@@ -200,14 +200,17 @@ void FAMS::AddDataToHash(block HT[], int hs[], fams_point& pt, int where,
 
 // compute the pilot h_i's for the data points
 void FAMS::ComputePilot(block *HT, int *hs, fams_partition *cuts,
-						char* pilot_fn) {
+					const std::string& outdir, const std::string& filename) {
 	const int     win_j = 10, max_win = 7000;
 	int           i, j;
 	unsigned int  nn;
 	unsigned int  wjd = (unsigned int)(win_j * d_);
 	int           num_l[1000];
+	char          fn[1024];
 	fams_res_cont res(n_);
-	if (LoadBandwidths(pilot_fn) == 0) {
+	
+	sprintf(fn, "%s/%s_pilot_%d.txt", outdir.c_str(), k_, filename.c_str());
+	if (LoadBandwidths(fn) == 0) {
 		bgLog("compute bandwidths...");
 		for (j = 0; j < n_; j++) {
 			int numn = 0;
@@ -240,9 +243,10 @@ void FAMS::ComputePilot(block *HT, int *hs, fams_partition *cuts,
 			}
 			points_[j].window_ = (nn + 1) * wjd;
 		}
-		SaveBandwidths(pilot_fn);
+		SaveBandwidths(fn);
 	} else
 		bgLog("load bandwidths...");
+	
 	for (j = 0; j < n_; j++) {
 		points_[j].weightdp2_ = (float)pow(
 			FAMS_FLOAT_SHIFT / points_[j].window_, (d_ + 2) * FAMS_ALPHA);
@@ -1041,7 +1045,7 @@ double FAMS::DoFindKLIteration(int K, int L, float* scores) {
 
 // main function to run FAMS
 int FAMS::RunFAMS(int K, int L, int k, double percent, int jump, float width,
-				  char* pilot_fn) {
+				  std::string outdir, std::string filename) {
 	bgLog("Running FAMS with K=%d L=%d\n", K, L);
 	if (hasPoints_ == 0) {
 		bgLog("Load points first\n");
@@ -1093,7 +1097,7 @@ int FAMS::RunFAMS(int K, int L, int k, double percent, int jump, float width,
 	bgLog(" Run pilot ");
 	if (adaptive) {
 		bgLog("adaptive...");
-		ComputePilot(HT, hs, cuts, pilot_fn);
+		ComputePilot(HT, hs, cuts, outdir, filename);
 	} else  {
 		bgLog("fixed bandwith...");
 		unsigned int hwd = (unsigned int)(hWidth * d_);

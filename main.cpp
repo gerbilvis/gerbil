@@ -11,7 +11,6 @@ using namespace std;
 
 int main(int argc, char** argv) {
 	param_mfams options;
-	char tmp[1024];
 	
 	if (!options.parse(argc, argv))
 		exit(1);
@@ -45,37 +44,37 @@ int main(int argc, char** argv) {
 		bgLog("Found K = %d L = %d (write them down)\n", options.K, options.L);
 	} else {
 	// actually run MS	
-		sprintf(tmp, "%s/pilot_%d_%s.txt", options.outputdir.c_str(), options.k,
-				options.inputfile.c_str());
 		switch (options.starting) {
 		case JUMP:
 			cfams.RunFAMS(options.K, options.L, options.k, options.jump,
-						  options.bandwidth, tmp);
+					  options.bandwidth, options.outputdir, options.inputfile);
 			break;
 		case PERCENT:
 			cfams.RunFAMS(options.K, options.L, options.k, options.percent,
-						  options.bandwidth, tmp);
+					  options.bandwidth, options.outputdir, options.inputfile);
 			break;
 		default:
 			cfams.RunFAMS(options.K, options.L, options.k,
-						  options.bandwidth, tmp);
+					  options.bandwidth, options.outputdir, options.inputfile);
 		}
 
+		if (options.starting != ALL)
+			cerr << "Note: As mean shift is not run on all input points, no "
+			        "output images are created." << endl;
 		if (!options.batch) {
 			// save the data
-			sprintf(tmp, "%s/out_%s.txt", options.outputdir.c_str(), options.inputfile.c_str());
-			cfams.SaveModes(tmp);
+			cfams.SaveModes(options.outputdir, options.inputfile);
 			// save pruned modes
-			sprintf(tmp, "%s/modes_%s.txt", options.outputdir.c_str(), options.inputfile.c_str());
-			cfams.SavePrunedModes(tmp);
-			sprintf(tmp, "%s/%s.seg.txt", options.outputdir.c_str(), options.inputfile.c_str());
-			cfams.SaveMymodes(tmp);
-			sprintf(tmp, "%s/%s.seg", options.outputdir.c_str(), options.inputfile.c_str());
-			cfams.CreatePpm(tmp);
+			cfams.SavePrunedModes(options.outputdir, options.inputfile);
+			cfams.SaveMymodes(options.outputdir, options.inputfile);
+			if (options.starting == ALL) {
+				sprintf(tmp, "%s/%s.seg", options.outputdir.c_str(), options.inputfile.c_str());
+				cfams.CreatePpm(tmp);//FIXME
+			}
 		}
 		// save image which holds segment indices of each pixel
 		sprintf(tmp, "%s/%s", options.outputdir.c_str(), options.inputfile.c_str());
-		cfams.SaveSegments(tmp);
+		cfams.SaveSegments(tmp);//FIXME
 	}
 }
 

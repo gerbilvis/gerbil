@@ -135,13 +135,16 @@ void CleanHash();
 void SelectMsPoints(double percent, int jump);
 
 int RunFAMS(int K, int L, int k, double percent, int jump, float width,
-			char* pilot_fn);
-inline int RunFAMS(int K, int L, int k, float width, char* pilot_fn) {
-	return RunFAMS(K, L, k, 0., 1, width, pilot_fn); }
-inline int RunFAMS(int K, int L, int k, int jump, float width, char* pilot_fn) {
-	return RunFAMS(K, L, k, 0., jump, width, pilot_fn); }
-inline int RunFAMS(int K, int L, int k, double percent, float width, char* pilot_fn) {
-	return RunFAMS(K, L, k, percent, 1, width, pilot_fn); }
+			const std::string& outdir, const std::string& filename);
+inline int RunFAMS(int K, int L, int k, float width,
+				   const std::string& od, const std::string& fn) {
+					return RunFAMS(K, L, k, 0., 1, width, od, fn); }
+inline int RunFAMS(int K, int L, int k, int jump, float width,
+				   const std::string& od, const std::string& fn) {
+				 	return RunFAMS(K, L, k, 0., jump, width, od, fn); }
+inline int RunFAMS(int K, int L, int k, double percent, float width,
+				   const std::string& od, const std::string& fn) {
+					return RunFAMS(K, L, k, percent, 1, width, od, fn); }
 			
 void MakeCuts(fams_partition* cuts);
 void MakeCutL(fams_partition& cut);
@@ -151,7 +154,8 @@ int HashFunction(int *cutVals, int whichPartition, int kk, int M = 0,
 void AddDataToHash(block HT[], int hs[], fams_point & pt, int where, int Bs,
 				   int M, int which, int which2,
 				   int hjump);
-void ComputePilot(block *HT, int *hs, fams_partition *cuts, char* pilot_fn);
+void ComputePilot(block *HT, int *hs, fams_partition *cuts,
+					const std::string& outdir, const std::string& filename);
 void GetNearestNeighbours(fams_point & who, block * HT, int *hs,
 						  fams_partition * cuts, fams_res_cont & res,
 						  int print,
@@ -173,13 +177,13 @@ void DoFAMS(block *HT, int *hs, fams_partition *cuts,
 unsigned int DoMeanShiftAdaptiveIteration(fams_res_cont& res,
 										  unsigned short *old,
 										  unsigned short *ret);
-void SaveModes(char* fn);
+void SaveModes(const std::string& outdir, const std::string& filename);
 
-void SaveMymodes(char *fn);
-void SaveSegments(char *fn);
+void SaveMymodes(const std::string& outdir, const std::string& filename);
+void SaveSegments(const std::string& outdir, const std::string& filename);
 void CreatePpm(char *fn);
-int LoadBandwidths(char* fn);
-void SaveBandwidths(char* fn);
+int LoadBandwidths(const char* fn);
+void SaveBandwidths(const char* fn);
 std::pair<int, int> FindKL(int Kmin, int Kmax, int Kjump, int Lmax, int k_neigh,
 		   float width, float epsilon);
 void ComputeRealBandwidths(unsigned int h);

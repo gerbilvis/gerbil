@@ -252,7 +252,7 @@ void FAMS::SavePrunedModes(char* fn) {
 }
 
 
-int FAMS::LoadBandwidths(char* fn) {
+int FAMS::LoadBandwidths(const char* fn) {
 	FILE* fd;
 	fd = fopen(fn, "rb");
 	if (fd == NULL)
@@ -273,7 +273,7 @@ int FAMS::LoadBandwidths(char* fn) {
 	return 1;
 }
 
-void FAMS::SaveBandwidths(char* fn) {
+void FAMS::SaveBandwidths(const char* fn) {
 	FILE* fd;
 	fd = fopen(fn, "wb");
 	if (fd == NULL)

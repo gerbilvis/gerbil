@@ -33,9 +33,9 @@ param_mfams::param_mfams() : mfams("Mean shift options") {
 		 "L for LSH")
 		("pilot.k", value(&k)->default_value(200),
 		 "number of neighbors used in the construction of the pilot density")
-		("init.method", value(&starting)->default_value(PERCENT),
-		 "start mean shift from all points (ALL), every Xth point"
-		 "(JUMP), or a random selection of points (PERCENT)")
+		("init.method", value(&starting)->default_value(ALL),
+		 "start mean shift from all points (ALL), every Xth point (JUMP), "
+		 "or a random selection of points (PERCENT)")
 		("init.jump", value(&jump)->default_value(2),
 		 "use points with indices 1+(jump*[1..infty])")
 		("init.percent", value(&percent)->default_value(50.f),
