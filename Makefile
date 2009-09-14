@@ -1,3 +1,4 @@
+CFLAGS+=-O3
 CFLAGS+=`pkg-config --cflags opencv`
 LDFLAGS+=`pkg-config --libs opencv`
 LDFLAGS+='-lboost_program_options'

@@ -19,21 +19,25 @@ int main(int argc, char** argv) {
 	multi_img image(options.inputfile);
 	if (image.empty())
 		return 2;
+		
+	//TODO: input filenames with path elements
+	string base = options.outputdir + "/" + options.inputfile;
 
-	image.write_out(options.outputdir + "/a");
+	image.write_out(base + ".a");
 	
 	// log image data
 	image.apply_logarithm();
-	image.write_out(options.outputdir + "/b");
+	image.write_out(base + ".b");
 	
 	// compute spectral gradient
 	multi_img gradient = image.spec_gradient();
-	gradient.write_out(options.outputdir + "/c");
+	gradient.write_out(base + ".c");
 	
 
 	// load points
 	FAMS cfams(options.use_LSH);
-	cfams.ImportPoints(gradient);
+//	cfams.ImportPoints(gradient);
+	cfams.ImportPoints(image);
 
 	if (options.findKL) {
 	// find K, L
@@ -47,15 +51,15 @@ int main(int argc, char** argv) {
 		switch (options.starting) {
 		case JUMP:
 			cfams.RunFAMS(options.K, options.L, options.k, options.jump,
-					  options.bandwidth, options.outputdir, options.inputfile);
+					  options.bandwidth, base);
 			break;
 		case PERCENT:
 			cfams.RunFAMS(options.K, options.L, options.k, options.percent,
-					  options.bandwidth, options.outputdir, options.inputfile);
+					  options.bandwidth, base);
 			break;
 		default:
 			cfams.RunFAMS(options.K, options.L, options.k,
-					  options.bandwidth, options.outputdir, options.inputfile);
+					  options.bandwidth, base);
 		}
 
 		if (options.starting != ALL)
@@ -63,18 +67,22 @@ int main(int argc, char** argv) {
 			        "output images are created." << endl;
 		if (!options.batch) {
 			// save the data
-			cfams.SaveModes(options.outputdir, options.inputfile);
+			cfams.SaveModes(base);
 			// save pruned modes
-			cfams.SavePrunedModes(options.outputdir, options.inputfile);
-			cfams.SaveMymodes(options.outputdir, options.inputfile);
-			if (options.starting == ALL) {
+			cfams.SavePrunedModes(base);
+			cfams.SaveMymodes(base);
+/*			if (options.starting == ALL) {
 				sprintf(tmp, "%s/%s.seg", options.outputdir.c_str(), options.inputfile.c_str());
 				cfams.CreatePpm(tmp);//FIXME
-			}
+			}*/
 		}
-		// save image which holds segment indices of each pixel
-		sprintf(tmp, "%s/%s", options.outputdir.c_str(), options.inputfile.c_str());
-		cfams.SaveSegments(tmp);//FIXME
+		
+		if (options.starting == ALL) {
+			// save image which holds segment indices of each pixel
+			IplImage *seg =	cfams.segmentImage(true);
+			cvSaveImage((base + ".idx.png").c_str(), seg);
+			cvReleaseImage(&seg);
+		}
 	}
 }
 

@@ -15,6 +15,8 @@
 #endif
 
 #include <cmath>
+// for segment image
+#include <cv.h>
 #include "auxiliary.h"
 #include "multi_img.h"
 // Algorithm constants
@@ -135,16 +137,13 @@ void CleanHash();
 void SelectMsPoints(double percent, int jump);
 
 int RunFAMS(int K, int L, int k, double percent, int jump, float width,
-			const std::string& outdir, const std::string& filename);
-inline int RunFAMS(int K, int L, int k, float width,
-				   const std::string& od, const std::string& fn) {
-					return RunFAMS(K, L, k, 0., 1, width, od, fn); }
-inline int RunFAMS(int K, int L, int k, int jump, float width,
-				   const std::string& od, const std::string& fn) {
-				 	return RunFAMS(K, L, k, 0., jump, width, od, fn); }
-inline int RunFAMS(int K, int L, int k, double percent, float width,
-				   const std::string& od, const std::string& fn) {
-					return RunFAMS(K, L, k, percent, 1, width, od, fn); }
+			const std::string& filebase);
+inline int RunFAMS(int K, int L, int k, float width, const std::string& fb) {
+					return RunFAMS(K, L, k, 0., 1, width, fb); }
+inline int RunFAMS(int K, int L, int k, int jump, float width, const std::string& fb) {
+				 	return RunFAMS(K, L, k, 0., jump, width, fb); }
+inline int RunFAMS(int K, int L, int k, double percent, float width, const std::string& fb) {
+					return RunFAMS(K, L, k, percent, 1, width, fb); }
 			
 void MakeCuts(fams_partition* cuts);
 void MakeCutL(fams_partition& cut);
@@ -154,8 +153,7 @@ int HashFunction(int *cutVals, int whichPartition, int kk, int M = 0,
 void AddDataToHash(block HT[], int hs[], fams_point & pt, int where, int Bs,
 				   int M, int which, int which2,
 				   int hjump);
-void ComputePilot(block *HT, int *hs, fams_partition *cuts,
-					const std::string& outdir, const std::string& filename);
+void ComputePilot(block *HT, int *hs, fams_partition *cuts, const std::string& filebase);
 void GetNearestNeighbours(fams_point & who, block * HT, int *hs,
 						  fams_partition * cuts, fams_res_cont & res,
 						  int print,
@@ -177,10 +175,9 @@ void DoFAMS(block *HT, int *hs, fams_partition *cuts,
 unsigned int DoMeanShiftAdaptiveIteration(fams_res_cont& res,
 										  unsigned short *old,
 										  unsigned short *ret);
-void SaveModes(const std::string& outdir, const std::string& filename);
+void SaveModes(const std::string& filebase);
 
-void SaveMymodes(const std::string& outdir, const std::string& filename);
-void SaveSegments(const std::string& outdir, const std::string& filename);
+void SaveMymodes(const std::string& filebase);
 void CreatePpm(char *fn);
 int LoadBandwidths(const char* fn);
 void SaveBandwidths(const char* fn);
@@ -190,8 +187,11 @@ void ComputeRealBandwidths(unsigned int h);
 double DoFindKLIteration(int K, int L, float* scores);
 void ComputeScores(block *HT, int *hs, fams_partition *cuts, float* scores);
 int PruneModes(int hprune, int npmin);
-void SavePrunedModes(char* fn);
+void SavePrunedModes(const std::string& filebase);
 
+// returns 2D, 1 color image that uses color markers to show image segments
+// returned image must be free'd by caller
+IplImage* segmentImage(bool normalize = false);
 
 
 //Produce the boolean vector of a data point with a partition

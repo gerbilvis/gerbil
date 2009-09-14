@@ -200,7 +200,7 @@ void FAMS::AddDataToHash(block HT[], int hs[], fams_point& pt, int where,
 
 // compute the pilot h_i's for the data points
 void FAMS::ComputePilot(block *HT, int *hs, fams_partition *cuts,
-					const std::string& outdir, const std::string& filename) {
+					const std::string& filebase) {
 	const int     win_j = 10, max_win = 7000;
 	int           i, j;
 	unsigned int  nn;
@@ -209,7 +209,7 @@ void FAMS::ComputePilot(block *HT, int *hs, fams_partition *cuts,
 	char          fn[1024];
 	fams_res_cont res(n_);
 	
-	sprintf(fn, "%s/%s_pilot_%d.txt", outdir.c_str(), k_, filename.c_str());
+	sprintf(fn, "%s.pilot_%d.txt", filebase.c_str(), k_);
 	if (LoadBandwidths(fn) == 0) {
 		bgLog("compute bandwidths...");
 		for (j = 0; j < n_; j++) {
@@ -1045,8 +1045,11 @@ double FAMS::DoFindKLIteration(int K, int L, float* scores) {
 
 // main function to run FAMS
 int FAMS::RunFAMS(int K, int L, int k, double percent, int jump, float width,
-				  std::string outdir, std::string filename) {
-	bgLog("Running FAMS with K=%d L=%d\n", K, L);
+				  const std::string& filebase) {
+	if (use_LSH_)
+		bgLog("Running FAMS with K=%d L=%d\n", K, L);
+	else
+		bgLog("Running FAMS without LSH (use --lsh.enabled)");
 	if (hasPoints_ == 0) {
 		bgLog("Load points first\n");
 		return 1;
@@ -1097,7 +1100,7 @@ int FAMS::RunFAMS(int K, int L, int k, double percent, int jump, float width,
 	bgLog(" Run pilot ");
 	if (adaptive) {
 		bgLog("adaptive...");
-		ComputePilot(HT, hs, cuts, outdir, filename);
+		ComputePilot(HT, hs, cuts, filebase);
 	} else  {
 		bgLog("fixed bandwith...");
 		unsigned int hwd = (unsigned int)(hWidth * d_);

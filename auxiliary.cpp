@@ -42,7 +42,7 @@ param_mfams::param_mfams() : mfams("Mean shift options") {
 		 "randomly select given percentage of points")
 		("bandwidth", value(&bandwidth)->default_value(1.f),
 		 "use fixed bandwidth*dimensionalty for mean shift window")
-		("findKL.enabled", value(&findKL)->default_value(false),
+		("findKL.enabled", bool_switch(&findKL)->default_value(false),
 		 "empirically determine optimal K, L values (1 < L < lsh.L)")
 		("findKL.Kmin", value(&Kmin)->default_value(1),
 		 "minimum value of K to be tested (parameter LSH.K for max)")

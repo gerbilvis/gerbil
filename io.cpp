@@ -4,6 +4,8 @@
 #include <cassert>
 #include <iostream>
 #include <fstream>
+#include <cv.h>
+#include <highgui.h>
 #include "mfams.h"
 
 using namespace std;
@@ -126,9 +128,9 @@ bool FAMS::ImportPoints(const multi_img& img) {
 	return true;
 }
 
-void FAMS::SaveMymodes(char *fn) {
-	FILE *fp;
-	fp = fopen(fn, "wb");
+void FAMS::SaveMymodes(const std::string& filebase) {
+	FILE* fp = fopen((filebase + ".modes.my.txt").c_str(), "wb");
+
 	int i, j, idx;
 	idx = 0;
 
@@ -145,35 +147,38 @@ void FAMS::SaveMymodes(char *fn) {
 	fclose(fp);
 }
 
-void FAMS::SaveSegments(char *fn) {
-	cerr << w_ << "x" << h_ << " (" << w_*h_ << ") vs " << nsel_ << endl;
+IplImage* FAMS::segmentImage(bool normalize) {
+	// mean shift was run on _all_ points
 	assert(w_ * h_ == nsel_);
-	std::string filename(fn);
 
-	float out[3];
-
-	ofstream pgmf((filename + ".idx.ppm").c_str());
-	if (!pgmf) {
-		cout << "File %s can not be opened for writing" << fn << endl;
+	IplImage *ret = cvCreateImage(cvSize(w_, h_), IPL_DEPTH_8U, 1);
+	register int i = 0;
+	register unsigned char *row;
+	unsigned char maxval = 0;
+	for (int y = 0; y < h_; ++y) {
+		row = (unsigned char*)(ret->imageData + ret->widthStep*y);
+		for (int x = 0; x < w_; ++x) {
+			row[x] = __min(indmymodes[i], 255);
+			cout << x << "." << y << " (" << i << ") \t" << (int)row[x] << endl;
+			maxval = __max(maxval, row[x]);
+			++i;
+		}
 	}
-
-	pgmf << "P2" << endl << w_ << " " << h_ << " " << "255" << endl;
-
-	for (int i = 1; i <= w_ * h_; ++i) {
-		pgmf << indmymodes[i];
-		if (i % 18)
-			pgmf << " ";
-		else
-			pgmf << endl;
+	if (normalize) {
+		cvScale(ret, ret, 255./(double)maxval, 0.);
+		for (int y = 0; y < h_; ++y) {
+			row = (unsigned char*)(ret->imageData + ret->widthStep*y);
+			for (int x = 0; x < w_; ++x) {
+				cout << x << "." << y << " (" << i << ") \t" << (int)row[x] << endl;
+			}
+		}
 	}
-
-	bgLog("Segment image is stored in  %s\n", (filename + ".idx.ppm").c_str());
-
-	pgmf.close();
+	
+	return ret;
 }
 
 
-void FAMS::CreatePpm(char *fn) {
+void FAMS::CreatePpm(char *fn) { // TODO: get rid of! export as multiimg instead
 	std::string filename(fn);
 
 	float out[3];
@@ -211,12 +216,11 @@ void FAMS::CreatePpm(char *fn) {
 }
 
 
-void FAMS::SaveModes(char* fn) {
+void FAMS::SaveModes(const std::string& filebase) {
 	if (nsel_ < 1)
 		return;
-	bgLog("Save convergence points in %s ...", fn);
-	FILE* fd;
-	fd = fopen(fn, "wb");
+
+	FILE* fd = fopen((filebase + ".modes.txt").c_str(), "wb");
 	int i, j, idx;
 	idx = 0;
 	for (i = 0; i < nsel_; i++) {
@@ -230,12 +234,10 @@ void FAMS::SaveModes(char* fn) {
 	bgLog("done\n");
 }
 
-void FAMS::SavePrunedModes(char* fn) {
+void FAMS::SavePrunedModes(const std::string& filebase) {
 	if (npm_ < 1)
 		return;
-	bgLog("Save joined convergence points in %s ...", fn);
-	FILE* fd;
-	fd = fopen(fn, "wb");
+	FILE* fd = fopen((filebase + ".modes.joined.txt").c_str(), "wb");
 	int i, j, idx;
 	idx = 0;
 	for (i = 0; i < npm_; i++) {

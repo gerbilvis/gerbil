@@ -7,6 +7,7 @@
 
 using namespace std;
 
+
 multi_img::multi_img(const string& filename) : width(0), height(0) {
 	vector<string> files;
 	
