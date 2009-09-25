@@ -62,6 +62,7 @@
 typedef struct fams_point {
 	unsigned short *data_;
 	unsigned short usedFlag_;
+	// size of ms window around this point (L1)
 	unsigned int   window_;
 	float          weightdp2_;
 	fams_point& operator=(struct fams_point& d2) {

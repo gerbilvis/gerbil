@@ -159,20 +159,12 @@ IplImage* FAMS::segmentImage(bool normalize) {
 		row = (unsigned char*)(ret->imageData + ret->widthStep*y);
 		for (int x = 0; x < w_; ++x) {
 			row[x] = __min(indmymodes[i], 255);
-			cout << x << "." << y << " (" << i << ") \t" << (int)row[x] << endl;
 			maxval = __max(maxval, row[x]);
 			++i;
 		}
 	}
-	if (normalize) {
+	if (normalize)
 		cvScale(ret, ret, 255./(double)maxval, 0.);
-		for (int y = 0; y < h_; ++y) {
-			row = (unsigned char*)(ret->imageData + ret->widthStep*y);
-			for (int x = 0; x < w_; ++x) {
-				cout << x << "." << y << " (" << i << ") \t" << (int)row[x] << endl;
-			}
-		}
-	}
 	
 	return ret;
 }

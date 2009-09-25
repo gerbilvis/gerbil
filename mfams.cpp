@@ -212,6 +212,7 @@ void FAMS::ComputePilot(block *HT, int *hs, fams_partition *cuts,
 	sprintf(fn, "%s.pilot_%d.txt", filebase.c_str(), k_);
 	if (LoadBandwidths(fn) == 0) {
 		bgLog("compute bandwidths...");
+		unsigned int dbg_acc = 0;
 		for (j = 0; j < n_; j++) {
 			int numn = 0;
 			int numns[max_win / win_j];
@@ -242,7 +243,9 @@ void FAMS::ComputePilot(block *HT, int *hs, fams_partition *cuts,
 				}
 			}
 			points_[j].window_ = (nn + 1) * wjd;
+			dbg_acc += points_[j].window_;
 		}
+		cout << "Avg. window size: " << dbg_acc << endl;
 		SaveBandwidths(fn);
 	} else
 		bgLog("load bandwidths...");
@@ -924,10 +927,10 @@ std::pair<int,int> FAMS::FindKL(int Kmin, int Kmax, int Kjump, int Lmax, int k,
 		return make_pair(0, 0);
 	}
 
-	int adaptive = 1;
+	bool adaptive = true;
 	int hWidth   = 0;
-	if (width > 0) {
-		adaptive = 0;
+	if (width > 0.f) {
+		adaptive = false;
 		hWidth   = (int)(65535.0 * (width) / (maxVal_ - minVal_));
 	}
 	k_       = k;
@@ -1056,10 +1059,10 @@ int FAMS::RunFAMS(int K, int L, int k, double percent, int jump, float width,
 	}
 	int i, j;
 
-	int adaptive = 1;
+	bool adaptive = true;
 	int hWidth;
-	if (width > 0) {
-		adaptive = 0;
+	if (width > 0.) {
+		adaptive = false;
 		hWidth   = (int)(65535.0 * (width) / (maxVal_ - minVal_));
 	}
 
@@ -1102,8 +1105,9 @@ int FAMS::RunFAMS(int K, int L, int k, double percent, int jump, float width,
 		bgLog("adaptive...");
 		ComputePilot(HT, hs, cuts, filebase);
 	} else  {
-		bgLog("fixed bandwith...");
+		bgLog("fixed bandwidth...");
 		unsigned int hwd = (unsigned int)(hWidth * d_);
+		cout << "Window size: " << hwd << endl;
 		for (i = 0; i < n_; i++) {
 			points_[i].window_    = hwd;
 			points_[i].weightdp2_ = 1;

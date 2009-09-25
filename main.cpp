@@ -36,8 +36,8 @@ int main(int argc, char** argv) {
 
 	// load points
 	FAMS cfams(options.use_LSH);
-//	cfams.ImportPoints(gradient);
-	cfams.ImportPoints(image);
+//	cfams.ImportPoints(image);
+	cfams.ImportPoints(gradient);
 
 	if (options.findKL) {
 	// find K, L

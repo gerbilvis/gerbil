@@ -27,11 +27,11 @@ param_mfams::param_mfams() : mfams("Mean shift options") {
 	mfams.add_options()
 		("lsh.enabled", bool_switch(&use_LSH)->default_value(false),
 		 "use locality-sensitive hashing") // TODO: default to false is ugly
-		("lsh.K", value(&K)->default_value(30),
+		("lsh.K", value(&K)->default_value(5),
 		 "K for LSH")
-		("lsh.L", value(&L)->default_value(30),
+		("lsh.L", value(&L)->default_value(100),
 		 "L for LSH")
-		("pilot.k", value(&k)->default_value(200),
+		("pilot.k", value(&k)->default_value(450),
 		 "number of neighbors used in the construction of the pilot density")
 		("init.method", value(&starting)->default_value(ALL),
 		 "start mean shift from all points (ALL), every Xth point (JUMP), "
@@ -40,8 +40,8 @@ param_mfams::param_mfams() : mfams("Mean shift options") {
 		 "use points with indices 1+(jump*[1..infty])")
 		("init.percent", value(&percent)->default_value(50.f),
 		 "randomly select given percentage of points")
-		("bandwidth", value(&bandwidth)->default_value(1.f),
-		 "use fixed bandwidth*dimensionalty for mean shift window")
+		("bandwidth", value(&bandwidth)->default_value(0.f),
+		 "use fixed bandwidth*dimensionality for mean shift window (else: adaptive)")
 		("findKL.enabled", bool_switch(&findKL)->default_value(false),
 		 "empirically determine optimal K, L values (1 < L < lsh.L)")
 		("findKL.Kmin", value(&Kmin)->default_value(1),
