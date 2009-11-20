@@ -5,11 +5,11 @@
 #include <cv.h>
 
 // struct to hold a multispectral image
-struct multi_img : public std::vector<IplImage*> {
+struct multi_img : public std::vector<cv::Mat_<double> > {
 public:
 	// default
 	multi_img() : width(0), height(0) {}
-	multi_img(size_t size) : width(0), height(0), std::vector<IplImage*>(size) {}
+	multi_img(size_t size) : width(0), height(0), std::vector<cv::Mat_<double> >(size) {}
 
 	/* reads in and processes either
 		(a) one image file containing 1 or several color channels
@@ -17,9 +17,6 @@ public:
 	*/
 	multi_img(const std::string& filename);
 
-	// release all image data
-	void cleanup();
-	
 	// returns pointer to data in interleaved format
 	// you have to free it after use! KTHXBYE
 	unsigned short* export_interleaved() const;

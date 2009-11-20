@@ -22,41 +22,27 @@ multi_img::multi_img(const string& filename) : width(0), height(0) {
 	read_image(files);
 };
 
-void multi_img::cleanup() {
-	for (int i = 0; i < size(); ++i)
-		cvReleaseImage(&(*this)[i]);
-	clear();
-}
-
 multi_img multi_img::clone() {
 	multi_img ret(size());
 	for (int i = 0; i < size(); ++i)
-		ret[i] = cvCloneImage((*this)[i]);
+		ret[i] = (*this)[i].clone();
 
 	return ret;
 }
 
 unsigned short* multi_img::export_interleaved() const {
-	IplImage *img;
 	double scale = 65535.0/(maxval - minval);
 	unsigned short *ret = new unsigned short[size()*width*height];
 	
 	/* actually we don't care about the ordering of the pixels, just all
 	   values have to get in there in interleaved format */
-	int x, y, d;
-	register int i;
-	register double *row;
+	cv::MatConstIterator_<double> it;
+	register int d, i;
 	for (d = 0; d < size(); ++d) {
-		i = d; // start with right offset
-		img = (*this)[d];
-		for (y = 0; y < height; ++y) {
-			row = (double*)(img->imageData + img->widthStep*y);
-			for (x = 0; x < width; ++x) {
-				ret[i + size()*x] = ((unsigned short)row[x] - minval)*scale;
-			}
-			// every row consists of width*dim values
-			i += width*size();
-		}
+		const cv::Mat_<double> &img = (*this)[d];
+		// i starts with offset d, then jumps over dimensions
+		for (it = img.begin(), i = d; it != img.end(); ++it, i+=size())
+			ret[i] = (unsigned short)((*it - minval) * scale);
 	}
 	
 	return ret;
@@ -87,60 +73,47 @@ vector<string> multi_img::read_filelist(const string& filename) {
 
 // read multires. image into vector
 void multi_img::read_image(vector<string>& files) {
-	CvSize cvsize; // for convenience
-	
+	/* our favorite range */
+	minval = 0.; maxval = 255.;
+
 	for (int fi = 0; fi < files.size(); ++fi) {
-	    IplImage *src = cvLoadImage(files[fi].c_str(),
-	                           CV_LOAD_IMAGE_ANYDEPTH | CV_LOAD_IMAGE_ANYCOLOR);
+	    cv::Mat src = cv::imread(files[fi].c_str(), -1); // flag -1: preserve format
 	    
-		if (!src) {
+		if (src.empty()) {
 			cerr << "ERROR: Failed to load " << files[fi] << endl;
 			continue;
 		}
 		
 		// write or test size
 		if (width > 0) {
-			if (src->width != width || src->height != height) {
+			if (src.cols != width || src.rows != height) {
 				cerr << "ERROR: Size mismatch for image " << files[fi] << endl;
 				continue;
 			}
 		} else {
-			width = src->width;
-			height = src->height;
-			cvsize = cvSize(width, height);
+			width = src.cols;
+			height = src.rows;
 		}
 		
-		// convert to float to make life easier
-		// also split channels to images if applicable
-		IplImage *tmpf[src->nChannels];
-		
-		/* for a scaling to 0..255 */
-		double scale = 1./(double)(1 << (src->depth - 8));
-		double shift = 0.;
-		minval = 0.; maxval = 255.;
+		// we only expect CV_8U or CV_16U right now
+		double srcmaxval = (src.depth() == CV_16U ? 65535. : 255.);
 
-		if (src->nChannels == 1) {
-			tmpf[0] = cvCreateImage(cvsize, IPL_DEPTH_64F, 1);
-			cvConvertScale(src, tmpf[0], scale, shift);
-		} else {
-			IplImage *tmp[src->nChannels];
-			for (int i = 0; i < src->nChannels; ++i)
-				tmp[i] = cvCreateImage(cvsize, src->depth, 1);
-			cvSplit(src, tmp[0], tmp[1], tmp[2], NULL);
-			for (int i = 0; i < src->nChannels; ++i) {
-				tmpf[i] = cvCreateImage(cvsize, IPL_DEPTH_64F, 1);
-				cvConvertScale(tmp[i], tmpf[i], scale, shift);
-				cvReleaseImage(&tmp[i]);
-			}
-		}
+		// operate on sane data type from now on
+		cv::Mat_<double> img = src;
+		// rescale data accordingly
+		if (maxval != srcmaxval) // evil comp., doesn't hurt
+			img *= maxval/srcmaxval;
 		
-		// add everything in
-		for (int i = 0; i < src->nChannels; ++i)
-			push_back(tmpf[i]);
-	    cout << "Added " << files[fi] << ":\t" << src->nChannels << " channels, "
-	              << src->depth  << " bits" << endl;
-	    
-	    cvReleaseImage(&src);
+		// split image
+		std::vector<cv::Mat> channels;
+		cv::split(img, channels);
+				
+		// add everything in at the end
+		insert(end(), channels.begin(), channels.end());
+		
+	    cout << "Added " << files[fi] << ":\t" << channels.size()
+             << (channels.size() == 1 ? " channel, " : " channels, ")
+             << (src.depth() == CV_16U ? 16 : 8) << " bits" << endl;
 	}
 
 	cout << "Total of " << size() << " dimensions" << endl;
@@ -148,27 +121,25 @@ void multi_img::read_image(vector<string>& files) {
 
 void multi_img::write_out(const string& base, bool normalize) {
 	char name[1024];
-	double scale = 255./(maxval - minval);
 	for (int i = 0; i < size(); ++i) {
 		sprintf(name, "%s%02d.png", base.c_str(), i);
 
-		/* we have it in scale 0..255 */
 		if (normalize) {
-			IplImage *urgs = cvCreateImage(cvSize(width, height), IPL_DEPTH_64F, 1);
-			cvConvertScale((*this)[i], urgs, scale, -scale*minval);
-			cvSaveImage(name, urgs);
-			cvReleaseImage(&urgs);
+			cv::Mat normalized;
+			double scale = 255./(maxval - minval);
+			(*this)[i].convertTo(normalized, CV_8U, scale, -scale*minval);
+			cv::imwrite(name, normalized);
 		} else
-			cvSaveImage(name, (*this)[i]);
+			cv::imwrite(name, (*this)[i]);
 	}
 }
 
 void multi_img::apply_logarithm() {
 	for (int i = 0; i < size(); ++i) {
 		// will assign large negative value to 0 pixels
-		cvLog((*this)[i], (*this)[i]);
+		cv::log((*this)[i], (*this)[i]);
 		// get rid of negative values (when pixel value was 0)
-		cvMaxS((*this)[i], 0., (*this)[i]);
+		cv::max((*this)[i], 0., (*this)[i]);
 	}
 	// data format has changed as follows
 	minval = 0.;
@@ -176,17 +147,14 @@ void multi_img::apply_logarithm() {
 }
 
 multi_img multi_img::spec_gradient() {
-	CvSize cvsize = cvSize(width, height); // letter case is always fun
 	multi_img ret;
 	// data format of output
 	ret.minval = -maxval/2.;
-	ret.maxval = maxval/2.;
-	ret.width = width; ret.height=height;
+	ret.maxval =  maxval/2.;
+	ret.width = width; ret.height = height;
 
 	for (int i = 0; i < size()-1; ++i) {
-		IplImage *tmp = cvCreateImage(cvsize, IPL_DEPTH_64F, 1);
-		cvSub((*this)[i+1], (*this)[i], tmp);
-		ret.push_back(tmp);		
+		ret.push_back((*this)[i+1] - (*this)[i]);
 	}
 	return ret;
 }

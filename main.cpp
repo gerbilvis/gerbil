@@ -86,33 +86,3 @@ int main(int argc, char** argv) {
 	}
 }
 
-
-
-/* main function to test multi_img */
-int main2(int argc, char **argv) {
-	
-	if (argc < 2)
-		return 1;
-
-	multi_img image(argv[1]);
-	
-	if (image.empty())
-		return 2;
-
-	image.write_out("/tmp/blackjack/a");
-	
-	// log image data
-	image.apply_logarithm();
-	image.write_out("/tmp/blackjack/b");
-	
-	// compute spectral gradient
-	multi_img gradient = image.spec_gradient();
-	gradient.write_out("/tmp/blackjack/c");
-	
-	if (argc > 2)
-		gradient.export_interleaved();
-	
-	// we could clean up here ;-)
-	
-	return 0;
-}
