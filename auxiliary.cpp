@@ -97,7 +97,7 @@ bool param_mfams::parse(int argc, char** argv) {
         if (vm.count("help")) {
 	        cout << "Usage: " << argv[0] << " [configfile] [options ...]" << endl << endl;
 	        cout << "All options can also be given in the specified config file." << endl;
-	        cout << "Options given in the command line will"
+	        cout << "Options given on the command line will "
 	        		"overwrite options from the file." << endl << endl;
 			cout << all;
 			cout << endl;
@@ -120,8 +120,9 @@ void bgLog(const char *varStr, ...) {
 	va_start(argList, varStr);
 
 	//print the output string to stderr using
-	vfprintf(stdout, varStr, argList);
+	vfprintf(stderr, varStr, argList);
 	va_end(argList);
+	fflush(stderr);
 }
 
 time_t timestart, timeend;

@@ -1052,11 +1052,12 @@ int FAMS::RunFAMS(int K, int L, int k, double percent, int jump, float width,
 	if (use_LSH_)
 		bgLog("Running FAMS with K=%d L=%d\n", K, L);
 	else
-		bgLog("Running FAMS without LSH (use --lsh.enabled)");
+		bgLog("Running FAMS without LSH (use --lsh.enabled)\n");
 	if (hasPoints_ == 0) {
-		bgLog("Load points first\n");
+		bgLog("You need to load points first!\n");
 		return 1;
 	}
+
 	int i, j;
 
 	bool adaptive = true;

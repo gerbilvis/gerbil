@@ -102,6 +102,7 @@ bool FAMS::ImportPoints(const multi_img& img) {
 	// set member variables
 	CleanPoints();
 	hasPoints_ = 1;
+	// w_ and h_ are only used for result output (i.e. in io.cpp)
 	w_ = img.width; h_ = img.height;
 	n_ = w_ * h_;
 	d_ = img.size(); // dimensionality

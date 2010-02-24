@@ -23,7 +23,7 @@ int main(int argc, char** argv) {
 	//TODO: input filenames with path elements
 	string base = options.outputdir + "/" + options.inputfile;
 
-	image.write_out(base + ".a");
+/*	image.write_out(base + ".a"); THIS IS FOR SPECTRAL GRADIENT
 	
 	// log image data
 	image.apply_logarithm();
@@ -32,13 +32,12 @@ int main(int argc, char** argv) {
 	// compute spectral gradient
 	multi_img gradient = image.spec_gradient();
 	gradient.write_out(base + ".c");
-	
+	*/
 
 	// load points
 	FAMS cfams(options.use_LSH);
-//	cfams.ImportPoints(image);
-	cfams.ImportPoints(gradient);
-
+	cfams.ImportPoints(image);
+//	cfams.ImportPoints(gradient);
 	if (options.findKL) {
 	// find K, L
 		std::pair<int, int> ret = cfams.FindKL(options.Kmin, options.K,
@@ -47,7 +46,7 @@ int main(int argc, char** argv) {
 		options.K = ret.first; options.L = ret.second;
 		bgLog("Found K = %d L = %d (write them down)\n", options.K, options.L);
 	} else {
-	// actually run MS	
+	// actually run MS
 		switch (options.starting) {
 		case JUMP:
 			cfams.RunFAMS(options.K, options.L, options.k, options.jump,
