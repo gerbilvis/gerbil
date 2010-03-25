@@ -4,36 +4,47 @@
 
 using namespace std;
 
-multi_img_viewer::multi_img_viewer(const multi_img& img, QWidget *parent) :
-	image(img), QMainWindow(parent){
+multi_img_viewer::multi_img_viewer(QWidget *parent)
+	: QWidget(parent), image(NULL)
+{
 	setupUi(this);
-	connect(binSlider, SIGNAL(valueChanged(int)), this, SLOT(rebuild(int)));
+}
 
-	viewport->addSet(&unlabled);
+void multi_img_viewer::setImage(const multi_img &img, bool gradient)
+{
+	if (!image) {
+		connect(binSlider, SIGNAL(valueChanged(int)), this, SLOT(rebuild(int)));
+		viewport->addSet(&unlabled);
+	}
+	image = &img;
+	viewport->gradient = gradient;
+	viewport->dimensionality = img.size();
 	rebuild(binSlider->value());
 }
 
 void multi_img_viewer::rebuild(int bins)
 {
+	assert(image);
 	binLabel->setText(QString("%1 bins").arg(bins));
 	createBins(bins);
+	viewport->nbins = bins;
 	viewport->repaint();
 }
 
 void multi_img_viewer::createBins(int nbins)
 {
-	int dim = image.size();
-	double minval = image.minval, maxval = image.maxval;
+	int dim = image->size();
+	double minval = image->minval, maxval = image->maxval;
 	double binsize = (maxval - minval)/(double)nbins;
 
 	/* note that this is quite inefficient because of cache misses */
 	cv::MatConstIterator_<double> it[dim];
 	register int d;
 	for (d = 0; d < dim; ++d)
-		it[d] = image[d].begin();
+		it[d] = (*image)[d].begin();
 
 	unlabled.bins.clear();
-	while (it[0] != image[0].end()) {
+	while (it[0] != (*image)[0].end()) {
 
 		// create hash key and line array at once
 		qlonglong hashkey = 0;
@@ -64,14 +75,12 @@ void multi_img_viewer::createBins(int nbins)
 	}
 
 	unlabled.label = QColor(255, 255, 255);
-	unlabled.totalweight = image.width*image.height;
-	viewport->nbins = nbins;
-	viewport->dimensionality = dim;
+	unlabled.totalweight = image->width * image->height;
 }
 
 void multi_img_viewer::changeEvent(QEvent *e)
 {
-    QMainWindow::changeEvent(e);
+    QWidget::changeEvent(e);
     switch (e->type()) {
     case QEvent::LanguageChange:
         retranslateUi(this);

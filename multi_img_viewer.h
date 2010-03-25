@@ -7,20 +7,20 @@
 
 #include <vector>
 
-class multi_img_viewer : public QMainWindow, private Ui::multi_img_viewer {
+class multi_img_viewer : public QWidget, private Ui::multi_img_viewer {
     Q_OBJECT
 public:
-	multi_img_viewer(const multi_img& img, QWidget *parent = 0);
-
-	void createBins(int bins);
+	multi_img_viewer(QWidget *parent = 0);
 
 public slots:
 	void rebuild(int bins);
+	void setImage(const multi_img &image, bool gradient = false);
 
 protected:
     void changeEvent(QEvent *e);
 
-	const multi_img& image;
+	void createBins(int bins);
+	const multi_img *image;
 	BinSet unlabled;
 };
 

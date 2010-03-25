@@ -24,6 +24,8 @@ multi_img::multi_img(const string& filename) : width(0), height(0) {
 
 multi_img multi_img::clone() {
 	multi_img ret(size());
+	ret.minval = minval; ret.maxval = maxval;
+	ret.width = width; ret.height = height;
 	for (int i = 0; i < size(); ++i)
 		ret[i] = (*this)[i].clone();
 

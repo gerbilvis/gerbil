@@ -6,7 +6,7 @@
 #include <qapplication.h>
 
 #include "mfams.h"
-#include "multi_img_viewer.h"
+#include "viewerwindow.h"
 
 using namespace std;
 
@@ -78,20 +78,19 @@ int main(int argc, char** argv) {
 //	image.write_out(base + ".a");
 	
 	// log image data
-	image.apply_logarithm();
-//	image.write_out(base + ".b");
+	multi_img log = image.clone();
+	log.apply_logarithm();
+//	log.write_out(base + ".b");
 	
 	// compute spectral gradient
-	multi_img gradient = image.spec_gradient();
+	multi_img gradient = log.spec_gradient();
 //	gradient.write_out(base + ".c");
 
 //	runFAMS(options, gradient, base);
 
 	QApplication app(argc, argv);
-	multi_img_viewer window(gradient);
+	ViewerWindow window(image, gradient);
 	window.show();
 	return app.exec();
-
-	//gradient.visualize();
 }
 

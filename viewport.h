@@ -30,6 +30,7 @@ public:
 
 	int nbins;
 	int dimensionality;
+	bool gradient;
 protected:
 	void paintEvent(QPaintEvent *event);
 

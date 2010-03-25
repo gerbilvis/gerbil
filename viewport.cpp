@@ -13,12 +13,23 @@ Viewport::Viewport(QWidget *parent)
 
 void Viewport::paintEvent(QPaintEvent *event)
 {
+	// return early if no data present. other variables may not be initialized
+	if (sets.empty())
+		return;
+
 	QBrush background(QColor(15, 7, 15));
 	QPainter painter;
 	QTransform modelview;
-	modelview.translate(10, 10);
-	modelview.scale((width() - 20)/(qreal)(dimensionality-1),
-					(height() - 20)/(qreal)nbins);
+	{
+		int p = 10; // padding
+		// if gradient, we discard one unit space intentionally for centering
+		int d = dimensionality - (gradient? 0 : 1);
+		int w = (width()  - 2*p)/(qreal)(d); // width of one unit
+		qreal h = (height() - 2*p)/((qreal)nbins - 1); // height of one unit
+		int t = (gradient? w/2 : 0); // moving half a unit for centering
+		modelview.translate(p + t, p);
+		modelview.scale(w, h);
+	}
 	painter.begin(this);
 
 	painter.fillRect(rect(), background);
