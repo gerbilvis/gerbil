@@ -13,7 +13,7 @@ Viewport::Viewport(QWidget *parent)
 
 void Viewport::paintEvent(QPaintEvent *event)
 {
-	QBrush background (QColor(64, 32, 64));
+	QBrush background(QColor(15, 7, 15));
 	QPainter painter;
 	QTransform modelview;
 	modelview.translate(10, 10);
@@ -21,10 +21,9 @@ void Viewport::paintEvent(QPaintEvent *event)
 					(height() - 20)/(qreal)nbins);
 	painter.begin(this);
 
-	painter.fillRect(event->rect(), background);
+	painter.fillRect(rect(), background);
 	painter.setWorldTransform(modelview);
 	painter.setRenderHint(QPainter::Antialiasing);
-	cerr << sets.size() << endl;
 	for (int i = 0; i < sets.size(); ++i) {
 		const BinSet *s = sets[i];
 		QColor color = s->label;

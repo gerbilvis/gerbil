@@ -9,6 +9,7 @@ multi_img_viewer::multi_img_viewer(const multi_img& img, QWidget *parent) :
 	setupUi(this);
 	connect(binSlider, SIGNAL(valueChanged(int)), this, SLOT(rebuild(int)));
 
+	viewport->addSet(&unlabled);
 	rebuild(binSlider->value());
 }
 
@@ -16,6 +17,7 @@ void multi_img_viewer::rebuild(int bins)
 {
 	binLabel->setText(QString("%1 bins").arg(bins));
 	createBins(bins);
+	viewport->repaint();
 }
 
 void multi_img_viewer::createBins(int nbins)
@@ -65,7 +67,6 @@ void multi_img_viewer::createBins(int nbins)
 	unlabled.totalweight = image.width*image.height;
 	viewport->nbins = nbins;
 	viewport->dimensionality = dim;
-	viewport->addSet(&unlabled);
 }
 
 void multi_img_viewer::changeEvent(QEvent *e)
