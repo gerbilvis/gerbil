@@ -125,7 +125,7 @@ void multi_img::write_out(const string& base, bool normalize) {
 		sprintf(name, "%s%02d.png", base.c_str(), i);
 
 		if (normalize) {
-			cv::Mat normalized;
+			cv::Mat_<uchar> normalized;
 			double scale = 255./(maxval - minval);
 			(*this)[i].convertTo(normalized, CV_8U, scale, -scale*minval);
 			cv::imwrite(name, normalized);

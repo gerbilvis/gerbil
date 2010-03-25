@@ -3,48 +3,24 @@
 #include <string>
 #include <vector>
 #include <highgui.h>
+#include <qapplication.h>
+
 #include "mfams.h"
+#include "multi_img_viewer.h"
 
 using namespace std;
 
-/* mfams main function */
-
-int main(int argc, char** argv) {
-	param_mfams options;
-	
-	if (!options.parse(argc, argv))
-		exit(1);
-
-	// load image	
-	multi_img image(options.inputfile);
-	if (image.empty())
-		return 2;
-		
-	//TODO: input filenames with path elements
-	string base = options.outputdir + "/" + options.inputfile;
-
-/*	image.write_out(base + ".a"); THIS IS FOR SPECTRAL GRADIENT
-	
-	// log image data
-	image.apply_logarithm();
-	image.write_out(base + ".b");
-	
-	// compute spectral gradient
-	multi_img gradient = image.spec_gradient();
-	gradient.write_out(base + ".c");
-	*/
-
+void runFAMS(param_mfams& options, const multi_img& image, const string& base) {
 	// load points
 	FAMS cfams(options.use_LSH);
 	cfams.ImportPoints(image);
-//	cfams.ImportPoints(gradient);
 	if (options.findKL) {
 	// find K, L
 		std::pair<int, int> ret = cfams.FindKL(options.Kmin, options.K,
 										options.Kjump, options.L, options.k,
 										options.bandwidth, options.epsilon);
 		options.K = ret.first; options.L = ret.second;
-		bgLog("Found K = %d L = %d (write them down)\n", options.K, options.L);
+		cerr << "Found K = " << options.k << "\tL = " << options.L << endl;
 	} else {
 	// actually run MS
 		switch (options.starting) {
@@ -61,9 +37,6 @@ int main(int argc, char** argv) {
 					  options.bandwidth, base);
 		}
 
-		if (options.starting != ALL)
-			cerr << "Note: As mean shift is not run on all input points, no "
-			        "output images are created." << endl;
 		if (!options.batch) {
 			// save the data
 			cfams.SaveModes(base);
@@ -75,13 +48,50 @@ int main(int argc, char** argv) {
 				cfams.CreatePpm(tmp);//FIXME
 			}*/
 		}
-		
+
 		if (options.starting == ALL) {
 			// save image which holds segment indices of each pixel
 			IplImage *seg =	cfams.segmentImage(true);
 			cvSaveImage((base + ".idx.png").c_str(), seg);
 			cvReleaseImage(&seg);
+		} else {
+			cerr << "Note: As mean shift is not run on all input points, no "
+					"output images were created." << endl;
 		}
 	}
+}
+
+int main(int argc, char** argv) {
+	param_mfams options;
+	
+	if (!options.parse(argc, argv))
+		exit(1);
+
+	// load image	
+	multi_img image(options.inputfile);
+	if (image.empty())
+		return 2;
+		
+	//TODO: input filenames with path elements
+	string base = options.outputdir + "/" + options.inputfile;
+
+//	image.write_out(base + ".a");
+	
+	// log image data
+	image.apply_logarithm();
+//	image.write_out(base + ".b");
+	
+	// compute spectral gradient
+	multi_img gradient = image.spec_gradient();
+//	gradient.write_out(base + ".c");
+
+//	runFAMS(options, gradient, base);
+
+	QApplication app(argc, argv);
+	multi_img_viewer window(gradient);
+	window.show();
+	return app.exec();
+
+	//gradient.visualize();
 }
 
