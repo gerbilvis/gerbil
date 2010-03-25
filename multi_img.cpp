@@ -50,6 +50,21 @@ unsigned short* multi_img::export_interleaved() const {
 	return ret;
 }
 
+QImage multi_img::export_qt(int d) const
+{
+	double scale = 255.0/(maxval - minval);
+	const cv::Mat_<double> &src = (*this)[d];
+	QImage dest(width, height, QImage::Format_ARGB32);
+	unsigned int color = 0;
+	for (int y = 0; y < src.rows; ++y) {
+		for (int x = 0; x < src.cols; ++x) {
+			color = (unsigned int)((src[y][x] - minval) * scale);
+			dest.setPixel(x, y, qRgba(color, color, color, 255));
+		}
+	}
+	return dest;
+}
+
 // parse file list
 vector<string> multi_img::read_filelist(const string& filename) {
 	vector<string> ret;
@@ -118,7 +133,8 @@ void multi_img::read_image(vector<string>& files) {
              << (src.depth() == CV_16U ? 16 : 8) << " bits" << endl;
 	}
 
-	cout << "Total of " << size() << " dimensions" << endl;
+	cout << "Total of " << size() << " dimensions.";
+	cout << "\tSpacial size: " << width << "x" << height << endl;
 }
 
 void multi_img::write_out(const string& base, bool normalize) {

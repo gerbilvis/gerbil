@@ -3,6 +3,7 @@
 
 #include <vector>
 #include <cv.h>
+#include <QImage>
 
 // struct to hold a multispectral image
 struct multi_img : public std::vector<cv::Mat_<double> > {
@@ -20,6 +21,9 @@ public:
 	/// returns pointer to data in interleaved format
 	// you have to free it after use! KTHXBYE
 	unsigned short* export_interleaved() const;
+
+	/// return QImage of specific dimension
+	QImage export_qt(int dim) const;
 	
 	/// get independent copy of image
 	// use case: apply log on image but keep original version as well

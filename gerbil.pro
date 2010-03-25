@@ -17,7 +17,8 @@ LIBS += -lboost_program_options
 # OPENGL
 QT += opengl
 QMAKE_CXXFLAGS += -Wall # -fopenmp -DGLIBCXX_PARALLEL
-QMAKE_CXXFLAGS_RELEASE = -march=i686 -O3
+QMAKE_CXXFLAGS_RELEASE = -march=i686 \
+    -O3
 
 # Input
 # FORMS =

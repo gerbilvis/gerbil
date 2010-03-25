@@ -16,7 +16,7 @@ struct Bin {
 
 struct BinSet {
 	QColor label;
-	QHash<qlonglong, Bin> bins;
+	QHash<QByteArray, Bin> bins;
 	float totalweight;
 };
 
@@ -27,10 +27,12 @@ class Viewport : public QGLWidget
 public:
 	Viewport(QWidget *parent = 0);
 	void addSet(const BinSet *set)	{ sets.push_back(set); }
+	QTransform getModelview();
 
 	int nbins;
 	int dimensionality;
 	bool gradient;
+
 protected:
 	void paintEvent(QPaintEvent *event);
 

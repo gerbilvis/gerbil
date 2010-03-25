@@ -47,19 +47,17 @@ void multi_img_viewer::createBins(int nbins)
 	while (it[0] != (*image)[0].end()) {
 
 		// create hash key and line array at once
-		qlonglong hashkey = 0;
-		qlonglong multiplier = 1;
+		QByteArray hashkey;
 		int lastpos = 0;
 		QVector<QLineF> lines;
 		for (d = 0; d < dim; ++d) {
 			int curpos = floor((*it[d] - minval) / binsize);
 			// minval/maxval are only theoretical bounds (TODO: check this in multi_img)
 			curpos = max(curpos, 0); curpos = min(curpos, nbins-1);
-			hashkey += multiplier * curpos;
+			hashkey[d] = (unsigned char)curpos;
 			if (d > 0)
 				lines.push_back(QLineF(d-1, lastpos, d, curpos));
 			lastpos = curpos;
-			multiplier *= nbins;
 		}
 
 		// put into our set
