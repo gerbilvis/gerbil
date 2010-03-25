@@ -30,7 +30,8 @@ void Viewport::paintEvent(QPaintEvent *event)
 		QHash<qlonglong, Bin>::const_iterator it;
 		for (it = s->bins.constBegin(); it != s->bins.constEnd(); ++it) {
 			const Bin &b = it.value();
-			color.setAlphaF(b.weight / s->totalweight);
+			qreal alpha = log(b.weight) / log(s->totalweight);
+			color.setAlphaF(min(alpha, 1.));
 			painter.setPen(color);
 			painter.drawLines(b.connections);
 		}
