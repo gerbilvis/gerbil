@@ -12,7 +12,10 @@ class multi_img_viewer : public QMainWindow, private Ui::multi_img_viewer {
 public:
 	multi_img_viewer(const multi_img& img, QWidget *parent = 0);
 
-	void createBins();
+	void createBins(int bins);
+
+public slots:
+	void rebuild(int bins);
 
 protected:
     void changeEvent(QEvent *e);

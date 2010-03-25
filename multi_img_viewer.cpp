@@ -7,14 +7,20 @@ using namespace std;
 multi_img_viewer::multi_img_viewer(const multi_img& img, QWidget *parent) :
 	image(img), QMainWindow(parent){
 	setupUi(this);
+	connect(binSlider, SIGNAL(valueChanged(int)), this, SLOT(rebuild(int)));
 
-	createBins();
+	rebuild(binSlider->value());
 }
 
-void multi_img_viewer::createBins()
+void multi_img_viewer::rebuild(int bins)
+{
+	binLabel->setText(QString("%1 bins").arg(bins));
+	createBins(bins);
+}
+
+void multi_img_viewer::createBins(int nbins)
 {
 	int dim = image.size();
-	int nbins = 255; // histogram size in each dimension
 	double minval = image.minval, maxval = image.maxval;
 	double binsize = (maxval - minval)/(double)nbins;
 
@@ -24,6 +30,7 @@ void multi_img_viewer::createBins()
 	for (d = 0; d < dim; ++d)
 		it[d] = image[d].begin();
 
+	unlabled.bins.clear();
 	while (it[0] != image[0].end()) {
 
 		// create hash key and line array at once
