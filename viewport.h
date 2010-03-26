@@ -5,7 +5,7 @@
 #include <vector>
 #include <iostream>
 #include <QHash>
-
+#include <QLabel>
 
 struct Bin {
 	Bin() {}
@@ -33,12 +33,25 @@ public:
 	int dimensionality;
 	bool gradient;
 
+signals:
+	void sliceSelected(int dim);
+
 protected:
 	void paintEvent(QPaintEvent *event);
+	void mouseMoveEvent(QMouseEvent *event);
 
 private:
 	std::vector<const BinSet*> sets;
 
+	int selection, hover;
+};
+
+class SliceLabel : public QLabel
+{
+	Q_OBJECT
+public:
+	SliceLabel(QWidget *parent = 0);
+	void paintEvent(QPaintEvent *event);
 };
 
 #endif // VIEWPORT_H
