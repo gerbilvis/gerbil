@@ -21,7 +21,6 @@ QMAKE_CXXFLAGS_RELEASE = -march=i686 \
     -O3
 
 # Input
-# FORMS =
 HEADERS += auxiliary.h \
     mfams.h \
     multi_img.h \
@@ -38,3 +37,4 @@ SOURCES += main.cpp \
     viewerwindow.cpp
 FORMS += multi_img_viewer.ui \
     viewerwindow.ui
+RESOURCES += gerbil.qrc

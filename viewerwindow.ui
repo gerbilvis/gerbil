@@ -13,6 +13,10 @@
   <property name="windowTitle">
    <string>Multispectral Image Viewer</string>
   </property>
+  <property name="windowIcon">
+   <iconset>
+    <normaloff>:/mainicon2</normaloff>:/mainicon2</iconset>
+  </property>
   <widget class="QWidget" name="centralwidget">
    <layout class="QVBoxLayout" name="ImgGradLayout">
     <item>
@@ -79,7 +83,51 @@
    <widget class="QWidget" name="sliceLayout">
     <layout class="QVBoxLayout" name="verticalLayout">
      <item>
-      <widget class="SliceLabel" name="sliceLabel">
+      <layout class="QHBoxLayout" name="horizontalLayout">
+       <item>
+        <widget class="QComboBox" name="markerSelector">
+         <property name="sizeAdjustPolicy">
+          <enum>QComboBox::AdjustToMinimumContentsLength</enum>
+         </property>
+         <property name="minimumContentsLength">
+          <number>3</number>
+         </property>
+        </widget>
+       </item>
+       <item>
+        <widget class="QPushButton" name="clearButton">
+         <property name="icon">
+          <iconset>
+           <normaloff>:/toolbar/clear2</normaloff>:/toolbar/clear2</iconset>
+         </property>
+         <property name="iconSize">
+          <size>
+           <width>16</width>
+           <height>16</height>
+          </size>
+         </property>
+        </widget>
+       </item>
+       <item>
+        <spacer name="horizontalSpacer_2">
+         <property name="orientation">
+          <enum>Qt::Horizontal</enum>
+         </property>
+         <property name="sizeHint" stdset="0">
+          <size>
+           <width>40</width>
+           <height>20</height>
+          </size>
+         </property>
+        </spacer>
+       </item>
+      </layout>
+     </item>
+     <item>
+      <widget class="SliceView" name="sliceLabel">
+       <property name="mouseTracking">
+        <bool>true</bool>
+       </property>
        <property name="text">
         <string/>
        </property>
@@ -102,7 +150,7 @@
    <header>multi_img_viewer.h</header>
   </customwidget>
   <customwidget>
-   <class>SliceLabel</class>
+   <class>SliceView</class>
    <extends>QLabel</extends>
    <header>viewport.h</header>
   </customwidget>

@@ -35,8 +35,7 @@ void Viewport::paintEvent(QPaintEvent *event)
 		return;
 
 	QBrush background(QColor(15, 7, 15));
-	QPainter painter;
-	painter.begin(this);
+	QPainter painter(this);
 	painter.fillRect(rect(), background);
 	painter.setWorldTransform(getModelview());
 	painter.setRenderHint(QPainter::Antialiasing);
@@ -62,7 +61,6 @@ void Viewport::paintEvent(QPaintEvent *event)
 	}
 	painter.setPen(Qt::red);
 	painter.drawLine(selection, 0, selection, nbins);
-	painter.end();
 }
 
 void Viewport::mouseMoveEvent(QMouseEvent *event)
@@ -78,10 +76,13 @@ void Viewport::mouseMoveEvent(QMouseEvent *event)
 	emit sliceSelected(x, gradient);
 }
 
-SliceLabel::SliceLabel(QWidget *parent) : QLabel(parent)
-{}
+SliceView::SliceView(QWidget *parent)
+	: QLabel(parent), cursor(-1, -1), curLabel(0)
+{
+	markerColors << Qt::blue << Qt::green << Qt::red << Qt::cyan << Qt::magenta;
+}
 
-void SliceLabel::paintEvent(QPaintEvent *event)
+void SliceView::paintEvent(QPaintEvent *event)
 {
 	const QPixmap *p = pixmap();
 	float src_aspect = p->width()/(float)p->height();
@@ -92,9 +93,53 @@ void SliceLabel::paintEvent(QPaintEvent *event)
 	} else {
 		h = height(); w = h*src_aspect;
 	}
+	scale = w/p->width();
 
-	QPainter painter;
-	painter.begin(this);
+	QPainter painter(this);
+	painter.setRenderHint(QPainter::Antialiasing);
+
+	// draw slice
 	painter.drawPixmap(0, 0, w, h, *p);
-	painter.end();
+
+	// mark labeled regions
+	for (int y = 0; y < p->height(); ++y) {
+		for (int x = 0; x < p->height(); ++x) {
+			int l = labels->pixelIndex(x, y);
+			if (l < 255) {
+				//painter.setBrush();
+				QColor col = markerColors[l];
+				col.setAlphaF(0.5);
+				painter.fillRect(QRectF(QPointF(x * scale, y * scale),
+										QSizeF(scale, scale)), QBrush(col));
+			}
+		}
+	}
+
+	// draw current cursor
+	QColor pen = markerColors[curLabel];
+	//pen.setAlphaF(0.5);
+	painter.setPen(pen);
+	painter.drawRect(QRectF(cursor * scale, QSizeF(scale, scale)));
+}
+
+void SliceView::mouseMoveEvent(QMouseEvent *ev)
+{
+	cursor = QPointF(ev->pos() / scale);
+	cursor.setX(round(cursor.x() - 0.75));
+	cursor.setY(round(cursor.y() - 0.75));
+	int x = cursor.x(), y = cursor.y();
+
+	if (!pixmap()->rect().contains(x, y))
+		return;
+
+	if (ev->buttons() & Qt::LeftButton) {
+		labels->setPixel(x, y, curLabel);
+	}
+
+	repaint();
+}
+
+void SliceView::leaveEvent(QEvent *ev)
+{
+	cursor = QPoint(-1, -1);
 }

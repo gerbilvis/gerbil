@@ -1,10 +1,13 @@
 #include "viewerwindow.h"
 
+#include <QPainter>
+#include <QIcon>
 #include <iostream>
 
 ViewerWindow::ViewerWindow(const multi_img &image, const multi_img &gradient, QWidget *parent)
 	: QMainWindow(parent), image(image), gradient(gradient),
-	  islices(image.size(), NULL), gslices(gradient.size(), NULL)
+	  islices(image.size(), NULL), gslices(gradient.size(), NULL),
+	  labels(image.width, image.height, QImage::Format_Indexed8)
 {
 	setupUi(this);
 	viewIMG->setImage(image);
@@ -24,6 +27,9 @@ ViewerWindow::ViewerWindow(const multi_img &image, const multi_img &gradient, QW
 	connect(viewGRAD->getViewport(), SIGNAL(sliceSelected(int, bool)),
 			this, SLOT(selectSlice(int, bool)));
 
+	labels.fill(255);
+	sliceLabel->labels = &labels;
+	createMarkers();
 	selectSlice(0, false);
 }
 
@@ -72,4 +78,20 @@ void ViewerWindow::changeEvent(QEvent *e)
     default:
         break;
     }
+}
+
+void ViewerWindow::createMarkers()
+{
+	QVector<QColor> &col = sliceLabel->markerColors;
+	for (int i = 0; i < col.size(); ++i)
+	{
+		markerSelector->addItem(colorIcon(col[i]), "");
+	}
+}
+
+QIcon ViewerWindow::colorIcon(const QColor &color)
+{
+	QPixmap pm(32, 32);
+	pm.fill(color);
+	return QIcon(pm);
 }

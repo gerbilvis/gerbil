@@ -46,12 +46,21 @@ private:
 	int selection, hover;
 };
 
-class SliceLabel : public QLabel
+class SliceView : public QLabel
 {
 	Q_OBJECT
 public:
-	SliceLabel(QWidget *parent = 0);
-	void paintEvent(QPaintEvent *event);
+	SliceView(QWidget *parent = 0);
+	void paintEvent(QPaintEvent *ev);
+	void mouseMoveEvent(QMouseEvent *ev);
+	void leaveEvent(QEvent *ev);
+
+	QImage *labels;
+	int curLabel;
+	QVector<QColor> markerColors;
+private:
+	qreal scale;
+	QPointF cursor;
 };
 
 #endif // VIEWPORT_H
