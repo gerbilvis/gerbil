@@ -34,7 +34,7 @@ public:
 	bool gradient;
 
 signals:
-	void sliceSelected(int dim);
+	void sliceSelected(int dim, bool gradient);
 
 protected:
 	void paintEvent(QPaintEvent *event);

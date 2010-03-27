@@ -71,7 +71,7 @@
     <set>Qt::LeftDockWidgetArea|Qt::RightDockWidgetArea</set>
    </property>
    <property name="windowTitle">
-    <string>Slice</string>
+    <string>Image Slice</string>
    </property>
    <attribute name="dockWidgetArea">
     <number>2</number>

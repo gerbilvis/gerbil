@@ -75,7 +75,7 @@ void Viewport::mouseMoveEvent(QMouseEvent *event)
 	selection = x;
 	hover = pos.y();
 	repaint();
-	emit sliceSelected(x);
+	emit sliceSelected(x, gradient);
 }
 
 SliceLabel::SliceLabel(QWidget *parent) : QLabel(parent)

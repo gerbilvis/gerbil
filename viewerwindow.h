@@ -12,17 +12,18 @@ class ViewerWindow : public QMainWindow, private Ui::ViewerWindow {
 public:
 	ViewerWindow(const multi_img &image, const multi_img &gradient, QWidget *parent = 0);
 
-	const QPixmap* getSlice(int dim);
+	const QPixmap* getSlice(int dim, bool gradient);
 
 public slots:
 	void reshapeDock(bool floating);
-	void selectSlice(int dim);
+	void selectSlice(int dim, bool gradient);
 
 protected:
     void changeEvent(QEvent *e);
 
-	std::vector<QPixmap*> slices;
-	const multi_img &image;
+	// slices from both image and gradient
+	std::vector<QPixmap*> islices, gslices;
+	const multi_img &image, &gradient;
 };
 
 #endif // VIEWERWINDOW_H

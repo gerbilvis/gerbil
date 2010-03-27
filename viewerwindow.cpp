@@ -3,7 +3,8 @@
 #include <iostream>
 
 ViewerWindow::ViewerWindow(const multi_img &image, const multi_img &gradient, QWidget *parent)
-	: QMainWindow(parent), slices(image.size(), NULL), image(image)
+	: QMainWindow(parent), image(image), gradient(gradient),
+	  islices(image.size(), NULL), gslices(gradient.size(), NULL)
 {
 	setupUi(this);
 	viewIMG->setImage(image);
@@ -18,25 +19,31 @@ ViewerWindow::ViewerWindow(const multi_img &image, const multi_img &gradient, QW
 	connect(sliceDock, SIGNAL(topLevelChanged(bool)),
 			this, SLOT(reshapeDock(bool)));
 
-	connect(viewIMG->getViewport(), SIGNAL(sliceSelected(int)),
-			this, SLOT(selectSlice(int)));
+	connect(viewIMG->getViewport(), SIGNAL(sliceSelected(int, bool)),
+			this, SLOT(selectSlice(int, bool)));
+	connect(viewGRAD->getViewport(), SIGNAL(sliceSelected(int, bool)),
+			this, SLOT(selectSlice(int, bool)));
 
-	selectSlice(0);
+	selectSlice(0, false);
 }
 
-const QPixmap* ViewerWindow::getSlice(int dim)
+const QPixmap* ViewerWindow::getSlice(int dim, bool grad)
 {
-	if (!slices[dim]) {
+	// select variables according to which set is asked for
+	std::vector<QPixmap*> &v = (grad ? gslices : islices);
+	const multi_img &m = (grad ? gradient : image);
+
+	if (!v[dim]) {
 		// create here
-		QImage img = image.export_qt(dim);
-		slices[dim] = new QPixmap(QPixmap::fromImage(img));
+		QImage img = m.export_qt(dim);
+		v[dim] = new QPixmap(QPixmap::fromImage(img));
 	}
-	return slices[dim];
+	return v[dim];
 }
 
-void ViewerWindow::selectSlice(int dim)
+void ViewerWindow::selectSlice(int dim, bool grad)
 {
-	sliceLabel->setPixmap(*getSlice(dim));
+	sliceLabel->setPixmap(*getSlice(dim, grad));
 }
 
 void ViewerWindow::reshapeDock(bool floating)
