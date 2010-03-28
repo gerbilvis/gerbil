@@ -10,10 +10,23 @@ ViewerWindow::ViewerWindow(const multi_img &image, const multi_img &gradient, QW
 	  labels(image.width, image.height, QImage::Format_Indexed8)
 {
 	setupUi(this);
+	sliceButton->hide();
+
+	/* setup labeling stuff first */
+	QVector<QColor> &labelcolors = sliceLabel->markerColors;
+	labels.setNumColors(labelcolors.size());
+	labels.fill(0);
+	sliceLabel->labels = &labels;
+	createMarkers();
+	selectSlice(0, false);
+
+	/* setup viewers, do setImage() last */
+	viewIMG->labels = viewGRAD->labels = &labels;
+	viewIMG->labelcolors = viewGRAD->labelcolors = &labelcolors;
 	viewIMG->setImage(image);
 	viewGRAD->setImage(gradient, true);
 
-	sliceButton->hide();
+	/* signals & slots */
 	connect(sliceDock, SIGNAL(visibilityChanged(bool)),
 			sliceButton, SLOT(setHidden(bool)));
 	connect(sliceButton, SIGNAL(clicked()),
@@ -27,11 +40,15 @@ ViewerWindow::ViewerWindow(const multi_img &image, const multi_img &gradient, QW
 	connect(viewGRAD->getViewport(), SIGNAL(sliceSelected(int, bool)),
 			this, SLOT(selectSlice(int, bool)));
 
-	labels.setNumColors(255);
-	labels.fill(255);
-	sliceLabel->labels = &labels;
-	createMarkers();
-	selectSlice(0, false);
+	connect(markerSelector, SIGNAL(currentIndexChanged(int)),
+			sliceLabel, SLOT(changeLabel(int)));
+	connect(clearButton, SIGNAL(clicked()),
+			sliceLabel, SLOT(clearLabelPixels()));
+
+	connect(applyButton, SIGNAL(clicked()),
+			viewIMG, SLOT(rebuild()));
+	connect(applyButton, SIGNAL(clicked()),
+			viewGRAD, SLOT(rebuild()));
 }
 
 const QPixmap* ViewerWindow::getSlice(int dim, bool grad)
@@ -84,7 +101,7 @@ void ViewerWindow::changeEvent(QEvent *e)
 void ViewerWindow::createMarkers()
 {
 	QVector<QColor> &col = sliceLabel->markerColors;
-	for (int i = 0; i < col.size(); ++i)
+	for (int i = 1; i < col.size(); ++i) // 0 is index for unlabeled
 	{
 		markerSelector->addItem(colorIcon(col[i]), "");
 	}
@@ -96,3 +113,4 @@ QIcon ViewerWindow::colorIcon(const QColor &color)
 	pm.fill(color);
 	return QIcon(pm);
 }
+

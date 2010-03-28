@@ -14,16 +14,19 @@ public:
 
 	const QWidget* getViewport() { return viewport; }
 
+	const QImage *labels;
+	const QVector<QColor> *labelcolors;
 public slots:
-	void rebuild(int bins);
+	void rebuild(int bins = 0);
 	void setImage(const multi_img &image, bool gradient = false);
+	void showLabeled(bool yes);
+	void showUnLabeled(bool yes);
 
 protected:
     void changeEvent(QEvent *e);
-
 	void createBins(int bins);
+
 	const multi_img *image;
-	BinSet unlabled;
 };
 
 #endif // MULTI_IMG_VIEWER_H

@@ -15,6 +15,7 @@ struct Bin {
 };
 
 struct BinSet {
+	BinSet(const QColor &c) : label(c), totalweight(0.f) {}
 	QColor label;
 	QHash<QByteArray, Bin> bins;
 	float totalweight;
@@ -26,13 +27,14 @@ class Viewport : public QGLWidget
 	Q_OBJECT
 public:
 	Viewport(QWidget *parent = 0);
-	void addSet(const BinSet *set)	{ sets.push_back(set); }
 	QTransform getModelview();
 
 	int nbins;
 	int dimensionality;
 	bool gradient;
+	std::vector<BinSet> sets;
 
+	bool showLabeled, showUnlabeled;
 signals:
 	void sliceSelected(int dim, bool gradient);
 
@@ -41,7 +43,6 @@ protected:
 	void mouseMoveEvent(QMouseEvent *event);
 
 private:
-	std::vector<const BinSet*> sets;
 
 	int selection, hover;
 };
@@ -58,8 +59,12 @@ public:
 	void setPixmap(const QPixmap &);
 
 	QImage *labels;
-	int curLabel;
 	QVector<QColor> markerColors;
+
+public slots:
+	void changeLabel(int label);
+	void clearLabelPixels();
+
 private:
 	void updateCache();
 	void updatePoint(const QPointF &p);
@@ -69,6 +74,8 @@ private:
 	QPointF cursor, lastcursor;
 	QPixmap cachedPixmap;
 	bool cacheValid;
+
+	int curLabel;
 };
 
 #endif // VIEWPORT_H

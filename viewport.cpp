@@ -9,7 +9,7 @@ using namespace std;
 
 Viewport::Viewport(QWidget *parent)
 	: QGLWidget(QGLFormat(QGL::SampleBuffers), parent),
-	  selection(0), hover(-1)
+	  selection(0), hover(-1), showLabeled(true), showUnlabeled(true)
 {}
 
 QTransform Viewport::getModelview()
@@ -39,19 +39,22 @@ void Viewport::paintEvent(QPaintEvent *event)
 	painter.fillRect(rect(), background);
 	painter.setWorldTransform(getModelview());
 	painter.setRenderHint(QPainter::Antialiasing);
-	for (int i = 0; i < sets.size(); ++i) {
-		const BinSet *s = sets[i];
-		QColor basecolor = s->label, color;
+	int start = (showUnlabeled ? 0 : 1);
+	int end = (showLabeled ? sets.size() : 1);
+	for (int i = start; i < end; ++i) {
+		BinSet &s = sets[i];
+		QColor basecolor = s.label, color;
 		QHash<QByteArray, Bin>::const_iterator it;
-		for (it = s->bins.constBegin(); it != s->bins.constEnd(); ++it) {
+		for (it = s.bins.constBegin(); it != s.bins.constEnd(); ++it) {
 			const Bin &b = it.value();
 			color = basecolor;
 
-			qreal alpha = 0.01 + 0.99*(log(b.weight) / log(s->totalweight));
+			qreal alpha = 0.01 + 0.99*(log(b.weight) / log(s.totalweight));
 			color.setAlphaF(min(alpha, 1.));
 
 			if ((unsigned char)it.key()[selection] == hover) {
-				color.setBlue(0);
+				if (basecolor == Qt::white)
+					color = Qt::yellow;
 				color.setAlphaF(1.);
 			}
 
@@ -77,9 +80,10 @@ void Viewport::mouseMoveEvent(QMouseEvent *event)
 }
 
 SliceView::SliceView(QWidget *parent)
-	: QLabel(parent), cursor(-1, -1), lastcursor(-1, -1), curLabel(0), cacheValid(false)
+	: QLabel(parent), cursor(-1, -1), lastcursor(-1, -1), curLabel(1), cacheValid(false)
 {
-	markerColors << Qt::blue << Qt::green << Qt::red << Qt::cyan << Qt::magenta;
+	markerColors << Qt::white // 0 is index for unlabeled
+			<< Qt::green << Qt::red << Qt::cyan << Qt::magenta << Qt::blue;
 }
 
 void SliceView::setPixmap(const QPixmap &p)
@@ -111,13 +115,15 @@ void SliceView::paintEvent(QPaintEvent *ev)
 		updateCache();
 
 	QPainter painter(this);
-	painter.setWorldTransform(scaler);
 	painter.setRenderHint(QPainter::Antialiasing);
 
-	// draw slice
-	QRect damaged = scalerI.mapRect(ev->rect());
-	//QRect damaged(20, 20, 20, 20);
-	painter.drawPixmap(damaged, cachedPixmap, damaged);
+	// draw slice (slow!)
+	painter.drawPixmap(ev->rect(), cachedPixmap.transformed(scaler), ev->rect());
+
+	painter.setWorldTransform(scaler);
+	// draw slice (artifacts)
+/*	QRect damaged = scalerI.mapRect(ev->rect());
+	painter.drawPixmap(damaged, cachedPixmap, damaged);*/
 
 	// draw current cursor
 	QPen pen(markerColors[curLabel]);
@@ -130,18 +136,19 @@ void SliceView::updateCache()
 {
 	cachedPixmap = pixmap()->copy(); // TODO: check for possible qt memory leak
 	QPixmap *p = &cachedPixmap;
-	QPainter painter(p);
+	{	QPainter painter(p);
 
-	// mark labeled regions
-	for (int y = 0; y < p->height(); ++y) {
-		for (int x = 0; x < p->width(); ++x) {
-			int l = labels->pixelIndex(x, y);
-			if (l < 255) {
-				//painter.setBrush();
-				QColor col = markerColors[l];
-				col.setAlphaF(0.5);
-				painter.setPen(col);
-				painter.drawPoint(x, y);
+		// mark labeled regions
+		for (int y = 0; y < p->height(); ++y) {
+			for (int x = 0; x < p->width(); ++x) {
+				int l = labels->pixelIndex(x, y);
+				if (l > 0) {
+					//painter.setBrush();
+					QColor col = markerColors[l];
+					col.setAlphaF(0.5);
+					painter.setPen(col);
+					painter.drawPoint(x, y);
+				}
 			}
 		}
 	}
@@ -165,7 +172,7 @@ void SliceView::mouseMoveEvent(QMouseEvent *ev)
 	// erase
 	} else if (ev->buttons() & Qt::RightButton) {
 		if (labels->pixelIndex(x, y) == curLabel)
-			labels->setPixel(x, y, 255);
+			labels->setPixel(x, y, 0);
 		cacheValid = false; // TODO: improve by altering cache directly
 		updatePoint(cursor);
 	}
@@ -181,8 +188,26 @@ void SliceView::updatePoint(const QPointF &p)
 	update(QRect(damagetl, damagebr));
 }
 
+void SliceView::clearLabelPixels()
+{
+	for (int y = 0; y < labels->height(); ++y) {
+		for (int x = 0; x < labels->width(); ++x) {
+			if (labels->pixelIndex(x, y) == curLabel)
+				labels->setPixel(x, y, 0);
+		}
+	}
+	cacheValid = false;
+	update();
+}
+
 void SliceView::leaveEvent(QEvent *ev)
 {
 	cursor = QPoint(-1, -1);
 	update();
+}
+
+void SliceView::changeLabel(int label)
+{
+	if (label > -1)
+		curLabel = label + 1; // we start with 1, combobox with 0
 }

@@ -14,7 +14,7 @@
    <string>Multispectral Image Viewer</string>
   </property>
   <property name="windowIcon">
-   <iconset>
+   <iconset resource="gerbil.qrc">
     <normaloff>:/mainicon2</normaloff>:/mainicon2</iconset>
   </property>
   <widget class="QWidget" name="centralwidget">
@@ -22,17 +22,37 @@
     <item>
      <layout class="QHBoxLayout" name="toolbarLayout">
       <item>
-       <widget class="QPushButton" name="markButton">
-        <property name="enabled">
-         <bool>false</bool>
-        </property>
+       <widget class="QPushButton" name="nonmarkButton">
         <property name="text">
-         <string>Labeled</string>
+         <string>Show Unlabeled</string>
         </property>
         <property name="checkable">
          <bool>true</bool>
         </property>
         <property name="checked">
+         <bool>true</bool>
+        </property>
+       </widget>
+      </item>
+      <item>
+       <widget class="QPushButton" name="markButton">
+        <property name="text">
+         <string>Show Labeled</string>
+        </property>
+        <property name="checkable">
+         <bool>true</bool>
+        </property>
+        <property name="checked">
+         <bool>true</bool>
+        </property>
+       </widget>
+      </item>
+      <item>
+       <widget class="QPushButton" name="ignoreButton">
+        <property name="text">
+         <string>Ignore Labels</string>
+        </property>
+        <property name="checkable">
          <bool>true</bool>
         </property>
        </widget>
@@ -49,6 +69,13 @@
          </size>
         </property>
        </spacer>
+      </item>
+      <item>
+       <widget class="QPushButton" name="addButton">
+        <property name="text">
+         <string>Add To Label &gt;</string>
+        </property>
+       </widget>
       </item>
       <item>
        <widget class="QPushButton" name="sliceButton">
@@ -85,19 +112,26 @@
      <item>
       <layout class="QHBoxLayout" name="horizontalLayout">
        <item>
+        <widget class="QPushButton" name="applyButton">
+         <property name="text">
+          <string>&lt; Update Labels</string>
+         </property>
+        </widget>
+       </item>
+       <item>
         <widget class="QComboBox" name="markerSelector">
          <property name="sizeAdjustPolicy">
           <enum>QComboBox::AdjustToMinimumContentsLength</enum>
          </property>
          <property name="minimumContentsLength">
-          <number>3</number>
+          <number>2</number>
          </property>
         </widget>
        </item>
        <item>
         <widget class="QPushButton" name="clearButton">
          <property name="icon">
-          <iconset>
+          <iconset resource="gerbil.qrc">
            <normaloff>:/toolbar/clear2</normaloff>:/toolbar/clear2</iconset>
          </property>
          <property name="iconSize">
@@ -155,6 +189,8 @@
    <header>viewport.h</header>
   </customwidget>
  </customwidgets>
- <resources/>
+ <resources>
+  <include location="gerbil.qrc"/>
+ </resources>
  <connections/>
 </ui>

@@ -5,7 +5,7 @@
 using namespace std;
 
 multi_img_viewer::multi_img_viewer(QWidget *parent)
-	: QWidget(parent), image(NULL)
+	: QWidget(parent), image(NULL), labels(NULL)
 {
 	setupUi(this);
 }
@@ -14,7 +14,6 @@ void multi_img_viewer::setImage(const multi_img &img, bool gradient)
 {
 	if (!image) {
 		connect(binSlider, SIGNAL(valueChanged(int)), this, SLOT(rebuild(int)));
-		viewport->addSet(&unlabled);
 	}
 	image = &img;
 	viewport->gradient = gradient;
@@ -25,14 +24,18 @@ void multi_img_viewer::setImage(const multi_img &img, bool gradient)
 void multi_img_viewer::rebuild(int bins)
 {
 	assert(image);
-	binLabel->setText(QString("%1 bins").arg(bins));
-	createBins(bins);
-	viewport->nbins = bins;
+	if (bins > 0) {
+		binLabel->setText(QString("%1 bins").arg(bins));
+		viewport->nbins = bins;
+	}
+	createBins(viewport->nbins);
 	viewport->update();
 }
 
 void multi_img_viewer::createBins(int nbins)
 {
+	assert(labels && labelcolors);
+
 	int dim = image->size();
 	double minval = image->minval, maxval = image->maxval;
 	double binsize = (maxval - minval)/(double)nbins;
@@ -43,8 +46,16 @@ void multi_img_viewer::createBins(int nbins)
 	for (d = 0; d < dim; ++d)
 		it[d] = (*image)[d].begin();
 
-	unlabled.bins.clear();
-	while (it[0] != (*image)[0].end()) {
+	vector<BinSet> &sets = viewport->sets;
+	sets.clear();
+	for (int i = 0; i < labelcolors->size(); ++i)
+		sets.push_back(BinSet(labelcolors->at(i)));
+
+	/* caution: dangerous assumption on the cv::Mat iterator order */
+	for (int y = 0; y < labels->height(); ++y)
+	  for (int x = 0; x < labels->width(); ++x) {
+		// test the labeling
+		int label = labels->pixelIndex(x, y);
 
 		// create hash key and line array at once
 		QByteArray hashkey;
@@ -61,19 +72,30 @@ void multi_img_viewer::createBins(int nbins)
 		}
 
 		// put into our set
-		if (!unlabled.bins.contains(hashkey)) {
-			unlabled.bins.insert(hashkey, Bin(lines, 1.f));
+		if (!sets[label].bins.contains(hashkey)) {
+			sets[label].bins.insert(hashkey, Bin(lines, 1.f));
 		} else {
-			unlabled.bins[hashkey].weight += 1.f;
+			sets[label].bins[hashkey].weight += 1.f;
 		}
+
+		sets[label].totalweight++;
 
 		// increment all iterators to next pixel
 		for (d = 0; d < dim; ++d)
 			++it[d];
 	}
+}
 
-	unlabled.label = QColor(255, 255, 255);
-	unlabled.totalweight = image->width * image->height;
+void multi_img_viewer::showLabeled(bool yes)
+{
+	viewport->showLabeled = yes;
+	viewport->update();
+}
+
+void multi_img_viewer::showUnLabeled(bool yes)
+{
+	viewport->showUnlabeled = yes;
+	viewport->update();
 }
 
 void multi_img_viewer::changeEvent(QEvent *e)
