@@ -51,16 +51,24 @@ class SliceView : public QLabel
 	Q_OBJECT
 public:
 	SliceView(QWidget *parent = 0);
+	void resizeEvent(QResizeEvent * ev);
 	void paintEvent(QPaintEvent *ev);
 	void mouseMoveEvent(QMouseEvent *ev);
 	void leaveEvent(QEvent *ev);
+	void setPixmap(const QPixmap &);
 
 	QImage *labels;
 	int curLabel;
 	QVector<QColor> markerColors;
 private:
+	void updateCache();
+	void updatePoint(const QPointF &p);
+
 	qreal scale;
-	QPointF cursor;
+	QTransform scaler, scalerI;
+	QPointF cursor, lastcursor;
+	QPixmap cachedPixmap;
+	bool cacheValid;
 };
 
 #endif // VIEWPORT_H

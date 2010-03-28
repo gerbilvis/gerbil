@@ -64,7 +64,7 @@ void Viewport::paintEvent(QPaintEvent *event)
 }
 
 void Viewport::mouseMoveEvent(QMouseEvent *event)
-{
+{	// todo: inefficient! cache the inverted transform
 	QPoint pos = getModelview().inverted().map(event->pos());
 	int x = pos.x(), y = pos.y();
 	if (x < 0 || x >= dimensionality)
@@ -77,13 +77,20 @@ void Viewport::mouseMoveEvent(QMouseEvent *event)
 }
 
 SliceView::SliceView(QWidget *parent)
-	: QLabel(parent), cursor(-1, -1), curLabel(0)
+	: QLabel(parent), cursor(-1, -1), lastcursor(-1, -1), curLabel(0), cacheValid(false)
 {
 	markerColors << Qt::blue << Qt::green << Qt::red << Qt::cyan << Qt::magenta;
 }
 
-void SliceView::paintEvent(QPaintEvent *event)
+void SliceView::setPixmap(const QPixmap &p)
 {
+	cacheValid = false;
+	QLabel::setPixmap(p);
+}
+
+void SliceView::resizeEvent(QResizeEvent *ev)
+{
+	// determine scale of correct aspect-ratio
 	const QPixmap *p = pixmap();
 	float src_aspect = p->width()/(float)p->height();
 	float dest_aspect = width()/(float)height();
@@ -94,12 +101,36 @@ void SliceView::paintEvent(QPaintEvent *event)
 		h = height(); w = h*src_aspect;
 	}
 	scale = w/p->width();
+	scaler = QTransform().scale(scale, scale);
+	scalerI = scaler.inverted();
+}
+
+void SliceView::paintEvent(QPaintEvent *ev)
+{
+	if (!cacheValid)
+		updateCache();
 
 	QPainter painter(this);
+	painter.setWorldTransform(scaler);
 	painter.setRenderHint(QPainter::Antialiasing);
 
 	// draw slice
-	painter.drawPixmap(0, 0, w, h, *p);
+	QRect damaged = scalerI.mapRect(ev->rect());
+	//QRect damaged(20, 20, 20, 20);
+	painter.drawPixmap(damaged, cachedPixmap, damaged);
+
+	// draw current cursor
+	QPen pen(markerColors[curLabel]);
+	pen.setWidth(0);
+	painter.setPen(pen);
+	painter.drawRect(QRectF(cursor, QSizeF(1, 1)));
+}
+
+void SliceView::updateCache()
+{
+	cachedPixmap = pixmap()->copy(); // TODO: check for possible qt memory leak
+	QPixmap *p = &cachedPixmap;
+	QPainter painter(p);
 
 	// mark labeled regions
 	for (int y = 0; y < p->height(); ++y) {
@@ -109,17 +140,12 @@ void SliceView::paintEvent(QPaintEvent *event)
 				//painter.setBrush();
 				QColor col = markerColors[l];
 				col.setAlphaF(0.5);
-				painter.fillRect(QRectF(QPointF(x * scale, y * scale),
-										QSizeF(scale, scale)), QBrush(col));
+				painter.setPen(col);
+				painter.drawPoint(x, y);
 			}
 		}
 	}
-
-	// draw current cursor
-	QColor pen = markerColors[curLabel];
-	//pen.setAlphaF(0.5);
-	painter.setPen(pen);
-	painter.drawRect(QRectF(cursor * scale, QSizeF(scale, scale)));
+	cacheValid = true;
 }
 
 void SliceView::mouseMoveEvent(QMouseEvent *ev)
@@ -135,16 +161,28 @@ void SliceView::mouseMoveEvent(QMouseEvent *ev)
 	// paint
 	if (ev->buttons() & Qt::LeftButton) {
 		labels->setPixel(x, y, curLabel);
+		cacheValid = false;
 	// erase
 	} else if (ev->buttons() & Qt::RightButton) {
 		if (labels->pixelIndex(x, y) == curLabel)
 			labels->setPixel(x, y, 255);
+		cacheValid = false; // TODO: improve by altering cache directly
+		updatePoint(cursor);
 	}
 
-	update();
+	updatePoint(lastcursor);
+	lastcursor = cursor;
+}
+
+void SliceView::updatePoint(const QPointF &p)
+{
+	QPoint damagetl = scaler.map(QPoint(p.x() - 1, p.y() - 1));
+	QPoint damagebr = scaler.map(QPoint(p.x() + 1, p.y() + 1));
+	update(QRect(damagetl, damagebr));
 }
 
 void SliceView::leaveEvent(QEvent *ev)
 {
 	cursor = QPoint(-1, -1);
+	update();
 }
