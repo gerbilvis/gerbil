@@ -28,7 +28,7 @@ void multi_img_viewer::rebuild(int bins)
 	binLabel->setText(QString("%1 bins").arg(bins));
 	createBins(bins);
 	viewport->nbins = bins;
-	viewport->repaint();
+	viewport->update();
 }
 
 void multi_img_viewer::createBins(int nbins)

@@ -72,7 +72,7 @@ void Viewport::mouseMoveEvent(QMouseEvent *event)
 
 	selection = x;
 	hover = pos.y();
-	repaint();
+	update();
 	emit sliceSelected(x, gradient);
 }
 
@@ -103,7 +103,7 @@ void SliceView::paintEvent(QPaintEvent *event)
 
 	// mark labeled regions
 	for (int y = 0; y < p->height(); ++y) {
-		for (int x = 0; x < p->height(); ++x) {
+		for (int x = 0; x < p->width(); ++x) {
 			int l = labels->pixelIndex(x, y);
 			if (l < 255) {
 				//painter.setBrush();
@@ -132,11 +132,16 @@ void SliceView::mouseMoveEvent(QMouseEvent *ev)
 	if (!pixmap()->rect().contains(x, y))
 		return;
 
+	// paint
 	if (ev->buttons() & Qt::LeftButton) {
 		labels->setPixel(x, y, curLabel);
+	// erase
+	} else if (ev->buttons() & Qt::RightButton) {
+		if (labels->pixelIndex(x, y) == curLabel)
+			labels->setPixel(x, y, 255);
 	}
 
-	repaint();
+	update();
 }
 
 void SliceView::leaveEvent(QEvent *ev)

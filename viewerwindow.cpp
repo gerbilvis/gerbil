@@ -27,6 +27,7 @@ ViewerWindow::ViewerWindow(const multi_img &image, const multi_img &gradient, QW
 	connect(viewGRAD->getViewport(), SIGNAL(sliceSelected(int, bool)),
 			this, SLOT(selectSlice(int, bool)));
 
+	labels.setNumColors(255);
 	labels.fill(255);
 	sliceLabel->labels = &labels;
 	createMarkers();
