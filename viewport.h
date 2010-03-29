@@ -78,6 +78,7 @@ public slots:
 private:
 	void cursorAction(QMouseEvent *ev, bool click = false);
 	void updateCache();
+	void updateCache(int x, int y, int label);
 	void updatePoint(const QPointF &p);
 
 	qreal scale;

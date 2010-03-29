@@ -200,7 +200,6 @@ void SliceView::updateCache()
 			for (int x = 0; x < p.width(); ++x) {
 				int l = labels(y, x);
 				if (l > 0) {
-					//painter.setBrush();
 					QColor col = markerColors[l];
 					col.setAlphaF(0.5);
 					painter.setPen(col);
@@ -210,6 +209,28 @@ void SliceView::updateCache()
 		}
 	}
 	cacheValid = true;
+}
+
+void SliceView::updateCache(int x, int y, int label)
+{
+	if (!cacheValid) {
+		updateCache();
+		return;
+	}
+
+	QPixmap &p = cachedPixmap;
+	QPainter painter(&p);
+	// restore pixel
+	painter.drawPixmap(x, y, *pixmap, x, y, 1, 1);
+
+	int l = labels(y, x);
+	// if needed, color pixel
+	if (l > 0) {
+		QColor col = markerColors[l];
+		col.setAlphaF(0.5);
+		painter.setPen(col);
+		painter.drawPoint(x, y);
+	}
 }
 
 void SliceView::alterLabel(const cv::Mat_<uchar> &mask, bool negative)
@@ -256,14 +277,15 @@ void SliceView::cursorAction(QMouseEvent *ev, bool click)
 	// paint
 	if (ev->buttons() & Qt::LeftButton) {
 		labels(y, x) = curLabel;
-		cacheValid = false;
+		updateCache(x, y, curLabel);
 	// erase
 	} else if (ev->buttons() & Qt::RightButton) {
-		if (labels(y, x) == curLabel)
+		if (labels(y, x) == curLabel) {
 			labels(y, x) = 0;
-		cacheValid = false; // TODO: improve by altering cache directly
-		if (!grandupdate)
-			updatePoint(cursor);
+			updateCache(x, y, 0);
+			if (!grandupdate)
+				updatePoint(cursor);
+		}
 	}
 
 	if (!grandupdate)
