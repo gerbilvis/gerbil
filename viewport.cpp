@@ -230,15 +230,19 @@ void SliceView::drawOverlay(const cv::Mat_<uchar> &mask)
 	update();
 }
 
-void SliceView::mouseMoveEvent(QMouseEvent *ev)
+void SliceView::cursorAction(QMouseEvent *ev, bool click)
 {
 	// kill overlay to free the view
 	bool grandupdate = (overlay != NULL);
-	overlay = NULL;
 
 	cursor = QPointF(ev->pos() / scale);
 	cursor.setX(round(cursor.x() - 0.75));
 	cursor.setY(round(cursor.y() - 0.75));
+
+	// nothing new after all..
+	if ((cursor == lastcursor) && !click)
+		return;
+
 	int x = cursor.x(), y = cursor.y();
 
 	if (!pixmap()->rect().contains(x, y))
@@ -260,14 +264,17 @@ void SliceView::mouseMoveEvent(QMouseEvent *ev)
 	if (!grandupdate)
 		updatePoint(lastcursor);
 	lastcursor = cursor;
-	if (grandupdate)
+
+	if (grandupdate) {
+		overlay = NULL;
 		update();
+	}
 }
 
 void SliceView::updatePoint(const QPointF &p)
 {
-	QPoint damagetl = scaler.map(QPoint(p.x() - 1, p.y() - 1));
-	QPoint damagebr = scaler.map(QPoint(p.x() + 1, p.y() + 1));
+	QPoint damagetl = scaler.map(QPoint(p.x() - 2, p.y() - 2));
+	QPoint damagebr = scaler.map(QPoint(p.x() + 2, p.y() + 2));
 	update(QRect(damagetl, damagebr));
 }
 

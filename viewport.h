@@ -61,7 +61,8 @@ public:
 	SliceView(QWidget *parent = 0);
 	void resizeEvent(QResizeEvent * ev);
 	void paintEvent(QPaintEvent *ev);
-	void mouseMoveEvent(QMouseEvent *ev);
+	void mouseMoveEvent(QMouseEvent *ev) { cursorAction(ev); }
+	void mousePressEvent(QMouseEvent *ev) { cursorAction(ev, true); }
 	void leaveEvent(QEvent *ev);
 	void setPixmap(const QPixmap &);
 
@@ -75,6 +76,7 @@ public slots:
 	void drawOverlay(const cv::Mat_<uchar> &mask);
 
 private:
+	void cursorAction(QMouseEvent *ev, bool click = false);
 	void updateCache();
 	void updatePoint(const QPointF &p);
 
