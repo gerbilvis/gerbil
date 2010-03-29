@@ -2,6 +2,10 @@
     <qresource prefix="/toolbar">
         <file alias="clear">resources/edit-clear.svg</file>
         <file alias="clear2">resources/edit-clear.png</file>
+        <file alias="right">resources/right.png</file>
+        <file alias="add">resources/add.png</file>
+        <file alias="left">resources/left.png</file>
+        <file alias="remove">resources/remove.png</file>
     </qresource>
     <qresource prefix="/">
         <file alias="mainicon">resources/mainicon.svg</file>

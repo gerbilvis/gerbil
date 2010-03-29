@@ -5,26 +5,25 @@
 #include <iostream>
 
 ViewerWindow::ViewerWindow(const multi_img &image, const multi_img &gradient, QWidget *parent)
-	: QMainWindow(parent), image(image), gradient(gradient),
+	: QMainWindow(parent), image(image), gradient(gradient), activeViewer(0),
 	  islices(image.size(), NULL), gslices(gradient.size(), NULL),
-	  labels(image.width, image.height, QImage::Format_Indexed8)
+	  labels(image.height, image.width, (uchar)0)
 {
 	setupUi(this);
 	sliceButton->hide();
 
 	/* setup labeling stuff first */
 	QVector<QColor> &labelcolors = sliceLabel->markerColors;
-	labels.setNumColors(labelcolors.size());
-	labels.fill(0);
-	sliceLabel->labels = &labels;
+	sliceLabel->labels = labels;
 	createMarkers();
 	selectSlice(0, false);
 
 	/* setup viewers, do setImage() last */
-	viewIMG->labels = viewGRAD->labels = &labels;
+	viewIMG->labels = viewGRAD->labels = labels;
 	viewIMG->labelcolors = viewGRAD->labelcolors = &labelcolors;
 	viewIMG->setImage(image);
 	viewGRAD->setImage(gradient, true);
+	viewIMG->setActive(false);
 
 	/* signals & slots */
 	connect(sliceDock, SIGNAL(visibilityChanged(bool)),
@@ -35,20 +34,41 @@ ViewerWindow::ViewerWindow(const multi_img &image, const multi_img &gradient, QW
 	connect(sliceDock, SIGNAL(topLevelChanged(bool)),
 			this, SLOT(reshapeDock(bool)));
 
-	connect(viewIMG->getViewport(), SIGNAL(sliceSelected(int, bool)),
-			this, SLOT(selectSlice(int, bool)));
-	connect(viewGRAD->getViewport(), SIGNAL(sliceSelected(int, bool)),
-			this, SLOT(selectSlice(int, bool)));
-
 	connect(markerSelector, SIGNAL(currentIndexChanged(int)),
 			sliceLabel, SLOT(changeLabel(int)));
 	connect(clearButton, SIGNAL(clicked()),
 			sliceLabel, SLOT(clearLabelPixels()));
+	connect(ignoreButton, SIGNAL(toggled(bool)),
+			markButton, SLOT(setDisabled(bool)));
+	connect(ignoreButton, SIGNAL(toggled(bool)),
+			nonmarkButton, SLOT(setDisabled(bool)));
 
-	connect(applyButton, SIGNAL(clicked()),
-			viewIMG, SLOT(rebuild()));
-	connect(applyButton, SIGNAL(clicked()),
-			viewGRAD, SLOT(rebuild()));
+	connect(addButton, SIGNAL(clicked()),
+			this, SLOT(addToLabel()));
+	connect(remButton, SIGNAL(clicked()),
+			this, SLOT(remFromLabel()));
+	connect(this, SIGNAL(alterLabel(cv::Mat_<uchar>,bool)),
+			sliceLabel, SLOT(alterLabel(cv::Mat_<uchar>,bool)));
+
+	multi_img_viewer *viewer[2] = {viewIMG, viewGRAD };
+	for (int i = 0; i < 2; ++i)
+	{
+		connect(applyButton, SIGNAL(clicked()),
+				viewer[i], SLOT(rebuild()));
+		connect(markButton, SIGNAL(toggled(bool)),
+				viewer[i], SLOT(toggleLabeled(bool)));
+		connect(nonmarkButton, SIGNAL(toggled(bool)),
+				viewer[i], SLOT(toggleUnlabeled(bool)));
+		connect(ignoreButton, SIGNAL(toggled(bool)),
+				viewer[i], SLOT(toggleLabels(bool)));
+
+		connect(viewer[i]->getViewport(), SIGNAL(sliceSelected(int, bool)),
+				this, SLOT(selectSlice(int, bool)));
+		connect(viewer[i]->getViewport(), SIGNAL(activated(bool)),
+				this, SLOT(setActive(bool)));
+		connect(viewer[i]->getViewport(), SIGNAL(activated(bool)),
+				viewer[(i ? 0 : 1)], SLOT(setActive(bool)));
+	}
 }
 
 const QPixmap* ViewerWindow::getSlice(int dim, bool grad)
@@ -68,6 +88,19 @@ const QPixmap* ViewerWindow::getSlice(int dim, bool grad)
 void ViewerWindow::selectSlice(int dim, bool grad)
 {
 	sliceLabel->setPixmap(*getSlice(dim, grad));
+}
+
+void ViewerWindow::setActive(bool gradient)
+{
+	activeViewer = (gradient ? 1 : 0);
+}
+
+void ViewerWindow::labelmask(bool negative)
+{
+	multi_img_viewer *viewer = (activeViewer == 0 ? viewIMG : viewGRAD);
+	emit alterLabel(viewer->createMask(), negative);
+	viewIMG->rebuild();
+	viewGRAD->rebuild();
 }
 
 void ViewerWindow::reshapeDock(bool floating)
@@ -113,4 +146,3 @@ QIcon ViewerWindow::colorIcon(const QColor &color)
 	pm.fill(color);
 	return QIcon(pm);
 }
-

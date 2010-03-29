@@ -6,6 +6,7 @@
 #include <iostream>
 #include <QHash>
 #include <QLabel>
+#include <cv.h>
 
 struct Bin {
 	Bin() {}
@@ -35,16 +36,18 @@ public:
 	std::vector<BinSet> sets;
 
 	bool showLabeled, showUnlabeled;
+
+	bool active;
+	int selection, hover;
+
 signals:
 	void sliceSelected(int dim, bool gradient);
+	void activated(bool who);
 
 protected:
-	void paintEvent(QPaintEvent *event);
-	void mouseMoveEvent(QMouseEvent *event);
-
-private:
-
-	int selection, hover;
+	void paintEvent(QPaintEvent*);
+	void mouseMoveEvent(QMouseEvent*);
+	void mousePressEvent(QMouseEvent*);
 };
 
 class SliceView : public QLabel
@@ -58,12 +61,13 @@ public:
 	void leaveEvent(QEvent *ev);
 	void setPixmap(const QPixmap &);
 
-	QImage *labels;
+	cv::Mat_<uchar> labels;
 	QVector<QColor> markerColors;
 
 public slots:
 	void changeLabel(int label);
 	void clearLabelPixels();
+	void alterLabel(const cv::Mat_<uchar> &mask, bool negative);
 
 private:
 	void updateCache();
@@ -75,7 +79,7 @@ private:
 	QPixmap cachedPixmap;
 	bool cacheValid;
 
-	int curLabel;
+	uchar curLabel;
 };
 
 #endif // VIEWPORT_H

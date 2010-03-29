@@ -8,6 +8,7 @@
 #include <QPixmap>
 #include <QImage>
 #include <QVector>
+#include <cv.h>
 
 class ViewerWindow : public QMainWindow, private Ui::ViewerWindow {
     Q_OBJECT
@@ -21,18 +22,26 @@ public:
 public slots:
 	void reshapeDock(bool floating);
 	void selectSlice(int dim, bool gradient);
+	void addToLabel()   { labelmask(false); }
+	void remFromLabel() { labelmask(true); }
+	void setActive(bool gradient);
+
+signals:
+	void alterLabel(const cv::Mat_<uchar> &mask, bool negative);
 
 protected:
     void changeEvent(QEvent *e);
 
 	// helper functions
 	void createMarkers();
+	void labelmask(bool negative);
 
 	// slices from both image and gradient
 	std::vector<QPixmap*> islices, gslices;
 	// pixel label holder
-	QImage labels;
+	cv::Mat_<uchar> labels;
 	const multi_img &image, &gradient;
+	int activeViewer; // 0: IMG, 1: GRAD
 };
 
 #endif // VIEWERWINDOW_H

@@ -9,7 +9,8 @@ using namespace std;
 
 Viewport::Viewport(QWidget *parent)
 	: QGLWidget(QGLFormat(QGL::SampleBuffers), parent),
-	  selection(0), hover(-1), showLabeled(true), showUnlabeled(true)
+	  selection(0), hover(-1), showLabeled(true), showUnlabeled(true),
+	  active(false)
 {}
 
 QTransform Viewport::getModelview()
@@ -49,12 +50,24 @@ void Viewport::paintEvent(QPaintEvent *event)
 			const Bin &b = it.value();
 			color = basecolor;
 
-			qreal alpha = 0.01 + 0.99*(log(b.weight) / log(s.totalweight));
+			qreal alpha;
+			/* TODO: this is far from optimal yet. challenge is to give a good
+			   view where important information is not lost, yet not clutter
+			   the view with too much low-weight information */
+			if (i == 0)
+				alpha = 0.01 + 0.09*(log(b.weight) / log(s.totalweight));
+			else
+				alpha = log(b.weight+1) / log(s.totalweight);
 			color.setAlphaF(min(alpha, 1.));
 
 			if ((unsigned char)it.key()[selection] == hover) {
-				if (basecolor == Qt::white)
+				if (basecolor == Qt::white) {
 					color = Qt::yellow;
+				} else {
+					color.setGreen(min(color.green() + 195, 255));
+					color.setRed(min(color.red() + 195, 255));
+					color.setBlue(color.blue()/2);
+				}
 				color.setAlphaF(1.);
 			}
 
@@ -62,7 +75,10 @@ void Viewport::paintEvent(QPaintEvent *event)
 			painter.drawLines(b.connections);
 		}
 	}
-	painter.setPen(Qt::red);
+	if (active)
+		painter.setPen(Qt::red);
+	else
+		painter.setPen(Qt::gray);
 	painter.drawLine(selection, 0, selection, nbins);
 }
 
@@ -77,6 +93,14 @@ void Viewport::mouseMoveEvent(QMouseEvent *event)
 	hover = pos.y();
 	update();
 	emit sliceSelected(x, gradient);
+}
+
+void Viewport::mousePressEvent(QMouseEvent *event)
+{
+	if (!active)
+		emit activated(gradient);
+	active = true;
+	mouseMoveEvent(event);
 }
 
 SliceView::SliceView(QWidget *parent)
@@ -141,7 +165,7 @@ void SliceView::updateCache()
 		// mark labeled regions
 		for (int y = 0; y < p->height(); ++y) {
 			for (int x = 0; x < p->width(); ++x) {
-				int l = labels->pixelIndex(x, y);
+				int l = labels(y, x);
 				if (l > 0) {
 					//painter.setBrush();
 					QColor col = markerColors[l];
@@ -153,6 +177,23 @@ void SliceView::updateCache()
 		}
 	}
 	cacheValid = true;
+}
+
+void SliceView::alterLabel(const cv::Mat_<uchar> &mask, bool negative)
+{
+	if (negative) {
+		// we are out of luck
+		cv::MatConstIterator_<uchar> itm = mask.begin();
+		cv::MatIterator_<uchar> itl = labels.begin();
+		for (; itm != mask.end(); ++itm, ++itl)
+			if (*itm && (*itl == curLabel))
+				*itl = 0;
+	} else {
+		labels.setTo(curLabel, mask);
+	}
+
+	cacheValid = false;
+	update();
 }
 
 void SliceView::mouseMoveEvent(QMouseEvent *ev)
@@ -167,12 +208,12 @@ void SliceView::mouseMoveEvent(QMouseEvent *ev)
 
 	// paint
 	if (ev->buttons() & Qt::LeftButton) {
-		labels->setPixel(x, y, curLabel);
+		labels(y, x) = curLabel;
 		cacheValid = false;
 	// erase
 	} else if (ev->buttons() & Qt::RightButton) {
-		if (labels->pixelIndex(x, y) == curLabel)
-			labels->setPixel(x, y, 0);
+		if (labels(y, x) == curLabel)
+			labels(y, x) = 0;
 		cacheValid = false; // TODO: improve by altering cache directly
 		updatePoint(cursor);
 	}
@@ -190,12 +231,10 @@ void SliceView::updatePoint(const QPointF &p)
 
 void SliceView::clearLabelPixels()
 {
-	for (int y = 0; y < labels->height(); ++y) {
-		for (int x = 0; x < labels->width(); ++x) {
-			if (labels->pixelIndex(x, y) == curLabel)
-				labels->setPixel(x, y, 0);
-		}
-	}
+	for (cv::MatIterator_<uchar> it = labels.begin(); it != labels.end(); ++it)
+		if (*it == curLabel)
+			*it = 0;
+
 	cacheValid = false;
 	update();
 }

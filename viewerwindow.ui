@@ -6,7 +6,7 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>800</width>
+    <width>829</width>
     <height>600</height>
    </rect>
   </property>
@@ -14,7 +14,7 @@
    <string>Multispectral Image Viewer</string>
   </property>
   <property name="windowIcon">
-   <iconset resource="gerbil.qrc">
+   <iconset>
     <normaloff>:/mainicon2</normaloff>:/mainicon2</iconset>
   </property>
   <widget class="QWidget" name="centralwidget">
@@ -72,8 +72,41 @@
       </item>
       <item>
        <widget class="QPushButton" name="addButton">
+        <property name="toolTip">
+         <string>Add to current label</string>
+        </property>
         <property name="text">
-         <string>Add To Label &gt;</string>
+         <string/>
+        </property>
+        <property name="icon">
+         <iconset>
+          <normaloff>:/toolbar/add</normaloff>:/toolbar/add</iconset>
+        </property>
+        <property name="iconSize">
+         <size>
+          <width>16</width>
+          <height>16</height>
+         </size>
+        </property>
+       </widget>
+      </item>
+      <item>
+       <widget class="QPushButton" name="remButton">
+        <property name="toolTip">
+         <string>Remove from current label</string>
+        </property>
+        <property name="text">
+         <string/>
+        </property>
+        <property name="icon">
+         <iconset>
+          <normaloff>:/toolbar/remove</normaloff>:/toolbar/remove</iconset>
+        </property>
+        <property name="iconSize">
+         <size>
+          <width>16</width>
+          <height>16</height>
+         </size>
         </property>
        </widget>
       </item>
@@ -114,7 +147,17 @@
        <item>
         <widget class="QPushButton" name="applyButton">
          <property name="text">
-          <string>&lt; Update Labels</string>
+          <string>Update</string>
+         </property>
+         <property name="icon">
+          <iconset>
+           <normaloff>:/toolbar/left</normaloff>:/toolbar/left</iconset>
+         </property>
+         <property name="iconSize">
+          <size>
+           <width>16</width>
+           <height>16</height>
+          </size>
          </property>
         </widget>
        </item>
@@ -131,7 +174,7 @@
        <item>
         <widget class="QPushButton" name="clearButton">
          <property name="icon">
-          <iconset resource="gerbil.qrc">
+          <iconset>
            <normaloff>:/toolbar/clear2</normaloff>:/toolbar/clear2</iconset>
          </property>
          <property name="iconSize">
@@ -189,8 +232,6 @@
    <header>viewport.h</header>
   </customwidget>
  </customwidgets>
- <resources>
-  <include location="gerbil.qrc"/>
- </resources>
+ <resources/>
  <connections/>
 </ui>

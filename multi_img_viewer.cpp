@@ -5,7 +5,8 @@
 using namespace std;
 
 multi_img_viewer::multi_img_viewer(QWidget *parent)
-	: QWidget(parent), image(NULL), labels(NULL)
+	: QWidget(parent), image(NULL), labelcolors(NULL),
+	  ignoreLabels(false)
 {
 	setupUi(this);
 }
@@ -16,6 +17,7 @@ void multi_img_viewer::setImage(const multi_img &img, bool gradient)
 		connect(binSlider, SIGNAL(valueChanged(int)), this, SLOT(rebuild(int)));
 	}
 	image = &img;
+	maskholder.create(image->height, image->width);
 	viewport->gradient = gradient;
 	viewport->dimensionality = img.size();
 	rebuild(binSlider->value());
@@ -34,13 +36,14 @@ void multi_img_viewer::rebuild(int bins)
 
 void multi_img_viewer::createBins(int nbins)
 {
-	assert(labels && labelcolors);
+	assert(labelcolors && !labels.empty());
 
 	int dim = image->size();
 	double minval = image->minval, maxval = image->maxval;
 	double binsize = (maxval - minval)/(double)nbins;
 
 	/* note that this is quite inefficient because of cache misses */
+	cv::MatConstIterator_<uchar> itl = labels.begin();
 	cv::MatConstIterator_<double> it[dim];
 	register int d;
 	for (d = 0; d < dim; ++d)
@@ -51,11 +54,9 @@ void multi_img_viewer::createBins(int nbins)
 	for (int i = 0; i < labelcolors->size(); ++i)
 		sets.push_back(BinSet(labelcolors->at(i)));
 
-	/* caution: dangerous assumption on the cv::Mat iterator order */
-	for (int y = 0; y < labels->height(); ++y)
-	  for (int x = 0; x < labels->width(); ++x) {
+	while (itl != labels.end()) {
 		// test the labeling
-		int label = labels->pixelIndex(x, y);
+		int label = (ignoreLabels ? 0 : *itl);
 
 		// create hash key and line array at once
 		QByteArray hashkey;
@@ -81,21 +82,53 @@ void multi_img_viewer::createBins(int nbins)
 		sets[label].totalweight++;
 
 		// increment all iterators to next pixel
+		++itl;
 		for (d = 0; d < dim; ++d)
 			++it[d];
 	}
 }
 
-void multi_img_viewer::showLabeled(bool yes)
+const cv::Mat_<uchar>& multi_img_viewer::createMask()
 {
-	viewport->showLabeled = yes;
+	double minval = image->minval, maxval = image->maxval;
+	double binsize = (maxval - minval)/(double)viewport->nbins;
+	int d = viewport->selection;
+
+	maskholder.setTo(0);
+	cv::MatIterator_<uchar> itm = maskholder.begin();
+	cv::MatConstIterator_<double> iti = (*image)[d].begin();
+	for (; itm != maskholder.end(); ++iti, ++itm) {
+		int curpos = floor((*iti - minval) / binsize);
+		// minval/maxval are only theoretical bounds (TODO: check this in multi_img)
+		curpos = max(curpos, 0); curpos = min(curpos, viewport->nbins-1);
+		if (curpos == viewport->hover)
+			*itm = 1;
+	}
+	return maskholder;
+}
+
+void multi_img_viewer::setActive(bool who)
+{
+	viewport->active = (who == viewport->gradient); // yes, indeed!
 	viewport->update();
 }
 
-void multi_img_viewer::showUnLabeled(bool yes)
+void multi_img_viewer::toggleLabeled(bool toggle)
 {
-	viewport->showUnlabeled = yes;
+	viewport->showLabeled = toggle;
 	viewport->update();
+}
+
+void multi_img_viewer::toggleUnlabeled(bool toggle)
+{
+	viewport->showUnlabeled = toggle;
+	viewport->update();
+}
+
+void multi_img_viewer::toggleLabels(bool toggle)
+{
+	ignoreLabels = toggle;
+	rebuild();
 }
 
 void multi_img_viewer::changeEvent(QEvent *e)

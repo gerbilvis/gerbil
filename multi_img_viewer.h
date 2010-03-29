@@ -6,6 +6,7 @@
 #include "multi_img.h"
 
 #include <vector>
+#include <cv.h>
 
 class multi_img_viewer : public QWidget, private Ui::multi_img_viewer {
     Q_OBJECT
@@ -13,20 +14,28 @@ public:
 	multi_img_viewer(QWidget *parent = 0);
 
 	const QWidget* getViewport() { return viewport; }
+	const cv::Mat_<uchar>& createMask();
 
-	const QImage *labels;
+	cv::Mat_<uchar> labels;
 	const QVector<QColor> *labelcolors;
+
 public slots:
 	void rebuild(int bins = 0);
 	void setImage(const multi_img &image, bool gradient = false);
-	void showLabeled(bool yes);
-	void showUnLabeled(bool yes);
+	void toggleLabeled(bool toggle);
+	void toggleUnlabeled(bool toggle);
+	void toggleLabels(bool toggle);
+	void setActive(bool who);
 
 protected:
     void changeEvent(QEvent *e);
 	void createBins(int bins);
 
 	const multi_img *image;
+	bool ignoreLabels;
+
+private:
+	cv::Mat_<uchar> maskholder;
 };
 
 #endif // MULTI_IMG_VIEWER_H
