@@ -42,12 +42,16 @@ public:
 
 signals:
 	void sliceSelected(int dim, bool gradient);
+	void newOverlay();
 	void activated(bool who);
 
 protected:
 	void paintEvent(QPaintEvent*);
 	void mouseMoveEvent(QMouseEvent*);
 	void mousePressEvent(QMouseEvent*);
+
+private:
+	QTransform modelviewI;
 };
 
 class SliceView : public QLabel
@@ -68,6 +72,7 @@ public slots:
 	void changeLabel(int label);
 	void clearLabelPixels();
 	void alterLabel(const cv::Mat_<uchar> &mask, bool negative);
+	void drawOverlay(const cv::Mat_<uchar> &mask);
 
 private:
 	void updateCache();
@@ -80,6 +85,7 @@ private:
 	bool cacheValid;
 
 	uchar curLabel;
+	const cv::Mat_<uchar> *overlay;
 };
 
 #endif // VIEWPORT_H

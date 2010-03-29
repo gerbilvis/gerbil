@@ -26,6 +26,10 @@ QTransform Viewport::getModelview()
 	modelview.translate(p + t, p);
 	modelview.scale(w, -1*h); // -1 low values at bottom
 	modelview.translate(0, -(nbins -1));
+
+	// cache it
+	modelviewI = modelview.inverted();
+
 	return modelview;
 }
 
@@ -83,16 +87,24 @@ void Viewport::paintEvent(QPaintEvent *event)
 }
 
 void Viewport::mouseMoveEvent(QMouseEvent *event)
-{	// todo: inefficient! cache the inverted transform
-	QPoint pos = getModelview().inverted().map(event->pos());
+{
+	QPoint pos = modelviewI.map(event->pos());
 	int x = pos.x(), y = pos.y();
 	if (x < 0 || x >= dimensionality)
 		return;
+	if (y < 0 || y >= nbins)
+		return;
+
+	if ((selection == x)&&(hover == y))
+		return;
+
+	if (selection != x)
+		emit sliceSelected(x, gradient);
 
 	selection = x;
-	hover = pos.y();
+	hover = y;
 	update();
-	emit sliceSelected(x, gradient);
+	emit newOverlay();
 }
 
 void Viewport::mousePressEvent(QMouseEvent *event)
@@ -104,7 +116,8 @@ void Viewport::mousePressEvent(QMouseEvent *event)
 }
 
 SliceView::SliceView(QWidget *parent)
-	: QLabel(parent), cursor(-1, -1), lastcursor(-1, -1), curLabel(1), cacheValid(false)
+	: QLabel(parent), cursor(-1, -1), lastcursor(-1, -1), curLabel(1),
+	  cacheValid(false), overlay(0)
 {
 	markerColors << Qt::white // 0 is index for unlabeled
 			<< Qt::green << Qt::red << Qt::cyan << Qt::magenta << Qt::blue;
@@ -154,6 +167,21 @@ void SliceView::paintEvent(QPaintEvent *ev)
 	pen.setWidth(0);
 	painter.setPen(pen);
 	painter.drawRect(QRectF(cursor, QSizeF(1, 1)));
+
+	// draw overlay (a quasi one-timer)
+	if (!overlay)
+		return;
+
+	pen.setColor(Qt::yellow); painter.setPen(pen);
+	for (int y = 0; y < overlay->rows; ++y) {
+		for (int x = 0; x < overlay->cols; ++x) {
+			if ((*overlay)(y, x)) {
+				//	painter.fillRect(x, y, 1, 1, Qt::yellow);
+				painter.drawLine(x+1, y, x, y+1);
+				painter.drawLine(x, y, x+1, y+1);
+			}
+		}
+	}
 }
 
 void SliceView::updateCache()
@@ -196,8 +224,18 @@ void SliceView::alterLabel(const cv::Mat_<uchar> &mask, bool negative)
 	update();
 }
 
+void SliceView::drawOverlay(const cv::Mat_<uchar> &mask)
+{
+	overlay = &mask;
+	update();
+}
+
 void SliceView::mouseMoveEvent(QMouseEvent *ev)
 {
+	// kill overlay to free the view
+	bool grandupdate = (overlay != NULL);
+	overlay = NULL;
+
 	cursor = QPointF(ev->pos() / scale);
 	cursor.setX(round(cursor.x() - 0.75));
 	cursor.setY(round(cursor.y() - 0.75));
@@ -215,11 +253,15 @@ void SliceView::mouseMoveEvent(QMouseEvent *ev)
 		if (labels(y, x) == curLabel)
 			labels(y, x) = 0;
 		cacheValid = false; // TODO: improve by altering cache directly
-		updatePoint(cursor);
+		if (!grandupdate)
+			updatePoint(cursor);
 	}
 
-	updatePoint(lastcursor);
+	if (!grandupdate)
+		updatePoint(lastcursor);
 	lastcursor = cursor;
+	if (grandupdate)
+		update();
 }
 
 void SliceView::updatePoint(const QPointF &p)

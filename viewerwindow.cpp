@@ -47,8 +47,10 @@ ViewerWindow::ViewerWindow(const multi_img &image, const multi_img &gradient, QW
 			this, SLOT(addToLabel()));
 	connect(remButton, SIGNAL(clicked()),
 			this, SLOT(remFromLabel()));
-	connect(this, SIGNAL(alterLabel(cv::Mat_<uchar>,bool)),
-			sliceLabel, SLOT(alterLabel(cv::Mat_<uchar>,bool)));
+	connect(this, SIGNAL(alterLabel(const cv::Mat_<uchar>&,bool)),
+			sliceLabel, SLOT(alterLabel(const cv::Mat_<uchar>&,bool)));
+	connect(this, SIGNAL(drawOverlay(const cv::Mat_<uchar>&)),
+			sliceLabel, SLOT(drawOverlay(const cv::Mat_<uchar>&)));
 
 	multi_img_viewer *viewer[2] = {viewIMG, viewGRAD };
 	for (int i = 0; i < 2; ++i)
@@ -68,6 +70,9 @@ ViewerWindow::ViewerWindow(const multi_img &image, const multi_img &gradient, QW
 				this, SLOT(setActive(bool)));
 		connect(viewer[i]->getViewport(), SIGNAL(activated(bool)),
 				viewer[(i ? 0 : 1)], SLOT(setActive(bool)));
+
+		connect(viewer[i]->getViewport(), SIGNAL(newOverlay()),
+				this, SLOT(newOverlay()));
 	}
 }
 
@@ -101,6 +106,12 @@ void ViewerWindow::labelmask(bool negative)
 	emit alterLabel(viewer->createMask(), negative);
 	viewIMG->rebuild();
 	viewGRAD->rebuild();
+}
+
+void ViewerWindow::newOverlay()
+{
+	multi_img_viewer *viewer = (activeViewer == 0 ? viewIMG : viewGRAD);
+	emit drawOverlay(viewer->createMask());
 }
 
 void ViewerWindow::reshapeDock(bool floating)

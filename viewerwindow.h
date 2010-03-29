@@ -25,9 +25,11 @@ public slots:
 	void addToLabel()   { labelmask(false); }
 	void remFromLabel() { labelmask(true); }
 	void setActive(bool gradient);
+	void newOverlay();
 
 signals:
 	void alterLabel(const cv::Mat_<uchar> &mask, bool negative);
+	void drawOverlay(const cv::Mat_<uchar> &mask);
 
 protected:
     void changeEvent(QEvent *e);
