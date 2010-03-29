@@ -54,7 +54,7 @@ private:
 	QTransform modelviewI;
 };
 
-class SliceView : public QLabel
+class SliceView : public QGLWidget
 {
 	Q_OBJECT
 public:
@@ -83,6 +83,7 @@ private:
 	qreal scale;
 	QTransform scaler, scalerI;
 	QPointF cursor, lastcursor;
+	const QPixmap *pixmap;
 	QPixmap cachedPixmap;
 	bool cacheValid;
 

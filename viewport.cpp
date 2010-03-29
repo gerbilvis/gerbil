@@ -116,7 +116,8 @@ void Viewport::mousePressEvent(QMouseEvent *event)
 }
 
 SliceView::SliceView(QWidget *parent)
-	: QLabel(parent), cursor(-1, -1), lastcursor(-1, -1), curLabel(1),
+	: QGLWidget(QGLFormat(QGL::SampleBuffers), parent), pixmap(NULL),
+	  cursor(-1, -1), lastcursor(-1, -1), curLabel(1),
 	  cacheValid(false), overlay(0)
 {
 	markerColors << Qt::white // 0 is index for unlabeled
@@ -126,14 +127,16 @@ SliceView::SliceView(QWidget *parent)
 void SliceView::setPixmap(const QPixmap &p)
 {
 	cacheValid = false;
-	QLabel::setPixmap(p);
+	pixmap = &p;
 }
 
 void SliceView::resizeEvent(QResizeEvent *ev)
 {
+	if (!pixmap)
+		return;
+		
 	// determine scale of correct aspect-ratio
-	const QPixmap *p = pixmap();
-	float src_aspect = p->width()/(float)p->height();
+	float src_aspect = pixmap->width()/(float)pixmap->height();
 	float dest_aspect = width()/(float)height();
 	float w, h;
 	if (src_aspect > dest_aspect) {
@@ -141,13 +144,15 @@ void SliceView::resizeEvent(QResizeEvent *ev)
 	} else {
 		h = height(); w = h*src_aspect;
 	}
-	scale = w/p->width();
+	scale = w/pixmap->width();
 	scaler = QTransform().scale(scale, scale);
 	scalerI = scaler.inverted();
 }
 
 void SliceView::paintEvent(QPaintEvent *ev)
 {
+	if (!pixmap)
+		return;
 	if (!cacheValid)
 		updateCache();
 
@@ -186,13 +191,13 @@ void SliceView::paintEvent(QPaintEvent *ev)
 
 void SliceView::updateCache()
 {
-	cachedPixmap = pixmap()->copy(); // TODO: check for possible qt memory leak
-	QPixmap *p = &cachedPixmap;
-	{	QPainter painter(p);
+	cachedPixmap = pixmap->copy(); // TODO: check for possible qt memory leak
+	QPixmap &p = cachedPixmap;
+	{	QPainter painter(&p);
 
 		// mark labeled regions
-		for (int y = 0; y < p->height(); ++y) {
-			for (int x = 0; x < p->width(); ++x) {
+		for (int y = 0; y < p.height(); ++y) {
+			for (int x = 0; x < p.width(); ++x) {
 				int l = labels(y, x);
 				if (l > 0) {
 					//painter.setBrush();
@@ -245,7 +250,7 @@ void SliceView::cursorAction(QMouseEvent *ev, bool click)
 
 	int x = cursor.x(), y = cursor.y();
 
-	if (!pixmap()->rect().contains(x, y))
+	if (!pixmap->rect().contains(x, y))
 		return;
 
 	// paint

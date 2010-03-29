@@ -119,8 +119,7 @@ void ViewerWindow::reshapeDock(bool floating)
 	if (!floating)
 		return;
 
-	const QPixmap *p = sliceLabel->pixmap();
-	float src_aspect = p->width()/(float)p->height();
+	float src_aspect = image.width/(float)image.height;
 	float dest_aspect = sliceLabel->width()/(float)sliceLabel->height();
 	// we force the dock aspect ratio to fit slice image aspect ratio.
 	// this is not 100% correct

@@ -205,15 +205,6 @@
        <property name="mouseTracking">
         <bool>true</bool>
        </property>
-       <property name="text">
-        <string/>
-       </property>
-       <property name="scaledContents">
-        <bool>true</bool>
-       </property>
-       <property name="alignment">
-        <set>Qt::AlignHCenter|Qt::AlignTop</set>
-       </property>
       </widget>
      </item>
     </layout>
@@ -228,7 +219,7 @@
   </customwidget>
   <customwidget>
    <class>SliceView</class>
-   <extends>QLabel</extends>
+   <extends>QWidget</extends>
    <header>viewport.h</header>
   </customwidget>
  </customwidgets>
