@@ -10,22 +10,28 @@ using namespace std;
 Viewport::Viewport(QWidget *parent)
 	: QGLWidget(QGLFormat(QGL::SampleBuffers), parent),
 	  selection(0), hover(-1), showLabeled(true), showUnlabeled(true),
-	  active(false)
+	  active(false), zoom(1.), shift(0), lasty(-1)
 {}
 
 QTransform Viewport::getModelview()
 {
+	/* apply zoom and translation in window coordinates */
+	qreal wwidth = width();
+	qreal wheight = height()*zoom;
+	int vshift = height()*shift;
+
 	int p = 10; // padding
 	// if gradient, we discard one unit space intentionally for centering
 	int d = dimensionality - (gradient? 0 : 1);
-	qreal w = (width()  - 2*p)/(qreal)(d); // width of one unit
-	qreal h = (height() - 2*p)/(qreal)(nbins - 1); // height of one unit
+	qreal w = (wwidth  - 2*p)/(qreal)(d); // width of one unit
+	qreal h = (wheight - 2*p)/(qreal)(nbins - 1); // height of one unit
 	int t = (gradient? w/2 : 0); // moving half a unit for centering
 
 	QTransform modelview;
-	modelview.translate(p + t, p);
+	modelview.translate(p + t, p + vshift);
 	modelview.scale(w, -1*h); // -1 low values at bottom
-	modelview.translate(0, -(nbins -1));
+	modelview.translate(0, -(nbins -1)); // shift for low values at bottom
+
 
 	// cache it
 	modelviewI = modelview.inverted();
@@ -88,23 +94,35 @@ void Viewport::paintEvent(QPaintEvent *event)
 
 void Viewport::mouseMoveEvent(QMouseEvent *event)
 {
-	QPoint pos = modelviewI.map(event->pos());
-	int x = pos.x(), y = pos.y();
-	if (x < 0 || x >= dimensionality)
-		return;
-	if (y < 0 || y >= nbins)
-		return;
+	if (event->buttons() & Qt::RightButton)
+	{
+		if (lasty < 0) {
+			return;
+		}
 
-	if ((selection == x)&&(hover == y))
-		return;
+		shift += (event->y() - lasty)*0.05/(qreal)height();
+		qreal displacement = (shift + 1./zoom);
 
-	if (selection != x)
-		emit sliceSelected(x, gradient);
+		update();
+	} else {
+		QPoint pos = modelviewI.map(event->pos());
+		int x = pos.x(), y = pos.y();
+		if (x < 0 || x >= dimensionality)
+			return;
+		if (y < 0 || y >= nbins)
+			return;
 
-	selection = x;
-	hover = y;
-	update();
-	emit newOverlay();
+		if ((selection == x)&&(hover == y))
+			return;
+
+		if (selection != x)
+			emit sliceSelected(x, gradient);
+
+		selection = x;
+		hover = y;
+		update();
+		emit newOverlay();
+	}
 }
 
 void Viewport::mousePressEvent(QMouseEvent *event)
@@ -112,7 +130,35 @@ void Viewport::mousePressEvent(QMouseEvent *event)
 	if (!active)
 		emit activated(gradient);
 	active = true;
+
+	if (event->button() == Qt::RightButton) {
+		this->setCursor(Qt::ClosedHandCursor);
+		lasty = event->y();
+	}
 	mouseMoveEvent(event);
+}
+
+void Viewport::mouseReleaseEvent(QMouseEvent * event)
+{
+	if (event->button() == Qt::RightButton) {
+		this->setCursor(Qt::ArrowCursor);
+		lasty = -1;
+	}
+}
+
+void Viewport::wheelEvent(QWheelEvent *event)
+{
+	qreal oldzoom = zoom;
+	if (event->delta() > 0)
+		zoom *= 1.25;
+	else
+		zoom = max(zoom * 0.80, 1.);
+
+	// adjust shift to new zoom
+	shift += ((oldzoom - zoom) * 0.5);
+
+	update();
+	event->accept();
 }
 
 SliceView::SliceView(QWidget *parent)

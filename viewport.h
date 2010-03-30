@@ -49,9 +49,15 @@ protected:
 	void paintEvent(QPaintEvent*);
 	void mouseMoveEvent(QMouseEvent*);
 	void mousePressEvent(QMouseEvent*);
+	void mouseReleaseEvent(QMouseEvent*);
+	void wheelEvent(QWheelEvent *);
 
 private:
 	QTransform modelviewI;
+	// zoom and shift in y-direction
+	qreal zoom;
+	qreal shift;
+	int lasty;
 };
 
 class SliceView : public QGLWidget
