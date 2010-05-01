@@ -10,5 +10,6 @@
     <qresource prefix="/">
         <file alias="mainicon">resources/mainicon.svg</file>
         <file alias="mainicon2">resources/mainicon.png</file>
+        <file alias="logoicon">logo/icon.png</file>
     </qresource>
 </RCC>

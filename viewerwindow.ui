@@ -14,8 +14,8 @@
    <string>Multispectral Image Viewer</string>
   </property>
   <property name="windowIcon">
-   <iconset>
-    <normaloff>:/mainicon2</normaloff>:/mainicon2</iconset>
+   <iconset resource="gerbil.qrc">
+    <normaloff>:/logoicon</normaloff>:/logoicon</iconset>
   </property>
   <widget class="QWidget" name="centralwidget">
    <layout class="QVBoxLayout" name="ImgGradLayout">
@@ -79,7 +79,7 @@
          <string/>
         </property>
         <property name="icon">
-         <iconset>
+         <iconset resource="gerbil.qrc">
           <normaloff>:/toolbar/add</normaloff>:/toolbar/add</iconset>
         </property>
         <property name="iconSize">
@@ -99,7 +99,7 @@
          <string/>
         </property>
         <property name="icon">
-         <iconset>
+         <iconset resource="gerbil.qrc">
           <normaloff>:/toolbar/remove</normaloff>:/toolbar/remove</iconset>
         </property>
         <property name="iconSize">
@@ -150,7 +150,7 @@
           <string>Update</string>
          </property>
          <property name="icon">
-          <iconset>
+          <iconset resource="gerbil.qrc">
            <normaloff>:/toolbar/left</normaloff>:/toolbar/left</iconset>
          </property>
          <property name="iconSize">
@@ -174,7 +174,7 @@
        <item>
         <widget class="QPushButton" name="clearButton">
          <property name="icon">
-          <iconset>
+          <iconset resource="gerbil.qrc">
            <normaloff>:/toolbar/clear2</normaloff>:/toolbar/clear2</iconset>
          </property>
          <property name="iconSize">
@@ -201,7 +201,7 @@
       </layout>
      </item>
      <item>
-      <widget class="SliceView" name="sliceLabel">
+      <widget class="SliceView" name="sliceLabel" native="true">
        <property name="mouseTracking">
         <bool>true</bool>
        </property>
@@ -223,6 +223,8 @@
    <header>viewport.h</header>
   </customwidget>
  </customwidgets>
- <resources/>
+ <resources>
+  <include location="gerbil.qrc"/>
+ </resources>
  <connections/>
 </ui>

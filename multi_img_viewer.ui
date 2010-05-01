@@ -35,6 +35,9 @@
          <property name="value">
           <number>10</number>
          </property>
+         <property name="tracking">
+          <bool>false</bool>
+         </property>
          <property name="orientation">
           <enum>Qt::Vertical</enum>
          </property>
