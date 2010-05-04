@@ -20,12 +20,13 @@ public:
 	typedef cv::MatConstIterator_<uchar> MaskConstIt;
 
 	struct BandDesc {
-		BandDesc() : center(0.f), rangeStart(0.f), rangeEnd(0.f) {}
-		BandDesc(float c) : center(c), rangeStart(c), rangeEnd(c) {}
+		BandDesc() : center(0.f), rangeStart(0.f), rangeEnd(0.f), empty(true){}
+		BandDesc(float c) : center(c), rangeStart(c), rangeEnd(c), empty(false){}
 		BandDesc(float s, float e) : rangeStart(s), rangeEnd(e),
-									 center((e + s)*0.5f) {}
+									 center((e + s)*0.5f), empty(false) {}
 		float rangeStart, rangeEnd;
 		float center;
+		bool empty;
 	};
 
 	/// default constructors

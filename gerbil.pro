@@ -12,11 +12,11 @@ CONFIG += link_pkgconfig
 PKGCONFIG += opencv
 
 # BOOST
-LIBS += -lboost_program_options
+LIBS += -lboost_program_options -lboost_filesystem
 
 # OPENGL
 QT += opengl
-QMAKE_CXXFLAGS += -Wall # -fopenmp -DGLIBCXX_PARALLEL
+QMAKE_CXXFLAGS += -Wall -DVOLE_WITH_BOOST # -fopenmp -DGLIBCXX_PARALLEL
 QMAKE_CXXFLAGS_RELEASE = -march=i686 \
     -O3
 

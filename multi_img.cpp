@@ -5,6 +5,12 @@
 #include <highgui.h>
 #include "multi_img.h"
 
+#ifdef VOLE_WITH_BOOST
+	#include "boost/filesystem.hpp"
+#else
+	#include "libgen.h"
+#endif
+
 using namespace std;
 
 
@@ -224,52 +230,6 @@ QImage multi_img::export_qt(unsigned int band) const
 	return dest;
 }
 
-// parse file list
-pair<vector<string>, vector<multi_img::BandDesc> >
-		multi_img::read_filelist(const string& filename) {
-	pair<vector<string>, vector<BandDesc> > empty;
-	ifstream in(filename.c_str());
-	if (in.fail())
-		return empty;
-
-	int count;
-	string base;
-	in >> count;
-	in >> base;
-	if (in.fail())
-		return empty;
-
-	base.append("/");
-	stringstream in2;
-	string fn; float a, b;
-	vector<string> files;
-	vector<BandDesc> descs;
-	cout << count << "\t" << base << endl;
-	for (; count > 0; count--) {
-/*		in.get(*in2.rdbuf());
-		cout << in2.str() << endl;
-		in.get(*in2.rdbuf());
-		cout << in2.str() << endl;*/
-		in >> fn;
-		if (in.fail())
-			return empty;	 // file inconsistent -> screw it!
-		files.push_back(base + fn);
-
-/*		in2 >> a;
-		if (in2.fail()) { // no band desc given
-			descs.push_back(BandDesc());
-		} else {
-			in2 >> b;
-			if (in2.fail()) // only center filter wavelength given
-				descs.push_back(BandDesc(a));
-			else			// filter borders given
-				descs.push_back(BandDesc(a, b));
-		}*/
-	}
-	in.close();
-	return make_pair(files, descs);
-}
-
 // read multires. image into vector
 void multi_img::read_image(const vector<string> &files, const vector<BandDesc> &descs) {
 	/* our favorite range */
@@ -312,7 +272,11 @@ void multi_img::read_image(const vector<string> &files, const vector<BandDesc> &
 		
 	    cout << "Added " << files[fi] << ":\t" << channels.size()
              << (channels.size() == 1 ? " channel, " : " channels, ")
-             << (src.depth() == CV_16U ? 16 : 8) << " bits" << endl;
+			 << (src.depth() == CV_16U ? 16 : 8) << " bits";
+		if (descs.empty()||descs[fi].empty)
+			cout << endl;
+		else
+			cout << ", " << descs[fi].center << " nm" << endl;
 	}
 
 	/* invalidate pixel cache as pixel length has changed
@@ -373,4 +337,63 @@ multi_img multi_img::spec_gradient() {
 	}
 	ret.resetPixels();
 	return ret;
+}
+
+// parse file list
+pair<vector<string>, vector<multi_img::BandDesc> >
+		multi_img::read_filelist(const string& filename) {
+	pair<vector<string>, vector<BandDesc> > empty;
+
+	ifstream in(filename.c_str());
+	if (in.fail())
+		return empty;
+
+	int count;
+	string base;
+	in >> count;
+	in >> base;
+	if (in.fail())
+		return empty;
+
+#ifdef VOLE_WITH_BOOST
+	boost::filesystem::path basepath(base), filepath(filename);
+	if (!basepath.is_complete()) {
+		basepath = filepath.remove_leaf() /= basepath;
+		base = basepath.string();
+	}
+#else	// NOTE: works only with Unix!
+	if (base[0] != '/') {
+		char *f = strdup(filename.c_str()), *d = dirname(f);
+		base = string(d).append("/").append(base);
+	}
+#endif
+	base.append("/"); // TODO: check if o.k. in Windows
+	stringstream in2;
+	string fn; float a, b;
+	vector<string> files;
+	vector<BandDesc> descs;
+	in >> ws;
+	for (; count > 0; count--) {
+		in2.clear();
+		in.get(*in2.rdbuf()); in >> ws;
+		in2 >> fn;
+		if (in2.fail()) {
+			cout << "fail!" << endl;
+			return empty;	 // file inconsistent -> screw it!
+		}
+		files.push_back(base + fn);
+
+		in2 >> a;
+		if (in2.fail()) { // no band desc given
+			descs.push_back(BandDesc());
+		} else {
+			in2 >> b;
+			if (in2.fail()) // only center filter wavelength given
+				descs.push_back(BandDesc(a));
+			else			// filter borders given
+				descs.push_back(BandDesc(a, b));
+		}
+	}
+	in.close();
+	return make_pair(files, descs);
 }
