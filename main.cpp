@@ -71,7 +71,26 @@ int main(int argc, char** argv) {
 	multi_img image(options.inputfile);
 	if (image.empty())
 		return 2;
-		
+
+/*	multi_img::Pixel a = image(0, 0);
+	cv::Mat_<multi_img::Value> b = image.Matrix(a);
+	b = image.Matrix(image(1, 1));
+	b.setTo(255.);
+	image.setPixel(1, 1, b);
+	image.setPixel(cv::Point(2, 2), multi_img::Pixel(31, 255.));
+
+	multi_img::Mask m(image.height, image.width, (uchar)0);
+	cv::circle(m, cv::Point(63, 63), 50, 255, 10);
+	vector<multi_img::Pixel> v = image.getSegmentCopy(m);
+	for (int i = 0; i < v.size(); ++i) {
+		if (v[i][0] < 25.)
+			v[i].assign(image.size(), image.minval);
+		else
+			v[i].assign(image.size(), image.maxval);
+	}
+	image.setSegment(v, m);
+*/
+
 	//TODO: input filenames with path elements
 	string base = options.outputdir + "/" + options.inputfile;
 

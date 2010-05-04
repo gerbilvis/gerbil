@@ -9,22 +9,37 @@
 class multi_img {
 
 public:
+	/// value type (may be changed to float for less precision)
 	typedef double Value;
 	typedef cv::Mat_<Value> Band;
+	typedef cv::MatIterator_<Value> BandIt;
+	typedef cv::MatConstIterator_<Value> BandConstIt;
 	typedef std::vector<Value> Pixel;
+	typedef cv::Mat_<uchar> Mask;
+	typedef cv::MatIterator_<uchar> MaskIt;
+	typedef cv::MatConstIterator_<uchar> MaskConstIt;
+
+	struct BandDesc {
+		BandDesc() : center(0.f), rangeStart(0.f), rangeEnd(0.f) {}
+		BandDesc(float c) : center(c), rangeStart(c), rangeEnd(c) {}
+		BandDesc(float s, float e) : rangeStart(s), rangeEnd(e),
+									 center((e + s)*0.5f) {}
+		float rangeStart, rangeEnd;
+		float center;
+	};
 
 	/// default constructors
 	multi_img() : width(0), height(0) {}
 	multi_img(size_t size) : width(0), height(0), bands(size) {}
 
 	/** reads in and processes either
-		(a) one image file containing 1 or several color channels
-		(b) a file containing file list (see read_filelist)
+		(a) an image file containing one or several color channels
+		(b) a descriptor file that contains a file list (see read_filelist)
 	*/
 	multi_img(const std::string& filename);
 
 	/// returns number of bands
-	inline unsigned int size() const { return bands.size(); };
+	inline size_t size() const { return bands.size(); };
 
 	/// returns true if image is uninitialized
 	inline bool empty() const { return bands.empty(); };
@@ -44,14 +59,36 @@ public:
 	inline const Pixel& operator()(cv::Point pt) const
 	{ return operator ()(pt.y, pt.x); }
 
+	/// returns spectral data of a segment (using mask)
+	std::vector<const Pixel*> getSegment(const Mask &mask);
+	/// returns copied spectral data of a segment (using mask)
+	std::vector<Pixel> getSegmentCopy(const Mask &mask);
+
 	/// sets a single pixel
 	void setPixel(unsigned int row, unsigned int col, const Pixel& values);
 	/// sets a single pixel
+	void setPixel(unsigned int row, unsigned int col,
+				  const cv::Mat_<Value>& values);
+	/// sets a single pixel
 	inline void setPixel(cv::Point pt, const Pixel& values)
 	{ setPixel(pt.y, pt.x, values); }
+	/// sets a single pixel
+	inline void setPixel(cv::Point pt, const cv::Mat_<Value>& values)
+	{ setPixel(pt.y, pt.x, values); }
 
-	/// replaces a band
-//	void setBand(unsigned int band, Band data);
+	/// replaces a band or rectangular part of it
+	void setBand(unsigned int band, const Band &data,
+				 const Mask &mask = Mask());
+
+	/// replaces all pixels in mask with given values
+	/**
+	  @arg values vector of pixel values which must hold the same amount of
+		   members as non-null mask values, ordered by row index first, column
+		   index second
+	 */
+	void setSegment(const std::vector<Pixel> &values, const Mask& mask);
+	void setSegment(const std::vector<cv::Mat_<Value> > &values,
+					const Mask& mask);
 
 	///	invalidate pixel cache (TODO: ROI) (maybe protected?)
 	void resetPixels() const;
@@ -70,12 +107,17 @@ public:
 	QImage export_qt(unsigned int band) const;
 	
 	/// get independent copy of image
-	// use case: apply log on image but keep original version as well
-	multi_img clone();
+	/**
+		@arg cloneCache if true, copies pixel cache. if false, cache is not
+			 copied and all pixels are dirty (useful if cache unneeded or will
+			 be invalidated anyway)
+	 */
+	multi_img clone(bool cloneCache = true);
 	
 	/// compile image from filelist (files can have several channels
-	// will not erase previous data (use cleanup for that)
-	void read_image(std::vector<std::string>& files);
+	// will not erase previous data
+	void read_image(const std::vector<std::string> &files,
+					const std::vector<BandDesc> &descs = std::vector<BandDesc>());
 
 	/// write the whole image with base name base (may include directories)
 	/* output is 8 bit grayscale PNG image
@@ -98,21 +140,37 @@ public:
 		...
 		filename(string)
 	*/
-	static std::vector<std::string> read_filelist(const std::string& filename);
+	static std::pair<std::vector<std::string>, std::vector<BandDesc> >
+			read_filelist(const std::string& filename);
 	
+	/// copies Pixel into a OpenCV matrix (row vector)
+	/* The copy is needed as there is no "ConstMatrix" type.
+	   Note that this is just a wrapper to OpenCV functionality, but it
+	   ensures that you are doing it "right". */
+	inline static cv::Mat_<Value> Matrix(const Pixel& p)
+	{ return cv::Mat_<Value>(p, true); }
+
+	/// copies Matrix into a Pixel
+	inline static Pixel Matrix(const cv::Mat_<Value>& m)
+	{ // see setPixel function
+	  // return Pixel(m.begin(), m.end());
+		Pixel ret(m.rows*m.cols); BandConstIt it; int i;
+		for (i = 0, it = m.begin(); it != m.end(); ++it, ++i)
+			ret[i] = *it;
+		return ret;
+	}
+
+/* finally some variables */
 	/// minimum and maximum values (by data format, not actually observed data!)
 	Value minval, maxval;
 	/// ensuring image dimension consistency
 	int width, height;
-
+	/// band meta-data
+	std::vector<BandDesc> meta;
 protected:
-	inline void setDirty(unsigned int row, unsigned int col,
-						 bool dirty = true) const;
-
 	std::vector<Band> bands;
 	mutable std::vector<Pixel> pixels;
-	mutable cv::Mat_<uchar> dirty;
-	mutable int dirtycount;
+	mutable Mask dirty;
 };
 
 #endif
