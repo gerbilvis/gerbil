@@ -172,7 +172,7 @@ void multi_img::setSegment(const std::vector<Pixel> &values, const Mask &mask) {
 		const uchar *m = mask[row];
 		for (int col = 0; col < width; ++col) {
 			if (m[col] > 0) {
-				setPixel(row, col, values[i]);
+				setPixel(row, col, values.at(i)); // vector does bound checking
 				++i;
 			}
 		}

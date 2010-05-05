@@ -19,13 +19,17 @@ public:
 	typedef cv::MatIterator_<uchar> MaskIt;
 	typedef cv::MatConstIterator_<uchar> MaskConstIt;
 
+	/// struct that holds optional filter information for each band
 	struct BandDesc {
 		BandDesc() : center(0.f), rangeStart(0.f), rangeEnd(0.f), empty(true){}
 		BandDesc(float c) : center(c), rangeStart(c), rangeEnd(c), empty(false){}
 		BandDesc(float s, float e) : rangeStart(s), rangeEnd(e),
 									 center((e + s)*0.5f), empty(false) {}
+		/// range of the filter (approximate filter edges in nm)
 		float rangeStart, rangeEnd;
+		/// center wavelength of the filter in nm
 		float center;
+		/// filter information available (empty == false) or not
 		bool empty;
 	};
 
@@ -77,7 +81,7 @@ public:
 	inline void setPixel(cv::Point pt, const cv::Mat_<Value>& values)
 	{ setPixel(pt.y, pt.x, values); }
 
-	/// replaces a band or rectangular part of it
+	/// replaces a band with optional mask
 	void setBand(unsigned int band, const Band &data,
 				 const Mask &mask = Mask());
 
