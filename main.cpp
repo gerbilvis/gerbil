@@ -72,7 +72,7 @@ int main(int argc, char** argv) {
 	if (image.empty())
 		return 2;
 
-// Example for the multi_img API
+/* Example for the multi_img API
 	// get pixel at position 0, 0
 	multi_img::Pixel a = image(0, 0);
 
@@ -122,7 +122,7 @@ int main(int argc, char** argv) {
 	ba.setTo(127, m);
 	// write back the changes, but use mask for optimized writeback
 	image.setBand(5, ba, m);
-//*/
+*/
 	//TODO: input filenames with path elements
 	string base = options.outputdir + "/" + options.inputfile;
 

@@ -10,6 +10,9 @@
 #else
 	#include "libgen.h"
 #endif
+#ifdef VOLE_GUI
+	#include <QImage>
+#endif
 
 using namespace std;
 
@@ -149,7 +152,7 @@ void multi_img::setBand(unsigned int band, const Band &data,
 	   cache. we do this only for pixels, which are not dirty yet (and would
 	   need a complete rebuild anyways. As we instantly fix the other pixels,
 	   those do not get marked as dirty by us. */
-	if (mask.empty()) {
+	if (!mask.empty()) {
 		assert(mask.rows == height && mask.cols == width);
 		MaskConstIt mit = mask.begin();
 		data.copyTo(b, mask);
@@ -213,6 +216,7 @@ unsigned short* multi_img::export_interleaved() const {
 	return ret;
 }
 
+#ifdef VOLE_GUI
 // exports one band
 QImage multi_img::export_qt(unsigned int band) const
 {
@@ -229,6 +233,7 @@ QImage multi_img::export_qt(unsigned int band) const
 	}
 	return dest;
 }
+#endif
 
 // read multires. image into vector
 void multi_img::read_image(const vector<string> &files, const vector<BandDesc> &descs) {
@@ -293,7 +298,7 @@ void multi_img::read_image(const vector<string> &files, const vector<BandDesc> &
 	}
 
 	cout << "Total of " << size() << " dimensions.";
-	cout << "\tSpacial size: " << width << "x" << height << endl;
+	cout << "\tSpatial size: " << width << "x" << height << endl;
 }
 
 void multi_img::write_out(const string& base, bool normalize) {

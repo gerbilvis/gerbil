@@ -16,7 +16,7 @@ LIBS += -lboost_program_options -lboost_filesystem
 
 # OPENGL
 QT += opengl
-QMAKE_CXXFLAGS += -Wall -DVOLE_WITH_BOOST # -fopenmp -DGLIBCXX_PARALLEL
+QMAKE_CXXFLAGS += -Wall -DVOLE_WITH_BOOST -DVOLE_GUI
 QMAKE_CXXFLAGS_RELEASE = -march=i686 \
     -O3
 

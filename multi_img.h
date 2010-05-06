@@ -3,7 +3,9 @@
 
 #include <vector>
 #include <cv.h>
-#include <QImage>
+#ifdef VOLE_GUI
+	class QImage;
+#endif
 
 // struct to hold a multispectral image
 class multi_img {
@@ -108,8 +110,10 @@ public:
 	// you have to free it after use! KTHXBYE
 	unsigned short* export_interleaved() const;
 
+#ifdef VOLE_GUI
 	/// return QImage of specific band
 	QImage export_qt(unsigned int band) const;
+#endif
 	
 	/// get independent copy of image
 	/**
