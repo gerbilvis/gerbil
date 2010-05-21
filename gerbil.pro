@@ -1,7 +1,5 @@
 TEMPLATE = app
 
-# only for the editor.. should not be here!
-INCLUDEPATH += /net/cv/lib32/include/opencv
 CONFIG += warn_off \
     debug_and_release
 CONFIG(debug, debug|release):TARGET = gerbil_dbg
