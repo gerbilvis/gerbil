@@ -35,7 +35,7 @@ multi_img multi_img::clone(bool cloneCache) {
 	multi_img ret(size());
 	ret.minval = minval; ret.maxval = maxval;
 	ret.width = width; ret.height = height;
-	for (int i = 0; i < size(); ++i)
+	for (unsigned int i = 0; i < size(); ++i)
 		ret.bands[i] = bands[i].clone();
 
 	if (cloneCache) {
@@ -57,7 +57,7 @@ void multi_img::resetPixels() const {
 
 void multi_img::rebuildPixels() const {
 	BandConstIt it;
-	register int d, i;
+	register unsigned int d, i;
 	for (d = 0; d < size(); ++d) {
 		const Band &src = bands[d];
 		for (it = src.begin(), i = 0; it != src.end(); ++it, ++i)
@@ -68,7 +68,7 @@ void multi_img::rebuildPixels() const {
 
 void multi_img::rebuildPixel(unsigned int row, unsigned int col) const {
 	Pixel &p = pixels[row*width + col];
-	for (int i = 0; i < size(); ++i)
+	for (unsigned int i = 0; i < size(); ++i)
 		p[i] = bands[i](row, col);
 
 	dirty(row, col) = 0;
@@ -110,11 +110,11 @@ std::vector<multi_img::Pixel> multi_img::getSegmentCopy(const Mask &mask) {
 
 void multi_img::setPixel(unsigned int row, unsigned int col,
 						 const Pixel &values) {
-	assert(row < height && col < width);
+	assert((int)row < height && (int)col < width);
 	assert(values.size() == size());
 	Pixel &p = pixels[row*width + col];
 	p = values;
-	for (int i = 0; i < size(); ++i)
+	for (unsigned int i = 0; i < size(); ++i)
 		bands[i](row, col) = p[i];
 
 	dirty(row, col) = 0;
@@ -123,19 +123,19 @@ void multi_img::setPixel(unsigned int row, unsigned int col,
 // matrix version
 void multi_img::setPixel(unsigned int row, unsigned int col,
 						 const cv::Mat_<Value>& values) {
-	assert(row < height && col < width);
-	assert(values.rows*values.cols == size());
+	assert((int)row < height && (int)col < width);
+	assert(values.rows*values.cols == (int)size());
 	Pixel &p = pixels[row*width + col];
 	/* should work, but bug in OpenCV (ConstIterator is STL-incompatible)
 	   https://code.ros.org/trac/opencv/ticket/321
 	p.assign(values.begin(), values.end()); */
 	// workaround
-	BandConstIt it; int i;
+	BandConstIt it; unsigned int i;
 	for (i = 0, it = values.begin(); it != values.end(); ++it, ++i)
 		p[i] = *it;
 	// end workaround
 
-	for (int i = 0; i < size(); ++i)
+	for (i = 0; i < size(); ++i)
 		bands[i](row, col) = p[i];
 
 	dirty(row, col) = 0;
@@ -205,7 +205,7 @@ unsigned short* multi_img::export_interleaved() const {
 	/* actually we don't care about the ordering of the pixels, just all
 	   values have to get in there in interleaved format */
 	BandConstIt it;
-	register int d, i;
+	register unsigned int d, i;
 	for (d = 0; d < size(); ++d) {
 		const Band &src = (*this)[d];
 		// i starts with offset d, then jumps over dimensions
@@ -240,7 +240,7 @@ void multi_img::read_image(const vector<string> &files, const vector<BandDesc> &
 	/* our favorite range */
 	minval = 0.; maxval = 255.;
 
-	for (int fi = 0; fi < files.size(); ++fi) {
+	for (unsigned int fi = 0; fi < files.size(); ++fi) {
 	    cv::Mat src = cv::imread(files[fi].c_str(), -1); // flag -1: preserve format
 	    
 		if (src.empty()) {
@@ -303,7 +303,7 @@ void multi_img::read_image(const vector<string> &files, const vector<BandDesc> &
 
 void multi_img::write_out(const string& base, bool normalize) {
 	char name[1024];
-	for (int i = 0; i < size(); ++i) {
+	for (unsigned int i = 0; i < size(); ++i) {
 		sprintf(name, "%s%02d.png", base.c_str(), i);
 
 		if (normalize) {
@@ -317,7 +317,7 @@ void multi_img::write_out(const string& base, bool normalize) {
 }
 
 void multi_img::apply_logarithm() {
-	for (int i = 0; i < size(); ++i) {
+	for (unsigned int i = 0; i < size(); ++i) {
 		// will assign large negative value to 0 pixels
 		cv::log(bands[i], bands[i]);
 		// get rid of negative values (when pixel value was 0)
@@ -337,7 +337,7 @@ multi_img multi_img::spec_gradient() {
 	ret.maxval =  maxval/2.;
 	ret.width = width; ret.height = height;
 
-	for (int i = 0; i < size()-1; ++i) {
+	for (unsigned int i = 0; i < size()-1; ++i) {
 		ret.bands[i] = (bands[i+1] - bands[i]);
 	}
 	ret.resetPixels();
@@ -353,7 +353,7 @@ pair<vector<string>, vector<multi_img::BandDesc> >
 	if (in.fail())
 		return empty;
 
-	int count;
+	unsigned int count;
 	string base;
 	in >> count;
 	in >> base;

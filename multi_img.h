@@ -25,12 +25,12 @@ public:
 	struct BandDesc {
 		BandDesc() : center(0.f), rangeStart(0.f), rangeEnd(0.f), empty(true){}
 		BandDesc(float c) : center(c), rangeStart(c), rangeEnd(c), empty(false){}
-		BandDesc(float s, float e) : rangeStart(s), rangeEnd(e),
-									 center((e + s)*0.5f), empty(false) {}
-		/// range of the filter (approximate filter edges in nm)
-		float rangeStart, rangeEnd;
+		BandDesc(float s, float e) : center((e + s)*0.5f),
+									 rangeStart(s), rangeEnd(e), empty(false) {}
 		/// center wavelength of the filter in nm
 		float center;
+		/// range of the filter (approximate filter edges in nm)
+		float rangeStart, rangeEnd;
 		/// filter information available (empty == false) or not
 		bool empty;
 	};
@@ -57,7 +57,7 @@ public:
 
 	/// returns spectral data of a single pixel
 	inline const Pixel& operator()(unsigned int row, unsigned int col) const
-	{	assert(row < height && col < width);
+	{	assert((int)row < height && (int)col < width);
 		if (dirty(row, col))
 			rebuildPixel(row, col);
 		return pixels[row*width + col];
@@ -173,6 +173,7 @@ public:
 	/// minimum and maximum values (by data format, not actually observed data!)
 	Value minval, maxval;
 	/// ensuring image dimension consistency
+	// signed int because cv::Mat.{rows, cols} are also signed int
 	int width, height;
 	/// band meta-data
 	std::vector<BandDesc> meta;

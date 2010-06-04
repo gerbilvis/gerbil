@@ -5,6 +5,8 @@ CONFIG += warn_off \
 CONFIG(debug, debug|release):TARGET = gerbil_dbg
 else:TARGET = gerbil
 
+# only for the editor.. should not be here!
+# INCLUDEPATH += /net/cv/lib32/include/opencv
 # OPENCV
 CONFIG += link_pkgconfig
 PKGCONFIG += opencv
