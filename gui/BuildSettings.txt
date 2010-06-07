@@ -1,0 +1,42 @@
+set(this_module_name "gerbil_gui")
+set(this_unit_memberships "gerbil")
+set(this_extra_include_directories)
+set(this_build_library)
+set(this_build_executable_file "gerbil_gui")
+set(this_build_executable "qgerbil")
+set(this_module_variable "Gerbil_Viewer")
+set(this_module_description "GUI for multispectral images")
+set(this_module_general_requirements "VOLE_BOOST" "VOLE_BOOST_PROGRAM_OPTIONS" "VOLE_QT" "VOLE_OPENCV")
+
+VoleRequiredModules()
+
+# FIXME what to fix?
+VoleUiIfGui("vole_gui.ui")
+VoleCompileIfGui(
+	main.cpp executionthread.cpp command_wrapper.cpp
+	vole_gui.cpp rectangle.cpp
+	blending_image.cpp
+	image_plane.cpp
+	image_helper.cxx
+	blending_image.h
+	command_wrapper.h
+	draw_operation.h
+	executionthread.h
+	generated_gui_include_list.h
+	gui_command_thread.h
+	image_helper.h
+	image_plane.h
+	mouse_move_operation.h
+	mouse_over_area.h
+	mouse_over_image_generator.h
+	rectangle.h
+	vole_gui.h
+)
+
+# manual moc'ing: Add all header files here for classes that should get a moc_* prefix
+#set(vole_gui_MOC_HDRS ${vole_gui_MOC_HDRS}
+VoleMocIfGui(
+	vole_gui.h rectangle.h image_plane.h executionthread.h
+	blending_image.h draw_operation.h command_wrapper.h
+)
+
