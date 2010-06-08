@@ -25,6 +25,10 @@ VoleMocIfQt(
 	viewport.h
 )
 
+VoleRccIfQt(
+	gerbil.qrc
+)
+
 VoleUiIfQt(
 	multi_img_viewer.ui
 	viewerwindow.ui
