@@ -8,35 +8,28 @@ set(this_module_variable "Gerbil_Viewer")
 set(this_module_description "GUI for multispectral images")
 set(this_module_general_requirements "VOLE_BOOST" "VOLE_BOOST_PROGRAM_OPTIONS" "VOLE_QT" "VOLE_OPENCV")
 
-VoleRequiredModules()
+#VoleRequiredModules("gui")
 
-# FIXME what to fix?
-VoleUiIfGui("vole_gui.ui")
-VoleCompileIfGui(
-	main.cpp executionthread.cpp command_wrapper.cpp
-	vole_gui.cpp rectangle.cpp
-	blending_image.cpp
-	image_plane.cpp
-	image_helper.cxx
-	blending_image.h
-	command_wrapper.h
-	draw_operation.h
-	executionthread.h
-	generated_gui_include_list.h
-	gui_command_thread.h
-	image_helper.h
-	image_plane.h
-	mouse_move_operation.h
-	mouse_over_area.h
-	mouse_over_image_generator.h
-	rectangle.h
-	vole_gui.h
+VoleCompileIfQt(
+multi_img_viewer.cpp
+multi_img_viewer.h
+multi_img_viewer.ui
+viewerwindow.cpp
+viewerwindow.h
+viewerwindow.ui
+viewport.cpp
+viewport.h
 )
 
 # manual moc'ing: Add all header files here for classes that should get a moc_* prefix
 #set(vole_gui_MOC_HDRS ${vole_gui_MOC_HDRS}
-VoleMocIfGui(
-	vole_gui.h rectangle.h image_plane.h executionthread.h
-	blending_image.h draw_operation.h command_wrapper.h
+VoleMocIfQt(
+	multi_img_viewer.h
+	viewerwindow.h
+	viewport.h
 )
 
+VoleUiIfQt(
+	multi_img_viewer.ui
+	viewerwindow.ui
+)
