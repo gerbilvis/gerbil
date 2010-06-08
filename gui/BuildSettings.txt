@@ -11,12 +11,10 @@ set(this_module_general_requirements "VOLE_BOOST" "VOLE_BOOST_PROGRAM_OPTIONS" "
 #VoleRequiredModules("gui")
 
 VoleCompileIfQt(
-	multi_img_viewer.cpp
-	multi_img_viewer.h
-	viewerwindow.cpp
-	viewerwindow.h
-	viewport.cpp
-	viewport.h
+	main
+	multi_img_viewer
+	viewerwindow
+	viewport
 )
 
 # manual moc'ing: Add all header files here for classes that should get a moc_* prefix
