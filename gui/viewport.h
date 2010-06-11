@@ -41,7 +41,7 @@ public:
 	int selection, hover;
 
 signals:
-	void sliceSelected(int dim, bool gradient);
+	void bandSelected(int dim, bool gradient);
 	void newOverlay();
 	void activated(bool who);
 
@@ -58,44 +58,6 @@ private:
 	qreal zoom;
 	qreal shift;
 	int lasty;
-};
-
-class SliceView : public QGLWidget
-{
-	Q_OBJECT
-public:
-	SliceView(QWidget *parent = 0);
-	void resizeEvent(QResizeEvent * ev);
-	void paintEvent(QPaintEvent *ev);
-	void mouseMoveEvent(QMouseEvent *ev) { cursorAction(ev); }
-	void mousePressEvent(QMouseEvent *ev) { cursorAction(ev, true); }
-	void leaveEvent(QEvent *ev);
-	void setPixmap(const QPixmap &);
-
-	cv::Mat_<uchar> labels;
-	QVector<QColor> markerColors;
-
-public slots:
-	void changeLabel(int label);
-	void clearLabelPixels();
-	void alterLabel(const cv::Mat_<uchar> &mask, bool negative);
-	void drawOverlay(const cv::Mat_<uchar> &mask);
-
-private:
-	void cursorAction(QMouseEvent *ev, bool click = false);
-	void updateCache();
-	void updateCache(int x, int y, int label);
-	void updatePoint(const QPointF &p);
-
-	qreal scale;
-	QTransform scaler, scalerI;
-	QPointF cursor, lastcursor;
-	const QPixmap *pixmap;
-	QPixmap cachedPixmap;
-	bool cacheValid;
-
-	uchar curLabel;
-	const cv::Mat_<uchar> *overlay;
 };
 
 #endif // VIEWPORT_H

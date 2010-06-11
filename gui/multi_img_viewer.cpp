@@ -86,6 +86,12 @@ void multi_img_viewer::createBins(int nbins)
 		for (d = 0; d < dim; ++d)
 			++it[d];
 	}
+/*	int datapoints = 0;
+	for (unsigned int i = 0; i < sets.size(); ++i)
+		datapoints += sets[i].bins.count();
+	cerr << (viewport->gradient? "Gradient View" : "Intensity View") << " showsi0V1a8N6
+	 ";
+	cerr << datapoints << " datapoints." << endl;*/
 }
 
 const cv::Mat_<uchar>& multi_img_viewer::createMask()

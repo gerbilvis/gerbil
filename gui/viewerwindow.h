@@ -2,7 +2,7 @@
 #define VIEWERWINDOW_H
 
 #include "ui_viewerwindow.h"
-#include "multi_img.h"
+#include <multi_img.h>
 
 #include <vector>
 #include <QPixmap>
@@ -15,21 +15,21 @@ class ViewerWindow : public QMainWindow, private Ui::ViewerWindow {
 public:
 	ViewerWindow(const multi_img &image, const multi_img &gradient, QWidget *parent = 0);
 
-	const QPixmap* getSlice(int dim, bool gradient);
+	const QPixmap* getBand(int dim, bool gradient);
 
 	static QIcon colorIcon(const QColor& color);
 
 public slots:
 	void reshapeDock(bool floating);
-	void selectSlice(int dim, bool gradient);
+	void selectBand(int dim, bool gradient);
 	void addToLabel()   { labelmask(false); }
 	void remFromLabel() { labelmask(true); }
 	void setActive(bool gradient);
 	void newOverlay();
 
 signals:
-	void alterLabel(const cv::Mat_<uchar> &mask, bool negative);
-	void drawOverlay(const cv::Mat_<uchar> &mask);
+	void alterLabel(const multi_img::Mask &mask, bool negative);
+	void drawOverlay(const multi_img::Mask &mask);
 
 protected:
     void changeEvent(QEvent *e);
@@ -38,8 +38,8 @@ protected:
 	void createMarkers();
 	void labelmask(bool negative);
 
-	// slices from both image and gradient
-	std::vector<QPixmap*> islices, gslices;
+	// bands from both image and gradient
+	std::vector<QPixmap*> ibands, gbands;
 	// pixel label holder
 	cv::Mat_<uchar> labels;
 	const multi_img &image, &gradient;

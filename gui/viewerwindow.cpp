@@ -6,17 +6,19 @@
 
 ViewerWindow::ViewerWindow(const multi_img &image, const multi_img &gradient, QWidget *parent)
 	: QMainWindow(parent), image(image), gradient(gradient), activeViewer(0),
-	  islices(image.size(), NULL), gslices(gradient.size(), NULL),
+	  ibands(image.size(), NULL), gbands(gradient.size(), NULL),
 	  labels(image.height, image.width, (uchar)0)
 {
 	setupUi(this);
-	sliceButton->hide();
+	bandButton->hide();
 
 	/* setup labeling stuff first */
-	QVector<QColor> &labelcolors = sliceLabel->markerColors;
-	sliceLabel->labels = labels;
+	QVector<QColor> &labelcolors = bandLabel->markerColors;
+	bandLabel->labels = labels;
 	createMarkers();
-	selectSlice(0, false);
+	selectBand(0, false);
+	bandLabel->setSources(image, gradient);
+
 
 	/* setup viewers, do setImage() last */
 	viewIMG->labels = viewGRAD->labels = labels;
@@ -26,18 +28,28 @@ ViewerWindow::ViewerWindow(const multi_img &image, const multi_img &gradient, QW
 	viewIMG->setActive(false);
 
 	/* signals & slots */
-	connect(sliceDock, SIGNAL(visibilityChanged(bool)),
-			sliceButton, SLOT(setHidden(bool)));
-	connect(sliceButton, SIGNAL(clicked()),
-			sliceDock, SLOT(show()));
+	connect(bandDock, SIGNAL(visibilityChanged(bool)),
+			bandButton, SLOT(setHidden(bool)));
+	connect(bandButton, SIGNAL(clicked()),
+			bandDock, SLOT(show()));
 
-	connect(sliceDock, SIGNAL(topLevelChanged(bool)),
+	connect(bandDock, SIGNAL(topLevelChanged(bool)),
 			this, SLOT(reshapeDock(bool)));
 
 	connect(markerSelector, SIGNAL(currentIndexChanged(int)),
-			sliceLabel, SLOT(changeLabel(int)));
+			bandLabel, SLOT(changeLabel(int)));
 	connect(clearButton, SIGNAL(clicked()),
-			sliceLabel, SLOT(clearLabelPixels()));
+			bandLabel, SLOT(clearLabelPixels()));
+
+	connect(graphsegButton, SIGNAL(toggled(bool)),
+			graphsegGoButton, SLOT(setEnabled(bool)));
+	connect(graphsegButton, SIGNAL(toggled(bool)),
+			bandLabel, SLOT(toggleSeedMode(bool)));
+	connect(graphsegGoButton, SIGNAL(clicked()),
+			bandLabel, SLOT(startGraphseg()));
+	connect(bandLabel, SIGNAL(seedingDone(bool)),
+			graphsegButton, SLOT(setChecked(bool)));
+
 	connect(ignoreButton, SIGNAL(toggled(bool)),
 			markButton, SLOT(setDisabled(bool)));
 	connect(ignoreButton, SIGNAL(toggled(bool)),
@@ -47,10 +59,10 @@ ViewerWindow::ViewerWindow(const multi_img &image, const multi_img &gradient, QW
 			this, SLOT(addToLabel()));
 	connect(remButton, SIGNAL(clicked()),
 			this, SLOT(remFromLabel()));
-	connect(this, SIGNAL(alterLabel(const cv::Mat_<uchar>&,bool)),
-			sliceLabel, SLOT(alterLabel(const cv::Mat_<uchar>&,bool)));
-	connect(this, SIGNAL(drawOverlay(const cv::Mat_<uchar>&)),
-			sliceLabel, SLOT(drawOverlay(const cv::Mat_<uchar>&)));
+	connect(this, SIGNAL(alterLabel(const multi_img::Mask&,bool)),
+			bandLabel, SLOT(alterLabel(const multi_img::Mask&,bool)));
+	connect(this, SIGNAL(drawOverlay(const multi_img::Mask&)),
+			bandLabel, SLOT(drawOverlay(const multi_img::Mask&)));
 
 	multi_img_viewer *viewer[2] = {viewIMG, viewGRAD };
 	for (int i = 0; i < 2; ++i)
@@ -64,8 +76,8 @@ ViewerWindow::ViewerWindow(const multi_img &image, const multi_img &gradient, QW
 		connect(ignoreButton, SIGNAL(toggled(bool)),
 				viewer[i], SLOT(toggleLabels(bool)));
 
-		connect(viewer[i]->getViewport(), SIGNAL(sliceSelected(int, bool)),
-				this, SLOT(selectSlice(int, bool)));
+		connect(viewer[i]->getViewport(), SIGNAL(bandSelected(int, bool)),
+				this, SLOT(selectBand(int, bool)));
 		connect(viewer[i]->getViewport(), SIGNAL(activated(bool)),
 				this, SLOT(setActive(bool)));
 		connect(viewer[i]->getViewport(), SIGNAL(activated(bool)),
@@ -76,10 +88,10 @@ ViewerWindow::ViewerWindow(const multi_img &image, const multi_img &gradient, QW
 	}
 }
 
-const QPixmap* ViewerWindow::getSlice(int dim, bool grad)
+const QPixmap* ViewerWindow::getBand(int dim, bool grad)
 {
 	// select variables according to which set is asked for
-	std::vector<QPixmap*> &v = (grad ? gslices : islices);
+	std::vector<QPixmap*> &v = (grad ? gbands : ibands);
 	const multi_img &m = (grad ? gradient : image);
 
 	if (!v[dim]) {
@@ -90,9 +102,22 @@ const QPixmap* ViewerWindow::getSlice(int dim, bool grad)
 	return v[dim];
 }
 
-void ViewerWindow::selectSlice(int dim, bool grad)
+void ViewerWindow::selectBand(int dim, bool grad)
 {
-	sliceLabel->setPixmap(*getSlice(dim, grad));
+	bandLabel->setPixmap(*getBand(dim, grad));
+	const multi_img &m = (grad ? gradient : image);
+	std::string banddesc = m.meta[dim].str();
+	QString title;
+	if (banddesc.empty())
+		title = QString("%1 Band #%2")
+			.arg(grad ? "Gradient" : "Image")
+			.arg(dim+1);
+	else
+		title = QString("%1 Band %2")
+			.arg(grad ? "Gradient" : "Image")
+			.arg(banddesc.c_str());
+
+	bandDock->setWindowTitle(title);
 }
 
 void ViewerWindow::setActive(bool gradient)
@@ -120,13 +145,13 @@ void ViewerWindow::reshapeDock(bool floating)
 		return;
 
 	float src_aspect = image.width/(float)image.height;
-	float dest_aspect = sliceLabel->width()/(float)sliceLabel->height();
-	// we force the dock aspect ratio to fit slice image aspect ratio.
+	float dest_aspect = bandLabel->width()/(float)bandLabel->height();
+	// we force the dock aspect ratio to fit band image aspect ratio.
 	// this is not 100% correct
 	if (src_aspect > dest_aspect) {
-		sliceDock->resize(sliceDock->width(), sliceDock->width()/src_aspect);
+		bandDock->resize(bandDock->width(), bandDock->width()/src_aspect);
 	} else
-		sliceDock->resize(sliceDock->height()*src_aspect, sliceDock->height());
+		bandDock->resize(bandDock->height()*src_aspect, bandDock->height());
 }
 
 void ViewerWindow::changeEvent(QEvent *e)
@@ -143,7 +168,7 @@ void ViewerWindow::changeEvent(QEvent *e)
 
 void ViewerWindow::createMarkers()
 {
-	QVector<QColor> &col = sliceLabel->markerColors;
+	QVector<QColor> &col = bandLabel->markerColors;
 	for (int i = 1; i < col.size(); ++i) // 0 is index for unlabeled
 	{
 		markerSelector->addItem(colorIcon(col[i]), "");
