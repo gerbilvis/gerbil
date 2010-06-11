@@ -8,6 +8,7 @@
 #include <QPixmap>
 #include <QImage>
 #include <QVector>
+#include <QMenu>
 #include <cv.h>
 
 class ViewerWindow : public QMainWindow, private Ui::ViewerWindow {
@@ -26,6 +27,7 @@ public slots:
 	void remFromLabel() { labelmask(true); }
 	void setActive(bool gradient);
 	void newOverlay();
+	void startGraphseg();
 
 signals:
 	void alterLabel(const multi_img::Mask &mask, bool negative);
@@ -44,6 +46,9 @@ protected:
 	cv::Mat_<uchar> labels;
 	const multi_img &image, &gradient;
 	int activeViewer; // 0: IMG, 1: GRAD
+
+private:
+	void initGraphsegUI();
 };
 
 #endif // VIEWERWINDOW_H

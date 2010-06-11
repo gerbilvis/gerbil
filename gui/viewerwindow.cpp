@@ -1,5 +1,7 @@
 #include "viewerwindow.h"
 
+#include <graphseg_config.h>
+
 #include <QPainter>
 #include <QIcon>
 #include <iostream>
@@ -17,8 +19,7 @@ ViewerWindow::ViewerWindow(const multi_img &image, const multi_img &gradient, QW
 	bandLabel->labels = labels;
 	createMarkers();
 	selectBand(0, false);
-	bandLabel->setSources(image, gradient);
-
+	graphsegWidget->hide();
 
 	/* setup viewers, do setImage() last */
 	viewIMG->labels = viewGRAD->labels = labels;
@@ -41,14 +42,7 @@ ViewerWindow::ViewerWindow(const multi_img &image, const multi_img &gradient, QW
 	connect(clearButton, SIGNAL(clicked()),
 			bandLabel, SLOT(clearLabelPixels()));
 
-	connect(graphsegButton, SIGNAL(toggled(bool)),
-			graphsegGoButton, SLOT(setEnabled(bool)));
-	connect(graphsegButton, SIGNAL(toggled(bool)),
-			bandLabel, SLOT(toggleSeedMode(bool)));
-	connect(graphsegGoButton, SIGNAL(clicked()),
-			bandLabel, SLOT(startGraphseg()));
-	connect(bandLabel, SIGNAL(seedingDone(bool)),
-			graphsegButton, SLOT(setChecked(bool)));
+	initGraphsegUI();
 
 	connect(ignoreButton, SIGNAL(toggled(bool)),
 			markButton, SLOT(setDisabled(bool)));
@@ -88,13 +82,60 @@ ViewerWindow::ViewerWindow(const multi_img &image, const multi_img &gradient, QW
 	}
 }
 
+void ViewerWindow::initGraphsegUI()
+{
+	graphsegSourceBox->addItem("Image", 0);
+	graphsegSourceBox->addItem("Gradient", 1);
+	graphsegSourceBox->addItem("Shown Band", 2);
+	graphsegAlgoBox->addItem("Kruskal", vole::KRUSKAL);
+	graphsegAlgoBox->addItem("Prim", vole::PRIM);
+	graphsegAlgoBox->addItem("Power Watershed q=2", vole::WATERSHED2);
+	connect(graphsegButton, SIGNAL(toggled(bool)),
+			graphsegWidget, SLOT(setVisible(bool)));
+	connect(graphsegButton, SIGNAL(toggled(bool)),
+			bandLabel, SLOT(toggleSeedMode(bool)));
+	connect(graphsegGoButton, SIGNAL(clicked()),
+			this, SLOT(startGraphseg()));
+	connect(bandLabel, SIGNAL(seedingDone(bool)),
+			graphsegButton, SLOT(setChecked(bool)));
+}
+
+void ViewerWindow::startGraphseg()
+{
+	vole::GraphSegConfig conf("graphseg");
+	conf.algo = (vole::graphsegalg)
+				graphsegAlgoBox->itemData(graphsegAlgoBox->currentIndex())
+				.value<int>();
+	conf.geodesic = graphsegGeodCheck->isEnabled();
+	conf.multi_seed = false;
+	int src = graphsegSourceBox->itemData(graphsegSourceBox->currentIndex())
+								 .value<int>();
+	if (src == 0) {
+		bandLabel->startGraphseg(image, conf);
+	} else if (src == 1) {
+		bandLabel->startGraphseg(gradient, conf);
+	} else {	// currently shown band, yes I know ITS FUCKING COMPLICATED
+		multi_img_viewer *viewer; const multi_img *img;
+		if (activeViewer == 0) {
+			viewer = viewIMG;
+			img = &image;
+		} else {
+			viewer = viewGRAD;
+			img = &gradient;
+		}
+		int band = viewer->getViewport()->selection;
+		multi_img i((*img)[band], img->minval, img->maxval);
+		bandLabel->startGraphseg(i, conf);
+	}
+}
+
 const QPixmap* ViewerWindow::getBand(int dim, bool grad)
 {
 	// select variables according to which set is asked for
 	std::vector<QPixmap*> &v = (grad ? gbands : ibands);
-	const multi_img &m = (grad ? gradient : image);
 
 	if (!v[dim]) {
+		const multi_img &m = (grad ? gradient : image);
 		// create here
 		QImage img = m.export_qt(dim);
 		v[dim] = new QPixmap(QPixmap::fromImage(img));

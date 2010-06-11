@@ -1,7 +1,5 @@
 #include "bandview.h"
 
-#include <graphseg.h>
-
 #include <QPainter>
 #include <QPaintEvent>
 #include <iostream>
@@ -13,7 +11,6 @@ BandView::BandView(QWidget *parent)
 {
 	markerColors << Qt::white // 0 is index for unlabeled
 			<< Qt::green << Qt::red << Qt::cyan << Qt::magenta << Qt::blue;
-	sources[0] = sources[1] = NULL;
 }
 
 void BandView::setPixmap(const QPixmap &p)
@@ -80,7 +77,7 @@ void BandView::paintEvent(QPaintEvent *ev)
 	}
 
 	if (seedMode) {
-		pen.setColor(Qt::yellow); pen.setStyle(Qt::DotLine);
+		pen.setColor(Qt::yellow); pen.setWidthF(0.5); pen.setStyle(Qt::DotLine);
 		painter.setPen(pen);
 		painter.drawRect(0, 0, pixmap->width(), pixmap->height());
 	}
@@ -229,24 +226,20 @@ void BandView::updatePoint(const QPointF &p)
 	update(QRect(damagetl, damagebr));
 }
 
-void BandView::startGraphseg()
+void BandView::startGraphseg(const multi_img& input, const vole::GraphSegConfig &config)
 {
-	assert(sources[0]);
-	vole::GraphSegConfig config("graphseg");
-	config.algo = vole::WATERSHED2;
-	config.multi_seed = false;
-	config.geodesic = false;
 	vole::GraphSeg seg(config);
-	multi_img::Mask result = seg.execute(*sources[0], seedMap);
+	multi_img::Mask result;
+	result = seg.execute(input, seedMap);
 
-	/* use segmentation as new marking */
+	/* add segmentation to current labeling */
 	multi_img::MaskConstIt sit = result.begin();
 	multi_img::MaskIt dit = labels.begin();
 	for (; sit < result.end(); ++sit, ++dit)
 		if (*sit > 0)
 			*dit = curLabel;
-		else if (*dit == curLabel)
-			*dit = 0;
+		/*else if (*dit == curLabel)
+			*dit = 0;*/
 
 	emit seedingDone();
 }
@@ -282,10 +275,4 @@ void BandView::toggleSeedMode(bool enabled)
 		seedMap = multi_img::Mask(pixmap->height(), pixmap->width(), 127);
 	}
 	update();
-}
-
-void BandView::setSources(const multi_img &i, const multi_img &g)
-{
-	sources[0] = &i;
-	sources[1] = &g;
 }

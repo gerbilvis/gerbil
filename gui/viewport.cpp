@@ -50,7 +50,8 @@ void Viewport::paintEvent(QPaintEvent *event)
 	painter.fillRect(rect(), background);
 	painter.setWorldTransform(getModelview());
 	painter.setRenderHint(QPainter::Antialiasing);
-	int start = (showUnlabeled ? 0 : 1);
+	/* make sure that viewport shows "unlabeled" in the ignore label case */
+	int start = ((showUnlabeled || ignoreLabels == 1) ? 0 : 1);
 	int end = (showLabeled ? sets.size() : 1);
 	for (int i = start; i < end; ++i) {
 		BinSet &s = sets[i];

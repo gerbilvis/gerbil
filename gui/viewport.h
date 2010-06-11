@@ -35,7 +35,7 @@ public:
 	bool gradient;
 	std::vector<BinSet> sets;
 
-	bool showLabeled, showUnlabeled;
+	bool showLabeled, showUnlabeled, ignoreLabels;
 
 	bool active;
 	int selection, hover;

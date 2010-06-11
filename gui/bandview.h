@@ -1,8 +1,10 @@
 #ifndef BANDVIEW_H
 #define BANDVIEW_H
 
-#include <QGLWidget>
 #include <multi_img.h>
+#include <graphseg.h>
+
+#include <QGLWidget>
 
 class BandView : public QGLWidget
 {
@@ -15,7 +17,6 @@ public:
 	void mousePressEvent(QMouseEvent *ev) { cursorAction(ev, true); }
 	void leaveEvent(QEvent *ev);
 	void setPixmap(const QPixmap &pixmap);
-	void setSources(const multi_img &i, const multi_img &g);
 
 	multi_img::Mask labels;
 	QVector<QColor> markerColors;
@@ -27,7 +28,7 @@ public slots:
 	void drawOverlay(const multi_img::Mask &mask);
 
 	void toggleSeedMode(bool enabled);
-	void startGraphseg();
+	void startGraphseg(const multi_img& input, const vole::GraphSegConfig &config);
 
 signals:
 	void seedingDone(bool yeah = false);
@@ -44,6 +45,7 @@ private:
 	QTransform scaler, scalerI;
 	QPointF cursor, lastcursor;
 	const QPixmap *pixmap;
+	const multi_img::Band *band;
 	QPixmap cachedPixmap;
 	bool cacheValid;
 
@@ -53,7 +55,6 @@ private:
 	/// interpret input as segmentation seeds
 	bool seedMode;
 	multi_img::Mask seedMap;
-	const multi_img *sources[2];
 };
 
 #endif // BANDVIEW_H

@@ -134,6 +134,7 @@ void multi_img_viewer::toggleUnlabeled(bool toggle)
 void multi_img_viewer::toggleLabels(bool toggle)
 {
 	ignoreLabels = toggle;
+	viewport->ignoreLabels = toggle;
 	rebuild();
 }
 

@@ -13,7 +13,7 @@ class multi_img_viewer : public QWidget, private Ui::multi_img_viewer {
 public:
 	multi_img_viewer(QWidget *parent = 0);
 
-	const QWidget* getViewport() { return viewport; }
+	const Viewport* getViewport() { return viewport; }
 	const cv::Mat_<uchar>& createMask();
 
 	cv::Mat_<uchar> labels;
