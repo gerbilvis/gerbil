@@ -6,7 +6,7 @@ set(this_build_executable_file "gerbil_gui")
 set(this_build_executable "qgerbil")
 set(this_module_variable "Gerbil_Viewer")
 set(this_module_description "GUI for multispectral images")
-set(this_module_general_requirements "VOLE_BOOST" "VOLE_BOOST_PROGRAM_OPTIONS" "VOLE_QT" "VOLE_QT_OPENGL" "VOLE_OPENCV")
+set(this_module_general_requirements "VOLE_BOOST" "VOLE_BOOST_PROGRAM_OPTIONS" "VOLE_QT" "VOLE_QT_OPENGL" "VOLE_QGLVIEWER" "VOLE_OPENCV")
 set(this_module_precondition_requirements "seg_graphs")
 
 VoleRequiredModules("seg_graphs")
@@ -17,6 +17,7 @@ VoleCompileIfQt(
 	viewerwindow
 	viewport
 	bandview
+	view3d
 )
 
 # manual moc'ing: Add all header files here for classes that should get a moc_* prefix
@@ -26,6 +27,7 @@ VoleMocIfQt(
 	viewerwindow.h
 	viewport.h
 	bandview.h
+	view3d.h
 )
 
 VoleRccIfQt(
@@ -36,3 +38,4 @@ VoleUiIfQt(
 	multi_img_viewer.ui
 	viewerwindow.ui
 )
+
