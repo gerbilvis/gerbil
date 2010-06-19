@@ -1,4 +1,5 @@
 #include "viewerwindow.h"
+#include "view3d.h"
 #include <qapplication.h>
 
 int main(int argc, char **argv)
@@ -19,8 +20,15 @@ int main(int argc, char **argv)
 
 	// start gui
 	QApplication app(argc, argv);
+	
+	// regular viewer
 	ViewerWindow window(image, gradient);
 	window.show();
+	
+	// fancy 3d viewer
+	View3D window3d(image);
+	window3d.show();
+	
 	return app.exec();
 }
 
