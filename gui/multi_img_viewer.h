@@ -14,9 +14,9 @@ public:
 	multi_img_viewer(QWidget *parent = 0);
 
 	const Viewport* getViewport() { return viewport; }
-	const cv::Mat_<uchar>& createMask();
+	const multi_img::Mask& createMask();
 
-	cv::Mat_<uchar> labels;
+	multi_img::Mask labels;
 	const QVector<QColor> *labelcolors;
 
 public slots:
@@ -35,7 +35,7 @@ protected:
 	bool ignoreLabels;
 
 private:
-	cv::Mat_<uchar> maskholder;
+	multi_img::Mask maskholder;
 };
 
 #endif // MULTI_IMG_VIEWER_H

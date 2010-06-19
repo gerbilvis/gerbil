@@ -116,13 +116,8 @@ void ViewerWindow::startGraphseg()
 		bandLabel->startGraphseg(gradient, conf);
 	} else {	// currently shown band, yes I know ITS FUCKING COMPLICATED
 		multi_img_viewer *viewer; const multi_img *img;
-		if (activeViewer == 0) {
-			viewer = viewIMG;
-			img = &image;
-		} else {
-			viewer = viewGRAD;
-			img = &gradient;
-		}
+		if (activeViewer == 0) {	viewer = viewIMG;	img = &image;    }
+						  else {	viewer = viewGRAD;	img = &gradient; }
 		int band = viewer->getViewport()->selection;
 		multi_img i((*img)[band], img->minval, img->maxval);
 		bandLabel->startGraphseg(i, conf);

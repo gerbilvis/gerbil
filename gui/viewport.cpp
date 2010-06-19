@@ -65,8 +65,10 @@ void Viewport::paintEvent(QPaintEvent *event)
 			/* TODO: this is far from optimal yet. challenge is to give a good
 			   view where important information is not lost, yet not clutter
 			   the view with too much low-weight information */
+			/* logarithm is used to prevent single data points to get lost.
+			   this should be configurable. */
 			if (i == 0)
-				alpha = 0.01 + 0.09*(log(b.weight) / log(s.totalweight));
+				alpha = 0.01 + 0.09*(log(b.weight+1) / log(s.totalweight));
 			else
 				alpha = log(b.weight+1) / log(s.totalweight);
 			color.setAlphaF(min(alpha, 1.));
