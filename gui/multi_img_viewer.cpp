@@ -9,12 +9,16 @@ multi_img_viewer::multi_img_viewer(QWidget *parent)
 	  ignoreLabels(false)
 {
 	setupUi(this);
+	connect(alphaSlider, SIGNAL(valueChanged(int)),
+			this, SLOT(setAlpha(int)));
+	setAlpha(100);
 }
 
 void multi_img_viewer::setImage(const multi_img &img, bool gradient)
 {
 	if (!image) {
-		connect(binSlider, SIGNAL(valueChanged(int)), this, SLOT(rebuild(int)));
+		connect(binSlider, SIGNAL(valueChanged(int)),
+				this, SLOT(rebuild(int)));
 	}
 	image = &img;
 	maskholder.create(image->height, image->width);
@@ -144,4 +148,11 @@ void multi_img_viewer::changeEvent(QEvent *e)
     default:
         break;
     }
+}
+
+void multi_img_viewer::setAlpha(int alpha)
+{
+	viewport->useralpha = (float)alpha/100.f;
+	alphaLabel->setText(QString::fromUtf8("α: %1").arg(viewport->useralpha, 0, 'f', 2));
+	viewport->update();
 }

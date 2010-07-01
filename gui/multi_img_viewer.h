@@ -26,6 +26,7 @@ public slots:
 	void toggleUnlabeled(bool toggle);
 	void toggleLabels(bool toggle);
 	void setActive(bool who);
+	void setAlpha(int);
 
 protected:
     void changeEvent(QEvent *e);

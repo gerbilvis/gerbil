@@ -39,6 +39,7 @@ public:
 
 	bool active;
 	int selection, hover;
+	float useralpha;
 
 signals:
 	void bandSelected(int dim, bool gradient);

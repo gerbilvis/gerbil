@@ -48,6 +48,8 @@ ViewerWindow::ViewerWindow(const multi_img &image, const multi_img &gradient, QW
 			markButton, SLOT(setDisabled(bool)));
 	connect(ignoreButton, SIGNAL(toggled(bool)),
 			nonmarkButton, SLOT(setDisabled(bool)));
+	connect(ignoreButton, SIGNAL(toggled(bool)),
+			bandLabel, SLOT(toggleShowLabels(bool)));
 
 	connect(addButton, SIGNAL(clicked()),
 			this, SLOT(addToLabel()));

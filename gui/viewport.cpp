@@ -10,7 +10,7 @@ using namespace std;
 Viewport::Viewport(QWidget *parent)
 	: QGLWidget(QGLFormat(QGL::SampleBuffers), parent),
 	  selection(0), hover(-1), showLabeled(true), showUnlabeled(true),
-	  active(false), zoom(1.), shift(0), lasty(-1)
+	  active(false), zoom(1.), shift(0), lasty(-1), useralpha(1.f)
 {}
 
 QTransform Viewport::getModelview()
@@ -53,6 +53,7 @@ void Viewport::paintEvent(QPaintEvent *event)
 	/* make sure that viewport shows "unlabeled" in the ignore label case */
 	int start = ((showUnlabeled || ignoreLabels == 1) ? 0 : 1);
 	int end = (showLabeled ? sets.size() : 1);
+
 	for (int i = start; i < end; ++i) {
 		BinSet &s = sets[i];
 		QColor basecolor = s.label, color;
@@ -68,9 +69,9 @@ void Viewport::paintEvent(QPaintEvent *event)
 			/* logarithm is used to prevent single data points to get lost.
 			   this should be configurable. */
 			if (i == 0)
-				alpha = 0.01 + 0.09*(log(b.weight+1) / log(s.totalweight));
+				alpha = useralpha * (0.01 + 0.09*(log(b.weight+1) / log(s.totalweight)));
 			else
-				alpha = log(b.weight+1) / log(s.totalweight);
+				alpha = useralpha * (log(b.weight+1) / log(s.totalweight));
 			color.setAlphaF(min(alpha, 1.));
 
 			if ((unsigned char)it.key()[selection] == hover) {

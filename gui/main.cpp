@@ -25,10 +25,10 @@ int main(int argc, char **argv)
 	ViewerWindow window(image, gradient);
 	window.show();
 	
-	// fancy 3d viewer
+/*	// fancy 3d viewer
 	View3D window3d(image);
 	window3d.show();
-	
+*/	
 	return app.exec();
 }
 

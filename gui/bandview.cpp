@@ -7,7 +7,7 @@
 BandView::BandView(QWidget *parent)
 	: QGLWidget(QGLFormat(QGL::SampleBuffers), parent), pixmap(NULL),
 	  cursor(-1, -1), lastcursor(-1, -1), curLabel(1),
-	  cacheValid(false), overlay(0), seedMode(false)
+	  cacheValid(false), overlay(0), seedMode(false), showLabels(true)
 {
 	markerColors << Qt::white // 0 is index for unlabeled
 			<< Qt::green << Qt::red << Qt::cyan << Qt::magenta << Qt::blue;
@@ -110,19 +110,19 @@ void BandView::updateCachePixelS(QPainter &p, int x, int y)
 void BandView::updateCache()
 {
 	cachedPixmap = pixmap->copy(); // TODO: check for possible qt memory leak
-	QPixmap &p = cachedPixmap;
-	{	QPainter painter(&p);
+	QPainter painter(&cachedPixmap);
 
-		if (!seedMode) {
+	if (!seedMode) {
+		if (showLabels) {
 			// mark labeled regions
-			for (int y = 0; y < p.height(); ++y)
-				for (int x = 0; x < p.width(); ++x)
+			for (int y = 0; y < pixmap->height(); ++y)
+				for (int x = 0; x < pixmap->width(); ++x)
 					updateCachePixel(painter, x, y);
-		} else {
-			for (int y = 0; y < p.height(); ++y)
-				for (int x = 0; x < p.width(); ++x)
-					updateCachePixelS(painter, x, y);
 		}
+	} else {
+		for (int y = 0; y < pixmap->height(); ++y)
+			for (int x = 0; x < pixmap->width(); ++x)
+				updateCachePixelS(painter, x, y);
 	}
 	cacheValid = true;
 }
@@ -140,10 +140,12 @@ void BandView::updateCache(int x, int y)
 	painter.drawPixmap(x, y, *pixmap, x, y, 1, 1);
 
 	// if needed, color pixel
-	if (!seedMode)
-		updateCachePixel(painter, x, y);
-	else
+	if (!seedMode) {
+		if (showLabels)
+			updateCachePixel(painter, x, y);
+	} else {
 		updateCachePixelS(painter, x, y);
+	}
 }
 
 void BandView::alterLabel(const multi_img::Mask &mask, bool negative)
@@ -275,4 +277,13 @@ void BandView::toggleSeedMode(bool enabled)
 		seedMap = multi_img::Mask(pixmap->height(), pixmap->width(), 127);
 	}
 	update();
+}
+
+void BandView::toggleShowLabels(bool disabled)
+{
+	if (showLabels == disabled) {	// i.e. not the state we want
+		showLabels = !showLabels;
+		cacheValid = false;
+		update();
+	}
 }

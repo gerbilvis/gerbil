@@ -27,6 +27,7 @@ public slots:
 	void alterLabel(const multi_img::Mask &mask, bool negative);
 	void drawOverlay(const multi_img::Mask &mask);
 
+	void toggleShowLabels(bool disabled);
 	void toggleSeedMode(bool enabled);
 	void startGraphseg(const multi_img& input, const vole::GraphSegConfig &config);
 
@@ -51,6 +52,9 @@ private:
 
 	uchar curLabel;
 	const multi_img::Mask *overlay;
+
+	/// color view according to labels
+	bool showLabels;
 
 	/// interpret input as segmentation seeds
 	bool seedMode;
