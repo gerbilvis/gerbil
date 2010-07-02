@@ -1,5 +1,5 @@
 #include "viewerwindow.h"
-#include "view3d.h"
+//#include "view3d.h"
 #include <qapplication.h>
 
 int main(int argc, char **argv)
