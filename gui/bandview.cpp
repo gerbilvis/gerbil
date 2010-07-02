@@ -189,6 +189,9 @@ void BandView::cursorAction(QMouseEvent *ev, bool click)
 	if (!pixmap->rect().contains(x, y))
 		return;
 
+	// overlay in spectral views
+	emit pixelOverlay(x, y);
+
 	// paint
 	if (ev->buttons() & Qt::LeftButton) {
 		if (!seedMode)

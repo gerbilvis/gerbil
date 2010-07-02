@@ -13,43 +13,32 @@ Viewport::Viewport(QWidget *parent)
 	  active(false), zoom(1.), shift(0), lasty(-1), useralpha(1.f)
 {}
 
-QTransform Viewport::getModelview()
+void Viewport::updateModelview()
 {
 	/* apply zoom and translation in window coordinates */
 	qreal wwidth = width();
 	qreal wheight = height()*zoom;
 	int vshift = height()*shift;
 
-	int p = 10; // padding
+	int hp = 20, vp = 10; // horizontal and vertical padding
+	int tp = 20; // lower padding for text (legend)
 	// if gradient, we discard one unit space intentionally for centering
 	int d = dimensionality - (gradient? 0 : 1);
-	qreal w = (wwidth  - 2*p)/(qreal)(d); // width of one unit
-	qreal h = (wheight - 2*p)/(qreal)(nbins - 1); // height of one unit
+	qreal w = (wwidth  - 2*hp)/(qreal)(d); // width of one unit
+	qreal h = (wheight - 2*vp - tp)/(qreal)(nbins - 1); // height of one unit
 	int t = (gradient? w/2 : 0); // moving half a unit for centering
 
-	QTransform modelview;
-	modelview.translate(p + t, p + vshift);
+	modelview.reset();
+	modelview.translate(hp + t, vp + vshift);
 	modelview.scale(w, -1*h); // -1 low values at bottom
 	modelview.translate(0, -(nbins -1)); // shift for low values at bottom
 
-
-	// cache it
+	// set inverse
 	modelviewI = modelview.inverted();
-
-	return modelview;
 }
 
-void Viewport::paintEvent(QPaintEvent *event)
+void Viewport::paintBins(QPainter &painter)
 {
-	// return early if no data present. other variables may not be initialized
-	if (sets.empty())
-		return;
-
-	QBrush background(QColor(15, 7, 15));
-	QPainter painter(this);
-	painter.fillRect(rect(), background);
-	painter.setWorldTransform(getModelview());
-	painter.setRenderHint(QPainter::Antialiasing);
 	/* make sure that viewport shows "unlabeled" in the ignore label case */
 	int start = ((showUnlabeled || ignoreLabels == 1) ? 0 : 1);
 	int end = (showLabeled ? sets.size() : 1);
@@ -89,11 +78,71 @@ void Viewport::paintEvent(QPaintEvent *event)
 			painter.drawLines(b.connections);
 		}
 	}
-	if (active)
-		painter.setPen(Qt::red);
-	else
-		painter.setPen(Qt::gray);
-	painter.drawLine(selection, 0, selection, nbins);
+}
+
+void Viewport::paintAxes(QPainter &painter, bool fore)
+{
+	if (fore) {
+		// draw selection in foreground
+		if (active)
+			painter.setPen(Qt::red);
+		else
+			painter.setPen(Qt::gray);
+		painter.drawLine(selection, 0, selection, nbins-1);
+	} else {
+		// draw axes in background
+		painter.setPen(QColor(64, 64, 64));
+		for (int i = 0; i < dimensionality; ++i)
+			painter.drawLine(i, 0, i, nbins-1);
+	}
+}
+
+void Viewport::paintLegend(QPainter &painter)
+{
+	assert(labels.size() == dimensionality);
+
+	painter.setPen(Qt::white);
+	for (int i = 0; i < dimensionality; ++i) {
+		QPointF l = modelview.map(QPointF(i - 1.f, 0.f));
+		QPointF r = modelview.map(QPointF(i + 1.f, 0.f));
+		QRectF rect(l, r);
+		rect.setHeight(30.f);
+
+		// only draw every second label if we run out of space
+		if (i % 2 && rect.width() < 50)
+			continue;
+
+		if (i == selection)
+			painter.setPen(Qt::red);
+		painter.drawText(rect, Qt::AlignCenter, labels[i]);
+		if (i == selection)	// revert back color
+			painter.setPen(Qt::white);
+	}
+}
+
+void Viewport::paintEvent(QPaintEvent *event)
+{
+	// return early if no data present. other variables may not be initialized
+	if (sets.empty())
+		return;
+
+	QPainter painter(this);
+	QBrush background(QColor(15, 7, 15));
+	painter.fillRect(rect(), background);
+	painter.setRenderHint(QPainter::Antialiasing);
+
+	paintLegend(painter);
+
+	painter.setWorldTransform(modelview);
+
+	paintAxes(painter, false);
+	paintBins(painter);
+	paintAxes(painter, true);
+}
+
+void Viewport::resizeEvent(QResizeEvent *)
+{
+	updateModelview();
 }
 
 void Viewport::mouseMoveEvent(QMouseEvent *event)
@@ -104,9 +153,12 @@ void Viewport::mouseMoveEvent(QMouseEvent *event)
 			return;
 		}
 
-		shift += (event->y() - lasty)*0.05/(qreal)height();
-		qreal displacement = (shift + 1./zoom);
+		shift += (event->y() - lasty)/(qreal)height();
+		lasty = event->y();
 
+		/* TODO: make sure that we use full space */
+
+		updateModelview();
 		update();
 	} else {
 		QPoint pos = modelviewI.map(event->pos());
@@ -161,6 +213,9 @@ void Viewport::wheelEvent(QWheelEvent *event)
 	// adjust shift to new zoom
 	shift += ((oldzoom - zoom) * 0.5);
 
+	/* TODO: make sure that we use full space */
+
+	updateModelview();
 	update();
 	event->accept();
 }

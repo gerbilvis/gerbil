@@ -11,7 +11,7 @@ multi_img_viewer::multi_img_viewer(QWidget *parent)
 	setupUi(this);
 	connect(alphaSlider, SIGNAL(valueChanged(int)),
 			this, SLOT(setAlpha(int)));
-	setAlpha(100);
+	setAlpha(70);
 }
 
 void multi_img_viewer::setImage(const multi_img &img, bool gradient)
@@ -24,6 +24,11 @@ void multi_img_viewer::setImage(const multi_img &img, bool gradient)
 	maskholder.create(image->height, image->width);
 	viewport->gradient = gradient;
 	viewport->dimensionality = img.size();
+	viewport->labels.resize(img.size());
+	for (int i = 0; i < img.size(); ++i)
+		if (!img.meta[i].empty)
+			viewport->labels[i].setNum(img.meta[i].center);
+
 	rebuild(binSlider->value());
 }
 
@@ -35,6 +40,8 @@ void multi_img_viewer::rebuild(int bins)
 		viewport->nbins = bins;
 	}
 	createBins(viewport->nbins);
+	viewport->hover = -1;
+	viewport->updateModelview();
 	viewport->update();
 }
 

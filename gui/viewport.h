@@ -28,12 +28,13 @@ class Viewport : public QGLWidget
 	Q_OBJECT
 public:
 	Viewport(QWidget *parent = 0);
-	QTransform getModelview();
+	void updateModelview();
 
 	int nbins;
 	int dimensionality;
 	bool gradient;
 	std::vector<BinSet> sets;
+	std::vector<QString> labels;
 
 	bool showLabeled, showUnlabeled, ignoreLabels;
 
@@ -48,13 +49,20 @@ signals:
 
 protected:
 	void paintEvent(QPaintEvent*);
+	void resizeEvent(QResizeEvent*);
 	void mouseMoveEvent(QMouseEvent*);
 	void mousePressEvent(QMouseEvent*);
 	void mouseReleaseEvent(QMouseEvent*);
 	void wheelEvent(QWheelEvent *);
 
+	// helper functions called by paintEvent
+	void paintBins(QPainter&);
+	void paintAxes(QPainter&, bool fore);
+	void paintLegend(QPainter&);
+
 private:
-	QTransform modelviewI;
+	// modelview matrix and its inverse
+	QTransform modelview, modelviewI;
 	// zoom and shift in y-direction
 	qreal zoom;
 	qreal shift;
