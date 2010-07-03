@@ -28,6 +28,7 @@ public slots:
 	void setActive(bool gradient);
 	void newOverlay();
 	void startGraphseg();
+	void applyIlluminant();
 
 signals:
 	void alterLabel(const multi_img::Mask &mask, bool negative);
@@ -44,11 +45,20 @@ protected:
 	std::vector<QPixmap*> ibands, gbands;
 	// pixel label holder
 	cv::Mat_<uchar> labels;
-	const multi_img &image, &gradient;
+	// references to orignal images and images with (possibly) applied illuminant
+	const multi_img *image, *gradient, *image_illum, *gradient_illum;
+
+	// rgb pixmap
+	QPixmap rgb;
 	int activeViewer; // 0: IMG, 1: GRAD
 
 private:
 	void initGraphsegUI();
+	void initIlluminantUI();
+	void updateRGB();
+
+	// when we apply illuminant, these are the working copies.
+	multi_img image_work, gradient_work;
 };
 
 #endif // VIEWERWINDOW_H

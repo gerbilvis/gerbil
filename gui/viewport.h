@@ -38,6 +38,8 @@ public:
 
 	bool showLabeled, showUnlabeled, ignoreLabels;
 
+	std::vector<float> *illuminant;
+
 	bool active;
 	int selection, hover;
 	float useralpha;

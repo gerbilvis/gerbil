@@ -1,6 +1,7 @@
 #include "viewport.h"
 #include "qpainter.h"
 #include <iostream>
+#include <cmath>
 #include <QtCore>
 #include <QPaintEvent>
 #include <QRect>
@@ -11,7 +12,7 @@ Viewport::Viewport(QWidget *parent)
 	: QGLWidget(QGLFormat(QGL::SampleBuffers), parent),
 	  selection(0), hover(-1), showLabeled(true), showUnlabeled(true),
 	  active(false), zoom(1.), shift(0), lasty(-1), useralpha(1.f),
-	  overlayMode(false), cacheValid(false)
+	  overlayMode(false), cacheValid(false), illuminant(NULL)
 {}
 
 void Viewport::updateModelview()
@@ -59,9 +60,11 @@ void Viewport::drawBins(QPainter &painter)
 			/* logarithm is used to prevent single data points to get lost.
 			   this should be configurable. */
 			if (i == 0)
-				alpha = useralpha * (0.01 + 0.09*(log(b.weight+1) / log(s.totalweight)));
+				alpha = useralpha *
+						(0.01 + 0.09*(log(b.weight+1) / log(s.totalweight)));
 			else
-				alpha = useralpha * (log(b.weight+1) / log(s.totalweight));
+				alpha = useralpha *
+						(log(b.weight+1) / log(s.totalweight));
 			color.setAlphaF(min(alpha, 1.));
 
 			if ((unsigned char)it.key()[selection] == hover) {
@@ -84,17 +87,30 @@ void Viewport::drawBins(QPainter &painter)
 void Viewport::drawAxes(QPainter &painter, bool fore)
 {
 	if (fore) {
+		if (selection < 0 || selection >= dimensionality)
+			return;
+
 		// draw selection in foreground
 		if (active)
 			painter.setPen(Qt::red);
 		else
 			painter.setPen(Qt::gray);
-		painter.drawLine(selection, 0, selection, nbins-1);
+		qreal top = (nbins-1);
+		if (illuminant)
+			top *= illuminant->at(selection);
+		painter.drawLine(QPointF(selection, 0.), QPointF(selection, top));
 	} else {
 		// draw axes in background
 		painter.setPen(QColor(64, 64, 64));
-		for (int i = 0; i < dimensionality; ++i)
-			painter.drawLine(i, 0, i, nbins-1);
+		if (illuminant) {
+			for (int i = 0; i < dimensionality; ++i) {
+				qreal top = (nbins-1) * illuminant->at(i);
+				painter.drawLine(QPointF(i, 0.), QPointF(i, top));
+			}
+		} else {
+			for (int i = 0; i < dimensionality; ++i)
+				painter.drawLine(i, 0, i, nbins-1);
+		}
 	}
 }
 
@@ -201,8 +217,15 @@ void Viewport::mouseMoveEvent(QMouseEvent *event)
 	} else {
 		QPoint pos = modelviewI.map(event->pos());
 		int x = pos.x(), y = pos.y();
+
+		// x range check _before_ accessing illuminant
 		if (x < 0 || x >= dimensionality)
 			return;
+
+		/* correct y for illuminant */
+		if (illuminant)
+			y = std::floor(y / illuminant->at(x) + 0.5f);
+
 		if (y < 0 || y >= nbins)
 			return;
 

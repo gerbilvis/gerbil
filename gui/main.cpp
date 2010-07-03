@@ -14,7 +14,7 @@ int main(int argc, char **argv)
 
 	/* compute spectral gradient */
 	// log image data
-	multi_img log = image.clone();
+	multi_img log(image);
 	log.apply_logarithm();
 	multi_img gradient = log.spec_gradient();
 

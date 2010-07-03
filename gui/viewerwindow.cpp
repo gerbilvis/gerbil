@@ -7,7 +7,9 @@
 #include <iostream>
 
 ViewerWindow::ViewerWindow(const multi_img &image, const multi_img &gradient, QWidget *parent)
-	: QMainWindow(parent), image(image), gradient(gradient), activeViewer(0),
+	: QMainWindow(parent), activeViewer(0),
+	  image(&image), image_illum(&image),
+	  gradient(&gradient), gradient_illum(&gradient),
 	  ibands(image.size(), NULL), gbands(gradient.size(), NULL),
 	  labels(image.height, image.width, (uchar)0)
 {
@@ -15,17 +17,21 @@ ViewerWindow::ViewerWindow(const multi_img &image, const multi_img &gradient, QW
 	bandButton->hide();
 
 	/* setup labeling stuff first */
-	QVector<QColor> &labelcolors = bandLabel->markerColors;
-	bandLabel->labels = labels;
+	QVector<QColor> &labelcolors = bandView->markerColors;
+	bandView->labels = labels;
+	rgbView->labels = labels;
+
 	createMarkers();
 	selectBand(0, false);
 	graphsegWidget->hide();
 
+	updateRGB();
+
 	/* setup viewers, do setImage() last */
 	viewIMG->labels = viewGRAD->labels = labels;
 	viewIMG->labelcolors = viewGRAD->labelcolors = &labelcolors;
-	viewIMG->setImage(image);
-	viewGRAD->setImage(gradient, true);
+	viewIMG->setImage(&image);
+	viewGRAD->setImage(&gradient, true);
 	viewIMG->setActive(false);
 
 	/* signals & slots */
@@ -38,27 +44,28 @@ ViewerWindow::ViewerWindow(const multi_img &image, const multi_img &gradient, QW
 			this, SLOT(reshapeDock(bool)));
 
 	connect(markerSelector, SIGNAL(currentIndexChanged(int)),
-			bandLabel, SLOT(changeLabel(int)));
+			bandView, SLOT(changeLabel(int)));
 	connect(clearButton, SIGNAL(clicked()),
-			bandLabel, SLOT(clearLabelPixels()));
+			bandView, SLOT(clearLabelPixels()));
 
 	initGraphsegUI();
+	initIlluminantUI();
 
 	connect(ignoreButton, SIGNAL(toggled(bool)),
 			markButton, SLOT(setDisabled(bool)));
 	connect(ignoreButton, SIGNAL(toggled(bool)),
 			nonmarkButton, SLOT(setDisabled(bool)));
 	connect(ignoreButton, SIGNAL(toggled(bool)),
-			bandLabel, SLOT(toggleShowLabels(bool)));
+			bandView, SLOT(toggleShowLabels(bool)));
 
 	connect(addButton, SIGNAL(clicked()),
 			this, SLOT(addToLabel()));
 	connect(remButton, SIGNAL(clicked()),
 			this, SLOT(remFromLabel()));
 	connect(this, SIGNAL(alterLabel(const multi_img::Mask&,bool)),
-			bandLabel, SLOT(alterLabel(const multi_img::Mask&,bool)));
+			bandView, SLOT(alterLabel(const multi_img::Mask&,bool)));
 	connect(this, SIGNAL(drawOverlay(const multi_img::Mask&)),
-			bandLabel, SLOT(drawOverlay(const multi_img::Mask&)));
+			bandView, SLOT(drawOverlay(const multi_img::Mask&)));
 
 	for (int i = 0; i < 2; ++i)
 	{
@@ -72,7 +79,7 @@ ViewerWindow::ViewerWindow(const multi_img &image, const multi_img &gradient, QW
 		connect(ignoreButton, SIGNAL(toggled(bool)),
 				v, SLOT(toggleLabels(bool)));
 
-		connect(bandLabel, SIGNAL(pixelOverlay(int,int)),
+		connect(bandView, SIGNAL(pixelOverlay(int,int)),
 				v, SLOT(overlay(int,int)));
 
 		const Viewport *vp = v->getViewport();
@@ -92,9 +99,126 @@ ViewerWindow::ViewerWindow(const multi_img &image, const multi_img &gradient, QW
 		connect(vp, SIGNAL(remSelection()),
 				this, SLOT(remFromLabel()));
 
-		connect(bandLabel, SIGNAL(killHover()),
+		connect(bandView, SIGNAL(killHover()),
 				vp, SLOT(killHover()));
 	}
+}
+
+const QPixmap* ViewerWindow::getBand(int dim, bool grad)
+{
+	// select variables according to which set is asked for
+	std::vector<QPixmap*> &v = (grad ? gbands : ibands);
+
+	if (!v[dim]) {
+		const multi_img *m = (grad ? gradient_illum : image_illum);
+		// create here
+		QImage img = m->export_qt(dim);
+		v[dim] = new QPixmap(QPixmap::fromImage(img));
+	}
+	return v[dim];
+}
+
+void ViewerWindow::selectBand(int dim, bool grad)
+{
+	bandView->setPixmap(*getBand(dim, grad));
+	const multi_img *m = (grad ? gradient : image);
+	std::string banddesc = m->meta[dim].str();
+	QString title;
+	if (banddesc.empty())
+		title = QString("%1 Band #%2")
+			.arg(grad ? "Gradient" : "Image")
+			.arg(dim+1);
+	else
+		title = QString("%1 Band %2")
+			.arg(grad ? "Gradient" : "Image")
+			.arg(banddesc.c_str());
+
+	bandDock->setWindowTitle(title);
+}
+
+void ViewerWindow::applyIlluminant() {
+	/* start with a copy of original image */
+	image_work = *image;
+
+	/* apply illuminant here */
+	int i1 = i1Box->itemData(i1Box->currentIndex()).value<int>();
+	int i2 = i2Box->itemData(i2Box->currentIndex()).value<int>();
+	if (i1 == i2)
+		return;
+
+	if (i1 != 0) {	// remove old illuminant
+		multi_img::Illuminant il(i1);
+		std::cout << "i1: " << i1 << std::endl;
+		std::vector<multi_img::Value> coeff = image_work.getIllumCoeff(il);
+		for (int i = 0; i < coeff.size(); ++i)
+			std::cout << i << " (" << image_work.meta[i].center << " nm): "
+					<< coeff[i] << std::endl;
+		image_work.apply_illuminant(il, true);
+	}
+	if (i2 != 0) {	// remove old illuminant
+		multi_img::Illuminant il(i2);
+		std::cout << "i2: " << i2 << std::endl;
+		std::vector<multi_img::Value> coeff = image_work.getIllumCoeff(il);
+		for (int i = 0; i < coeff.size(); ++i)
+			std::cout << i << " (" << image_work.meta[i].center << " nm): "
+					<< coeff[i] << std::endl;
+		image_work.apply_illuminant(il);
+	}
+
+	/* rebuild spectral gradient */
+	multi_img log(image_work);
+	log.apply_logarithm();
+	gradient_work = log.spec_gradient();
+
+	/* set references accordingly */
+	image_illum = &image_work;
+	gradient_illum = &gradient_work;
+
+	/* update caches */
+	ibands.clear(); ibands.resize(image->size(), NULL);
+	gbands.clear(); gbands.resize(image->size(), NULL);
+	updateRGB();
+	int band = (activeViewer == 0 ? viewIMG->getViewport()->selection
+								  : viewGRAD->getViewport()->selection);
+	selectBand(band, activeViewer == 1);
+
+	/* only gradient view shows new image.
+	   image view has its own way of handling illumination */
+	viewGRAD->setImage(gradient_illum, true);
+
+	/* reflect change in our own gui */
+	i1Box->setCurrentIndex(i2Box->currentIndex());
+}
+
+void ViewerWindow::updateRGB()
+{
+	cv::Mat3f rgbmat = image_illum->rgb();
+	QImage img(rgbmat.cols, rgbmat.rows, QImage::Format_ARGB32);
+	for (int y = 0; y < rgbmat.rows; ++y) {
+		cv::Vec3f *row = rgbmat[y];
+		for (int x = 0; x < rgbmat.cols; ++x) {
+			cv::Vec3f &c = row[x];
+			img.setPixel(x, y, qRgb(c[2]*255., c[1]*255., c[0]*255.));
+		}
+	}
+	rgb = QPixmap::fromImage(img);
+	rgbView->setPixmap(rgb);
+}
+
+void ViewerWindow::initIlluminantUI()
+{
+	for (int i = 0; i < 2; ++i) {
+		QComboBox *b = (i ? i2Box : i1Box);
+		b->addItem("Neutral", 0);
+		b->addItem("2,856 K (Illuminant A, light bulb)",	2856);
+		b->addItem("3,100 K (Tungsten halogen lamp)",		3100);
+		b->addItem("5,000 K (Horizon light)",				5000);
+		b->addItem("5,500 K (Mid-morning daylight)",		5500);
+		b->addItem("6,500 K (Noon daylight)",				6500);
+		b->addItem("7,500 K (North sky daylight)",			7500);
+	}
+	connect(i2Button, SIGNAL(clicked()),
+			this, SLOT(applyIlluminant()));
 }
 
 void ViewerWindow::initGraphsegUI()
@@ -108,10 +232,10 @@ void ViewerWindow::initGraphsegUI()
 	connect(graphsegButton, SIGNAL(toggled(bool)),
 			graphsegWidget, SLOT(setVisible(bool)));
 	connect(graphsegButton, SIGNAL(toggled(bool)),
-			bandLabel, SLOT(toggleSeedMode(bool)));
+			bandView, SLOT(toggleSeedMode(bool)));
 	connect(graphsegGoButton, SIGNAL(clicked()),
 			this, SLOT(startGraphseg()));
-	connect(bandLabel, SIGNAL(seedingDone(bool)),
+	connect(bandView, SIGNAL(seedingDone(bool)),
 			graphsegButton, SLOT(setChecked(bool)));
 }
 
@@ -126,49 +250,17 @@ void ViewerWindow::startGraphseg()
 	int src = graphsegSourceBox->itemData(graphsegSourceBox->currentIndex())
 								 .value<int>();
 	if (src == 0) {
-		bandLabel->startGraphseg(image, conf);
+		bandView->startGraphseg(*image_illum, conf);
 	} else if (src == 1) {
-		bandLabel->startGraphseg(gradient, conf);
+		bandView->startGraphseg(*gradient_illum, conf);
 	} else {	// currently shown band, yes I know ITS FUCKING COMPLICATED
 		multi_img_viewer *viewer; const multi_img *img;
-		if (activeViewer == 0) {	viewer = viewIMG;	img = &image;    }
-						  else {	viewer = viewGRAD;	img = &gradient; }
+		if (activeViewer == 0) {	viewer = viewIMG;	img = image_illum;    }
+						  else {	viewer = viewGRAD;	img = gradient_illum; }
 		int band = viewer->getViewport()->selection;
 		multi_img i((*img)[band], img->minval, img->maxval);
-		bandLabel->startGraphseg(i, conf);
+		bandView->startGraphseg(i, conf);
 	}
-}
-
-const QPixmap* ViewerWindow::getBand(int dim, bool grad)
-{
-	// select variables according to which set is asked for
-	std::vector<QPixmap*> &v = (grad ? gbands : ibands);
-
-	if (!v[dim]) {
-		const multi_img &m = (grad ? gradient : image);
-		// create here
-		QImage img = m.export_qt(dim);
-		v[dim] = new QPixmap(QPixmap::fromImage(img));
-	}
-	return v[dim];
-}
-
-void ViewerWindow::selectBand(int dim, bool grad)
-{
-	bandLabel->setPixmap(*getBand(dim, grad));
-	const multi_img &m = (grad ? gradient : image);
-	std::string banddesc = m.meta[dim].str();
-	QString title;
-	if (banddesc.empty())
-		title = QString("%1 Band #%2")
-			.arg(grad ? "Gradient" : "Image")
-			.arg(dim+1);
-	else
-		title = QString("%1 Band %2")
-			.arg(grad ? "Gradient" : "Image")
-			.arg(banddesc.c_str());
-
-	bandDock->setWindowTitle(title);
 }
 
 void ViewerWindow::setActive(bool gradient)
@@ -195,8 +287,8 @@ void ViewerWindow::reshapeDock(bool floating)
 	if (!floating)
 		return;
 
-	float src_aspect = image.width/(float)image.height;
-	float dest_aspect = bandLabel->width()/(float)bandLabel->height();
+	float src_aspect = image->width/(float)image->height;
+	float dest_aspect = bandView->width()/(float)bandView->height();
 	// we force the dock aspect ratio to fit band image aspect ratio.
 	// this is not 100% correct
 	if (src_aspect > dest_aspect) {
@@ -219,7 +311,7 @@ void ViewerWindow::changeEvent(QEvent *e)
 
 void ViewerWindow::createMarkers()
 {
-	QVector<QColor> &col = bandLabel->markerColors;
+	QVector<QColor> &col = bandView->markerColors;
 	for (int i = 1; i < col.size(); ++i) // 0 is index for unlabeled
 	{
 		markerSelector->addItem(colorIcon(col[i]), "");

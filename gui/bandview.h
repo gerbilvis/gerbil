@@ -48,7 +48,6 @@ private:
 	QTransform scaler, scalerI;
 	QPointF cursor, lastcursor;
 	const QPixmap *pixmap;
-	const multi_img::Band *band;
 	QPixmap cachedPixmap;
 	bool cacheValid;
 

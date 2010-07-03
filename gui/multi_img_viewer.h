@@ -21,7 +21,7 @@ public:
 
 public slots:
 	void rebuild(int bins = 0);
-	void setImage(const multi_img &image, bool gradient = false);
+	void setImage(const multi_img *image, bool gradient = false);
 	void toggleLabeled(bool toggle);
 	void toggleUnlabeled(bool toggle);
 	void toggleLabels(bool toggle);
@@ -35,6 +35,8 @@ protected:
 
 	const multi_img *image;
 	bool ignoreLabels;
+
+	std::vector<float> illuminant;
 
 private:
 	multi_img::Mask maskholder;

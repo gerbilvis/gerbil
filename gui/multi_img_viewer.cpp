@@ -14,20 +14,34 @@ multi_img_viewer::multi_img_viewer(QWidget *parent)
 	setAlpha(70);
 }
 
-void multi_img_viewer::setImage(const multi_img &img, bool gradient)
+void multi_img_viewer::setImage(const multi_img *img, bool gradient)
 {
 	if (!image) {
 		connect(binSlider, SIGNAL(valueChanged(int)),
 				this, SLOT(rebuild(int)));
 	}
-	image = &img;
-	maskholder.create(image->height, image->width);
+	image = img;
+	if (maskholder.rows != image->height || maskholder.cols != image->width)
+		maskholder.create(image->height, image->width);
 	viewport->gradient = gradient;
-	viewport->dimensionality = img.size();
-	viewport->labels.resize(img.size());
-	for (int i = 0; i < img.size(); ++i)
-		if (!img.meta[i].empty)
-			viewport->labels[i].setNum(img.meta[i].center);
+	viewport->dimensionality = image->size();
+
+	/* intialize meta data */
+	viewport->labels.resize(image->size());
+	for (int i = 0; i < image->size(); ++i) {
+		if (!image->meta[i].empty)
+			viewport->labels[i].setNum(image->meta[i].center);
+	}
+
+	if (!gradient) {
+		/* initialize illuminant */
+		illuminant.resize(image->size());
+		for (int i = 0; i < image->size(); ++i) {
+			illuminant[i] = (31.f-i)/31.f;
+		}
+		// propagate only here such that viewport sees NULL before
+		viewport->illuminant = &illuminant;
+	}
 
 	rebuild(binSlider->value());
 }
@@ -70,7 +84,7 @@ void multi_img_viewer::createBins(int nbins)
 
 			// create hash key and line array at once
 			QByteArray hashkey;
-			int lastpos = 0;
+			qreal lastpos = 0;
 			QVector<QLineF> lines;
 			for (int d = 0; d < dim; ++d) {
 				int curpos = floor((pixel[d] - minval) / binsize);
@@ -78,9 +92,12 @@ void multi_img_viewer::createBins(int nbins)
 				   so they could be violated */
 				curpos = max(curpos, 0); curpos = min(curpos, nbins-1);
 				hashkey[d] = (unsigned char)curpos;
+				qreal curpos_illum = curpos;
+				if (!illuminant.empty())
+					curpos_illum *= illuminant[d];
 				if (d > 0)
-					lines.push_back(QLineF(d-1, lastpos, d, curpos));
-				lastpos = curpos;
+					lines.push_back(QLineF(d-1, lastpos, d, curpos_illum));
+				lastpos = curpos_illum;
 			}
 
 			// put into our set
