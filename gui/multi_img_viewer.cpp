@@ -84,7 +84,7 @@ void multi_img_viewer::createBins(int nbins)
 
 			// create hash key and line array at once
 			QByteArray hashkey;
-			qreal lastpos = 0;
+			qreal lastpos = 0.;
 			QVector<QLineF> lines;
 			for (int d = 0; d < dim; ++d) {
 				int curpos = floor((pixel[d] - minval) / binsize);
@@ -145,9 +145,11 @@ void multi_img_viewer::overlay(int x, int y)
 	lines.clear();
 
 	double binsize = (image->maxval - image->minval)/(double)viewport->nbins;
-	int lastpos = 0;
+	qreal lastpos = 0.;
 	for (int d = 0; d < image->size(); ++d) {
-		int curpos = floor((pixel[d] - image->minval) / binsize);
+		qreal curpos = floor((pixel[d] - image->minval) / binsize);
+		if (!illuminant.empty())
+			curpos *= illuminant[d];
 		if (d > 0)
 			lines.push_back(QLineF(d-1, lastpos, d, curpos));
 		lastpos = curpos;
