@@ -42,10 +42,18 @@ public:
 	int selection, hover;
 	float useralpha;
 
+	bool overlayMode;
+	QVector<QLineF> overlayLines;
+
+public slots:
+	void killHover();
+
 signals:
 	void bandSelected(int dim, bool gradient);
 	void newOverlay();
 	void activated(bool who);
+	void addSelection();
+	void remSelection();
 
 protected:
 	void paintEvent(QPaintEvent*);
@@ -54,11 +62,14 @@ protected:
 	void mousePressEvent(QMouseEvent*);
 	void mouseReleaseEvent(QMouseEvent*);
 	void wheelEvent(QWheelEvent *);
+	void keyPressEvent(QKeyEvent *);
 
 	// helper functions called by paintEvent
-	void paintBins(QPainter&);
-	void paintAxes(QPainter&, bool fore);
-	void paintLegend(QPainter&);
+	void drawBins(QPainter&);
+	void drawAxes(QPainter&, bool fore);
+	void drawLegend(QPainter&);
+	void drawRegular();
+	void drawOverlay();
 
 private:
 	// modelview matrix and its inverse
@@ -67,6 +78,10 @@ private:
 	qreal zoom;
 	qreal shift;
 	int lasty;
+
+	// cache for efficient overlay
+	bool cacheValid;
+	QImage cacheImg;
 };
 
 #endif // VIEWPORT_H

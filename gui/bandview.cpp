@@ -190,6 +190,8 @@ void BandView::cursorAction(QMouseEvent *ev, bool click)
 		return;
 
 	// overlay in spectral views
+	if (grandupdate)
+		emit killHover();
 	emit pixelOverlay(x, y);
 
 	// paint

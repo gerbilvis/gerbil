@@ -60,27 +60,40 @@ ViewerWindow::ViewerWindow(const multi_img &image, const multi_img &gradient, QW
 	connect(this, SIGNAL(drawOverlay(const multi_img::Mask&)),
 			bandLabel, SLOT(drawOverlay(const multi_img::Mask&)));
 
-	multi_img_viewer *viewer[2] = {viewIMG, viewGRAD };
 	for (int i = 0; i < 2; ++i)
 	{
+		multi_img_viewer *v = (i == 1 ? viewGRAD : viewIMG);
 		connect(applyButton, SIGNAL(clicked()),
-				viewer[i], SLOT(rebuild()));
+				v, SLOT(rebuild()));
 		connect(markButton, SIGNAL(toggled(bool)),
-				viewer[i], SLOT(toggleLabeled(bool)));
+				v, SLOT(toggleLabeled(bool)));
 		connect(nonmarkButton, SIGNAL(toggled(bool)),
-				viewer[i], SLOT(toggleUnlabeled(bool)));
+				v, SLOT(toggleUnlabeled(bool)));
 		connect(ignoreButton, SIGNAL(toggled(bool)),
-				viewer[i], SLOT(toggleLabels(bool)));
+				v, SLOT(toggleLabels(bool)));
 
-		connect(viewer[i]->getViewport(), SIGNAL(bandSelected(int, bool)),
+		connect(bandLabel, SIGNAL(pixelOverlay(int,int)),
+				v, SLOT(overlay(int,int)));
+
+		const Viewport *vp = v->getViewport();
+
+		connect(vp, SIGNAL(bandSelected(int, bool)),
 				this, SLOT(selectBand(int, bool)));
-		connect(viewer[i]->getViewport(), SIGNAL(activated(bool)),
+		connect(vp, SIGNAL(activated(bool)),
 				this, SLOT(setActive(bool)));
-		connect(viewer[i]->getViewport(), SIGNAL(activated(bool)),
-				viewer[(i ? 0 : 1)], SLOT(setActive(bool)));
+		connect(vp, SIGNAL(activated(bool)),
+				(i ? viewIMG : viewGRAD), SLOT(setActive(bool)));
 
-		connect(viewer[i]->getViewport(), SIGNAL(newOverlay()),
+		connect(vp, SIGNAL(newOverlay()),
 				this, SLOT(newOverlay()));
+
+		connect(vp, SIGNAL(addSelection()),
+				this, SLOT(addToLabel()));
+		connect(vp, SIGNAL(remSelection()),
+				this, SLOT(remFromLabel()));
+
+		connect(bandLabel, SIGNAL(killHover()),
+				vp, SLOT(killHover()));
 	}
 }
 

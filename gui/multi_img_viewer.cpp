@@ -35,12 +35,12 @@ void multi_img_viewer::setImage(const multi_img &img, bool gradient)
 void multi_img_viewer::rebuild(int bins)
 {
 	assert(image);
-	if (bins > 0) {
+	if (bins > 0) { // number of bins changed
 		binLabel->setText(QString("%1 bins").arg(bins));
 		viewport->nbins = bins;
+		viewport->hover = -1;
 	}
 	createBins(viewport->nbins);
-	viewport->hover = -1;
 	viewport->updateModelview();
 	viewport->update();
 }
@@ -74,7 +74,8 @@ void multi_img_viewer::createBins(int nbins)
 			QVector<QLineF> lines;
 			for (int d = 0; d < dim; ++d) {
 				int curpos = floor((pixel[d] - minval) / binsize);
-				// multi_img::minval/maxval are only theoretical bounds
+				/* multi_img::minval/maxval are only theoretical bounds,
+				   so they could be violated */
 				curpos = max(curpos, 0); curpos = min(curpos, nbins-1);
 				hashkey[d] = (unsigned char)curpos;
 				if (d > 0)
@@ -118,6 +119,26 @@ const multi_img::Mask& multi_img_viewer::createMask()
 			*itm = 1;
 	}
 	return maskholder;
+}
+
+void multi_img_viewer::overlay(int x, int y)
+{
+	const multi_img::Pixel &pixel = (*image)(y, x);
+	QVector<QLineF> &lines = viewport->overlayLines;
+	lines.clear();
+
+	double binsize = (image->maxval - image->minval)/(double)viewport->nbins;
+	int lastpos = 0;
+	for (int d = 0; d < image->size(); ++d) {
+		int curpos = floor((pixel[d] - image->minval) / binsize);
+		if (d > 0)
+			lines.push_back(QLineF(d-1, lastpos, d, curpos));
+		lastpos = curpos;
+	}
+
+	viewport->overlayMode = true;
+	viewport->repaint();
+	viewport->overlayMode = false;
 }
 
 void multi_img_viewer::setActive(bool who)

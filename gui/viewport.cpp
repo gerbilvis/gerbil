@@ -10,7 +10,8 @@ using namespace std;
 Viewport::Viewport(QWidget *parent)
 	: QGLWidget(QGLFormat(QGL::SampleBuffers), parent),
 	  selection(0), hover(-1), showLabeled(true), showUnlabeled(true),
-	  active(false), zoom(1.), shift(0), lasty(-1), useralpha(1.f)
+	  active(false), zoom(1.), shift(0), lasty(-1), useralpha(1.f),
+	  overlayMode(false), cacheValid(false)
 {}
 
 void Viewport::updateModelview()
@@ -37,7 +38,7 @@ void Viewport::updateModelview()
 	modelviewI = modelview.inverted();
 }
 
-void Viewport::paintBins(QPainter &painter)
+void Viewport::drawBins(QPainter &painter)
 {
 	/* make sure that viewport shows "unlabeled" in the ignore label case */
 	int start = ((showUnlabeled || ignoreLabels == 1) ? 0 : 1);
@@ -80,7 +81,7 @@ void Viewport::paintBins(QPainter &painter)
 	}
 }
 
-void Viewport::paintAxes(QPainter &painter, bool fore)
+void Viewport::drawAxes(QPainter &painter, bool fore)
 {
 	if (fore) {
 		// draw selection in foreground
@@ -97,7 +98,7 @@ void Viewport::paintAxes(QPainter &painter, bool fore)
 	}
 }
 
-void Viewport::paintLegend(QPainter &painter)
+void Viewport::drawLegend(QPainter &painter)
 {
 	assert(labels.size() == dimensionality);
 
@@ -120,24 +121,61 @@ void Viewport::paintLegend(QPainter &painter)
 	}
 }
 
+void Viewport::drawRegular()
+{
+	QPainter painter(this);
+	QBrush background(QColor(15, 7, 15));
+	painter.fillRect(rect(), background);
+	painter.setRenderHint(QPainter::Antialiasing);
+
+	drawLegend(painter);
+
+	painter.setWorldTransform(modelview);
+
+	drawAxes(painter, false);
+	drawBins(painter);
+	drawAxes(painter, true);
+}
+
+void Viewport::drawOverlay()
+{
+	QPainter painter(this);
+	painter.drawImage(0, 0, cacheImg);
+	painter.setRenderHint(QPainter::Antialiasing);
+
+	QPen pen(Qt::black);
+	pen.setWidth(5);
+	painter.setPen(pen);
+	for (int i = 0; i < overlayLines.size(); ++i) {
+		painter.drawLine(modelview.map(overlayLines[i]));
+	}
+	QPen pen2(Qt::yellow);
+	pen2.setWidth(2);
+	painter.setPen(pen2);
+	for (int i = 0; i < overlayLines.size(); ++i) {
+		painter.drawLine(modelview.map(overlayLines[i]));
+	}
+}
+
 void Viewport::paintEvent(QPaintEvent *event)
 {
 	// return early if no data present. other variables may not be initialized
 	if (sets.empty())
 		return;
 
-	QPainter painter(this);
-	QBrush background(QColor(15, 7, 15));
-	painter.fillRect(rect(), background);
-	painter.setRenderHint(QPainter::Antialiasing);
+	if (!overlayMode) {
+		drawRegular();
+		cacheValid = false;
+		return;
+	}
 
-	paintLegend(painter);
+	// we draw an overlay. check cache first
+	if (!cacheValid) {
+		cacheImg = this->grabFrameBuffer();
+		cacheValid = true;
+	}
 
-	painter.setWorldTransform(modelview);
-
-	paintAxes(painter, false);
-	paintBins(painter);
-	paintAxes(painter, true);
+	drawOverlay();
 }
 
 void Viewport::resizeEvent(QResizeEvent *)
@@ -218,4 +256,47 @@ void Viewport::wheelEvent(QWheelEvent *event)
 	updateModelview();
 	update();
 	event->accept();
+}
+
+void Viewport::keyPressEvent(QKeyEvent *event)
+{
+	bool dirty = false;
+
+	switch (event->key()) {
+	case Qt::Key_Plus:
+		emit addSelection();
+		break;
+	case Qt::Key_Minus:
+		emit remSelection();
+		break;
+
+	case Qt::Key_Up:
+		if (hover < nbins-1)
+			hover++;
+		dirty = true; break;
+	case Qt::Key_Down:
+		if (hover > 0)
+			hover--;
+		dirty = true; break;
+	case Qt::Key_Left:
+		if (selection > 0)
+			selection--;
+		dirty = true; break;
+	case Qt::Key_Right:
+		if (selection < dimensionality-1)
+			selection++;
+		dirty = true; break;
+	}
+
+	if (dirty) {
+		update();
+		emit newOverlay();
+	}
+}
+
+void Viewport::killHover()
+{
+	hover = -1;
+	// make sure the drawing happens before next overlay cache update
+	repaint();
 }

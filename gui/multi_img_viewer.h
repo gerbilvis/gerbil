@@ -27,6 +27,7 @@ public slots:
 	void toggleLabels(bool toggle);
 	void setActive(bool who);
 	void setAlpha(int);
+	void overlay(int x, int y);
 
 protected:
     void changeEvent(QEvent *e);

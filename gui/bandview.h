@@ -34,6 +34,7 @@ public slots:
 signals:
 	void seedingDone(bool yeah = false);
 	void pixelOverlay(int x, int y);
+	void killHover();
 
 private:
 	void cursorAction(QMouseEvent *ev, bool click = false);
