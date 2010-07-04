@@ -39,7 +39,7 @@ void multi_img_viewer::setImage(const multi_img *img, bool gradient)
 void multi_img_viewer::setIlluminant(const std::vector<multi_img::Value> &coeffs)
 {
 	illuminant = coeffs;
-	viewport->illuminant = &illuminant;
+	viewport->illuminant = (illuminant.empty() ? NULL : &illuminant);
 	rebuild();
 }
 

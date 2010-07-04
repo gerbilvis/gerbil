@@ -164,18 +164,12 @@ void ViewerWindow::applyIlluminant() {
 		return;
 
 	if (i1 != 0) {	// remove old illuminant
-		multi_img::Illuminant il(i1);
-		il.calcWeight(image_work.meta[0].center,
-					  image_work.meta[image_work.size()-1].center);
+		const multi_img::Illuminant &il = getIlluminant(i1);
 		image_work.apply_illuminant(il, true);
 	}
 	if (i2 != 0) {	// add new illuminant
-		multi_img::Illuminant il(i2);
-		il.calcWeight(image_work.meta[0].center,
-					  image_work.meta[image_work.size()-1].center);
+		const multi_img::Illuminant &il = getIlluminant(i2);
 		image_work.apply_illuminant(il);
-		// propagate new illuminant
-		viewIMG->setIlluminant(image_work.getIllumCoeff(il));
 	}
 
 	/* rebuild spectral gradient */
@@ -199,7 +193,7 @@ void ViewerWindow::applyIlluminant() {
 	   image view has its own way of handling illumination */
 	viewGRAD->setImage(gradient_illum, true);
 
-	/* reflect change in our own gui */
+	/* reflect change in our own gui (will propagate to viewIMG) */
 	i1Box->setCurrentIndex(i2Box->currentIndex());
 }
 
@@ -243,6 +237,8 @@ void ViewerWindow::initIlluminantUI()
 	}
 	connect(i2Button, SIGNAL(clicked()),
 			this, SLOT(applyIlluminant()));
+	connect(i1Box, SIGNAL(currentIndexChanged(int)),
+			this, SLOT(setI1(int)));
 }
 
 void ViewerWindow::initGraphsegUI()
@@ -347,4 +343,41 @@ QIcon ViewerWindow::colorIcon(const QColor &color)
 	QPixmap pm(32, 32);
 	pm.fill(color);
 	return QIcon(pm);
+}
+
+void ViewerWindow::buildIlluminant(int temp)
+{
+	multi_img::Illuminant il(temp);
+	std::vector<multi_img::Value> cf;
+	if (temp > 0) {
+		il.calcWeight(image->meta[0].center,
+					  image->meta[image->size()-1].center);
+		cf = image->getIllumCoeff(il);
+	} // when 0, empty vector is returned, which is just fine!
+	illuminants[temp] = make_pair(il, cf);
+}
+
+const multi_img::Illuminant & ViewerWindow::getIlluminant(int temp)
+{
+	Illum_map::iterator i = illuminants.find(temp);
+	if (i != illuminants.end())
+		return i->second.first;
+
+	buildIlluminant(temp);
+	return illuminants[temp].first;
+}
+
+const std::vector<multi_img::Value> & ViewerWindow::getIlluminantC(int temp)
+{
+	Illum_map::iterator i = illuminants.find(temp);
+	if (i != illuminants.end())
+		return i->second.second;
+
+	buildIlluminant(temp);
+	return illuminants[temp].second;
+}
+
+void ViewerWindow::setI1(int index) {
+	int i1 = i1Box->itemData(index).value<int>();
+	viewIMG->setIlluminant(getIlluminantC(i1));
 }
