@@ -34,13 +34,14 @@ void multi_img_viewer::setImage(const multi_img *img, bool gradient)
 	}
 
 	if (!gradient) {
-		/* initialize illuminant */
+		/* initialize illuminant TESTING CODE
 		illuminant.resize(image->size());
 		for (int i = 0; i < image->size(); ++i) {
 			illuminant[i] = (31.f-i)/31.f;
 		}
 		// propagate only here such that viewport sees NULL before
 		viewport->illuminant = &illuminant;
+		*/
 	}
 
 	rebuild(binSlider->value());

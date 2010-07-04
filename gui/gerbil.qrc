@@ -7,6 +7,7 @@
         <file alias="remove">resources/remove.png</file>
         <file alias="cut">resources/edit-cut.png</file>
         <file alias="run">resources/run.png</file>
+        <file alias="limiter">resources/limiter.png</file>
     </qresource>
     <qresource prefix="/">
         <file alias="mainicon">resources/mainicon.svg</file>
