@@ -102,14 +102,33 @@ void Viewport::drawAxes(QPainter &painter, bool fore)
 	} else {
 		// draw axes in background
 		painter.setPen(QColor(64, 64, 64));
+		QPolygonF poly;
 		if (illuminant) {
 			for (int i = 0; i < dimensionality; ++i) {
 				qreal top = (nbins-1) * illuminant->at(i);
 				painter.drawLine(QPointF(i, 0.), QPointF(i, top));
+				poly << QPointF(i, top);
 			}
+			poly << QPointF(dimensionality-1, nbins-1);
+			poly << QPointF(0, nbins-1);
 		} else {
 			for (int i = 0; i < dimensionality; ++i)
 				painter.drawLine(i, 0, i, nbins-1);
+		}
+
+		// visualize illuminant
+		if (illuminant) {
+			QPolygonF poly2 = modelview.map(poly);
+			poly2.translate(0., -5.);
+			painter.restore();
+			QBrush brush(QColor(32, 32, 32), Qt::Dense3Pattern);
+			painter.setBrush(brush);
+			painter.setPen(Qt::NoPen);
+			painter.drawPolygon(poly2);
+			painter.setPen(Qt::white);
+			poly2.remove(dimensionality, 2);
+			painter.drawPolyline(poly2);
+			painter.setWorldTransform(modelview);
 		}
 	}
 }
@@ -146,6 +165,7 @@ void Viewport::drawRegular()
 
 	drawLegend(painter);
 
+	painter.save();
 	painter.setWorldTransform(modelview);
 
 	drawAxes(painter, false);
