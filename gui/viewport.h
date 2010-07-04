@@ -1,12 +1,12 @@
 #ifndef VIEWPORT_H
 #define VIEWPORT_H
 
+#include <multi_img.h>
+#include <cv.h>
 #include <QGLWidget>
 #include <vector>
-#include <iostream>
 #include <QHash>
 #include <QLabel>
-#include <cv.h>
 
 struct Bin {
 	Bin() {}
@@ -38,7 +38,7 @@ public:
 
 	bool showLabeled, showUnlabeled, ignoreLabels;
 
-	std::vector<float> *illuminant;
+	std::vector<multi_img::Value> *illuminant;
 
 	bool active;
 	int selection, hover;

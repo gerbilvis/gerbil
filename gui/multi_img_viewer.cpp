@@ -33,18 +33,14 @@ void multi_img_viewer::setImage(const multi_img *img, bool gradient)
 			viewport->labels[i].setNum(image->meta[i].center);
 	}
 
-	if (!gradient) {
-		/* initialize illuminant TESTING CODE
-		illuminant.resize(image->size());
-		for (int i = 0; i < image->size(); ++i) {
-			illuminant[i] = (31.f-i)/31.f;
-		}
-		// propagate only here such that viewport sees NULL before
-		viewport->illuminant = &illuminant;
-		*/
-	}
-
 	rebuild(binSlider->value());
+}
+
+void multi_img_viewer::setIlluminant(const std::vector<multi_img::Value> &coeffs)
+{
+	illuminant = coeffs;
+	viewport->illuminant = &illuminant;
+	rebuild();
 }
 
 void multi_img_viewer::rebuild(int bins)
@@ -94,8 +90,9 @@ void multi_img_viewer::createBins(int nbins)
 				curpos = max(curpos, 0); curpos = min(curpos, nbins-1);
 				hashkey[d] = (unsigned char)curpos;
 				qreal curpos_illum = curpos;
-				if (!illuminant.empty())
+				if (!illuminant.empty()) {
 					curpos_illum *= illuminant[d];
+				}
 				if (d > 0)
 					lines.push_back(QLineF(d-1, lastpos, d, curpos_illum));
 				lastpos = curpos_illum;

@@ -165,21 +165,17 @@ void ViewerWindow::applyIlluminant() {
 
 	if (i1 != 0) {	// remove old illuminant
 		multi_img::Illuminant il(i1);
-		std::cout << "i1: " << i1 << std::endl;
-		std::vector<multi_img::Value> coeff = image_work.getIllumCoeff(il);
-		for (int i = 0; i < coeff.size(); ++i)
-			std::cout << i << " (" << image_work.meta[i].center << " nm): "
-					<< coeff[i] << std::endl;
+		il.calcWeight(image_work.meta[0].center,
+					  image_work.meta[image_work.size()-1].center);
 		image_work.apply_illuminant(il, true);
 	}
-	if (i2 != 0) {	// remove old illuminant
+	if (i2 != 0) {	// add new illuminant
 		multi_img::Illuminant il(i2);
-		std::cout << "i2: " << i2 << std::endl;
-		std::vector<multi_img::Value> coeff = image_work.getIllumCoeff(il);
-		for (int i = 0; i < coeff.size(); ++i)
-			std::cout << i << " (" << image_work.meta[i].center << " nm): "
-					<< coeff[i] << std::endl;
+		il.calcWeight(image_work.meta[0].center,
+					  image_work.meta[image_work.size()-1].center);
 		image_work.apply_illuminant(il);
+		// propagate new illuminant
+		viewIMG->setIlluminant(image_work.getIllumCoeff(il));
 	}
 
 	/* rebuild spectral gradient */

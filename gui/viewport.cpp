@@ -302,13 +302,19 @@ void Viewport::keyPressEvent(QKeyEvent *event)
 			hover--;
 		dirty = true; break;
 	case Qt::Key_Left:
-		if (selection > 0)
+		if (selection > 0) {
 			selection--;
-		dirty = true; break;
+			emit bandSelected(selection, gradient);
+			dirty = true;
+		}
+		break;
 	case Qt::Key_Right:
-		if (selection < dimensionality-1)
+		if (selection < dimensionality-1) {
 			selection++;
-		dirty = true; break;
+			emit bandSelected(selection, gradient);
+			dirty = true;
+		}
+		break;
 	}
 
 	if (dirty) {
