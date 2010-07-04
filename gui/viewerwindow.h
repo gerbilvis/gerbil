@@ -15,6 +15,8 @@ class ViewerWindow : public QMainWindow, private Ui::ViewerWindow {
     Q_OBJECT
 public:
 	ViewerWindow(const multi_img &image, const multi_img &gradient, QWidget *parent = 0);
+	// RGB HACK
+	ViewerWindow(const multi_img &image, const multi_img &gradient, const char* rgbfile);
 
 	const QPixmap* getBand(int dim, bool gradient);
 
@@ -53,9 +55,10 @@ protected:
 	int activeViewer; // 0: IMG, 1: GRAD
 
 private:
+	void init();
 	void initGraphsegUI();
 	void initIlluminantUI();
-	void updateRGB();
+	void updateRGB(bool hack = false, const char *rgbfile = 0);
 
 	// when we apply illuminant, these are the working copies.
 	multi_img image_work, gradient_work;

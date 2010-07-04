@@ -21,6 +21,13 @@ int main(int argc, char **argv)
 	// start gui
 	QApplication app(argc, argv);
 	
+	 // RGB HACK
+	if (argc == 3) {
+		ViewerWindow window(image, gradient, argv[2]);
+		window.show();
+		return app.exec();
+	}
+	
 	// regular viewer
 	ViewerWindow window(image, gradient);
 	window.show();

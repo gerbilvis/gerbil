@@ -13,6 +13,23 @@ ViewerWindow::ViewerWindow(const multi_img &image, const multi_img &gradient, QW
 	  ibands(image.size(), NULL), gbands(gradient.size(), NULL),
 	  labels(image.height, image.width, (uchar)0)
 {
+	init();
+}
+
+/* RGB HACK */
+ViewerWindow::ViewerWindow(const multi_img &image, const multi_img &gradient, const char* rgbfile)
+	: QMainWindow(NULL), activeViewer(0),
+	  image(&image), image_illum(&image),
+	  gradient(&gradient), gradient_illum(&gradient),
+	  ibands(image.size(), NULL), gbands(gradient.size(), NULL),
+	  labels(image.height, image.width, (uchar)0)
+{
+	init();
+	updateRGB(true, rgbfile);
+}
+
+void ViewerWindow::init()
+{
 	setupUi(this);
 	bandButton->hide();
 
@@ -30,8 +47,8 @@ ViewerWindow::ViewerWindow(const multi_img &image, const multi_img &gradient, QW
 	/* setup viewers, do setImage() last */
 	viewIMG->labels = viewGRAD->labels = labels;
 	viewIMG->labelcolors = viewGRAD->labelcolors = &labelcolors;
-	viewIMG->setImage(&image);
-	viewGRAD->setImage(&gradient, true);
+	viewIMG->setImage(image);
+	viewGRAD->setImage(gradient, true);
 	viewIMG->setActive(false);
 
 	/* signals & slots */
@@ -190,8 +207,19 @@ void ViewerWindow::applyIlluminant() {
 	i1Box->setCurrentIndex(i2Box->currentIndex());
 }
 
-void ViewerWindow::updateRGB()
+void ViewerWindow::updateRGB(bool hack, const char *rgbfile)
 {
+	/* RGB HACK */
+	if (hack) {
+		QPixmap source(rgbfile);
+		if (source.width() != image->width || source.height() != image->height)
+			rgb = source.scaled(image->width, image->height);
+		else
+			rgb = source;
+		rgbView->setPixmap(rgb);
+		return;
+	}
+	
 	cv::Mat3f rgbmat = image_illum->rgb();
 	QImage img(rgbmat.cols, rgbmat.rows, QImage::Format_ARGB32);
 	for (int y = 0; y < rgbmat.rows; ++y) {
