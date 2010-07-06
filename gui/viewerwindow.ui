@@ -363,13 +363,6 @@
      <item row="1" column="3">
       <widget class="QComboBox" name="i2Box"/>
      </item>
-     <item row="1" column="5">
-      <widget class="QPushButton" name="i2Button">
-       <property name="text">
-        <string>Apply</string>
-       </property>
-      </widget>
-     </item>
      <item row="0" column="3">
       <widget class="QComboBox" name="i1Box"/>
      </item>
@@ -393,7 +386,14 @@
        </property>
       </widget>
      </item>
-     <item row="1" column="6">
+     <item row="1" column="4">
+      <widget class="QPushButton" name="i2Button">
+       <property name="text">
+        <string>Apply</string>
+       </property>
+      </widget>
+     </item>
+     <item row="1" column="5">
       <spacer name="horizontalSpacer_6">
        <property name="orientation">
         <enum>Qt::Horizontal</enum>
@@ -405,6 +405,39 @@
         </size>
        </property>
       </spacer>
+     </item>
+     <item row="0" column="4">
+      <layout class="QHBoxLayout" name="horizontalLayout_3">
+       <property name="leftMargin">
+        <number>4</number>
+       </property>
+       <item>
+        <widget class="QCheckBox" name="i1Check">
+         <property name="enabled">
+          <bool>false</bool>
+         </property>
+         <property name="text">
+          <string>show</string>
+         </property>
+         <property name="checked">
+          <bool>true</bool>
+         </property>
+        </widget>
+       </item>
+       <item>
+        <spacer name="horizontalSpacer_7">
+         <property name="orientation">
+          <enum>Qt::Horizontal</enum>
+         </property>
+         <property name="sizeHint" stdset="0">
+          <size>
+           <width>1</width>
+           <height>1</height>
+          </size>
+         </property>
+        </spacer>
+       </item>
+      </layout>
      </item>
     </layout>
    </widget>

@@ -8,25 +8,18 @@ int main(int argc, char **argv)
 		return 1;
 
 	// load image   
-	multi_img image(argv[1]);
-	if (image.empty())
+	multi_img* image = new multi_img(argv[1]);
+	if (image->empty())
 		return 2;
 
 	/* compute spectral gradient */
 	// log image data
-	multi_img log(image);
+	multi_img log(*image);
 	log.apply_logarithm();
-	multi_img gradient = log.spec_gradient();
+	multi_img* gradient = new multi_img(log.spec_gradient());
 
 	// start gui
 	QApplication app(argc, argv);
-	
-	 // RGB HACK
-	if (argc == 3) {
-		ViewerWindow window(image, gradient, argv[2]);
-		window.show();
-		return app.exec();
-	}
 	
 	// regular viewer
 	ViewerWindow window(image, gradient);

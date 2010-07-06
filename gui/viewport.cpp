@@ -128,6 +128,7 @@ void Viewport::drawAxes(QPainter &painter, bool fore)
 			painter.setPen(Qt::white);
 			poly2.remove(dimensionality, 2);
 			painter.drawPolyline(poly2);
+			painter.save();
 			painter.setWorldTransform(modelview);
 		}
 	}
@@ -171,6 +172,8 @@ void Viewport::drawRegular()
 	drawAxes(painter, false);
 	drawBins(painter);
 	drawAxes(painter, true);
+
+	painter.restore();
 }
 
 void Viewport::drawOverlay()

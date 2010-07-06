@@ -6,7 +6,7 @@ using namespace std;
 
 multi_img_viewer::multi_img_viewer(QWidget *parent)
 	: QWidget(parent), image(NULL), labelcolors(NULL),
-	  ignoreLabels(false)
+	  ignoreLabels(false), illuminant(NULL)
 {
 	setupUi(this);
 	connect(alphaSlider, SIGNAL(valueChanged(int)),
@@ -36,10 +36,12 @@ void multi_img_viewer::setImage(const multi_img *img, bool gradient)
 	rebuild(binSlider->value());
 }
 
-void multi_img_viewer::setIlluminant(const std::vector<multi_img::Value> &coeffs)
+void multi_img_viewer::setIlluminant(const std::vector<multi_img::Value> *coeffs)
 {
+	if (illuminant == coeffs)
+		return;
 	illuminant = coeffs;
-	viewport->illuminant = (illuminant.empty() ? NULL : &illuminant);
+	viewport->illuminant = illuminant;
 	rebuild();
 }
 
@@ -90,8 +92,8 @@ void multi_img_viewer::createBins(int nbins)
 				curpos = max(curpos, 0); curpos = min(curpos, nbins-1);
 				hashkey[d] = (unsigned char)curpos;
 				qreal curpos_illum = curpos;
-				if (!illuminant.empty()) {
-					curpos_illum *= illuminant[d];
+				if (illuminant) {
+					curpos_illum *= (*illuminant)[d];
 				}
 				if (d > 0)
 					lines.push_back(QLineF(d-1, lastpos, d, curpos_illum));
@@ -146,8 +148,8 @@ void multi_img_viewer::overlay(int x, int y)
 	qreal lastpos = 0.;
 	for (int d = 0; d < image->size(); ++d) {
 		qreal curpos = floor((pixel[d] - image->minval) / binsize);
-		if (!illuminant.empty())
-			curpos *= illuminant[d];
+		if (illuminant)
+			curpos *= (*illuminant)[d];
 		if (d > 0)
 			lines.push_back(QLineF(d-1, lastpos, d, curpos));
 		lastpos = curpos;

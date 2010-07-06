@@ -38,7 +38,7 @@ public:
 
 	bool showLabeled, showUnlabeled, ignoreLabels;
 
-	std::vector<multi_img::Value> *illuminant;
+	const std::vector<multi_img::Value> *illuminant;
 
 	bool active;
 	int selection, hover;

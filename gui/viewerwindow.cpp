@@ -6,26 +6,18 @@
 #include <QIcon>
 #include <iostream>
 
-ViewerWindow::ViewerWindow(const multi_img &image, const multi_img &gradient, QWidget *parent)
+ViewerWindow::ViewerWindow(multi_img *image, multi_img *gradient, QWidget *parent)
 	: QMainWindow(parent), activeViewer(0),
-	  image(&image), image_illum(&image),
-	  gradient(&gradient), gradient_illum(&gradient),
-	  ibands(image.size(), NULL), gbands(gradient.size(), NULL),
-	  labels(image.height, image.width, (uchar)0)
+	  image(image), image_orig(NULL), gradient(gradient),
+	  ibands(image->size(), NULL), gbands(gradient->size(), NULL),
+	  labels(image->height, image->width, (uchar)0)
 {
 	init();
 }
 
-/* RGB HACK */
-ViewerWindow::ViewerWindow(const multi_img &image, const multi_img &gradient, const char* rgbfile)
-	: QMainWindow(NULL), activeViewer(0),
-	  image(&image), image_illum(&image),
-	  gradient(&gradient), gradient_illum(&gradient),
-	  ibands(image.size(), NULL), gbands(gradient.size(), NULL),
-	  labels(image.height, image.width, (uchar)0)
-{
-	init();
-	updateRGB(true, rgbfile);
+ViewerWindow::~ViewerWindow() {
+	if (image_orig != image)
+		delete image_orig;
 }
 
 void ViewerWindow::init()
@@ -127,7 +119,7 @@ const QPixmap* ViewerWindow::getBand(int dim, bool grad)
 	std::vector<QPixmap*> &v = (grad ? gbands : ibands);
 
 	if (!v[dim]) {
-		const multi_img *m = (grad ? gradient_illum : image_illum);
+		const multi_img *m = (grad ? gradient : image);
 		// create here
 		QImage img = m->export_qt(dim);
 		v[dim] = new QPixmap(QPixmap::fromImage(img));
@@ -154,73 +146,64 @@ void ViewerWindow::selectBand(int dim, bool grad)
 }
 
 void ViewerWindow::applyIlluminant() {
-	/* start with a copy of original image */
-	image_work = *image;
-
-	/* apply illuminant here */
 	int i1 = i1Box->itemData(i1Box->currentIndex()).value<int>();
 	int i2 = i2Box->itemData(i2Box->currentIndex()).value<int>();
 	if (i1 == i2)
 		return;
 
-	if (i1 != 0) {	// remove old illuminant
+	/* one-timer remove old illuminant */
+	if (i1Box->isEnabled() && i1 != 0) {
 		const multi_img::Illuminant &il = getIlluminant(i1);
-		image_work.apply_illuminant(il, true);
+		image->apply_illuminant(il, true);
 	}
-	if (i2 != 0) {	// add new illuminant
+	i1Box->setDisabled(true);
+	i1Check->setVisible(true);
+
+	/* add new illuminant */
+	if (i2 != 0) {
+		if (!image_orig) {
+			image_orig = new multi_img(*image);
+			viewIMG->setImage(image_orig);
+		} else {
+			*image = *image_orig;
+		}
 		const multi_img::Illuminant &il = getIlluminant(i2);
-		image_work.apply_illuminant(il);
+		image->apply_illuminant(il);
 	}
 
 	/* rebuild spectral gradient */
-	multi_img log(image_work);
+	multi_img log(*image);
 	log.apply_logarithm();
-	gradient_work = log.spec_gradient();
-
-	/* set references accordingly */
-	image_illum = &image_work;
-	gradient_illum = &gradient_work;
+	*gradient = log.spec_gradient();
 
 	/* update caches */
 	ibands.clear(); ibands.resize(image->size(), NULL);
 	gbands.clear(); gbands.resize(image->size(), NULL);
-	updateRGB();
+	viewGRAD->rebuild();
 	int band = (activeViewer == 0 ? viewIMG->getViewport()->selection
 								  : viewGRAD->getViewport()->selection);
 	selectBand(band, activeViewer == 1);
-
-	/* only gradient view shows new image.
-	   image view has its own way of handling illumination */
-	viewGRAD->setImage(gradient_illum, true);
+	bandView->update();
+	updateRGB();
 
 	/* reflect change in our own gui (will propagate to viewIMG) */
 	i1Box->setCurrentIndex(i2Box->currentIndex());
 }
 
-void ViewerWindow::updateRGB(bool hack, const char *rgbfile)
+void ViewerWindow::updateRGB()
 {
-	/* RGB HACK */
-	if (hack) {
-		QPixmap source(rgbfile);
-		if (source.width() != image->width || source.height() != image->height)
-			rgb = source.scaled(image->width, image->height);
-		else
-			rgb = source;
-		rgbView->setPixmap(rgb);
-		return;
-	}
-	
-	cv::Mat3f rgbmat = image_illum->rgb();
+	cv::Mat3f rgbmat = image->rgb();
 	QImage img(rgbmat.cols, rgbmat.rows, QImage::Format_ARGB32);
 	for (int y = 0; y < rgbmat.rows; ++y) {
 		cv::Vec3f *row = rgbmat[y];
 		for (int x = 0; x < rgbmat.cols; ++x) {
 			cv::Vec3f &c = row[x];
-			img.setPixel(x, y, qRgb(c[2]*255., c[1]*255., c[0]*255.));
+			img.setPixel(x, y, qRgb(c[0]*255., c[1]*255., c[2]*255.));
 		}
 	}
 	rgb = QPixmap::fromImage(img);
 	rgbView->setPixmap(rgb);
+	rgbView->update();
 }
 
 void ViewerWindow::initIlluminantUI()
@@ -239,6 +222,9 @@ void ViewerWindow::initIlluminantUI()
 			this, SLOT(applyIlluminant()));
 	connect(i1Box, SIGNAL(currentIndexChanged(int)),
 			this, SLOT(setI1(int)));
+	connect(i1Check, SIGNAL(toggled(bool)),
+			this, SLOT(setI1Visible(bool)));
+	i1Check->setVisible(false);
 }
 
 void ViewerWindow::initGraphsegUI()
@@ -270,13 +256,13 @@ void ViewerWindow::startGraphseg()
 	int src = graphsegSourceBox->itemData(graphsegSourceBox->currentIndex())
 								 .value<int>();
 	if (src == 0) {
-		bandView->startGraphseg(*image_illum, conf);
+		bandView->startGraphseg(*image, conf);
 	} else if (src == 1) {
-		bandView->startGraphseg(*gradient_illum, conf);
+		bandView->startGraphseg(*gradient, conf);
 	} else {	// currently shown band, yes I know ITS FUCKING COMPLICATED
 		multi_img_viewer *viewer; const multi_img *img;
-		if (activeViewer == 0) {	viewer = viewIMG;	img = image_illum;    }
-						  else {	viewer = viewGRAD;	img = gradient_illum; }
+		if (activeViewer == 0) {	viewer = viewIMG;	img = image;    }
+						  else {	viewer = viewGRAD;	img = gradient; }
 		int band = viewer->getViewport()->selection;
 		multi_img i((*img)[band], img->minval, img->maxval);
 		bandView->startGraphseg(i, conf);
@@ -347,18 +333,18 @@ QIcon ViewerWindow::colorIcon(const QColor &color)
 
 void ViewerWindow::buildIlluminant(int temp)
 {
+	assert(temp > 0);
 	multi_img::Illuminant il(temp);
 	std::vector<multi_img::Value> cf;
-	if (temp > 0) {
-		il.calcWeight(image->meta[0].center,
-					  image->meta[image->size()-1].center);
-		cf = image->getIllumCoeff(il);
-	} // when 0, empty vector is returned, which is just fine!
+	il.calcWeight(image->meta[0].center,
+				  image->meta[image->size()-1].center);
+	cf = image->getIllumCoeff(il);
 	illuminants[temp] = make_pair(il, cf);
 }
 
 const multi_img::Illuminant & ViewerWindow::getIlluminant(int temp)
 {
+	assert(temp > 0);
 	Illum_map::iterator i = illuminants.find(temp);
 	if (i != illuminants.end())
 		return i->second.first;
@@ -369,6 +355,7 @@ const multi_img::Illuminant & ViewerWindow::getIlluminant(int temp)
 
 const std::vector<multi_img::Value> & ViewerWindow::getIlluminantC(int temp)
 {
+	assert(temp > 0);
 	Illum_map::iterator i = illuminants.find(temp);
 	if (i != illuminants.end())
 		return i->second.second;
@@ -379,5 +366,22 @@ const std::vector<multi_img::Value> & ViewerWindow::getIlluminantC(int temp)
 
 void ViewerWindow::setI1(int index) {
 	int i1 = i1Box->itemData(index).value<int>();
-	viewIMG->setIlluminant(getIlluminantC(i1));
+	if (i1 > 0) {
+		i1Check->setEnabled(true);
+		if (i1Check->isChecked())
+			viewIMG->setIlluminant(&getIlluminantC(i1));
+	} else {
+		i1Check->setEnabled(false);
+		viewIMG->setIlluminant(NULL);
+	}
+}
+
+void ViewerWindow::setI1Visible(bool visible)
+{
+	if (visible) {
+		int i1 = i1Box->itemData(i1Box->currentIndex()).value<int>();
+		viewIMG->setIlluminant(&getIlluminantC(i1));
+	} else {
+		viewIMG->setIlluminant(NULL);
+	}
 }

@@ -14,9 +14,8 @@
 class ViewerWindow : public QMainWindow, private Ui::ViewerWindow {
     Q_OBJECT
 public:
-	ViewerWindow(const multi_img &image, const multi_img &gradient, QWidget *parent = 0);
-	// RGB HACK
-	ViewerWindow(const multi_img &image, const multi_img &gradient, const char* rgbfile);
+	ViewerWindow(multi_img *image, multi_img *gradient, QWidget *parent = 0);
+	~ViewerWindow();
 
 	const QPixmap* getBand(int dim, bool gradient);
 	const inline multi_img::Illuminant & getIlluminant(int temp);
@@ -34,6 +33,7 @@ public slots:
 	void startGraphseg();
 	void applyIlluminant();
 	void setI1(int index);
+	void setI1Visible(bool);
 
 signals:
 	void alterLabel(const multi_img::Mask &mask, bool negative);
@@ -50,8 +50,7 @@ protected:
 	std::vector<QPixmap*> ibands, gbands;
 	// pixel label holder
 	cv::Mat_<uchar> labels;
-	// references to orignal images and images with (possibly) applied illuminant
-	const multi_img *image, *gradient, *image_illum, *gradient_illum;
+	multi_img *image, *gradient, *image_orig;
 
 	// rgb pixmap
 	QPixmap rgb;
@@ -61,11 +60,9 @@ private:
 	void init();
 	void initGraphsegUI();
 	void initIlluminantUI();
-	void updateRGB(bool hack = false, const char *rgbfile = 0);
+	void updateRGB();
 	void buildIlluminant(int temp);
 
-	// when we apply illuminant, these are the working copies.
-	multi_img image_work, gradient_work;
 	// cache for illumination coefficients
 	typedef std::map<int, std::pair<
 			multi_img::Illuminant, std::vector<multi_img::Value> > > Illum_map;
