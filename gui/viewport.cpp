@@ -11,8 +11,8 @@ using namespace std;
 Viewport::Viewport(QWidget *parent)
 	: QGLWidget(QGLFormat(QGL::SampleBuffers), parent),
 	  selection(0), hover(-1), showLabeled(true), showUnlabeled(true),
-	  active(false), zoom(1.), shift(0), lasty(-1), useralpha(1.f),
-	  overlayMode(false), cacheValid(false), illuminant(NULL)
+	  active(false), wasActive(false), zoom(1.), shift(0), lasty(-1),
+	  useralpha(1.f), overlayMode(false), cacheValid(false), illuminant(NULL)
 {}
 
 void Viewport::updateModelview()
@@ -222,13 +222,46 @@ void Viewport::resizeEvent(QResizeEvent *)
 	updateModelview();
 }
 
+void Viewport::updateXY(int sel, int bin)
+{
+	bool emitOverlay = !wasActive;
+
+	/// first handle sel -> band selection
+	if (sel < 0 || sel >= dimensionality)
+		return;
+
+	/* emit new band if either new selection or first input after
+	   activating this view */
+	if (selection != sel || !wasActive) {
+		wasActive = true;
+		emit bandSelected(sel, gradient);
+	}
+
+	/// second handle bin -> intensity highlight
+	if (illuminant)	/* correct y for illuminant */
+		bin = std::floor(bin / illuminant->at(sel) + 0.5f);
+
+	if (bin < 0 || bin >= nbins)
+		return;
+
+	/// do the final update
+	if ((selection != sel)||(hover != bin)) {
+		selection = sel;
+		hover = bin;
+		update();
+		emitOverlay = true;
+	}
+
+	if (emitOverlay)
+		emit newOverlay();
+}
+
 void Viewport::mouseMoveEvent(QMouseEvent *event)
 {
-	if (event->buttons() & Qt::RightButton)
+	if (event->buttons() & Qt::RightButton) // panning movement
 	{
-		if (lasty < 0) {
+		if (lasty < 0)
 			return;
-		}
 
 		shift += (event->y() - lasty)/(qreal)height();
 		lasty = event->y();
@@ -239,37 +272,17 @@ void Viewport::mouseMoveEvent(QMouseEvent *event)
 		update();
 	} else {
 		QPoint pos = modelviewI.map(event->pos());
-		int x = pos.x(), y = pos.y();
-
-		// x range check _before_ accessing illuminant
-		if (x < 0 || x >= dimensionality)
-			return;
-
-		/* correct y for illuminant */
-		if (illuminant)
-			y = std::floor(y / illuminant->at(x) + 0.5f);
-
-		if (y < 0 || y >= nbins)
-			return;
-
-		if ((selection == x)&&(hover == y))
-			return;
-
-		if (selection != x)
-			emit bandSelected(x, gradient);
-
-		selection = x;
-		hover = y;
-		update();
-		emit newOverlay();
+		updateXY(pos.x(), pos.y());
 	}
 }
 
 void Viewport::mousePressEvent(QMouseEvent *event)
 {
-	if (!active)
+	if (!active) {
+		wasActive = false;
 		emit activated(gradient);
-	active = true;
+		active = true;
+	}
 
 	if (event->button() == Qt::RightButton) {
 		this->setCursor(Qt::ClosedHandCursor);

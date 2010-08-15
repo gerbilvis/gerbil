@@ -40,7 +40,7 @@ public:
 
 	const std::vector<multi_img::Value> *illuminant;
 
-	bool active;
+	bool active, wasActive;
 	int selection, hover;
 	float useralpha;
 
@@ -65,6 +65,9 @@ protected:
 	void mouseReleaseEvent(QMouseEvent*);
 	void wheelEvent(QWheelEvent *);
 	void keyPressEvent(QKeyEvent *);
+
+	// helper functions called by mouseMoveEvent
+	void updateXY(int sel, int bin);
 
 	// helper functions called by paintEvent
 	void drawBins(QPainter&);

@@ -153,7 +153,7 @@ void ViewerWindow::applyIlluminant() {
 
 	/* one-timer remove old illuminant */
 	if (i1Box->isEnabled() && i1 != 0) {
-		const multi_img::Illuminant &il = getIlluminant(i1);
+		const Illuminant &il = getIlluminant(i1);
 		image->apply_illuminant(il, true);
 	}
 	i1Box->setDisabled(true);
@@ -167,7 +167,7 @@ void ViewerWindow::applyIlluminant() {
 		} else {
 			*image = *image_orig;
 		}
-		const multi_img::Illuminant &il = getIlluminant(i2);
+		const Illuminant &il = getIlluminant(i2);
 		image->apply_illuminant(il);
 	}
 
@@ -334,7 +334,7 @@ QIcon ViewerWindow::colorIcon(const QColor &color)
 void ViewerWindow::buildIlluminant(int temp)
 {
 	assert(temp > 0);
-	multi_img::Illuminant il(temp);
+	Illuminant il(temp);
 	std::vector<multi_img::Value> cf;
 	il.calcWeight(image->meta[0].center,
 				  image->meta[image->size()-1].center);
@@ -342,7 +342,7 @@ void ViewerWindow::buildIlluminant(int temp)
 	illuminants[temp] = make_pair(il, cf);
 }
 
-const multi_img::Illuminant & ViewerWindow::getIlluminant(int temp)
+const Illuminant & ViewerWindow::getIlluminant(int temp)
 {
 	assert(temp > 0);
 	Illum_map::iterator i = illuminants.find(temp);

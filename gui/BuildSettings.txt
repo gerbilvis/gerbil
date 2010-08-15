@@ -8,9 +8,8 @@ set(this_module_variable "Gerbil_Viewer")
 set(this_module_description "GUI for multispectral images")
 set(this_module_general_requirements "VOLE_BOOST" "VOLE_BOOST_PROGRAM_OPTIONS" "VOLE_QT" "VOLE_QT_OPENGL" "VOLE_OPENCV")
 #set(this_module_general_requirements "VOLE_BOOST" "VOLE_BOOST_PROGRAM_OPTIONS" "VOLE_QT" "VOLE_QT_OPENGL" "VOLE_QGLVIEWER" "VOLE_OPENCV")
-set(this_module_precondition_requirements "seg_graphs")
 
-VoleRequiredModules("seg_graphs")
+VoleRequiredModules("gerbil_common" "seg_graphs")
 
 VoleCompileIfQt(
 	main

@@ -3,6 +3,7 @@
 
 #include "ui_viewerwindow.h"
 #include <multi_img.h>
+#include <illuminant.h>
 
 #include <vector>
 #include <QPixmap>
@@ -18,7 +19,7 @@ public:
 	~ViewerWindow();
 
 	const QPixmap* getBand(int dim, bool gradient);
-	const inline multi_img::Illuminant & getIlluminant(int temp);
+	const inline Illuminant & getIlluminant(int temp);
 	const inline std::vector<multi_img::Value> & getIlluminantC(int temp);
 
 	static QIcon colorIcon(const QColor& color);
@@ -65,7 +66,7 @@ private:
 
 	// cache for illumination coefficients
 	typedef std::map<int, std::pair<
-			multi_img::Illuminant, std::vector<multi_img::Value> > > Illum_map;
+			Illuminant, std::vector<multi_img::Value> > > Illum_map;
 	Illum_map illuminants;
 };
 
