@@ -5,7 +5,7 @@
 using namespace std;
 
 multi_img_viewer::multi_img_viewer(QWidget *parent)
-	: QWidget(parent), image(NULL), labelcolors(NULL),
+	: QWidget(parent), labelcolors(NULL), image(NULL),
 	  ignoreLabels(false), illuminant(NULL)
 {
 	setupUi(this);
@@ -28,7 +28,7 @@ void multi_img_viewer::setImage(const multi_img *img, bool gradient)
 
 	/* intialize meta data */
 	viewport->labels.resize(image->size());
-	for (int i = 0; i < image->size(); ++i) {
+	for (unsigned int i = 0; i < image->size(); ++i) {
 		if (!image->meta[i].empty)
 			viewport->labels[i].setNum(image->meta[i].center);
 	}
@@ -146,7 +146,7 @@ void multi_img_viewer::overlay(int x, int y)
 
 	double binsize = (image->maxval - image->minval)/(double)viewport->nbins;
 	qreal lastpos = 0.;
-	for (int d = 0; d < image->size(); ++d) {
+	for (unsigned int d = 0; d < image->size(); ++d) {
 		qreal curpos = floor((pixel[d] - image->minval) / binsize);
 		if (illuminant)
 			curpos *= (*illuminant)[d];

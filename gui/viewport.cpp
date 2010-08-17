@@ -10,9 +10,11 @@ using namespace std;
 
 Viewport::Viewport(QWidget *parent)
 	: QGLWidget(QGLFormat(QGL::SampleBuffers), parent),
-	  selection(0), hover(-1), showLabeled(true), showUnlabeled(true),
-	  active(false), wasActive(false), zoom(1.), shift(0), lasty(-1),
-	  useralpha(1.f), overlayMode(false), cacheValid(false), illuminant(NULL)
+	  illuminant(NULL), selection(0), hover(-1),
+	  active(false), wasActive(false), useralpha(1.f),
+	  showLabeled(true), showUnlabeled(true), ignoreLabels(false),
+	  overlayMode(false),
+	  zoom(1.), shift(0), lasty(-1), cacheValid(false)
 {}
 
 void Viewport::updateModelview()
@@ -136,7 +138,7 @@ void Viewport::drawAxes(QPainter &painter, bool fore)
 
 void Viewport::drawLegend(QPainter &painter)
 {
-	assert(labels.size() == dimensionality);
+	assert(labels.size() == (unsigned int)dimensionality);
 
 	painter.setPen(Qt::white);
 	for (int i = 0; i < dimensionality; ++i) {

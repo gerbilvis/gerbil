@@ -6,8 +6,8 @@
 
 BandView::BandView(QWidget *parent)
 	: QGLWidget(QGLFormat(QGL::SampleBuffers), parent), pixmap(NULL),
-	  cursor(-1, -1), lastcursor(-1, -1), curLabel(1),
-	  cacheValid(false), overlay(0), seedMode(false), showLabels(true)
+	  cacheValid(false), overlay(0), showLabels(true),
+	  cursor(-1, -1), lastcursor(-1, -1), curLabel(1), seedMode(false)
 {
 	markerColors << Qt::white // 0 is index for unlabeled
 			<< Qt::green << Qt::red << Qt::cyan << Qt::magenta << Qt::blue;

@@ -46,11 +46,11 @@ private:
 
 	qreal scale;
 	QTransform scaler, scalerI;
-	QPointF cursor, lastcursor;
 	const QPixmap *pixmap;
 	QPixmap cachedPixmap;
 	bool cacheValid;
 
+	QPointF cursor, lastcursor;
 	uchar curLabel;
 	const multi_img::Mask *overlay;
 

@@ -47,11 +47,12 @@ protected:
 	void createMarkers();
 	void labelmask(bool negative);
 
+	// multispectral image and gradient
+	multi_img *image, *image_orig, *gradient;
 	// bands from both image and gradient
 	std::vector<QPixmap*> ibands, gbands;
 	// pixel label holder
 	cv::Mat_<uchar> labels;
-	multi_img *image, *gradient, *image_orig;
 
 	// rgb pixmap
 	QPixmap rgb;

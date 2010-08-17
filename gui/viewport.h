@@ -36,14 +36,14 @@ public:
 	std::vector<BinSet> sets;
 	std::vector<QString> labels;
 
-	bool showLabeled, showUnlabeled, ignoreLabels;
-
 	const std::vector<multi_img::Value> *illuminant;
 
-	bool active, wasActive;
 	int selection, hover;
+	bool active, wasActive;
+
 	float useralpha;
 
+	bool showLabeled, showUnlabeled, ignoreLabels;
 	bool overlayMode;
 	QVector<QLineF> overlayLines;
 

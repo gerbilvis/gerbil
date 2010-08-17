@@ -7,10 +7,10 @@
 #include <iostream>
 
 ViewerWindow::ViewerWindow(multi_img *image, multi_img *gradient, QWidget *parent)
-	: QMainWindow(parent), activeViewer(0),
+	: QMainWindow(parent),
 	  image(image), image_orig(NULL), gradient(gradient),
 	  ibands(image->size(), NULL), gbands(gradient->size(), NULL),
-	  labels(image->height, image->width, (uchar)0)
+	  labels(image->height, image->width, (uchar)0), activeViewer(0)
 {
 	init();
 }
