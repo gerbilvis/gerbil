@@ -49,12 +49,12 @@ void BandView::paintEvent(QPaintEvent *ev)
 	//painter.setRenderHint(QPainter::Antialiasing); too slow!
 
 	// draw band (slow!)
-	painter.drawPixmap(ev->rect(), cachedPixmap.transformed(scaler), ev->rect());
+//	painter.drawPixmap(ev->rect(), cachedPixmap.transformed(scaler), ev->rect());
 
 	painter.setWorldTransform(scaler);
 	// draw band (artifacts)
-/*	QRect damaged = scalerI.mapRect(ev->rect());
-	painter.drawPixmap(damaged, cachedPixmap, damaged);*/
+	QRect damaged = scalerI.mapRect(ev->rect());
+	painter.drawPixmap(damaged, cachedPixmap, damaged);
 
 	// draw current cursor
 	QPen pen(seedMode ? Qt::yellow : markerColors[curLabel]);
