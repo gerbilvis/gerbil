@@ -39,6 +39,8 @@ public:
 	const std::vector<multi_img::Value> *illuminant;
 
 	int selection, hover;
+	bool limiterMode;
+	std::vector<std::pair<int, int> > limiters;
 	bool active, wasActive;
 
 	float useralpha;
@@ -71,10 +73,14 @@ protected:
 
 	// helper functions called by paintEvent
 	void drawBins(QPainter&);
-	void drawAxes(QPainter&, bool fore);
+	void drawAxesBg(QPainter&);
+	void drawAxesFg(QPainter&);
 	void drawLegend(QPainter&);
 	void drawRegular();
 	void drawOverlay();
+
+	// helper for limiter handling
+	bool updateLimiter(int dim, int bin);
 
 private:
 	// modelview matrix and its inverse
@@ -83,6 +89,10 @@ private:
 	qreal zoom;
 	qreal shift;
 	int lasty;
+
+	/* if in limiter mode, user has to release mouse button before switching
+	   band. this is for usability, users tend to accidentially switch bands */
+	bool holdSelection;
 
 	// cache for efficient overlay
 	bool cacheValid;

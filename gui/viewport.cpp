@@ -10,11 +10,12 @@ using namespace std;
 
 Viewport::Viewport(QWidget *parent)
 	: QGLWidget(QGLFormat(QGL::SampleBuffers), parent),
-	  illuminant(NULL), selection(0), hover(-1),
+	  illuminant(NULL), selection(0), hover(-1), limiterMode(false),
 	  active(false), wasActive(false), useralpha(1.f),
 	  showLabeled(true), showUnlabeled(true), ignoreLabels(false),
 	  overlayMode(false),
-	  zoom(1.), shift(0), lasty(-1), cacheValid(false)
+	  zoom(1.), shift(0), lasty(-1), cacheValid(false),
+	  holdSelection(false)
 {}
 
 void Viewport::updateModelview()
@@ -69,7 +70,19 @@ void Viewport::drawBins(QPainter &painter)
 						(log(b.weight+1) / log(s.totalweight));
 			color.setAlphaF(min(alpha, 1.));
 
-			if ((unsigned char)it.key()[selection] == hover) {
+			bool highlighted = false;
+			QByteArray K = it.key();
+			if (limiterMode) {
+				highlighted = true;
+				for (int i = 0; i < dimensionality; ++i) {
+					unsigned char k = K[i];
+					if (k < limiters[i].first || k > limiters[i].second)
+						highlighted = false;
+				}
+			} else if ((unsigned char)K[selection] == hover)
+				highlighted = true;
+
+			if (highlighted) {
 				if (basecolor == Qt::white) {
 					color = Qt::yellow;
 				} else {
@@ -86,53 +99,74 @@ void Viewport::drawBins(QPainter &painter)
 	}
 }
 
-void Viewport::drawAxes(QPainter &painter, bool fore)
+void Viewport::drawAxesFg(QPainter &painter)
 {
-	if (fore) {
-		if (selection < 0 || selection >= dimensionality)
-			return;
+	if (selection < 0 || selection >= dimensionality)
+		return;
 
-		// draw selection in foreground
-		if (active)
-			painter.setPen(Qt::red);
-		else
-			painter.setPen(Qt::gray);
-		qreal top = (nbins-1);
-		if (illuminant)
-			top *= illuminant->at(selection);
-		painter.drawLine(QPointF(selection, 0.), QPointF(selection, top));
+	// draw selection in foreground
+	if (active)
+		painter.setPen(Qt::red);
+	else
+		painter.setPen(Qt::gray);
+	qreal top = (nbins-1);
+	if (illuminant)
+		top *= illuminant->at(selection);
+	painter.drawLine(QPointF(selection, 0.), QPointF(selection, top));
+
+	// draw limiters
+	if (limiterMode) {
+		painter.setPen(Qt::red);
+		for (int i = 0; i < dimensionality; ++i) {
+			qreal h = nbins*0.01;
+			qreal y1 = limiters[i].first, y2 = limiters[i].second;
+			QPolygonF polygon;
+			polygon << QPointF(i - 0.25, y1 + h)
+					<< QPointF(i - 0.25, y1)
+					<< QPointF(i + 0.25, y1)
+					<< QPointF(i + 0.25, y1 + h);
+			painter.drawPolyline(polygon);
+			polygon.clear();
+			polygon << QPointF(i - 0.25, y2 - h)
+					<< QPointF(i - 0.25, y2)
+					<< QPointF(i + 0.25, y2)
+					<< QPointF(i + 0.25, y2 - h);
+			painter.drawPolyline(polygon);
+		}
+	}
+}
+void Viewport::drawAxesBg(QPainter &painter)
+{
+	// draw axes in background
+	painter.setPen(QColor(64, 64, 64));
+	QPolygonF poly;
+	if (illuminant) {
+		for (int i = 0; i < dimensionality; ++i) {
+			qreal top = (nbins-1) * illuminant->at(i);
+			painter.drawLine(QPointF(i, 0.), QPointF(i, top));
+			poly << QPointF(i, top);
+		}
+		poly << QPointF(dimensionality-1, nbins-1);
+		poly << QPointF(0, nbins-1);
 	} else {
-		// draw axes in background
-		painter.setPen(QColor(64, 64, 64));
-		QPolygonF poly;
-		if (illuminant) {
-			for (int i = 0; i < dimensionality; ++i) {
-				qreal top = (nbins-1) * illuminant->at(i);
-				painter.drawLine(QPointF(i, 0.), QPointF(i, top));
-				poly << QPointF(i, top);
-			}
-			poly << QPointF(dimensionality-1, nbins-1);
-			poly << QPointF(0, nbins-1);
-		} else {
-			for (int i = 0; i < dimensionality; ++i)
-				painter.drawLine(i, 0, i, nbins-1);
-		}
+		for (int i = 0; i < dimensionality; ++i)
+			painter.drawLine(i, 0, i, nbins-1);
+	}
 
-		// visualize illuminant
-		if (illuminant) {
-			QPolygonF poly2 = modelview.map(poly);
-			poly2.translate(0., -5.);
-			painter.restore();
-			QBrush brush(QColor(32, 32, 32), Qt::Dense3Pattern);
-			painter.setBrush(brush);
-			painter.setPen(Qt::NoPen);
-			painter.drawPolygon(poly2);
-			painter.setPen(Qt::white);
-			poly2.remove(dimensionality, 2);
-			painter.drawPolyline(poly2);
-			painter.save();
-			painter.setWorldTransform(modelview);
-		}
+	// visualize illuminant
+	if (illuminant) {
+		QPolygonF poly2 = modelview.map(poly);
+		poly2.translate(0., -5.);
+		painter.restore();
+		QBrush brush(QColor(32, 32, 32), Qt::Dense3Pattern);
+		painter.setBrush(brush);
+		painter.setPen(Qt::NoPen);
+		painter.drawPolygon(poly2);
+		painter.setPen(Qt::white);
+		poly2.remove(dimensionality, 2);
+		painter.drawPolyline(poly2);
+		painter.save();
+		painter.setWorldTransform(modelview);
 	}
 }
 
@@ -171,9 +205,9 @@ void Viewport::drawRegular()
 	painter.save();
 	painter.setWorldTransform(modelview);
 
-	drawAxes(painter, false);
+	drawAxesBg(painter);
 	drawBins(painter);
-	drawAxes(painter, true);
+	drawAxesFg(painter);
 
 	painter.restore();
 }
@@ -234,7 +268,7 @@ void Viewport::updateXY(int sel, int bin)
 
 	/* emit new band if either new selection or first input after
 	   activating this view */
-	if (selection != sel || !wasActive) {
+	if ((selection != sel && !holdSelection) || !wasActive) {
 		wasActive = true;
 		emit bandSelected(sel, gradient);
 	}
@@ -247,15 +281,23 @@ void Viewport::updateXY(int sel, int bin)
 		return;
 
 	/// do the final update
-	if ((selection != sel)||(hover != bin)) {
+	if (selection != sel && !holdSelection) {
 		selection = sel;
+		emitOverlay = true;
+		if (limiterMode)
+			holdSelection = true;
+	}
+	if (!limiterMode && (hover != bin)) {
 		hover = bin;
-		update();
 		emitOverlay = true;
 	}
+	if (limiterMode && updateLimiter(selection, bin))
+		emitOverlay = true;
 
-	if (emitOverlay)
+	if (emitOverlay) {
+		update();	/* TODO: check for dual update! */
 		emit newOverlay();
+	}
 }
 
 void Viewport::mouseMoveEvent(QMouseEvent *event)
@@ -268,7 +310,7 @@ void Viewport::mouseMoveEvent(QMouseEvent *event)
 		shift += (event->y() - lasty)/(qreal)height();
 		lasty = event->y();
 
-		/* TODO: make sure that we use full space */
+		/* TODO: make sure that we use full visible space */
 
 		updateModelview();
 		update();
@@ -290,11 +332,14 @@ void Viewport::mousePressEvent(QMouseEvent *event)
 		this->setCursor(Qt::ClosedHandCursor);
 		lasty = event->y();
 	}
+
 	mouseMoveEvent(event);
 }
 
 void Viewport::mouseReleaseEvent(QMouseEvent * event)
 {
+	// in limiterMode, holdSelect is always set on first mouse action
+	holdSelection = false;
 	if (event->button() == Qt::RightButton) {
 		this->setCursor(Qt::ArrowCursor);
 		lasty = -1;
@@ -332,13 +377,17 @@ void Viewport::keyPressEvent(QKeyEvent *event)
 		break;
 
 	case Qt::Key_Up:
-		if (hover < nbins-1)
+		if (!limiterMode && hover < nbins-1) {
 			hover++;
-		dirty = true; break;
+			dirty = true;
+		}
+		break;
 	case Qt::Key_Down:
-		if (hover > 0)
+		if (!limiterMode && hover > 0) {
 			hover--;
-		dirty = true; break;
+			dirty = true;
+		}
+		break;
 	case Qt::Key_Left:
 		if (selection > 0) {
 			selection--;
@@ -366,4 +415,16 @@ void Viewport::killHover()
 	hover = -1;
 	// make sure the drawing happens before next overlay cache update
 	repaint();
+}
+
+bool Viewport::updateLimiter(int dim, int bin)
+{
+	std::pair<int, int> &l = limiters[dim];
+	int &target = (std::abs(l.first - bin) < std::abs(l.second - bin)
+		   ? l.first : l.second);
+	if (target == bin)
+		return false;
+
+	target = bin;
+	return true;
 }

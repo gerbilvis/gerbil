@@ -100,6 +100,8 @@ void ViewerWindow::init()
 		connect(vp, SIGNAL(activated(bool)),
 				(i ? viewIMG : viewGRAD), SLOT(setActive(bool)));
 
+		connect(v, SIGNAL(newOverlay()),
+				this, SLOT(newOverlay()));
 		connect(vp, SIGNAL(newOverlay()),
 				this, SLOT(newOverlay()));
 

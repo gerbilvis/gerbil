@@ -9,20 +9,25 @@ multi_img_viewer::multi_img_viewer(QWidget *parent)
 	  ignoreLabels(false), illuminant(NULL)
 {
 	setupUi(this);
+	connect(binSlider, SIGNAL(valueChanged(int)),
+			this, SLOT(rebuild(int)));
 	connect(alphaSlider, SIGNAL(valueChanged(int)),
 			this, SLOT(setAlpha(int)));
+	connect(limiterButton, SIGNAL(toggled(bool)),
+			this, SLOT(toggleLimiters(bool)));
 	setAlpha(70);
 }
 
 void multi_img_viewer::setImage(const multi_img *img, bool gradient)
 {
-	if (!image) {
-		connect(binSlider, SIGNAL(valueChanged(int)),
-				this, SLOT(rebuild(int)));
-	}
 	image = img;
 	if (maskholder.rows != image->height || maskholder.cols != image->width)
 		maskholder.create(image->height, image->width);
+
+	QString title("<b>%1 Spectrum</b> [%2..%3]");
+	titleLabel->setText(title.arg(gradient ? "Spectral Gradient" : "Image")
+						.arg(image->minval).arg(image->maxval));
+
 	viewport->gradient = gradient;
 	viewport->dimensionality = image->size();
 
@@ -47,18 +52,25 @@ void multi_img_viewer::setIlluminant(const std::vector<multi_img::Value> *coeffs
 
 void multi_img_viewer::rebuild(int bins)
 {
-	assert(image);
+	if (!image)
+		return;
+
 	if (bins > 0) { // number of bins changed
+		nbins = bins;
+		binsize = (image->maxval - image->minval)/(multi_img::Value)nbins;
 		binLabel->setText(QString("%1 bins").arg(bins));
 		viewport->nbins = bins;
+		// reset hover value that would become inappropr.
 		viewport->hover = -1;
+		// reset limiters to most-lazy values
+		viewport->limiters.assign(image->size(), make_pair(0, bins-1));
 	}
-	createBins(viewport->nbins);
+	createBins();
 	viewport->updateModelview();
 	viewport->update();
 }
 
-void multi_img_viewer::createBins(int nbins)
+void multi_img_viewer::createBins()
 {
 	assert(labelcolors && !labels.empty());
 
@@ -66,8 +78,6 @@ void multi_img_viewer::createBins(int nbins)
 	image->rebuildPixels();
 
 	int dim = image->size();
-	double minval = image->minval, maxval = image->maxval;
-	double binsize = (maxval - minval)/(double)nbins;
 
 	vector<BinSet> &sets = viewport->sets;
 	sets.clear();
@@ -86,7 +96,7 @@ void multi_img_viewer::createBins(int nbins)
 			qreal lastpos = 0.;
 			QVector<QLineF> lines;
 			for (int d = 0; d < dim; ++d) {
-				int curpos = floor((pixel[d] - minval) / binsize);
+				int curpos = floor((pixel[d] - image->minval) / binsize);
 				/* multi_img::minval/maxval are only theoretical bounds,
 				   so they could be violated */
 				curpos = max(curpos, 0); curpos = min(curpos, nbins-1);
@@ -119,22 +129,44 @@ void multi_img_viewer::createBins(int nbins)
 }
 
 /* create mask of single-band user selection */
-const multi_img::Mask& multi_img_viewer::createMask()
+void multi_img_viewer::fillMaskSingle(int dim, int sel)
 {
-	double minval = image->minval, maxval = image->maxval;
-	double binsize = (maxval - minval)/(double)viewport->nbins;
-	int d = viewport->selection;
-
 	maskholder.setTo(0);
+
 	multi_img::MaskIt itm = maskholder.begin();
-	multi_img::BandConstIt itb = (*image)[d].begin();
+	multi_img::BandConstIt itb = (*image)[dim].begin();
 	for (; itm != maskholder.end(); ++itb, ++itm) {
-		int curpos = floor((*itb - minval) / binsize);
+		int curpos = floor((*itb - image->minval) / binsize);
 		// minval/maxval are only theoretical bounds
-		curpos = max(curpos, 0); curpos = min(curpos, viewport->nbins-1);
+		curpos = max(curpos, 0); curpos = min(curpos, nbins-1);
 		if (curpos == viewport->hover)
 			*itm = 1;
 	}
+}
+
+void multi_img_viewer::fillMaskLimiters(const std::vector<std::pair<int, int> >& l)
+{
+	maskholder.setTo(1);
+
+	for (int y = 0; y < image->height; ++y) {
+		uchar *row = maskholder[y];
+		for (int x = 0; x < image->width; ++x) {
+			const multi_img::Pixel& p = (*image)(y, x);
+			for (unsigned int i = 0; i < image->size(); ++i) {
+				int curpos = floor((p[i] - image->minval) / binsize);
+				if (curpos < l[i].first || curpos > l[i].second)
+					row[x] = 0;
+			}
+		}
+	}
+}
+
+const multi_img::Mask& multi_img_viewer::createMask()
+{
+	if (viewport->limiterMode)
+		fillMaskLimiters(viewport->limiters);
+	else
+		fillMaskSingle(viewport->selection, viewport->hover);
 	return maskholder;
 }
 
@@ -144,7 +176,6 @@ void multi_img_viewer::overlay(int x, int y)
 	QVector<QLineF> &lines = viewport->overlayLines;
 	lines.clear();
 
-	double binsize = (image->maxval - image->minval)/(double)viewport->nbins;
 	qreal lastpos = 0.;
 	for (unsigned int d = 0; d < image->size(); ++d) {
 		qreal curpos = floor((pixel[d] - image->minval) / binsize);
@@ -183,6 +214,13 @@ void multi_img_viewer::toggleLabels(bool toggle)
 	ignoreLabels = toggle;
 	viewport->ignoreLabels = toggle;
 	rebuild();
+}
+
+void multi_img_viewer::toggleLimiters(bool toggle)
+{
+	viewport->limiterMode = toggle;
+	viewport->repaint();
+	emit newOverlay();
 }
 
 void multi_img_viewer::changeEvent(QEvent *e)

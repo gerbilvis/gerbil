@@ -26,13 +26,21 @@ public slots:
 	void toggleLabeled(bool toggle);
 	void toggleUnlabeled(bool toggle);
 	void toggleLabels(bool toggle);
+	void toggleLimiters(bool toggle);
 	void setActive(bool who);
 	void setAlpha(int);
 	void overlay(int x, int y);
 
+signals:
+	void newOverlay();
+
 protected:
     void changeEvent(QEvent *e);
-	void createBins(int bins);
+	void createBins();
+
+	// helpers for createMask
+	void fillMaskSingle(int dim, int sel);
+	void fillMaskLimiters(const std::vector<std::pair<int, int> >& limits);
 
 	const multi_img *image;
 	bool ignoreLabels;
@@ -41,6 +49,10 @@ protected:
 
 private:
 	multi_img::Mask maskholder;
+	// current number of bins shown
+	int nbins;
+	// respective data range of each bin
+	multi_img::Value binsize;
 };
 
 #endif // MULTI_IMG_VIEWER_H
