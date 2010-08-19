@@ -6,6 +6,7 @@
 #include "multi_img.h"
 
 #include <vector>
+#include <QMenu>
 #include <cv.h>
 
 class multi_img_viewer : public QWidget, private Ui::multi_img_viewer {
@@ -30,6 +31,7 @@ public slots:
 	void setActive(bool who);
 	void setAlpha(int);
 	void overlay(int x, int y);
+	void showLimiterMenu();
 
 signals:
 	void newOverlay();
@@ -37,6 +39,7 @@ signals:
 protected:
     void changeEvent(QEvent *e);
 	void createBins();
+	void setLimiters(int label);
 
 	// helpers for createMask
 	void fillMaskSingle(int dim, int sel);
@@ -48,11 +51,14 @@ protected:
 	const std::vector<multi_img::Value> *illuminant;
 
 private:
+	void createLimiterMenu();
+
 	multi_img::Mask maskholder;
 	// current number of bins shown
 	int nbins;
 	// respective data range of each bin
 	multi_img::Value binsize;
+	QMenu limiterMenu;
 };
 
 #endif // MULTI_IMG_VIEWER_H

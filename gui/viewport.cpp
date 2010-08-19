@@ -14,8 +14,7 @@ Viewport::Viewport(QWidget *parent)
 	  active(false), wasActive(false), useralpha(1.f),
 	  showLabeled(true), showUnlabeled(true), ignoreLabels(false),
 	  overlayMode(false),
-	  zoom(1.), shift(0), lasty(-1), cacheValid(false),
-	  holdSelection(false)
+	  zoom(1.), shift(0), lasty(-1), holdSelection(false), cacheValid(false)
 {}
 
 void Viewport::updateModelview()
@@ -118,8 +117,10 @@ void Viewport::drawAxesFg(QPainter &painter)
 	if (limiterMode) {
 		painter.setPen(Qt::red);
 		for (int i = 0; i < dimensionality; ++i) {
-			qreal h = nbins*0.01;
 			qreal y1 = limiters[i].first, y2 = limiters[i].second;
+			qreal h = nbins*0.01;
+			if (h > y2 - y1)	// don't let them overlap, looks uncool
+				h = y2 - y1;
 			QPolygonF polygon;
 			polygon << QPointF(i - 0.25, y1 + h)
 					<< QPointF(i - 0.25, y1)
@@ -284,9 +285,12 @@ void Viewport::updateXY(int sel, int bin)
 	if (selection != sel && !holdSelection) {
 		selection = sel;
 		emitOverlay = true;
-		if (limiterMode)
-			holdSelection = true;
 	}
+
+	// do this after the first chance to change selection (above)
+	if (limiterMode)
+		holdSelection = true;
+
 	if (!limiterMode && (hover != bin)) {
 		hover = bin;
 		emitOverlay = true;
@@ -298,6 +302,19 @@ void Viewport::updateXY(int sel, int bin)
 		update();	/* TODO: check for dual update! */
 		emit newOverlay();
 	}
+}
+
+void Viewport::enterEvent(QEvent *)
+{
+	if (active)
+		return;
+/*	sloppy focus. debatable.
+	emit bandSelected(selection, gradient);
+	emit activated(gradient);
+	active = true;
+	update();
+	emit newOverlay();
+*/
 }
 
 void Viewport::mouseMoveEvent(QMouseEvent *event)
@@ -326,8 +343,8 @@ void Viewport::mousePressEvent(QMouseEvent *event)
 		wasActive = false;
 		emit activated(gradient);
 		active = true;
-	}
 
+	}
 	if (event->button() == Qt::RightButton) {
 		this->setCursor(Qt::ClosedHandCursor);
 		lasty = event->y();
@@ -420,8 +437,9 @@ void Viewport::killHover()
 bool Viewport::updateLimiter(int dim, int bin)
 {
 	std::pair<int, int> &l = limiters[dim];
-	int &target = (std::abs(l.first - bin) < std::abs(l.second - bin)
-		   ? l.first : l.second);
+	int &target = (l.first == l.second ?
+		(bin > l.first ? l.second : l.first) :
+		(std::abs(l.first-bin) < std::abs(l.second-bin) ? l.first : l.second));
 	if (target == bin)
 		return false;
 

@@ -53,6 +53,8 @@ protected:
 	std::vector<QPixmap*> ibands, gbands;
 	// pixel label holder
 	cv::Mat_<uchar> labels;
+	// label colors
+	QVector<QColor> labelColors;
 
 	// rgb pixmap
 	QPixmap rgb;

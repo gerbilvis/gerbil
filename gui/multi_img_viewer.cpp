@@ -1,4 +1,5 @@
 #include "multi_img_viewer.h"
+#include "viewerwindow.h"
 #include <cv.h>
 #include <iostream>
 
@@ -6,15 +7,19 @@ using namespace std;
 
 multi_img_viewer::multi_img_viewer(QWidget *parent)
 	: QWidget(parent), labelcolors(NULL), image(NULL),
-	  ignoreLabels(false), illuminant(NULL)
+	  ignoreLabels(false), illuminant(NULL), limiterMenu(this)
 {
 	setupUi(this);
+
 	connect(binSlider, SIGNAL(valueChanged(int)),
 			this, SLOT(rebuild(int)));
 	connect(alphaSlider, SIGNAL(valueChanged(int)),
 			this, SLOT(setAlpha(int)));
 	connect(limiterButton, SIGNAL(toggled(bool)),
 			this, SLOT(toggleLimiters(bool)));
+	connect(limiterMenuButton, SIGNAL(clicked()),
+			this, SLOT(showLimiterMenu()));
+
 	setAlpha(70);
 }
 
@@ -63,7 +68,7 @@ void multi_img_viewer::rebuild(int bins)
 		// reset hover value that would become inappropr.
 		viewport->hover = -1;
 		// reset limiters to most-lazy values
-		viewport->limiters.assign(image->size(), make_pair(0, bins-1));
+		setLimiters(0);
 	}
 	createBins();
 	viewport->updateModelview();
@@ -82,7 +87,7 @@ void multi_img_viewer::createBins()
 	vector<BinSet> &sets = viewport->sets;
 	sets.clear();
 	for (int i = 0; i < labelcolors->size(); ++i)
-		sets.push_back(BinSet(labelcolors->at(i)));
+		sets.push_back(BinSet(labelcolors->at(i), dim));
 
 	for (int y = 0; y < labels.rows; ++y) {
 		uchar *lr = labels[y];
@@ -108,6 +113,11 @@ void multi_img_viewer::createBins()
 				if (d > 0)
 					lines.push_back(QLineF(d-1, lastpos, d, curpos_illum));
 				lastpos = curpos_illum;
+
+				/* cache observed range; can be used for limiter init later */
+				std::pair<int, int> &range = sets[label].boundary[d];
+				range.first = std::min(range.first, curpos);
+				range.second = std::max(range.second, curpos);
 			}
 
 			// put into our set
@@ -240,4 +250,54 @@ void multi_img_viewer::setAlpha(int alpha)
 	viewport->useralpha = (float)alpha/100.f;
 	alphaLabel->setText(QString::fromUtf8("α: %1").arg(viewport->useralpha, 0, 'f', 2));
 	viewport->update();
+}
+
+void multi_img_viewer::createLimiterMenu()
+{
+	QAction *tmp;
+	tmp = limiterMenu.addAction("No limits");
+	tmp->setData(0);
+	tmp = limiterMenu.addAction("Limit from current highlight");
+	tmp->setData(-1);
+	limiterMenu.addSeparator();
+	for (int i = 1; i < labelcolors->size(); ++i) {
+		tmp = limiterMenu.addAction(ViewerWindow::colorIcon((*labelcolors)[i]),
+													  "Limit by label");
+		tmp->setData(i);
+	}
+}
+
+void multi_img_viewer::showLimiterMenu()
+{
+	if (limiterMenu.isEmpty())
+		createLimiterMenu();
+	QAction *a = limiterMenu.exec(limiterMenuButton->mapToGlobal(QPoint(0, 0)));
+	if (!a)
+		return;
+
+	int choice = a->data().toInt(); assert(choice < labelcolors->size());
+	setLimiters(choice);
+	if (!limiterButton->isChecked())
+		limiterButton->toggle();	// change button state, toggleLimiters()
+	else
+		toggleLimiters(true);
+}
+
+void multi_img_viewer::setLimiters(int label)
+{
+	if (label < 1) {	// not label
+		viewport->limiters.assign(image->size(), make_pair(0, nbins-1));
+		if (label == -1) {	// use hover data
+			int b = viewport->selection;
+			int h = viewport->hover;
+			viewport->limiters[b] = std::make_pair(h, h);
+		}
+	} else {
+		if (viewport->sets[label].totalweight > 0.f) { // label holds data
+			// use range from this label
+			const std::vector<std::pair<int, int> > &b = viewport->sets[label].boundary;
+			viewport->limiters.assign(b.begin(), b.end());
+		} else
+			setLimiters(0);
+	}
 }

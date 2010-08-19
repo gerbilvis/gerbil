@@ -19,7 +19,7 @@ public:
 	void setPixmap(const QPixmap &pixmap);
 
 	multi_img::Mask labels;
-	QVector<QColor> markerColors;
+	QVector<QColor> *labelColors;
 
 public slots:
 	void changeLabel(int label);

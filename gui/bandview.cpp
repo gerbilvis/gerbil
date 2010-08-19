@@ -8,10 +8,7 @@ BandView::BandView(QWidget *parent)
 	: QGLWidget(QGLFormat(QGL::SampleBuffers), parent), pixmap(NULL),
 	  cacheValid(false), cursor(-1, -1), lastcursor(-1, -1), curLabel(1),
 	  overlay(0), showLabels(true), seedMode(false)
-{
-	markerColors << Qt::white // 0 is index for unlabeled
-			<< Qt::green << Qt::red << Qt::cyan << Qt::magenta << Qt::blue;
-}
+{}
 
 void BandView::setPixmap(const QPixmap &p)
 {
@@ -57,7 +54,7 @@ void BandView::paintEvent(QPaintEvent *ev)
 	painter.drawPixmap(damaged, cachedPixmap, damaged);
 
 	// draw current cursor
-	QPen pen(seedMode ? Qt::yellow : markerColors[curLabel]);
+	QPen pen(seedMode ? Qt::yellow : (*labelColors)[curLabel]);
 	pen.setWidth(0);
 	painter.setPen(pen);
 	painter.drawRect(QRectF(cursor, QSizeF(1, 1)));
@@ -88,7 +85,7 @@ void BandView::updateCachePixel(QPainter &p, int x, int y)
 {
 	uchar l = labels(y, x);
 	if (l > 0) {
-		QColor col = markerColors[l];
+		QColor col = (*labelColors)[l];
 		col.setAlphaF(0.5);
 		p.setPen(col);
 		p.drawPoint(x, y);

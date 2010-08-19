@@ -8,6 +8,7 @@
         <file alias="cut">resources/edit-cut.png</file>
         <file alias="run">resources/run.png</file>
         <file alias="limiter">resources/limiter.png</file>
+        <file alias="popup">resources/popup-arrow.png</file>
     </qresource>
     <qresource prefix="/">
         <file alias="mainicon">resources/mainicon.svg</file>

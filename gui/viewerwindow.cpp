@@ -26,9 +26,13 @@ void ViewerWindow::init()
 	bandButton->hide();
 
 	/* setup labeling stuff first */
-	QVector<QColor> &labelcolors = bandView->markerColors;
-	bandView->labels = labels;
-	rgbView->labels = labels;
+	labelColors << Qt::white // 0 is index for unlabeled
+		<< Qt::green << Qt::red << Qt::cyan << Qt::magenta << Qt::blue;
+
+	bandView->labels = rgbView->labels = labels;
+	bandView->labelColors = rgbView->labelColors = &labelColors;
+	viewIMG->labels = viewGRAD->labels = labels;
+	viewIMG->labelcolors = viewGRAD->labelcolors = &labelColors;
 
 	createMarkers();
 	selectBand(0, false);
@@ -36,9 +40,7 @@ void ViewerWindow::init()
 
 	updateRGB();
 
-	/* setup viewers, do setImage() last */
-	viewIMG->labels = viewGRAD->labels = labels;
-	viewIMG->labelcolors = viewGRAD->labelcolors = &labelcolors;
+	/* do setImage() last */
 	viewIMG->setImage(image);
 	viewGRAD->setImage(gradient, true);
 	viewIMG->setActive(false);
@@ -319,10 +321,9 @@ void ViewerWindow::changeEvent(QEvent *e)
 
 void ViewerWindow::createMarkers()
 {
-	QVector<QColor> &col = bandView->markerColors;
-	for (int i = 1; i < col.size(); ++i) // 0 is index for unlabeled
+	for (int i = 1; i < labelColors.size(); ++i) // 0 is index for unlabeled
 	{
-		markerSelector->addItem(colorIcon(col[i]), "");
+		markerSelector->addItem(colorIcon(labelColors[i]), "");
 	}
 }
 

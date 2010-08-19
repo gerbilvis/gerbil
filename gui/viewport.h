@@ -7,6 +7,7 @@
 #include <vector>
 #include <QHash>
 #include <QLabel>
+#include <limits>
 
 struct Bin {
 	Bin() {}
@@ -16,10 +17,13 @@ struct Bin {
 };
 
 struct BinSet {
-	BinSet(const QColor &c) : label(c), totalweight(0.f) {}
+	BinSet(const QColor &c, int size)
+		: label(c), totalweight(0.f),
+		boundary(size, std::make_pair(std::numeric_limits<int>::max(), 0)) {}
 	QColor label;
 	QHash<QByteArray, Bin> bins;
 	float totalweight;
+	std::vector<std::pair<int, int> > boundary;
 };
 
 
@@ -62,6 +66,7 @@ signals:
 protected:
 	void paintEvent(QPaintEvent*);
 	void resizeEvent(QResizeEvent*);
+	void enterEvent(QEvent*);
 	void mouseMoveEvent(QMouseEvent*);
 	void mousePressEvent(QMouseEvent*);
 	void mouseReleaseEvent(QMouseEvent*);
