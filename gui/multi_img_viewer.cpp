@@ -62,9 +62,11 @@ void multi_img_viewer::rebuild(int bins)
 
 	if (bins > 0) { // number of bins changed
 		nbins = bins;
-		binsize = (image->maxval - image->minval)/(multi_img::Value)nbins;
+		binsize = (image->maxval - image->minval)/(multi_img::Value)(nbins-1);
 		binLabel->setText(QString("%1 bins").arg(bins));
 		viewport->nbins = bins;
+		viewport->binsize = binsize;
+		viewport->minval = image->minval;
 		// reset hover value that would become inappropr.
 		viewport->hover = -1;
 		// reset limiters to most-lazy values
@@ -98,21 +100,12 @@ void multi_img_viewer::createBins()
 
 			// create hash key and line array at once
 			QByteArray hashkey;
-			qreal lastpos = 0.;
-			QVector<QLineF> lines;
 			for (int d = 0; d < dim; ++d) {
 				int curpos = floor((pixel[d] - image->minval) / binsize);
 				/* multi_img::minval/maxval are only theoretical bounds,
 				   so they could be violated */
 				curpos = max(curpos, 0); curpos = min(curpos, nbins-1);
 				hashkey[d] = (unsigned char)curpos;
-				qreal curpos_illum = curpos;
-				if (illuminant) {
-					curpos_illum *= (*illuminant)[d];
-				}
-				if (d > 0)
-					lines.push_back(QLineF(d-1, lastpos, d, curpos_illum));
-				lastpos = curpos_illum;
 
 				/* cache observed range; can be used for limiter init later */
 				std::pair<int, int> &range = sets[label].boundary[d];
@@ -122,21 +115,23 @@ void multi_img_viewer::createBins()
 
 			// put into our set
 			if (!sets[label].bins.contains(hashkey)) {
-				sets[label].bins.insert(hashkey, Bin(lines, 1.f));
+				sets[label].bins.insert(hashkey, Bin(pixel));
 			} else {
-				sets[label].bins[hashkey].weight += 1.f;
+				sets[label].bins[hashkey].add(pixel);
 			}
 
 			sets[label].totalweight++;
 		}
 	}
-// ** statistics **
+
+	viewport->prepareLines();
+/* ** statistics **
 	int datapoints = 0;
 	for (unsigned int i = 0; i < sets.size(); ++i)
 		datapoints += sets[i].bins.count();
 	cerr << (viewport->gradient? "Gradient View" : "Intensity View") << " shows ";
 	cerr << datapoints << " datapoints." << endl;
-	
+*/
 }
 
 /* create mask of single-band user selection */
@@ -189,7 +184,7 @@ void multi_img_viewer::overlay(int x, int y)
 
 	qreal lastpos = 0.;
 	for (unsigned int d = 0; d < image->size(); ++d) {
-		qreal curpos = floor((pixel[d] - image->minval) / binsize);
+		qreal curpos = (pixel[d] - image->minval) / binsize;
 		if (illuminant)
 			curpos *= (*illuminant)[d];
 		if (d > 0)

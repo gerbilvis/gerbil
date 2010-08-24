@@ -14,8 +14,33 @@ Viewport::Viewport(QWidget *parent)
 	  active(false), wasActive(false), useralpha(1.f),
 	  showLabeled(true), showUnlabeled(true), ignoreLabels(false),
 	  overlayMode(false),
-	  zoom(1.), shift(0), lasty(-1), holdSelection(false), cacheValid(false)
+	  zoom(1.), shift(0), lasty(-1), holdSelection(false), cacheValid(false),
+	  drawMeans(true)
 {}
+
+void Viewport::prepareLines()
+{
+	int start = ((showUnlabeled || ignoreLabels == 1) ? 0 : 1);
+	int end = (showLabeled ? sets.size() : 1);
+
+	for (int i = start; i < end; ++i) {
+		BinSet &s = sets[i];
+		QHash<QByteArray, Bin>::iterator it;
+		for (it = s.bins.begin(); it != s.bins.end(); ++it) {
+			const QByteArray &K = it.key();
+			Bin &b = it.value();
+			for (int d = 0; d < dimensionality; ++d) {
+				qreal curpos = (drawMeans ?
+						((b.means[d]/b.weight) - minval)/binsize
+						: (unsigned char)K[d] + 0.5);
+				if (illuminant) {
+					curpos *= (*illuminant)[d];
+				}
+				b.points[d] = QPointF(d, curpos);
+			}
+		}
+	}
+}
 
 void Viewport::updateModelview()
 {
@@ -50,9 +75,9 @@ void Viewport::drawBins(QPainter &painter)
 	for (int i = start; i < end; ++i) {
 		BinSet &s = sets[i];
 		QColor basecolor = s.label, color;
-		QHash<QByteArray, Bin>::const_iterator it;
-		for (it = s.bins.constBegin(); it != s.bins.constEnd(); ++it) {
-			const Bin &b = it.value();
+		QHash<QByteArray, Bin>::iterator it;
+		for (it = s.bins.begin(); it != s.bins.end(); ++it) {
+			Bin &b = it.value();
 			color = basecolor;
 
 			qreal alpha;
@@ -70,7 +95,7 @@ void Viewport::drawBins(QPainter &painter)
 			color.setAlphaF(min(alpha, 1.));
 
 			bool highlighted = false;
-			QByteArray K = it.key();
+			const QByteArray &K = it.key();
 			if (limiterMode) {
 				highlighted = true;
 				for (int i = 0; i < dimensionality; ++i) {
@@ -93,7 +118,7 @@ void Viewport::drawBins(QPainter &painter)
 			}
 
 			painter.setPen(color);
-			painter.drawLines(b.connections);
+			painter.drawPolyline(b.points);
 		}
 	}
 }
@@ -419,6 +444,10 @@ void Viewport::keyPressEvent(QKeyEvent *event)
 			dirty = true;
 		}
 		break;
+	case Qt::Key_Space:
+		drawMeans = !drawMeans;
+		prepareLines();
+		update();
 	}
 
 	if (dirty) {
