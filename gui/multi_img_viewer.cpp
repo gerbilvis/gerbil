@@ -130,12 +130,13 @@ void multi_img_viewer::createBins()
 			sets[label].totalweight++;
 		}
 	}
-/* ** statistics **
+// ** statistics **
 	int datapoints = 0;
 	for (unsigned int i = 0; i < sets.size(); ++i)
 		datapoints += sets[i].bins.count();
 	cerr << (viewport->gradient? "Gradient View" : "Intensity View") << " shows ";
-	cerr << datapoints << " datapoints." << endl; */
+	cerr << datapoints << " datapoints." << endl;
+	
 }
 
 /* create mask of single-band user selection */
