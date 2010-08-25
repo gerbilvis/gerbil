@@ -1,5 +1,6 @@
 #include "bandview.h"
 
+#include <stopwatch.h>
 #include <QPainter>
 #include <QPaintEvent>
 #include <iostream>
@@ -61,15 +62,29 @@ void BandView::paintEvent(QPaintEvent *ev)
 
 	// draw overlay (a quasi one-timer)
 	if (overlay) {
-		pen.setColor(Qt::yellow); painter.setPen(pen);
-		for (int y = 0; y < overlay->rows; ++y) {
-			for (int x = 0; x < overlay->cols; ++x) {
-				if ((*overlay)(y, x)) {
-					//	painter.fillRect(x, y, 1, 1, Qt::yellow);
-					painter.drawLine(x+1, y, x, y+1);
-					painter.drawLine(x, y, x+1, y+1);
+		if (scale > 4.) {
+			pen.setColor(Qt::yellow); painter.setPen(pen);
+			for (int y = 0; y < overlay->rows; ++y) {
+				const unsigned char *row = (*overlay)[y];
+				for (int x = 0; x < overlay->cols; ++x) {
+					if (row[x]) {
+						painter.drawLine(x+1, y, x, y+1);
+						painter.drawLine(x, y, x+1, y+1);
+					}
 				}
 			}
+		} else {
+			QImage dest(overlay->cols, overlay->rows, QImage::Format_ARGB32);
+			dest.fill(qRgba(0, 0, 0, 0));
+			for (int y = 0; y < overlay->rows; ++y) {
+				const unsigned char *srcrow = (*overlay)[y];
+				QRgb *destrow = (QRgb*)dest.scanLine(y);
+				for (int x = 0; x < overlay->cols; ++x) {
+					if (srcrow[x])
+						destrow[x] = qRgba(255, 255, 0, 63);
+				}
+			}
+			painter.drawImage(0, 0, dest);
 		}
 	}
 
@@ -164,6 +179,7 @@ void BandView::alterLabel(const multi_img::Mask &mask, bool negative)
 
 void BandView::drawOverlay(const multi_img::Mask &mask)
 {
+	//vole::Stopwatch s("Overlay drawing");
 	overlay = &mask;
 	update();
 }
@@ -230,7 +246,8 @@ void BandView::updatePoint(const QPointF &p)
 	update(QRect(damagetl, damagebr));
 }
 
-void BandView::startGraphseg(const multi_img& input, const vole::GraphSegConfig &config)
+void BandView::startGraphseg(const multi_img& input,
+							 const vole::GraphSegConfig &config)
 {
 	vole::GraphSeg seg(config);
 	multi_img::Mask result;

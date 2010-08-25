@@ -1,5 +1,6 @@
 #include "multi_img_viewer.h"
 #include "viewerwindow.h"
+#include <stopwatch.h>
 #include <cv.h>
 #include <iostream>
 
@@ -81,6 +82,8 @@ void multi_img_viewer::createBins()
 {
 	assert(labelcolors && !labels.empty());
 
+	//vole::Stopwatch s("Bin creation");
+
 	// make sure the whole cache is built beforehand
 	image->rebuildPixels();
 
@@ -143,9 +146,7 @@ void multi_img_viewer::fillMaskSingle(int dim, int sel)
 	multi_img::BandConstIt itb = (*image)[dim].begin();
 	for (; itm != maskholder.end(); ++itb, ++itm) {
 		int curpos = floor((*itb - image->minval) / binsize);
-		// minval/maxval are only theoretical bounds
-		curpos = max(curpos, 0); curpos = min(curpos, nbins-1);
-		if (curpos == viewport->hover)
+		if (curpos == sel)
 			*itm = 1;
 	}
 }
@@ -169,6 +170,7 @@ void multi_img_viewer::fillMaskLimiters(const std::vector<std::pair<int, int> >&
 
 const multi_img::Mask& multi_img_viewer::createMask()
 {
+	//vole::Stopwatch s("Mask creation");
 	if (viewport->limiterMode)
 		fillMaskLimiters(viewport->limiters);
 	else

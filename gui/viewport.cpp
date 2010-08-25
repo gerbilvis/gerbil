@@ -1,10 +1,11 @@
 #include "viewport.h"
-#include "qpainter.h"
+#include "stopwatch.h"
 #include <iostream>
 #include <cmath>
 #include <QtCore>
 #include <QPaintEvent>
 #include <QRect>
+#include <QPainter>
 
 using namespace std;
 
@@ -260,6 +261,8 @@ void Viewport::drawOverlay()
 
 void Viewport::paintEvent(QPaintEvent *event)
 {
+	//vole::Stopwatch s("Viewport painting");
+
 	// return early if no data present. other variables may not be initialized
 	if (sets.empty())
 		return;
