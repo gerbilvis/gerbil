@@ -81,7 +81,7 @@ void BandView::paintEvent(QPaintEvent *ev)
 				QRgb *destrow = (QRgb*)dest.scanLine(y);
 				for (int x = 0; x < overlay->cols; ++x) {
 					if (srcrow[x])
-						destrow[x] = qRgba(255, 255, 0, 63);
+						destrow[x] = qRgba(255, 255, 0, 191);
 				}
 			}
 			painter.drawImage(0, 0, dest);

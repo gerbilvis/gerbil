@@ -161,8 +161,10 @@ void multi_img_viewer::fillMaskLimiters(const std::vector<std::pair<int, int> >&
 			const multi_img::Pixel& p = (*image)(y, x);
 			for (unsigned int i = 0; i < image->size(); ++i) {
 				int curpos = floor((p[i] - image->minval) / binsize);
-				if (curpos < l[i].first || curpos > l[i].second)
+				if (curpos < l[i].first || curpos > l[i].second) {
 					row[x] = 0;
+					break;
+				}
 			}
 		}
 	}

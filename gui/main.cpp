@@ -19,9 +19,12 @@ int main(int argc, char **argv)
 
 	/* compute spectral gradient */
 	// log image data
-	multi_img log(*image);
-	log.apply_logarithm();
-	multi_img* gradient = new multi_img(log.spec_gradient());
+	multi_img* gradient;
+	{
+		multi_img log(*image);
+		log.apply_logarithm();
+		gradient = new multi_img(log.spec_gradient());
+	}
 
 	// start gui
 	QApplication app(argc, argv);

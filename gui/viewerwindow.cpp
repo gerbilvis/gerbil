@@ -307,18 +307,6 @@ void ViewerWindow::reshapeDock(bool floating)
 		bandDock->resize(bandDock->height()*src_aspect, bandDock->height());
 }
 
-void ViewerWindow::changeEvent(QEvent *e)
-{
-    QMainWindow::changeEvent(e);
-    switch (e->type()) {
-    case QEvent::LanguageChange:
-        retranslateUi(this);
-        break;
-    default:
-        break;
-    }
-}
-
 void ViewerWindow::createMarkers()
 {
 	for (int i = 1; i < labelColors.size(); ++i) // 0 is index for unlabeled
@@ -386,5 +374,17 @@ void ViewerWindow::setI1Visible(bool visible)
 		viewIMG->setIlluminant(&getIlluminantC(i1));
 	} else {
 		viewIMG->setIlluminant(NULL);
+	}
+}
+
+void ViewerWindow::changeEvent(QEvent *e)
+{
+	QMainWindow::changeEvent(e);
+	switch (e->type()) {
+	case QEvent::LanguageChange:
+		retranslateUi(this);
+		break;
+	default:
+		break;
 	}
 }
