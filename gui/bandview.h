@@ -1,23 +1,21 @@
 #ifndef BANDVIEW_H
 #define BANDVIEW_H
 
+#include "scaledview.h"
+
 #include <multi_img.h>
 #include <graphseg.h>
 
-#include <QGLWidget>
-
-class BandView : public QGLWidget
+class BandView : public ScaledView
 {
 	Q_OBJECT
 public:
 	BandView(QWidget *parent = 0);
-	void resizeEvent(QResizeEvent * ev);
 	void paintEvent(QPaintEvent *ev);
-	void mouseMoveEvent(QMouseEvent *ev) { cursorAction(ev); }
-	void mousePressEvent(QMouseEvent *ev) { cursorAction(ev, true); }
 	void leaveEvent(QEvent *ev);
-	void setPixmap(const QPixmap &pixmap);
 
+	void setPixmap(const QPixmap &pixmap);
+ 
 	multi_img::Mask labels;
 	QVector<QColor> *labelColors;
 
@@ -44,9 +42,6 @@ private:
 	void updateCache(int x, int y);
 	void updatePoint(const QPointF &p);
 
-	qreal scale;
-	QTransform scaler, scalerI;
-	const QPixmap *pixmap;
 	QPixmap cachedPixmap;
 	bool cacheValid;
 

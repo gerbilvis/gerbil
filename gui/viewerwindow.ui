@@ -18,112 +18,163 @@
     <normaloff>:/logoicon</normaloff>:/logoicon</iconset>
   </property>
   <widget class="QWidget" name="centralwidget">
-   <layout class="QVBoxLayout" name="ImgGradLayout">
+   <layout class="QVBoxLayout" name="verticalLayout_4">
+    <property name="spacing">
+     <number>0</number>
+    </property>
+    <property name="margin">
+     <number>0</number>
+    </property>
     <item>
-     <layout class="QHBoxLayout" name="toolbarLayout">
-      <item>
-       <widget class="QPushButton" name="nonmarkButton">
-        <property name="text">
-         <string>Show Unlabeled</string>
-        </property>
-        <property name="checkable">
-         <bool>true</bool>
-        </property>
-        <property name="checked">
-         <bool>true</bool>
-        </property>
-       </widget>
-      </item>
-      <item>
-       <widget class="QPushButton" name="markButton">
-        <property name="text">
-         <string>Show Labeled</string>
-        </property>
-        <property name="checkable">
-         <bool>true</bool>
-        </property>
-        <property name="checked">
-         <bool>true</bool>
-        </property>
-       </widget>
-      </item>
-      <item>
-       <widget class="QPushButton" name="ignoreButton">
-        <property name="text">
-         <string>Ignore Labels</string>
-        </property>
-        <property name="checkable">
-         <bool>true</bool>
-        </property>
-       </widget>
-      </item>
-      <item>
-       <spacer name="horizontalSpacer">
-        <property name="orientation">
-         <enum>Qt::Horizontal</enum>
-        </property>
-        <property name="sizeHint" stdset="0">
-         <size>
-          <width>1</width>
-          <height>1</height>
-         </size>
-        </property>
-       </spacer>
-      </item>
-      <item>
-       <widget class="QPushButton" name="addButton">
-        <property name="toolTip">
-         <string>Add to current label</string>
-        </property>
-        <property name="text">
-         <string/>
-        </property>
-        <property name="icon">
-         <iconset resource="gerbil.qrc">
-          <normaloff>:/toolbar/add</normaloff>:/toolbar/add</iconset>
-        </property>
-        <property name="iconSize">
-         <size>
-          <width>16</width>
-          <height>16</height>
-         </size>
-        </property>
-       </widget>
-      </item>
-      <item>
-       <widget class="QPushButton" name="remButton">
-        <property name="toolTip">
-         <string>Remove from current label</string>
-        </property>
-        <property name="text">
-         <string/>
-        </property>
-        <property name="icon">
-         <iconset resource="gerbil.qrc">
-          <normaloff>:/toolbar/remove</normaloff>:/toolbar/remove</iconset>
-        </property>
-        <property name="iconSize">
-         <size>
-          <width>16</width>
-          <height>16</height>
-         </size>
-        </property>
-       </widget>
-      </item>
-      <item>
-       <widget class="QPushButton" name="bandButton">
-        <property name="text">
-         <string>View Band</string>
-        </property>
-       </widget>
-      </item>
-     </layout>
-    </item>
-    <item>
-     <widget class="multi_img_viewer" name="viewIMG" native="true"/>
-    </item>
-    <item>
-     <widget class="multi_img_viewer" name="viewGRAD" native="true"/>
+     <widget class="QStackedWidget" name="mainStack">
+      <property name="currentIndex">
+       <number>1</number>
+      </property>
+      <widget class="QWidget" name="mainPage">
+       <layout class="QVBoxLayout" name="verticalLayout_3">
+        <item>
+         <layout class="QHBoxLayout" name="toolbarLayout">
+          <item>
+           <widget class="QPushButton" name="nonmarkButton">
+            <property name="text">
+             <string>Show Unlabeled</string>
+            </property>
+            <property name="checkable">
+             <bool>true</bool>
+            </property>
+            <property name="checked">
+             <bool>true</bool>
+            </property>
+           </widget>
+          </item>
+          <item>
+           <widget class="QPushButton" name="markButton">
+            <property name="text">
+             <string>Show Labeled</string>
+            </property>
+            <property name="checkable">
+             <bool>true</bool>
+            </property>
+            <property name="checked">
+             <bool>true</bool>
+            </property>
+           </widget>
+          </item>
+          <item>
+           <widget class="QPushButton" name="ignoreButton">
+            <property name="text">
+             <string>Ignore Labels</string>
+            </property>
+            <property name="checkable">
+             <bool>true</bool>
+            </property>
+           </widget>
+          </item>
+          <item>
+           <spacer name="horizontalSpacer">
+            <property name="orientation">
+             <enum>Qt::Horizontal</enum>
+            </property>
+            <property name="sizeHint" stdset="0">
+             <size>
+              <width>1</width>
+              <height>1</height>
+             </size>
+            </property>
+           </spacer>
+          </item>
+          <item>
+           <widget class="QPushButton" name="addButton">
+            <property name="toolTip">
+             <string>Add to current label</string>
+            </property>
+            <property name="text">
+             <string/>
+            </property>
+            <property name="icon">
+             <iconset resource="gerbil.qrc">
+              <normaloff>:/toolbar/add</normaloff>:/toolbar/add</iconset>
+            </property>
+            <property name="iconSize">
+             <size>
+              <width>16</width>
+              <height>16</height>
+             </size>
+            </property>
+           </widget>
+          </item>
+          <item>
+           <widget class="QPushButton" name="remButton">
+            <property name="toolTip">
+             <string>Remove from current label</string>
+            </property>
+            <property name="text">
+             <string/>
+            </property>
+            <property name="icon">
+             <iconset resource="gerbil.qrc">
+              <normaloff>:/toolbar/remove</normaloff>:/toolbar/remove</iconset>
+            </property>
+            <property name="iconSize">
+             <size>
+              <width>16</width>
+              <height>16</height>
+             </size>
+            </property>
+           </widget>
+          </item>
+          <item>
+           <widget class="QPushButton" name="bandButton">
+            <property name="text">
+             <string>View Band</string>
+            </property>
+           </widget>
+          </item>
+         </layout>
+        </item>
+        <item>
+         <widget class="multi_img_viewer" name="viewIMG" native="true"/>
+        </item>
+        <item>
+         <widget class="multi_img_viewer" name="viewGRAD" native="true"/>
+        </item>
+       </layout>
+      </widget>
+      <widget class="QWidget" name="roiPage">
+       <layout class="QVBoxLayout" name="verticalLayout_5">
+        <item>
+         <widget class="QLabel" name="roiTitle">
+          <property name="text">
+           <string>&lt;b&gt;Select Region of Interest:&lt;/b&gt;</string>
+          </property>
+          <property name="textFormat">
+           <enum>Qt::RichText</enum>
+          </property>
+         </widget>
+        </item>
+        <item>
+         <widget class="ROIView" name="roiView" native="true">
+          <property name="sizePolicy">
+           <sizepolicy hsizetype="Expanding" vsizetype="Expanding">
+            <horstretch>1</horstretch>
+            <verstretch>1</verstretch>
+           </sizepolicy>
+          </property>
+         </widget>
+        </item>
+        <item>
+         <widget class="QDialogButtonBox" name="roiButtons">
+          <property name="standardButtons">
+           <set>QDialogButtonBox::Apply|QDialogButtonBox::Cancel|QDialogButtonBox::Reset</set>
+          </property>
+          <property name="centerButtons">
+           <bool>false</bool>
+          </property>
+         </widget>
+        </item>
+       </layout>
+      </widget>
+     </widget>
     </item>
    </layout>
   </widget>
@@ -458,7 +509,7 @@
    <widget class="QWidget" name="dockWidgetContents">
     <layout class="QVBoxLayout" name="verticalLayout_2">
      <item>
-      <widget class="BandView" name="rgbView" native="true">
+      <widget class="ScaledView" name="rgbView" native="true">
        <property name="sizePolicy">
         <sizepolicy hsizetype="Expanding" vsizetype="Expanding">
          <horstretch>1</horstretch>
@@ -484,6 +535,16 @@
    <class>BandView</class>
    <extends>QWidget</extends>
    <header>bandview.h</header>
+  </customwidget>
+  <customwidget>
+   <class>ScaledView</class>
+   <extends>QWidget</extends>
+   <header>scaledview.h</header>
+  </customwidget>
+  <customwidget>
+   <class>ROIView</class>
+   <extends>QWidget</extends>
+   <header>roiview.h</header>
   </customwidget>
  </customwidgets>
  <resources>

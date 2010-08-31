@@ -15,7 +15,7 @@
 class ViewerWindow : public QMainWindow, private Ui::ViewerWindow {
     Q_OBJECT
 public:
-	ViewerWindow(multi_img *image, multi_img *gradient, QWidget *parent = 0);
+	ViewerWindow(multi_img *image, QWidget *parent = 0);
 
 	const QPixmap* getBand(int dim, bool gradient);
 	const inline Illuminant & getIlluminant(int temp);
@@ -43,27 +43,31 @@ protected:
     void changeEvent(QEvent *e);
 
 	// helper functions
+	void applyROI();
+
 	void createMarkers();
 	void labelmask(bool negative);
 
 	// multispectral image and gradient
-	multi_img *image, *gradient;
+	multi_img *full_image, *image, *gradient;
+	// current region of interest
+	cv::Rect roi;
 	// bands from both image and gradient
 	std::vector<QPixmap*> ibands, gbands;
 	// pixel label holder
-	cv::Mat_<uchar> labels;
+	cv::Mat1b labels;
 	// label colors
 	QVector<QColor> labelColors;
 
 	// rgb pixmap
-	QPixmap rgb;
+	QPixmap full_rgb, rgb;
 	int activeViewer; // 0: IMG, 1: GRAD
 
 private:
 	void init();
 	void initGraphsegUI();
 	void initIlluminantUI();
-	void updateRGB();
+	void updateRGB(bool full);
 	void buildIlluminant(int temp);
 
 	// cache for illumination coefficients

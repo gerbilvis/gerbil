@@ -6,13 +6,46 @@
 #include <QIcon>
 #include <iostream>
 
-ViewerWindow::ViewerWindow(multi_img *image, multi_img *gradient, QWidget *parent)
+ViewerWindow::ViewerWindow(multi_img *image, QWidget *parent)
 	: QMainWindow(parent),
-	  image(image), gradient(gradient),
-	  ibands(image->size(), NULL), gbands(gradient->size(), NULL),
-	  labels(image->height, image->width, (uchar)0), activeViewer(0)
+	  full_image(image), image(NULL), gradient(NULL),
+	  activeViewer(0)
 {
 	init();
+}
+
+void ViewerWindow::applyROI()
+{
+	// first: set up new working images
+	delete image;
+	delete gradient;
+	image = new multi_img(*full_image, roi);
+
+	multi_img log(*image);
+	log.apply_logarithm();
+	gradient = new multi_img(log.spec_gradient());
+
+	// second: re-initialize gui
+	labels = cv::Mat1b(image->height, image->width, (uchar)0);
+
+	bandView->labels = labels;
+	viewIMG->labels = viewGRAD->labels = labels;
+
+	/* update caches */
+	ibands.assign(image->size(), NULL);
+	gbands.assign(gradient->size(), NULL);
+
+	selectBand(0, false);
+	updateRGB(false);
+
+	/* do setImage() last */
+	viewIMG->setImage(image);
+	viewGRAD->setImage(gradient, true);
+	viewIMG->setActive(false);
+
+	bandDock->show();
+	rgbDock->show();
+	mainStack->setCurrentIndex(0);
 }
 
 void ViewerWindow::init()
@@ -20,25 +53,18 @@ void ViewerWindow::init()
 	setupUi(this);
 	bandButton->hide();
 
+	bandDock->hide();
+	rgbDock->hide();
+
 	/* setup labeling stuff first */
 	labelColors << Qt::white // 0 is index for unlabeled
 		<< Qt::green << Qt::red << Qt::cyan << Qt::magenta << Qt::blue;
 
-	bandView->labels = rgbView->labels = labels;
-	bandView->labelColors = rgbView->labelColors = &labelColors;
-	viewIMG->labels = viewGRAD->labels = labels;
+	bandView->labelColors = &labelColors;
 	viewIMG->labelcolors = viewGRAD->labelcolors = &labelColors;
-
 	createMarkers();
-	selectBand(0, false);
+
 	graphsegWidget->hide();
-
-	updateRGB();
-
-	/* do setImage() last */
-	viewIMG->setImage(image);
-	viewGRAD->setImage(gradient, true);
-	viewIMG->setActive(false);
 
 	/* signals & slots */
 	connect(bandDock, SIGNAL(visibilityChanged(bool)),
@@ -110,6 +136,16 @@ void ViewerWindow::init()
 		connect(bandView, SIGNAL(killHover()),
 				vp, SLOT(killHover()));
 	}
+
+	updateRGB(true);
+
+	if (full_image->width*full_image->height < 513*513) {
+		roi = cv::Rect(0, 0, full_image->width, full_image->height);
+		roiView->roi = QRect(0, 0, full_image->width, full_image->height);
+		applyROI();
+	} else {
+		roiView->roi = QRect(10, 10, full_image->width - 20, full_image->height - 30);
+	}
 }
 
 const QPixmap* ViewerWindow::getBand(int dim, bool grad)
@@ -156,52 +192,56 @@ void ViewerWindow::applyIlluminant() {
 	/* remove old illuminant */
 	if (i1 != 0) {
 		const Illuminant &il = getIlluminant(i1);
-		image->apply_illuminant(il, true);
+		full_image->apply_illuminant(il, true);
 	}
 
 	/* add new illuminant */
 	if (i2 != 0) {
 		const Illuminant &il = getIlluminant(i2);
-		image->apply_illuminant(il);
+		full_image->apply_illuminant(il);
 	}
-
-	/* rebuild spectral gradient */
-	{
-		multi_img log(*image);
-		log.apply_logarithm();
-		*gradient = log.spec_gradient();
-	}
-
-	/* update caches */
-	ibands.clear(); ibands.resize(image->size(), NULL);
-	gbands.clear(); gbands.resize(image->size(), NULL);
 
 	viewIMG->setIlluminant((i2 ? &getIlluminantC(i2) : NULL), true);
-	viewGRAD->rebuild();
-	int band = (activeViewer == 0 ? viewIMG->getViewport()->selection
-								  : viewGRAD->getViewport()->selection);
-	selectBand(band, activeViewer == 1);
-	bandView->update();
-	updateRGB();
+	/* rebuild spectral gradient and update other stuff */
+	if (roi.width > 0)
+	{
+		applyROI();
+		viewGRAD->rebuild();
+		int band = (activeViewer == 0 ? viewIMG->getViewport()->selection
+									  : viewGRAD->getViewport()->selection);
+		selectBand(band, activeViewer == 1);
+		bandView->update();
+	}
+	updateRGB(true);
 
 	/* reflect change in our own gui (will propagate to viewIMG) */
 	i1Box->setCurrentIndex(i2Box->currentIndex());
 }
 
-void ViewerWindow::updateRGB()
+void ViewerWindow::updateRGB(bool full)
 {
-	cv::Mat3f rgbmat = image->rgb();
-	QImage img(rgbmat.cols, rgbmat.rows, QImage::Format_ARGB32);
-	for (int y = 0; y < rgbmat.rows; ++y) {
-		cv::Vec3f *row = rgbmat[y];
-		for (int x = 0; x < rgbmat.cols; ++x) {
-			cv::Vec3f &c = row[x];
-			img.setPixel(x, y, qRgb(c[0]*255., c[1]*255., c[2]*255.));
+	if (full || full_rgb.isNull()) {
+		cv::Mat3f rgbmat = full_image->rgb();
+		QImage img(rgbmat.cols, rgbmat.rows, QImage::Format_ARGB32);
+		for (int y = 0; y < rgbmat.rows; ++y) {
+			cv::Vec3f *row = rgbmat[y];
+			QRgb *destrow = (QRgb*)img.scanLine(y);
+			for (int x = 0; x < rgbmat.cols; ++x) {
+				cv::Vec3f &c = row[x];
+				destrow[x] = qRgb(c[0]*255., c[1]*255., c[2]*255.);
+			}
 		}
+		full_rgb = QPixmap::fromImage(img);
 	}
-	rgb = QPixmap::fromImage(img);
-	rgbView->setPixmap(rgb);
-	rgbView->update();
+	if (full) {
+		roiView->setPixmap(full_rgb);
+		roiView->update();
+	}
+	if (roi.width > 0) {
+		rgb = full_rgb.copy(roi.x, roi.y, roi.width, roi.height);
+		rgbView->setPixmap(rgb);
+		rgbView->update();
+	}
 }
 
 void ViewerWindow::initIlluminantUI()
@@ -288,7 +328,7 @@ void ViewerWindow::newOverlay()
 
 void ViewerWindow::reshapeDock(bool floating)
 {
-	if (!floating)
+	if (!floating || !image)
 		return;
 
 	float src_aspect = image->width/(float)image->height;
@@ -321,9 +361,9 @@ void ViewerWindow::buildIlluminant(int temp)
 	assert(temp > 0);
 	Illuminant il(temp);
 	std::vector<multi_img::Value> cf;
-	il.calcWeight(image->meta[0].center,
-				  image->meta[image->size()-1].center);
-	cf = image->getIllumCoeff(il);
+	il.calcWeight(full_image->meta[0].center,
+				  full_image->meta[full_image->size()-1].center);
+	cf = full_image->getIllumCoeff(il);
 	illuminants[temp] = make_pair(il, cf);
 }
 

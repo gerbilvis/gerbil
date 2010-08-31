@@ -6,7 +6,7 @@
 #include <iostream>
 
 BandView::BandView(QWidget *parent)
-	: QGLWidget(QGLFormat(QGL::SampleBuffers), parent), pixmap(NULL),
+	: ScaledView(parent),
 	  cacheValid(false), cursor(-1, -1), lastcursor(-1, -1), curLabel(1),
 	  overlay(0), showLabels(true), seedMode(false)
 {}
@@ -15,25 +15,6 @@ void BandView::setPixmap(const QPixmap &p)
 {
 	cacheValid = false;
 	pixmap = &p;
-}
-
-void BandView::resizeEvent(QResizeEvent *ev)
-{
-	if (!pixmap)
-		return;
-
-	// determine scale of correct aspect-ratio
-	float src_aspect = pixmap->width()/(float)pixmap->height();
-	float dest_aspect = width()/(float)height();
-	float w, h;
-	if (src_aspect > dest_aspect) {
-		w = width(); h = w/src_aspect;
-	} else {
-		h = height(); w = h*src_aspect;
-	}
-	scale = w/pixmap->width();
-	scaler = QTransform().scale(scale, scale);
-	scalerI = scaler.inverted();
 }
 
 void BandView::paintEvent(QPaintEvent *ev)

@@ -16,7 +16,9 @@ VoleCompileIfQt(
 	multi_img_viewer
 	viewerwindow
 	viewport
+	scaledview
 	bandview
+	roiview
 #	view3d
 )
 
@@ -26,7 +28,9 @@ VoleMocIfQt(
 	multi_img_viewer.h
 	viewerwindow.h
 	viewport.h
+	scaledview.h
 	bandview.h
+	roiview.h
 #	view3d.h
 )
 

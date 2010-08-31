@@ -17,20 +17,11 @@ int main(int argc, char **argv)
 	if (image->empty())
 		return 2;
 
-	/* compute spectral gradient */
-	// log image data
-	multi_img* gradient;
-	{
-		multi_img log(*image);
-		log.apply_logarithm();
-		gradient = new multi_img(log.spec_gradient());
-	}
-
 	// start gui
 	QApplication app(argc, argv);
 	
 	// regular viewer
-	ViewerWindow window(image, gradient);
+	ViewerWindow window(image);
 	window.show();
 	
 /*	// fancy 3d viewer

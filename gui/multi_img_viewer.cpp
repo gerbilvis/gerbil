@@ -54,6 +54,7 @@ void multi_img_viewer::setImage(const multi_img *img, bool gradient)
 void multi_img_viewer::setIlluminant(
 		const std::vector<multi_img::Value> *coeffs, bool for_real)
 {
+	return;
 	if (for_real) {
 		// only set it to true, never to false again
 		viewport->illuminant_correction = true;
