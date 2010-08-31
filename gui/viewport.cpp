@@ -15,7 +15,8 @@ Viewport::Viewport(QWidget *parent)
 	  active(false), wasActive(false), useralpha(1.f),
 	  showLabeled(true), showUnlabeled(true), ignoreLabels(false),
 	  overlayMode(false),
-	  zoom(1.), shift(0), lasty(-1), holdSelection(false), cacheValid(false),
+	  zoom(1.), shift(0), lasty(-1), holdSelection(false), activeLimiter(-1),
+	  cacheValid(false),
 	  drawMeans(true)
 {}
 
@@ -31,11 +32,13 @@ void Viewport::prepareLines()
 			const QByteArray &K = it.key();
 			Bin &b = it.value();
 			for (int d = 0; d < dimensionality; ++d) {
-				qreal curpos = (drawMeans ?
-						((b.means[d]/b.weight) - minval)/binsize
-						: (unsigned char)K[d] + 0.5);
-				if (illuminant) {
-					curpos *= (*illuminant)[d];
+				qreal curpos;
+				if (drawMeans) {
+					curpos = ((b.means[d]/b.weight) - minval)/binsize;
+				} else {
+					curpos = (unsigned char)K[d] + 0.5;
+					if (illuminant_correction && illuminant)
+						curpos *= (*illuminant)[d];
 				}
 				b.points[d] = QPointF(d, curpos);
 			}
@@ -144,6 +147,10 @@ void Viewport::drawAxesFg(QPainter &painter)
 		painter.setPen(Qt::red);
 		for (int i = 0; i < dimensionality; ++i) {
 			qreal y1 = limiters[i].first, y2 = limiters[i].second;
+			if (illuminant) {
+				y1 *= illuminant->at(selection);
+				y2 *= illuminant->at(selection);
+			}
 			qreal h = nbins*0.01;
 			if (h > y2 - y1)	// don't let them overlap, looks uncool
 				h = y2 - y1;
@@ -245,18 +252,15 @@ void Viewport::drawOverlay()
 	painter.drawImage(0, 0, cacheImg);
 	painter.setRenderHint(QPainter::Antialiasing);
 
+	QPolygonF poly = modelview.map(overlayPoints);
 	QPen pen(Qt::black);
 	pen.setWidth(5);
 	painter.setPen(pen);
-	for (int i = 0; i < overlayLines.size(); ++i) {
-		painter.drawLine(modelview.map(overlayLines[i]));
-	}
+	painter.drawPolyline(poly);
 	QPen pen2(Qt::yellow);
 	pen2.setWidth(2);
 	painter.setPen(pen2);
-	for (int i = 0; i < overlayLines.size(); ++i) {
-		painter.drawLine(modelview.map(overlayLines[i]));
-	}
+	painter.drawPolyline(poly);
 }
 
 void Viewport::paintEvent(QPaintEvent *event)
@@ -303,7 +307,7 @@ void Viewport::updateXY(int sel, int bin)
 	}
 
 	/// second handle bin -> intensity highlight
-	if (illuminant)	/* correct y for illuminant */
+	if (illuminant && illuminant_correction)	/* correct y for illuminant */
 		bin = std::floor(bin / illuminant->at(sel) + 0.5f);
 
 	if (bin < 0 || bin >= nbins)
@@ -328,7 +332,7 @@ void Viewport::updateXY(int sel, int bin)
 
 	if (emitOverlay) {
 		update();	/* TODO: check for dual update! */
-		emit newOverlay();
+		emit newOverlay(selection);
 	}
 }
 
@@ -341,7 +345,7 @@ void Viewport::enterEvent(QEvent *)
 	emit activated(gradient);
 	active = true;
 	update();
-	emit newOverlay();
+	emit newOverlay(-1);
 */
 }
 
@@ -383,8 +387,10 @@ void Viewport::mousePressEvent(QMouseEvent *event)
 
 void Viewport::mouseReleaseEvent(QMouseEvent * event)
 {
-	// in limiterMode, holdSelect is always set on first mouse action
+	// in limiterMode, holdSelect+act.Limiter is set on first mouse action
 	holdSelection = false;
+	activeLimiter = -1;
+
 	if (event->button() == Qt::RightButton) {
 		this->setCursor(Qt::ArrowCursor);
 		lasty = -1;
@@ -455,7 +461,7 @@ void Viewport::keyPressEvent(QKeyEvent *event)
 
 	if (dirty) {
 		update();
-		emit newOverlay();
+		emit newOverlay(-1);
 	}
 }
 
@@ -469,12 +475,19 @@ void Viewport::killHover()
 bool Viewport::updateLimiter(int dim, int bin)
 {
 	std::pair<int, int> &l = limiters[dim];
-	int &target = (l.first == l.second ?
-		(bin > l.first ? l.second : l.first) :
-		(std::abs(l.first-bin) < std::abs(l.second-bin) ? l.first : l.second));
-	if (target == bin)
+	int *target;
+	if (l.first == l.second) {
+		target = (bin > l.first ? &l.second : &l.first);
+	} else if (activeLimiter > -1) {
+		target = (activeLimiter ? &l.second : &l.first);
+	} else {
+		target = (std::abs(l.first-bin) < std::abs(l.second-bin) ?
+				  &l.first : &l.second);
+	}
+	if (*target == bin)
 		return false;
 
-	target = bin;
+	*target = bin;
+	activeLimiter = (target == &l.first ? 0 : 1);
 	return true;
 }

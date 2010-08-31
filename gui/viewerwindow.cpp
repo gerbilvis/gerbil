@@ -8,16 +8,11 @@
 
 ViewerWindow::ViewerWindow(multi_img *image, multi_img *gradient, QWidget *parent)
 	: QMainWindow(parent),
-	  image(image), image_orig(NULL), gradient(gradient),
+	  image(image), gradient(gradient),
 	  ibands(image->size(), NULL), gbands(gradient->size(), NULL),
 	  labels(image->height, image->width, (uchar)0), activeViewer(0)
 {
 	init();
-}
-
-ViewerWindow::~ViewerWindow() {
-	if (image_orig != image)
-		delete image_orig;
 }
 
 void ViewerWindow::init()
@@ -104,7 +99,7 @@ void ViewerWindow::init()
 
 		connect(v, SIGNAL(newOverlay()),
 				this, SLOT(newOverlay()));
-		connect(vp, SIGNAL(newOverlay()),
+		connect(vp, SIGNAL(newOverlay(int)),
 				this, SLOT(newOverlay()));
 
 		connect(vp, SIGNAL(addSelection()),
@@ -155,34 +150,33 @@ void ViewerWindow::applyIlluminant() {
 	if (i1 == i2)
 		return;
 
-	/* one-timer remove old illuminant */
-	if (i1Box->isEnabled() && i1 != 0) {
-		const Illuminant &il = getIlluminant(i1);
-		image->apply_illuminant(il, true);
-	}
 	i1Box->setDisabled(true);
 	i1Check->setVisible(true);
 
+	/* remove old illuminant */
+	if (i1 != 0) {
+		const Illuminant &il = getIlluminant(i1);
+		image->apply_illuminant(il, true);
+	}
+
 	/* add new illuminant */
 	if (i2 != 0) {
-		if (!image_orig) {
-			image_orig = new multi_img(*image);
-			viewIMG->setImage(image_orig);
-		} else {
-			*image = *image_orig;
-		}
 		const Illuminant &il = getIlluminant(i2);
 		image->apply_illuminant(il);
 	}
 
 	/* rebuild spectral gradient */
-	multi_img log(*image);
-	log.apply_logarithm();
-	*gradient = log.spec_gradient();
+	{
+		multi_img log(*image);
+		log.apply_logarithm();
+		*gradient = log.spec_gradient();
+	}
 
 	/* update caches */
 	ibands.clear(); ibands.resize(image->size(), NULL);
 	gbands.clear(); gbands.resize(image->size(), NULL);
+
+	viewIMG->setIlluminant((i2 ? &getIlluminantC(i2) : NULL), true);
 	viewGRAD->rebuild();
 	int band = (activeViewer == 0 ? viewIMG->getViewport()->selection
 								  : viewGRAD->getViewport()->selection);
@@ -281,7 +275,7 @@ void ViewerWindow::setActive(bool gradient)
 void ViewerWindow::labelmask(bool negative)
 {
 	multi_img_viewer *viewer = (activeViewer == 0 ? viewIMG : viewGRAD);
-	emit alterLabel(viewer->createMask(), negative);
+	emit alterLabel(viewer->getMask(), negative);
 	viewIMG->rebuild();
 	viewGRAD->rebuild();
 }
@@ -289,7 +283,7 @@ void ViewerWindow::labelmask(bool negative)
 void ViewerWindow::newOverlay()
 {
 	multi_img_viewer *viewer = (activeViewer == 0 ? viewIMG : viewGRAD);
-	emit drawOverlay(viewer->createMask());
+	emit drawOverlay(viewer->getMask());
 }
 
 void ViewerWindow::reshapeDock(bool floating)
@@ -360,10 +354,10 @@ void ViewerWindow::setI1(int index) {
 	if (i1 > 0) {
 		i1Check->setEnabled(true);
 		if (i1Check->isChecked())
-			viewIMG->setIlluminant(&getIlluminantC(i1));
+			viewIMG->setIlluminant(&getIlluminantC(i1), false);
 	} else {
 		i1Check->setEnabled(false);
-		viewIMG->setIlluminant(NULL);
+		viewIMG->setIlluminant(NULL, false);
 	}
 }
 
@@ -371,9 +365,9 @@ void ViewerWindow::setI1Visible(bool visible)
 {
 	if (visible) {
 		int i1 = i1Box->itemData(i1Box->currentIndex()).value<int>();
-		viewIMG->setIlluminant(&getIlluminantC(i1));
+		viewIMG->setIlluminant(&getIlluminantC(i1), false);
 	} else {
-		viewIMG->setIlluminant(NULL);
+		viewIMG->setIlluminant(NULL, false);
 	}
 }
 

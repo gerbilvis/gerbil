@@ -53,6 +53,7 @@ public:
 	std::vector<QString> labels;
 
 	const std::vector<multi_img::Value> *illuminant;
+	bool illuminant_correction;
 
 	int selection, hover;
 	bool limiterMode;
@@ -63,14 +64,14 @@ public:
 
 	bool showLabeled, showUnlabeled, ignoreLabels;
 	bool overlayMode;
-	QVector<QLineF> overlayLines;
+	QPolygonF overlayPoints;
 
 public slots:
 	void killHover();
 
 signals:
 	void bandSelected(int dim, bool gradient);
-	void newOverlay();
+	void newOverlay(int dim);
 	void activated(bool who);
 	void addSelection();
 	void remSelection();
@@ -110,6 +111,7 @@ private:
 	/* if in limiter mode, user has to release mouse button before switching
 	   band. this is for usability, users tend to accidentially switch bands */
 	bool holdSelection;
+	int activeLimiter;
 
 	// cache for efficient overlay
 	bool cacheValid;

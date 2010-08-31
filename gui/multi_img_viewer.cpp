@@ -3,12 +3,13 @@
 #include <stopwatch.h>
 #include <cv.h>
 #include <iostream>
+#include <QThread>
 
 using namespace std;
 
 multi_img_viewer::multi_img_viewer(QWidget *parent)
-	: QWidget(parent), labelcolors(NULL), image(NULL),
-	  ignoreLabels(false), illuminant(NULL), limiterMenu(this)
+	: QWidget(parent), labelcolors(NULL), image(NULL), illuminant(NULL),
+	  ignoreLabels(false), limiterMenu(this)
 {
 	setupUi(this);
 
@@ -20,6 +21,9 @@ multi_img_viewer::multi_img_viewer(QWidget *parent)
 			this, SLOT(toggleLimiters(bool)));
 	connect(limiterMenuButton, SIGNAL(clicked()),
 			this, SLOT(showLimiterMenu()));
+
+	connect(viewport, SIGNAL(newOverlay(int)),
+			this, SLOT(updateMask(int)));
 
 	setAlpha(70);
 }
@@ -47,13 +51,19 @@ void multi_img_viewer::setImage(const multi_img *img, bool gradient)
 	rebuild(binSlider->value());
 }
 
-void multi_img_viewer::setIlluminant(const std::vector<multi_img::Value> *coeffs)
+void multi_img_viewer::setIlluminant(
+		const std::vector<multi_img::Value> *coeffs, bool for_real)
 {
-	if (illuminant == coeffs)
-		return;
-	illuminant = coeffs;
-	viewport->illuminant = illuminant;
-	rebuild();
+	if (for_real) {
+		// only set it to true, never to false again
+		viewport->illuminant_correction = true;
+
+		illuminant = coeffs;
+		rebuild();
+	} else {
+		viewport->illuminant = coeffs;
+		viewport->update();
+	}
 }
 
 void multi_img_viewer::rebuild(int bins)
@@ -104,16 +114,16 @@ void multi_img_viewer::createBins()
 			// create hash key and line array at once
 			QByteArray hashkey;
 			for (int d = 0; d < dim; ++d) {
-				int curpos = floor((pixel[d] - image->minval) / binsize);
+				int pos = floor(curpos(pixel[d], d));
 				/* multi_img::minval/maxval are only theoretical bounds,
 				   so they could be violated */
-				curpos = max(curpos, 0); curpos = min(curpos, nbins-1);
-				hashkey[d] = (unsigned char)curpos;
+				pos = max(pos, 0); pos = min(pos, nbins-1);
+				hashkey[d] = (unsigned char)pos;
 
 				/* cache observed range; can be used for limiter init later */
 				std::pair<int, int> &range = sets[label].boundary[d];
-				range.first = std::min(range.first, curpos);
-				range.second = std::max(range.second, curpos);
+				range.first = std::min(range.first, pos);
+				range.second = std::max(range.second, pos);
 			}
 
 			// put into our set
@@ -145,8 +155,8 @@ void multi_img_viewer::fillMaskSingle(int dim, int sel)
 	multi_img::MaskIt itm = maskholder.begin();
 	multi_img::BandConstIt itb = (*image)[dim].begin();
 	for (; itm != maskholder.end(); ++itb, ++itm) {
-		int curpos = floor((*itb - image->minval) / binsize);
-		if (curpos == sel)
+		int pos = floor(curpos(*itb, dim));
+		if (pos == sel)
 			*itm = 1;
 	}
 }
@@ -159,9 +169,9 @@ void multi_img_viewer::fillMaskLimiters(const std::vector<std::pair<int, int> >&
 		uchar *row = maskholder[y];
 		for (int x = 0; x < image->width; ++x) {
 			const multi_img::Pixel& p = (*image)(y, x);
-			for (unsigned int i = 0; i < image->size(); ++i) {
-				int curpos = floor((p[i] - image->minval) / binsize);
-				if (curpos < l[i].first || curpos > l[i].second) {
+			for (unsigned int d = 0; d < image->size(); ++d) {
+				int pos = floor(curpos(p[d], d));
+				if (pos < l[d].first || pos > l[d].second) {
 					row[x] = 0;
 					break;
 				}
@@ -170,79 +180,48 @@ void multi_img_viewer::fillMaskLimiters(const std::vector<std::pair<int, int> >&
 	}
 }
 
-const multi_img::Mask& multi_img_viewer::createMask()
+void multi_img_viewer::updateMaskLimiters(
+		const std::vector<std::pair<int, int> >& l, int dim)
 {
-	//vole::Stopwatch s("Mask creation");
-	if (viewport->limiterMode)
-		fillMaskLimiters(viewport->limiters);
-	else
+	multi_img::MaskIt itm = maskholder.begin();
+	multi_img::BandConstIt itb = (*image)[dim].begin();
+	for (; itm != maskholder.end(); ++itb, ++itm) {
+		int pos = floor(curpos(*itb, dim));
+		if (pos < l[dim].first || pos > l[dim].second)
+			*itm = 0;
+		else
+			*itm = 1;
+	}
+}
+
+void multi_img_viewer::updateMask(int dim)
+{
+	if (dim == -1)
+		return;
+
+	if (viewport->limiterMode) {
+		if (maskValid)
+			updateMaskLimiters(viewport->limiters, dim);
+		else
+			fillMaskLimiters(viewport->limiters);
+		maskValid = true;
+	} else {
 		fillMaskSingle(viewport->selection, viewport->hover);
-	return maskholder;
+	}
 }
 
 void multi_img_viewer::overlay(int x, int y)
 {
 	const multi_img::Pixel &pixel = (*image)(y, x);
-	QVector<QLineF> &lines = viewport->overlayLines;
-	lines.clear();
+	QPolygonF &points = viewport->overlayPoints;
+	points.resize(image->size());
 
-	qreal lastpos = 0.;
-	for (unsigned int d = 0; d < image->size(); ++d) {
-		qreal curpos = (pixel[d] - image->minval) / binsize;
-		if (illuminant)
-			curpos *= (*illuminant)[d];
-		if (d > 0)
-			lines.push_back(QLineF(d-1, lastpos, d, curpos));
-		lastpos = curpos;
-	}
+	for (unsigned int d = 0; d < image->size(); ++d)
+		points[d] = QPointF(d, curpos(pixel[d], d));
 
 	viewport->overlayMode = true;
 	viewport->repaint();
 	viewport->overlayMode = false;
-}
-
-void multi_img_viewer::setActive(bool who)
-{
-	viewport->active = (who == viewport->gradient); // yes, indeed!
-	viewport->update();
-}
-
-void multi_img_viewer::toggleLabeled(bool toggle)
-{
-	viewport->showLabeled = toggle;
-	viewport->update();
-}
-
-void multi_img_viewer::toggleUnlabeled(bool toggle)
-{
-	viewport->showUnlabeled = toggle;
-	viewport->update();
-}
-
-void multi_img_viewer::toggleLabels(bool toggle)
-{
-	ignoreLabels = toggle;
-	viewport->ignoreLabels = toggle;
-	rebuild();
-}
-
-void multi_img_viewer::toggleLimiters(bool toggle)
-{
-	viewport->limiterMode = toggle;
-	viewport->repaint();
-	emit newOverlay();
-}
-
-void multi_img_viewer::changeEvent(QEvent *e)
-{
-    QWidget::changeEvent(e);
-    switch (e->type()) {
-    case QEvent::LanguageChange:
-        retranslateUi(this);
-        break;
-    default:
-        break;
-    }
 }
 
 void multi_img_viewer::setAlpha(int alpha)
@@ -299,5 +278,50 @@ void multi_img_viewer::setLimiters(int label)
 			viewport->limiters.assign(b.begin(), b.end());
 		} else
 			setLimiters(0);
+	}
+}
+
+void multi_img_viewer::setActive(bool who)
+{
+	viewport->active = (who == viewport->gradient); // yes, indeed!
+	viewport->update();
+}
+
+void multi_img_viewer::toggleLabeled(bool toggle)
+{
+	viewport->showLabeled = toggle;
+	viewport->update();
+}
+
+void multi_img_viewer::toggleUnlabeled(bool toggle)
+{
+	viewport->showUnlabeled = toggle;
+	viewport->update();
+}
+
+void multi_img_viewer::toggleLabels(bool toggle)
+{
+	ignoreLabels = toggle;
+	viewport->ignoreLabels = toggle;
+	rebuild();
+}
+
+void multi_img_viewer::toggleLimiters(bool toggle)
+{
+	viewport->limiterMode = toggle;
+	viewport->repaint();
+	maskValid = false;
+	emit newOverlay();
+}
+
+void multi_img_viewer::changeEvent(QEvent *e)
+{
+	QWidget::changeEvent(e);
+	switch (e->type()) {
+	case QEvent::LanguageChange:
+		retranslateUi(this);
+		break;
+	default:
+		break;
 	}
 }

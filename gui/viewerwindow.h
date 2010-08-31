@@ -16,7 +16,6 @@ class ViewerWindow : public QMainWindow, private Ui::ViewerWindow {
     Q_OBJECT
 public:
 	ViewerWindow(multi_img *image, multi_img *gradient, QWidget *parent = 0);
-	~ViewerWindow();
 
 	const QPixmap* getBand(int dim, bool gradient);
 	const inline Illuminant & getIlluminant(int temp);
@@ -48,7 +47,7 @@ protected:
 	void labelmask(bool negative);
 
 	// multispectral image and gradient
-	multi_img *image, *image_orig, *gradient;
+	multi_img *image, *gradient;
 	// bands from both image and gradient
 	std::vector<QPixmap*> ibands, gbands;
 	// pixel label holder
