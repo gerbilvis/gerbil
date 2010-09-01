@@ -21,7 +21,7 @@ void ROIView::paintEvent(QPaintEvent *ev)
 	QRect damaged = scalerI.mapRect(ev->rect());
 	painter.drawPixmap(damaged, *pixmap, damaged);
 
-	QColor color(Qt::gray); color.setAlpha(127);
+	QColor color(Qt::darkGray); color.setAlpha(127);
 	painter.fillRect(0, 0, roi.x(), pixmap->height(), color);
 	painter.fillRect(roi.x()+roi.width(), 0,
 					 pixmap->width() - roi.x() - roi.width(),

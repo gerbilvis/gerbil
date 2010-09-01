@@ -19,19 +19,17 @@ void BandView::setPixmap(const QPixmap &p)
 
 void BandView::paintEvent(QPaintEvent *ev)
 {
-	if (!pixmap)
+	QPainter painter(this);
+	if (!pixmap) {
+		painter.fillRect(this->rect(), QColor(Qt::lightGray));
 		return;
+	}
 	if (!cacheValid)
 		updateCache();
 
-	QPainter painter(this);
 	//painter.setRenderHint(QPainter::Antialiasing); too slow!
 
-	// draw band (slow!)
-//	painter.drawPixmap(ev->rect(), cachedPixmap.transformed(scaler), ev->rect());
-
 	painter.setWorldTransform(scaler);
-	// draw band (artifacts)
 	QRect damaged = scalerI.mapRect(ev->rect());
 	painter.drawPixmap(damaged, cachedPixmap, damaged);
 

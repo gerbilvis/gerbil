@@ -182,14 +182,25 @@ void multi_img_viewer::fillMaskLimiters(const std::vector<std::pair<int, int> >&
 void multi_img_viewer::updateMaskLimiters(
 		const std::vector<std::pair<int, int> >& l, int dim)
 {
-	multi_img::MaskIt itm = maskholder.begin();
-	multi_img::BandConstIt itb = (*image)[dim].begin();
-	for (; itm != maskholder.end(); ++itb, ++itm) {
-		int pos = floor(curpos(*itb, dim));
-		if (pos < l[dim].first || pos > l[dim].second)
-			*itm = 0;
-		else
-			*itm = 1;
+	for (int y = 0; y < image->height; ++y) {
+		uchar *mrow = maskholder[y];
+		const multi_img::Value *brow = (*image)[dim][y];
+		for (int x = 0; x < image->width; ++x) {
+			int pos = floor(curpos(brow[x], dim));
+			if (pos < l[dim].first || pos > l[dim].second) {
+				mrow[x] = 0;
+			} else if (mrow[x] == 0) { // we need to do exhaustive test
+				mrow[x] = 1;
+				const multi_img::Pixel& p = (*image)(y, x);
+				for (unsigned int d = 0; d < image->size(); ++d) {
+					int pos = floor(curpos(p[d], d));
+					if (pos < l[d].first || pos > l[d].second) {
+						mrow[x] = 0;
+						break;
+					}
+				}
+			}
+		}
 	}
 }
 

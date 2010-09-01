@@ -37,10 +37,12 @@ void ScaledView::resizeEvent(QResizeEvent *ev)
 
 void ScaledView::paintEvent(QPaintEvent *ev)
 {
-	if (!pixmap)
-		return;
-
 	QPainter painter(this);
+	if (!pixmap) {
+		painter.fillRect(this->rect(), QColor(Qt::lightGray));
+		return;
+	}
+
 	painter.setRenderHint(QPainter::SmoothPixmapTransform);
 
 	painter.setWorldTransform(scaler);
