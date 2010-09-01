@@ -43,8 +43,8 @@ void ViewerWindow::applyROI()
 	viewGRAD->setImage(gradient, true);
 	viewIMG->setActive(false);
 
-	bandDock->show();
-	rgbDock->show();
+	bandDock->setEnabled(true);
+	rgbDock->setEnabled(true);
 	mainStack->setCurrentIndex(0);
 }
 
@@ -53,8 +53,8 @@ void ViewerWindow::init()
 	setupUi(this);
 	bandButton->hide();
 
-	bandDock->hide();
-	rgbDock->hide();
+	bandDock->setDisabled(true);
+	rgbDock->setDisabled(true);
 
 	/* setup labeling stuff first */
 	labelColors << Qt::white // 0 is index for unlabeled
@@ -66,7 +66,6 @@ void ViewerWindow::init()
 
 	graphsegWidget->hide();
 
-	/* signals & slots */
 	connect(bandDock, SIGNAL(visibilityChanged(bool)),
 			bandButton, SLOT(setHidden(bool)));
 	connect(bandButton, SIGNAL(clicked()),
@@ -82,6 +81,11 @@ void ViewerWindow::init()
 
 	initGraphsegUI();
 	initIlluminantUI();
+
+	// signals for ROI
+	connect(roiButtons, SIGNAL(clicked(QAbstractButton*)),
+			this, SLOT(roi_decision(QAbstractButton*)));
+	connect(roiButton, SIGNAL(clicked()), this, SLOT(roi_trigger()));
 
 	connect(ignoreButton, SIGNAL(toggled(bool)),
 			markButton, SLOT(setDisabled(bool)));
@@ -139,12 +143,11 @@ void ViewerWindow::init()
 
 	updateRGB(true);
 
-	if (full_image->width*full_image->height < 513*513) {
+	roiView->roi = QRect(0, 0, full_image->width, full_image->height);
+	// default to full image if small enough
+	if (0 && full_image->width*full_image->height < 513*513) {
 		roi = cv::Rect(0, 0, full_image->width, full_image->height);
-		roiView->roi = QRect(0, 0, full_image->width, full_image->height);
 		applyROI();
-	} else {
-		roiView->roi = QRect(10, 10, full_image->width - 20, full_image->height - 30);
 	}
 }
 
@@ -408,6 +411,36 @@ void ViewerWindow::setI1Visible(bool visible)
 		viewIMG->setIlluminant(&getIlluminantC(i1), false);
 	} else {
 		viewIMG->setIlluminant(NULL, false);
+	}
+}
+
+void ViewerWindow::roi_trigger()
+{
+	mainStack->setCurrentIndex(1);
+}
+
+void ViewerWindow::roi_decision(QAbstractButton *sender)
+{
+	QDialogButtonBox::ButtonRole role = roiButtons->buttonRole(sender);
+	bool apply = (role == QDialogButtonBox::ApplyRole);
+
+	if (role == QDialogButtonBox::ResetRole) {
+		if (roi.width > 1)
+			roiView->roi = QRect(roi.x, roi.y, roi.width, roi.height);
+		else
+			roiView->roi = QRect(0, 0, full_image->width, full_image->height);
+		roiView->update();
+	} else if (role == QDialogButtonBox::RejectRole) {
+		if (roi.width < 2)	// implicit accept if no interest in ROI
+			apply = true;
+		else
+			mainStack->setCurrentIndex(0);
+	}
+
+	if (apply) {
+		const QRect &r = roiView->roi;
+		roi = cv::Rect(r.x(), r.y(), r.width(), r.height());
+		applyROI();
 	}
 }
 

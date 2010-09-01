@@ -15,7 +15,7 @@ Viewport::Viewport(QWidget *parent)
 	  active(false), wasActive(false), useralpha(1.f),
 	  showLabeled(true), showUnlabeled(true), ignoreLabels(false),
 	  overlayMode(false),
-	  zoom(1.), shift(0), lasty(-1), holdSelection(false), activeLimiter(-1),
+	  zoom(1.), shift(0), lasty(-1), holdSelection(false), activeLimiter(0),
 	  cacheValid(false),
 	  drawMeans(true)
 {}
@@ -389,7 +389,7 @@ void Viewport::mouseReleaseEvent(QMouseEvent * event)
 {
 	// in limiterMode, holdSelect+act.Limiter is set on first mouse action
 	holdSelection = false;
-	activeLimiter = -1;
+	activeLimiter = 0;
 
 	if (event->button() == Qt::RightButton) {
 		this->setCursor(Qt::ArrowCursor);
@@ -478,8 +478,8 @@ bool Viewport::updateLimiter(int dim, int bin)
 	int *target;
 	if (l.first == l.second) {
 		target = (bin > l.first ? &l.second : &l.first);
-	} else if (activeLimiter > -1) {
-		target = (activeLimiter ? &l.second : &l.first);
+	} else if (activeLimiter) {
+		target = activeLimiter;
 	} else {
 		target = (std::abs(l.first-bin) < std::abs(l.second-bin) ?
 				  &l.first : &l.second);
@@ -488,6 +488,6 @@ bool Viewport::updateLimiter(int dim, int bin)
 		return false;
 
 	*target = bin;
-	activeLimiter = (target == &l.first ? 0 : 1);
+	activeLimiter = target;
 	return true;
 }

@@ -12,6 +12,8 @@ ScaledView::ScaledView(QWidget *parent)
 void ScaledView::setPixmap(const QPixmap &p)
 {
 	pixmap = &p;
+	resizeEvent(0);
+	update();
 }
 
 void ScaledView::resizeEvent(QResizeEvent *ev)

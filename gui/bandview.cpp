@@ -14,7 +14,7 @@ BandView::BandView(QWidget *parent)
 void BandView::setPixmap(const QPixmap &p)
 {
 	cacheValid = false;
-	pixmap = &p;
+	ScaledView::setPixmap(p);
 }
 
 void BandView::paintEvent(QPaintEvent *ev)

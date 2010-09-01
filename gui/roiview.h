@@ -12,10 +12,15 @@ public:
 	ROIView(QWidget *parent = 0);
 
 	void paintEvent(QPaintEvent *ev);
+	void mouseReleaseEvent(QMouseEvent*);
 
 	QRect roi;
+
 private:
 	void cursorAction(QMouseEvent *ev, bool click = false);
+
+	int lockX, lockY;
+	QPointF lastcursor;
 };
 
 #endif // ROIVIEW_H

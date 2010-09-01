@@ -9,6 +9,7 @@
         <file alias="run">resources/run.png</file>
         <file alias="limiter">resources/limiter.png</file>
         <file alias="popup">resources/popup-arrow.png</file>
+        <file alias="roi">resources/roi.png</file>
     </qresource>
     <qresource prefix="/">
         <file alias="mainicon">resources/mainicon.svg</file>

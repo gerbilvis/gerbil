@@ -31,8 +31,7 @@ multi_img_viewer::multi_img_viewer(QWidget *parent)
 void multi_img_viewer::setImage(const multi_img *img, bool gradient)
 {
 	image = img;
-	if (maskholder.rows != image->height || maskholder.cols != image->width)
-		maskholder.create(image->height, image->width);
+	maskholder = multi_img::Mask(image->height, image->width, (uchar)0);
 
 	QString title("<b>%1 Spectrum</b> [%2..%3]");
 	titleLabel->setText(title.arg(gradient ? "Spectral Gradient" : "Image")
@@ -54,7 +53,6 @@ void multi_img_viewer::setImage(const multi_img *img, bool gradient)
 void multi_img_viewer::setIlluminant(
 		const std::vector<multi_img::Value> *coeffs, bool for_real)
 {
-	return;
 	if (for_real) {
 		// only set it to true, never to false again
 		viewport->illuminant_correction = true;

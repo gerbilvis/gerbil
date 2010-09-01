@@ -35,6 +35,9 @@ public slots:
 	void setI1(int index);
 	void setI1Visible(bool);
 
+	void roi_trigger();
+	void roi_decision(QAbstractButton *sender);
+
 signals:
 	void alterLabel(const multi_img::Mask &mask, bool negative);
 	void drawOverlay(const multi_img::Mask &mask);
@@ -42,9 +45,8 @@ signals:
 protected:
     void changeEvent(QEvent *e);
 
-	// helper functions
+	/* helper functions */
 	void applyROI();
-
 	void createMarkers();
 	void labelmask(bool negative);
 

@@ -35,6 +35,30 @@
         <item>
          <layout class="QHBoxLayout" name="toolbarLayout">
           <item>
+           <widget class="QPushButton" name="roiButton">
+            <property name="text">
+             <string>Select ROI</string>
+            </property>
+            <property name="icon">
+             <iconset resource="gerbil.qrc">
+              <normaloff>:/toolbar/roi</normaloff>:/toolbar/roi</iconset>
+            </property>
+            <property name="iconSize">
+             <size>
+              <width>26</width>
+              <height>16</height>
+             </size>
+            </property>
+           </widget>
+          </item>
+          <item>
+           <widget class="Line" name="line">
+            <property name="orientation">
+             <enum>Qt::Vertical</enum>
+            </property>
+           </widget>
+          </item>
+          <item>
            <widget class="QPushButton" name="nonmarkButton">
             <property name="text">
              <string>Show Unlabeled</string>
