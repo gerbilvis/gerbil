@@ -57,7 +57,7 @@ protected:
 	// bands from both image and gradient
 	std::vector<QPixmap*> ibands, gbands;
 	// pixel label holder
-	cv::Mat1b labels;
+	cv::Mat_<uchar> labels;
 	// label colors
 	QVector<QColor> labelColors;
 

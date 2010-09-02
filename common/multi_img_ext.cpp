@@ -24,16 +24,16 @@ namespace CIEObserver {	// 10 degree 1964 CIE observer coefficients
 	multi_img::Value z[] = { 5.35027E-07, 4.0283E-06, 2.61437E-05, 0.00014622, 0.000704776, 0.0029278, 0.0104822, 0.032344, 0.0860109, 0.19712, 0.389366, 0.65676, 0.972542, 1.2825, 1.55348, 1.7985, 1.96728, 2.0273, 1.9948, 1.9007, 1.74537, 1.5549, 1.31756, 1.0302, 0.772125, 0.5706, 0.415254, 0.302356, 0.218502, 0.159249, 0.112044, 0.082248, 0.060709, 0.04305, 0.030451, 0.020584, 0.013676, 0.007918, 0.003988, 0.001091, 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0. };
 }
 
-cv::Mat3f multi_img::rgb() const
+cv::Mat_<cv::Vec3f> multi_img::rgb() const
 {
-	cv::Mat3f xyz(height, width, 0.);
+	cv::Mat_<cv::Vec3f> xyz(height, width, 0.);
 	Value greensum = 0.;
 	for (unsigned int i = 0; i < size(); ++i) {
 		int idx = (meta[i].center - 360) / 5;
 		if (idx < 0 || idx > 94)
 			continue;
 		BandConstIt src = bands[i].begin();
-		cv::Mat3f::iterator dst = xyz.begin();
+		cv::Mat_<cv::Vec3f>::iterator dst = xyz.begin();
 		for (; dst != xyz.end(); ++src, ++dst) {
 			cv::Vec3f &v = *dst;
 			Value intensity = (*src) * 1./maxval;
@@ -44,9 +44,9 @@ cv::Mat3f multi_img::rgb() const
 		greensum += CIEObserver::y[idx];
 	}
 
-	cv::Mat3f rgb(height, width);
-	cv::Mat3f::iterator src = xyz.begin();
-	cv::Mat3f::iterator dst = rgb.begin();
+	cv::Mat_<cv::Vec3f> rgb(height, width);
+	cv::Mat_<cv::Vec3f>::iterator src = xyz.begin();
+	cv::Mat_<cv::Vec3f>::iterator dst = rgb.begin();
 	for (; dst != rgb.end(); ++src, ++dst) {
 		cv::Vec3f &vs = *src;
 		cv::Vec3f &vd = *dst;

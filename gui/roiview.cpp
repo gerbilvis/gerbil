@@ -4,6 +4,7 @@
 #include <QPainter>
 #include <QPaintEvent>
 #include <iostream>
+#include <cmath>
 
 ROIView::ROIView(QWidget *parent)
 	: ScaledView(parent), lockX(-1), lockY(-1), lastcursor(-1, -1)
@@ -38,8 +39,8 @@ void ROIView::paintEvent(QPaintEvent *ev)
 void ROIView::cursorAction(QMouseEvent *ev, bool click)
 {
 	QPointF cursor(ev->pos() / scale);
-	cursor.setX(round(cursor.x() - 0.75));
-	cursor.setY(round(cursor.y() - 0.75));
+	cursor.setX(std::floor(cursor.x() - 0.25));
+	cursor.setY(std::floor(cursor.y() - 0.25));
 
 	// nothing new after all..
 	if (cursor == lastcursor)

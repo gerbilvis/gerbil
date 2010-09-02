@@ -28,7 +28,7 @@ struct Bin {
 struct BinSet {
 	BinSet(const QColor &c, int size)
 		: label(c), totalweight(0.f),
-		boundary(size, std::make_pair(std::numeric_limits<int>::max(), 0)) {}
+		boundary(size, std::make_pair((int)255, (int)0)) {}
 	QColor label;
 	QHash<QByteArray, Bin> bins;
 	float totalweight;

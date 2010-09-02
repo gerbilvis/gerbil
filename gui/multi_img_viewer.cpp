@@ -121,8 +121,8 @@ void multi_img_viewer::createBins()
 
 				/* cache observed range; can be used for limiter init later */
 				std::pair<int, int> &range = sets[label].boundary[d];
-				range.first = std::min(range.first, pos);
-				range.second = std::max(range.second, pos);
+				range.first = std::min<int>(range.first, pos);
+				range.second = std::max<int>(range.second, pos);
 			}
 
 			// put into our set

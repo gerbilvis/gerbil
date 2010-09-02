@@ -4,6 +4,7 @@
 #include <QPainter>
 #include <QPaintEvent>
 #include <iostream>
+#include <cmath>
 
 BandView::BandView(QWidget *parent)
 	: ScaledView(parent),
@@ -169,8 +170,8 @@ void BandView::cursorAction(QMouseEvent *ev, bool click)
 	bool grandupdate = (overlay != NULL);
 
 	cursor = QPointF(ev->pos() / scale);
-	cursor.setX(round(cursor.x() - 0.75));
-	cursor.setY(round(cursor.y() - 0.75));
+	cursor.setX(std::floor(cursor.x() - 0.25));
+	cursor.setY(std::floor(cursor.y() - 0.25));
 
 	// nothing new after all..
 	if ((cursor == lastcursor) && !click)

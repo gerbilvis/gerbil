@@ -26,7 +26,7 @@ void ViewerWindow::applyROI()
 	gradient = new multi_img(log.spec_gradient());
 
 	// second: re-initialize gui
-	labels = cv::Mat1b(image->height, image->width, (uchar)0);
+	labels = cv::Mat_<uchar>(image->height, image->width, (uchar)0);
 
 	bandView->labels = labels;
 	viewIMG->labels = viewGRAD->labels = labels;
@@ -224,7 +224,7 @@ void ViewerWindow::applyIlluminant() {
 void ViewerWindow::updateRGB(bool full)
 {
 	if (full || full_rgb.isNull()) {
-		cv::Mat3f rgbmat = full_image->rgb();
+		cv::Mat_<cv::Vec3f> rgbmat = full_image->rgb();
 		QImage img(rgbmat.cols, rgbmat.rows, QImage::Format_ARGB32);
 		for (int y = 0; y < rgbmat.rows; ++y) {
 			cv::Vec3f *row = rgbmat[y];
