@@ -206,11 +206,8 @@ void multi_img_viewer::updateMaskLimiters(
 
 void multi_img_viewer::updateMask(int dim)
 {
-	if (dim == -1)
-		return;
-
-	if (viewport->limiterMode) {
-		if (maskValid)
+	if (viewport->limiterMode) {		
+		if (maskValid && dim > -1)
 			updateMaskLimiters(viewport->limiters, dim);
 		else
 			fillMaskLimiters(viewport->limiters);

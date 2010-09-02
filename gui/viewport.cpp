@@ -418,6 +418,7 @@ void Viewport::wheelEvent(QWheelEvent *event)
 void Viewport::keyPressEvent(QKeyEvent *event)
 {
 	bool dirty = false;
+	bool hoverdirt = false;
 
 	switch (event->key()) {
 	case Qt::Key_Plus:
@@ -430,12 +431,14 @@ void Viewport::keyPressEvent(QKeyEvent *event)
 	case Qt::Key_Up:
 		if (!limiterMode && hover < nbins-1) {
 			hover++;
+			hoverdirt = true;
 			dirty = true;
 		}
 		break;
 	case Qt::Key_Down:
 		if (!limiterMode && hover > 0) {
 			hover--;
+			hoverdirt = true;
 			dirty = true;
 		}
 		break;
@@ -461,7 +464,7 @@ void Viewport::keyPressEvent(QKeyEvent *event)
 
 	if (dirty) {
 		update();
-		emit newOverlay(-1);
+		emit newOverlay(hoverdirt ? selection : -1);
 	}
 }
 

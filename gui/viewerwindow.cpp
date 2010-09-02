@@ -41,7 +41,6 @@ void ViewerWindow::applyROI()
 	/* do setImage() last */
 	viewIMG->setImage(image);
 	viewGRAD->setImage(gradient, true);
-	viewIMG->setActive(false);
 
 	bandDock->setEnabled(true);
 	rgbDock->setEnabled(true);
@@ -140,12 +139,13 @@ void ViewerWindow::init()
 		connect(bandView, SIGNAL(killHover()),
 				vp, SLOT(killHover()));
 	}
+	viewIMG->setActive(false);
 
 	updateRGB(true);
 
 	roiView->roi = QRect(0, 0, full_image->width, full_image->height);
 	// default to full image if small enough
-	if (0 && full_image->width*full_image->height < 513*513) {
+	if (full_image->width*full_image->height < 513*513) {
 		roi = cv::Rect(0, 0, full_image->width, full_image->height);
 		applyROI();
 	}
