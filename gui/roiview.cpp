@@ -80,6 +80,7 @@ void ROIView::cursorAction(QMouseEvent *ev, bool click)
 	lockY = (bottom ? 1 : 0);
 
 	update();
+	emit newSelection(roi);
 }
 
 void ROIView::mouseReleaseEvent(QMouseEvent *)

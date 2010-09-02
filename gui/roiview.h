@@ -16,6 +16,9 @@ public:
 
 	QRect roi;
 
+signals:
+	void newSelection(const QRect& roi);
+
 private:
 	void cursorAction(QMouseEvent *ev, bool click = false);
 

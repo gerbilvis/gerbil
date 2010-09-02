@@ -85,6 +85,8 @@ void ViewerWindow::init()
 	connect(roiButtons, SIGNAL(clicked(QAbstractButton*)),
 			this, SLOT(roi_decision(QAbstractButton*)));
 	connect(roiButton, SIGNAL(clicked()), this, SLOT(roi_trigger()));
+	connect(roiView, SIGNAL(newSelection(QRect)),
+			this, SLOT(roi_selection(QRect)));
 
 	connect(ignoreButton, SIGNAL(toggled(bool)),
 			markButton, SLOT(setDisabled(bool)));
@@ -442,6 +444,14 @@ void ViewerWindow::roi_decision(QAbstractButton *sender)
 		roi = cv::Rect(r.x(), r.y(), r.width(), r.height());
 		applyROI();
 	}
+}
+
+void ViewerWindow::roi_selection(const QRect &roi)
+{
+	QString title("<b>Select Region of Interest:</b> %1.%2 - %3.%4 (%5x%6)");
+	title = title.arg(roi.x()).arg(roi.y()).arg(roi.right()).arg(roi.bottom())
+			.arg(roi.width()).arg(roi.height());
+	roiTitle->setText(title);
 }
 
 void ViewerWindow::changeEvent(QEvent *e)

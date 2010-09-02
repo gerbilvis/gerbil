@@ -37,6 +37,7 @@ public slots:
 
 	void roi_trigger();
 	void roi_decision(QAbstractButton *sender);
+	void roi_selection(const QRect &roi);
 
 signals:
 	void alterLabel(const multi_img::Mask &mask, bool negative);
@@ -57,7 +58,7 @@ protected:
 	// bands from both image and gradient
 	std::vector<QPixmap*> ibands, gbands;
 	// pixel label holder
-	cv::Mat_<uchar> labels;
+	cv::Mat1b labels;
 	// label colors
 	QVector<QColor> labelColors;
 
