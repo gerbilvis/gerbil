@@ -43,10 +43,9 @@ public:
 	Viewport(QWidget *parent = 0);
 
 	void prepareLines();
-	void updateModelview();
+	void reset(int nbins, multi_img::Value binsize, multi_img::Value minval);
+	void setLimiters(int label);
 
-	int nbins;
-	multi_img::Value binsize, minval;
 	int dimensionality;
 	bool gradient;
 	std::vector<BinSet> sets;
@@ -86,6 +85,9 @@ protected:
 	void wheelEvent(QWheelEvent *);
 	void keyPressEvent(QKeyEvent *);
 
+	// helper function that updates world transformation
+	void updateModelview();
+
 	// helper functions called by mouseMoveEvent
 	void updateXY(int sel, int bin);
 
@@ -100,6 +102,9 @@ protected:
 	// helper for limiter handling
 	bool updateLimiter(int dim, int bin);
 
+	// cached information about image
+	int nbins;
+	multi_img::Value binsize, minval;
 private:
 	// modelview matrix and its inverse
 	QTransform modelview, modelviewI;
@@ -116,6 +121,10 @@ private:
 	// cache for efficient overlay
 	bool cacheValid;
 	QImage cacheImg;
+
+	// draw without highlight
+	bool clearView;
+	bool implicitClearView;
 
 	// drawing mode
 	bool drawMeans;

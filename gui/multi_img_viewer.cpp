@@ -74,16 +74,10 @@ void multi_img_viewer::rebuild(int bins)
 		nbins = bins;
 		binsize = (image->maxval - image->minval)/(multi_img::Value)(nbins-1);
 		binLabel->setText(QString("%1 bins").arg(bins));
-		viewport->nbins = bins;
-		viewport->binsize = binsize;
-		viewport->minval = image->minval;
-		// reset hover value that would become inappropr.
-		viewport->hover = -1;
-		// reset limiters to most-lazy values
-		setLimiters(0);
+		viewport->reset(nbins, binsize, image->minval);
 	}
 	createBins();
-	viewport->updateModelview();
+	viewport->prepareLines();
 	viewport->update();
 }
 
@@ -136,7 +130,6 @@ void multi_img_viewer::createBins()
 		}
 	}
 
-	viewport->prepareLines();
 /* ** statistics **
 	int datapoints = 0;
 	for (unsigned int i = 0; i < sets.size(); ++i)
@@ -262,29 +255,11 @@ void multi_img_viewer::showLimiterMenu()
 		return;
 
 	int choice = a->data().toInt(); assert(choice < labelcolors->size());
-	setLimiters(choice);
-	if (!limiterButton->isChecked())
-		limiterButton->toggle();	// change button state, toggleLimiters()
-	else
-		toggleLimiters(true);
-}
-
-void multi_img_viewer::setLimiters(int label)
-{
-	if (label < 1) {	// not label
-		viewport->limiters.assign(image->size(), make_pair(0, nbins-1));
-		if (label == -1) {	// use hover data
-			int b = viewport->selection;
-			int h = viewport->hover;
-			viewport->limiters[b] = std::make_pair(h, h);
-		}
+	viewport->setLimiters(choice);
+	if (!limiterButton->isChecked()) {
+		limiterButton->toggle();	// change button state AND toggleLimiters()
 	} else {
-		if (viewport->sets[label].totalweight > 0.f) { // label holds data
-			// use range from this label
-			const std::vector<std::pair<int, int> > &b = viewport->sets[label].boundary;
-			viewport->limiters.assign(b.begin(), b.end());
-		} else
-			setLimiters(0);
+		toggleLimiters(true);
 	}
 }
 
@@ -317,7 +292,7 @@ void multi_img_viewer::toggleLimiters(bool toggle)
 {
 	viewport->limiterMode = toggle;
 	viewport->repaint();
-	maskValid = false;
+	updateMask(-1);
 	emit newOverlay();
 }
 

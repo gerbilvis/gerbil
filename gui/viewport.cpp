@@ -16,9 +16,43 @@ Viewport::Viewport(QWidget *parent)
 	  showLabeled(true), showUnlabeled(true), ignoreLabels(false),
 	  overlayMode(false),
 	  zoom(1.), shift(0), lasty(-1), holdSelection(false), activeLimiter(0),
-	  cacheValid(false),
+	  cacheValid(false), clearView(false), implicitClearView(false),
 	  drawMeans(true)
 {}
+
+void Viewport::reset(int bins, multi_img::Value bsize, multi_img::Value minv)
+{
+	nbins = bins;
+	binsize = bsize;
+	minval = minv;
+
+	// reset hover value that would become inappropr.
+	hover = -1;
+	// reset limiters to most-lazy values
+	setLimiters(0);
+
+	// update coordinate system
+	updateModelview();
+}
+
+void Viewport::setLimiters(int label)
+{
+	if (label < 1) {	// not label
+		limiters.assign(dimensionality, make_pair(0, nbins-1));
+		if (label == -1) {	// use hover data
+			int b = selection;
+			int h = hover;
+			limiters[b] = std::make_pair(h, h);
+		}
+	} else {
+		if (sets[label].totalweight > 0.f) { // label holds data
+			// use range from this label
+			const std::vector<std::pair<int, int> > &b = sets[label].boundary;
+			limiters.assign(b.begin(), b.end());
+		} else
+			setLimiters(0);
+	}
+}
 
 void Viewport::prepareLines()
 {
@@ -72,6 +106,9 @@ void Viewport::updateModelview()
 
 void Viewport::drawBins(QPainter &painter)
 {
+	/* check if we implicitely have a clear view */
+	implicitClearView = (clearView || (hover < 0 && !limiterMode));
+
 	/* make sure that viewport shows "unlabeled" in the ignore label case */
 	int start = ((showUnlabeled || ignoreLabels == 1) ? 0 : 1);
 	int end = (showLabeled ? sets.size() : 1);
@@ -100,16 +137,17 @@ void Viewport::drawBins(QPainter &painter)
 
 			bool highlighted = false;
 			const QByteArray &K = it.key();
-			if (limiterMode) {
-				highlighted = true;
-				for (int i = 0; i < dimensionality; ++i) {
-					unsigned char k = K[i];
-					if (k < limiters[i].first || k > limiters[i].second)
-						highlighted = false;
-				}
-			} else if ((unsigned char)K[selection] == hover)
-				highlighted = true;
-
+			if (!implicitClearView) {
+				if (limiterMode) {
+					highlighted = true;
+					for (int i = 0; i < dimensionality; ++i) {
+						unsigned char k = K[i];
+						if (k < limiters[i].first || k > limiters[i].second)
+							highlighted = false;
+					}
+				} else if ((unsigned char)K[selection] == hover)
+					highlighted = true;
+			}
 			if (highlighted) {
 				if (basecolor == Qt::white) {
 					color = Qt::yellow;
@@ -338,9 +376,14 @@ void Viewport::updateXY(int sel, int bin)
 
 void Viewport::enterEvent(QEvent *)
 {
+	bool refresh = clearView;
+	clearView = false;
+	if (refresh)
+		update();
+
+/*	sloppy focus. debatable.
 	if (active)
 		return;
-/*	sloppy focus. debatable.
 	emit bandSelected(selection, gradient);
 	emit activated(gradient);
 	active = true;
@@ -429,7 +472,7 @@ void Viewport::keyPressEvent(QKeyEvent *event)
 		break;
 
 	case Qt::Key_Up:
-		if (!limiterMode && hover < nbins-1) {
+		if (!limiterMode && hover < nbins-2) {
 			hover++;
 			hoverdirt = true;
 			dirty = true;
@@ -470,9 +513,11 @@ void Viewport::keyPressEvent(QKeyEvent *event)
 
 void Viewport::killHover()
 {
-	hover = -1;
-	// make sure the drawing happens before next overlay cache update
-	repaint();
+	clearView = true;
+
+	if (!implicitClearView)
+		// make sure the drawing happens before next overlay cache update
+		repaint();
 }
 
 bool Viewport::updateLimiter(int dim, int bin)

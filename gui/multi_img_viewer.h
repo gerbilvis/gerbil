@@ -48,7 +48,6 @@ signals:
 protected:
     void changeEvent(QEvent *e);
 	void createBins();
-	void setLimiters(int label);
 
 	// helpers for createMask
 	void fillMaskSingle(int dim, int sel);
