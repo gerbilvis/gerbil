@@ -56,10 +56,7 @@ void Viewport::setLimiters(int label)
 
 void Viewport::prepareLines()
 {
-	int start = ((showUnlabeled || ignoreLabels == 1) ? 0 : 1);
-	int end = (showLabeled ? sets.size() : 1);
-
-	for (int i = start; i < end; ++i) {
+	for (unsigned int i = 0; i < sets.size(); ++i) {
 		BinSet &s = sets[i];
 		QHash<QByteArray, Bin>::iterator it;
 		for (it = s.bins.begin(); it != s.bins.end(); ++it) {
