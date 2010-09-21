@@ -67,8 +67,8 @@ void ViewerWindow::init()
 	labelColors << Qt::white // 0 is index for unlabeled
 		<< Qt::green << Qt::red << Qt::cyan << Qt::magenta << Qt::blue;
 
-	bandView->labelColors = &labelColors;
-	viewIMG->labelcolors = viewGRAD->labelcolors = &labelColors;
+	bandView->setLabelColors(labelColors);
+	viewIMG->labelColors = viewGRAD->labelColors = &labelColors;
 	createMarkers();
 
 	graphsegWidget->hide();
@@ -441,10 +441,14 @@ void ViewerWindow::roi_decision(QAbstractButton *sender)
 			roiView->roi = QRect(0, 0, full_image->width, full_image->height);
 		roiView->update();
 	} else if (role == QDialogButtonBox::RejectRole) {
-		if (roi.width < 2)	// implicit accept if no interest in ROI
+		if (roi.width < 2) {
+			// implicit accept full image if no interest in ROI
+			roiView->roi = QRect(0, 0, full_image->width, full_image->height);
 			apply = true;
-		else
+		} else {
+			// just get out of the view
 			mainStack->setCurrentIndex(0);
+		}
 	}
 
 	if (apply) {

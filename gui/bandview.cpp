@@ -17,13 +17,29 @@
 BandView::BandView(QWidget *parent)
 	: ScaledView(parent),
 	  cacheValid(false), cursor(-1, -1), lastcursor(-1, -1), curLabel(1),
-	  overlay(0), showLabels(true), seedMode(false)
+	  overlay(0), showLabels(true), seedMode(false),
+	  labelColors(NULL),
+	  seedColorsA(std::make_pair(QColor(255, 0, 0, 63), QColor(255, 255, 0, 63)))
 {}
 
 void BandView::setPixmap(const QPixmap &p)
 {
 	cacheValid = false;
 	ScaledView::setPixmap(p);
+}
+
+void BandView::setLabelColors(const QVector<QColor> &lc)
+{
+	labelColors = lc;
+	labelColorsA.resize(lc.size());
+	
+	labelColorsA[0] = QColor(0, 0, 0, 0);
+	for (int i = 1; i < labelColors.size(); ++i) // 0 is index for unlabeled
+	{
+		QColor col = labelColors[i];
+		col.setAlpha(63);
+		labelColorsA[i] = col;
+	}
 }
 
 void BandView::paintEvent(QPaintEvent *ev)
@@ -43,7 +59,7 @@ void BandView::paintEvent(QPaintEvent *ev)
 	painter.drawPixmap(damaged, cachedPixmap, damaged);
 
 	// draw current cursor
-	QPen pen(seedMode ? Qt::yellow : (*labelColors)[curLabel]);
+	QPen pen(seedMode ? Qt::yellow : labelColors[curLabel]);
 	pen.setWidth(0);
 	painter.setPen(pen);
 	painter.drawRect(QRectF(cursor, QSizeF(1, 1)));
@@ -69,7 +85,7 @@ void BandView::paintEvent(QPaintEvent *ev)
 				QRgb *destrow = (QRgb*)dest.scanLine(y);
 				for (int x = 0; x < overlay->cols; ++x) {
 					if (srcrow[x])
-						destrow[x] = qRgba(255, 255, 0, 191);
+						destrow[x] = qRgba(255, 255, 0, 63);
 				}
 			}
 			painter.drawImage(0, 0, dest);
@@ -83,48 +99,54 @@ void BandView::paintEvent(QPaintEvent *ev)
 	}
 }
 
+void BandView::updateCache()
+{
+	cachedPixmap = pixmap->copy(); // TODO: check for possible qt memory leak
+	cacheValid = true;
+	if (!seedMode && !showLabels)
+		return;
+
+	QPainter painter(&cachedPixmap);
+//	painter.setCompositionMode(QPainter::CompositionMode_Darken);
+
+	QImage dest(pixmap->width(), pixmap->height(), QImage::Format_ARGB32);
+	dest.fill(qRgba(0, 0, 0, 0));
+	for (int y = 0; y < pixmap->height(); ++y) {
+		const uchar *srcrow = (seedMode ? seedMap[y] : labels[y]);
+		QRgb *destrow = (QRgb*)dest.scanLine(y);
+		for (int x = 0; x < pixmap->width(); ++x) {
+			uchar val = srcrow[x];
+			if (seedMode) {
+				if (val == 255)
+					destrow[x] = seedColorsA.first.rgba();
+				else if (val == 0)
+					destrow[x] = seedColorsA.second.rgba();
+			} else if (val > 0) {
+				destrow[x] = labelColorsA[val].rgba();
+			}
+		}
+	}
+	painter.drawImage(0, 0, dest);
+}
+
 // helper to color single pixel with labeling
-void BandView::updateCachePixel(QPainter &p, int x, int y)
+void BandView::markCachePixel(QPainter &p, int x, int y)
 {
 	uchar l = labels(y, x);
 	if (l > 0) {
-		QColor col = (*labelColors)[l];
-		col.setAlphaF(0.5);
-		p.setPen(col);
+		p.setPen(labelColorsA[l]);
 		p.drawPoint(x, y);
 	}
 }
 
 // helper to color single pixel in seed mode
-void BandView::updateCachePixelS(QPainter &p, int x, int y)
+void BandView::markCachePixelS(QPainter &p, int x, int y)
 {
 	uchar l = seedMap(y, x);
 	if (l == 0 || l == 255) {
-		QColor col(l ? Qt::yellow : Qt::red);
-		col.setAlphaF(0.5);
-		p.setPen(col);
+		p.setPen(l ? seedColorsA.first : seedColorsA.second);
 		p.drawPoint(x, y);
 	}
-}
-
-void BandView::updateCache()
-{
-	cachedPixmap = pixmap->copy(); // TODO: check for possible qt memory leak
-	QPainter painter(&cachedPixmap);
-
-	if (!seedMode) {
-		if (showLabels) {
-			// mark labeled regions
-			for (int y = 0; y < pixmap->height(); ++y)
-				for (int x = 0; x < pixmap->width(); ++x)
-					updateCachePixel(painter, x, y);
-		}
-	} else {
-		for (int y = 0; y < pixmap->height(); ++y)
-			for (int x = 0; x < pixmap->width(); ++x)
-				updateCachePixelS(painter, x, y);
-	}
-	cacheValid = true;
 }
 
 void BandView::updateCache(int x, int y)
@@ -139,12 +161,24 @@ void BandView::updateCache(int x, int y)
 	// restore pixel
 	painter.drawPixmap(x, y, *pixmap, x, y, 1, 1);
 
+	if (!seedMode && !showLabels)
+		return;
+	
 	// if needed, color pixel
-	if (!seedMode) {
-		if (showLabels)
-			updateCachePixel(painter, x, y);
-	} else {
-		updateCachePixelS(painter, x, y);
+	QColor *col = 0;
+	uchar val =	(seedMode ? seedMap(y, x) : labels(y, x));
+	if (seedMode) {
+		if (val == 255)
+			col = &seedColorsA.first;
+		else if (val == 0)
+			col = &seedColorsA.second;
+	} else if (val > 0) {
+		col = &labelColorsA[val];
+	}
+
+	if (col) {
+		painter.setPen(*col);
+		painter.drawPoint(x, y);
 	}
 }
 

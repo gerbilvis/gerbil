@@ -32,12 +32,12 @@ void ScaledView::resizeEvent(QResizeEvent *ev)
 	// determine scale of correct aspect-ratio
 	float src_aspect = pixmap->width()/(float)pixmap->height();
 	float dest_aspect = width()/(float)height();
-	float w, h;
-	if (src_aspect > dest_aspect) {
-		w = width(); h = w/src_aspect;
-	} else {
-		h = height(); w = h*src_aspect;
-	}
+	float w;	// new width
+	if (src_aspect > dest_aspect)
+		w = width() - 1;
+	else
+		w = height()*src_aspect - 1;
+
 	scale = w/pixmap->width();
 	scaler = QTransform().scale(scale, scale);
 	scalerI = scaler.inverted();

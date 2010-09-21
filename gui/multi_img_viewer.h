@@ -26,7 +26,7 @@ public:
 	}
 
 	multi_img::Mask labels;
-	const QVector<QColor> *labelcolors;
+	const QVector<QColor> *labelColors;
 
 public slots:
 	void rebuild(int bins = 0);

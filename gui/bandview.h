@@ -5,6 +5,7 @@
 
 #include <multi_img.h>
 #include <graphseg.h>
+#include <QPen>
 
 class BandView : public ScaledView
 {
@@ -15,9 +16,9 @@ public:
 	void leaveEvent(QEvent *ev);
 
 	void setPixmap(const QPixmap &pixmap);
+	void setLabelColors(const QVector<QColor> &labelColors);
  
 	multi_img::Mask labels;
-	QVector<QColor> *labelColors;
 
 public slots:
 	void changeLabel(int label);
@@ -36,8 +37,8 @@ signals:
 
 private:
 	void cursorAction(QMouseEvent *ev, bool click = false);
-	inline void updateCachePixel(QPainter &p, int x, int y);
-	inline void updateCachePixelS(QPainter &p, int x, int y);
+	inline void markCachePixel(QPainter &p, int x, int y);
+	inline void markCachePixelS(QPainter &p, int x, int y);
 	void updateCache();
 	void updateCache(int x, int y);
 	void updatePoint(const QPointF &p);
@@ -55,6 +56,10 @@ private:
 	/// interpret input as segmentation seeds
 	bool seedMode;
 	multi_img::Mask seedMap;
+	
+	QVector<QColor> labelColors;
+	QVector<QColor> labelColorsA;
+	std::pair<QColor, QColor> seedColorsA;
 };
 
 #endif // BANDVIEW_H

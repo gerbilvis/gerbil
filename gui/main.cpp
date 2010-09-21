@@ -1,24 +1,32 @@
 #include "viewerwindow.h"
 //#include "view3d.h"
 #include <qapplication.h>
+#include <qfiledialog.h>
 #include <iostream>
+#include <string>
 
 int main(int argc, char **argv)
 {
+
+	// start gui
+	QApplication app(argc, argv);
+
+	// get input file name
+	std::string filename;
 	if (argc != 2) {
 		std::cerr << "Usage: " << argv[0] << " <filename>\n\n"
 					 "Filename may point to a RGB image or "
 					 "a multispectral image descriptor file." << std::endl;
-		return 1;
+		filename = QFileDialog::getOpenFileName
+		           	(0, "Open Descriptor or Image File").toStdString();
+	} else {
+		filename = argv[1];
 	}
 
 	// load image   
-	multi_img* image = new multi_img(argv[1]);
+	multi_img* image = new multi_img(filename);
 	if (image->empty())
 		return 2;
-
-	// start gui
-	QApplication app(argc, argv);
 	
 	// regular viewer
 	ViewerWindow window(image);
