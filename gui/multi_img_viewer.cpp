@@ -30,6 +30,9 @@ multi_img_viewer::multi_img_viewer(QWidget *parent)
 	connect(limiterMenuButton, SIGNAL(clicked()),
 			this, SLOT(showLimiterMenu()));
 
+	connect(rgbButton, SIGNAL(toggled(bool)),
+			viewport, SLOT(toggleRGB(bool)));
+
 	connect(viewport, SIGNAL(newOverlay(int)),
 			this, SLOT(updateMask(int)));
 
@@ -38,6 +41,9 @@ multi_img_viewer::multi_img_viewer(QWidget *parent)
 
 void multi_img_viewer::setImage(const multi_img *img, bool gradient)
 {
+	if (gradient)
+		rgbButton->setVisible(false);
+
 	image = img;
 	maskholder = multi_img::Mask(image->height, image->width, (uchar)0);
 
@@ -135,6 +141,20 @@ void multi_img_viewer::createBins()
 			}
 
 			sets[label].totalweight++;
+		}
+	}
+
+	/* normalize means & calculate color */
+	//vole::Stopwatch s("Bin normalization + RGB");
+	for (unsigned int i = 0; i < sets.size(); ++i) {
+		BinSet &s = sets[i];
+		QHash<QByteArray, Bin>::iterator it;
+		for (it = s.bins.begin(); it != s.bins.end(); ++it) {
+			Bin &b = it.value();
+			for (int d = 0; d < dim; ++d)
+				b.means[d] /= b.weight;
+			cv::Vec3f color = image->rgb(b.means);
+			b.rgb = QColor(color[0]*255, color[1]*255, color[2]*255);
 		}
 	}
 

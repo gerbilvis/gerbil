@@ -25,7 +25,7 @@ Viewport::Viewport(QWidget *parent)
 	  overlayMode(false),
 	  zoom(1.), shift(0), lasty(-1), holdSelection(false), activeLimiter(0),
 	  cacheValid(false), clearView(false), implicitClearView(false),
-	  drawMeans(true)
+	  drawMeans(true), drawRGB(false)
 {}
 
 void Viewport::reset(int bins, multi_img::Value bsize, multi_img::Value minv)
@@ -73,7 +73,7 @@ void Viewport::prepareLines()
 			for (int d = 0; d < dimensionality; ++d) {
 				qreal curpos;
 				if (drawMeans) {
-					curpos = ((b.means[d]/b.weight) - minval)/binsize;
+					curpos = (b.means[d] - minval)/binsize;
 				} else {
 					curpos = (unsigned char)K[d] + 0.5;
 					if (illuminant_correction && illuminant)
@@ -124,7 +124,7 @@ void Viewport::drawBins(QPainter &painter)
 		QHash<QByteArray, Bin>::iterator it;
 		for (it = s.bins.begin(); it != s.bins.end(); ++it) {
 			Bin &b = it.value();
-			color = basecolor;
+			color = (drawRGB ? b.rgb : basecolor);
 
 			qreal alpha;
 			/* TODO: this is far from optimal yet. challenge is to give a good
@@ -134,7 +134,7 @@ void Viewport::drawBins(QPainter &painter)
 			   this should be configurable. */
 			if (i == 0)
 				alpha = useralpha *
-						(0.01 + 0.09*(log(b.weight+1) / log(s.totalweight)));
+						(0.01 + 0.99*(log(b.weight+1) / log(s.totalweight)));
 			else
 				alpha = useralpha *
 						(log(b.weight+1) / log(s.totalweight));

@@ -30,6 +30,7 @@ struct Bin {
 
 	float weight;
 	std::vector<multi_img::Value> means;
+	QColor rgb;
 	QPolygonF points;
 };
 
@@ -75,6 +76,8 @@ public:
 
 public slots:
 	void killHover();
+	void toggleRGB(bool enabled)
+	{ drawRGB = enabled; update(); }
 
 signals:
 	void bandSelected(int dim, bool gradient);
@@ -134,8 +137,10 @@ private:
 	bool clearView;
 	bool implicitClearView;
 
-	// drawing mode
+	// drawing mode mean vs. bin center
 	bool drawMeans;
+	// drawing mode labelcolor vs. sRGB color
+	bool drawRGB;
 };
 
 #endif // VIEWPORT_H

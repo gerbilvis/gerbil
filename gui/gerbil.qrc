@@ -10,6 +10,7 @@
         <file alias="limiter">resources/limiter.png</file>
         <file alias="popup">resources/popup-arrow.png</file>
         <file alias="roi">resources/roi.png</file>
+        <file alias="rgb">resources/colorwheel.png</file>
     </qresource>
     <qresource prefix="/">
         <file alias="mainicon">resources/mainicon.svg</file>

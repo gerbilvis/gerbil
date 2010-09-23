@@ -32,6 +32,41 @@ namespace CIEObserver {	// 10 degree 1964 CIE observer coefficients
 	multi_img::Value z[] = { 5.35027E-07, 4.0283E-06, 2.61437E-05, 0.00014622, 0.000704776, 0.0029278, 0.0104822, 0.032344, 0.0860109, 0.19712, 0.389366, 0.65676, 0.972542, 1.2825, 1.55348, 1.7985, 1.96728, 2.0273, 1.9948, 1.9007, 1.74537, 1.5549, 1.31756, 1.0302, 0.772125, 0.5706, 0.415254, 0.302356, 0.218502, 0.159249, 0.112044, 0.082248, 0.060709, 0.04305, 0.030451, 0.020584, 0.013676, 0.007918, 0.003988, 0.001091, 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0. };
 }
 
+void multi_img::pixel2xyz(const Pixel &p, cv::Vec3f &v) const
+{
+	Value greensum = 0.;
+	for (unsigned int i = 0; i < p.size(); ++i) {
+		int idx = (meta[i].center - 360) / 5;
+		if (idx < 0 || idx > 94)
+			continue;
+		Value intensity = p[i] * 1./maxval;
+		v[0] += CIEObserver::x[idx] * intensity;
+		v[1] += CIEObserver::y[idx] * intensity;
+		v[2] += CIEObserver::z[idx] * intensity;
+		greensum += CIEObserver::y[idx];
+	}
+	for (unsigned int i = 0; i < 3; ++i)
+		v[i] /= greensum;
+}
+
+void multi_img::xyz2rgb(const cv::Vec3f &vs, cv::Vec3f &vd)
+{
+	/* Inverse M for sRGB, D65 */
+	vd[0] =  3.2404542 * vs[0] + -1.5371385 * vs[1] + -0.4985314 * vs[2];
+	vd[1] = -0.9692660 * vs[0] +  1.8760108 * vs[1] +  0.0415560 * vs[2];
+	vd[2] =  0.0556434 * vs[0] + -0.2040259 * vs[1] +  1.0572252 * vs[2];
+
+	/* default Gamma correction for sRGB */
+	float gamma = 1./2.4;
+	for (unsigned int i = 0; i < 3; ++i) {
+		if (vd[i] < 0.)	vd[i] = 0.;	if (vd[i] > 1.)	vd[i] = 1.;
+		if (vd[i] > 0.0031308)
+			vd[i] = 1.055*std::pow(vd[i], gamma) - 0.055;
+		else
+			vd[i] = 12.92*vd[i];
+	}
+}
+
 cv::Mat_<cv::Vec3f> multi_img::rgb() const
 {
 	cv::Mat_<cv::Vec3f> xyz(height, width, 0.);
@@ -60,23 +95,17 @@ cv::Mat_<cv::Vec3f> multi_img::rgb() const
 		cv::Vec3f &vd = *dst;
 		for (unsigned int i = 0; i < 3; ++i)
 			vs[i] /= greensum;
-
-		/* Inverse M for sRGB, D65 */
-		vd[0] =  3.2404542 * vs[0] + -1.5371385 * vs[1] + -0.4985314 * vs[2];
-		vd[1] = -0.9692660 * vs[0] +  1.8760108 * vs[1] +  0.0415560 * vs[2];
-		vd[2] =  0.0556434 * vs[0] + -0.2040259 * vs[1] +  1.0572252 * vs[2];
-
-		/* default Gamma correction for sRGB */
-		float gamma = 1./2.4;
-		for (unsigned int i = 0; i < 3; ++i) {
-			if (vd[i] < 0.)	vd[i] = 0.;	if (vd[i] > 1.)	vd[i] = 1.;
-			if (vd[i] > 0.0031308)
-				vd[i] = 1.055*std::pow(vd[i], gamma) - 0.055;
-			else
-				vd[i] = 12.92*vd[i];
-		}
+		xyz2rgb(vs, vd);
 	}
 	return rgb;
+}
+
+cv::Vec3f multi_img::rgb(const Pixel &p) const
+{
+	cv::Vec3f xyz, ret;
+	pixel2xyz(p, xyz);
+	xyz2rgb(xyz, ret);
+	return ret;
 }
 
 void multi_img::apply_illuminant(const Illuminant& il, bool remove)
