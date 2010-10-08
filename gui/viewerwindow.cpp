@@ -302,6 +302,7 @@ void ViewerWindow::startGraphseg()
 	conf.algo = (vole::graphsegalg)
 				graphsegAlgoBox->itemData(graphsegAlgoBox->currentIndex())
 				.value<int>();
+	conf.distance = vole::MANHATTAN;
 	conf.geodesic = graphsegGeodCheck->isEnabled();
 	conf.multi_seed = false;
 	int src = graphsegSourceBox->itemData(graphsegSourceBox->currentIndex())
