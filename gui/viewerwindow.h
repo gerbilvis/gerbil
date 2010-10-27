@@ -64,7 +64,7 @@ protected:
 
 	// rgb pixmap
 	QPixmap full_rgb, rgb;
-	int activeViewer; // 0: IMG, 1: GRAD
+	multi_img_viewer *activeViewer; // 0: IMG, 1: GRAD
 
 private:
 	void init();

@@ -102,7 +102,7 @@
             <number>100</number>
            </property>
            <property name="value">
-            <number>70</number>
+            <number>50</number>
            </property>
            <property name="tracking">
             <bool>true</bool>

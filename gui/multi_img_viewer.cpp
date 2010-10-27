@@ -16,7 +16,7 @@
 using namespace std;
 
 multi_img_viewer::multi_img_viewer(QWidget *parent)
-	: QWidget(parent), labelColors(NULL), image(NULL), illuminant(NULL),
+	: QWidget(parent), image(NULL), labelColors(NULL), illuminant(NULL),
 	  ignoreLabels(false), limiterMenu(this)
 {
 	setupUi(this);

@@ -17,7 +17,7 @@
 ViewerWindow::ViewerWindow(multi_img *image, QWidget *parent)
 	: QMainWindow(parent),
 	  full_image(image), image(NULL), gradient(NULL),
-	  activeViewer(0)
+	  activeViewer(viewIMG)
 {
 	init();
 }
@@ -220,9 +220,8 @@ void ViewerWindow::applyIlluminant() {
 	{
 		applyROI();
 		viewGRAD->rebuild();
-		int band = (activeViewer == 0 ? viewIMG->getViewport()->selection
-									  : viewGRAD->getViewport()->selection);
-		selectBand(band, activeViewer == 1);
+		int band = activeViewer->getViewport()->selection;
+		selectBand(band, activeViewer == viewGRAD);
 		bandView->update();
 	}
 	updateRGB(true);
@@ -311,11 +310,9 @@ void ViewerWindow::startGraphseg()
 		bandView->startGraphseg(*image, conf);
 	} else if (src == 1) {
 		bandView->startGraphseg(*gradient, conf);
-	} else {	// currently shown band, yes I know ITS FUCKING COMPLICATED
-		multi_img_viewer *viewer; const multi_img *img;
-		if (activeViewer == 0) {	viewer = viewIMG;	img = image;    }
-						  else {	viewer = viewGRAD;	img = gradient; }
-		int band = viewer->getViewport()->selection;
+	} else {	// currently shown band, construct from selection in viewport
+		int band = activeViewer->getViewport()->selection;
+		const multi_img *img = activeViewer->image;
 		multi_img i((*img)[band], img->minval, img->maxval);
 		bandView->startGraphseg(i, conf);
 	}
@@ -323,21 +320,19 @@ void ViewerWindow::startGraphseg()
 
 void ViewerWindow::setActive(bool gradient)
 {
-	activeViewer = (gradient ? 1 : 0);
+	activeViewer = (gradient ? viewGRAD : viewIMG);
 }
 
 void ViewerWindow::labelmask(bool negative)
 {
-	multi_img_viewer *viewer = (activeViewer == 0 ? viewIMG : viewGRAD);
-	emit alterLabel(viewer->getMask(), negative);
+	emit alterLabel(activeViewer->getMask(), negative);
 	viewIMG->rebuild();
 	viewGRAD->rebuild();
 }
 
 void ViewerWindow::newOverlay()
 {
-	multi_img_viewer *viewer = (activeViewer == 0 ? viewIMG : viewGRAD);
-	emit drawOverlay(viewer->getMask());
+	emit drawOverlay(activeViewer->getMask());
 }
 
 void ViewerWindow::reshapeDock(bool floating)

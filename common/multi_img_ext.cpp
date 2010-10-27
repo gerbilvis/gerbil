@@ -35,7 +35,7 @@ namespace CIEObserver {	// 10 degree 1964 CIE observer coefficients
 void multi_img::pixel2xyz(const Pixel &p, cv::Vec3f &v) const
 {
 	Value greensum = 0.;
-	for (unsigned int i = 0; i < p.size(); ++i) {
+	for (size_t i = 0; i < p.size(); ++i) {
 		int idx = (meta[i].center - 360) / 5;
 		if (idx < 0 || idx > 94)
 			continue;
@@ -71,7 +71,7 @@ cv::Mat_<cv::Vec3f> multi_img::rgb() const
 {
 	cv::Mat_<cv::Vec3f> xyz(height, width, 0.);
 	Value greensum = 0.;
-	for (unsigned int i = 0; i < size(); ++i) {
+	for (size_t i = 0; i < size(); ++i) {
 		int idx = (meta[i].center - 360) / 5;
 		if (idx < 0 || idx > 94)
 			continue;
@@ -111,11 +111,11 @@ cv::Vec3f multi_img::rgb(const Pixel &p) const
 void multi_img::apply_illuminant(const Illuminant& il, bool remove)
 {
 	if (remove) {
-		for (unsigned int i = 0; i < size(); ++i)
+		for (size_t i = 0; i < size(); ++i)
 			bands[i] /= il.at(meta[i].center);
 		// if meta was not set, center is 0., and il.at() will throw assert :)
 	} else {
-		for (unsigned int i = 0; i < size(); ++i)
+		for (size_t i = 0; i < size(); ++i)
 			bands[i] *= il.at(meta[i].center);
 	}
 	// cache became invalid
@@ -125,7 +125,7 @@ void multi_img::apply_illuminant(const Illuminant& il, bool remove)
 std::vector<multi_img::Value> multi_img::getIllumCoeff(const Illuminant & il) const
 {
 	std::vector<Value> ret(size());
-	for (unsigned int i = 0; i < size(); ++i)
+	for (size_t i = 0; i < size(); ++i)
 		ret[i] = il.at(meta[i].center);
 	return ret;
 }

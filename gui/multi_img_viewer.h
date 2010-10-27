@@ -25,6 +25,7 @@ public:
 		return curpos;
 	}
 
+	const multi_img *image;
 	multi_img::Mask labels;
 	const QVector<QColor> *labelColors;
 
@@ -54,7 +55,6 @@ protected:
 	void fillMaskLimiters(const std::vector<std::pair<int, int> >& limits);
 	void updateMaskLimiters(const std::vector<std::pair<int, int> >&, int dim);
 
-	const multi_img *image;
 	const std::vector<multi_img::Value> *illuminant;
 	bool ignoreLabels;
 
