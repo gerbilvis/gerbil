@@ -31,52 +31,35 @@ multi_img multi_img::spec_rescale(size_t newsize) const
 	std::cerr << "multi_img: spec_rescale(" << newsize << ")" << std::endl;
 	assert(newsize <= this->size());
 
-	if (newsize == this->size()) {
-		std::cerr << "multi_img: spec_rescale(): pointless rescaling, returning unmodified copy" << std::endl;
+	if (newsize == this->size())
 		return multi_img(*this);
-	}
 
 	multi_img ret(height, width, newsize);
+	ret.minval = minval;
+	ret.maxval = maxval;
 
+	rebuildPixels();
 	for (int row = 0; row < height; ++row) {
 		for (int col = 0; col < width; ++col) {
-			if (dirty(row, col))
-				rebuildPixel(row, col);
-			/// copy std::vector into a cv::Mat
-			cv::Mat_<Value> tmpmat(pixels[row*width + col], true);
-			/// write scaled down Mat into another instance
-			cv::Mat_<Value> tmpmat2;
-			cv::resize(tmpmat, tmpmat2, cv::Size(1, newsize));
-			/// copy results into ret's pixel cache
-			for (size_t b = 0; b < newsize; b++) {
-				ret.pixels[row*width + col][b] = tmpmat2(0, b);
-			}
+			/// delegate resizing to opencv, using mat headers over vectors
+			cv::Mat_<Value> src(pixels[row*width + col]),
+			                dst(ret.pixels[row*width + col]);
+			cv::resize(src, dst, cv::Size(1, newsize));
 		}
 	}
 
 	/// ret: write back pixel cache into bands
-	unsigned int d;
-	for (d = 0; d < ret.size(); ++d) {
-		Band &dst = ret.bands[d];
-		BandIt it;
-		unsigned int i;
-		for (it = dst.begin(), i = 0; it != dst.end(); it++, i++) {
-			*it = ret.pixels[i][d];
-		}
-	}
+	ret.applyCache();
 
-	ret.dirty.setTo(0);
-
-	/// interpolate wavelengths
+	/// interpolate wavelength metadata accordingly
 	{
-		cv::Mat_<float> tmpmeta(cv::Size(1, meta.size()));
+		cv::Mat_<float> tmpmeta1(cv::Size(1, meta.size())), tmpmeta2;
 		std::vector<BandDesc>::const_iterator it;
 		unsigned int i;
 		for (it = meta.begin(), i = 0; it != meta.end(); it++, i++) {
-			tmpmeta(0, i) = it->center;
+			tmpmeta1(0, i) = it->center;
 		}
-		cv::Mat_<float> tmpmeta2;
-		cv::resize(tmpmeta, tmpmeta2, cv::Size(1, newsize));
+		cv::resize(tmpmeta1, tmpmeta2, cv::Size(1, newsize));
 		for (size_t b = 0; b < newsize; b++) {
 			ret.meta[b] = BandDesc(round(tmpmeta2(0, b)));
 		}
