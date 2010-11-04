@@ -26,6 +26,65 @@ multi_img multi_img::spec_gradient() const
 	return ret;
 }
 
+multi_img multi_img::spec_rescale(size_t newsize) const
+{
+	std::cerr << "multi_img: spec_rescale(" << newsize << ")" << std::endl;
+	assert(newsize <= this->size());
+
+	if (newsize == this->size()) {
+		std::cerr << "multi_img: spec_rescale(): pointless rescaling, returning unmodified copy" << std::endl;
+		return multi_img(*this);
+	}
+
+	multi_img ret(height, width, newsize);
+
+	for (int row = 0; row < height; ++row) {
+		for (int col = 0; col < width; ++col) {
+			if (dirty(row, col))
+				rebuildPixel(row, col);
+			/// copy std::vector into a cv::Mat
+			cv::Mat_<Value> tmpmat(pixels[row*width + col], true);
+			/// write scaled down Mat into another instance
+			cv::Mat_<Value> tmpmat2;
+			cv::resize(tmpmat, tmpmat2, cv::Size(1, newsize));
+			/// copy results into ret's pixel cache
+			for (size_t b = 0; b < newsize; b++) {
+				ret.pixels[row*width + col][b] = tmpmat2(0, b);
+			}
+		}
+	}
+
+	/// ret: write back pixel cache into bands
+	unsigned int d;
+	for (d = 0; d < ret.size(); ++d) {
+		Band &dst = ret.bands[d];
+		BandIt it;
+		unsigned int i;
+		for (it = dst.begin(), i = 0; it != dst.end(); it++, i++) {
+			*it = ret.pixels[i][d];
+		}
+	}
+
+	ret.dirty.setTo(0);
+
+	/// interpolate wavelengths
+	{
+		cv::Mat_<float> tmpmeta(cv::Size(1, meta.size()));
+		std::vector<BandDesc>::const_iterator it;
+		unsigned int i;
+		for (it = meta.begin(), i = 0; it != meta.end(); it++, i++) {
+			tmpmeta(0, i) = it->center;
+		}
+		cv::Mat_<float> tmpmeta2;
+		cv::resize(tmpmeta, tmpmeta2, cv::Size(1, newsize));
+		for (size_t b = 0; b < newsize; b++) {
+			ret.meta[b] = BandDesc(round(tmpmeta2(0, b)));
+		}
+	}
+
+	return ret;
+}
+
 namespace CIEObserver {	// 10 degree 1964 CIE observer coefficients
 	multi_img::Value x[] = { 1.222E-07, 9.1927E-07, 5.9586E-06, 3.3266E-05, 0.000159952, 0.00066244, 0.0023616, 0.0072423, 0.0191097, 0.0434, 0.084736, 0.140638, 0.204492, 0.264737, 0.314679, 0.357719, 0.383734, 0.386726, 0.370702, 0.342957, 0.302273, 0.254085, 0.195618, 0.132349, 0.080507, 0.041072, 0.016172, 0.005132, 0.003816, 0.015444, 0.037465, 0.071358, 0.117749, 0.172953, 0.236491, 0.304213, 0.376772, 0.451584, 0.529826, 0.616053, 0.705224, 0.793832, 0.878655, 0.951162, 1.01416, 1.0743, 1.11852, 1.1343, 1.12399, 1.0891, 1.03048, 0.95074, 0.856297, 0.75493, 0.647467, 0.53511, 0.431567, 0.34369, 0.268329, 0.2043, 0.152568, 0.11221, 0.0812606, 0.05793, 0.0408508, 0.028623, 0.0199413, 0.013842, 0.00957688, 0.0066052, 0.00455263, 0.0031447, 0.00217496, 0.0015057, 0.00104476, 0.00072745, 0.000508258, 0.00035638, 0.000250969, 0.00017773, 0.00012639, 9.0151E-05, 6.45258E-05, 4.6339E-05, 3.34117E-05, 2.4209E-05, 1.76115E-05, 1.2855E-05, 9.41363E-06, 6.913E-06, 5.09347E-06, 3.7671E-06, 2.79531E-06, 2.082E-06, 1.55314E-06 };
 	multi_img::Value y[] = { 1.3398E-08, 1.0065E-07, 6.511E-07, 3.625E-06, 1.7364E-05, 7.156E-05, 0.0002534, 0.0007685, 0.0020044, 0.004509, 0.008756, 0.014456, 0.021391, 0.029497, 0.038676, 0.049602, 0.062077, 0.074704, 0.089456, 0.106256, 0.128201, 0.152761, 0.18519, 0.21994, 0.253589, 0.297665, 0.339133, 0.395379, 0.460777, 0.53136, 0.606741, 0.68566, 0.761757, 0.82333, 0.875211, 0.92381, 0.961988, 0.9822, 0.991761, 0.99911, 0.99734, 0.98238, 0.955552, 0.915175, 0.868934, 0.825623, 0.777405, 0.720353, 0.658341, 0.593878, 0.527963, 0.461834, 0.398057, 0.339554, 0.283493, 0.228254, 0.179828, 0.140211, 0.107633, 0.081187, 0.060281, 0.044096, 0.0318004, 0.0226017, 0.0159051, 0.0111303, 0.0077488, 0.0053751, 0.00371774, 0.00256456, 0.00176847, 0.00122239, 0.00084619, 0.00058644, 0.00040741, 0.000284041, 0.00019873, 0.00013955, 9.8428E-05, 6.9819E-05, 4.9737E-05, 3.55405E-05, 2.5486E-05, 1.83384E-05, 1.3249E-05, 9.6196E-06, 7.0128E-06, 5.1298E-06, 3.76473E-06, 2.77081E-06, 2.04613E-06, 1.51677E-06, 1.12809E-06, 8.4216E-07, 6.297E-07 };
