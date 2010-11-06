@@ -38,10 +38,11 @@ public slots:
 	void toggleUnlabeled(bool toggle);
 	void toggleLabels(bool toggle);
 	void toggleLimiters(bool toggle);
-	void setActive(bool who);
 	void setAlpha(int);
 	void overlay(int x, int y);
 	void showLimiterMenu();
+	void setActive()	{ viewport->active = true; viewport->update(); }
+	void setInactive()	{ viewport->active = false; viewport->update(); }
 
 signals:
 	void newOverlay();

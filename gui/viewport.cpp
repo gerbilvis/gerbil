@@ -390,7 +390,7 @@ void Viewport::enterEvent(QEvent *)
 	if (active)
 		return;
 	emit bandSelected(selection, gradient);
-	emit activated(gradient);
+	emit activated();
 	active = true;
 	update();
 	emit newOverlay(-1);
@@ -421,7 +421,7 @@ void Viewport::mousePressEvent(QMouseEvent *event)
 {
 	if (!active) {
 		wasActive = false;
-		emit activated(gradient);
+		emit activated();
 		active = true;
 
 	}

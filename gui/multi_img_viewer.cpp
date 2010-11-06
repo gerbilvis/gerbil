@@ -291,12 +291,6 @@ void multi_img_viewer::showLimiterMenu()
 	}
 }
 
-void multi_img_viewer::setActive(bool who)
-{
-	viewport->active = (who == viewport->gradient); // yes, indeed!
-	viewport->update();
-}
-
 void multi_img_viewer::toggleLabeled(bool toggle)
 {
 	viewport->showLabeled = toggle;

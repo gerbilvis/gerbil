@@ -82,7 +82,7 @@ public slots:
 signals:
 	void bandSelected(int dim, bool gradient);
 	void newOverlay(int dim);
-	void activated(bool who);
+	void activated();
 	void addSelection();
 	void remSelection();
 

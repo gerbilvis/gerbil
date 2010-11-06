@@ -12,12 +12,13 @@
 
 #include <QPainter>
 #include <QIcon>
+#include <QSignalMapper>
 #include <iostream>
 
 ViewerWindow::ViewerWindow(multi_img *image, QWidget *parent)
 	: QMainWindow(parent),
 	  full_image(image), image(NULL), gradient(NULL),
-	  activeViewer(viewIMG)
+	  activeViewer(0)
 {
 	init();
 }
@@ -57,13 +58,22 @@ void ViewerWindow::applyROI()
 
 void ViewerWindow::init()
 {
+	/* GUI elements */
 	setupUi(this);
+	initGraphsegUI();
+	initIlluminantUI();
+
+	/* more manual work to get GUI in proper shape */
 	bandButton->hide();
+	graphsegWidget->hide();
 
 	bandDock->setDisabled(true);
 	rgbDock->setDisabled(true);
 
-	/* setup labeling stuff first */
+	activeViewer = viewIMG;
+	viewIMG->setActive();
+
+	/* setup labeling stuff */
 	labelColors << Qt::white // 0 is index for unlabeled
 		<< Qt::green << Qt::red << Qt::cyan << Qt::magenta << Qt::blue;
 
@@ -71,8 +81,7 @@ void ViewerWindow::init()
 	viewIMG->labelColors = viewGRAD->labelColors = &labelColors;
 	createMarkers();
 
-	graphsegWidget->hide();
-
+	/* slots & signals */
 	connect(bandDock, SIGNAL(visibilityChanged(bool)),
 			bandButton, SLOT(setHidden(bool)));
 	connect(bandButton, SIGNAL(clicked()),
@@ -85,9 +94,6 @@ void ViewerWindow::init()
 			bandView, SLOT(changeLabel(int)));
 	connect(clearButton, SIGNAL(clicked()),
 			bandView, SLOT(clearLabelPixels()));
-
-	initGraphsegUI();
-	initIlluminantUI();
 
 	// signals for ROI
 	connect(roiButtons, SIGNAL(clicked(QAbstractButton*)),
@@ -112,9 +118,19 @@ void ViewerWindow::init()
 	connect(this, SIGNAL(drawOverlay(const multi_img::Mask&)),
 			bandView, SLOT(drawOverlay(const multi_img::Mask&)));
 
+	// for self-activation of viewports
+	QSignalMapper *vpmap = new QSignalMapper(this);
+	vpmap->setMapping(viewIMG, 0);
+	vpmap->setMapping(viewGRAD, 0);
+	connect(vpmap, SIGNAL(mapped(int)),
+			this, SLOT(setActive(int)));
+
 	for (int i = 0; i < 2; ++i)
 	{
 		multi_img_viewer *v = (i == 1 ? viewGRAD : viewIMG);
+		multi_img_viewer *v2 = (i == 0 ? viewGRAD : viewIMG);
+		const Viewport *vp = v->getViewport();
+
 		connect(applyButton, SIGNAL(clicked()),
 				v, SLOT(rebuild()));
 		connect(markButton, SIGNAL(toggled(bool)),
@@ -127,14 +143,14 @@ void ViewerWindow::init()
 		connect(bandView, SIGNAL(pixelOverlay(int,int)),
 				v, SLOT(overlay(int,int)));
 
-		const Viewport *vp = v->getViewport();
+		connect(vp, SIGNAL(activated()),
+				vpmap, SLOT(map()));
+		// connect same signal also to the _other_ viewport
+		connect(vp, SIGNAL(activated()),
+				v2, SLOT(setInactive()));
 
 		connect(vp, SIGNAL(bandSelected(int, bool)),
 				this, SLOT(selectBand(int, bool)));
-		connect(vp, SIGNAL(activated(bool)),
-				this, SLOT(setActive(bool)));
-		connect(vp, SIGNAL(activated(bool)),
-				(i ? viewIMG : viewGRAD), SLOT(setActive(bool)));
 
 		connect(v, SIGNAL(newOverlay()),
 				this, SLOT(newOverlay()));
@@ -149,7 +165,6 @@ void ViewerWindow::init()
 		connect(bandView, SIGNAL(killHover()),
 				vp, SLOT(killHover()));
 	}
-	viewIMG->setActive(false);
 
 	updateRGB(true);
 
@@ -318,9 +333,9 @@ void ViewerWindow::startGraphseg()
 	}
 }
 
-void ViewerWindow::setActive(bool gradient)
+void ViewerWindow::setActive(int id)
 {
-	activeViewer = (gradient ? viewGRAD : viewIMG);
+	activeViewer = (id == 1 ? viewGRAD : viewIMG);
 }
 
 void ViewerWindow::labelmask(bool negative)

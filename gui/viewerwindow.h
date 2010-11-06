@@ -28,7 +28,7 @@ public slots:
 	void selectBand(int dim, bool gradient);
 	void addToLabel()   { labelmask(false); }
 	void remFromLabel() { labelmask(true); }
-	void setActive(bool gradient);
+	void setActive(int id); // id 0: viewIMG, 1: viewGRAD
 	void newOverlay();
 	void startGraphseg();
 	void applyIlluminant();
