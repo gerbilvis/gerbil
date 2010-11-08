@@ -120,8 +120,8 @@ void ViewerWindow::init()
 
 	// for self-activation of viewports
 	QSignalMapper *vpmap = new QSignalMapper(this);
-	vpmap->setMapping(viewIMG, 0);
-	vpmap->setMapping(viewGRAD, 0);
+	vpmap->setMapping(viewIMG->getViewport(), 0);
+	vpmap->setMapping(viewGRAD->getViewport(), 1);
 	connect(vpmap, SIGNAL(mapped(int)),
 			this, SLOT(setActive(int)));
 

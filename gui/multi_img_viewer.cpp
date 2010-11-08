@@ -36,7 +36,7 @@ multi_img_viewer::multi_img_viewer(QWidget *parent)
 	connect(viewport, SIGNAL(newOverlay(int)),
 			this, SLOT(updateMask(int)));
 
-	setAlpha(70);
+	setAlpha(alphaSlider->value());
 }
 
 void multi_img_viewer::setImage(const multi_img *img, bool gradient)

@@ -14,7 +14,7 @@ class multi_img_viewer : public QWidget, private Ui::multi_img_viewer {
 public:
 	multi_img_viewer(QWidget *parent = 0);
 
-	const Viewport* getViewport() { return viewport; }
+	Viewport* getViewport() { return viewport; }
 	const multi_img::Mask& getMask() { return maskholder; }
 
 	/* translate image value to value in our coordinate system */
