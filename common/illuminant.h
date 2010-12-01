@@ -9,27 +9,26 @@
 #ifndef ILLUMINANT_H
 #define ILLUMINANT_H
 
-#include <multi_img.h>
-
 class Illuminant {
 public:
 	Illuminant() {} // needed for std containers
-	Illuminant(multi_img::Value temperature) : temp(temperature), weight(1.)
+	Illuminant(double temperature) : temp(temperature), weight(1.)
 	{	// precalculate real value at 560nm to do norming
 		norm560 = 100./at(560, true);
 	}
 	
 	// calculate the weight such that all coeffs. in range <= 1.
 	inline void calcWeight(int wl1, int wl2) {
-		multi_img::Value maxv = 0.;
+		double maxv = 0.;
 		for (int i = wl1; i <= wl2; i+=10)
-			if (at(i) > maxv)	maxv = at(i);
+			if (at(i) > maxv)
+				maxv = at(i);
 		weight = 1./maxv;
 	}
 	
-	inline multi_img::Value at(int wavelength, bool norm = false) const {
+	inline double at(int wavelength, bool norm = false) const {
 		assert(wavelength > 0);
-		std::map<int, multi_img::Value>::iterator i = coeff.find(wavelength);
+		std::map<int, double>::iterator i = coeff.find(wavelength);
 		if (i != coeff.end())
 			return i->second * weight;
 	
@@ -44,12 +43,16 @@ public:
 		}
 		return M * weight;
 	}
+	
+	inline double at(float wavelength, bool norm = false) const {
+		return at((int)(wavelength + 0.5f), norm);
+	}
 
 private:
-	mutable std::map<int, multi_img::Value> coeff;
-	multi_img::Value temp;
-	multi_img::Value norm560;
-	multi_img::Value weight;
+	mutable std::map<int, double> coeff;
+	double temp;
+	double norm560;
+	double weight;
 };
 
 #endif
