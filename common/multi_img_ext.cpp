@@ -102,8 +102,8 @@ void multi_img::xyz2rgb(const cv::Vec3f &vs, cv::Vec3f &vd)
 	float gamma = 1.f/2.4f;
 	for (unsigned int i = 0; i < 3; ++i) {
 		// sanitize first
-		vd[i] = std::min<float>(vd[i], 0.f);
-		vd[i] = std::max<float>(vd[i], 1.f);
+		vd[i] = std::max<float>(vd[i], 0.f);
+		vd[i] = std::min<float>(vd[i], 1.f);
 		// now apply gamma the sRGB way
 		if (vd[i] > 0.0031308f)
 			vd[i] = 1.055f * std::pow(vd[i], gamma) - 0.055f;
