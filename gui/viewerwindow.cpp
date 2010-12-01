@@ -316,7 +316,7 @@ void ViewerWindow::startGraphseg()
 	conf.algo = (vole::graphsegalg)
 				graphsegAlgoBox->itemData(graphsegAlgoBox->currentIndex())
 				.value<int>();
-	conf.distance = vole::MANHATTAN;
+	conf.distance = vole::CHEBYSHEV; // as in Couprie et al., PAMI 2010
 	conf.geodesic = graphsegGeodCheck->isChecked();
 	conf.multi_seed = false;
 	int src = graphsegSourceBox->itemData(graphsegSourceBox->currentIndex())
