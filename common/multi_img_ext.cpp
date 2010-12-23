@@ -91,12 +91,12 @@ void multi_img::pixel2xyz(const Pixel &p, cv::Vec3f &v) const
 		v[i] /= greensum;
 }
 
-void multi_img::xyz2rgb(const cv::Vec3f &vs, cv::Vec3f &vd)
+void multi_img::xyz2bgr(const cv::Vec3f &vs, cv::Vec3f &vd)
 {
 	/* Inverse M for sRGB, D65 */
-	vd[0] =  3.2404542f * vs[0] + -1.5371385f * vs[1] + -0.4985314f * vs[2];
+	vd[2] =  3.2404542f * vs[0] + -1.5371385f * vs[1] + -0.4985314f * vs[2];
 	vd[1] = -0.9692660f * vs[0] +  1.8760108f * vs[1] +  0.0415560f * vs[2];
-	vd[2] =  0.0556434f * vs[0] + -0.2040259f * vs[1] +  1.0572252f * vs[2];
+	vd[0] =  0.0556434f * vs[0] + -0.2040259f * vs[1] +  1.0572252f * vs[2];
 
 	/* default Gamma correction for sRGB */
 	float gamma = 1.f/2.4f;
@@ -112,7 +112,7 @@ void multi_img::xyz2rgb(const cv::Vec3f &vs, cv::Vec3f &vd)
 	}
 }
 
-cv::Mat_<cv::Vec3f> multi_img::rgb() const
+cv::Mat_<cv::Vec3f> multi_img::bgr() const
 {
 	cv::Mat_<cv::Vec3f> xyz(height, width, 0.);
 	float greensum = 0.;
@@ -132,24 +132,24 @@ cv::Mat_<cv::Vec3f> multi_img::rgb() const
 		greensum += CIEObserver::y[idx];
 	}
 
-	cv::Mat_<cv::Vec3f> rgb(height, width);
+	cv::Mat_<cv::Vec3f> bgr(height, width);
 	cv::Mat_<cv::Vec3f>::iterator src = xyz.begin();
-	cv::Mat_<cv::Vec3f>::iterator dst = rgb.begin();
-	for (; dst != rgb.end(); ++src, ++dst) {
+	cv::Mat_<cv::Vec3f>::iterator dst = bgr.begin();
+	for (; dst != bgr.end(); ++src, ++dst) {
 		cv::Vec3f &vs = *src;
 		cv::Vec3f &vd = *dst;
 		for (unsigned int i = 0; i < 3; ++i)
 			vs[i] /= greensum;
-		xyz2rgb(vs, vd);
+		xyz2bgr(vs, vd);
 	}
-	return rgb;
+	return bgr;
 }
 
-cv::Vec3f multi_img::rgb(const Pixel &p) const
+cv::Vec3f multi_img::bgr(const Pixel &p) const
 {
 	cv::Vec3f xyz, ret;
 	pixel2xyz(p, xyz);
-	xyz2rgb(xyz, ret);
+	xyz2bgr(xyz, ret);
 	return ret;
 }
 

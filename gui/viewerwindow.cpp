@@ -248,14 +248,14 @@ void ViewerWindow::applyIlluminant() {
 void ViewerWindow::updateRGB(bool full)
 {
 	if (full || full_rgb.isNull()) {
-		cv::Mat_<cv::Vec3f> rgbmat = full_image->rgb();
-		QImage img(rgbmat.cols, rgbmat.rows, QImage::Format_ARGB32);
-		for (int y = 0; y < rgbmat.rows; ++y) {
-			cv::Vec3f *row = rgbmat[y];
+		cv::Mat_<cv::Vec3f> bgrmat = full_image->bgr();
+		QImage img(bgrmat.cols, bgrmat.rows, QImage::Format_ARGB32);
+		for (int y = 0; y < bgrmat.rows; ++y) {
+			cv::Vec3f *row = bgrmat[y];
 			QRgb *destrow = (QRgb*)img.scanLine(y);
-			for (int x = 0; x < rgbmat.cols; ++x) {
+			for (int x = 0; x < bgrmat.cols; ++x) {
 				cv::Vec3f &c = row[x];
-				destrow[x] = qRgb(c[0]*255., c[1]*255., c[2]*255.);
+				destrow[x] = qRgb(c[2]*255., c[1]*255., c[0]*255.);
 			}
 		}
 		full_rgb = QPixmap::fromImage(img);

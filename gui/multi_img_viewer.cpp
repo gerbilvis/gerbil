@@ -153,8 +153,8 @@ void multi_img_viewer::createBins()
 			Bin &b = it.value();
 			for (int d = 0; d < dim; ++d)
 				b.means[d] /= b.weight;
-			cv::Vec3f color = image->rgb(b.means);
-			b.rgb = QColor(color[0]*255, color[1]*255, color[2]*255);
+			cv::Vec3f color = image->bgr(b.means);
+			b.rgb = QColor(color[2]*255, color[1]*255, color[0]*255);
 		}
 	}
 
