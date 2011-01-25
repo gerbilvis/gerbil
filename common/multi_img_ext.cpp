@@ -13,8 +13,8 @@ multi_img multi_img::spec_gradient() const
 {
 	multi_img ret(size() - 1);
 	// data format of output
-	ret.minval = -maxval/2.f;
-	ret.maxval =  maxval/2.f;
+	ret.minval = -maxval;
+	ret.maxval =  maxval;
 	ret.width = width; ret.height = height;
 
 	for (unsigned int i = 0; i < size()-1; ++i) {
@@ -23,6 +23,7 @@ multi_img multi_img::spec_gradient() const
 			ret.meta[i] = BandDesc(meta[i].center, meta[i+1].center);
 	}
 	ret.resetPixels();
+
 	return ret;
 }
 
