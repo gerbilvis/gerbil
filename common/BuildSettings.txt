@@ -11,5 +11,6 @@ VoleRequiredModules()
 
 VoleCompileLibrary(
 	multi_img_ext
+	multi_img_io_ext
 	illuminant
 )
