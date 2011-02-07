@@ -17,6 +17,24 @@
 
 #include <fstream>
 
+void multi_img::read_image(const string& filename)
+{
+	pair<vector<string>, vector<BandDesc> > bands;
+
+	// try to read in file list first
+	bands = parse_filelist(filename);
+	if (bands.first.empty()) {
+		// maybe we got a .LAN image
+		if (read_image_lan(filename))
+			return;
+		// maybe we got a single image as argument
+		read_image(vector<string>(1, filename));
+	} else {
+		// read in multispectral image data
+		read_image(bands.first, bands.second);
+	}
+}
+
 struct hackstream : public std::ifstream {
 	hackstream(const char* in, std::_Ios_Openmode mode)	: ifstream(in, mode) {}
 	void readus(unsigned short &d)
