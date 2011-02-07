@@ -88,6 +88,8 @@ void multi_img::pixel2xyz(const Pixel &p, cv::Vec3f &v) const
 		v[2] += CIEObserver::z[idx] * intensity;
 		greensum += CIEObserver::y[idx];
 	}
+	if (greensum == 0.f)	// we didn't collect valuable data.
+		return;
 	for (unsigned int i = 0; i < 3; ++i)
 		v[i] /= greensum;
 }
@@ -116,7 +118,7 @@ void multi_img::xyz2bgr(const cv::Vec3f &vs, cv::Vec3f &vd)
 cv::Mat_<cv::Vec3f> multi_img::bgr() const
 {
 	cv::Mat_<cv::Vec3f> xyz(height, width, 0.);
-	float greensum = 0.;
+	float greensum = 0.f;
 	for (size_t i = 0; i < size(); ++i) {
 		int idx = ((int)(meta[i].center + 0.5f) - 360) / 5;
 		if (idx < 0 || idx > 94)
@@ -132,6 +134,9 @@ cv::Mat_<cv::Vec3f> multi_img::bgr() const
 		}
 		greensum += CIEObserver::y[idx];
 	}
+
+	if (greensum == 0.f)
+		greensum = 1.f;
 
 	cv::Mat_<cv::Vec3f> bgr(height, width);
 	cv::Mat_<cv::Vec3f>::iterator src = xyz.begin();
