@@ -306,6 +306,15 @@ void Viewport::drawOverlay()
 	painter.drawPolyline(poly);
 }
 
+void Viewport::activate()
+{
+	if (!active) {
+		wasActive = false;
+		emit activated();
+		active = true;
+	}
+}
+
 void Viewport::paintEvent(QPaintEvent *event)
 {
 	//vole::Stopwatch s("Viewport painting");
@@ -419,12 +428,8 @@ void Viewport::mouseMoveEvent(QMouseEvent *event)
 
 void Viewport::mousePressEvent(QMouseEvent *event)
 {
-	if (!active) {
-		wasActive = false;
-		emit activated();
-		active = true;
+	activate(); // give ourselves active role if we don't have it yet
 
-	}
 	if (event->button() == Qt::RightButton) {
 		this->setCursor(Qt::ClosedHandCursor);
 		lasty = event->y();

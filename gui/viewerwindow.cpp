@@ -8,11 +8,16 @@
 
 #include "viewerwindow.h"
 
-#include <graphseg_config.h>
+#include <labeling.h>
+#include <qtopencv.h>
+
+#include <highgui.h>
 
 #include <QPainter>
 #include <QIcon>
 #include <QSignalMapper>
+#include <QMessageBox>
+#include <QFileDialog>
 #include <iostream>
 
 ViewerWindow::ViewerWindow(multi_img *image, QWidget *parent)
@@ -34,11 +39,21 @@ void ViewerWindow::applyROI()
 	log.apply_logarithm();
 	gradient = new multi_img(log.spec_gradient());
 
-	// second: re-initialize gui
-	labels = cv::Mat_<uchar>(image->height, image->width, (uchar)0);
+	/* TODO: this is only testing code! */
+/*	std::pair<multi_img::Value, multi_img::Value> range;
+	range= image->data_range();
+	image->minval = range.first;
+	image->maxval = range.second;
+	range = gradient->data_range();
+	gradient->minval = range.first;
+	gradient->maxval = range.second;*/
 
-	bandView->labels = labels;
-	viewIMG->labels = viewGRAD->labels = labels;
+	// second: re-initialize gui
+	/* set labeling, and label colors */
+	cv::Mat1s labels(image->height, image->width, (short)0);
+	viewIMG->labels = viewGRAD->labels = bandView->labels = labels;
+	if (labelColors.empty())
+		setLabelColors(vole::Labeling::colors(2, true));
 
 	/* update caches */
 	ibands.assign(image->size(), NULL);
@@ -73,14 +88,6 @@ void ViewerWindow::init()
 	activeViewer = viewIMG;
 	viewIMG->setActive();
 
-	/* setup labeling stuff */
-	labelColors << Qt::white // 0 is index for unlabeled
-		<< Qt::green << Qt::red << Qt::cyan << Qt::magenta << Qt::blue;
-
-	bandView->setLabelColors(labelColors);
-	viewIMG->labelColors = viewGRAD->labelColors = &labelColors;
-	createMarkers();
-
 	/* slots & signals */
 	connect(bandDock, SIGNAL(visibilityChanged(bool)),
 			bandButton, SLOT(setHidden(bool)));
@@ -95,12 +102,23 @@ void ViewerWindow::init()
 	connect(clearButton, SIGNAL(clicked()),
 			bandView, SLOT(clearLabelPixels()));
 
+	connect(bandView, SIGNAL(newLabel()),
+			this, SLOT(createLabel()));
+
+	// label buttons
+	connect(lLoadButton, SIGNAL(clicked()),
+			this, SLOT(loadLabeling()));
+	connect(lSaveButton, SIGNAL(clicked()),
+			this, SLOT(saveLabeling()));
+	connect(lLoadSeedButton, SIGNAL(clicked()),
+			this, SLOT(loadSeeds()));
+
 	// signals for ROI
 	connect(roiButtons, SIGNAL(clicked(QAbstractButton*)),
-			this, SLOT(roi_decision(QAbstractButton*)));
-	connect(roiButton, SIGNAL(clicked()), this, SLOT(roi_trigger()));
+			this, SLOT(ROIDecision(QAbstractButton*)));
+	connect(roiButton, SIGNAL(clicked()), this, SLOT(ROITrigger()));
 	connect(roiView, SIGNAL(newSelection(QRect)),
-			this, SLOT(roi_selection(QRect)));
+			this, SLOT(ROISelection(QRect)));
 
 	connect(ignoreButton, SIGNAL(toggled(bool)),
 			markButton, SLOT(setDisabled(bool)));
@@ -117,6 +135,9 @@ void ViewerWindow::init()
 			bandView, SLOT(alterLabel(const multi_img::Mask&,bool)));
 	connect(this, SIGNAL(drawOverlay(const multi_img::Mask&)),
 			bandView, SLOT(drawOverlay(const multi_img::Mask&)));
+
+	connect(this, SIGNAL(newLabelColors(const QVector<QColor>&, bool)),
+			bandView, SLOT(setLabelColors(const QVector<QColor>&, bool)));
 
 	// for self-activation of viewports
 	QSignalMapper *vpmap = new QSignalMapper(this);
@@ -139,6 +160,9 @@ void ViewerWindow::init()
 				v, SLOT(toggleUnlabeled(bool)));
 		connect(ignoreButton, SIGNAL(toggled(bool)),
 				v, SLOT(toggleLabels(bool)));
+
+		connect(this, SIGNAL(newLabelColors(const QVector<QColor>&, bool)),
+				v, SLOT(updateLabelColors(const QVector<QColor>&, bool)));
 
 		connect(bandView, SIGNAL(pixelOverlay(int,int)),
 				v, SLOT(overlay(int,int)));
@@ -174,6 +198,58 @@ void ViewerWindow::init()
 		roi = cv::Rect(0, 0, full_image->width, full_image->height);
 		applyROI();
 	}
+}
+
+bool ViewerWindow::setLabelColors(const std::vector<cv::Vec3b> &colors)
+{
+	QVector<QColor> col = vole::Vec2QColor(colors);
+	col[0] = Qt::white; // override black for 0 label
+
+	// test if costy rebuilds necessary (existing colors changed)
+	bool changed = false;
+	for (int i = 1; i < labelColors.size() && i < col.size(); ++i) {
+		if (col[i] != labelColors[i])
+			changed = true;
+	}
+
+	labelColors = col;
+
+	// use colors for our awesome label menu
+	markerSelector->clear();
+	for (int i = 1; i < labelColors.size(); ++i) // 0 is index for unlabeled
+	{
+		markerSelector->addItem(colorIcon(labelColors[i]), "");
+	}
+	markerSelector->addItem(QIcon(":/toolbar/add"), "");
+
+	// tell others about colors
+	emit newLabelColors(labelColors, changed);
+	return changed;
+}
+
+void ViewerWindow::setLabels(const vole::Labeling &labeling)
+{
+	assert(labeling().rows == image->height && labeling().cols == image->width);
+	/* note: always update labels before updating label colors, for the case
+	   that there are less colors available than used in previous labeling */
+	cv::Mat1s labels = labeling()(roi);
+	viewIMG->labels = viewGRAD->labels = bandView->labels = labels;
+
+	bool updated = setLabelColors(labeling.colors());
+	if (!updated) {
+		viewIMG->rebuild();
+		viewGRAD->rebuild();
+		bandView->refresh();
+	}
+}
+
+void ViewerWindow::createLabel()
+{
+	int index = labelColors.count();
+	// increment colors by 1
+	setLabelColors(vole::Labeling::colors(index + 1, true));
+	// select our new label for convenience
+	markerSelector->setCurrentIndex(index - 1);
 }
 
 const QPixmap* ViewerWindow::getBand(int dim, bool grad)
@@ -306,8 +382,21 @@ void ViewerWindow::initGraphsegUI()
 			bandView, SLOT(toggleSeedMode(bool)));
 	connect(graphsegGoButton, SIGNAL(clicked()),
 			this, SLOT(startGraphseg()));
-	connect(bandView, SIGNAL(seedingDone(bool)),
+	connect(this, SIGNAL(seedingDone(bool)),
 			graphsegButton, SLOT(setChecked(bool)));
+}
+
+void ViewerWindow::runGraphseg(const multi_img& input,
+							   const vole::GraphSegConfig &config)
+{
+	vole::GraphSeg seg(config);
+	multi_img::Mask result;
+	result = seg.execute(input, bandView->seedMap);
+
+	/* add segmentation to current labeling */
+	bandView->alterLabel(result, false);
+
+	emit seedingDone();
 }
 
 void ViewerWindow::startGraphseg()
@@ -322,14 +411,14 @@ void ViewerWindow::startGraphseg()
 	int src = graphsegSourceBox->itemData(graphsegSourceBox->currentIndex())
 								 .value<int>();
 	if (src == 0) {
-		bandView->startGraphseg(*image, conf);
+		runGraphseg(*image, conf);
 	} else if (src == 1) {
-		bandView->startGraphseg(*gradient, conf);
+		runGraphseg(*gradient, conf);
 	} else {	// currently shown band, construct from selection in viewport
 		int band = activeViewer->getViewport()->selection;
 		const multi_img *img = activeViewer->image;
 		multi_img i((*img)[band], img->minval, img->maxval);
-		bandView->startGraphseg(i, conf);
+		runGraphseg(i, conf);
 	}
 }
 
@@ -363,14 +452,6 @@ void ViewerWindow::reshapeDock(bool floating)
 		bandDock->resize(bandDock->width(), bandDock->width()/src_aspect);
 	} else
 		bandDock->resize(bandDock->height()*src_aspect, bandDock->height());
-}
-
-void ViewerWindow::createMarkers()
-{
-	for (int i = 1; i < labelColors.size(); ++i) // 0 is index for unlabeled
-	{
-		markerSelector->addItem(colorIcon(labelColors[i]), "");
-	}
 }
 
 QIcon ViewerWindow::colorIcon(const QColor &color)
@@ -435,12 +516,81 @@ void ViewerWindow::setI1Visible(bool visible)
 	}
 }
 
-void ViewerWindow::roi_trigger()
+void ViewerWindow::loadLabeling()
+{
+	std::string filename = QFileDialog::getOpenFileName
+						   (this, "Open Labeling Image File").toStdString();
+	if (filename.empty())
+		return;
+	vole::Labeling labeling(filename, false);
+	if (labeling().empty()) {
+		QMessageBox::critical(this, "Error loading labels",
+						"The labeling image could not be read."
+						"\nSupported are all image formats readable by OpenCV.");
+		return;
+	}
+	if (labeling().rows != full_image->height || labeling().cols != full_image->width) {
+		QMessageBox::critical(this, "Labeling image does not match",
+				QString("The labeling image has wrong proportions."
+						"\nIt has to be of size %1x%2 for this image.")
+						.arg(full_image->width).arg(full_image->height));
+		return;
+	}
+
+	setLabels(labeling);
+}
+
+void ViewerWindow::loadSeeds()
+{
+	std::string filename = QFileDialog::getOpenFileName
+						   (this, "Open Seed Image File").toStdString();
+	if (filename.empty())
+		return;
+	cv::Mat1s seeding = cv::imread(filename, 0);
+	if (seeding.empty()) {
+		QMessageBox::critical(this, "Error loading seeds",
+						"The seed image could not be read."
+						"\nSupported are all image formats readable by OpenCV.");
+		return;
+	}
+	if (seeding.rows != full_image->height || seeding.cols != full_image->width) {
+		QMessageBox::critical(this, "Seed image does not match",
+				QString("The seed image has wrong proportions."
+						"\nIt has to be of size %1x%2 for this image.")
+						.arg(full_image->width).arg(full_image->height));
+		return;
+	}
+
+	bandView->seedMap = seeding;
+
+	// now make sure we are in seed mode
+	if (graphsegButton->isChecked()) {
+		bandView->refresh();
+	} else {
+		graphsegButton->toggle();
+	}
+}
+
+void ViewerWindow::saveLabeling()
+{
+	std::string filename = QFileDialog::getSaveFileName
+						   (this, "Save Labeling as Image File").toStdString();
+	if (filename.empty())
+		return;
+	vole::Labeling labeling(bandView->labels);
+	cv::Mat3b output = labeling.bgr();
+	bool success = cv::imwrite(filename, output);
+	if (!success)
+		QMessageBox::critical(this, QString("Could not write output file."),
+							QString("See console for OpenCV error output."));
+}
+
+void ViewerWindow::ROITrigger()
 {
 	mainStack->setCurrentIndex(1);
 }
 
-void ViewerWindow::roi_decision(QAbstractButton *sender)
+void ViewerWindow::ROIDecision(QAbstractButton *sender)
 {
 	QDialogButtonBox::ButtonRole role = roiButtons->buttonRole(sender);
 	bool apply = (role == QDialogButtonBox::ApplyRole);
@@ -469,7 +619,7 @@ void ViewerWindow::roi_decision(QAbstractButton *sender)
 	}
 }
 
-void ViewerWindow::roi_selection(const QRect &roi)
+void ViewerWindow::ROISelection(const QRect &roi)
 {
 	QString title("<b>Select Region of Interest:</b> %1.%2 - %3.%4 (%5x%6)");
 	title = title.arg(roi.x()).arg(roi.y()).arg(roi.right()).arg(roi.bottom())

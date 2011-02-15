@@ -26,8 +26,7 @@ public:
 	}
 
 	const multi_img *image;
-	multi_img::Mask labels;
-	const QVector<QColor> *labelColors;
+	cv::Mat1s labels;
 
 public slots:
 	void rebuild(int bins = 0);
@@ -43,6 +42,7 @@ public slots:
 	void showLimiterMenu();
 	void setActive()	{ viewport->active = true; viewport->update(); }
 	void setInactive()	{ viewport->active = false; viewport->update(); }
+	void updateLabelColors(const QVector<QColor> &labelColors, bool changed);
 
 signals:
 	void newOverlay();
@@ -69,6 +69,7 @@ private:
 	// respective data range of each bin
 	multi_img::Value binsize;
 	QMenu limiterMenu;
+	QVector<QColor> labelColors;
 };
 
 #endif // MULTI_IMG_VIEWER_H

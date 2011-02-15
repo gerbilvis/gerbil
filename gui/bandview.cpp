@@ -21,13 +21,25 @@ BandView::BandView(QWidget *parent)
 	  seedColorsA(std::make_pair(QColor(255, 0, 0, 63), QColor(255, 255, 0, 63)))
 {}
 
-void BandView::setPixmap(const QPixmap &p)
+void BandView::refresh()
 {
 	cacheValid = false;
-	ScaledView::setPixmap(p);
+	update();
 }
 
-void BandView::setLabelColors(const QVector<QColor> &lc)
+void BandView::setPixmap(const QPixmap &p)
+{
+	ScaledView::setPixmap(p);
+
+	// adjust seed map if necessary
+	if (seedMap.empty()
+		|| seedMap.rows != pixmap->height() || seedMap.cols != pixmap->width())
+		seedMap = cv::Mat1s(pixmap->height(), pixmap->width(), (short)127);
+
+	cacheValid = false;
+}
+
+void BandView::setLabelColors(const QVector<QColor> &lc, bool changed)
 {
 	labelColors = lc;
 	labelColorsA.resize(lc.size());
@@ -39,6 +51,8 @@ void BandView::setLabelColors(const QVector<QColor> &lc)
 		col.setAlpha(63);
 		labelColorsA[i] = col;
 	}
+	if (changed)
+		refresh();
 }
 
 void BandView::paintEvent(QPaintEvent *ev)
@@ -58,12 +72,15 @@ void BandView::paintEvent(QPaintEvent *ev)
 	painter.drawPixmap(damaged, cachedPixmap, damaged);
 
 	// draw current cursor
-	QPen pen(seedMode ? Qt::yellow : labelColors[curLabel]);
-	pen.setWidth(0);
-	painter.setPen(pen);
-	painter.drawRect(QRectF(cursor, QSizeF(1, 1)));
+	if (curLabel < labelColors.count()) {
+		QPen pen(seedMode ? Qt::yellow : labelColors[curLabel]);
+		pen.setWidth(0);
+		painter.setPen(pen);
+		painter.drawRect(QRectF(cursor, QSizeF(1, 1)));
+	}
 
 	// draw overlay (a quasi one-timer)
+	QPen pen;
 	if (overlay) {
 		if (scale > 4.) {
 			pen.setColor(Qt::yellow); painter.setPen(pen);
@@ -84,7 +101,8 @@ void BandView::paintEvent(QPaintEvent *ev)
 				QRgb *destrow = (QRgb*)dest.scanLine(y);
 				for (int x = 0; x < overlay->cols; ++x) {
 					if (srcrow[x])
-						destrow[x] = qRgba(255, 255, 0, 63);
+//						destrow[x] = qRgba(255, 255, 0, 63);
+						destrow[x] = qRgba(255, 255, 0, 255);
 				}
 			}
 			painter.drawImage(0, 0, dest);
@@ -94,6 +112,7 @@ void BandView::paintEvent(QPaintEvent *ev)
 	if (seedMode) {
 		pen.setColor(Qt::yellow); pen.setWidthF(0.5); pen.setStyle(Qt::DotLine);
 		painter.setPen(pen);
+		painter.setBrush(Qt::NoBrush);
 		painter.drawRect(0, 0, pixmap->width(), pixmap->height());
 	}
 }
@@ -111,10 +130,10 @@ void BandView::updateCache()
 	QImage dest(pixmap->width(), pixmap->height(), QImage::Format_ARGB32);
 	dest.fill(qRgba(0, 0, 0, 0));
 	for (int y = 0; y < pixmap->height(); ++y) {
-		const uchar *srcrow = (seedMode ? seedMap[y] : labels[y]);
+		const short *srcrow = (seedMode ? seedMap[y] : labels[y]);
 		QRgb *destrow = (QRgb*)dest.scanLine(y);
 		for (int x = 0; x < pixmap->width(); ++x) {
-			uchar val = srcrow[x];
+			short val = srcrow[x];
 			if (seedMode) {
 				if (val == 255)
 					destrow[x] = seedColorsA.first.rgba();
@@ -141,9 +160,9 @@ void BandView::markCachePixel(QPainter &p, int x, int y)
 // helper to color single pixel in seed mode
 void BandView::markCachePixelS(QPainter &p, int x, int y)
 {
-	uchar l = seedMap(y, x);
-	if (l == 0 || l == 255) {
-		p.setPen(l ? seedColorsA.first : seedColorsA.second);
+	short l = seedMap(y, x);
+	if (l < 64 || l > 192) {
+		p.setPen(l < 64 ? seedColorsA.first : seedColorsA.second);
 		p.drawPoint(x, y);
 	}
 }
@@ -165,7 +184,7 @@ void BandView::updateCache(int x, int y)
 	
 	// if needed, color pixel
 	QColor *col = 0;
-	uchar val =	(seedMode ? seedMap(y, x) : labels(y, x));
+	short val = (seedMode ? seedMap(y, x) : labels(y, x));
 	if (seedMode) {
 		if (val == 255)
 			col = &seedColorsA.first;
@@ -183,19 +202,12 @@ void BandView::updateCache(int x, int y)
 
 void BandView::alterLabel(const multi_img::Mask &mask, bool negative)
 {
-	if (negative) {
-		// we are out of luck
-		multi_img::MaskConstIt itm = mask.begin();
-		multi_img::MaskIt itl = labels.begin();
-		for (; itm != mask.end(); ++itm, ++itl)
-			if (*itm && (*itl == curLabel))
-				*itl = 0;
-	} else {
+	if (negative)
+		labels.setTo(0, mask.mul(labels == curLabel));
+	else
 		labels.setTo(curLabel, mask);
-	}
 
-	cacheValid = false;
-	update();
+	refresh();
 }
 
 void BandView::drawOverlay(const multi_img::Mask &mask)
@@ -266,33 +278,15 @@ void BandView::updatePoint(const QPointF &p)
 	update(QRect(damagetl, damagebr));
 }
 
-void BandView::startGraphseg(const multi_img& input,
-							 const vole::GraphSegConfig &config)
-{
-	vole::GraphSeg seg(config);
-	multi_img::Mask result;
-	result = seg.execute(input, seedMap);
-
-	/* add segmentation to current labeling */
-	multi_img::MaskConstIt sit = result.begin();
-	multi_img::MaskIt dit = labels.begin();
-	for (; sit < result.end(); ++sit, ++dit)
-		if (*sit > 0)
-			*dit = curLabel;
-		/*else if (*dit == curLabel)
-			*dit = 0;*/
-
-	emit seedingDone();
-}
-
 void BandView::clearLabelPixels()
 {
-	for (multi_img::MaskIt it = labels.begin(); it != labels.end(); ++it)
-		if (*it == curLabel)
-			*it = 0;
+	if (seedMode) {
+		seedMap.setTo(127);
+	} else {
+		labels.setTo(0, labels == curLabel);
+	}
 
-	cacheValid = false;
-	update();
+	refresh();
 }
 
 void BandView::leaveEvent(QEvent *ev)
@@ -303,26 +297,27 @@ void BandView::leaveEvent(QEvent *ev)
 
 void BandView::changeLabel(int label)
 {
-	if (label > -1)
-		curLabel = label + 1; // we start with 1, combobox with 0
+	if (label < 0)	// empty selection, during initialization
+		return;
+	label += 1; // we start with 1, combobox with 0
+
+	if (labelColors.count() && label == labelColors.count()) {
+		// need to create label color first
+		emit newLabel();
+	}
+	curLabel = label;
 }
 
 void BandView::toggleSeedMode(bool enabled)
 {
 	seedMode = enabled;
-	cacheValid = false;
-
-	if (enabled) { // starting a new seed
-		seedMap = multi_img::Mask(pixmap->height(), pixmap->width(), 127);
-	}
-	update();
+	refresh();
 }
 
 void BandView::toggleShowLabels(bool disabled)
 {
 	if (showLabels == disabled) {	// i.e. not the state we want
 		showLabels = !showLabels;
-		cacheValid = false;
-		update();
+		refresh();
 	}
 }

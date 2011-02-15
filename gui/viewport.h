@@ -78,6 +78,7 @@ public slots:
 	void killHover();
 	void toggleRGB(bool enabled)
 	{ drawRGB = enabled; update(); }
+	void activate();
 
 signals:
 	void bandSelected(int dim, bool gradient);

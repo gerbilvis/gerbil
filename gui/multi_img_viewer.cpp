@@ -16,7 +16,7 @@
 using namespace std;
 
 multi_img_viewer::multi_img_viewer(QWidget *parent)
-	: QWidget(parent), image(NULL), labelColors(NULL), illuminant(NULL),
+	: QWidget(parent), image(NULL), illuminant(NULL),
 	  ignoreLabels(false), limiterMenu(this)
 {
 	setupUi(this);
@@ -97,7 +97,7 @@ void multi_img_viewer::rebuild(int bins)
 
 void multi_img_viewer::createBins()
 {
-	assert(labelColors && !labels.empty());
+	assert(!labelColors.empty() && !labels.empty());
 
 	//vole::Stopwatch s("Bin creation");
 
@@ -108,11 +108,11 @@ void multi_img_viewer::createBins()
 
 	vector<BinSet> &sets = viewport->sets;
 	sets.clear();
-	for (int i = 0; i < labelColors->size(); ++i)
-		sets.push_back(BinSet(labelColors->at(i), dim));
+	for (int i = 0; i < labelColors.size(); ++i)
+		sets.push_back(BinSet(labelColors[i], dim));
 
 	for (int y = 0; y < labels.rows; ++y) {
-		uchar *lr = labels[y];
+		short *lr = labels[y];
 		for (int x = 0; x < labels.cols; ++x) {
 			// test the labeling
 			int label = (ignoreLabels ? 0 : lr[x]);
@@ -261,14 +261,15 @@ void multi_img_viewer::setAlpha(int alpha)
 
 void multi_img_viewer::createLimiterMenu()
 {
+	limiterMenu.clear();
 	QAction *tmp;
 	tmp = limiterMenu.addAction("No limits");
 	tmp->setData(0);
 	tmp = limiterMenu.addAction("Limit from current highlight");
 	tmp->setData(-1);
 	limiterMenu.addSeparator();
-	for (int i = 1; i < labelColors->size(); ++i) {
-		tmp = limiterMenu.addAction(ViewerWindow::colorIcon((*labelColors)[i]),
+	for (int i = 1; i < labelColors.size(); ++i) {
+		tmp = limiterMenu.addAction(ViewerWindow::colorIcon(labelColors[i]),
 													  "Limit by label");
 		tmp->setData(i);
 	}
@@ -276,19 +277,25 @@ void multi_img_viewer::createLimiterMenu()
 
 void multi_img_viewer::showLimiterMenu()
 {
-	if (limiterMenu.isEmpty())
-		createLimiterMenu();
 	QAction *a = limiterMenu.exec(limiterMenuButton->mapToGlobal(QPoint(0, 0)));
 	if (!a)
 		return;
 
-	int choice = a->data().toInt(); assert(choice < labelColors->size());
+	int choice = a->data().toInt(); assert(choice < labelColors.size());
 	viewport->setLimiters(choice);
 	if (!limiterButton->isChecked()) {
 		limiterButton->toggle();	// change button state AND toggleLimiters()
 	} else {
 		toggleLimiters(true);
 	}
+}
+
+void multi_img_viewer::updateLabelColors(const QVector<QColor> &colors, bool changed)
+{
+	labelColors = colors;
+	createLimiterMenu();
+	if (changed)
+		rebuild();
 }
 
 void multi_img_viewer::toggleLabeled(bool toggle)
@@ -314,6 +321,7 @@ void multi_img_viewer::toggleLimiters(bool toggle)
 {
 	viewport->limiterMode = toggle;
 	viewport->repaint();
+	viewport->activate();
 	updateMask(-1);
 	emit newOverlay();
 }

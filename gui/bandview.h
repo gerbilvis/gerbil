@@ -4,7 +4,6 @@
 #include "scaledview.h"
 
 #include <multi_img.h>
-#include <graphseg.h>
 #include <QPen>
 
 class BandView : public ScaledView
@@ -16,24 +15,25 @@ public:
 	void leaveEvent(QEvent *ev);
 
 	void setPixmap(const QPixmap &pixmap);
-	void setLabelColors(const QVector<QColor> &labelColors);
- 
-	multi_img::Mask labels;
+
+	cv::Mat1s labels;
+	cv::Mat1s seedMap; // mat1s to be consistent with labels matrix
 
 public slots:
+	void refresh();
 	void changeLabel(int label);
 	void clearLabelPixels();
 	void alterLabel(const multi_img::Mask &mask, bool negative);
 	void drawOverlay(const multi_img::Mask &mask);
 
+	void setLabelColors(const QVector<QColor> &labelColors, bool changed);
 	void toggleShowLabels(bool disabled);
 	void toggleSeedMode(bool enabled);
-	void startGraphseg(const multi_img& input, const vole::GraphSegConfig &config);
 
 signals:
-	void seedingDone(bool yeah = false);
 	void pixelOverlay(int x, int y);
 	void killHover();
+	void newLabel(); // user requested another label
 
 private:
 	void cursorAction(QMouseEvent *ev, bool click = false);
@@ -47,7 +47,7 @@ private:
 	bool cacheValid;
 
 	QPointF cursor, lastcursor;
-	uchar curLabel;
+	short curLabel;
 	const multi_img::Mask *overlay;
 
 	/// color view according to labels
@@ -55,7 +55,6 @@ private:
 
 	/// interpret input as segmentation seeds
 	bool seedMode;
-	multi_img::Mask seedMap;
 	
 	QVector<QColor> labelColors;
 	QVector<QColor> labelColorsA;

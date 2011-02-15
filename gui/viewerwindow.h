@@ -3,7 +3,9 @@
 
 #include "ui_viewerwindow.h"
 #include <multi_img.h>
+#include <labeling.h>
 #include <illuminant.h>
+#include <graphseg.h>
 
 #include <vector>
 #include <QPixmap>
@@ -35,21 +37,33 @@ public slots:
 	void setI1(int index);
 	void setI1Visible(bool);
 
-	void roi_trigger();
-	void roi_decision(QAbstractButton *sender);
-	void roi_selection(const QRect &roi);
+	void loadLabeling();
+	void loadSeeds();
+	void saveLabeling();
+	// add new label (color)
+	void createLabel();
+
+	void ROITrigger();
+	void ROIDecision(QAbstractButton *sender);
+	void ROISelection(const QRect &roi);
 
 signals:
 	void alterLabel(const multi_img::Mask &mask, bool negative);
+	void newLabelColors(const QVector<QColor> &colors, bool changed);
 	void drawOverlay(const multi_img::Mask &mask);
+	void seedingDone(bool yeah = false);
 
 protected:
     void changeEvent(QEvent *e);
 
 	/* helper functions */
 	void applyROI();
-	void createMarkers();
 	void labelmask(bool negative);
+	// returns true if updates were triggered, false if not (trigger yourself!)
+	bool setLabelColors(const std::vector<cv::Vec3b> &colors);
+	void setLabels(const vole::Labeling &labeling);
+
+	void runGraphseg(const multi_img& input, const vole::GraphSegConfig &config);
 
 	// multispectral image and gradient
 	multi_img *full_image, *image, *gradient;
@@ -57,8 +71,6 @@ protected:
 	cv::Rect roi;
 	// bands from both image and gradient
 	std::vector<QPixmap*> ibands, gbands;
-	// pixel label holder
-	cv::Mat1b labels;
 	// label colors
 	QVector<QColor> labelColors;
 
