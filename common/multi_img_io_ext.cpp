@@ -36,7 +36,7 @@ void multi_img::read_image(const string& filename)
 }
 
 struct hackstream : public std::ifstream {
-	hackstream(const char* in, std::_Ios_Openmode mode)	: ifstream(in, mode) {}
+	hackstream(const char* in, std::ios_base::openmode mode)	: ifstream(in, mode) {}
 	void readus(unsigned short &d)
 	{	read((char*)&d, sizeof(unsigned short));	}
 	void readui(unsigned int &d)
@@ -102,7 +102,7 @@ bool multi_img::read_image_lan(const string& filename)
 	in.close();
 
 	/* rescale data according to minval/maxval */
-	double srcmaxval = (depth == 0 ? 255. : 65535.);
+	Value srcmaxval = (depth == 0 ? (Value)255. : (Value)65535.);
 	Value scale = (maxval - minval)/srcmaxval;
 	for (int d = 0; d < size; ++d) {
 		if (minval != 0.) {
@@ -134,7 +134,7 @@ void multi_img::write_out(const string& base, bool normalize) const
 
 		if (normalize) {
 			cv::Mat_<uchar> normalized;
-			Value scale = 255./(maxval - minval);
+			Value scale = (Value)255./(maxval - minval);
 			bands[i].convertTo(normalized, CV_8U, scale, -scale*minval);
 			cv::imwrite(name, normalized);
 		} else
