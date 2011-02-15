@@ -14,9 +14,11 @@ int main(int argc, char **argv)
 	// get input file name
 	std::string filename;
 	if (argc != 2) {
+#ifdef __unix__
 		std::cerr << "Usage: " << argv[0] << " <filename>\n\n"
 					 "Filename may point to a RGB image or "
 					 "a multispectral image descriptor file." << std::endl;
+#endif
 		filename = QFileDialog::getOpenFileName
 		           	(0, "Open Descriptor or Image File").toStdString();
 	} else {
