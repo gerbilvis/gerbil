@@ -97,6 +97,9 @@ protected:
 	void wheelEvent(QWheelEvent *);
 	void keyPressEvent(QKeyEvent *);
 
+	// helper function that updates Y-axis labels
+	void updateYAxis();
+
 	// helper function that updates world transformation
 	void updateModelview();
 
@@ -116,7 +119,9 @@ protected:
 
 	// cached information about image
 	int nbins;
-	multi_img::Value binsize, minval;
+	multi_img::Value binsize, minval, maxval;
+	std::vector<QString> yaxis;
+
 private:
 	// modelview matrix and its inverse
 	QTransform modelview, modelviewI;

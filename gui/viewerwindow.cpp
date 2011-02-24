@@ -23,14 +23,21 @@
 ViewerWindow::ViewerWindow(multi_img *image, QWidget *parent)
 	: QMainWindow(parent),
 	  full_image(image), image(NULL), gradient(NULL),
-	  activeViewer(0)
+	  activeViewer(0), normIMG(NORM_OBSERVED), normGRAD(NORM_OBSERVED)
 {
-	init();
+	initUI();
+	roiView->roi = QRect(0, 0, full_image->width, full_image->height);
+
+	// default to full image if small enough
+	if (full_image->width*full_image->height < 513*513) {
+		roi = cv::Rect(0, 0, full_image->width, full_image->height);
+		applyROI();
+	}
 }
 
 void ViewerWindow::applyROI()
 {
-	// first: set up new working images
+	/// first: set up new working images
 	delete image;
 	delete gradient;
 	image = new multi_img(*full_image, roi);
@@ -39,27 +46,26 @@ void ViewerWindow::applyROI()
 	log.apply_logarithm();
 	gradient = new multi_img(log.spec_gradient());
 
-	/* TODO: this is only testing code! */
-/*	std::pair<multi_img::Value, multi_img::Value> range;
-	range= image->data_range();
-	image->minval = range.first;
-	image->maxval = range.second;
-	range = gradient->data_range();
-	gradient->minval = range.first;
-	gradient->maxval = range.second;*/
+	// calculate new norm ranges inside ROI
+	for (int i = 0; i < 2; ++i) {
+		setNormRange(i);
+		updateImageRange(i);
+	}
+	// gui update (if norm ranges changed)
+	normTargetChanged();
 
-	// second: re-initialize gui
-	/* set labeling, and label colors */
+	/* set labeling, and label colors (depend on ROI size) */
 	cv::Mat1s labels(image->height, image->width, (short)0);
 	viewIMG->labels = viewGRAD->labels = bandView->labels = labels;
 	if (labelColors.empty())
 		setLabelColors(vole::Labeling::colors(2, true));
 
-	/* update caches */
+	/// second: re-initialize gui
+	/* empty caches */
 	ibands.assign(image->size(), NULL);
 	gbands.assign(gradient->size(), NULL);
 
-	selectBand(0, false);
+	updateBand();
 	updateRGB(false);
 
 	/* do setImage() last */
@@ -71,12 +77,13 @@ void ViewerWindow::applyROI()
 	mainStack->setCurrentIndex(0);
 }
 
-void ViewerWindow::init()
+void ViewerWindow::initUI()
 {
 	/* GUI elements */
 	setupUi(this);
 	initGraphsegUI();
 	initIlluminantUI();
+	initNormalizationUI();
 
 	/* more manual work to get GUI in proper shape */
 	bandButton->hide();
@@ -87,6 +94,10 @@ void ViewerWindow::init()
 
 	activeViewer = viewIMG;
 	viewIMG->setActive();
+
+	// dock arrangement
+	tabifyDockWidget(labelDock, illumDock);
+	tabifyDockWidget(labelDock, normDock);
 
 	/* slots & signals */
 	connect(bandDock, SIGNAL(visibilityChanged(bool)),
@@ -191,13 +202,6 @@ void ViewerWindow::init()
 	}
 
 	updateRGB(true);
-
-	roiView->roi = QRect(0, 0, full_image->width, full_image->height);
-	// default to full image if small enough
-	if (full_image->width*full_image->height < 513*513) {
-		roi = cv::Rect(0, 0, full_image->width, full_image->height);
-		applyROI();
-	}
 }
 
 bool ViewerWindow::setLabelColors(const std::vector<cv::Vec3b> &colors)
@@ -266,6 +270,13 @@ const QPixmap* ViewerWindow::getBand(int dim, bool grad)
 	return v[dim];
 }
 
+void ViewerWindow::updateBand()
+{
+	int band = activeViewer->getViewport()->selection;
+	selectBand(band, activeViewer == viewGRAD);
+	bandView->update();
+}
+
 void ViewerWindow::selectBand(int dim, bool grad)
 {
 	bandView->setPixmap(*getBand(dim, grad));
@@ -310,10 +321,6 @@ void ViewerWindow::applyIlluminant() {
 	if (roi.width > 0)
 	{
 		applyROI();
-		viewGRAD->rebuild();
-		int band = activeViewer->getViewport()->selection;
-		selectBand(band, activeViewer == viewGRAD);
-		bandView->update();
 	}
 	updateRGB(true);
 
@@ -366,6 +373,135 @@ void ViewerWindow::initIlluminantUI()
 	connect(i1Check, SIGNAL(toggled(bool)),
 			this, SLOT(setI1Visible(bool)));
 	i1Check->setVisible(false);
+}
+
+void ViewerWindow::initNormalizationUI()
+{
+	normModeBox->addItem("Observed");
+	normModeBox->addItem("Theoretical");
+	normModeBox->addItem("Fixed");
+	connect(normIButton, SIGNAL(toggled(bool)),
+			this, SLOT(normTargetChanged()));
+	connect(normGButton, SIGNAL(toggled(bool)),
+			this, SLOT(normTargetChanged()));
+	connect(normModeBox, SIGNAL(currentIndexChanged(int)),
+			this, SLOT(normModeSelected(int)));
+	connect(normApplyButton, SIGNAL(clicked()),
+			this, SLOT(applyNormUserRange()));
+	connect(normClampButton, SIGNAL(clicked()),
+			this, SLOT(clampNormUserRange()));
+}
+
+std::pair<multi_img::Value, multi_img::Value>
+ViewerWindow::getNormRange(normMode mode, int target,
+						   std::pair<multi_img::Value, multi_img::Value> cur)
+{
+	const multi_img *img = (target == 0 ? image : gradient);
+	std::pair<multi_img::Value, multi_img::Value> ret;
+	switch (mode) {
+	case NORM_OBSERVED:
+		ret = img->data_range();
+		break;
+	case NORM_THEORETICAL:
+		// hack!
+		if (target == 0)
+			ret = make_pair(MULTI_IMG_MIN_DEFAULT, MULTI_IMG_MAX_DEFAULT);
+		else
+			ret = make_pair(-log(MULTI_IMG_MAX_DEFAULT), log(MULTI_IMG_MAX_DEFAULT));
+		break;
+	default:
+		ret = cur; // keep previous setting
+	}
+	return ret;
+}
+
+void ViewerWindow::setNormRange(int target)
+{
+	// select respective normalization mode, range variable and image
+	normMode m = (target == 0 ? normIMG : normGRAD);
+	std::pair<multi_img::Value, multi_img::Value> &r =
+			(target == 0 ? normIMGRange : normGRADRange);
+
+	// set range according to mode
+	r = getNormRange(m, target, r);
+}
+
+void ViewerWindow::updateImageRange(int target)
+{
+	const std::pair<multi_img::Value, multi_img::Value> &r =
+			(target == 0 ? normIMGRange : normGRADRange);
+	multi_img *i = (target == 0 ? image : gradient);
+	i->minval = r.first;
+	i->maxval = r.second;
+}
+
+void ViewerWindow::normTargetChanged()
+{
+	/* reset gui to current settings */
+	int target = (normIButton->isChecked() ? 0 : 1);
+	normMode m = (target == 0 ? normIMG : normGRAD);
+
+	// update normModeBox
+	normModeBox->setCurrentIndex(m);
+
+	// update norm range spin boxes
+	normModeSelected(m);
+}
+
+void ViewerWindow::normModeSelected(int mode)
+{
+	int target = (normIButton->isChecked() ? 0 : 1);
+	const std::pair<multi_img::Value, multi_img::Value> &cur =
+			(target == 0 ? normIMGRange : normGRADRange);
+
+	normMode nm = static_cast<normMode>(mode);
+	std::pair<multi_img::Value, multi_img::Value> r
+			= getNormRange(nm, target, cur);
+	normMinBox->setValue(r.first);
+	normMaxBox->setValue(r.second);
+
+	normMinBox->setReadOnly(nm != NORM_FIXED);
+	normMaxBox->setReadOnly(nm != NORM_FIXED);
+}
+
+void ViewerWindow::applyNormUserRange()
+{
+	int target = (normIButton->isChecked() ? 0 : 1);
+
+	// set internal norm mode
+	normMode &nm = (target == 0 ? normIMG : normGRAD);
+	nm = static_cast<normMode>(normModeBox->currentIndex());
+
+	// set internal range
+	std::pair<multi_img::Value, multi_img::Value> &r =
+				(target == 0 ? normIMGRange : normGRADRange);
+	r.first = normMinBox->value();
+	r.second = normMaxBox->value();
+
+	// if available, overwrite with more precise values than in the spin boxes.
+	setNormRange(target);
+
+	// update image
+	updateImageRange(target);
+
+	// re-initialize gui (duplication from applyROI())
+	if (target == 0) {
+		viewIMG->rebuild(-1);
+		/* empty cache */
+		ibands.assign(image->size(), NULL);
+	} else {
+		viewGRAD->rebuild(-1);
+		/* empty cache */
+		gbands.assign(gradient->size(), NULL);
+	}
+	updateBand();
+}
+
+void ViewerWindow::clampNormUserRange()
+{
+	// notes:
+	// - update fullImage?
+	// - updateRGB needed
 }
 
 void ViewerWindow::initGraphsegUI()

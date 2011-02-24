@@ -37,6 +37,11 @@ public slots:
 	void setI1(int index);
 	void setI1Visible(bool);
 
+	void normTargetChanged();
+	void normModeSelected(int mode);
+	void applyNormUserRange();
+	void clampNormUserRange();
+
 	void loadLabeling();
 	void loadSeeds();
 	void saveLabeling();
@@ -78,12 +83,32 @@ protected:
 	QPixmap full_rgb, rgb;
 	multi_img_viewer *activeViewer; // 0: IMG, 1: GRAD
 
+	enum normMode {
+		NORM_OBSERVED = 0,
+		NORM_THEORETICAL = 1,
+		NORM_FIXED = 2
+	};
+	normMode normIMG, normGRAD;
+	std::pair<multi_img::Value, multi_img::Value> normIMGRange, normGRADRange;
+
 private:
-	void init();
+	void initUI();
 	void initGraphsegUI();
 	void initIlluminantUI();
+	void initNormalizationUI();
+	void updateBand();
 	void updateRGB(bool full);
 	void buildIlluminant(int temp);
+
+	// calculates norm range
+	std::pair<multi_img::Value, multi_img::Value>
+			getNormRange(normMode mode, int target,
+						 std::pair<multi_img::Value, multi_img::Value> cur);
+
+	// updates target's norm range member variable
+	void setNormRange(int target);
+	// updates target data range acc. to norm range member variable
+	void updateImageRange(int target);
 
 	// cache for illumination coefficients
 	typedef std::map<int, std::pair<

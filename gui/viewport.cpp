@@ -33,14 +33,28 @@ void Viewport::reset(int bins, multi_img::Value bsize, multi_img::Value minv)
 	nbins = bins;
 	binsize = bsize;
 	minval = minv;
+	maxval = minv + (multi_img::Value)(bins - 1)*bsize;
 
 	// reset hover value that would become inappropr.
 	hover = -1;
 	// reset limiters to most-lazy values
 	setLimiters(0);
 
+	// update y-axis (used by updateModelView())
+	updateYAxis();
+
 	// update coordinate system
 	updateModelview();
+}
+
+void Viewport::updateYAxis()
+{
+	yaxis.clear();
+	for (int i = 0; i < 5; ++i) {
+		float ifrac = (float)i*0.25*(float)(nbins - 1);
+		double ycoord = maxval - ifrac*binsize;
+		yaxis.push_back(QString().setNum(ycoord, 'g', 3));
+	}
 }
 
 void Viewport::setLimiters(int label)
@@ -87,21 +101,29 @@ void Viewport::prepareLines()
 
 void Viewport::updateModelview()
 {
+	/* find width of y-axis legend */
+	QPainter painter(this);
+	QRectF bbox, fbox(0.f, 0.f, 200.f, 40.f);
+	for (size_t i = 0; i < yaxis.size(); ++i)
+		bbox |= painter.boundingRect(fbox, 0, yaxis[i]);
+
 	/* apply zoom and translation in window coordinates */
 	qreal wwidth = width();
 	qreal wheight = height()*zoom;
 	int vshift = height()*shift;
 
 	int hp = 20, vp = 10; // horizontal and vertical padding
-	int tp = 20; // lower padding for text (legend)
+	int vtp = 20; // lower padding for text (legend)
+	int htp = bbox.width() - 8; // left padding for text (legend)
+
 	// if gradient, we discard one unit space intentionally for centering
 	int d = dimensionality - (gradient? 0 : 1);
-	qreal w = (wwidth  - 2*hp)/(qreal)(d); // width of one unit
-	qreal h = (wheight - 2*vp - tp)/(qreal)(nbins - 1); // height of one unit
+	qreal w = (wwidth  - 2*hp - htp)/(qreal)(d); // width of one unit
+	qreal h = (wheight - 2*vp - vtp)/(qreal)(nbins - 1); // height of one unit
 	int t = (gradient? w/2 : 0); // moving half a unit for centering
 
 	modelview.reset();
-	modelview.translate(hp + t, vp + vshift);
+	modelview.translate(hp + htp + t, vp + vshift);
 	modelview.scale(w, -1*h); // -1 low values at bottom
 	modelview.translate(0, -(nbins -1)); // shift for low values at bottom
 
@@ -252,21 +274,37 @@ void Viewport::drawLegend(QPainter &painter)
 	assert(labels.size() == (unsigned int)dimensionality);
 
 	painter.setPen(Qt::white);
+	/// x-axis
 	for (int i = 0; i < dimensionality; ++i) {
 		QPointF l = modelview.map(QPointF(i - 1.f, 0.f));
 		QPointF r = modelview.map(QPointF(i + 1.f, 0.f));
 		QRectF rect(l, r);
 		rect.setHeight(30.f);
 
-		// only draw every second label if we run out of space
-		if (i % 2 && rect.width() < 50)
-			continue;
+		// only draw every xth label if we run out of space
+		int stepping = std::max<int>(1, 120 / rect.width());
+		if (i != selection) {
+			if (i % stepping || std::abs(i - selection) < stepping)
+				continue;
+		}
+		rect.adjust(-50.f, 0.f, 50.f, 0.f);
 
 		if (i == selection)
 			painter.setPen(Qt::red);
 		painter.drawText(rect, Qt::AlignCenter, labels[i]);
 		if (i == selection)	// revert back color
 			painter.setPen(Qt::white);
+	}
+
+	/// y-axis
+	for (size_t i = 0; i < yaxis.size(); ++i) {
+		float ifrac = (float)(i)/(float)(yaxis.size()-1) * (float)(nbins - 1);
+		QPointF b = modelview.map(QPointF(0.f, (float)(nbins - 1) - ifrac));
+		b += QPointF(-8.f, 20.f); // draw left of data, vcenter alignment
+		QPointF t = b;
+		t -= QPointF(200.f, 40.f); // draw left of data, vcenter alignment
+		QRectF rect(t, b);
+		painter.drawText(rect, Qt::AlignVCenter | Qt::AlignRight, yaxis[i]);
 	}
 }
 
@@ -347,41 +385,37 @@ void Viewport::updateXY(int sel, int bin)
 {
 	bool emitOverlay = !wasActive;
 
-	/// first handle sel -> band selection
-	if (sel < 0 || sel >= dimensionality)
-		return;
+	if (sel >= 0 && sel < dimensionality) {
+		/// first handle sel -> band selection
 
-	/* emit new band if either new selection or first input after
-	   activating this view */
-	if ((selection != sel && !holdSelection) || !wasActive) {
-		wasActive = true;
-		emit bandSelected(sel, gradient);
+		/* emit new band if either new selection or first input after
+		   activating this view */
+		if ((selection != sel && !holdSelection) || !wasActive) {
+			wasActive = true;
+			selection = sel;
+			emitOverlay = true;
+			emit bandSelected(sel, gradient);
+		}
+
+		// do this after the first chance to change selection (above)
+		if (limiterMode)
+			holdSelection = true;
+
+		/// second handle bin -> intensity highlight
+		if (illuminant && illuminant_correction)	/* correct y for illuminant */
+			bin = std::floor(bin / illuminant->at(sel) + 0.5f);
+
+		if (bin >= 0 && bin < nbins) {
+			if (!limiterMode && (hover != bin)) {
+				hover = bin;
+				emitOverlay = true;
+			}
+			if (limiterMode && updateLimiter(selection, bin))
+				emitOverlay = true;
+		}
 	}
 
-	/// second handle bin -> intensity highlight
-	if (illuminant && illuminant_correction)	/* correct y for illuminant */
-		bin = std::floor(bin / illuminant->at(sel) + 0.5f);
-
-	if (bin < 0 || bin >= nbins)
-		return;
-
-	/// do the final update
-	if (selection != sel && !holdSelection) {
-		selection = sel;
-		emitOverlay = true;
-	}
-
-	// do this after the first chance to change selection (above)
-	if (limiterMode)
-		holdSelection = true;
-
-	if (!limiterMode && (hover != bin)) {
-		hover = bin;
-		emitOverlay = true;
-	}
-	if (limiterMode && updateLimiter(selection, bin))
-		emitOverlay = true;
-
+	/// finally update
 	if (emitOverlay) {
 		update();	/* TODO: check for dual update! */
 		emit newOverlay(selection);
