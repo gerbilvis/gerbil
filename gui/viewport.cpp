@@ -25,7 +25,7 @@ Viewport::Viewport(QWidget *parent)
 	  overlayMode(false),
 	  zoom(1.), shift(0), lasty(-1), holdSelection(false), activeLimiter(0),
 	  cacheValid(false), clearView(false), implicitClearView(false),
-	  drawMeans(true), drawRGB(false)
+	  drawMeans(true), drawRGB(false), yaxisWidth(0)
 {}
 
 void Viewport::reset(int bins, multi_img::Value bsize, multi_img::Value minv)
@@ -49,12 +49,17 @@ void Viewport::reset(int bins, multi_img::Value bsize, multi_img::Value minv)
 
 void Viewport::updateYAxis()
 {
-	yaxis.clear();
+	/* find width of y-axis legend */
+	yaxis.resize(5);
+	QPainter painter(this);
+	QRectF bbox, fbox(0.f, 0.f, 200.f, 40.f);
 	for (int i = 0; i < 5; ++i) {
 		float ifrac = (float)i*0.25*(float)(nbins - 1);
 		double ycoord = maxval - ifrac*binsize;
-		yaxis.push_back(QString().setNum(ycoord, 'g', 3));
+		yaxis[i] = QString().setNum(ycoord, 'g', 3);
+		bbox |= painter.boundingRect(fbox, 0, yaxis[i]);
 	}
+	yaxisWidth = bbox.width();
 }
 
 void Viewport::setLimiters(int label)
@@ -101,12 +106,6 @@ void Viewport::prepareLines()
 
 void Viewport::updateModelview()
 {
-	/* find width of y-axis legend */
-	QPainter painter(this);
-	QRectF bbox, fbox(0.f, 0.f, 200.f, 40.f);
-	for (size_t i = 0; i < yaxis.size(); ++i)
-		bbox |= painter.boundingRect(fbox, 0, yaxis[i]);
-
 	/* apply zoom and translation in window coordinates */
 	qreal wwidth = width();
 	qreal wheight = height()*zoom;
@@ -114,7 +113,7 @@ void Viewport::updateModelview()
 
 	int hp = 20, vp = 10; // horizontal and vertical padding
 	int vtp = 20; // lower padding for text (legend)
-	int htp = bbox.width() - 8; // left padding for text (legend)
+	int htp = yaxisWidth - 8; // left padding for text (legend)
 
 	// if gradient, we discard one unit space intentionally for centering
 	int d = dimensionality - (gradient? 0 : 1);

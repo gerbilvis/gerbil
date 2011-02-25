@@ -120,7 +120,6 @@ protected:
 	// cached information about image
 	int nbins;
 	multi_img::Value binsize, minval, maxval;
-	std::vector<QString> yaxis;
 
 private:
 	// modelview matrix and its inverse
@@ -147,6 +146,9 @@ private:
 	bool drawMeans;
 	// drawing mode labelcolor vs. sRGB color
 	bool drawRGB;
+
+	std::vector<QString> yaxis;
+	int yaxisWidth;
 };
 
 #endif // VIEWPORT_H

@@ -85,10 +85,11 @@ void multi_img_viewer::rebuild(int bins)
 		return;
 
 	if (bins > 0 || bins == -1) { // number of bins or binning changed
-		if (bins > 0)
+		if (bins > 0) {
 			nbins = bins;
+			binLabel->setText(QString("%1 bins").arg(bins));
+		}
 		binsize = (image->maxval - image->minval)/(multi_img::Value)(nbins-1);
-		binLabel->setText(QString("%1 bins").arg(bins));
 		viewport->reset(nbins, binsize, image->minval);
 	}
 	createBins();
