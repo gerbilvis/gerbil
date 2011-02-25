@@ -317,11 +317,9 @@ void ViewerWindow::applyIlluminant() {
 	}
 
 	viewIMG->setIlluminant((i2 ? &getIlluminantC(i2) : NULL), true);
-	/* rebuild spectral gradient and update other stuff */
+	/* rebuild  */
 	if (roi.width > 0)
-	{
 		applyROI();
-	}
 	updateRGB(true);
 
 	/* reflect change in our own gui (will propagate to viewIMG) */
@@ -464,7 +462,7 @@ void ViewerWindow::normModeSelected(int mode)
 	normMaxBox->setReadOnly(nm != NORM_FIXED);
 }
 
-void ViewerWindow::applyNormUserRange()
+void ViewerWindow::applyNormUserRange(bool update)
 {
 	int target = (normIButton->isChecked() ? 0 : 1);
 
@@ -484,24 +482,44 @@ void ViewerWindow::applyNormUserRange()
 	// update image
 	updateImageRange(target);
 
-	// re-initialize gui (duplication from applyROI())
-	if (target == 0) {
-		viewIMG->rebuild(-1);
-		/* empty cache */
-		ibands.assign(image->size(), NULL);
-	} else {
-		viewGRAD->rebuild(-1);
-		/* empty cache */
-		gbands.assign(gradient->size(), NULL);
+	if (update) {
+		// re-initialize gui (duplication from applyROI())
+		if (target == 0) {
+			viewIMG->rebuild(-1);
+			/* empty cache */
+			ibands.assign(image->size(), NULL);
+		} else {
+			viewGRAD->rebuild(-1);
+			/* empty cache */
+			gbands.assign(gradient->size(), NULL);
+		}
+		updateBand();
 	}
-	updateBand();
 }
 
 void ViewerWindow::clampNormUserRange()
 {
-	// notes:
-	// - update fullImage?
-	// - updateRGB needed
+	// make sure internal settings are consistent
+	applyNormUserRange(false);
+
+	int target = (normIButton->isChecked() ? 0 : 1);
+
+	/* if image is changed, change full image. for gradient, we cannot preserve
+		the gradient over ROI or illuminant changes, so it remains a local change */
+	if (target == 0) {
+		full_image->minval = image->minval;
+		full_image->maxval = image->maxval;
+		full_image->clamp();
+		if (roi.width > 0)
+			applyROI();
+		updateRGB(true);
+	} else {
+		gradient->clamp();
+		viewGRAD->rebuild(-1);
+		/* empty cache */
+		gbands.assign(gradient->size(), NULL);
+		updateBand();
+	}
 }
 
 void ViewerWindow::initGraphsegUI()

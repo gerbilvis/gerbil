@@ -39,7 +39,7 @@ public slots:
 
 	void normTargetChanged();
 	void normModeSelected(int mode);
-	void applyNormUserRange();
+	void applyNormUserRange(bool update = true);
 	void clampNormUserRange();
 
 	void loadLabeling();

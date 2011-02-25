@@ -509,7 +509,7 @@
        <item row="1" column="3">
         <widget class="QPushButton" name="normClampButton">
          <property name="enabled">
-          <bool>false</bool>
+          <bool>true</bool>
          </property>
          <property name="text">
           <string>Clamp Data</string>
