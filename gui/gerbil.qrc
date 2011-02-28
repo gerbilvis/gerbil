@@ -11,6 +11,7 @@
         <file alias="popup">resources/popup-arrow.png</file>
         <file alias="roi">resources/roi.png</file>
         <file alias="rgb">resources/colorwheel.png</file>
+        <file alias="windows">resources/windows.png</file>
     </qresource>
     <qresource prefix="/">
         <file alias="mainicon">resources/mainicon.svg</file>

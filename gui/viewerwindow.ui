@@ -36,6 +36,9 @@
          <layout class="QHBoxLayout" name="toolbarLayout">
           <item>
            <widget class="QPushButton" name="roiButton">
+            <property name="toolTip">
+             <string>specify a region of interest</string>
+            </property>
             <property name="text">
              <string>Select ROI</string>
             </property>
@@ -60,6 +63,9 @@
           </item>
           <item>
            <widget class="QPushButton" name="nonmarkButton">
+            <property name="toolTip">
+             <string>draw vectors of unlabeled pixels</string>
+            </property>
             <property name="text">
              <string>Show Unlabeled</string>
             </property>
@@ -73,6 +79,9 @@
           </item>
           <item>
            <widget class="QPushButton" name="markButton">
+            <property name="toolTip">
+             <string>draw vectors of labeled pixels</string>
+            </property>
             <property name="text">
              <string>Show Labeled</string>
             </property>
@@ -86,6 +95,9 @@
           </item>
           <item>
            <widget class="QPushButton" name="ignoreButton">
+            <property name="toolTip">
+             <string>draw all vectors label-free</string>
+            </property>
             <property name="text">
              <string>Ignore Labels</string>
             </property>
@@ -110,7 +122,7 @@
           <item>
            <widget class="QPushButton" name="addButton">
             <property name="toolTip">
-             <string>Add to current label</string>
+             <string>add to current label</string>
             </property>
             <property name="text">
              <string/>
@@ -130,7 +142,7 @@
           <item>
            <widget class="QPushButton" name="remButton">
             <property name="toolTip">
-             <string>Remove from current label</string>
+             <string>remove from current label</string>
             </property>
             <property name="text">
              <string/>
@@ -148,9 +160,29 @@
            </widget>
           </item>
           <item>
-           <widget class="QPushButton" name="bandButton">
+           <widget class="Line" name="line_3">
+            <property name="orientation">
+             <enum>Qt::Vertical</enum>
+            </property>
+           </widget>
+          </item>
+          <item>
+           <widget class="QPushButton" name="docksButton">
+            <property name="toolTip">
+             <string>select available dock windows</string>
+            </property>
             <property name="text">
-             <string>View Band</string>
+             <string/>
+            </property>
+            <property name="icon">
+             <iconset resource="gerbil.qrc">
+              <normaloff>:/toolbar/windows</normaloff>:/toolbar/windows</iconset>
+            </property>
+            <property name="iconSize">
+             <size>
+              <width>16</width>
+              <height>16</height>
+             </size>
             </property>
            </widget>
           </item>
@@ -224,6 +256,9 @@
       <layout class="QHBoxLayout" name="horizontalLayout">
        <item>
         <widget class="QPushButton" name="applyButton">
+         <property name="toolTip">
+          <string>update viewports to reflect labeling changes</string>
+         </property>
          <property name="text">
           <string>Update</string>
          </property>
@@ -241,6 +276,9 @@
        </item>
        <item>
         <widget class="QComboBox" name="markerSelector">
+         <property name="toolTip">
+          <string>label to edit</string>
+         </property>
          <property name="sizeAdjustPolicy">
           <enum>QComboBox::AdjustToMinimumContentsLength</enum>
          </property>
@@ -251,6 +289,9 @@
        </item>
        <item>
         <widget class="QPushButton" name="clearButton">
+         <property name="toolTip">
+          <string>clear current label or seeds</string>
+         </property>
          <property name="icon">
           <iconset resource="gerbil.qrc">
            <normaloff>:/toolbar/clear</normaloff>:/toolbar/clear</iconset>
@@ -281,6 +322,9 @@
        </item>
        <item>
         <widget class="QPushButton" name="graphsegButton">
+         <property name="toolTip">
+          <string>graph-cut segmentation</string>
+         </property>
          <property name="text">
           <string/>
          </property>
@@ -330,13 +374,24 @@
          <number>0</number>
         </property>
         <item>
-         <widget class="QComboBox" name="graphsegSourceBox"/>
+         <widget class="QComboBox" name="graphsegSourceBox">
+          <property name="toolTip">
+           <string>segmentation data source</string>
+          </property>
+         </widget>
         </item>
         <item>
-         <widget class="QComboBox" name="graphsegAlgoBox"/>
+         <widget class="QComboBox" name="graphsegAlgoBox">
+          <property name="toolTip">
+           <string>segmentation algorithm</string>
+          </property>
+         </widget>
         </item>
         <item>
          <widget class="QCheckBox" name="graphsegGeodCheck">
+          <property name="toolTip">
+           <string>use geodesic weights</string>
+          </property>
           <property name="text">
            <string>geodesic</string>
           </property>
@@ -360,6 +415,9 @@
         </item>
         <item>
          <widget class="QPushButton" name="graphsegGoButton">
+          <property name="toolTip">
+           <string>run segmentation</string>
+          </property>
           <property name="text">
            <string/>
           </property>
@@ -422,10 +480,29 @@
    </attribute>
    <widget class="QWidget" name="dockWidgetContents_4">
     <layout class="QHBoxLayout" name="horizontalLayout_6">
+     <property name="spacing">
+      <number>10</number>
+     </property>
      <item>
       <layout class="QVBoxLayout" name="verticalLayout_6">
        <item>
+        <spacer name="verticalSpacer_5">
+         <property name="orientation">
+          <enum>Qt::Vertical</enum>
+         </property>
+         <property name="sizeHint" stdset="0">
+          <size>
+           <width>0</width>
+           <height>0</height>
+          </size>
+         </property>
+        </spacer>
+       </item>
+       <item>
         <widget class="QRadioButton" name="normIButton">
+         <property name="toolTip">
+          <string>define data range of image</string>
+         </property>
          <property name="text">
           <string>Image</string>
          </property>
@@ -436,10 +513,26 @@
        </item>
        <item>
         <widget class="QRadioButton" name="normGButton">
+         <property name="toolTip">
+          <string>define data range of spectral gradient</string>
+         </property>
          <property name="text">
           <string>Gradient</string>
          </property>
         </widget>
+       </item>
+       <item>
+        <spacer name="verticalSpacer_4">
+         <property name="orientation">
+          <enum>Qt::Vertical</enum>
+         </property>
+         <property name="sizeHint" stdset="0">
+          <size>
+           <width>0</width>
+           <height>0</height>
+          </size>
+         </property>
+        </spacer>
        </item>
       </layout>
      </item>
@@ -459,6 +552,9 @@
          </item>
          <item>
           <widget class="QDoubleSpinBox" name="normMinBox">
+           <property name="toolTip">
+            <string>lower bound</string>
+           </property>
            <property name="readOnly">
             <bool>true</bool>
            </property>
@@ -479,6 +575,9 @@
          </item>
          <item>
           <widget class="QDoubleSpinBox" name="normMaxBox">
+           <property name="toolTip">
+            <string>upper bound</string>
+           </property>
            <property name="readOnly">
             <bool>true</bool>
            </property>
@@ -501,6 +600,9 @@
        </item>
        <item row="0" column="3">
         <widget class="QPushButton" name="normApplyButton">
+         <property name="toolTip">
+          <string>use given range for display</string>
+         </property>
          <property name="text">
           <string>Apply</string>
          </property>
@@ -510,6 +612,9 @@
         <widget class="QPushButton" name="normClampButton">
          <property name="enabled">
           <bool>true</bool>
+         </property>
+         <property name="toolTip">
+          <string>enforce given range</string>
          </property>
          <property name="text">
           <string>Clamp Data</string>
@@ -522,7 +627,11 @@
           <number>0</number>
          </property>
          <item>
-          <widget class="QComboBox" name="normModeBox"/>
+          <widget class="QComboBox" name="normModeBox">
+           <property name="toolTip">
+            <string>source of data range</string>
+           </property>
+          </widget>
          </item>
          <item>
           <spacer name="horizontalSpacer_10">
@@ -538,6 +647,32 @@
           </spacer>
          </item>
         </layout>
+       </item>
+       <item row="1" column="4">
+        <spacer name="horizontalSpacer_7">
+         <property name="orientation">
+          <enum>Qt::Horizontal</enum>
+         </property>
+         <property name="sizeHint" stdset="0">
+          <size>
+           <width>0</width>
+           <height>0</height>
+          </size>
+         </property>
+        </spacer>
+       </item>
+       <item row="2" column="2">
+        <spacer name="verticalSpacer_3">
+         <property name="orientation">
+          <enum>Qt::Vertical</enum>
+         </property>
+         <property name="sizeHint" stdset="0">
+          <size>
+           <width>0</width>
+           <height>0</height>
+          </size>
+         </property>
+        </spacer>
        </item>
       </layout>
      </item>
@@ -577,44 +712,66 @@
     <number>2</number>
    </attribute>
    <widget class="QWidget" name="dockWidgetContents_3">
-    <layout class="QHBoxLayout" name="horizontalLayout_4">
-     <item>
+    <layout class="QGridLayout" name="gridLayout_3">
+     <item row="0" column="0">
       <widget class="QPushButton" name="lLoadButton">
+       <property name="toolTip">
+        <string>load pixel labeling from a file</string>
+       </property>
        <property name="text">
         <string>Load</string>
        </property>
       </widget>
      </item>
-     <item>
+     <item row="0" column="1">
       <widget class="QPushButton" name="lSaveButton">
+       <property name="toolTip">
+        <string>save pixel labeling to a file</string>
+       </property>
        <property name="text">
         <string>Save</string>
        </property>
       </widget>
      </item>
-     <item>
+     <item row="0" column="2">
       <widget class="Line" name="line_2">
        <property name="orientation">
         <enum>Qt::Vertical</enum>
        </property>
       </widget>
      </item>
-     <item>
+     <item row="0" column="3">
       <widget class="QPushButton" name="lLoadSeedButton">
+       <property name="toolTip">
+        <string>load seeding for segmentation from a file</string>
+       </property>
        <property name="text">
         <string>Load Seeds</string>
        </property>
       </widget>
      </item>
-     <item>
+     <item row="0" column="4">
       <spacer name="horizontalSpacer_8">
        <property name="orientation">
         <enum>Qt::Horizontal</enum>
        </property>
        <property name="sizeHint" stdset="0">
         <size>
-         <width>1</width>
-         <height>1</height>
+         <width>0</width>
+         <height>0</height>
+        </size>
+       </property>
+      </spacer>
+     </item>
+     <item row="1" column="0">
+      <spacer name="verticalSpacer_2">
+       <property name="orientation">
+        <enum>Qt::Vertical</enum>
+       </property>
+       <property name="sizeHint" stdset="0">
+        <size>
+         <width>0</width>
+         <height>0</height>
         </size>
        </property>
       </spacer>
@@ -688,10 +845,18 @@
       </spacer>
      </item>
      <item row="1" column="3">
-      <widget class="QComboBox" name="i2Box"/>
+      <widget class="QComboBox" name="i2Box">
+       <property name="toolTip">
+        <string>illuminant to apply</string>
+       </property>
+      </widget>
      </item>
      <item row="0" column="3">
-      <widget class="QComboBox" name="i1Box"/>
+      <widget class="QComboBox" name="i1Box">
+       <property name="toolTip">
+        <string>current/original illuminant</string>
+       </property>
+      </widget>
      </item>
      <item row="0" column="0">
       <widget class="QLabel" name="i1Label">
@@ -715,6 +880,9 @@
      </item>
      <item row="1" column="4">
       <widget class="QPushButton" name="i2Button">
+       <property name="toolTip">
+        <string>calculate new scene illumination</string>
+       </property>
        <property name="text">
         <string>Apply</string>
        </property>
@@ -727,44 +895,27 @@
        </property>
        <property name="sizeHint" stdset="0">
         <size>
-         <width>1</width>
-         <height>1</height>
+         <width>0</width>
+         <height>0</height>
         </size>
        </property>
       </spacer>
      </item>
      <item row="0" column="4">
-      <layout class="QHBoxLayout" name="horizontalLayout_3">
-       <property name="leftMargin">
-        <number>4</number>
+      <widget class="QCheckBox" name="i1Check">
+       <property name="enabled">
+        <bool>false</bool>
        </property>
-       <item>
-        <widget class="QCheckBox" name="i1Check">
-         <property name="enabled">
-          <bool>false</bool>
-         </property>
-         <property name="text">
-          <string>show</string>
-         </property>
-         <property name="checked">
-          <bool>true</bool>
-         </property>
-        </widget>
-       </item>
-       <item>
-        <spacer name="horizontalSpacer_7">
-         <property name="orientation">
-          <enum>Qt::Horizontal</enum>
-         </property>
-         <property name="sizeHint" stdset="0">
-          <size>
-           <width>1</width>
-           <height>1</height>
-          </size>
-         </property>
-        </spacer>
-       </item>
-      </layout>
+       <property name="toolTip">
+        <string>draw illuminant range</string>
+       </property>
+       <property name="text">
+        <string>show</string>
+       </property>
+       <property name="checked">
+        <bool>true</bool>
+       </property>
+      </widget>
      </item>
     </layout>
    </widget>

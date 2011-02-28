@@ -23,7 +23,8 @@
 ViewerWindow::ViewerWindow(multi_img *image, QWidget *parent)
 	: QMainWindow(parent),
 	  full_image(image), image(NULL), gradient(NULL),
-	  activeViewer(0), normIMG(NORM_OBSERVED), normGRAD(NORM_OBSERVED)
+	  activeViewer(0), normIMG(NORM_OBSERVED), normGRAD(NORM_OBSERVED),
+	  contextMenu(NULL)
 {
 	initUI();
 	roiView->roi = QRect(0, 0, full_image->width, full_image->height);
@@ -86,7 +87,6 @@ void ViewerWindow::initUI()
 	initNormalizationUI();
 
 	/* more manual work to get GUI in proper shape */
-	bandButton->hide();
 	graphsegWidget->hide();
 
 	bandDock->setDisabled(true);
@@ -100,10 +100,8 @@ void ViewerWindow::initUI()
 	tabifyDockWidget(labelDock, normDock);
 
 	/* slots & signals */
-	connect(bandDock, SIGNAL(visibilityChanged(bool)),
-			bandButton, SLOT(setHidden(bool)));
-	connect(bandButton, SIGNAL(clicked()),
-			bandDock, SLOT(show()));
+	connect(docksButton, SIGNAL(clicked()),
+			this, SLOT(openContextMenu()));
 
 	connect(bandDock, SIGNAL(topLevelChanged(bool)),
 			this, SLOT(reshapeDock(bool)));
@@ -779,6 +777,13 @@ void ViewerWindow::ROISelection(const QRect &roi)
 	title = title.arg(roi.x()).arg(roi.y()).arg(roi.right()).arg(roi.bottom())
 			.arg(roi.width()).arg(roi.height());
 	roiTitle->setText(title);
+}
+
+void ViewerWindow::openContextMenu()
+{
+	delete contextMenu;
+	contextMenu = createPopupMenu();
+	contextMenu->exec(QCursor::pos());
 }
 
 void ViewerWindow::changeEvent(QEvent *e)

@@ -52,6 +52,8 @@ public slots:
 	void ROIDecision(QAbstractButton *sender);
 	void ROISelection(const QRect &roi);
 
+	void openContextMenu();
+
 signals:
 	void alterLabel(const multi_img::Mask &mask, bool negative);
 	void newLabelColors(const QVector<QColor> &colors, bool changed);
@@ -114,6 +116,8 @@ private:
 	typedef std::map<int, std::pair<
 			Illuminant, std::vector<multi_img::Value> > > Illum_map;
 	Illum_map illuminants;
+
+	QMenu *contextMenu;
 };
 
 #endif // VIEWERWINDOW_H

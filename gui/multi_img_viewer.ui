@@ -38,6 +38,9 @@
              <verstretch>0</verstretch>
             </sizepolicy>
            </property>
+           <property name="toolTip">
+            <string>number of histogram bins per dimension</string>
+           </property>
            <property name="minimum">
             <number>2</number>
            </property>
@@ -94,6 +97,9 @@
              <horstretch>0</horstretch>
              <verstretch>0</verstretch>
             </sizepolicy>
+           </property>
+           <property name="toolTip">
+            <string>vector line opacity</string>
            </property>
            <property name="minimum">
             <number>1</number>
@@ -159,7 +165,7 @@
          <item>
           <widget class="QPushButton" name="limiterButton">
            <property name="toolTip">
-            <string>Use band-wise limiters</string>
+            <string>use band-wise limiters</string>
            </property>
            <property name="text">
             <string/>
@@ -205,6 +211,9 @@
              <height>0</height>
             </size>
            </property>
+           <property name="toolTip">
+            <string>initialize band-wise limiters</string>
+           </property>
            <property name="text">
             <string/>
            </property>
@@ -233,7 +242,7 @@
             </sizepolicy>
            </property>
            <property name="toolTip">
-            <string>Draw vectors with respective sRGB coloring</string>
+            <string>draw vectors with respective sRGB coloring</string>
            </property>
            <property name="text">
             <string/>
