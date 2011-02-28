@@ -56,8 +56,12 @@ void ViewerWindow::applyROI()
 	normTargetChanged();
 
 	/* set labeling, and label colors (depend on ROI size) */
-	cv::Mat1s labels(image->height, image->width, (short)0);
-	viewIMG->labels = viewGRAD->labels = bandView->labels = labels;
+	cv::Mat1s &labels = bandView->labels;
+	if (labels.empty() ||
+		labels.rows != image->height || labels.cols != image->width) {
+		labels = cv::Mat1s(image->height, image->width, (short)0);
+		viewIMG->labels = viewGRAD->labels = labels;
+	}
 	if (labelColors.empty())
 		setLabelColors(vole::Labeling::colors(2, true));
 
@@ -382,6 +386,8 @@ void ViewerWindow::initNormalizationUI()
 			this, SLOT(normTargetChanged()));
 	connect(normModeBox, SIGNAL(currentIndexChanged(int)),
 			this, SLOT(normModeSelected(int)));
+	connect(normMinBox, SIGNAL(valueChanged(double)),
+			this, SLOT(normModeFixed()));
 	connect(normApplyButton, SIGNAL(clicked()),
 			this, SLOT(applyNormUserRange()));
 	connect(normClampButton, SIGNAL(clicked()),
@@ -441,23 +447,35 @@ void ViewerWindow::normTargetChanged()
 	normModeBox->setCurrentIndex(m);
 
 	// update norm range spin boxes
-	normModeSelected(m);
+	normModeSelected(m, true);
 }
 
-void ViewerWindow::normModeSelected(int mode)
+void ViewerWindow::normModeSelected(int mode, bool targetchange)
 {
+	normMode nm = static_cast<normMode>(mode);
+	if (nm == NORM_FIXED && !targetchange) // user edits from currenty viewed values
+		return;
+
 	int target = (normIButton->isChecked() ? 0 : 1);
 	const std::pair<multi_img::Value, multi_img::Value> &cur =
 			(target == 0 ? normIMGRange : normGRADRange);
 
-	normMode nm = static_cast<normMode>(mode);
 	std::pair<multi_img::Value, multi_img::Value> r
 			= getNormRange(nm, target, cur);
+
+	// prevent signal loop
+	normMinBox->blockSignals(true);
+	normMaxBox->blockSignals(true);
 	normMinBox->setValue(r.first);
 	normMaxBox->setValue(r.second);
+	normMinBox->blockSignals(false);
+	normMaxBox->blockSignals(false);
+}
 
-	normMinBox->setReadOnly(nm != NORM_FIXED);
-	normMaxBox->setReadOnly(nm != NORM_FIXED);
+void ViewerWindow::normModeFixed()
+{
+	if (normModeBox->currentIndex() != 2)
+		normModeBox->setCurrentIndex(2);
 }
 
 void ViewerWindow::applyNormUserRange(bool update)

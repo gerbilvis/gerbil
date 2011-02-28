@@ -555,9 +555,6 @@
            <property name="toolTip">
             <string>lower bound</string>
            </property>
-           <property name="readOnly">
-            <bool>true</bool>
-           </property>
            <property name="minimum">
             <double>-65536.000000000000000</double>
            </property>
@@ -577,9 +574,6 @@
           <widget class="QDoubleSpinBox" name="normMaxBox">
            <property name="toolTip">
             <string>upper bound</string>
-           </property>
-           <property name="readOnly">
-            <bool>true</bool>
            </property>
            <property name="minimum">
             <double>-65536.000000000000000</double>

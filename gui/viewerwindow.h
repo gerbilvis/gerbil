@@ -38,7 +38,8 @@ public slots:
 	void setI1Visible(bool);
 
 	void normTargetChanged();
-	void normModeSelected(int mode);
+	void normModeSelected(int mode, bool targetchange = false);
+	void normModeFixed();
 	void applyNormUserRange(bool update = true);
 	void clampNormUserRange();
 
