@@ -54,14 +54,14 @@ void Viewport::updateYAxis()
 	/* calculate raw numbers for y-axis */
 	std::vector<float> ycoord(amount);
 	float maximum;
-
 	for (int i = 0; i < amount; ++i) {
 		float ifrac = (float)i*0.25*(float)(nbins - 1);
 		ycoord[i] = maxval - ifrac*binsize;
-		maximum = std::max<float>(maximum, ycoord[i]);
+		if (i == 0 || std::abs(ycoord[i]) > maximum)
+			maximum = std::abs(ycoord[i]);
 	}
 
-	/* find precision of maximum value */
+	/* find order of magnitude of maximum value */
 	float roundAt = 0.001f; // we want 3 significant digits
 	if (maximum >= 1.f) {
 		do {
@@ -136,9 +136,9 @@ void Viewport::updateModelview()
 	qreal wheight = height()*zoom;
 	int vshift = height()*shift;
 
-	int hp = 20, vp = 10; // horizontal and vertical padding
-	int vtp = 20; // lower padding for text (legend)
-	int htp = yaxisWidth - 8; // left padding for text (legend)
+	int hp = 20, vp = 12; // horizontal and vertical padding
+	int vtp = 18; // lower padding for text (legend)
+	int htp = yaxisWidth - 6; // left padding for text (legend)
 
 	// if gradient, we discard one unit space intentionally for centering
 	int d = dimensionality - (gradient? 0 : 1);
