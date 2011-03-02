@@ -388,6 +388,8 @@ void ViewerWindow::initNormalizationUI()
 			this, SLOT(normModeSelected(int)));
 	connect(normMinBox, SIGNAL(valueChanged(double)),
 			this, SLOT(normModeFixed()));
+	connect(normMaxBox, SIGNAL(valueChanged(double)),
+			this, SLOT(normModeFixed()));
 	connect(normApplyButton, SIGNAL(clicked()),
 			this, SLOT(applyNormUserRange()));
 	connect(normClampButton, SIGNAL(clicked()),

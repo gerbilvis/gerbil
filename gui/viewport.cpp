@@ -49,14 +49,39 @@ void Viewport::reset(int bins, multi_img::Value bsize, multi_img::Value minv)
 
 void Viewport::updateYAxis()
 {
-	/* find width of y-axis legend */
-	yaxis.resize(5);
+	const int amount = 5;
+
+	/* calculate raw numbers for y-axis */
+	std::vector<float> ycoord(amount);
+	float maximum;
+
+	for (int i = 0; i < amount; ++i) {
+		float ifrac = (float)i*0.25*(float)(nbins - 1);
+		ycoord[i] = maxval - ifrac*binsize;
+		maximum = std::max<float>(maximum, ycoord[i]);
+	}
+
+	/* find precision of maximum value */
+	float roundAt = 0.001f; // we want 3 significant digits
+	if (maximum >= 1.f) {
+		do {
+			maximum *= 0.1f;
+			roundAt *= 10.f;
+		} while (maximum >= 1.f);
+	} else {
+		while (maximum < 1.f) {
+			maximum *= 10.f;
+			roundAt *= 0.1f;
+		};
+	}
+
+	/* set yaxis strings and find width of y-axis legend */
+	yaxis.resize(amount);
 	QPainter painter(this);
 	QRectF bbox, fbox(0.f, 0.f, 200.f, 40.f);
-	for (int i = 0; i < 5; ++i) {
-		float ifrac = (float)i*0.25*(float)(nbins - 1);
-		double ycoord = maxval - ifrac*binsize;
-		yaxis[i] = QString().setNum(ycoord, 'g', 3);
+	for (int i = 0; i < amount; ++i) {
+		float value = roundAt * std::floor(ycoord[i]/roundAt + 0.5f);
+		yaxis[i] = QString().setNum(value, 'g', 3);
 		bbox |= painter.boundingRect(fbox, 0, yaxis[i]);
 	}
 	yaxisWidth = bbox.width();
