@@ -17,8 +17,9 @@
 BandView::BandView(QWidget *parent)
 	: ScaledView(parent),
 	  cacheValid(false), cursor(-1, -1), lastcursor(-1, -1), curLabel(1),
-	  overlay(0), showLabels(true), seedMode(false),
-	  seedColorsA(std::make_pair(QColor(255, 0, 0, 63), QColor(255, 255, 0, 63)))
+	  overlay(0), showLabels(true), seedMode(false), labelAlpha(63),
+	  seedColorsA(std::make_pair(
+			  QColor(255, 0, 0, labelAlpha), QColor(255, 255, 0, labelAlpha)))
 {}
 
 void BandView::refresh()
@@ -48,7 +49,7 @@ void BandView::setLabelColors(const QVector<QColor> &lc, bool changed)
 	for (int i = 1; i < labelColors.size(); ++i) // 0 is index for unlabeled
 	{
 		QColor col = labelColors[i];
-		col.setAlpha(63);
+		col.setAlpha(labelAlpha);
 		labelColorsA[i] = col;
 	}
 	if (changed)
@@ -320,4 +321,18 @@ void BandView::toggleShowLabels(bool disabled)
 		showLabels = !showLabels;
 		refresh();
 	}
+}
+
+void BandView::applyLabelAlpha(int alpha)
+{
+	if (labelAlpha == alpha)
+		return;
+
+	labelAlpha = alpha;
+	for (int i = 1; i < labelColorsA.size(); ++i)
+		labelColorsA[i].setAlpha(labelAlpha);
+	seedColorsA.first.setAlpha(labelAlpha);
+	seedColorsA.second.setAlpha(labelAlpha);
+
+	refresh();
 }

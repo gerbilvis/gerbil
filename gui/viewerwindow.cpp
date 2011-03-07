@@ -151,6 +151,8 @@ void ViewerWindow::initUI()
 
 	connect(this, SIGNAL(newLabelColors(const QVector<QColor>&, bool)),
 			bandView, SLOT(setLabelColors(const QVector<QColor>&, bool)));
+	connect(alphaSlider, SIGNAL(valueChanged(int)),
+			bandView, SLOT(applyLabelAlpha(int)));
 
 	// for self-activation of viewports
 	QSignalMapper *vpmap = new QSignalMapper(this);
