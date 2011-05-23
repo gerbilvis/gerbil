@@ -411,9 +411,9 @@ ViewerWindow::getNormRange(normMode mode, int target,
 	case NORM_THEORETICAL:
 		// hack!
 		if (target == 0)
-			ret = make_pair(MULTI_IMG_MIN_DEFAULT, MULTI_IMG_MAX_DEFAULT);
+			ret = std::make_pair(MULTI_IMG_MIN_DEFAULT, MULTI_IMG_MAX_DEFAULT);
 		else
-			ret = make_pair(-log(MULTI_IMG_MAX_DEFAULT), log(MULTI_IMG_MAX_DEFAULT));
+			ret = std::make_pair(-log(MULTI_IMG_MAX_DEFAULT), log(MULTI_IMG_MAX_DEFAULT));
 		break;
 	default:
 		ret = cur; // keep previous setting

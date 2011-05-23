@@ -17,6 +17,8 @@
 
 #include <fstream>
 
+using namespace std;
+
 void multi_img::read_image(const string& filename)
 {
 	pair<vector<string>, vector<BandDesc> > bands;
@@ -35,8 +37,8 @@ void multi_img::read_image(const string& filename)
 	}
 }
 
-struct hackstream : public std::ifstream {
-	hackstream(const char* in, std::ios_base::openmode mode)	: ifstream(in, mode) {}
+struct hackstream : public ifstream {
+	hackstream(const char* in, ios_base::openmode mode)	: ifstream(in, mode) {}
 	void readus(unsigned short &d)
 	{	read((char*)&d, sizeof(unsigned short));	}
 	void readui(unsigned int &d)
@@ -46,6 +48,42 @@ struct hackstream : public std::ifstream {
 	void reada(unsigned short *a, size_t num)
 	{	read((char*)a, sizeof(unsigned short)*num);	}
 };
+
+void multi_img::fill_bil(ifstream &in, unsigned short depth)
+{
+	/* read data in BIL (band interleaved by line) format */
+
+	// depth == 0 -> unsigned char; depth == 2 -> unsigned short (from .lan)
+
+	// we use either the 8bit or the 16bit array, have both for convenience. */
+	unsigned char *srow8 = new unsigned char[width];
+	unsigned short *srow16 = new unsigned short[width];
+	for (unsigned int y = 0; y < height; ++y) {
+		for (int d = 0; d < size(); ++d) {
+			multi_img::Value *drow = bands[d][y];
+			if (depth == 0)
+				in.read((char*)srow8, sizeof(unsigned char)*width);
+			else
+				in.read((char*)srow16, sizeof(unsigned short)*width);
+			for (unsigned int x = 0; x < width; ++x)
+				drow[x] = (Value)(depth == 0 ? srow8[x] : srow16[x]);
+		}
+	}
+	delete[] srow8;
+	delete[] srow16;
+
+	/* rescale data according to minval/maxval */
+	Value srcmaxval = (depth == 0 ? (Value)255. : (Value)65535.);
+	Value scale = (maxval - minval)/srcmaxval;
+	for (int d = 0; d < size(); ++d) {
+		if (minval != 0.) {
+			bands[d] = bands[d] * scale + minval;
+		} else {
+			if (maxval != srcmaxval) // evil comp., doesn't hurt
+				bands[d] *= scale;
+		}
+	}
+}
 
 bool multi_img::read_image_lan(const string& filename)
 {
@@ -82,36 +120,10 @@ bool multi_img::read_image_lan(const string& filename)
 	// prepare image
 	init(cols, rows, size);
 
-	/* read data in BIL (band interleaved by line) format */
-	// we use either the 8bit or the 16bit array, have both for convenience. */
-	unsigned char *srow8 = new unsigned char[cols];
-	unsigned short *srow16 = new unsigned short[cols];
-	for (unsigned int y = 0; y < rows; ++y) {
-		for (int d = 0; d < size; ++d) {
-			multi_img::Value *drow = bands[d][y];
-			if (depth == 0)
-				in.reada(srow8, cols);
-			else
-				in.reada(srow16, cols);
-			for (unsigned int x = 0; x < cols; ++x)
-				drow[x] = (Value)(depth == 0 ? srow8[x] : srow16[x]);
-		}
-	}
-	delete[] srow8;
-	delete[] srow16;
-	in.close();
+	// read raw data
+	fill_bil(in, depth);
 
-	/* rescale data according to minval/maxval */
-	Value srcmaxval = (depth == 0 ? (Value)255. : (Value)65535.);
-	Value scale = (maxval - minval)/srcmaxval;
-	for (int d = 0; d < size; ++d) {
-		if (minval != 0.) {
-			bands[d] = bands[d] * scale + minval;
-		} else {
-			if (maxval != srcmaxval) // evil comp., doesn't hurt
-				bands[d] *= scale;
-		}
-	}
+	in.close();
 	return true;
 }
 
@@ -129,7 +141,7 @@ void multi_img::write_out(const string& base, bool normalize) const
 		txtfile << string(name).substr(string(name).find_last_of("/") + 1);
 		txtfile << " " << meta[i].rangeStart;
 		if (meta[i].rangeStart != meta[i].rangeEnd) /// print range, if available
-			txtfile << " "  << meta[i].rangeStart;
+			txtfile << " "  << meta[i].rangeEnd;
 		txtfile << "\n";
 
 		if (normalize) {
