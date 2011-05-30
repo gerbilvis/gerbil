@@ -71,7 +71,7 @@ void multi_img::fill_bil(ifstream &in, unsigned short depth)
 	}
 	delete[] srow8;
 	delete[] srow16;
-
+	
 	/* rescale data according to minval/maxval */
 	Value srcmaxval = (depth == 0 ? (Value)255. : (Value)65535.);
 	Value scale = (maxval - minval)/srcmaxval;
@@ -127,30 +127,39 @@ bool multi_img::read_image_lan(const string& filename)
 	return true;
 }
 
-void multi_img::write_out(const string& base, bool normalize) const
+void multi_img::write_out(const string& base, bool normalize, bool in16bit) const
 {
+	// header of text file
     ofstream txtfile((base + ".txt").c_str());
     txtfile << size() << "\n";
     txtfile << "./" << "\n";
 
+	// preparation of scale and shift
+	Value scale = (!normalize ? 1.
+	               : (in16bit ? (Value)65535./(maxval - minval)
+				              : (Value)255./(maxval - minval)));
+	Value shift = (!normalize ? 0. : -scale*minval);
+
+	// write out band files and corresponding text file entries at once
 	char name[1024];
 	for (size_t i = 0; i < size(); ++i) {
 		sprintf(name, "%s%02d.png", base.c_str(), (int)i);
 
-		/// write only the basename in the text file
+		// write only the basename in the text file
 		txtfile << string(name).substr(string(name).find_last_of("/") + 1);
 		txtfile << " " << meta[i].rangeStart;
-		if (meta[i].rangeStart != meta[i].rangeEnd) /// print range, if available
+		if (meta[i].rangeStart != meta[i].rangeEnd) // print range, if available
 			txtfile << " "  << meta[i].rangeEnd;
 		txtfile << "\n";
 
-		if (normalize) {
-			cv::Mat_<uchar> normalized;
-			Value scale = (Value)255./(maxval - minval);
-			bands[i].convertTo(normalized, CV_8U, scale, -scale*minval);
-			cv::imwrite(name, normalized);
-		} else
+		if (in16bit || normalize) { // data conversion needed
+			cv::Mat output;
+			bands[i].convertTo(output, (in16bit ? CV_16U : CV_8U),
+							   scale, shift);
+			cv::imwrite(name, output);
+		} else {
 			cv::imwrite(name, bands[i]);
+		}
 	}
 
     txtfile.close();
