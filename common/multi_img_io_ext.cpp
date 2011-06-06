@@ -58,14 +58,14 @@ void multi_img::fill_bil(ifstream &in, unsigned short depth)
 	// we use either the 8bit or the 16bit array, have both for convenience. */
 	unsigned char *srow8 = new unsigned char[width];
 	unsigned short *srow16 = new unsigned short[width];
-	for (unsigned int y = 0; y < height; ++y) {
-		for (int d = 0; d < size(); ++d) {
+	for (int y = 0; y < height; ++y) {
+		for (unsigned int d = 0; d < size(); ++d) {
 			multi_img::Value *drow = bands[d][y];
 			if (depth == 0)
 				in.read((char*)srow8, sizeof(unsigned char)*width);
 			else
 				in.read((char*)srow16, sizeof(unsigned short)*width);
-			for (unsigned int x = 0; x < width; ++x)
+			for (int x = 0; x < width; ++x)
 				drow[x] = (Value)(depth == 0 ? srow8[x] : srow16[x]);
 		}
 	}
@@ -75,7 +75,7 @@ void multi_img::fill_bil(ifstream &in, unsigned short depth)
 	/* rescale data according to minval/maxval */
 	Value srcmaxval = (depth == 0 ? (Value)255. : (Value)65535.);
 	Value scale = (maxval - minval)/srcmaxval;
-	for (int d = 0; d < size(); ++d) {
+	for (unsigned int d = 0; d < size(); ++d) {
 		if (minval != 0.) {
 			bands[d] = bands[d] * scale + minval;
 		} else {
@@ -135,10 +135,10 @@ void multi_img::write_out(const string& base, bool normalize, bool in16bit) cons
     txtfile << "./" << "\n";
 
 	// preparation of scale and shift
-	Value scale = (!normalize ? 1.
-	               : (in16bit ? (Value)65535./(maxval - minval)
-				              : (Value)255./(maxval - minval)));
-	Value shift = (!normalize ? 0. : -scale*minval);
+	Value scale = (!normalize ? 1.f
+	               : (in16bit ? (Value)65535.f/(maxval - minval)
+				              : (Value)255.f/(maxval - minval)));
+	Value shift = (!normalize ? 0.f : -scale*minval);
 
 	// write out band files and corresponding text file entries at once
 	char name[1024];
@@ -182,7 +182,7 @@ pair<vector<string>, vector<multi_img::BandDesc> >
 	if (in.fail())
 		return empty;
 
-#ifdef WITH_BOOST
+#ifdef WITH_BOOST_FILESYSTEM
 	boost::filesystem::path basepath(base), filepath(filename);
 	if (!basepath.is_complete()) {
 		basepath = filepath.remove_leaf() /= basepath;
