@@ -2,9 +2,14 @@
 #define VIEWERWINDOW_H
 
 #include "ui_viewerwindow.h"
+#include "progress_observer.h"
+#include "commandrunner.h"
 #include <multi_img.h>
 #include <labeling.h>
 #include <illuminant.h>
+#include <meanshift_shell.h>
+#include <medianshift_shell.h>
+#include <probshift_shell.h>
 #include <graphseg.h>
 
 #include <vector>
@@ -33,9 +38,19 @@ public slots:
 	void setActive(int id); // id 0: viewIMG, 1: viewGRAD
 	void newOverlay();
 	void startGraphseg();
+	void startUnsupervisedSeg(bool findKL = false);
+	void startFindKL();
+	void segmentationFinished();
+	void segmentationApply(std::map<std::string, boost::any>);
+
 	void applyIlluminant();
 	void setI1(int index);
 	void setI1Visible(bool);
+	void bandsSliderMoved(int b);
+	void usMethodChanged(int idx);
+	void usInitMethodChanged(int idx);
+	void usBandwidthMethodChanged(const QString &current);
+	void unsupervisedSegCancelled();
 
 	void normTargetChanged();
 	void normModeSelected(int mode, bool targetchange = false);
@@ -43,7 +58,7 @@ public slots:
 	void applyNormUserRange(bool update = true);
 	void clampNormUserRange();
 
-	void loadLabeling();
+	void loadLabeling(std::string filename = "");
 	void loadSeeds();
 	void saveLabeling();
 	// add new label (color)
@@ -98,6 +113,7 @@ private:
 	void initUI();
 	void initGraphsegUI();
 	void initIlluminantUI();
+	void initUnsupervisedSegUI();
 	void initNormalizationUI();
 	void updateBand();
 	void updateRGB(bool full);
@@ -117,6 +133,8 @@ private:
 	typedef std::map<int, std::pair<
 			Illuminant, std::vector<multi_img::Value> > > Illum_map;
 	Illum_map illuminants;
+
+	CommandRunner *usRunner;
 
 	QMenu *contextMenu;
 };

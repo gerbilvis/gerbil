@@ -23,7 +23,9 @@ public slots:
 	void refresh();
 	void changeLabel(int label);
 	void clearLabelPixels();
+	void clearAllLabels(); /// TODO: add a button for this
 	void alterLabel(const multi_img::Mask &mask, bool negative);
+	void setLabels(multi_img::Mask l);
 	void drawOverlay(const multi_img::Mask &mask);
 
 	void setLabelColors(const QVector<QColor> &labelColors, bool changed);
@@ -59,7 +61,7 @@ private:
 	
 	int labelAlpha;
 	QVector<QColor> labelColors;
-	QVector<QColor> labelColorsA;
+	QVector<QColor> labelColorsA; /// labelColors with 50% alpha
 	std::pair<QColor, QColor> seedColorsA;
 };
 

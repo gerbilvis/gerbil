@@ -211,6 +211,13 @@ void BandView::alterLabel(const multi_img::Mask &mask, bool negative)
 	refresh();
 }
 
+void BandView::setLabels(multi_img::Mask l)
+{
+	l.copyTo(labels);
+
+	refresh();
+}
+
 void BandView::drawOverlay(const multi_img::Mask &mask)
 {
 	//vole::Stopwatch s("Overlay drawing");
@@ -286,6 +293,13 @@ void BandView::clearLabelPixels()
 	} else {
 		labels.setTo(0, labels == curLabel);
 	}
+
+	refresh();
+}
+
+void BandView::clearAllLabels()
+{
+	labels.setTo(0);
 
 	refresh();
 }

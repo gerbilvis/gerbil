@@ -7,6 +7,7 @@
 */
 
 #include "viewerwindow.h"
+#include "commandrunner.h"
 
 #include <labeling.h>
 #include <qtopencv.h>
@@ -24,7 +25,7 @@ ViewerWindow::ViewerWindow(multi_img *image, QWidget *parent)
 	: QMainWindow(parent),
 	  full_image(image), image(NULL), gradient(NULL),
 	  activeViewer(0), normIMG(NORM_OBSERVED), normGRAD(NORM_OBSERVED),
-	  contextMenu(NULL)
+	  usRunner(NULL), contextMenu(NULL)
 {
 	initUI();
 	roiView->roi = QRect(0, 0, full_image->width, full_image->height);
@@ -41,7 +42,14 @@ void ViewerWindow::applyROI()
 	/// first: set up new working images
 	delete image;
 	delete gradient;
+
+	size_t bands = bandsSlider->value();
+	if (bands > 0 && bands < full_image->size()) {
+		multi_img tmpimg = full_image->spec_rescale(bands);
+		image = new multi_img(tmpimg, roi);
+	} else {
 	image = new multi_img(*full_image, roi);
+	}
 
 	multi_img log(*image);
 	log.apply_logarithm();
@@ -88,6 +96,7 @@ void ViewerWindow::initUI()
 	setupUi(this);
 	initGraphsegUI();
 	initIlluminantUI();
+	initUnsupervisedSegUI();
 	initNormalizationUI();
 
 	/* more manual work to get GUI in proper shape */
@@ -206,6 +215,56 @@ void ViewerWindow::initUI()
 	}
 
 	updateRGB(true);
+
+	/// init bandsSlider
+	bandsLabel->setText(QString("%1 bands").arg(full_image->size()));
+	bandsSlider->setMaximum(full_image->size());
+	bandsSlider->setValue(full_image->size());
+	connect(bandsSlider, SIGNAL(valueChanged(int)),
+			this, SLOT(bandsSliderMoved(int)));
+	connect(bandsSlider, SIGNAL(sliderMoved(int)),
+			this, SLOT(bandsSliderMoved(int)));
+}
+
+void ViewerWindow::bandsSliderMoved(int b)
+{
+	bandsLabel->setText(QString("%1 bands").arg(b));
+	if (!bandsSlider->isSliderDown())
+		applyROI();
+}
+
+void ViewerWindow::usMethodChanged(int idx)
+{
+	if (idx == 0) { /// Meanshift
+		usSkipPropWidget->setEnabled(false);
+		usSpectralWidget->setEnabled(false);
+		usMSPPWidget->setEnabled(false);
+	} else if (idx == 1) { /// Medianshift
+		usSkipPropWidget->setEnabled(true);
+		usSpectralWidget->setEnabled(false);
+		usMSPPWidget->setEnabled(false);
+	} else { /// Probabilistic Shift
+		usSkipPropWidget->setEnabled(false);
+		usSpectralWidget->setEnabled(true);
+		usMSPPWidget->setEnabled(true);
+	}
+}
+
+void ViewerWindow::usInitMethodChanged(int idx)
+{
+	switch (usInitMethodBox->itemData(idx).toInt()) {
+	case vole::JUMP:
+		usInitPercentWidget->hide();
+		usInitJumpWidget->show();
+		break;
+	case vole::PERCENT:
+		usInitJumpWidget->hide();
+		usInitPercentWidget->show();
+		break;
+	default:
+		usInitJumpWidget->hide();
+		usInitPercentWidget->hide();
+	}
 }
 
 bool ViewerWindow::setLabelColors(const std::vector<cv::Vec3b> &colors)
@@ -240,7 +299,8 @@ void ViewerWindow::setLabels(const vole::Labeling &labeling)
 	assert(labeling().rows == image->height && labeling().cols == image->width);
 	/* note: always update labels before updating label colors, for the case
 	   that there are less colors available than used in previous labeling */
-	cv::Mat1s labels = labeling()(roi);
+	//cv::Mat1s labels = labeling()(roi); TODO: hmmmm..
+	cv::Mat1s labels = labeling();
 	viewIMG->labels = viewGRAD->labels = bandView->labels = labels;
 
 	bool updated = setLabelColors(labeling.colors());
@@ -596,6 +656,223 @@ void ViewerWindow::startGraphseg()
 	}
 }
 
+void ViewerWindow::initUnsupervisedSegUI()
+{
+	usMethodBox->addItem("Meanshift", 0);
+	usMethodBox->addItem("Medianshift", 1);
+	usMethodBox->addItem("Probabilistic Shift", 2);
+	usMethodChanged(0); // set default state
+
+	usInitMethodBox->addItem("all", vole::ALL);
+	usInitMethodBox->addItem("jump", vole::JUMP);
+	usInitMethodBox->addItem("percent", vole::PERCENT);
+	usInitMethodChanged(0);
+
+	usBandwidthBox->addItem("adaptive");
+	usBandwidthBox->addItem("fixed");
+	usBandwidthMethodChanged("adaptive");
+
+	usBandsSpinBox->setValue(full_image->size());
+	usBandsSpinBox->setMaximum(full_image->size());
+
+	usInitJumpWidget->hide();
+	usInitPercentWidget->hide();
+	usFoundKLWidget->hide();
+	usProgressWidget->hide();
+
+	connect(usGoButton, SIGNAL(clicked()),
+			this, SLOT(startUnsupervisedSeg()));
+	connect(usFindKLGoButton, SIGNAL(clicked()),
+			this, SLOT(startFindKL()));
+	connect(usCancelButton, SIGNAL(clicked()),
+			this, SLOT(unsupervisedSegCancelled()));
+
+	connect(usMethodBox, SIGNAL(currentIndexChanged(int)),
+			this, SLOT(usMethodChanged(int)));
+
+	connect(usLshCheckBox, SIGNAL(toggled(bool)),
+			usLshWidget, SLOT(setEnabled(bool)));
+
+	connect(usBandwidthBox, SIGNAL(currentIndexChanged(const QString&)),
+			this, SLOT(usBandwidthMethodChanged(const QString&)));
+
+	connect(usInitMethodBox, SIGNAL(currentIndexChanged(int)),
+			this, SLOT(usInitMethodChanged(int)));
+
+	connect(usSpectralCheckBox, SIGNAL(toggled(bool)),
+			usSpectralConvCheckBox, SLOT(setEnabled(bool)));
+	connect(usSpectralCheckBox, SIGNAL(toggled(bool)),
+			usSpectralMinMaxWidget, SLOT(setEnabled(bool)));
+
+	/// pull default values from temporary instance of config class
+	vole::MeanShiftConfig def;
+	usKSpinBox->setValue(def.K);
+	usLSpinBox->setValue(def.L);
+	/// TODO: random seed box
+	usPilotKSpinBox->setValue(def.k);
+	usInitMethodBox->setCurrentIndex(
+			usInitMethodBox->findData(def.starting));
+	usInitJumpBox->setValue(def.jump);
+	usFixedBWSpinBox->setValue(def.bandwidth);
+	usFindKLKMinBox->setValue(def.Kmin);
+	usFindKLKStepBox->setValue(def.Kjump);
+	usFindKLEpsilonBox->setValue(def.epsilon);
+
+	vole::ProbShiftConfig def_ps;
+	usProbShiftMSPPAlphaSpinBox->setValue(def_ps.msBwFactor);
+}
+
+void ViewerWindow::usBandwidthMethodChanged(const QString &current) {
+	if (current == "fixed") {
+		usAdaptiveBWWidget->hide();
+		usFixedBWWidget->show();
+	} else if (current == "adaptive") {
+		usFixedBWWidget->hide();
+		usAdaptiveBWWidget->show();
+	} else {
+		assert(0);
+	}
+}
+
+void ViewerWindow::unsupervisedSegCancelled() {
+	usCancelButton->setDisabled(true);
+	usCancelButton->setText("Please wait...");
+	/// runner->terminate() will be called by the Cancel button
+}
+
+void ViewerWindow::startFindKL()
+{
+	startUnsupervisedSeg(true);
+}
+
+void ViewerWindow::startUnsupervisedSeg(bool findKL)
+{
+	// allow only one runner at a time (UI enforces that)
+	assert(usRunner == NULL);
+	usRunner = new CommandRunner();
+
+	int method = usMethodBox->itemData(usMethodBox->currentIndex()).value<int>();
+
+	if (findKL) { // run MeanShift::findKL()
+		usRunner->cmd = new vole::MeanShiftShell();
+		vole::MeanShiftConfig &config = ((vole::MeanShiftShell *) usRunner->cmd)->config;
+
+		config.batch = true;
+		config.findKL = true;
+		config.k = usPilotKSpinBox->value();
+		config.K = usFindKLKmaxBox->value();
+		config.L = usFindKLLmaxBox->value();
+		config.Kmin = usFindKLKMinBox->value();
+		config.Kjump = usFindKLKStepBox->value();
+		config.epsilon = usFindKLEpsilonBox->value();
+	} else if (method == 0) { // Meanshift
+		usRunner->cmd = new vole::MeanShiftShell();
+		vole::MeanShiftConfig &config = ((vole::MeanShiftShell *) usRunner->cmd)->config;
+
+		// fixed settings
+		config.batch = true;
+
+		config.use_LSH = usLshCheckBox->isChecked();
+		config.K = usKSpinBox->value();
+		config.L = usLSpinBox->value();
+
+		config.starting = (vole::ms_sampling) usInitMethodBox->itemData(usInitMethodBox->currentIndex()).value<int>();
+		config.percent = usInitPercentBox->value();
+		config.jump = usInitJumpBox->value();
+		config.k = usPilotKSpinBox->value();
+
+		if (usBandwidthBox->currentText() == "fixed") {
+			config.bandwidth = usFixedBWSpinBox->value();
+		} else {
+			config.bandwidth = 0;
+		}
+	} else if (method == 1) { // Medianshift
+		usRunner->cmd = new vole::MedianShiftShell();
+		vole::MedianShiftConfig &config = ((vole::MedianShiftShell *) usRunner->cmd)->config;
+
+		config.K = usKSpinBox->value();
+		config.L = usLSpinBox->value();
+		config.k = usPilotKSpinBox->value();
+		config.skipprop = usSkipPropCheckBox->isChecked();
+	} else { // Probabilistic Shift
+		usRunner->cmd = new vole::ProbShiftShell();
+		vole::ProbShiftConfig &config = ((vole::ProbShiftShell *) usRunner->cmd)->config;
+
+		config.useLSH = usLshCheckBox->isChecked();
+		config.lshK = usKSpinBox->value();
+		config.lshL = usLSpinBox->value();
+
+		config.useSpectral = usSpectralCheckBox->isChecked();
+		config.useConverged = usSpectralConvCheckBox->isChecked();
+		config.minClusts = usSpectralMinBox->value();
+		config.maxClusts = usSpectralMaxBox->value();
+		config.useMeanShift = usProbShiftMSPPCheckBox->isChecked();
+		config.msBwFactor = usProbShiftMSPPAlphaSpinBox->value();
+	}
+
+	// connect runner with progress bar, cancel button and finish-slot
+	connect(usRunner, SIGNAL(progressChanged(int)), usProgressBar, SLOT(setValue(int)));
+	connect(usCancelButton, SIGNAL(clicked()), usRunner, SLOT(terminate()));
+
+	qRegisterMetaType< std::map<std::string, boost::any> >("std::map<std::string, boost::any>");
+	connect(usRunner, SIGNAL(success(std::map<std::string,boost::any>)), this, SLOT(segmentationApply(std::map<std::string,boost::any>)));
+	connect(usRunner, SIGNAL(finished()), this, SLOT(segmentationFinished()));
+
+	usProgressWidget->show();
+	usSettingsWidget->setDisabled(true);
+
+	// prepare input image
+	boost::shared_ptr<multi_img> input(new multi_img(*full_image, roi)); // image data is not copied
+	int bands = usBandsSpinBox->value();
+	bool gradient = usGradientCheckBox->isChecked();
+
+	if (bands > 0 && bands < (int) input->size()) {
+		boost::shared_ptr<multi_img> input_tmp(new multi_img(input->spec_rescale(bands)));
+		input = input_tmp;
+	}
+
+	if (gradient) {
+		// copy needed here
+		multi_img loginput(*input);
+		loginput.apply_logarithm();
+		input = boost::shared_ptr<multi_img>(new multi_img(loginput.spec_gradient()));
+	}
+
+	usRunner->input["multi_img"] = input;
+
+	usRunner->start();
+}
+
+void ViewerWindow::segmentationFinished() {
+	if (usRunner->abort) {
+		// restore Cancel button
+		usCancelButton->setEnabled(true);
+		usCancelButton->setText("Cancel");
+	}
+
+	// hide progress, re-enable settings
+	usProgressWidget->hide();
+	usSettingsWidget->setEnabled(true);
+
+	/// clean up runner
+	delete usRunner;
+	usRunner = NULL;
+}
+
+void ViewerWindow::segmentationApply(std::map<std::string, boost::any> output) {
+	if (output.count("labels")) {
+		boost::shared_ptr<cv::Mat1s> labelMask = boost::any_cast< boost::shared_ptr<cv::Mat1s> >(output["labels"]);
+		setLabels(*labelMask);
+	}
+
+	if (output.count("findKL.K") && output.count("findKL.L")) {
+		int foundK = boost::any_cast<int>(output["findKL.K"]);
+		int foundL = boost::any_cast<int>(output["findKL.L"]);
+		usFoundKLLabel->setText(QString("Found values: K=%1 L=%2").arg(foundK).arg(foundL));
+		usFoundKLWidget->show();
+	}
+}
+
 void ViewerWindow::setActive(int id)
 {
 	activeViewer = (id == 1 ? viewGRAD : viewIMG);
@@ -690,9 +967,10 @@ void ViewerWindow::setI1Visible(bool visible)
 	}
 }
 
-void ViewerWindow::loadLabeling()
+void ViewerWindow::loadLabeling(std::string filename)
 {
-	std::string filename = QFileDialog::getOpenFileName
+	if (filename.empty())
+		filename = QFileDialog::getOpenFileName
 						   (this, "Open Labeling Image File").toStdString();
 	if (filename.empty())
 		return;
