@@ -111,6 +111,7 @@ void ViewerWindow::initUI()
 	// dock arrangement
 	tabifyDockWidget(labelDock, illumDock);
 	tabifyDockWidget(labelDock, normDock);
+	usDock->hide();
 
 	/* slots & signals */
 	connect(docksButton, SIGNAL(clicked()),
@@ -607,9 +608,19 @@ void ViewerWindow::initGraphsegUI()
 	graphsegSourceBox->addItem("Image", 0);
 	graphsegSourceBox->addItem("Gradient", 1);
 	graphsegSourceBox->addItem("Shown Band", 2);
+	graphsegSourceBox->setCurrentIndex(0);
+
+	graphsegSimilarityBox->addItem("Manhattan distance (L1)", vole::MANHATTAN);
+	graphsegSimilarityBox->addItem("Euclidean distance (L2)", vole::EUCLIDEAN);
+	graphsegSimilarityBox->addItem(QString::fromUtf8("Chebyshev distance (L∞)"), vole::CHEBYSHEV);
+	graphsegSimilarityBox->addItem("Modified Spectral Angle Similarity", vole::MOD_SPEC_ANGLE);
+	graphsegSimilarityBox->setCurrentIndex(3);
+
 	graphsegAlgoBox->addItem("Kruskal", vole::KRUSKAL);
 	graphsegAlgoBox->addItem("Prim", vole::PRIM);
 	graphsegAlgoBox->addItem("Power Watershed q=2", vole::WATERSHED2);
+	graphsegAlgoBox->setCurrentIndex(2);
+
 	connect(graphsegButton, SIGNAL(toggled(bool)),
 			graphsegWidget, SLOT(setVisible(bool)));
 	connect(graphsegButton, SIGNAL(toggled(bool)),
@@ -639,7 +650,9 @@ void ViewerWindow::startGraphseg()
 	conf.algo = (vole::graphsegalg)
 				graphsegAlgoBox->itemData(graphsegAlgoBox->currentIndex())
 				.value<int>();
-	conf.distance = vole::CHEBYSHEV; // as in Couprie et al., PAMI 2010
+	conf.similarity.measure = (vole::similarity_fun)
+	      graphsegSimilarityBox->itemData(graphsegSimilarityBox->currentIndex())
+	      .value<int>();
 	conf.geodesic = graphsegGeodCheck->isChecked();
 	conf.multi_seed = false;
 	int src = graphsegSourceBox->itemData(graphsegSourceBox->currentIndex())
