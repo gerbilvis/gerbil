@@ -1,0 +1,8 @@
+<RCC>
+    <qresource prefix="/" >
+        <file>res/smile.xpm</file>
+        <file>res/smile_dx.xpm</file>
+        <file>res/smile_dy.xpm</file>
+        <file>res/smile_edge.xpm</file>
+    </qresource>
+</RCC>
