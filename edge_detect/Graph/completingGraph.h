@@ -56,9 +56,6 @@ namespace msi{
 			
 			Neuron * deleteMember(unsigned int index);
       
-			//! Set pointer to multi_img
-      inline void setMSI(const multi_img *msi){m_msi=msi;}
-      
       inline unsigned int getMinimumEdgeCount(){return minimumEdgeCount;}
 			
 			//! Give the size of the reserved space for Nodes
@@ -134,9 +131,6 @@ namespace msi{
 			*/
       bool intruder;
             
-			//! Pointer to multi_img
-      const multi_img *m_msi;
-      
       ///important only for small world graphs
       unsigned int minimumEdgeCount;
       
@@ -270,7 +264,7 @@ namespace msi{
 			
 		protected: 
 			
-			fastDijkstra *m_dijkstra;
+		fastDijkstra *m_dijkstra;
   };
 	
 }//end of namespace msi

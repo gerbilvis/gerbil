@@ -1,6 +1,6 @@
-vole_module_name("ms_edges")
+vole_module_name("edge_detect")
 vole_module_description("Edge detection in multispectral images")
-vole_module_variable("Vole_MSedges")
+vole_module_variable("Gerbil_Edge_Detect")
 
 vole_add_required_dependencies("OPENCV" "BOOST" "BOOST_PROGRAM_OPTIONS" "BOOST_SYSTEM")
 vole_add_optional_modules("gerbil_common")
@@ -14,12 +14,10 @@ vole_add_command("edge_detect" "edge_detection.h" "EdgeDetection")
 
 vole_compile_library(
 	"edge_detection_config"
-	"myCanny"
-	"_cvgeom.h"
-	"_cvimgproc.h"
 	"self_organizing_map"
 	"neuron"
 	"som_trainer"
+	"somtester"
 	"space_filling_curve"
 	"Graph/completingGraph"
 	"Graph/graph"
@@ -27,13 +25,9 @@ vole_compile_library(
 	"Graph/solution"
 	"Graph/dijkstra"
 	"Graph/smallWorldGraph"
-  "Graph/fastDijkstra"
-  "GTM/rbfnet"
-  "GTM/gmm"
-  "GTM/gtm"
-  "GTM/gtm_em"
-  "GTM/gtm_defs.h"
-  "GTM/gtm_misc"
+	"Graph/fastDijkstra"
+	"canny/myCanny"
+	"canny/_cvgeom.h" "canny/_cvimgproc.h"
 )
 
 vole_add_module()

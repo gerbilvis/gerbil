@@ -678,13 +678,6 @@ namespace msi {
 				
 				weightingFactor = learning * std::exp(- (dist * dist)/(2.0 * sigma * sigma) );
 				t->update(input, weightingFactor);
-#ifdef WITH_GERBIL_COMMON
-				if(!m_msi->empty())
-				{  
-					t->setSRGB(m_msi->bgr(*t));
-				}
-#endif
-			
 			}
 		}
 		return res;

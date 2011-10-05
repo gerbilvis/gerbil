@@ -1,18 +1,10 @@
-//	-------------------------------------------------------------------------------------------------------------	 	//
-// 														Variants of Self-Organizing Maps																											//
-// Studienarbeit in Computer Vision at the Chair of Patter Recognition Friedrich-Alexander Universitaet Erlangen		//
-// Start:	15.11.2010																																																//
-// End	:	16.05.2011																																																//
-// 																																																									//
-// Ralph Muessig																																																		//
-// ralph.muessig@e-technik.stud.uni-erlangen.de																																			//
-// Informations- und Kommunikationstechnik																																					//
-//	---------------------------------------------------------------------------------------------------------------	//
-
-
 #ifndef EDGE_DETECTION_CONFIG_H
 #define EDGE_DETECTION_CONFIG_H
 
+#include <config.h>
+#include <multi_img.h>
+#include <similarity_measure.h>
+#include <sm_config.h>
 #include <iostream>
 #include <string>
 
@@ -20,13 +12,12 @@
 #include <QWidget>
 #endif // VOLE_GUI
 
-#include "config.h"
-
 // this is our config struct. a struct is not mandatory, but it is clean!
 class EdgeDetectionConfig : public vole::Config {
 
 	public:
 	EdgeDetectionConfig(std::string prefix = std::string());
+	~EdgeDetectionConfig();
 
 	// graphical output on runtime?
 	bool isGraphical;
@@ -35,26 +26,23 @@ class EdgeDetectionConfig : public vole::Config {
 	// working directory
 	std::string output_dir;
 
-	// Edge detection algorithm: <SOM> | <GTM>
-	std::string algorithm;
-	
 	// SOM methods: <learn> | <apply> | <visualize>
 	std::string mode;
 	  
 	// SOM linearization: <NONE> | <SFC>
 	std::string linearization;
 
-	// MSI name
+	// Image
 	std::string msi_name;
 
-	// use fixed seed for random initializations
+	// use fixed seed for random initializations TODO specify seed
 	bool fixedSeed;
 	
 	// SOM features
 	int som_width;
 	int som_height;
 	std::string som_file;
-
+	bool hack3d;
 
 	// Training features 
 	bool withUMap;											//use unified distance map for calculating distances, can be used by DD,SW,GTM 
@@ -70,17 +58,12 @@ class EdgeDetectionConfig : public vole::Config {
 	double som_learnStart;							// start value for learning rate
 	double som_learnEnd;								// start value for learning rate
 	double som_radiusStart;							// start value for neighborhood radius
-	double som_radiusEnd	;							// start value for neighborhood radius
-	
-	//GTM parameters
-	std::string gtm_actfn; 							// activation function for the RBF net : <GAUSSIAN>, <TPS>, <R4LOGR>
-	unsigned int gtm_numRbf;						//rbf shape is gtm_numRbf x gtm_numRbf
-	unsigned int gtm_numLatent;					//latent shape is gtm_numlatent x gtm_numLatent
-	
-	unsigned int gtm_numIterations;			//number of EM iterations
-	double gtm_samplePercentage;				//percentage of input data used to train EM
+	double som_radiusEnd;							// start value for neighborhood radius
 
-	//! Return available parameters
+	/// similarity measure for edge weighting
+	vole::SMConfig similarity;
+	vole::SimilarityMeasure<multi_img::Value> *distfun;
+
 	virtual std::string getString() const;
 
 	#ifdef VOLE_GUI

@@ -1,43 +1,37 @@
-//	-------------------------------------------------------------------------------------------------------------	 	//
-// 														Variants of Self-Organizing Maps																											//
-// Studienarbeit in Computer Vision at the Chair of Patter Recognition Friedrich-Alexander Universitaet Erlangen		//
-// Start:	15.11.2010																																																//
-// End	:	16.05.2011																																																//
-// 																																																									//
-// Ralph Muessig																																																		//
-// ralph.muessig@e-technik.stud.uni-erlangen.de																																			//
-// Informations- und Kommunikationstechnik																																					//
-//	---------------------------------------------------------------------------------------------------------------	//
-
-
 #include "edge_detection_config.h"
-
-#ifdef VOLE_GUI
-#include <QVBoxLayout>
-#endif // VOLE_GUI
+#include <sm_factory.h>
 
 using namespace boost::program_options;
 
 
-EdgeDetectionConfig::EdgeDetectionConfig(std::string prefix) : Config(prefix) {
+EdgeDetectionConfig::EdgeDetectionConfig(std::string prefix)
+    : Config(prefix), similarity(prefix + "similarity")
+{
 	#ifdef WITH_BOOST
 		initBoostOptions();
 	#endif // WITH_BOOST
+
+	distfun = vole::SMFactory<multi_img::Value>::spawn(similarity);
+	assert(distfun);
 }
 
+EdgeDetectionConfig::~EdgeDetectionConfig()
+{
+	delete distfun;
+}
 
 #ifdef WITH_BOOST
 void EdgeDetectionConfig::initBoostOptions() {
 	options.add_options()
-		// global section
+		(key("hack3d"), bool_switch(&hack3d)->default_value(false),
+			 "Use hack to have 3D som of size width a*a*a, specify "
+			 "width=a, height=1")
 		(key("graphical"), bool_switch(&isGraphical)->default_value(false),
 			 "Show graphical output during runtime")
 		(key("input,I"), value(&input_dir),
 		 "Image to process")
 		(key("output,O"), value(&output_dir)->default_value("/tmp/"),
 		 "Output directory")
-		(key("algorithm,A"), value(&algorithm)->default_value("SOM"),
-		"Edge detection algorithm: SOM, GTM")		 
 		(key("mode,M"), value(&mode)->default_value("learn"),
 		"Operating mode: learn, apply, visualize")
 		(key("linearization,L"), value(&linearization)->default_value("NONE"),
@@ -78,24 +72,15 @@ void EdgeDetectionConfig::initBoostOptions() {
 		 "Initial neighborhood radius")
 		(key("somRadiusEnd"), value(&som_radiusEnd)->default_value(1.),
 		 "Neighborhood radius at the end of the training process")
-		(key("rbfActFunc"), value(&gtm_actfn)->default_value("GAUSSIAN"),
-		 "Activation function for the RBF network.\nAllowed values: GAUSSIAN | TPS | R4LOGR")		 
-		(key("rbfSize"), value(&gtm_numRbf)->default_value(4),
-		 "RBF network shape will contain rbfSize x rbfSize hidden units and rbf output units")
-		(key("latentSize"), value(&gtm_numLatent)->default_value(15),
-		 "Latent space will contain latentSize x latentSize latent variables")
-		(key("emIterations"), value(&gtm_numIterations)->default_value(30),
-		 "Number of iterations before the EM algorithm terminates")
-		(key("samplePercentage"), value(&gtm_samplePercentage)->default_value(0.1),
-		 "Percentage of randomly chosen input samples(0.0 to 1.0)")
 		 (key("fixedSeed"), value(&fixedSeed)->default_value(false),
 		 "Fix seeds for random generators")
 		;
+	options.add(similarity.options);
 }
 #endif // WITH_BOOST
 
 std::string EdgeDetectionConfig::getString() const {
-	std::stringstream s;
+	std::stringstream s;	// TODO
 	if (prefix_enabled) {
 		s << "[" << prefix << "]" << std::endl;
 	}
@@ -104,7 +89,6 @@ std::string EdgeDetectionConfig::getString() const {
 		<< "graphical=" << isGraphical << " # Show any graphical output during runtime" << std::endl
 		<< "input=" << input_dir << " # Image to process" << std::endl
 		<< "output=" << output_dir << " # Working directory" << std::endl
-		<< "algorithm=" << algorithm << "#  Set the training algorithm : GTM, SOM" << std::endl
 		<< "mode=" << mode << " # Set the operating mode: -M <learn> | <apply> | <visualize>" << std::endl
 		<< "linearization=" << linearization << "#  Set the linearization type : NONE, SFC (Space-filling curves)" << std::endl
 		<< "somFile=" << som_file << " # Specify the path to a saved som file to use a trained som!" << std::endl
@@ -125,32 +109,8 @@ std::string EdgeDetectionConfig::getString() const {
 		<< "somLearnEnd=" << som_learnEnd << " # End value for the learning rate in SOM" << std::endl
 		<< "somRadiusStart=" << som_radiusStart << " # Start value for the radius of the neighborhood function in SOM" << std::endl
 		<< "somRadiusEnd=" << som_radiusEnd << " # End value for the radius of the neighborhood function in SOM" << std::endl
-		<< "rbfActFunc=" << gtm_actfn << " # Activation function for the radial basis units : GAUSSIAN | TPS | R4LOGR" << std::endl
-		<< "rbfSize=" << gtm_numRbf << " # Number of hidden units (= rbfSize x rbfSize )" << std::endl
-		<< "latentSize=" << gtm_numLatent << " # Number of latent variables (= latentSize x latentSize )" << std::endl
-		<< "emIterations=" << gtm_numIterations << " # Number of training iterations used for the GTM algorithm" << std::endl
-		<< "samplePercentage=" << gtm_samplePercentage << " # Percentage of used multispectral input vectors during the EM training" << std::endl
 		<< "fixedSeed=" << fixedSeed << " # Initialize the random number generators with a fixedSeed " << std::endl
-		
+        << similarity.getString();
 	;
 	return s.str();
 }
-
-#ifdef VOLE_GUI
-QWidget *EdgeDetectionConfig::getConfigWidget() {
-	this->initConfigWidget();
-	QVBoxLayout *data_access_config = new QVBoxLayout();
-	// (..)
-	configWidget->setLayout(layout);
-	layout->addLayout(data_access_config);
-	configWidget->setLayout(layout);
-	return configWidget;
-}
-
-void EdgeDetectionConfig::updateValuesFromWidget() {
-//	{ std::stringstream s; s << edit_min_ev_ratio->text().toStdString();
-//		s >> minimum_eigenvalue_ratio; }
-}
-#endif// VOLE_GUI
-
-

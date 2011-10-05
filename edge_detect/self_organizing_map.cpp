@@ -1,182 +1,31 @@
-//	-------------------------------------------------------------------------------------------------------------	 	//
-// 														Variants of Self-Organizing Maps																											//
-// Studienarbeit in Computer Vision at the Chair of Patter Recognition Friedrich-Alexander Universitaet Erlangen		//
-// Start:	15.11.2010																																																//
-// End	:	16.05.2011																																																//
-// 																																																									//
-// Ralph Muessig																																																		//
-// ralph.muessig@e-technik.stud.uni-erlangen.de																																			//
-// Informations- und Kommunikationstechnik																																					//
-//	---------------------------------------------------------------------------------------------------------------	//
-
-
-
-// std library
 #include <iostream>
 #include <sstream>
+#include <fstream>
 #include <algorithm> 
-#include <iterator>
-#include <fstream> 
 
 #include "self_organizing_map.h"
 
-void SelfOrganizingMap::init() {
-
-	if(m_graph || m_umap)
-	{
-    //graphSettings
-		msi::Configuration graphConf;
-		graphConf.output = m_conf->output_dir;
-		graphConf.directed = false;
-		graphConf.completing = false;
-		graphConf.periodic = false;
-		graphConf.insertion = msi::UNDEFINED;
-		graphConf.nodes =(unsigned int) m_width*m_height;
-		graphConf.startcomp = 0;
-		graphConf.finishcomp = graphConf.nodes;
-		graphConf.initialDegree = m_conf->sw_initialDegree;
-		graphConf.graph_type = m_conf->graph_type;
-		graphConf.width = m_width;
-		graphConf.height = m_height;
-		graphConf.sw_model = m_conf->sw_model;
-		graphConf.beta = m_conf->sw_beta;
-		graphConf.phi = m_conf->sw_phi;
-		graphConf.maxIter = m_conf->som_maxIter;
-    
-		initCompletingGraph(graphConf);  
-  }  
-  
-	// create 2D pointer array at heap of size[m_height][m_width]
-	m_neurons = new Neuron**[m_height];
-	for(int y = 0; y < m_height; y++) 
-	{
-		m_neurons[y] = new Neuron*[m_width];
-		for(int x = 0; x < m_width; x++ ) 
-		{
-			// create neuron also on heap
-			m_neurons[y][x] = new Neuron(m_vector_dim);
-   
-			if(m_graph || m_umap)
-			{  
-        //update node information
-				Neuron*n = m_neurons[y][x];
-#ifdef Gerbil_common        
-				multi_img::Pixel p(*n);
-				n->setSRGB(m_msi->bgr(p));
-#endif        
-				msi_graph->update((unsigned int)(y*(m_width)+x), n);
-			}    
-		}
-	}
-	if(m_graph || m_umap)
-	{  
-		msi_graph->initDijkstra();
-  }  
-}
-
-void SelfOrganizingMap::initCompletingGraph(msi::Configuration &conf)
+SOM::SOM(const EdgeDetectionConfig &conf, int dimension)
+	: dim(dimension), width(conf.som_width), height(conf.som_height),
+	  config(conf),
+      neurons(Field(height, Row(width, Neuron(dim))))
 {
-
-	assert( (conf.graph_type == "MESH") || (conf.graph_type == "MESH_P"));
-
-	if(conf.graph_type == "MESH")
-  { 
-		if(conf.beta > 0.0 || conf.phi > 0.0)
-		{	
-			std::cout << "# Using SMALL WORLD MESH topology" <<std::endl;
-			msi_graph = new msi::SW_Mesh(conf, conf.nodes);
-		}
-		else
-		{
-			std::cout << "# Using MESH topology" <<std::endl;
-			msi_graph = new msi::Mesh(conf, conf.nodes);
-		}	
-  }
-  else if(conf.graph_type == "MESH_P")
-  {  
-    conf.periodic=true;
-		if(conf.beta > 0.0 || conf.phi > 0.0)
-		{	
-			std::cout << "# Using PERIODIC SMALL WORLD MESH topology" <<std::endl;
-			msi_graph = new msi::SW_Mesh(conf, conf.nodes);
-		}
-		else
-		{
-			std::cout << "# Using PERIODIC MESH topology" <<std::endl;
-			msi_graph = new msi::Mesh(conf, conf.nodes);
-		}
-	}
-}
-
-void SelfOrganizingMap::reallocate(unsigned int bands) 
-{
-	m_vector_dim = bands;
-	multi_img::Value l = 0.0;
-	multi_img::Value h = 1.0;
+	/// Uniformly randomizes each neuron
+	// TODO: given interval [0..1] sure? purpose? it will not fit anyway
 	cv::RNG rng;
-	
-	if(m_conf->fixedSeed)
+	if (config.fixedSeed)	// TODO: get seed from outside
 		rng = cv::RNG (19.0);
 	else
 		rng = cv::RNG(cv::getTickCount());
 	
-	for(int y = 0; y < m_height; y++) 
-	{
-		for(int x = 0; x < m_width; x++ ) 
-		{
-			// create neuron with new size
-			m_neurons[y][x] = new Neuron(bands);
-			m_neurons[y][x]->randomize(rng, l, h);
+	for (int y = 0; y < height; y++) {
+		for(int x = 0; x < width; x++) {
+			neurons[y][x].randomize(rng, 0., 1.);
 		}
 	}
 }
 
-void SelfOrganizingMap::randomizeNeurons(double inputDataLow, double inputDataHigh) {
-
-	cv::RNG rng;
-	if(m_conf->fixedSeed)
-		rng = cv::RNG (19.0);
-	else
-		rng = cv::RNG(cv::getTickCount());
-	
-	for(int y = 0; y < m_height; y++) 
-	{
-		for(int x = 0; x < m_width; x++) 
-		{
-			m_neurons[y][x]->randomize(rng,inputDataLow, inputDataHigh);
-			if(m_graph)
-			{
-				unsigned int index = (y * (m_width)+x);
-				Neuron* n = m_neurons[y][x] ;
-#ifdef Gerbil_common        
-				multi_img::Pixel p(*n);
-				n->setSRGB(m_msi->bgr(p));
-#endif      
-				msi_graph->update(index , n);
-      }  
-		}
-	}
-}
-
-void SelfOrganizingMap::generateLookupTable(const multi_img &msi)
-{
-	// create 2D pointer array at heap of size[m_height][m_width]
-	m_lookupTable = new cv::Point*[msi.height];
-	for (int y = 0; y < msi.height; y++) {
-		m_lookupTable[y] = new cv::Point[msi.width];
-		for (int x = 0; x < msi.width; x++) {
-			m_lookupTable[y][x] = identifyWinnerNeuron(msi(y, x));
-		}
-	}
-}
-
-cv::Point SelfOrganizingMap::identifyWinnerNeuron(int y, int x)
-{
-	return m_lookupTable[y][x];
-}
-
-    
-cv::Point SelfOrganizingMap::identifyWinnerNeuron(const multi_img::Pixel &inputVec)
+cv::Point SOM::identifyWinnerNeuron(const multi_img::Pixel &inputVec) const
 {
 	// initialize with maximum value
 	double closestDistance = DBL_MAX;
@@ -184,25 +33,13 @@ cv::Point SelfOrganizingMap::identifyWinnerNeuron(const multi_img::Pixel &inputV
 	// init grid position
 	cv::Point winner(-1, -1);
 
-	// find closest Neuron to inputVec in the SOM/graph
-	// iterate over all neurons in grid/graph
-	for (int y = 0; y < m_height; y++) 
-	{
-		for (int x = 0; x < m_width; x++) 
-		{
-			if(m_graph)
-			{
-				const msi::Node* node = msi_graph->getNode((unsigned int)(y* (m_width) + x));
-				Neuron *neuron = node->getNeuron();
-				dist = neuron->euclideanDistance(inputVec);
-			} 
-			else 
-			{  
-				dist = m_neurons[y][x]->euclideanDistance(inputVec);
-			}
+	// find closest Neuron to inputVec in the SOM
+	// iterate over all neurons in grid
+	for (int y = 0; y < height; y++) {
+		for (int x = 0; x < width; x++) {
+       		dist = config.distfun->getSimilarity(neurons[y][x], inputVec);
 			// compare current distance with minimal found distance
-			if (dist < closestDistance) 
-			{
+			if (dist < closestDistance) {
 				// set new minimal distance and winner position
 				closestDistance = dist;
 				winner = cv::Point(x, y);
@@ -213,61 +50,156 @@ cv::Point SelfOrganizingMap::identifyWinnerNeuron(const multi_img::Pixel &inputV
 	return winner;
 }
 
-int SelfOrganizingMap::save(std::string output, std::string params) {
-
-	// open stream to write at
-	std::ofstream file_stream(output.c_str());
-	if (file_stream.bad()) {
-		std::cerr << "SOM: File cannot be opened! Saving SOM not possible!" << std::endl; 
-		return 1; 
-	}
-
-	// first line contains: all params of the som
-	// m_heightSom, m_widthSom, bands, m_radiusStart, m_radiusEnd, m_iter, m_learningStart, m_learningEnd
-	file_stream << params << std::endl;
-
-    // datensatz in datei kopieren      
-	for(int y = 0; y < m_height; y++) {
-		for(int x = 0; x < m_width; x++) {
-			std::copy(m_neurons[y][x]->begin(), m_neurons[y][x]->end(), std::ostream_iterator<double>(file_stream, " "));
-			file_stream << std::endl;
+multi_img SOM::export_2d()
+{
+	multi_img ret(height, width, dim);
+	ret.maxval = 1.;
+	for(int y = 0; y < height; y++) {
+		for(int x = 0; x < width; x++) {
+			ret.setPixel(y, x, neurons[y][x]);
 		}
 	}
-	file_stream.close();
-
-	return 0;
+	return ret;
 }
 
-std::string SelfOrganizingMap::load(std::string input) {
+void SOM::updateSingle(const cv::Point &pos, const multi_img::Pixel &input, double weight)
+{
+  // find neuron
+	Neuron *currentNeuron = getNeuron(pos.x, pos.y);
 
-	// datei oeffnen
-	std::ifstream file_stream(input.c_str(), std::ifstream::in);
-    if (file_stream.bad()) {
-		std::cerr << "SOM: Opening file for restoring som data failed!" << std::endl; 
-		return m_params; 
+	// update neuron using openCV
+	currentNeuron->update(input, weight);
+}
+
+void SOM::updateSingle(const cv::Point3i &pos, const multi_img::Pixel &input, double weight)
+{
+	// find neuron
+	Neuron *currentNeuron = getNeuron(pos.x, pos.y * width + pos.z);
+
+	// update neuron using openCV
+	currentNeuron->update(input, weight);
+}
+
+void SOM::updateNeighborhood(const cv::Point &pos, const multi_img::Pixel &input, double radius, double learnRate)
+{
+	if (config.hack3d) {
+		updateNeighborhood3(pos, input, radius, learnRate);
+		return;
 	}
-	// read the important som parameters at the first line: height width dimension
-	std::getline(file_stream, m_params);
 
-	std::stringstream par(m_params);
-	par >> m_width;
-	par >> m_height;
-	par >> m_vector_dim;
-  
-	// create 2D pointer array at heap of size[m_height][m_width]
-	m_neurons = new Neuron**[m_height];
-	for(int y = 0; y < m_height; y++) {
+	double rad = (height == 1 ? radius : radius*radius);
 
-		m_neurons[y] = new Neuron*[m_width];
-		for(int x = 0; x < m_width; x++ ) {
-			// create neuron also on heap
-			m_neurons[y][x] = new Neuron(m_vector_dim);
-			// just read in every vector value
-			for(int i = 0; i < m_vector_dim; i++)
-				file_stream >> (*m_neurons[y][x])[i];
+	int minX = 0; int minY = 0;
+	int maxX = height - 1;
+	int maxY = width - 1;
+
+	bool finished = false;
+	int y = pos.y, x;
+	while (1) { // y loop
+		x = pos.x;
+		while (1) { // x loop
+			// squared distance(topological) between winning and current neuron
+			double dist = (pos.x - x) * (pos.x - x) + (pos.y - y) * (pos.y - y);
+
+			// calculate the time- and radius dependent weighting factor
+			//TODO no real gaussian here
+			double weightingFactor = learnRate * exp(-(dist)/(2.0*rad));
+			// check if change is still relevant
+			if (weightingFactor < 0.01) {
+				if (x == pos.x) // we are finished in y-direction
+					finished = true;
+				break;  // at least we are always finished in x-direction here
+			}
+
+			if (x <= maxX && y <= maxY)
+				updateSingle(cv::Point(x, y), input, weightingFactor);
+			// now with opposite indices
+			int yy = pos.y+pos.y - y;
+			int xx = pos.x+pos.x - x;
+			if (x != xx && xx >= minX && y <= maxY)
+				updateSingle(cv::Point(xx, y), input, weightingFactor);
+			if (y != yy && x <= maxX && yy >= minY)
+				updateSingle(cv::Point(x, yy), input, weightingFactor);
+			if (x != xx && y != yy && xx >= minX && yy >= minY)
+				updateSingle(cv::Point(xx, yy), input, weightingFactor);
+
+			x++;
+    }
+		if (finished)
+			break;
+		y++;
+	}
+}
+
+void SOM::updateNeighborhood3(const cv::Point &pos2d, const multi_img::Pixel &input,
+                                     double radius, double learnRate) {
+	int minI = 0;
+	int maxI = width - 1;
+	cv::Point3i pos(pos2d.x, pos2d.y / (maxI+1), pos2d.y % (maxI+1));
+//	std::cerr << "Point " << pos2d.x << "." << pos2d.y << "\tis "
+//			<< pos.x << "." << pos.y << "." << pos.z << std::endl;
+
+	static int it = 0;
+	if (!(++it % 100))
+		std::cerr << "update " << it << " at " << pos.x << "." << pos.y << "." << pos.z
+				  << " with radius " << radius << std::endl;
+	bool finishedX, finishedY = false;
+	int z = pos.z, y, x;
+	while (1) { // z loop
+		y = pos.y;
+		while (1) { // y loop
+			finishedX = false;
+			x = pos.x;
+			while (1) { // x loop
+				// squared distance(topological) between winning and current neuron
+				double dist = (pos.x - x) * (pos.x - x) + (pos.y - y) * (pos.y - y)
+							  + (pos.z - z) * (pos.z - z);
+
+				// calculate the time- and radius dependent weighting factor
+				//TODO no real gaussian here
+				double weightingFactor = learnRate * exp(-(dist)/(2.0*radius*radius*radius));
+				// check if change is still relevant
+				if (weightingFactor < 0.01) {
+					if (x == pos.x)	// we are finished in y-direction
+						finishedX = true;
+					break;	// at least we are always finished in x-direction here
+				}
+
+				int yy = pos.y+pos.y - y;
+				int xx = pos.x+pos.x - x;
+				int zz = pos.z+pos.z - z;
+				if (z <= maxI) {
+					if (x <= maxI && y <= maxI)
+						updateSingle(cv::Point3i(x, y, z), input, weightingFactor);
+					if (x != xx && xx >= minI && y <= maxI)
+						updateSingle(cv::Point3i(xx, y, z), input, weightingFactor);
+					if (y != yy && x <= maxI && yy >= minI)
+						updateSingle(cv::Point3i(x, yy, z), input, weightingFactor);
+					if (x != xx && y != yy && xx >= minI && yy >= minI)
+						updateSingle(cv::Point3i(xx, yy, z), input, weightingFactor);
+				}
+				if (zz >= minI) {
+					if (x <= maxI && y <= maxI)
+						updateSingle(cv::Point3i(x, y, zz), input, weightingFactor);
+					if (x != xx && xx >= minI && y <= maxI)
+						updateSingle(cv::Point3i(xx, y, zz), input, weightingFactor);
+					if (y != yy && x <= maxI && yy >= minI)
+						updateSingle(cv::Point3i(x, yy, zz), input, weightingFactor);
+					if (x != xx && y != yy && xx >= minI && yy >= minI)
+						updateSingle(cv::Point3i(xx, yy, zz), input, weightingFactor);
+				}
+
+				x++;
+			}
+			if (finishedX) {
+				if (y == pos.y)
+					finishedY = true;
+				break;
+			}
+			y++;
 		}
+		if (finishedY)
+			break;
+		z++;
 	}
-	file_stream.close();
-
-	return m_params;
 }

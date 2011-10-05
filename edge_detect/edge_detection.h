@@ -14,8 +14,7 @@
 #define EDGE_DETECTION_H
 
 #include "edge_detection_config.h"
-
-#include "command.h"
+#include <command.h>
 
 
 class EdgeDetection : public vole::Command {
@@ -28,6 +27,8 @@ class EdgeDetection : public vole::Command {
 		void printHelp() const;
 
 	protected:
+		int executeSimple();
+
 		EdgeDetectionConfig config;
 		bool logOutput;
 		
