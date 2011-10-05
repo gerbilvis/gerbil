@@ -1,8 +1,7 @@
 #include "graphsom.h"
 
-void GraphSOM::GraphSOM(const EdgeDetectionConfig &conf, int dimension)
-    : SOM(conf, dimension), m_graph(conf.graph_withGraph),
-      m_umap(conf.withUMap), msi_graph(NULL)
+GraphSOM::GraphSOM(const EdgeDetectionConfig &conf, int dimension)
+    : SOM(conf, dimension), graph(NULL)
 {
 	msi::Configuration graphConf;
 	graphConf.output = config.output_dir;
@@ -26,59 +25,62 @@ void GraphSOM::GraphSOM(const EdgeDetectionConfig &conf, int dimension)
 
 	updateGraph();
 
-	msi_graph->initDijkstra();
+	graph->initDijkstra();
+
+	graph->precomputePaths(false); // TODO: not sure this is right position
 }
 
 void GraphSOM::initGraph(const msi::Configuration &conf)
 {
 
-	assert( (conf.graph_type == "MESH") || (conf.graph_type == "MESH_P"));
+	assert((conf.graph_type == "MESH") || (conf.graph_type == "MESH_P"));
 
 	if (conf.graph_type == "MESH")
   {
 		if(conf.beta > 0.0 || conf.phi > 0.0)
 		{
 			std::cout << "# Using SMALL WORLD MESH topology" <<std::endl;
-			msi_graph = new msi::SW_Mesh(conf, conf.nodes);
+			graph = new msi::SW_Mesh(conf, conf.nodes);
 		}
 		else
 		{
 			std::cout << "# Using MESH topology" <<std::endl;
-			msi_graph = new msi::Mesh(conf, conf.nodes);
+			graph = new msi::Mesh(conf, conf.nodes);
 		}
   }
   else if (conf.graph_type == "MESH_P")
   {
-    conf.periodic=true;
+		// conf.periodic=true; TODO: This does not work. graph will not be created as desired?
+		// maybe make periodic an argument to the mesh, and/or remove conf.periodic altogether?
 		if(conf.beta > 0.0 || conf.phi > 0.0)
 		{
 			std::cout << "# Using PERIODIC SMALL WORLD MESH topology" <<std::endl;
-			msi_graph = new msi::SW_Mesh(conf, conf.nodes);
+			graph = new msi::SW_Mesh(conf, conf.nodes);
 		}
 		else
 		{
 			std::cout << "# Using PERIODIC MESH topology" <<std::endl;
-			msi_graph = new msi::Mesh(conf, conf.nodes);
+			graph = new msi::Mesh(conf, conf.nodes);
 		}
 	}
 }
 
 void GraphSOM::updateGraph()
 {
-	if (!msi_graph)
+	if (!graph)
 		return;
 
 	for(int y = 0; y < height; y++) {
 		for(int x = 0; x < width; x++ ) {
 			//update node information in graph
 			unsigned int index = (y * (width)+x);
-			Neuron* n = m_neurons[y][x];
-			msi_graph->update(index, n);
+			Neuron* n = &neurons[y][x];
+			graph->update(index, n);
 		}
 	}
 }
 
-void GraphSOM::identifyWinnerNeuron(const multi_img::Pixel &inputVec)
+cv::Point GraphSOM::identifyWinnerNeuron(const multi_img::Pixel &inputVec) const
 {
 	// initialize with maximum value
 	double closestDistance = DBL_MAX;
@@ -90,7 +92,7 @@ void GraphSOM::identifyWinnerNeuron(const multi_img::Pixel &inputVec)
 	// iterate over all neurons in grid/graph
 	for (int y = 0; y < height; y++) {
 		for (int x = 0; x < width; x++) {
-			const msi::Node* node = msi_graph->getNode((unsigned int)(y* (width) + x));
+			const msi::Node* node = graph->getNode((unsigned int)(y* (width) + x));
        		const Neuron *neuron = node->getNeuron();
        		dist = config.distfun->getSimilarity(*neuron, inputVec);
 			// compare current distance with minimal found distance
@@ -107,13 +109,12 @@ void GraphSOM::identifyWinnerNeuron(const multi_img::Pixel &inputVec)
 
 void GraphSOM::updateNeighborhood(const cv::Point &pos, const multi_img::Pixel &input, double radius, double learnRate)
 {
-  unsigned int index = ((unsigned int)pos.y * som.getWidth() + (unsigned int)pos.x);
-  msi::Mesh graph = som.getGraph();
+	unsigned int index = ((unsigned int)pos.y * width + (unsigned int)pos.x);
 	const msi::Node *centerNode = graph->getNode(index);
 
 	graph->updateNeighborhood(centerNode, radius, learnRate, input);
 
-  graph->nextIter();
+	graph->nextIter();
 }
 
 double GraphSOM::getDistance(const cv::Point2d &p1, const cv::Point2d &p2) const
@@ -155,8 +156,8 @@ double GraphSOM::getDistance(const cv::Point2d &p1, const cv::Point2d &p2) const
 	else
 		cp2.y = std::floor(p2.y);
 
-	index1 = (unsigned int)cp1.y * som.getWidth() + (unsigned int)cp1.x;
-	index2 = (unsigned int)cp2.y * som.getWidth() + (unsigned int)cp2.x;
+	index1 = (unsigned int)cp1.y * width + (unsigned int)cp1.x;
+	index2 = (unsigned int)cp2.y * width + (unsigned int)cp2.x;
 
 	distance = 0.0;
 
@@ -164,12 +165,12 @@ double GraphSOM::getDistance(const cv::Point2d &p1, const cv::Point2d &p2) const
 	{
 		assert(!umap.empty());
 
-		distance = msi_graph->getDistance(index1,index2,true);
+		distance = graph->getDistance(index1,index2,true);
 	}
 
 	else if(config.graph_withGraph == true && config.withUMap == true)
 	{
-		distance = msi_graph->getDistance(index1,index2, true);
+		distance = graph->getDistance(index1,index2, true);
 	}
 
 	else if(config.graph_withGraph == true && config.withUMap == false)
@@ -182,10 +183,10 @@ double GraphSOM::getDistance(const cv::Point2d &p1, const cv::Point2d &p2) const
 
 				distance = std::min(dd, wd);
 			} else {
-				distance = msi_graph->getDistance(index1,index2,false);
+				distance = graph->getDistance(index1,index2,false);
 			}
 		} else {
-			distance = msi_graph->getDistance(index1,index2,false);
+			distance = graph->getDistance(index1,index2,false);
 		}
 	}
 
@@ -201,17 +202,12 @@ double GraphSOM::getDistance(const cv::Point2d &p1, const cv::Point2d &p2) const
 
 double GraphSOM::wrapAroundDistance(const cv::Point2d &p1, const cv::Point2d &p2) const
 {
-	cv::Point2d direction = p2 - p1;
 	cv::Point2d intersection;
 	cv::Point2d inter1, inter2;
 
 	int bordersFound = 0;
-	cv::Mat solution;
-	double h = (double)(m_heightSom);
-	double w = (double)(m_widthSom);
-
-	cv::Mat1d lefthandside = cv::Mat::zeros(2,2,CV_64F);
-	cv::Mat1d righthandside = cv::Mat::zeros(2,1,CV_64F);
+	double h = (double)height;
+	double w = (double)width;
 
 	cv::Mat1d topEdge 		= cv::Mat::zeros(2,2,CV_64F);
 	topEdge[0][0] = 0.0;
@@ -283,15 +279,16 @@ double GraphSOM::wrapAroundDistance(const cv::Point2d &p1, const cv::Point2d &p2
 	}
 	//some error occured, use direct distance, maybe not the shortest but won't produce error!
 	if(bordersFound != 2)
-		return vectorDistance(p1,p2);
+		return SOM::getDistance(p1,p2);
 	else
 	{
-		if(config.sw_initialDegree == 4)
+		assert(0 == 1); // following stuff is easy... but not right now
+		/*if(config.sw_initialDegree == 4)
 		{
 			return (manhattanDistance(inter1,inter2) - manhattanDistance(p1,p2));
 		}
 		else
-			return (euclideanDistance(inter1,inter2) - euclideanDistance(p1,p2));
+			return (euclideanDistance(inter1,inter2) - euclideanDistance(p1,p2));*/
 	}
 }
 

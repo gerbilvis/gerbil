@@ -9,28 +9,16 @@
 
 SOMTrainer::SOMTrainer(SOM &map, const multi_img &image,
                      const EdgeDetectionConfig &conf)
-  : som(map), input(image), config(conf)
+    : som(map), input(image), config(conf), currIter(0)
 {
-
-  m_nr = 0;
-  currIter = 0;
-  
   m_bmuMap = cv::Mat::zeros(som.getHeight(), som.getWidth(), CV_64F);
-  
-  m_withUMap = conf.withUMap;
-  m_withGraph = som.withGraph();
-
-	if (m_withGraph || m_withUMap)
-  {
-    som.getGraph()->precomputePaths(false);
-  }
 }
 
 void SOMTrainer::feedNetwork()
 {
 
   // matrices that hold shuffled sequences of the input for number of iterations
-	std::cout << "# Start feeding"  <<std::endl;
+	std::cout << "Start feeding"  <<std::endl;
 	cv::Mat_<int> shuffledY(1, maxIter);
 	cv::Mat_<int> shuffledX(1, maxIter);
   
@@ -71,17 +59,17 @@ void SOMTrainer::feedNetwork()
 
 	// write the visualization of SOM
 	if(config.verbosity > 2 ) {
-		displaySom(true);
-		displayMSI(false);
-		displayBmuMap(false);
+	//	displaySom(true);
+	//	displayMSI(false);
+	//	displayBmuMap(false);
 
-		if(m_withUMap)
-			umatrix(false);
-		if(config.isGraphical && m_withGraph) 
-		{
+//		if (config.withUMap)
+//			umatrix(false);	 // TODO: do we need this for operation? if yes, bug!
+	//	if(config.isGraphical && m_withGraph)
+	//	{
 	//	compareMultispectralData();
-			displayGraphDistances();
-		}
+	//		displayGraphDistances();
+	//	}
 	}
 }
 
@@ -99,17 +87,17 @@ void SOMTrainer::feedSample(const multi_img::Pixel &input)
 	cv::Point pos = som.identifyWinnerNeuron(input);
 
 	//increase winning count of neuron
-	m_bmuMap[pos.y][pos.x] += 1.0;
-	// BMU and their neigborhood learns weighted from the input
+	m_bmuMap(pos) += 1.0;
+	// BMU and their neighborhood learns weighted from the input | wtf?!
 
 	//vole::Stopwatch watch;
-
-	updateNeighborhood(pos, input, radius, learnRate);
+	som.updateNeighborhood(pos, input, radius, learnRate);
 	//watch.print("Neighborhood updated");
 
 	currIter++;
 }
 
+/*
 cv::Mat1d SOMTrainer::umatrix(bool write)
 {
 	int width = som.getWidth();
@@ -312,8 +300,8 @@ cv::Mat1d SOMTrainer::umatrix(bool write)
 		}
 	}
 		
-	if(m_withUMap)
-		msi_graph->scaleDistances(config.scaleUDistance);
+	if (config.withUMap)
+		som.getGraph ... msi_graph->scaleDistances(config.scaleUDistance);
 
 	if(write)
 	{
@@ -364,7 +352,7 @@ cv::Mat1d SOMTrainer::umatrix(bool write)
 	
 	return umap;
 }
-
+*/
 
 double SOMTrainer::generateBWSom() {
 

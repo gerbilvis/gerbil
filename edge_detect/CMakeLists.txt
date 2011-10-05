@@ -15,6 +15,7 @@ vole_add_command("edge_detect" "edge_detection.h" "EdgeDetection")
 vole_compile_library(
 	"edge_detection_config"
 	"self_organizing_map"
+	"graphsom"
 	"neuron"
 	"som_trainer"
 	"somtester"

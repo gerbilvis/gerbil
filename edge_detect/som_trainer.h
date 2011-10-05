@@ -80,7 +80,7 @@ public:
 	*	
 	* @param write write umap to disk
 	*/
-	cv::Mat1d umatrix(bool write =true);
+//	cv::Mat1d umatrix(bool write =true);
 
 protected:
 	vole::SimilarityMeasure<multi_img::Value> *distfun;
@@ -89,23 +89,12 @@ protected:
 	const multi_img &input;
 	const EdgeDetectionConfig &config;
 
-	cv::Mat3f m_img_som;
-	cv::Mat3f m_3d_som;
-	cv::Mat3f m_img_msi;
 	cv::Mat1f m_img_bwsom;
-	cv::Mat_<unsigned int> m_rank;
-	
-	cv::Mat1d *m_edgeWeights;
 	cv::Mat1d umap;
 	cv::Mat1d m_bmuMap;
 
-	int m_nr;
-	int m_foundEdges;
 	int maxIter;
 	int currIter;
-
-	bool m_withGraph;
-	bool m_withUMap;
 };
 
 #endif // SOM_TRAINER_H

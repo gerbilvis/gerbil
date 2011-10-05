@@ -26,14 +26,6 @@ public:
 	*/
 	virtual cv::Point identifyWinnerNeuron(const multi_img::Pixel &input) const;
 
-    /**
-    * Returns the position of the closest neuron by searching the lookup table 
-    * @param  x x coordinate to look for
-    * @param  y y coordinate to look for
-    * @return Position of the closest neuron in x,y coordinates
-    */
-    virtual cv::Point identifyWinnerNeuron(int y, int x) const;
-
 	/**
 	* Returns a pointer to the neuron at the given grid position
 	*
