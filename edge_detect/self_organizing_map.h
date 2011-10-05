@@ -26,13 +26,6 @@ public:
 	*/
 	virtual cv::Point identifyWinnerNeuron(const multi_img::Pixel &input) const;
 
-    
-    /**
-    * Generates a lookup table of size "size" for the neurons in the SOM grid for faster access
-    * @param  msi Pointer to the multispectral image
-    */    
-    void generateLookupTable(const multi_img &msi);
-    
     /**
     * Returns the position of the closest neuron by searching the lookup table 
     * @param  x x coordinate to look for
@@ -55,17 +48,22 @@ public:
 	multi_img export_2d();
 
 	//! Returns the width of the SOM grid
-	inline int getWidth() { return width; }
+	inline int getWidth() const
+	{ return width; }
 
 	//! Returns the height of the SOM grid
-	inline int getHeight() { return height; }
+	inline int getHeight() const
+	{ return height; }
 
 	//! Returns dimensionality of the SOM ( equal to neuron dimensionality)
-	inline unsigned int getDimension() { return dim; }
+	inline unsigned int getDimension() const
+	{ return dim; }
 
 	virtual void updateNeighborhood(const cv::Point &pos,
 	                                const multi_img::Pixel &input,
 	                                double radius, double learnRate);
+
+	virtual double getDistance(const cv::Point2d &p1, const cv::Point2d &p2) const;
 
 protected:
 	virtual void updateSingle(const cv::Point &pos, const multi_img::Pixel &input, double weight);

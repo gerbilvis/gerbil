@@ -45,10 +45,9 @@ public:
 	*
 	*	@param dx	Horizontal distance map
 	*	@param dx	Vertical distance map
-	*	@param mode	0: Sobel fake, 1: Scharr fake
 	*
 	*/
-	void getEdge(cv::Mat1d &dx, cv::Mat1d &dy, int mode);
+	void getEdge(cv::Mat1d &dx, cv::Mat1d &dy);
 
 private:
 	const SOM &som;
@@ -56,8 +55,8 @@ private:
 	const EdgeDetectionConfig &config;
 	std::vector<std::vector<cv::Point> > lookup;
 
+	cv::Mat_<unsigned int> sfcmap;
 	cv::Mat1f rankmap;
-	cv::Mat edgemap;
 };
 
 #endif // SOMTESTER_H

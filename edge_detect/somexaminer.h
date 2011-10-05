@@ -7,12 +7,6 @@ public:
     SOMExaminer();
 
 	/**
-	* Helper function to generate specific output names
-	* consisting of the current parameter set.
-	*/
-	std::string getFilenameExtension();
-
-	/**
 	* RGB visualization of SOM network
 	* using CIE X Y Z and D65 illumination.
 	*

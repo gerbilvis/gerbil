@@ -14,7 +14,7 @@ unsigned int g_node1=UINT_MAX; // TODO WTF
 unsigned int g_node2=UINT_MAX;
 
 /// global mouse handler function controlling the leftclick in the msi window
-void mouse_leftclick( int event, int x, int y, int flags, void* param ) {
+void mouse_leftclick(int event, int x, int y, int flags, void* param) {
 
   cv::Point *mark = (cv::Point *) param;
 
@@ -35,7 +35,7 @@ void mouse_leftclick( int event, int x, int y, int flags, void* param ) {
 }
 
 /// global mouse handler function controlling the rightclick in the som window
-void mouse_rightclick( int event, int x, int y, int flags, void* param ) {
+void mouse_rightclick(int event, int x, int y, int flags, void* param) {
 
   cv::Point *mark2 = (cv::Point *) param;
 
@@ -69,81 +69,6 @@ SOMExaminer::SOMExaminer()
     if (m_msiName.find(".txt")) {
       m_msiName.resize(m_msiName.size() - 4);
     }
-}
-
-
-
-std::string SOMExaminer::getFilenameExtension()
-{
-
-	std::stringstream s1, s2, s3, s4, s5, s6, s7, s8;
-	std::string height, width, iter, radiusS, radiusE, learnS, learnE;
-	std::string graphDistance;
-
-	s1 << m_heightSom;
-	height = s1.str();
-	s2 << m_widthSom;
-	width = s2.str();
-	s3 << m_iter;
-	iter = s3.str();
-	s4 << m_radiusStart;
-	radiusS = s4.str();
-	s5 << m_radiusEnd;
-	radiusE = s5.str();
-	s6 << m_learningStart;
-	learnS = s6.str();
-	s7 << m_learningEnd;
-	learnE = s7.str();
-	// SOM is computed the basic way
-	if(config.graph_withGraph == false)
-	{
-		s8 << "_DDIST";
-		//Edge detection computes via umap (graph based or again direct??)
-		if(config.withUMap)
-			s8 << "_UMAP_" << config.scaleUDistance ;
-	}
-	//SOM is trained on a graph topology
-	else
-	{
-		s8 << "_GDIST";
-		if(config.withUMap)
-			s8 << "_UMAP_"<< config.scaleUDistance;
-		//with N neighboring nodes
-		s8 << "_N";
-		// using wrap around (periodic) structure
-		if(config.graph_type == "MESH_P")
-			s8 << "P";
-		s8 << config.sw_initialDegree;
-		if(config.forceDD)
-			s8 << "_FDD";
-		// graph is a small world graph using phi-model
-		// phi percent of edges are SHORTCUTS
-		if(config.sw_model == "PHI" && (config.sw_phi != 0.0 ))
-		{
-			s8 << "_PHI";
-			s8 << config.sw_phi;
-		}
-		// graph is a small world graph using beta-model
-		// beta percent of edges are rewired
-		else if(config.sw_model == "BETA" && (config.sw_beta != 0.0 ))
-		{
-			s8 << "_BETA";
-			s8 << config.sw_beta;
-		}
-		// graph is basic N(P)-connected mesh
-		else
-		{
-			//distances are computed via umap
-			if(config.withUMap)
-				s8 << "_UMAP";
-		}
-	}
-
-	graphDistance = s8.str();
-
-	std::string name(m_msiName);
-
-	return name + "_"+height+"x"+width+"_"+iter+ "_R"+radiusS+"-"+radiusE+ "_L" + learnS +"-"+ learnE +graphDistance;
 }
 
 void SOMExaminer::displayGraphDistances()

@@ -203,3 +203,10 @@ void SOM::updateNeighborhood3(const cv::Point &pos2d, const multi_img::Pixel &in
 		z++;
 	}
 }
+
+double SOM::getDistance(const cv::Point2d &p1, const cv::Point2d &p2) const
+{
+	double dx = (p1.x - p2.x);
+	double dy = (p1.y - p2.y);
+	return std::sqrt(dx * dx + dy * dy);
+}

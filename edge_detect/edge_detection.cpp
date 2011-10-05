@@ -81,7 +81,7 @@ int EdgeDetection::execute()
 		vole::Stopwatch watch;
 
 		cv::Mat1d dX, dY;
-		tester.getEdge(dX, dY, 0);
+		tester.getEdge(dX, dY);
 		watch.print("Calculating Edge image");
 		std::cout << "Write images" <<std::endl;
 
@@ -89,25 +89,17 @@ int EdgeDetection::execute()
 
 		dX.convertTo(sobelXShow, CV_8UC1, 255.);
 		dY.convertTo(sobelYShow, CV_8UC1, 255.);
-		std::string xname, yname;
-		std::string umap ="";
-		if(config.withUMap)
-			umap = "";
-		if(config.graph_withGraph) {
-			if(config.sw_phi > 0.0 || config.sw_beta > 0.0) {
-//TODO				xname = trainer.getFilenameExtension() + umap +"_graphEdgeX";
-//TODO				yname = trainer.getFilenameExtension() + umap + "_graphEdgeY";
-			} else {
-//TODO				xname = trainer.getFilenameExtension() + umap +"_graphEdgeX";
-//TODO				yname = trainer.getFilenameExtension() + umap +"_graphEdgeY";
-			}
+		std::string xname, yname;	// TODO bullshit
+		if (config.graph_withGraph) {
+			xname = "/graphEdgeX";
+			yname = "/graphEdgeY";
 		} else {
-//TODO			xname = trainer.getFilenameExtension() + umap +"_directEdgeX";
-//TODO			yname = trainer.getFilenameExtension() + umap +"_directEdgeY";
+			xname = "/directEdgeX";
+			yname = "/directEdgeY";
 		}
 
-		cv::imwrite(config.output_dir+ xname, sobelXShow);
-		cv::imwrite(config.output_dir+ yname, sobelYShow);
+		cv::imwrite(config.output_dir + xname, sobelXShow);
+		cv::imwrite(config.output_dir + yname, sobelYShow);
 	} else if (config.linearization.compare("SFC") == 0) {
 		if (config.som_height == 1) {
 			std::cout << "# Generating 1D Rank" << std::endl;
@@ -135,7 +127,7 @@ int EdgeDetection::execute()
 				SpaceFillingCurve curve(SpaceFillingCurve::PEANO, order);
 				std::cout << "# Generating 1D Peano" << std::endl;
 				tester.generateRankImage(curve.getRankMatrix());
-			} else {
+			} else { // TODO: what about the width? and the modulo test is *WRONG*
 				std::cerr << "Height of SOM must be 2^n, 3^n, n >= 0." << std::cout;
 				return 1;
 			}

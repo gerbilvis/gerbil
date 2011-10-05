@@ -27,10 +27,16 @@ public:
 	void updateNeighborhood(const cv::Point &pos, const multi_img::Pixel &input,
 	                        double radius, double learnRate);
 
+	double getDistance(const cv::Point2d &p1, const cv::Point2d &p2) const;
+
 	inline msi::Mesh* getGraph()
 	{ return msi_graph; }
 
 private:
+	double wrapAroundDistance(const cv::Point2d &p1, const cv::Point2d &p2) const;
+	bool findBorderIntersection(const cv::Point2d &p1, const cv::Point2d &p2,
+	                            cv::Point2d &intersect, cv::Mat1d &border) const;
+
 	msi::Mesh *msi_graph;
 };
 
