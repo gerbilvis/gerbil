@@ -1,15 +1,20 @@
+#include "self_organizing_map.h"
+#include <sm_factory.h>
+
 #include <iostream>
 #include <sstream>
 #include <fstream>
 #include <algorithm> 
 
-#include "self_organizing_map.h"
-
-SOM::SOM(const EdgeDetectionConfig &conf, int dimension)
+SOM::SOM(const vole::EdgeDetectionConfig &conf, int dimension)
 	: dim(dimension), width(conf.som_width), height(conf.som_height),
 	  config(conf),
       neurons(Field(height, Row(width, Neuron(dim))))
 {
+	/// Create similarity measure
+	distfun = vole::SMFactory<multi_img::Value>::spawn(config.similarity);
+	assert(distfun);
+
 	/// Uniformly randomizes each neuron
 	// TODO: given interval [0..1] sure? purpose? it will not fit anyway
 	cv::RNG rng;
@@ -25,6 +30,11 @@ SOM::SOM(const EdgeDetectionConfig &conf, int dimension)
 	}
 }
 
+SOM::~SOM()
+{
+	delete distfun;
+}
+
 cv::Point SOM::identifyWinnerNeuron(const multi_img::Pixel &inputVec) const
 {
 	// initialize with maximum value
@@ -37,7 +47,7 @@ cv::Point SOM::identifyWinnerNeuron(const multi_img::Pixel &inputVec) const
 	// iterate over all neurons in grid
 	for (int y = 0; y < height; y++) {
 		for (int x = 0; x < width; x++) {
-       		dist = config.distfun->getSimilarity(neurons[y][x], inputVec);
+       		dist = distfun->getSimilarity(neurons[y][x], inputVec);
 			// compare current distance with minimal found distance
 			if (dist < closestDistance) {
 				// set new minimal distance and winner position

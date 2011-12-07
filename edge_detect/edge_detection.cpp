@@ -42,7 +42,7 @@ int EdgeDetection::execute()
 
 	if (config.input_dir.size() < 1) {
 		std::cerr << "please add -I <input_file>" << std::endl;
-	return 1;
+		return 1;
 	}
 
 	multi_img img;

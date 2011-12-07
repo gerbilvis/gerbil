@@ -9,7 +9,7 @@
 class SOMTester
 {
 public:
-    SOMTester(const SOM &map, const multi_img &image, const EdgeDetectionConfig &conf);
+    SOMTester(const SOM &map, const multi_img &image, const vole::EdgeDetectionConfig &conf);
 
 	/**
 	* Generates the 2D grayscale representation of the multispectral image
@@ -52,7 +52,7 @@ public:
 private:
 	const SOM &som;
 	const multi_img &image;
-	const EdgeDetectionConfig &config;
+	const vole::EdgeDetectionConfig &config;
 	std::vector<std::vector<cv::Point> > lookup;
 
 	cv::Mat_<unsigned int> sfcmap;

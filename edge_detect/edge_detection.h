@@ -29,7 +29,7 @@ class EdgeDetection : public vole::Command {
 	protected:
 		int executeSimple();
 
-		EdgeDetectionConfig config;
+		vole::EdgeDetectionConfig config;
 		bool logOutput;
 		
 };

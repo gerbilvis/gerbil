@@ -333,11 +333,11 @@ void SOMExaminer::compareMultispectralData()
 			}
 		}
 
-		if(mouse_left_clicked && mark.y < m_msi.height && mark.x < m_msi.width) {
+		if (mouse_left_clicked && mark.y < m_msi.height && mark.x < m_msi.width) {
 			const multi_img::Pixel& atClick = m_msi(mark.y, mark.x);
 			const multi_img::Pixel& old_click = m_msi(posY,posX);
 			std::cout << " Difference to previous clicked vector: "
-					<< config.distfun->getSimilarity(old_click, atClick) << std::endl;
+					<< m_som.distfun->getSimilarity(old_click, atClick) << std::endl;
 			posX = mark.x;
 			posY = mark.y;
 			cv::Point somPoint = m_som.identifyWinnerNeuron(atClick);
@@ -355,7 +355,7 @@ void SOMExaminer::compareMultispectralData()
 			cv::rectangle( som, start, end, cv::Scalar(0,0,0), 2 );
 			cv::putText( som, ss.str(), cv::Point(static_cast<int>((somPoint.x + 0.2)*scaleX),static_cast<int>((somPoint.y+0.5)*scaleY)), cv::FONT_HERSHEY_PLAIN, 1.2, cv::Scalar(1., 1., 1.), 2, 8, false);
 			std::cout << "Rank: " << rank << " Difference to input: "
-				<< config.distfun->getSimilarity(atClick, *m_som.getNeuron(somPoint.x, somPoint.y))
+				<< m_som.distfun->getSimilarity(atClick, *m_som.getNeuron(somPoint.x, somPoint.y))
 				<< std::endl;
 
 			cv::imshow("SOM", som);

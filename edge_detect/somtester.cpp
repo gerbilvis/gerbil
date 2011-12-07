@@ -4,7 +4,7 @@
 #include <cv.h>
 #include <highgui.h>
 
-SOMTester::SOMTester(const SOM &map, const multi_img &img, const EdgeDetectionConfig &conf)
+SOMTester::SOMTester(const SOM &map, const multi_img &img, const vole::EdgeDetectionConfig &conf)
     : som(map), image(img), config(conf),
       lookup(std::vector<std::vector<cv::Point> >(image.height,
                                             std::vector<cv::Point>(image.width)))

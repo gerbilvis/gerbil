@@ -6,7 +6,6 @@
 #include "edge_detection_config.h"
 #include "neuron.h"
 #include "self_organizing_map.h"
-#include <similarity_measure.h>
 #include <multi_img.h>
 #include <cv.h>
 #include <cmath>
@@ -24,7 +23,7 @@ public:
 	* @param	name filename of the multispectral image
 	*/
 	SOMTrainer(SOM &map, const multi_img &image,
-	           const EdgeDetectionConfig &conf);
+	           const vole::EdgeDetectionConfig &conf);
 
 	//! Destructor
 	~SOMTrainer() {}
@@ -83,11 +82,9 @@ public:
 //	cv::Mat1d umatrix(bool write =true);
 
 protected:
-	vole::SimilarityMeasure<multi_img::Value> *distfun;
-
 	SOM &som;
 	const multi_img &input;
-	const EdgeDetectionConfig &config;
+	const vole::EdgeDetectionConfig &config;
 
 	cv::Mat1f m_img_bwsom;
 	cv::Mat1d umap;

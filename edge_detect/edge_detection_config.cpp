@@ -1,23 +1,15 @@
 #include "edge_detection_config.h"
-#include <sm_factory.h>
 
 using namespace boost::program_options;
 
+namespace vole {
 
-EdgeDetectionConfig::EdgeDetectionConfig(std::string prefix)
+EdgeDetectionConfig::EdgeDetectionConfig(const std::string& prefix)
     : Config(prefix), similarity(prefix + "similarity")
 {
 	#ifdef WITH_BOOST
 		initBoostOptions();
 	#endif // WITH_BOOST
-
-	distfun = vole::SMFactory<multi_img::Value>::spawn(similarity);
-	assert(distfun);
-}
-
-EdgeDetectionConfig::~EdgeDetectionConfig()
-{
-	delete distfun;
 }
 
 #ifdef WITH_BOOST
@@ -28,18 +20,12 @@ void EdgeDetectionConfig::initBoostOptions() {
 			 "width=a, height=1")
 		(key("graphical"), bool_switch(&isGraphical)->default_value(false),
 			 "Show graphical output during runtime")
-		(key("input,I"), value(&input_dir),
-		 "Image to process")
-		(key("output,O"), value(&output_dir)->default_value("/tmp/"),
-		 "Output directory")
 		(key("mode,M"), value(&mode)->default_value("learn"),
 		"Operating mode: learn, apply, visualize")
 		(key("linearization,L"), value(&linearization)->default_value("NONE"),
 		"Type of linearization: NONE, SFC (Space Filling Curve)")
 		(key("somFile"), value(&som_file),
 		 "File containing offline-trained SOM")
-		(key("msiName"), value(&msi_name)->default_value(""),
-		 "Name of the multispectral image")
 		(key("somWidth"), value(&som_width)->default_value(120),
 		 "Width of the SOM")
 		(key("somHeight"), value(&som_height)->default_value(1),
@@ -76,6 +62,18 @@ void EdgeDetectionConfig::initBoostOptions() {
 		 "Fix seeds for random generators")
 		;
 	options.add(similarity.options);
+
+	if (prefix_enabled)	// skip input/output options
+		return;
+
+	options.add_options()
+		(key("input,I"), value(&input_dir),
+		 "Image to process")
+		(key("output,O"), value(&output_dir)->default_value("/tmp/"),
+		 "Output directory")
+		(key("msiName"), value(&msi_name)->default_value(""),
+		 "Name of the multispectral image")
+		;
 }
 #endif // WITH_BOOST
 
@@ -83,12 +81,14 @@ std::string EdgeDetectionConfig::getString() const {
 	std::stringstream s;	// TODO
 	if (prefix_enabled) {
 		s << "[" << prefix << "]" << std::endl;
+	} else {
+		s << "input=" << input_dir << " # Image to process" << std::endl // TODO: input_file!
+		  << "output=" << output_dir << " # Working directory" << std::endl
+			;
 	}
 	s	<< "verbose=" << verbosity
 		<< " # verbosity level: 0 = silent, 1 = normal, 2 = much output, 3 = insane" << std::endl
 		<< "graphical=" << isGraphical << " # Show any graphical output during runtime" << std::endl
-		<< "input=" << input_dir << " # Image to process" << std::endl
-		<< "output=" << output_dir << " # Working directory" << std::endl
 		<< "mode=" << mode << " # Set the operating mode: -M <learn> | <apply> | <visualize>" << std::endl
 		<< "linearization=" << linearization << "#  Set the linearization type : NONE, SFC (Space-filling curves)" << std::endl
 		<< "somFile=" << som_file << " # Specify the path to a saved som file to use a trained som!" << std::endl
@@ -113,4 +113,6 @@ std::string EdgeDetectionConfig::getString() const {
         << similarity.getString();
 	;
 	return s.str();
+}
+
 }

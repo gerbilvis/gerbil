@@ -1,11 +1,11 @@
 #ifndef SELF_ORGANIZING_MAP_H
 #define SELF_ORGANIZING_MAP_H
 
-#include <vector>	//std library
-#include "neuron.h"
-#include "multi_img.h"
-
 #include "edge_detection_config.h"
+#include "neuron.h"
+#include <similarity_measure.h>
+#include <multi_img.h>
+#include <vector>
 
 class SOM {
 
@@ -13,9 +13,9 @@ public:
 	typedef std::vector<Neuron> Row;
 	typedef std::vector<Row> Field;
 
-	SOM(const EdgeDetectionConfig &conf, int dimension);
+	SOM(const vole::EdgeDetectionConfig &conf, int dimension);
 
-	virtual ~SOM() {}
+	virtual ~SOM();
 
 	/**
 	* Finds the neuron in the SOM grid which has the closest distance
@@ -74,7 +74,9 @@ protected:
 	bool umap;        ///< If weight map is used
 
 	cv::Mat1d edgeWeights;
-	const EdgeDetectionConfig &config;
+	const vole::EdgeDetectionConfig &config;
+public:
+	vole::SimilarityMeasure<multi_img::Value> *distfun;
 };
 
 

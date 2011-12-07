@@ -14,7 +14,7 @@ class GraphSOM : public SOM
 {
 
 public:
-    GraphSOM(const EdgeDetectionConfig &conf, int dimension);
+    GraphSOM(const vole::EdgeDetectionConfig &conf, int dimension);
 
 	~GraphSOM() {}
 

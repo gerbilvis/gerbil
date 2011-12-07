@@ -8,7 +8,7 @@
 #include <fstream>
 
 SOMTrainer::SOMTrainer(SOM &map, const multi_img &image,
-                     const EdgeDetectionConfig &conf)
+                     const vole::EdgeDetectionConfig &conf)
     : som(map), input(image), config(conf), currIter(0)
 {
   m_bmuMap = cv::Mat::zeros(som.getHeight(), som.getWidth(), CV_64F);
@@ -407,7 +407,7 @@ double SOMTrainer::generateBWSom() {
         //  if(dist <= radius) {
             count++;
 					const Neuron *neighbor = som.getNeuron(posX,posY);
-					difference += config.distfun->getSimilarity(*cn, *neighbor);
+					difference += som.distfun->getSimilarity(*cn, *neighbor);
         //  }
         }
       }

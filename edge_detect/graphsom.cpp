@@ -1,6 +1,6 @@
 #include "graphsom.h"
 
-GraphSOM::GraphSOM(const EdgeDetectionConfig &conf, int dimension)
+GraphSOM::GraphSOM(const vole::EdgeDetectionConfig &conf, int dimension)
     : SOM(conf, dimension), graph(NULL)
 {
 	msi::Configuration graphConf;
@@ -94,7 +94,7 @@ cv::Point GraphSOM::identifyWinnerNeuron(const multi_img::Pixel &inputVec) const
 		for (int x = 0; x < width; x++) {
 			const msi::Node* node = graph->getNode((unsigned int)(y* (width) + x));
        		const Neuron *neuron = node->getNeuron();
-       		dist = config.distfun->getSimilarity(*neuron, inputVec);
+       		dist = distfun->getSimilarity(*neuron, inputVec);
 			// compare current distance with minimal found distance
 			if (dist < closestDistance) {
 				// set new minimal distance and winner position
@@ -163,7 +163,7 @@ double GraphSOM::getDistance(const cv::Point2d &p1, const cv::Point2d &p2) const
 
 	if(config.graph_withGraph == false && config.withUMap == true)
 	{
-		assert(!umap.empty());
+		assert(umap);
 
 		distance = graph->getDistance(index1,index2,true);
 	}
@@ -282,7 +282,7 @@ double GraphSOM::wrapAroundDistance(const cv::Point2d &p1, const cv::Point2d &p2
 		return SOM::getDistance(p1,p2);
 	else
 	{
-		assert(0 == 1); // following stuff is easy... but not right now
+		assert(0 == 1); // this stuff is easy... but not right now
 		/*if(config.sw_initialDegree == 4)
 		{
 			return (manhattanDistance(inter1,inter2) - manhattanDistance(p1,p2));
