@@ -4,8 +4,6 @@
 class SOMExaminer
 {
 public:
-    SOMExaminer();
-
 	/**
 	* RGB visualization of SOM network
 	* using CIE X Y Z and D65 illumination.

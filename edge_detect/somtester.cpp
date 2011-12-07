@@ -1,6 +1,5 @@
 #include "somtester.h"
 
-#include "myCanny.h"
 #include <cv.h>
 #include <highgui.h>
 

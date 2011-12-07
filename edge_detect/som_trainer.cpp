@@ -9,9 +9,10 @@
 
 SOMTrainer::SOMTrainer(SOM &map, const multi_img &image,
                      const vole::EdgeDetectionConfig &conf)
-    : som(map), input(image), config(conf), currIter(0)
+	: som(map), input(image), config(conf),
+	  currIter(0), maxIter(conf.som_maxIter)
 {
-  m_bmuMap = cv::Mat::zeros(som.getHeight(), som.getWidth(), CV_64F);
+	m_bmuMap = cv::Mat::zeros(som.getHeight(), som.getWidth(), CV_64F);
 }
 
 void SOMTrainer::feedNetwork()

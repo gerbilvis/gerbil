@@ -9,7 +9,7 @@
 SOM::SOM(const vole::EdgeDetectionConfig &conf, int dimension)
 	: dim(dimension), width(conf.som_width), height(conf.som_height),
 	  config(conf),
-      neurons(Field(height, Row(width, Neuron(dim))))
+	  neurons(Field(conf.som_height, Row(conf.som_width, Neuron(dimension))))
 {
 	/// Create similarity measure
 	distfun = vole::SMFactory<multi_img::Value>::spawn(config.similarity);

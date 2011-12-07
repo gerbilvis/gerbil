@@ -16,19 +16,14 @@ public:
 
 	// graphical output on runtime?
 	bool isGraphical;
-	// dir where images are stored
-	std::string input_dir;
+
+	// input image filename
+	std::string input_file;
 	// working directory
 	std::string output_dir;
 
-	// SOM methods: <learn> | <apply> | <visualize>
-	std::string mode;
-	  
 	// SOM linearization: <NONE> | <SFC>
 	std::string linearization;
-
-	// Image
-	std::string msi_name;
 
 	// use fixed seed for random initializations TODO specify seed
 	bool fixedSeed;

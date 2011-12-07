@@ -7,6 +7,7 @@ namespace vole {
 EdgeDetectionConfig::EdgeDetectionConfig(const std::string& prefix)
     : Config(prefix), similarity(prefix + "similarity")
 {
+
 	#ifdef WITH_BOOST
 		initBoostOptions();
 	#endif // WITH_BOOST
@@ -20,46 +21,44 @@ void EdgeDetectionConfig::initBoostOptions() {
 			 "width=a, height=1")
 		(key("graphical"), bool_switch(&isGraphical)->default_value(false),
 			 "Show graphical output during runtime")
-		(key("mode,M"), value(&mode)->default_value("learn"),
-		"Operating mode: learn, apply, visualize")
 		(key("linearization,L"), value(&linearization)->default_value("NONE"),
-		"Type of linearization: NONE, SFC (Space Filling Curve)")
+			"Type of linearization: NONE, SFC (Space Filling Curve)")
 		(key("somFile"), value(&som_file),
-		 "File containing offline-trained SOM")
-		(key("somWidth"), value(&som_width)->default_value(120),
-		 "Width of the SOM")
-		(key("somHeight"), value(&som_height)->default_value(1),
-		 "Height of the SOM")
-		(key("withUMap"), value(&withUMap)->default_value(1),
-		 "Use unified distance map for weighted graphs.\nCan be used by DD,SOM and GTM")
-		(key("scaleUDistance"), value(&scaleUDistance)->default_value(1.0),
-		 "Scale factor, how much percent of the weighting factors is used.\nCan be used by DD,SOM and GTM")
-		(key("withGraph"), value(&graph_withGraph)->default_value(1),
-		 "Use graph topology for SOM")
-		(key("forceDD"), value(&forceDD)->default_value(0),
-		 "Use direct distance for edge detection on a graph-trained SOM")		 
-		(key("initialDegree"), value(&sw_initialDegree)->default_value(8),
-		 "Degree of every vertex ")          
-		(key("graph_type"), value(&graph_type)->default_value("MESH"),
-		 "Topology of the graph\nAllowed values: RING | MESH | MESH_P")
-		(key("sw_model"), value(&sw_model)->default_value("BETA"),
-		 "Type of transforming a graph into small world graph\nAllowed values: BETA | PHI")     
-		(key("beta"), value(&sw_beta)->default_value(0.0),
-		 "Probability for rewireing an edge using the beta model")
-		(key("phi"), value(&sw_phi)->default_value(0.0),
-		 "Percentage rewired edges using the phi model")     
+			"File containing offline-trained SOM")
+		(key("somWidth"), value(&som_width)->default_value(32),
+			"Width of the SOM")
+		(key("somHeight"), value(&som_height)->default_value(32),
+			"Height of the SOM")
 		(key("somMaxIter"), value(&som_maxIter)->default_value(40000),
-		 "Number of training iterations for the SOM")
+			"Number of training iterations for the SOM")
 		(key("somLearnStart"), value(&som_learnStart)->default_value(0.1),
-		 "Learning rate at the beginning")
+			"Learning rate at the beginning")
 		(key("somLearnEnd"), value(&som_learnEnd)->default_value(0.001),
-		 "Learning rate at the end of the training process")
+			"Learning rate at the end of the training process")
 		(key("somRadiusStart"), value(&som_radiusStart)->default_value(4.),
-		 "Initial neighborhood radius")
+			"Initial neighborhood radius")
 		(key("somRadiusEnd"), value(&som_radiusEnd)->default_value(1.),
-		 "Neighborhood radius at the end of the training process")
-		 (key("fixedSeed"), value(&fixedSeed)->default_value(false),
-		 "Fix seeds for random generators")
+			"Neighborhood radius at the end of the training process")
+		(key("withGraph"), value(&graph_withGraph)->default_value(0),
+			"Use graph topology for SOM")
+		(key("withUMap"), value(&withUMap)->default_value(0),
+			"Use unified distance map for weighted graphs.\nCan be used by DD,SOM and GTM")
+		(key("scaleUDistance"), value(&scaleUDistance)->default_value(1.0),
+			"Scale factor, how much percent of the weighting factors is used.\nCan be used by DD,SOM and GTM")
+		(key("forceDD"), value(&forceDD)->default_value(0),
+			"Use direct distance for edge detection on a graph-trained SOM")
+		(key("initialDegree"), value(&sw_initialDegree)->default_value(8),
+			"Degree of every vertex ")
+		(key("graph_type"), value(&graph_type)->default_value("MESH"),
+			"Topology of the graph\nAllowed values: RING | MESH | MESH_P")
+		(key("sw_model"), value(&sw_model)->default_value("BETA"),
+			"Type of transforming a graph into small world graph\nAllowed values: BETA | PHI")
+		(key("beta"), value(&sw_beta)->default_value(0.0),
+			"Probability for rewireing an edge using the beta model")
+		(key("phi"), value(&sw_phi)->default_value(0.0),
+			"Percentage rewired edges using the phi model")
+		(key("fixedSeed"), value(&fixedSeed)->default_value(false),
+			"Fix seeds for random generators")
 		;
 	options.add(similarity.options);
 
@@ -67,12 +66,10 @@ void EdgeDetectionConfig::initBoostOptions() {
 		return;
 
 	options.add_options()
-		(key("input,I"), value(&input_dir),
-		 "Image to process")
+		(key("input,I"), value(&input_file),
+		 "Image file to process")
 		(key("output,O"), value(&output_dir)->default_value("/tmp/"),
 		 "Output directory")
-		(key("msiName"), value(&msi_name)->default_value(""),
-		 "Name of the multispectral image")
 		;
 }
 #endif // WITH_BOOST
@@ -82,17 +79,15 @@ std::string EdgeDetectionConfig::getString() const {
 	if (prefix_enabled) {
 		s << "[" << prefix << "]" << std::endl;
 	} else {
-		s << "input=" << input_dir << " # Image to process" << std::endl // TODO: input_file!
+		s << "input=" << input_file << " # Image to process" << std::endl
 		  << "output=" << output_dir << " # Working directory" << std::endl
-			;
+		;
 	}
 	s	<< "verbose=" << verbosity
 		<< " # verbosity level: 0 = silent, 1 = normal, 2 = much output, 3 = insane" << std::endl
 		<< "graphical=" << isGraphical << " # Show any graphical output during runtime" << std::endl
-		<< "mode=" << mode << " # Set the operating mode: -M <learn> | <apply> | <visualize>" << std::endl
 		<< "linearization=" << linearization << "#  Set the linearization type : NONE, SFC (Space-filling curves)" << std::endl
 		<< "somFile=" << som_file << " # Specify the path to a saved som file to use a trained som!" << std::endl
-		<< "msiName=" << msi_name << " # Name of the multispectral image" << std::endl
 		<< "somWidth=" << som_width << " # Width of the SOM" << std::endl
 		<< "somHeight=" << som_height << " # Height of the SOM" << std::endl
 		<< "withGraph=" << graph_withGraph << " # Use a graph topology for the" << std::endl

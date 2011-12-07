@@ -336,7 +336,7 @@ using namespace msi;
   
 	void SW_Mesh::print(std::ostream& o, const std::string& n) const {
 		unsigned int i, j;
-		std::string fillcolor("");
+		std::string fillcolor("000000");
 
 		if (conf.directed)
 			o << "digraph ";
@@ -376,10 +376,10 @@ using namespace msi;
 //       if(edg.size()> 10) fillcolor = "grey14";
 */
 
-//colorize spread
-			cv::Vec3f rgb = n->getRGB();
-			Color c((unsigned int)(rgb[2]* 255.),(unsigned int)(rgb[1]* 255.),(unsigned int)(rgb[0]* 255.));
-			fillcolor = c.rgb2hex();
+//colorize spread TODO
+			//cv::Vec3f rgb = n->getRGB();
+			//Color c((unsigned int)(rgb[2]* 255.),(unsigned int)(rgb[1]* 255.),(unsigned int)(rgb[0]* 255.));
+			//fillcolor = c.rgb2hex();
 			o << "\t" << i << "[shape= box, style=filled, fillcolor=\"#"<<fillcolor<<"\"]" << ";\n";
 			for (j = 0; j < edg.size(); ++j) 
 			{

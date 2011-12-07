@@ -64,14 +64,14 @@ protected:
 	                                 const multi_img::Pixel &input,
 	                                 double radius, double learnRate);
 
-	Field neurons;	///< Pointer structure representing the SOM grid
-	cv::Point** lookupTable; ///< pre calculated positions of closest neurons
-
 	int dim;		///< Dimension of each neuron / the SOM
 	int width;		  	///< Width of SOM grid
 	int height;		  	///< Height of SOM grid
 	bool graph;       ///< If graph is used
 	bool umap;        ///< If weight map is used
+
+	Field neurons;	///< Pointer structure representing the SOM grid
+	cv::Point** lookupTable; ///< pre calculated positions of closest neurons
 
 	cv::Mat1d edgeWeights;
 	const vole::EdgeDetectionConfig &config;

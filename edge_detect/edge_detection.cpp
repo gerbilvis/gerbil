@@ -29,32 +29,17 @@ EdgeDetection::EdgeDetection()
 
 int EdgeDetection::execute()
 {
-	std::cout << "### Application for edge detection in multispectral images ###" << std::endl;
-	if (config.mode.compare("simple"))
-		return executeSimple();
-
-	std::cout << "### Using variants of self-organizing-maps ###" << std::endl;
-  // check some parameters.....
-	if (config.output_dir.size() < 1) {
-		std::cerr << "Specify output directory by typing -O <output_dir>" << std::endl;
-		return 1;
-	}
-
-	if (config.input_dir.size() < 1) {
-		std::cerr << "please add -I <input_file>" << std::endl;
-		return 1;
-	}
+/*	if (config.mode.compare("simple"))
+		return executeSimple();*/
 
 	multi_img img;
 	img.minval = 0.;
 	img.maxval = 1.;
-	std::cout << "# Loading: " << (config.input_dir+config.msi_name)<<std::endl;
-	img.read_image(config.input_dir+config.msi_name);
+	img.read_image(config.input_file);
 	if (img.empty())
 		return -1;
 	img.rebuildPixels(false);
 
-	std::cout << "# Loaded multispectral image '" << config.msi_name << "' from: " << config.input_dir << std::endl;
 	SOM *som;
 	if (config.graph_withGraph || config.withUMap) {
 		som = new GraphSOM(config, img.size());
@@ -98,8 +83,8 @@ int EdgeDetection::execute()
 			yname = "/directEdgeY";
 		}
 
-		cv::imwrite(config.output_dir + xname, sobelXShow);
-		cv::imwrite(config.output_dir + yname, sobelYShow);
+		cv::imwrite(config.output_dir + xname + ".png", sobelXShow);
+		cv::imwrite(config.output_dir + yname + ".png", sobelYShow);
 	} else if (config.linearization.compare("SFC") == 0) {
 		if (config.som_height == 1) {
 			std::cout << "# Generating 1D Rank" << std::endl;
@@ -142,7 +127,8 @@ int EdgeDetection::execute()
 
 int EdgeDetection::executeSimple()	// simple method for comparison
 {
-	multi_img img(config.input_dir+config.msi_name);
+	std::cout << "### Simple method (no SOM) ###" << std::endl;
+	multi_img img(config.input_file);
 
 	if(img.empty())
 	{
@@ -166,7 +152,7 @@ int EdgeDetection::executeSimple()	// simple method for comparison
 	}
 
 // remove .txt appendix
-  std::string name = config.msi_name.substr(0,config.msi_name.size()-4); // TODO error prone
+  std::string name = config.input_file.substr(0,config.input_file.size()-4); // TODO error prone
 
 	cv::Canny( grayscale, edge, 15., 40., 3, true );
 	cv::imwrite(config.output_dir+name+"_avg.png", grayscale);

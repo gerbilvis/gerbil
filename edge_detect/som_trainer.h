@@ -90,7 +90,7 @@ protected:
 	cv::Mat1d umap;
 	cv::Mat1d m_bmuMap;
 
-	int maxIter;
+	const int& maxIter;
 	int currIter;
 };
 

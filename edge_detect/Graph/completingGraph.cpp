@@ -693,7 +693,7 @@ namespace msi {
 	{
 		unsigned int i, j;
 		
-		std::string fillcolor("");
+		std::string fillcolor("000000");
 
 		if (conf.directed)
 			o << "digraph ";
@@ -719,11 +719,10 @@ namespace msi {
 			const std::vector<Node*>& edg = nodes[x]->getEdges();
 
 			Neuron *n = nodes[x]->getNeuron(); 
-			cv::Vec3f rgb = n->getRGB();
-      
-			Color c((unsigned int)(rgb[2]* 255.),(unsigned int)(rgb[1]* 255.),(unsigned int)(rgb[0]* 255.));
-
-			fillcolor = c.rgb2hex();
+			// TODO
+			//cv::Vec3f rgb = n->getRGB();
+			//Color c((unsigned int)(rgb[2]* 255.),(unsigned int)(rgb[1]* 255.),(unsigned int)(rgb[0]* 255.));
+			//c.rgb2hex();
 			o << "\t" << i << "[shape= box, style=filled, fillcolor=\"#"<<fillcolor<<"\"]" << ";\n";
 			for (j = 0; j < edg.size(); ++j) 
 			{

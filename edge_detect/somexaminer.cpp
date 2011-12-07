@@ -63,14 +63,6 @@ void mouse_rightclick(int event, int x, int y, int flags, void* param) {
     }
 }
 
-SOMExaminer::SOMExaminer()
-{
-	// just cut out ".txt" from the name ...
-    if (m_msiName.find(".txt")) {
-      m_msiName.resize(m_msiName.size() - 4);
-    }
-}
-
 void SOMExaminer::displayGraphDistances()
 {
 
