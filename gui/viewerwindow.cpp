@@ -653,6 +653,9 @@ void ViewerWindow::startGraphseg()
 	conf.similarity.measure = (vole::similarity_fun)
 	      graphsegSimilarityBox->itemData(graphsegSimilarityBox->currentIndex())
 	      .value<int>();
+#ifdef WITH_EDGE_DETECT
+	conf.som_similarity = false;
+#endif
 	conf.geodesic = graphsegGeodCheck->isChecked();
 	conf.multi_seed = false;
 	int src = graphsegSourceBox->itemData(graphsegSourceBox->currentIndex())
