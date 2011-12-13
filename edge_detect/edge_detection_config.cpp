@@ -4,8 +4,8 @@ using namespace boost::program_options;
 
 namespace vole {
 
-EdgeDetectionConfig::EdgeDetectionConfig(const std::string& prefix)
-    : Config(prefix), similarity(prefix + "similarity")
+EdgeDetectionConfig::EdgeDetectionConfig(const std::string& p)
+	: Config(p), similarity(prefix + "similarity")
 {
 
 	#ifdef WITH_BOOST

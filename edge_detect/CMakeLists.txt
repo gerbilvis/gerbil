@@ -20,6 +20,7 @@ vole_compile_library(
 	"som_trainer"
 	"somtester"
 	"space_filling_curve"
+	"som_distance"
 	"Graph/completingGraph"
 	"Graph/graph"
 	"Graph/misc"

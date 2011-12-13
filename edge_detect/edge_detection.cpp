@@ -21,10 +21,35 @@
 EdgeDetection::EdgeDetection() 
   : vole::Command("edge_detect", // command name
           config,
-          "Ralph Muessig", // author names
-          "ralph.muessig@e-technik.stud.uni-erlangen.de" ) // email
+		  "Johannes Jordan, Ralph Muessig", // author names
+		  "johannes.jordan@cs.fau.de" ) // email
+{}
+
+EdgeDetection::EdgeDetection(const vole::EdgeDetectionConfig &cfg)
+  : config(cfg), vole::Command("edge_detect", // command name
+		  config,
+		  "Johannes Jordan, Ralph Muessig", // author names
+		  "johannes.jordan@cs.fau.de" ) // email
+{}
+
+SOM* EdgeDetection::train(const multi_img &img)
 {
-	logOutput = false;
+	SOM *som;
+	if (config.graph_withGraph || config.withUMap) {
+		som = new GraphSOM(config, img.size());
+	} else {
+		som = new SOM(config, img.size());
+	}
+	std::cout << "# Generated SOM " << config.som_width << "x" << config.som_height << " with dimension " << img.size() << std::endl;
+
+	SOMTrainer trainer(*som, img, config);
+
+	std::cout << "# SOM Trainer starts to feed the network using "<< config.som_maxIter << " iterations..." << std::endl;
+
+	vole::Stopwatch watch("Training");
+	trainer.feedNetwork();
+
+	return som;
 }
 
 int EdgeDetection::execute()
@@ -40,34 +65,18 @@ int EdgeDetection::execute()
 		return -1;
 	img.rebuildPixels(false);
 
-	SOM *som;
-	if (config.graph_withGraph || config.withUMap) {
-		som = new GraphSOM(config, img.size());
-	} else {
-		som = new SOM(config, img.size());
-	}
-	std::cout << "# Generated SOM " << config.som_width << "x" << config.som_height << " with dimension " << img.size() << std::endl;
-
-	SOMTrainer trainer(*som, img, config);
-
-	std::cout << "# SOM Trainer starts to feed the network using "<< config.som_maxIter << " iterations..." << std::endl;
-
-	vole::Stopwatch watch;
-	trainer.feedNetwork();
-	watch.print("Training");
+	SOM *som = train(img);
 
 	std::cout << "# Generating 2D image using the SOM and the multispectral image..." << std::endl;
-
+	vole::Stopwatch watch("Edge Image Generation");
 	SOMTester tester(*som, img, config);
+
 	if (config.linearization.compare("NONE") == 0)
 	{
 		std::cout << "# Using direct distance" << std::endl;
 
-		vole::Stopwatch watch;
-
 		cv::Mat1d dX, dY;
 		tester.getEdge(dX, dY);
-		watch.print("Calculating Edge image");
 		std::cout << "Write images" <<std::endl;
 
 		cv::Mat sobelXShow, sobelYShow;
@@ -120,7 +129,6 @@ int EdgeDetection::execute()
 		tester.generateEdgeImage( 5., 20.);
 	}
     
-	watch.print("Edge Image Generation");
 	delete som;
 	return 0;
 }
