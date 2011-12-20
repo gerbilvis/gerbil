@@ -54,6 +54,8 @@ SOM* EdgeDetection::train(const multi_img &img)
 
 int EdgeDetection::execute()
 {
+	assert(!config.prefix_enabled); // input, output file variables set
+
 /*	if (config.mode.compare("simple"))
 		return executeSimple();*/
 
@@ -65,7 +67,17 @@ int EdgeDetection::execute()
 		return -1;
 	img.rebuildPixels(false);
 
+	if (config.hack3d) {
+		assert(config.som_height == 1);
+		config.som_height = config.som_width * config.som_width;
+	}
+
 	SOM *som = train(img);
+	if (config.output_som) {
+		multi_img somimg = som->export_2d();
+		somimg.write_out(config.output_dir + "/som");
+		config.storeConfig((config.output_dir + "/config.txt").c_str());
+	}
 
 	std::cout << "# Generating 2D image using the SOM and the multispectral image..." << std::endl;
 	vole::Stopwatch watch("Edge Image Generation");

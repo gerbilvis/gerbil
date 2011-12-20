@@ -1,4 +1,5 @@
 #include "edge_detection_config.h"
+#include <time.h>
 
 using namespace boost::program_options;
 
@@ -23,8 +24,6 @@ void EdgeDetectionConfig::initBoostOptions() {
 			 "Show graphical output during runtime")
 		(key("linearization,L"), value(&linearization)->default_value("NONE"),
 			"Type of linearization: NONE, SFC (Space Filling Curve)")
-		(key("somFile"), value(&som_file),
-			"File containing offline-trained SOM")
 		(key("somWidth"), value(&som_width)->default_value(32),
 			"Width of the SOM")
 		(key("somHeight"), value(&som_height)->default_value(32),
@@ -57,8 +56,8 @@ void EdgeDetectionConfig::initBoostOptions() {
 			"Probability for rewireing an edge using the beta model")
 		(key("phi"), value(&sw_phi)->default_value(0.0),
 			"Percentage rewired edges using the phi model")
-		(key("fixedSeed"), value(&fixedSeed)->default_value(false),
-			"Fix seeds for random generators")
+		(key("seed"), value(&seed)->default_value(time(NULL)),
+			"Seed value of random number generators")
 		;
 	options.add(similarity.options);
 
@@ -70,6 +69,8 @@ void EdgeDetectionConfig::initBoostOptions() {
 		 "Image file to process")
 		(key("output,O"), value(&output_dir)->default_value("/tmp/"),
 		 "Output directory")
+		(key("output_som"), bool_switch(&output_som)->default_value(false),
+			 "Output trained SOM as a multispectral image")
 		;
 }
 #endif // WITH_BOOST
@@ -83,11 +84,7 @@ std::string EdgeDetectionConfig::getString() const {
 		  << "output=" << output_dir << " # Working directory" << std::endl
 		;
 	}
-	s	<< "verbose=" << verbosity
-		<< " # verbosity level: 0 = silent, 1 = normal, 2 = much output, 3 = insane" << std::endl
-		<< "graphical=" << isGraphical << " # Show any graphical output during runtime" << std::endl
-		<< "linearization=" << linearization << "#  Set the linearization type : NONE, SFC (Space-filling curves)" << std::endl
-		<< "somFile=" << som_file << " # Specify the path to a saved som file to use a trained som!" << std::endl
+	s	<< "linearization=" << linearization << "#  Set the linearization type : NONE, SFC (Space-filling curves)" << std::endl
 		<< "somWidth=" << som_width << " # Width of the SOM" << std::endl
 		<< "somHeight=" << som_height << " # Height of the SOM" << std::endl
 		<< "withGraph=" << graph_withGraph << " # Use a graph topology for the" << std::endl
@@ -104,7 +101,7 @@ std::string EdgeDetectionConfig::getString() const {
 		<< "somLearnEnd=" << som_learnEnd << " # End value for the learning rate in SOM" << std::endl
 		<< "somRadiusStart=" << som_radiusStart << " # Start value for the radius of the neighborhood function in SOM" << std::endl
 		<< "somRadiusEnd=" << som_radiusEnd << " # End value for the radius of the neighborhood function in SOM" << std::endl
-		<< "fixedSeed=" << fixedSeed << " # Initialize the random number generators with a fixedSeed " << std::endl
+		<< "seed=" << seed << " # Seed value of random number generators " << std::endl
         << similarity.getString();
 	;
 	return s.str();

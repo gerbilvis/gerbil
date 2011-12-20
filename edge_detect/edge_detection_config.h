@@ -25,14 +25,17 @@ public:
 	// SOM linearization: <NONE> | <SFC>
 	std::string linearization;
 
-	// use fixed seed for random initializations TODO specify seed
-	bool fixedSeed;
+	// random seed
+	uint64 seed;
 	
 	// SOM features
 	int som_width;
 	int som_height;
-	std::string som_file;
 	bool hack3d;
+
+	// export SOM?
+	bool output_som;
+	// TODO: input SOM functionality
 
 	// Training features 
 	bool withUMap;											//use unified distance map for calculating distances, can be used by DD,SW,GTM 

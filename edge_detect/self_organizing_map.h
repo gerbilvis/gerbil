@@ -56,10 +56,10 @@ public:
 	                                double radius, double learnRate);
 
 	virtual double getDistance(const cv::Point2d &p1, const cv::Point2d &p2) const;
+	virtual double getDistance3(const cv::Point3d &p1, const cv::Point3d &p2) const;
 
 protected:
-	virtual void updateSingle(const cv::Point &pos, const multi_img::Pixel &input, double weight);
-	virtual void updateSingle(const cv::Point3i &pos, const multi_img::Pixel &input, double weight);
+	virtual void updateSingle3(const cv::Point3i &pos, const multi_img::Pixel &input, double weight);
 	virtual void updateNeighborhood3(const cv::Point &pos,
 	                                 const multi_img::Pixel &input,
 	                                 double radius, double learnRate);

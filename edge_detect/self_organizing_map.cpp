@@ -17,11 +17,7 @@ SOM::SOM(const vole::EdgeDetectionConfig &conf, int dimension)
 
 	/// Uniformly randomizes each neuron
 	// TODO: given interval [0..1] sure? purpose? it will not fit anyway
-	cv::RNG rng;
-	if (config.fixedSeed)	// TODO: get seed from outside
-		rng = cv::RNG (19.0);
-	else
-		rng = cv::RNG(cv::getTickCount());
+	cv::RNG rng(config.seed);
 	
 	for (int y = 0; y < height; y++) {
 		for(int x = 0; x < width; x++) {
@@ -48,6 +44,7 @@ cv::Point SOM::identifyWinnerNeuron(const multi_img::Pixel &inputVec) const
 	for (int y = 0; y < height; y++) {
 		for (int x = 0; x < width; x++) {
        		dist = distfun->getSimilarity(neurons[y][x], inputVec);
+			assert(dist < DBL_MAX);
 			// compare current distance with minimal found distance
 			if (dist < closestDistance) {
 				// set new minimal distance and winner position
@@ -72,24 +69,6 @@ multi_img SOM::export_2d()
 	return ret;
 }
 
-void SOM::updateSingle(const cv::Point &pos, const multi_img::Pixel &input, double weight)
-{
-  // find neuron
-	Neuron *currentNeuron = getNeuron(pos.x, pos.y);
-
-	// update neuron using openCV
-	currentNeuron->update(input, weight);
-}
-
-void SOM::updateSingle(const cv::Point3i &pos, const multi_img::Pixel &input, double weight)
-{
-	// find neuron
-	Neuron *currentNeuron = getNeuron(pos.x, pos.y * width + pos.z);
-
-	// update neuron using openCV
-	currentNeuron->update(input, weight);
-}
-
 void SOM::updateNeighborhood(const cv::Point &pos, const multi_img::Pixel &input, double radius, double learnRate)
 {
 	if (config.hack3d) {
@@ -100,8 +79,8 @@ void SOM::updateNeighborhood(const cv::Point &pos, const multi_img::Pixel &input
 	double rad = (height == 1 ? radius : radius*radius);
 
 	int minX = 0; int minY = 0;
-	int maxX = height - 1;
-	int maxY = width - 1;
+	int maxX = width - 1;
+	int maxY = height - 1;
 
 	bool finished = false;
 	int y = pos.y, x;
@@ -113,25 +92,26 @@ void SOM::updateNeighborhood(const cv::Point &pos, const multi_img::Pixel &input
 
 			// calculate the time- and radius dependent weighting factor
 			//TODO no real gaussian here
-			double weightingFactor = learnRate * exp(-(dist)/(2.0*rad));
+			double weight = learnRate * exp(-(dist)/(2.0*rad));
+
 			// check if change is still relevant
-			if (weightingFactor < 0.01) {
+			if (weight < 0.01) {
 				if (x == pos.x) // we are finished in y-direction
 					finished = true;
 				break;  // at least we are always finished in x-direction here
 			}
 
 			if (x <= maxX && y <= maxY)
-				updateSingle(cv::Point(x, y), input, weightingFactor);
+				neurons[y][x].update(input, weight);
 			// now with opposite indices
 			int yy = pos.y+pos.y - y;
 			int xx = pos.x+pos.x - x;
 			if (x != xx && xx >= minX && y <= maxY)
-				updateSingle(cv::Point(xx, y), input, weightingFactor);
+				neurons[y][xx].update(input, weight);
 			if (y != yy && x <= maxX && yy >= minY)
-				updateSingle(cv::Point(x, yy), input, weightingFactor);
+				neurons[yy][x].update(input, weight);
 			if (x != xx && y != yy && xx >= minX && yy >= minY)
-				updateSingle(cv::Point(xx, yy), input, weightingFactor);
+				neurons[yy][xx].update(input, weight);
 
 			x++;
     }
@@ -141,18 +121,23 @@ void SOM::updateNeighborhood(const cv::Point &pos, const multi_img::Pixel &input
 	}
 }
 
+void SOM::updateSingle3(const cv::Point3i &pos, const multi_img::Pixel &input, double weight)
+{
+	neurons[pos.y * width + pos.z][pos.x].update(input, weight);
+}
+
 void SOM::updateNeighborhood3(const cv::Point &pos2d, const multi_img::Pixel &input,
                                      double radius, double learnRate) {
 	int minI = 0;
 	int maxI = width - 1;
-	cv::Point3i pos(pos2d.x, pos2d.y / (maxI+1), pos2d.y % (maxI+1));
+	cv::Point3i pos(pos2d.x, pos2d.y / width, pos2d.y % width);
 //	std::cerr << "Point " << pos2d.x << "." << pos2d.y << "\tis "
 //			<< pos.x << "." << pos.y << "." << pos.z << std::endl;
 
 	static int it = 0;
-	if (!(++it % 100))
+/*	if (!(++it % 100))
 		std::cerr << "update " << it << " at " << pos.x << "." << pos.y << "." << pos.z
-				  << " with radius " << radius << std::endl;
+				  << " with radius " << radius << std::endl;*/
 	bool finishedX, finishedY = false;
 	int z = pos.z, y, x;
 	while (1) { // z loop
@@ -180,23 +165,23 @@ void SOM::updateNeighborhood3(const cv::Point &pos2d, const multi_img::Pixel &in
 				int zz = pos.z+pos.z - z;
 				if (z <= maxI) {
 					if (x <= maxI && y <= maxI)
-						updateSingle(cv::Point3i(x, y, z), input, weightingFactor);
+						updateSingle3(cv::Point3i(x, y, z), input, weightingFactor);
 					if (x != xx && xx >= minI && y <= maxI)
-						updateSingle(cv::Point3i(xx, y, z), input, weightingFactor);
+						updateSingle3(cv::Point3i(xx, y, z), input, weightingFactor);
 					if (y != yy && x <= maxI && yy >= minI)
-						updateSingle(cv::Point3i(x, yy, z), input, weightingFactor);
+						updateSingle3(cv::Point3i(x, yy, z), input, weightingFactor);
 					if (x != xx && y != yy && xx >= minI && yy >= minI)
-						updateSingle(cv::Point3i(xx, yy, z), input, weightingFactor);
+						updateSingle3(cv::Point3i(xx, yy, z), input, weightingFactor);
 				}
 				if (zz >= minI) {
 					if (x <= maxI && y <= maxI)
-						updateSingle(cv::Point3i(x, y, zz), input, weightingFactor);
+						updateSingle3(cv::Point3i(x, y, zz), input, weightingFactor);
 					if (x != xx && xx >= minI && y <= maxI)
-						updateSingle(cv::Point3i(xx, y, zz), input, weightingFactor);
+						updateSingle3(cv::Point3i(xx, y, zz), input, weightingFactor);
 					if (y != yy && x <= maxI && yy >= minI)
-						updateSingle(cv::Point3i(x, yy, zz), input, weightingFactor);
+						updateSingle3(cv::Point3i(x, yy, zz), input, weightingFactor);
 					if (x != xx && y != yy && xx >= minI && yy >= minI)
-						updateSingle(cv::Point3i(xx, yy, zz), input, weightingFactor);
+						updateSingle3(cv::Point3i(xx, yy, zz), input, weightingFactor);
 				}
 
 				x++;
@@ -219,4 +204,12 @@ double SOM::getDistance(const cv::Point2d &p1, const cv::Point2d &p2) const
 	double dx = (p1.x - p2.x);
 	double dy = (p1.y - p2.y);
 	return std::sqrt(dx * dx + dy * dy);
+}
+
+double SOM::getDistance3(const cv::Point3d &p1, const cv::Point3d &p2) const
+{
+	double dx = (p1.x - p2.x);
+	double dy = (p1.y - p2.y);
+	double dz = (p1.z - p2.z);
+	return std::sqrt(dx * dx + dy * dy + dz * dz);
 }

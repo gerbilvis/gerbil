@@ -9,8 +9,7 @@
 
 SOMTrainer::SOMTrainer(SOM &map, const multi_img &image,
                      const vole::EdgeDetectionConfig &conf)
-	: som(map), input(image), config(conf),
-	  currIter(0), maxIter(conf.som_maxIter)
+	: som(map), input(image), config(conf), currIter(0)
 {
 	m_bmuMap = cv::Mat::zeros(som.getHeight(), som.getWidth(), CV_64F);
 }
@@ -18,45 +17,42 @@ SOMTrainer::SOMTrainer(SOM &map, const multi_img &image,
 void SOMTrainer::feedNetwork()
 {
 
-  // matrices that hold shuffled sequences of the input for number of iterations
+	// matrices that hold shuffled sequences of the input for number of iterations
 	std::cout << "Start feeding"  <<std::endl;
-	cv::Mat_<int> shuffledY(1, maxIter);
-	cv::Mat_<int> shuffledX(1, maxIter);
+	cv::Mat_<int> shuffledY(1, config.som_maxIter);
+	cv::Mat_<int> shuffledX(1, config.som_maxIter);
   
-	cv::RNG rng;
+	cv::RNG rng(config.seed);
 	
-	if(config.fixedSeed)
-		rng = cv::RNG (19.0); // TODO
-	else
-		rng = cv::RNG(cv::getTickCount());
-	
-  // generate random sequence of the input x,y range
+	// generate random sequence of the input x,y range
 	rng.fill(shuffledY, cv::RNG::UNIFORM, cv::Scalar(0), cv::Scalar(input.height));
 	rng.fill(shuffledX, cv::RNG::UNIFORM, cv::Scalar(0), cv::Scalar(input.width));
   
-  // start the iterative feeding process here
+	// start the iterative feeding process here
 	cv::MatConstIterator_<int> itY = shuffledY.begin();
 	cv::MatConstIterator_<int> itX = shuffledX.begin();
 
 	// output percentage	
-	unsigned int ten = std::max<unsigned int>(maxIter/10, 10);
+	unsigned int hundred = std::max<unsigned int>(config.som_maxIter/100, 100);
 	int round = 1;
 	if(config.verbosity > 0)
-		std::cout  << "  0 %" <<std::endl;
+		std::cout  << "  0 %"; std::cout.flush();
 	for (; itX != shuffledX.end(); itX++, itY++) 
 	{
 		// extract random pixel vector from the multispectral image
 		const multi_img::Pixel & vec = input(*itY, *itX);
 		feedSample(vec);
-		if( (maxIter > 10) && (currIter % ten) == 0 && config.verbosity > 0) {
-			std::cout << " "<< (round*10) << " %" <<std::endl;
+		if ((config.verbosity > 0) && (config.som_maxIter > 100)
+			&& ((currIter % hundred) == 0) && (round < 100)) {
+			std::cout << "\r" << (round < 10 ? "  " : " ") << round << " %";
+			std::cout.flush();
 			round++;
 		}	
-  }
-  if(config.verbosity > 0)
-		std::cout  << "100 %" <<std::endl;
+	}
+	if(config.verbosity > 0)
+		std::cout  << "\r100 %" <<std::endl;
 
-  std::cout <<"# Feeding done" <<std::endl;
+	std::cout <<"# Feeding done" <<std::endl;
 
 	// write the visualization of SOM
 	if(config.verbosity > 2 ) {
@@ -77,12 +73,13 @@ void SOMTrainer::feedNetwork()
 void SOMTrainer::feedSample(const multi_img::Pixel &input)
 {
 	// adjust learning rate and radius
+	// note that they are _decreasing_ -> start * (end/start)^(iter%)
 	double learnRate = config.som_learnStart * std::pow(
-	            config.som_learnStart / config.som_learnEnd,
-	            (double)currIter/(double)maxIter);
+				config.som_learnEnd / config.som_learnStart,
+				(double)currIter/(double)config.som_maxIter);
 	double radius = config.som_radiusStart * std::pow(
-	            config.som_radiusStart / config.som_radiusEnd,
-	            (double)currIter/(double)maxIter);
+				config.som_radiusEnd / config.som_radiusStart,
+				(double)currIter/(double)config.som_maxIter);
 
 	// find best matching neuron to given input vector
 	cv::Point pos = som.identifyWinnerNeuron(input);

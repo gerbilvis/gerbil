@@ -48,6 +48,7 @@ public:
 	*
 	*/
 	void getEdge(cv::Mat1d &dx, cv::Mat1d &dy);
+	void getEdge3(cv::Mat1d &dx, cv::Mat1d &dy); // hack3d version
 
 private:
 	const SOM &som;
