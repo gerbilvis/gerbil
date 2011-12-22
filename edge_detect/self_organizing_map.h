@@ -18,15 +18,6 @@ public:
 	virtual ~SOM();
 
 	/**
-	* Finds the neuron in the SOM grid which has the closest distance
-	* to the given input vector and returns its position in the grid.
-	*
-	* @param	input Neuron to which closest neuron in SOM will be determined
-	* @return	Position of the neuron in x,y coordinates
-	*/
-	virtual cv::Point identifyWinnerNeuron(const multi_img::Pixel &input) const;
-
-	/**
 	* Returns a pointer to the neuron at the given grid position
 	*
 	* @param	x x-coordinate
@@ -36,7 +27,7 @@ public:
 	inline Neuron* getNeuron(int x, int y)
 	{ return &neurons[y][x]; }
 
-	// export as multi_img
+	//! export as multi_img
 	multi_img export_2d();
 
 	//! Returns the width of the SOM grid
@@ -50,6 +41,15 @@ public:
 	//! Returns dimensionality of the SOM ( equal to neuron dimensionality)
 	inline unsigned int getDimension() const
 	{ return dim; }
+
+	/**
+	* Finds the neuron in the SOM grid which has the closest distance
+	* to the given input vector and returns its position in the grid.
+	*
+	* @param	input Neuron to which closest neuron in SOM will be determined
+	* @return	Position of the neuron in x,y coordinates
+	*/
+	virtual cv::Point identifyWinnerNeuron(const multi_img::Pixel &input) const;
 
 	virtual void updateNeighborhood(const cv::Point &pos,
 	                                const multi_img::Pixel &input,
@@ -67,14 +67,11 @@ protected:
 	int dim;		///< Dimension of each neuron / the SOM
 	int width;		  	///< Width of SOM grid
 	int height;		  	///< Height of SOM grid
-	bool graph;       ///< If graph is used
-	bool umap;        ///< If weight map is used
 
-	Field neurons;	///< Pointer structure representing the SOM grid
-	cv::Point** lookupTable; ///< pre calculated positions of closest neurons
+	Field neurons;	///< Neurons in the SOM grid
 
-	cv::Mat1d edgeWeights;
 	const vole::EdgeDetectionConfig &config;
+
 public:
 	vole::SimilarityMeasure<multi_img::Value> *distfun;
 };

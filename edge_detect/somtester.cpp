@@ -15,42 +15,6 @@ SOMTester::SOMTester(const SOM &map, const multi_img &img, const vole::EdgeDetec
 	}
 }
 
-cv::Mat SOMTester::generateRankImage() {
-	rankmap = cv::Mat1f(image.height, image.width);
-	float normidx = 1.f / (float)(som.getWidth() * som.getHeight());
-
-	bool indirect = !sfcmap.empty();
-
-	for (int y = 0; y < image.height; y++) {
-		float *row = rankmap[y];
-		for (int x = 0; x < image.width; x++) {
-			const cv::Point &p = lookup[y][x];
-			if (indirect)
-				row[x] = sfcmap(p) * normidx;
-			else
-				row[x] = p.x * normidx;
-		}
-	}
-
-
-	double min, max;
-	cv::minMaxLoc(rankmap, &min, &max);
-	std::cerr << "rank image: [" << min << ", " << max << "]" << std::endl;
-
-	cv::imwrite(config.output_dir + "/rank.png", rankmap*255.f);
-
-	return rankmap;
-
-}
-
-cv::Mat SOMTester::generateRankImage(cv::Mat_<unsigned int> &rankMatrix)
-{
-	sfcmap = rankMatrix; // TODO: wtf why store as member?
-	cv::imwrite(config.output_dir + "/rankmatrix.png", sfcmap);
-
-	return generateRankImage();
-}
-
 void SOMTester::getEdge(cv::Mat1d &dx, cv::Mat1d &dy)
 {
 	std::cout << "Calculating derivatives (dx, dy)" << std::endl;
@@ -205,15 +169,4 @@ void SOMTester::getEdge3(cv::Mat1d &dx, cv::Mat1d &dy)
 		*ix = ((*ix + maxIntensity) * 0.5 / maxIntensity);
 		*iy = ((*iy + maxIntensity) * 0.5 / maxIntensity);
 	}
-}
-
-cv::Mat SOMTester::generateEdgeImage(double h1, double h2)
-{
-	cv::Mat1b edgemap = rankmap * 255.f;
-	cv::Mat1b edgeShow;
-	cv::Canny(edgemap, edgeShow, h1, h2, 3, true);
-
-	cv::imwrite(config.output_dir + "/edge.png", edgeShow);
-
-	return edgeShow;
 }

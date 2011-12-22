@@ -19,8 +19,8 @@ void SOMTrainer::feedNetwork()
 
 	// matrices that hold shuffled sequences of the input for number of iterations
 	std::cout << "Start feeding"  <<std::endl;
-	cv::Mat_<int> shuffledY(1, config.som_maxIter);
-	cv::Mat_<int> shuffledX(1, config.som_maxIter);
+	cv::Mat_<int> shuffledY(1, config.maxIter);
+	cv::Mat_<int> shuffledX(1, config.maxIter);
   
 	cv::RNG rng(config.seed);
 	
@@ -33,7 +33,7 @@ void SOMTrainer::feedNetwork()
 	cv::MatConstIterator_<int> itX = shuffledX.begin();
 
 	// output percentage	
-	unsigned int hundred = std::max<unsigned int>(config.som_maxIter/100, 100);
+	unsigned int hundred = std::max<unsigned int>(config.maxIter/100, 100);
 	int round = 1;
 	if(config.verbosity > 0)
 		std::cout  << "  0 %"; std::cout.flush();
@@ -42,7 +42,7 @@ void SOMTrainer::feedNetwork()
 		// extract random pixel vector from the multispectral image
 		const multi_img::Pixel & vec = input(*itY, *itX);
 		feedSample(vec);
-		if ((config.verbosity > 0) && (config.som_maxIter > 100)
+		if ((config.verbosity > 0) && (config.maxIter > 100)
 			&& ((currIter % hundred) == 0) && (round < 100)) {
 			std::cout << "\r" << (round < 10 ? "  " : " ") << round << " %";
 			std::cout.flush();
@@ -74,12 +74,12 @@ void SOMTrainer::feedSample(const multi_img::Pixel &input)
 {
 	// adjust learning rate and radius
 	// note that they are _decreasing_ -> start * (end/start)^(iter%)
-	double learnRate = config.som_learnStart * std::pow(
-				config.som_learnEnd / config.som_learnStart,
-				(double)currIter/(double)config.som_maxIter);
-	double radius = config.som_radiusStart * std::pow(
-				config.som_radiusEnd / config.som_radiusStart,
-				(double)currIter/(double)config.som_maxIter);
+	double learnRate = config.learnStart * std::pow(
+				config.learnEnd / config.learnStart,
+				(double)currIter/(double)config.maxIter);
+	double radius = config.radiusStart * std::pow(
+				config.radiusEnd / config.radiusStart,
+				(double)currIter/(double)config.maxIter);
 
 	// find best matching neuron to given input vector
 	cv::Point pos = som.identifyWinnerNeuron(input);

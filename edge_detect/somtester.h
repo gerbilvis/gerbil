@@ -12,42 +12,16 @@ public:
     SOMTester(const SOM &map, const multi_img &image, const vole::EdgeDetectionConfig &conf);
 
 	/**
-	* Generates the 2D grayscale representation of the multispectral image
-	* using the 1D SOM network and the multispectral image by finding
-	* the best matching neuron to each pixel vector of the multispectral image.
-	*
-	* @return Rank image which is the result of the dimensionality reduction
-	*/
-	cv::Mat generateRankImage();
-
-	/**
-	* Generates the 2D grayscale representation of the multispectral image
-	* using the 2D SOM network and the multispectral image by finding
-	* the best matching neuron to each pixel vector of the multispectral image.
-	* Additionally involves linearization of the two dimensional SOM
-	* using an appropriate hilbert or peano curve.
-	*/
-	cv::Mat generateRankImage(cv::Mat_<unsigned int> &rank);
-
-	/**
-	* Applies the canny edge detector to the rank/grayscale image.
-	* Hysteresis parameter control the edge detection result.
-	*
-	* @param	h1 lower hysteresis threshold parameter
-	* @param	h2 upper hysteresis threshold parameter
-	* @return	Edge image of type cv::Mat
-	*/
-	cv::Mat generateEdgeImage(double h1, double h2);
-
-	/**
 	*
 	* Compute directional distance images using a fake Sobel operator
 	*
-	*	@param dx	Horizontal distance map
-	*	@param dx	Vertical distance map
+	*	@param dx	Horizontal distance map (output)
+	*	@param dx	Vertical distance map (output)
 	*
 	*/
 	void getEdge(cv::Mat1d &dx, cv::Mat1d &dy);
+
+protected:
 	void getEdge3(cv::Mat1d &dx, cv::Mat1d &dy); // hack3d version
 
 private:
@@ -55,9 +29,6 @@ private:
 	const multi_img &image;
 	const vole::EdgeDetectionConfig &config;
 	std::vector<std::vector<cv::Point> > lookup;
-
-	cv::Mat_<unsigned int> sfcmap;
-	cv::Mat1f rankmap;
 };
 
 #endif // SOMTESTER_H
