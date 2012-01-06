@@ -1,7 +1,9 @@
 #include "edge_detection_config.h"
 #include <time.h>
 
+#ifdef WITH_BOOST
 using namespace boost::program_options;
+#endif
 
 namespace vole {
 
@@ -17,6 +19,9 @@ EdgeDetectionConfig::EdgeDetectionConfig(const std::string& p)
 #ifdef WITH_BOOST
 void EdgeDetectionConfig::initBoostOptions() {
 	options.add_options()
+		(key("som_input"), value(&som_file)->default_value(""),
+			 "When set, read given multispectral image file to initialize SOM"
+			 " instead of training")
 		(key("hack3d"), bool_switch(&hack3d)->default_value(false),
 			 "Use hack to have 3D som of size width a*a*a, specify "
 			 "width=a, height=1")
@@ -43,7 +48,7 @@ void EdgeDetectionConfig::initBoostOptions() {
 		return;
 
 	options.add_options()
-		(key("input,I"), value(&input_file),
+		(key("input,I"), value(&input_file)->default_value("input.png"),
 		 "Image file to process")
 		(key("output,O"), value(&output_dir)->default_value("/tmp/"),
 		 "Output directory")
@@ -62,7 +67,8 @@ std::string EdgeDetectionConfig::getString() const {
 		  << "output=" << output_dir << " # Working directory" << std::endl
 		;
 	}
-	s	<< "somWidth=" << width << " # Width of the SOM" << std::endl
+	s	<< "som_input=" << som_file << " # SOM image file instead of training" << std::endl
+		<< "somWidth=" << width << " # Width of the SOM" << std::endl
 		<< "somHeight=" << height << " # Height of the SOM" << std::endl
 		<< "hack3d=" << hack3d << " # use hack for 3D SOM" << std::endl
 		<< "somMaxIter=" << maxIter << " # Number of training iterations for the SOM" << std::endl

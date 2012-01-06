@@ -26,6 +26,24 @@ SOM::SOM(const vole::EdgeDetectionConfig &conf, int dimension)
 	}
 }
 
+SOM::SOM(const vole::EdgeDetectionConfig &conf, const multi_img &data)
+	: dim(data.size()), width(conf.width), height(conf.height),
+	  config(conf),
+	  neurons(Field(conf.height, Row(conf.width, Neuron(data.size()))))
+{
+	/// Create similarity measure
+	distfun = vole::SMFactory<multi_img::Value>::spawn(config.similarity);
+	assert(distfun);
+
+	/// Read SOM from multi_img
+
+	for (int y = 0; y < height; y++) {
+		for(int x = 0; x < width; x++) {
+			neurons[y][x] = data(y, x);
+		}
+	}
+}
+
 SOM::~SOM()
 {
 	delete distfun;

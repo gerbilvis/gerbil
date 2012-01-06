@@ -14,6 +14,7 @@ public:
 	typedef std::vector<Row> Field;
 
 	SOM(const vole::EdgeDetectionConfig &conf, int dimension);
+	SOM(const vole::EdgeDetectionConfig &conf, const multi_img &data);
 
 	virtual ~SOM();
 
@@ -57,6 +58,8 @@ public:
 
 	virtual double getDistance(const cv::Point2d &p1, const cv::Point2d &p2) const;
 	virtual double getDistance3(const cv::Point3d &p1, const cv::Point3d &p2) const;
+
+	bool ishack3d() const { return config.hack3d; }
 
 protected:
 	virtual void updateSingle3(const cv::Point3i &pos, const multi_img::Pixel &input, double weight);

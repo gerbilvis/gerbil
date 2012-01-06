@@ -32,17 +32,35 @@ EdgeDetection::EdgeDetection(const vole::EdgeDetectionConfig &cfg)
 
 SOM* EdgeDetection::train(const multi_img &img)
 {
-	SOM *som = new SOM(config, img.size());
-	std::cout << "# Generated SOM " << config.width << "x" << config.height << " with dimension " << img.size() << std::endl;
+	if (config.som_file.empty()) {
+		SOM *som = new SOM(config, img.size());
+		std::cout << "# Generated SOM " << config.width << "x" << config.height << " with dimension " << img.size() << std::endl;
 
-	SOMTrainer trainer(*som, img, config);
+		SOMTrainer trainer(*som, img, config);
 
-	std::cout << "# SOM Trainer starts to feed the network using "<< config.maxIter << " iterations..." << std::endl;
+		std::cout << "# SOM Trainer starts to feed the network using "<< config.maxIter << " iterations..." << std::endl;
 
-	vole::Stopwatch watch("Training");
-	trainer.feedNetwork();
+		vole::Stopwatch watch("Training");
+		trainer.feedNetwork();
 
-	return som;
+		return som;
+	} else {
+		multi_img somimg;
+		somimg.minval = img.minval;
+		somimg.maxval = img.maxval;
+		somimg.read_image(config.som_file);
+		if (somimg.empty()) {
+			std::cerr << "Could not read image containing the SOM!" << std::endl;
+			return NULL;
+		}
+		if (somimg.width != config.width || somimg.height != config.height
+			|| somimg.size() != img.size()) {
+			std::cerr << "SOM image has wrong dimensions!" << std::endl;
+			return NULL;
+		}
+		somimg.rebuildPixels(false);
+		return new SOM(config, somimg);
+	}
 }
 
 int EdgeDetection::execute()
@@ -63,6 +81,9 @@ int EdgeDetection::execute()
 	}
 
 	SOM *som = train(img);
+	if (som == NULL)
+		return -1;
+
 	if (config.output_som) {
 		multi_img somimg = som->export_2d();
 		somimg.write_out(config.output_dir + "/som");

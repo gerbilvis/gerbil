@@ -19,6 +19,9 @@ public:
 	// working directory
 	std::string output_dir;
 
+	// som file input
+	std::string som_file;
+
 	// random seed
 	uint64 seed;
 	
