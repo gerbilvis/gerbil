@@ -613,7 +613,11 @@ void ViewerWindow::initGraphsegUI()
 	graphsegSimilarityBox->addItem("Manhattan distance (L1)", vole::MANHATTAN);
 	graphsegSimilarityBox->addItem("Euclidean distance (L2)", vole::EUCLIDEAN);
 	graphsegSimilarityBox->addItem(QString::fromUtf8("Chebyshev distance (L∞)"), vole::CHEBYSHEV);
-	graphsegSimilarityBox->addItem("Modified Spectral Angle Similarity", vole::MOD_SPEC_ANGLE);
+	graphsegSimilarityBox->addItem("Spectral Angle", vole::MOD_SPEC_ANGLE);
+	graphsegSimilarityBox->addItem("Spectral Information Divergence", vole::SPEC_INF_DIV);
+	graphsegSimilarityBox->addItem("SID+SAM I", vole::SIDSAM1);
+	graphsegSimilarityBox->addItem("SID+SAM II", vole::SIDSAM2);
+	graphsegSimilarityBox->addItem("Normalized L2", vole::NORM_L2);
 	graphsegSimilarityBox->setCurrentIndex(3);
 
 	graphsegAlgoBox->addItem("Kruskal", vole::KRUSKAL);

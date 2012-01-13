@@ -4,7 +4,8 @@
 #include <iostream>
 #include <sstream>
 #include <fstream>
-#include <algorithm> 
+#include <algorithm>
+#include <limits>
 
 SOM::SOM(const vole::EdgeDetectionConfig &conf, int dimension)
 	: dim(dimension), width(conf.width), height(conf.height),
@@ -52,7 +53,7 @@ SOM::~SOM()
 cv::Point SOM::identifyWinnerNeuron(const multi_img::Pixel &inputVec) const
 {
 	// initialize with maximum value
-	double closestDistance = DBL_MAX;
+	double closestDistance = std::numeric_limits<double>::max();
 	double dist;
 	// init grid position
 	cv::Point winner(-1, -1);
@@ -62,7 +63,6 @@ cv::Point SOM::identifyWinnerNeuron(const multi_img::Pixel &inputVec) const
 	for (int y = 0; y < height; y++) {
 		for (int x = 0; x < width; x++) {
        		dist = distfun->getSimilarity(neurons[y][x], inputVec);
-			assert(dist < DBL_MAX);
 			// compare current distance with minimal found distance
 			if (dist < closestDistance) {
 				// set new minimal distance and winner position
