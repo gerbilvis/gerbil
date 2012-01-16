@@ -118,7 +118,7 @@ bool multi_img::read_image_lan(const string& filename)
 	          << "\t(" << (depth == 0 ? "8" : "16") << " bits)" << std::endl;
 
 	// prepare image
-	init(cols, rows, size);
+	init(rows, cols, size);
 
 	// read raw data
 	fill_bil(in, depth);
