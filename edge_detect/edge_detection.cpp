@@ -14,7 +14,7 @@
 #include "edge_detection.h"
 #include "self_organizing_map.h"
 #include "som_trainer.h"
-#include "somtester.h"
+#include "som_tester.h"
 
 EdgeDetection::EdgeDetection() 
   : vole::Command("edge_detect", // command name
@@ -24,10 +24,11 @@ EdgeDetection::EdgeDetection()
 {}
 
 EdgeDetection::EdgeDetection(const vole::EdgeDetectionConfig &cfg)
-  : config(cfg), vole::Command("edge_detect", // command name
+  : vole::Command("edge_detect", // command name
 		  config,
 		  "Johannes Jordan, Ralph Muessig", // author names
-		  "johannes.jordan@cs.fau.de" ) // email
+		  "johannes.jordan@cs.fau.de" ), // email
+ 		  config(cfg)
 {}
 
 SOM* EdgeDetection::train(const multi_img &img)

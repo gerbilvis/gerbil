@@ -9,8 +9,8 @@
 
 SOM::SOM(const vole::EdgeDetectionConfig &conf, int dimension)
 	: dim(dimension), width(conf.width), height(conf.height),
-	  config(conf),
-	  neurons(Field(conf.height, Row(conf.width, Neuron(dimension))))
+	  neurons(Field(conf.height, Row(conf.width, Neuron(dimension)))),
+	  config(conf)
 {
 	/// Create similarity measure
 	distfun = vole::SMFactory<multi_img::Value>::spawn(config.similarity);
@@ -29,8 +29,8 @@ SOM::SOM(const vole::EdgeDetectionConfig &conf, int dimension)
 
 SOM::SOM(const vole::EdgeDetectionConfig &conf, const multi_img &data)
 	: dim(data.size()), width(conf.width), height(conf.height),
-	  config(conf),
-	  neurons(Field(conf.height, Row(conf.width, Neuron(data.size()))))
+	  neurons(Field(conf.height, Row(conf.width, Neuron(data.size())))),
+	  config(conf)
 {
 	/// Create similarity measure
 	distfun = vole::SMFactory<multi_img::Value>::spawn(config.similarity);
@@ -152,8 +152,8 @@ void SOM::updateNeighborhood3(const cv::Point &pos2d, const multi_img::Pixel &in
 //	std::cerr << "Point " << pos2d.x << "." << pos2d.y << "\tis "
 //			<< pos.x << "." << pos.y << "." << pos.z << std::endl;
 
-	static int it = 0;
-/*	if (!(++it % 100))
+/*	static int it = 0;
+	if (!(++it % 100))
 		std::cerr << "update " << it << " at " << pos.x << "." << pos.y << "." << pos.z
 				  << " with radius " << radius << std::endl;*/
 	bool finishedX, finishedY = false;

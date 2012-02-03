@@ -17,7 +17,7 @@ vole_compile_library(
 	"self_organizing_map"
 	"neuron"
 	"som_trainer"
-	"somtester"
+	"som_tester"
 	"som_distance"
 	"canny/myCanny"
 	"canny/_cvgeom.h" "canny/_cvimgproc.h"

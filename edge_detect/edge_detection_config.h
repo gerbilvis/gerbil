@@ -32,7 +32,6 @@ public:
 
 	// export SOM?
 	bool output_som;
-	// TODO: input SOM functionality
 
 	// Training features 
 	int maxIter;								// number of iterations
