@@ -61,6 +61,9 @@ void Viewport::updateYAxis()
 			maximum = std::abs(ycoord[i]);
 	}
 
+	if (maximum == 0)
+		return;
+
 	/* find order of magnitude of maximum value */
 	float roundAt = 0.001f; // we want 3 significant digits
 	if (maximum >= 1.f) {
