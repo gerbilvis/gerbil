@@ -1,4 +1,4 @@
-#include "somtester.h"
+#include "som_tester.h"
 
 #include <cv.h>
 #include <highgui.h>
