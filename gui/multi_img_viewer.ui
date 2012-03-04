@@ -293,6 +293,9 @@
        <property name="focusPolicy">
         <enum>Qt::ClickFocus</enum>
        </property>
+       <property name="autoFillBackground">
+        <bool>false</bool>
+       </property>
       </widget>
      </item>
     </layout>

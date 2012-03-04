@@ -1,4 +1,4 @@
-/*	
+/*
 	Copyright(c) 2010 Johannes Jordan <johannes.jordan@cs.fau.de>.
 
 	This file may be licensed under the terms of of the GNU General Public
@@ -12,6 +12,7 @@
 #include <multi_img.h>
 #include <cv.h>
 #include <QGLWidget>
+#include <QGLBuffer>
 #include <vector>
 #include <QHash>
 #include <QLabel>
@@ -20,7 +21,7 @@
 struct Bin {
 	Bin() {}
 	Bin(const multi_img::Pixel& initial_means)
-	 : weight(1.f), means(initial_means), points(initial_means.size()) {}
+	 : weight(1.f), means(initial_means) {} //, points(initial_means.size()) {}
 
 	inline void add(const multi_img::Pixel& p) {
 		weight += 1.f;
@@ -31,15 +32,17 @@ struct Bin {
 	float weight;
 	std::vector<multi_img::Value> means;
 	QColor rgb;
-	QPolygonF points;
+	//QPolygonF points;
 };
 
 struct BinSet {
 	BinSet(const QColor &c, int size)
 		: label(c), totalweight(0.f),
-		boundary(size, std::make_pair((int)255, (int)0)) {}
+		boundary(size, std::make_pair((int)255, (int)0)),
+		vb(QGLBuffer::VertexBuffer) {}
 	QColor label;
 	QHash<QByteArray, Bin> bins;
+	QGLBuffer vb;
 	float totalweight;
 	std::vector<std::pair<int, int> > boundary;
 };
@@ -50,6 +53,7 @@ class Viewport : public QGLWidget
 	Q_OBJECT
 public:
 	Viewport(QWidget *parent = 0);
+	~Viewport();
 
 	void prepareLines();
 	void reset(int nbins, multi_img::Value binsize, multi_img::Value minval);

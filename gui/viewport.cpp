@@ -1,4 +1,4 @@
-/*	
+/*
 	Copyright(c) 2010 Johannes Jordan <johannes.jordan@cs.fau.de>.
 
 	This file may be licensed under the terms of of the GNU General Public
@@ -7,7 +7,7 @@
 */
 
 #include "viewport.h"
-#include "stopwatch.h"
+#include <stopwatch.h>
 #include <iostream>
 #include <cmath>
 #include <QtCore>
@@ -27,6 +27,10 @@ Viewport::Viewport(QWidget *parent)
 	  cacheValid(false), clearView(false), implicitClearView(false),
 	  drawMeans(true), drawRGB(false), yaxisWidth(0)
 {}
+
+Viewport::~Viewport()
+{
+}
 
 void Viewport::reset(int bins, multi_img::Value bsize, multi_img::Value minv)
 {
@@ -111,8 +115,31 @@ void Viewport::setLimiters(int label)
 
 void Viewport::prepareLines()
 {
+	vole::Stopwatch watch("prepareLines");
 	for (unsigned int i = 0; i < sets.size(); ++i) {
+
 		BinSet &s = sets[i];
+		if (s.bins.empty())
+			continue;
+		int total = s.bins.count() * dimensionality;
+
+		makeCurrent();
+		s.vb.setUsagePattern(QGLBuffer::StaticDraw);
+		if (!s.vb.create()) std::cerr << "could not create vb" << std::endl;
+		if (!s.vb.bind()) std::cerr << "could not bind vb" << std::endl;
+		s.vb.allocate(total * sizeof(GLfloat) * 2);
+		GLfloat *varr = (GLfloat*)s.vb.map(QGLBuffer::WriteOnly);
+
+/*		s.ib.setUsagePattern(QGLBuffer::DynamicDraw);
+		if (!s.ib.create()) std::cerr << "could not create ib" << std::endl;
+		if (!s.ib.bind()) std::cerr << "could not bind ib" << std::endl;
+		s.ib.allocate(total * sizeof(GLuint)); // *2 for GL_LINES
+		GLuint *iarr = (GLuint*)s.ib.map(QGLBuffer::WriteOnly);*/
+
+		//assert(varr && iarr);
+		assert(varr);
+
+		int vidx = 0;
 		QHash<QByteArray, Bin>::iterator it;
 		for (it = s.bins.begin(); it != s.bins.end(); ++it) {
 			const QByteArray &K = it.key();
@@ -126,9 +153,13 @@ void Viewport::prepareLines()
 					if (illuminant_correction && illuminant)
 						curpos *= (*illuminant)[d];
 				}
-				b.points[d] = QPointF(d, curpos);
+				//b.points[d] = QPointF(d, curpos);
+				varr[vidx++] = d;
+				varr[vidx++] = curpos;
 			}
 		}
+		s.vb.unmap();
+		s.vb.release();
 	}
 }
 
@@ -160,6 +191,11 @@ void Viewport::updateModelview()
 
 void Viewport::drawBins(QPainter &painter)
 {
+	vole::Stopwatch watch("drawBins");
+	painter.beginNativePainting();
+	glEnable(GL_BLEND);
+	glBlendFunc(GL_SRC_ALPHA,GL_ONE_MINUS_SRC_ALPHA);
+
 	/* check if we implicitely have a clear view */
 	implicitClearView = (clearView || !active || (hover < 0 && !limiterMode));
 	/* make sure that viewport shows "unlabeled" in the ignore label case */
@@ -168,6 +204,14 @@ void Viewport::drawBins(QPainter &painter)
 
 	for (int i = start; i < end; ++i) {
 		BinSet &s = sets[i];
+		if (s.bins.empty())
+			continue;
+
+		if (!s.vb.bind()) std::cerr << i << ": could not bind vb" << std::endl;
+		glEnableClientState(GL_VERTEX_ARRAY);
+		glVertexPointer(2, GL_FLOAT, 0, 0);
+		int currind = 0;
+
 		QColor basecolor = s.label, color;
 		QHash<QByteArray, Bin>::iterator it;
 		for (it = s.bins.begin(); it != s.bins.end(); ++it) {
@@ -212,10 +256,23 @@ void Viewport::drawBins(QPainter &painter)
 				color.setAlphaF(1.);
 			}
 
-			painter.setPen(color);
-			painter.drawPolyline(b.points);
+			//painter.setPen(color);
+			//painter.drawPolyline(b.points);
+			glColor4f(color.redF(), color.greenF(), color.blueF(), color.alphaF());
+/*			const QPolygonF &poly = b.points;
+			glBegin(GL_LINE_STRIP);
+			for (int i = 0; i < b.points.size(); ++i)
+				glVertex2f((float)poly[i].x(), (float)poly[i].y());
+			glEnd();*/
+/*			glDrawRangeElements(GL_LINE_STRIP, currind, currind+dimensionality,
+						   dimensionality, GL_UNSIGNED_INT,
+						   (const GLuint*)0+currind);*/
+			glDrawArrays(GL_LINE_STRIP, currind, dimensionality);
+			currind += dimensionality;
 		}
+		s.vb.release();
 	}
+	painter.endNativePainting();
 }
 
 void Viewport::drawAxesFg(QPainter &painter)
@@ -343,14 +400,10 @@ void Viewport::drawRegular()
 
 	drawLegend(painter);
 
-	painter.save();
 	painter.setWorldTransform(modelview);
-
 	drawAxesBg(painter);
 	drawBins(painter);
 	drawAxesFg(painter);
-
-	painter.restore();
 }
 
 void Viewport::drawOverlay()
