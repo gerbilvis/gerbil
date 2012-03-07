@@ -987,18 +987,28 @@ void ViewerWindow::setI1Visible(bool visible)
 	}
 }
 
-void ViewerWindow::loadLabeling(std::string filename)
+void ViewerWindow::loadLabeling(QString filename)
 {
-	if (filename.empty())
+	if (filename.isEmpty())
 		filename = QFileDialog::getOpenFileName
-						   (this, "Open Labeling Image File").toStdString();
-	if (filename.empty())
+						   (this, "Open Labeling Image File");
+	if (filename.isEmpty())
 		return;
-	vole::Labeling labeling(filename, false);
+	QString errorstr;
+	vole::Labeling labeling;
+	try {
+		labeling = vole::Labeling(filename.toStdString(), false);
+	} catch (cv::Exception &e) {
+		errorstr = QString("The labeling file could not be read.\nReason: %1"
+		"\nSupported are all image formats readable by OpenCV.").arg(e.what());
+	}
 	if (labeling().empty()) {
-		QMessageBox::critical(this, "Error loading labels",
-						"The labeling image could not be read."
-						"\nSupported are all image formats readable by OpenCV.");
+		errorstr = QString("The labeling file %1 could not be read."
+		"\nSupported are all image formats readable by OpenCV.").arg(filename);
+	}
+
+	if (!errorstr.isEmpty()) {
+		QMessageBox::critical(this, "Error loading labels", errorstr);
 		return;
 	}
 	if (labeling().rows != full_image->height || labeling().cols != full_image->width) {
@@ -1017,17 +1027,28 @@ void ViewerWindow::loadLabeling(std::string filename)
 
 void ViewerWindow::loadSeeds()
 {
-	std::string filename = QFileDialog::getOpenFileName
-						   (this, "Open Seed Image File").toStdString();
-	if (filename.empty())
+	QString filename = QFileDialog::getOpenFileName
+						   (this, "Open Seed Image File");
+	if (filename.isEmpty())
 		return;
-	cv::Mat1s seeding = cv::imread(filename, 0);
+	cv::Mat1s seeding;
+	QString errorstr;
+	try {
+		seeding = cv::imread(filename.toStdString(), 0);
+	} catch (cv::Exception &e) {
+		errorstr = QString("The seed file could not be read.\nReason: %1"
+		"\nSupported are all image formats readable by OpenCV.").arg(e.what());
+	}
 	if (seeding.empty()) {
-		QMessageBox::critical(this, "Error loading seeds",
-						"The seed image could not be read."
-						"\nSupported are all image formats readable by OpenCV.");
+		errorstr = QString("The seed file %1 could not be read."
+		"\nSupported are all image formats readable by OpenCV.").arg(filename);
+	}
+
+	if (!errorstr.isEmpty()) {
+		QMessageBox::critical(this, "Error loading seeds", errorstr);
 		return;
 	}
+
 	if (seeding.rows != full_image->height || seeding.cols != full_image->width) {
 		QMessageBox::critical(this, "Seed image does not match",
 				QString("The seed image has wrong proportions."
@@ -1048,16 +1069,24 @@ void ViewerWindow::loadSeeds()
 
 void ViewerWindow::saveLabeling()
 {
-	std::string filename = QFileDialog::getSaveFileName
-						   (this, "Save Labeling as Image File").toStdString();
-	if (filename.empty())
+	QString filename = QFileDialog::getSaveFileName
+						   (this, "Save Labeling as Image File");
+	if (filename.isEmpty())
 		return;
 	vole::Labeling labeling(bandView->labels);
 	cv::Mat3b output = labeling.bgr();
-	bool success = cv::imwrite(filename, output);
-	if (!success)
-		QMessageBox::critical(this, QString("Could not write output file."),
-							QString("See console for OpenCV error output."));
+	QString errorstr;
+	try {
+		bool success = cv::imwrite(filename.toStdString(), output);
+		if (!success)
+			errorstr = QString("Could not write to %1!").arg(filename);
+	} catch (cv::Exception &e) {
+		errorstr = QString("Could not write to %1!\nReason: %2")
+						  .arg(filename).arg(QString(e.what()));
+	}
+
+	if (!errorstr.isEmpty())
+		QMessageBox::critical(this, "Error writing file", errorstr);
 }
 
 void ViewerWindow::ROITrigger()

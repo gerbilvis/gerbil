@@ -1,7 +1,6 @@
 #include "viewerwindow.h"
-//#include "view3d.h"
-#include <qapplication.h>
-#include <qfiledialog.h>
+#include <QApplication>
+#include <QFileDialog>
 #include <iostream>
 #include <string>
 
@@ -25,7 +24,7 @@ int main(int argc, char **argv)
 		filename = argv[1];
 	}
 
-	std::string labelfile;
+	QString labelfile;
 	if (argc >= 3)
 		labelfile = argv[2];
 
@@ -39,7 +38,7 @@ int main(int argc, char **argv)
 	window.show();
 	
 	// load labels
-	if (!labelfile.empty())
+	if (!labelfile.isEmpty())
 		window.loadLabeling(labelfile);
 	
 /*	// fancy 3d viewer

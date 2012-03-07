@@ -58,7 +58,7 @@ public slots:
 	void applyNormUserRange(bool update = true);
 	void clampNormUserRange();
 
-	void loadLabeling(std::string filename = "");
+	void loadLabeling(QString filename = "");
 	void loadSeeds();
 	void saveLabeling();
 	// add new label (color)
