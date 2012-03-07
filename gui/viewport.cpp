@@ -10,6 +10,7 @@
 #include <stopwatch.h>
 #include <iostream>
 #include <cmath>
+#include <QMessageBox>
 #include <QtCore>
 #include <QPaintEvent>
 #include <QRect>
@@ -121,12 +122,30 @@ void Viewport::prepareLines()
 
 	makeCurrent();
 	vb.setUsagePattern(QGLBuffer::StaticDraw);
-	if (!vb.create()) std::cerr << "could not create vb" << std::endl;
-	if (!vb.bind()) std::cerr << "could not bind vb" << std::endl;
+	bool success = vb.create();
+	if (!success) {
+		QMessageBox::critical(this, "Drawing Error",
+							  "Your GPU does not support vertex buffers."
+							  "\nWe're doomed.");
+		return;
+	}
+	success = vb.bind();
+	if (!success) {
+		QMessageBox::critical(this, "Drawing Error",
+			"Drawing spectra cannot be continued. Please notify us about this"
+			" problem, state error code 1 and what you did before it occured. Send an email to"
+			" johannes.jordan@cs.fau.de. Thank you for your help!");
+		return;
+	}
 	vb.allocate(total * dimensionality * sizeof(GLfloat) * 2);
 	GLfloat *varr = (GLfloat*)vb.map(QGLBuffer::WriteOnly);
-
-	assert(varr);
+	if (!varr) {
+		QMessageBox::critical(this, "Drawing Error",
+			"Drawing spectra cannot be continued. Please notify us about this"
+			" problem, state error code 2 and what you did before it occured. Send an email to"
+			" johannes.jordan@cs.fau.de. Thank you for your help!");
+		return;
+	}
 
 	int vidx = 0;
 	for (unsigned int i = 0; i < total; ++i) {
@@ -187,8 +206,14 @@ void Viewport::drawBins(QPainter &painter)
 	glClear(GL_DEPTH_BUFFER_BIT);
 	glDepthFunc(GL_LESS);
 	glBlendFunc(GL_SRC_ALPHA,GL_ONE_MINUS_SRC_ALPHA);
-
-	if (!vb.bind()) std::cerr << "could not bind vb" << std::endl;
+	bool success = vb.bind();
+	if (!success) {
+		QMessageBox::critical(this, "Drawing Error",
+			"Drawing spectra cannot be continued. Please notify us about this"
+			" problem, state error code 3 and what you did before it occured. Send an email to"
+			" johannes.jordan@cs.fau.de. Thank you for your help!");
+		return;
+	}
 	glEnableClientState(GL_VERTEX_ARRAY);
 	glVertexPointer(2, GL_FLOAT, 0, 0);
 	int currind = 0;
