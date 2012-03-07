@@ -101,7 +101,7 @@ void multi_img_viewer::createBins()
 {
 	assert(!labelColors.empty() && !labels.empty());
 
-	//vole::Stopwatch s("Bin creation");
+	vole::Stopwatch watch;
 
 	// make sure the whole cache is built beforehand
 	image->rebuildPixels();
@@ -109,7 +109,8 @@ void multi_img_viewer::createBins()
 	int dim = image->size();
 
 	vector<BinSet> &sets = viewport->sets;
-	sets.clear();
+	vector<std::pair<int, QByteArray> > &shuffleIdx = viewport->shuffleIdx;
+	sets.clear(); shuffleIdx.clear();
 	for (int i = 0; i < labelColors.size(); ++i)
 		sets.push_back(BinSet(labelColors[i], dim));
 
@@ -119,6 +120,7 @@ void multi_img_viewer::createBins()
 			// test the labeling
 			int label = (ignoreLabels ? 0 : lr[x]);
 			const multi_img::Pixel& pixel = (*image)(y, x);
+			BinSet &s = sets[label];
 
 			// create hash key and line array at once
 			QByteArray hashkey;
@@ -130,24 +132,27 @@ void multi_img_viewer::createBins()
 				hashkey[d] = (unsigned char)pos;
 
 				/* cache observed range; can be used for limiter init later */
-				std::pair<int, int> &range = sets[label].boundary[d];
+				std::pair<int, int> &range = s.boundary[d];
 				range.first = std::min<int>(range.first, pos);
 				range.second = std::max<int>(range.second, pos);
 			}
 
 			// put into our set
-			if (!sets[label].bins.contains(hashkey)) {
-				sets[label].bins.insert(hashkey, Bin(pixel));
+			if (!s.bins.contains(hashkey)) {
+				s.bins.insert(hashkey, Bin(pixel));
 			} else {
-				sets[label].bins[hashkey].add(pixel);
+				s.bins[hashkey].add(pixel);
 			}
+
+			// add to initial shuffle index
+			shuffleIdx.push_back(make_pair(label, hashkey));
 
 			sets[label].totalweight++;
 		}
 	}
+	watch.print_reset(" - bin creation");
 
 	/* normalize means & calculate color */
-	//vole::Stopwatch s("Bin normalization + RGB");
 	for (unsigned int i = 0; i < sets.size(); ++i) {
 		BinSet &s = sets[i];
 		QHash<QByteArray, Bin>::iterator it;
@@ -159,6 +164,11 @@ void multi_img_viewer::createBins()
 			b.rgb = QColor(color[2]*255, color[1]*255, color[0]*255);
 		}
 	}
+	watch.print_reset(" - bin normalization + RGB");
+
+	/* shuffle indices with fisher-yates */
+	std::random_shuffle(shuffleIdx.begin(), shuffleIdx.end());
+	watch.print(" - index shuffle");
 
 /* ** statistics **
 	int datapoints = 0;

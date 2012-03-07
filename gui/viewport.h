@@ -38,11 +38,9 @@ struct Bin {
 struct BinSet {
 	BinSet(const QColor &c, int size)
 		: label(c), totalweight(0.f),
-		boundary(size, std::make_pair((int)255, (int)0)),
-		vb(QGLBuffer::VertexBuffer) {}
+		boundary(size, std::make_pair((int)255, (int)0)) {}
 	QColor label;
 	QHash<QByteArray, Bin> bins;
-	QGLBuffer vb;
 	float totalweight;
 	std::vector<std::pair<int, int> > boundary;
 };
@@ -63,6 +61,8 @@ public:
 	bool gradient;
 	std::vector<BinSet> sets;
 	std::vector<QString> labels;
+	QGLBuffer vb;
+	std::vector<std::pair<int, QByteArray> > shuffleIdx;
 
 	const std::vector<multi_img::Value> *illuminant;
 	bool illuminant_correction;
