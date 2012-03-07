@@ -1008,6 +1008,9 @@ void ViewerWindow::loadLabeling(std::string filename)
 						.arg(full_image->width).arg(full_image->height));
 		return;
 	}
+	// if the user is operating within ROI, apply it to labeling as well */
+	if (roi != cv::Rect(0, 0, full_image->width, full_image->height))
+		labeling.setLabels(labeling.getLabels()(roi));
 
 	setLabels(labeling);
 }
