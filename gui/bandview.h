@@ -61,7 +61,7 @@ private:
 	
 	int labelAlpha;
 	QVector<QColor> labelColors;
-	QVector<QColor> labelColorsA; /// labelColors with 50% alpha
+	QVector<QColor> labelColorsA; /// labelColors with user-selected alpha
 	std::pair<QColor, QColor> seedColorsA;
 };
 

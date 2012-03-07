@@ -10,6 +10,7 @@
 #include <stopwatch.h>
 #include <iostream>
 #include <cmath>
+#include <QApplication>
 #include <QMessageBox>
 #include <QtCore>
 #include <QPaintEvent>
@@ -118,16 +119,16 @@ void Viewport::setLimiters(int label)
 void Viewport::prepareLines()
 {
 	vole::Stopwatch watch("prepareLines");
-	int total = shuffleIdx.size();
+	unsigned int total = shuffleIdx.size();
 
 	makeCurrent();
 	vb.setUsagePattern(QGLBuffer::StaticDraw);
 	bool success = vb.create();
 	if (!success) {
 		QMessageBox::critical(this, "Drawing Error",
-							  "Your GPU does not support vertex buffers."
-							  "\nWe're doomed.");
-		return;
+							  "Vertex Buffer Objects not supported."
+							  "\nMake sure your graphics driver supports OpenGL 1.5 or later.");
+		QApplication::quit();
 	}
 	success = vb.bind();
 	if (!success) {
@@ -212,6 +213,7 @@ void Viewport::drawBins(QPainter &painter)
 			"Drawing spectra cannot be continued. Please notify us about this"
 			" problem, state error code 3 and what you did before it occured. Send an email to"
 			" johannes.jordan@cs.fau.de. Thank you for your help!");
+		painter.endNativePainting();
 		return;
 	}
 	glEnableClientState(GL_VERTEX_ARRAY);

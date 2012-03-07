@@ -300,7 +300,6 @@ void ViewerWindow::setLabels(const vole::Labeling &labeling)
 	assert(labeling().rows == image->height && labeling().cols == image->width);
 	/* note: always update labels before updating label colors, for the case
 	   that there are less colors available than used in previous labeling */
-	//cv::Mat1s labels = labeling()(roi); TODO: hmmmm..
 	cv::Mat1s labels = labeling();
 	viewIMG->labels = viewGRAD->labels = bandView->labels = labels;
 
