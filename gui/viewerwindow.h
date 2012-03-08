@@ -2,14 +2,20 @@
 #define VIEWERWINDOW_H
 
 #include "ui_viewerwindow.h"
-#include "progress_observer.h"
-#include "commandrunner.h"
 #include <multi_img.h>
 #include <labeling.h>
 #include <illuminant.h>
+#include <progress_observer.h>
+#include "commandrunner.h"
+#ifdef WITH_SEG_MEANSHIFT
 #include <meanshift_shell.h>
+#endif
+#ifdef WITH_SEG_MEDIANSHIFT
 #include <medianshift_shell.h>
+#endif
+#ifdef WITH_SEG_PROBSHIFT
 #include <probshift_shell.h>
+#endif
 #include <graphseg.h>
 
 #include <vector>
@@ -38,19 +44,23 @@ public slots:
 	void setActive(int id); // id 0: viewIMG, 1: viewGRAD
 	void newOverlay();
 	void startGraphseg();
+#ifdef WITH_SEG_MEANSHIFT
 	void startUnsupervisedSeg(bool findKL = false);
 	void startFindKL();
 	void segmentationFinished();
 	void segmentationApply(std::map<std::string, boost::any>);
+#endif
 
 	void applyIlluminant();
 	void setI1(int index);
 	void setI1Visible(bool);
 	void bandsSliderMoved(int b);
+#ifdef WITH_SEG_MEANSHIFT
 	void usMethodChanged(int idx);
 	void usInitMethodChanged(int idx);
 	void usBandwidthMethodChanged(const QString &current);
 	void unsupervisedSegCancelled();
+#endif
 
 	void normTargetChanged();
 	void normModeSelected(int mode, bool targetchange = false);
@@ -113,7 +123,9 @@ private:
 	void initUI();
 	void initGraphsegUI();
 	void initIlluminantUI();
+#ifdef WITH_SEG_MEANSHIFT
 	void initUnsupervisedSegUI();
+#endif
 	void initNormalizationUI();
 	void updateBand();
 	void updateRGB(bool full);

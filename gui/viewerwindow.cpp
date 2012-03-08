@@ -96,7 +96,9 @@ void ViewerWindow::initUI()
 	setupUi(this);
 	initGraphsegUI();
 	initIlluminantUI();
+#ifdef WITH_SEG_MEANSHIFT
 	initUnsupervisedSegUI();
+#endif
 	initNormalizationUI();
 
 	/* more manual work to get GUI in proper shape */
@@ -111,7 +113,11 @@ void ViewerWindow::initUI()
 	// dock arrangement
 	tabifyDockWidget(labelDock, illumDock);
 	tabifyDockWidget(labelDock, normDock);
+#ifdef WITH_SEG_MEANSHIFT
 	usDock->hide();
+#else
+	usDock->deleteLater();
+#endif
 
 	/* slots & signals */
 	connect(docksButton, SIGNAL(clicked()),
@@ -234,21 +240,13 @@ void ViewerWindow::bandsSliderMoved(int b)
 		applyROI();
 }
 
+#ifdef WITH_SEG_MEANSHIFT
 void ViewerWindow::usMethodChanged(int idx)
 {
-	if (idx == 0) { /// Meanshift
-		usSkipPropWidget->setEnabled(false);
-		usSpectralWidget->setEnabled(false);
-		usMSPPWidget->setEnabled(false);
-	} else if (idx == 1) { /// Medianshift
-		usSkipPropWidget->setEnabled(true);
-		usSpectralWidget->setEnabled(false);
-		usMSPPWidget->setEnabled(false);
-	} else { /// Probabilistic Shift
-		usSkipPropWidget->setEnabled(false);
-		usSpectralWidget->setEnabled(true);
-		usMSPPWidget->setEnabled(true);
-	}
+	// idx: 0 Meanshift, 1 Medianshift, 2 Probabilistic Shift
+	usSkipPropWidget->setEnabled(idx == 1);
+	usSpectralWidget->setEnabled(idx == 2);
+	usMSPPWidget->setEnabled(idx == 2);
 }
 
 void ViewerWindow::usInitMethodChanged(int idx)
@@ -267,6 +265,7 @@ void ViewerWindow::usInitMethodChanged(int idx)
 		usInitPercentWidget->hide();
 	}
 }
+#endif
 
 bool ViewerWindow::setLabelColors(const std::vector<cv::Vec3b> &colors)
 {
@@ -675,11 +674,16 @@ void ViewerWindow::startGraphseg()
 	}
 }
 
+#ifdef WITH_SEG_MEANSHIFT
 void ViewerWindow::initUnsupervisedSegUI()
 {
 	usMethodBox->addItem("Meanshift", 0);
+#ifdef WITH_SEG_MEDIANSHIFT
 	usMethodBox->addItem("Medianshift", 1);
+#endif
+#ifdef WITH_SEG_PROBSHIFT
 	usMethodBox->addItem("Probabilistic Shift", 2);
+#endif
 	usMethodChanged(0); // set default state
 
 	usInitMethodBox->addItem("all", vole::ALL);
@@ -737,8 +741,10 @@ void ViewerWindow::initUnsupervisedSegUI()
 	usFindKLKStepBox->setValue(def.Kjump);
 	usFindKLEpsilonBox->setValue(def.epsilon);
 
+#ifdef WITH_SEG_PROBSHIFT
 	vole::ProbShiftConfig def_ps;
 	usProbShiftMSPPAlphaSpinBox->setValue(def_ps.msBwFactor);
+#endif
 }
 
 void ViewerWindow::usBandwidthMethodChanged(const QString &current) {
@@ -805,6 +811,7 @@ void ViewerWindow::startUnsupervisedSeg(bool findKL)
 		} else {
 			config.bandwidth = 0;
 		}
+#ifdef WITH_SEG_MEDIANSHIFT
 	} else if (method == 1) { // Medianshift
 		usRunner->cmd = new vole::MedianShiftShell();
 		vole::MedianShiftConfig &config = ((vole::MedianShiftShell *) usRunner->cmd)->config;
@@ -813,6 +820,8 @@ void ViewerWindow::startUnsupervisedSeg(bool findKL)
 		config.L = usLSpinBox->value();
 		config.k = usPilotKSpinBox->value();
 		config.skipprop = usSkipPropCheckBox->isChecked();
+#endif
+#ifdef WITH_SEG_PROBSHIFT
 	} else { // Probabilistic Shift
 		usRunner->cmd = new vole::ProbShiftShell();
 		vole::ProbShiftConfig &config = ((vole::ProbShiftShell *) usRunner->cmd)->config;
@@ -827,6 +836,7 @@ void ViewerWindow::startUnsupervisedSeg(bool findKL)
 		config.maxClusts = usSpectralMaxBox->value();
 		config.useMeanShift = usProbShiftMSPPCheckBox->isChecked();
 		config.msBwFactor = usProbShiftMSPPAlphaSpinBox->value();
+#endif
 	}
 
 	// connect runner with progress bar, cancel button and finish-slot
@@ -891,6 +901,7 @@ void ViewerWindow::segmentationApply(std::map<std::string, boost::any> output) {
 		usFoundKLWidget->show();
 	}
 }
+#endif // WITH_SEG_MEANSHIFT
 
 void ViewerWindow::setActive(int id)
 {
