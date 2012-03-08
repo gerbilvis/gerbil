@@ -37,8 +37,8 @@ void multi_img::read_image(const string& filename)
 	}
 }
 
-struct hackstream : public ifstream {
-	hackstream(const char* in, ios_base::openmode mode)	: ifstream(in, mode) {}
+struct hackstream : public std::ifstream {
+	hackstream(const char* in, std::ios_base::openmode mode)	: ifstream(in, mode) {}
 	void readus(unsigned short &d)
 	{	read((char*)&d, sizeof(unsigned short));	}
 	void readui(unsigned int &d)
