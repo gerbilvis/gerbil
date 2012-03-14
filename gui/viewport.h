@@ -150,6 +150,10 @@ private:
 	bool drawMeans;
 	// drawing mode labelcolor vs. sRGB color
 	bool drawRGB;
+	// draw with antialiasing
+	bool drawAA;
+	// did we draw with AA lately?
+	bool currentAA;
 
 	std::vector<QString> yaxis;
 	int yaxisWidth;

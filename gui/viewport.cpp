@@ -27,8 +27,8 @@ Viewport::Viewport(QWidget *parent)
 	  overlayMode(false),
 	  zoom(1.), shift(0), lasty(-1), holdSelection(false), activeLimiter(0),
 	  cacheValid(false), clearView(false), implicitClearView(false),
-	  drawMeans(true), drawRGB(false), yaxisWidth(0),
-	  vb(QGLBuffer::VertexBuffer)
+	  drawMeans(true), drawRGB(false), drawAA(true), currentAA(false),
+	  yaxisWidth(0), vb(QGLBuffer::VertexBuffer)
 {}
 
 Viewport::~Viewport()
@@ -60,15 +60,14 @@ void Viewport::updateYAxis()
 
 	/* calculate raw numbers for y-axis */
 	std::vector<float> ycoord(amount);
-	float maximum;
+	float maximum = 0.f;
 	for (int i = 0; i < amount; ++i) {
 		float ifrac = (float)i*0.25*(float)(nbins - 1);
 		ycoord[i] = maxval - ifrac*binsize;
-		if (i == 0 || std::abs(ycoord[i]) > maximum)
-			maximum = std::abs(ycoord[i]);
+		maximum = std::max(maximum, std::abs(ycoord[i]));
 	}
 
-	if (maximum == 0)
+	if (maximum == 0.f)
 		return;
 
 	/* find order of magnitude of maximum value */
@@ -85,16 +84,15 @@ void Viewport::updateYAxis()
 		};
 	}
 
-	/* set yaxis strings and find width of y-axis legend */
+	/* set y-axis strings and find width of y-axis legend */
 	yaxis.resize(amount);
-	QPainter painter(this);
-	QRectF bbox, fbox(0.f, 0.f, 200.f, 40.f);
+	yaxisWidth = 0;
+	QFontMetrics fm(font());
 	for (int i = 0; i < amount; ++i) {
 		float value = roundAt * std::floor(ycoord[i]/roundAt + 0.5f);
 		yaxis[i] = QString().setNum(value, 'g', 3);
-		bbox |= painter.boundingRect(fbox, 0, yaxis[i]);
+		yaxisWidth = std::max(yaxisWidth, fm.width(yaxis[i]));
 	}
-	yaxisWidth = bbox.width();
 }
 
 void Viewport::setLimiters(int label)
@@ -282,7 +280,7 @@ void Viewport::drawBins(QPainter &painter)
 
 		//painter.setPen(color);
 		//painter.drawPolyline(b.points);
-		glColor4f(color.redF(), color.greenF(), color.blueF(), color.alphaF());
+		qglColor(color);
 		glDrawArrays(GL_LINE_STRIP, currind, dimensionality);
 		currind += dimensionality;
 	}
@@ -411,7 +409,14 @@ void Viewport::drawRegular()
 	QPainter painter(this);
 	QBrush background(QColor(15, 7, 15));
 	painter.fillRect(rect(), background);
-	painter.setRenderHint(QPainter::Antialiasing);
+	currentAA = false;
+	if (drawAA) {
+		// draw without AA while user is messing around with mouse
+		if (QApplication::mouseButtons() == Qt::NoButton || !active) {
+			painter.setRenderHint(QPainter::Antialiasing);
+			currentAA = true;
+		}
+	}
 
 	drawLegend(painter);
 
@@ -576,6 +581,9 @@ void Viewport::mouseReleaseEvent(QMouseEvent * event)
 		this->setCursor(Qt::ArrowCursor);
 		lasty = -1;
 	}
+
+	if (drawAA && !currentAA)
+		update();
 }
 
 void Viewport::wheelEvent(QWheelEvent *event)
@@ -638,6 +646,10 @@ void Viewport::keyPressEvent(QKeyEvent *event)
 		}
 		break;
 	case Qt::Key_Space:
+		drawAA = !drawAA;
+		update();
+		break;
+	case Qt::Key_M:
 		drawMeans = !drawMeans;
 		prepareLines();
 		update();
