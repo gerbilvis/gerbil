@@ -85,8 +85,8 @@ void ViewerWindow::applyROI()
 	viewIMG->setImage(image);
 	viewGRAD->setImage(gradient, true);
 
-	bandDock->setEnabled(true);
-	rgbDock->setEnabled(true);
+	bandDock->widget()->setEnabled(true);
+	rgbDock->widget()->setEnabled(true);
 	mainStack->setCurrentIndex(0);
 }
 
@@ -104,8 +104,8 @@ void ViewerWindow::initUI()
 	/* more manual work to get GUI in proper shape */
 	graphsegWidget->hide();
 
-	bandDock->setDisabled(true);
-	rgbDock->setDisabled(true);
+	bandDock->widget()->setDisabled(true);
+	rgbDock->widget()->setDisabled(true);
 
 	activeViewer = viewIMG;
 	viewIMG->setActive();
@@ -901,6 +901,15 @@ void ViewerWindow::segmentationApply(std::map<std::string, boost::any> output) {
 		usFoundKLWidget->show();
 	}
 }
+#else // method stubs as using define in header does not work (moc problem?)
+void ViewerWindow::startUnsupervisedSeg(bool findKL) {}
+void ViewerWindow::startFindKL() {}
+void ViewerWindow::segmentationFinished() {}
+void ViewerWindow::segmentationApply(std::map<std::string, boost::any>) {}
+void ViewerWindow::usMethodChanged(int idx) {}
+void ViewerWindow::usInitMethodChanged(int idx) {}
+void ViewerWindow::usBandwidthMethodChanged(const QString &current) {}
+void ViewerWindow::unsupervisedSegCancelled() {}
 #endif // WITH_SEG_MEANSHIFT
 
 void ViewerWindow::setActive(int id)

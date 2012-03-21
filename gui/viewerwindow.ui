@@ -1261,6 +1261,9 @@
              <property name="text">
               <string>use LSH</string>
              </property>
+             <property name="checked">
+              <bool>true</bool>
+             </property>
             </widget>
            </item>
            <item>

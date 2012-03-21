@@ -19,7 +19,7 @@ BandView::BandView(QWidget *parent)
 	  cacheValid(false), cursor(-1, -1), lastcursor(-1, -1), curLabel(1),
 	  overlay(0), showLabels(true), seedMode(false), labelAlpha(63),
 	  seedColorsA(std::make_pair(
-			  QColor(255, 0, 0, labelAlpha), QColor(255, 255, 0, labelAlpha)))
+            QColor(255, 0, 0, labelAlpha), QColor(255, 255, 0, labelAlpha)))
 {}
 
 void BandView::refresh()
@@ -60,7 +60,7 @@ void BandView::paintEvent(QPaintEvent *ev)
 {
 	QPainter painter(this);
 	if (!pixmap) {
-		painter.fillRect(this->rect(), QColor(Qt::lightGray));
+		painter.fillRect(this->rect(), QBrush(Qt::gray, Qt::BDiagPattern));
 		return;
 	}
 	if (!cacheValid)

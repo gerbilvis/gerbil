@@ -43,24 +43,23 @@ public slots:
 	void remFromLabel() { labelmask(true); }
 	void setActive(int id); // id 0: viewIMG, 1: viewGRAD
 	void newOverlay();
+
 	void startGraphseg();
-#ifdef WITH_SEG_MEANSHIFT
+
 	void startUnsupervisedSeg(bool findKL = false);
 	void startFindKL();
 	void segmentationFinished();
 	void segmentationApply(std::map<std::string, boost::any>);
-#endif
 
 	void applyIlluminant();
 	void setI1(int index);
 	void setI1Visible(bool);
 	void bandsSliderMoved(int b);
-#ifdef WITH_SEG_MEANSHIFT
+
 	void usMethodChanged(int idx);
 	void usInitMethodChanged(int idx);
 	void usBandwidthMethodChanged(const QString &current);
 	void unsupervisedSegCancelled();
-#endif
 
 	void normTargetChanged();
 	void normModeSelected(int mode, bool targetchange = false);

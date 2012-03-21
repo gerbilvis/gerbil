@@ -104,8 +104,8 @@ void Viewport::setLimiters(int label)
 			int h = hover;
 			limiters[b] = std::make_pair(h, h);
 		}
-	} else {
-		if (sets[label].totalweight > 0.f) { // label holds data
+	} else {                                 // label holds data
+		if (sets.size() > label && sets[label].totalweight > 0.f) {
 			// use range from this label
 			const std::vector<std::pair<int, int> > &b = sets[label].boundary;
 			limiters.assign(b.begin(), b.end());
@@ -285,7 +285,8 @@ void Viewport::drawBins(QPainter &painter)
 		currind += dimensionality;
 	}
 	vb.release();
-	painter.endNativePainting();
+		glDisable(GL_DEPTH_TEST);
+		painter.endNativePainting();
 }
 
 void Viewport::drawAxesFg(QPainter &painter)
@@ -352,7 +353,7 @@ void Viewport::drawAxesBg(QPainter &painter)
 	if (illuminant) {
 		QPolygonF poly2 = modelview.map(poly);
 		poly2.translate(0., -5.);
-		painter.restore();
+				painter.restore();
 		QBrush brush(QColor(32, 32, 32), Qt::Dense3Pattern);
 		painter.setBrush(brush);
 		painter.setPen(Qt::NoPen);
@@ -360,8 +361,8 @@ void Viewport::drawAxesBg(QPainter &painter)
 		painter.setPen(Qt::white);
 		poly2.remove(dimensionality, 2);
 		painter.drawPolyline(poly2);
-		painter.save();
-		painter.setWorldTransform(modelview);
+				painter.save();
+				painter.setWorldTransform(modelview);
 	}
 }
 
@@ -420,10 +421,14 @@ void Viewport::drawRegular()
 
 	drawLegend(painter);
 
+		// needed in drawAxesBg
+		painter.save();
 	painter.setWorldTransform(modelview);
 	drawAxesBg(painter);
 	drawBins(painter);
 	drawAxesFg(painter);
+		// if you save and not restore, qt will lament about it
+		painter.restore();
 }
 
 void Viewport::drawOverlay()

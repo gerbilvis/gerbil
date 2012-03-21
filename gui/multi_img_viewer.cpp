@@ -140,12 +140,11 @@ void multi_img_viewer::createBins()
 			// put into our set
 			if (!s.bins.contains(hashkey)) {
 				s.bins.insert(hashkey, Bin(pixel));
+				// add to initial shuffle index
+				shuffleIdx.push_back(make_pair(label, hashkey));
 			} else {
 				s.bins[hashkey].add(pixel);
 			}
-
-			// add to initial shuffle index
-			shuffleIdx.push_back(make_pair(label, hashkey));
 
 			sets[label].totalweight++;
 		}

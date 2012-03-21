@@ -47,7 +47,7 @@ void ScaledView::paintEvent(QPaintEvent *ev)
 {
 	QPainter painter(this);
 	if (!pixmap) {
-		painter.fillRect(this->rect(), QColor(Qt::lightGray));
+		painter.fillRect(this->rect(), QBrush(Qt::gray, Qt::BDiagPattern));
 		return;
 	}
 
