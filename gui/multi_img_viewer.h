@@ -33,6 +33,7 @@ public slots:
 	void updateMask(int dim);
 	void setImage(const multi_img *image, bool gradient = false);
 	void setIlluminant(const std::vector<multi_img::Value> *, bool for_real);
+	void toggleFold();
 	void toggleLabeled(bool toggle);
 	void toggleUnlabeled(bool toggle);
 	void toggleLabels(bool toggle);

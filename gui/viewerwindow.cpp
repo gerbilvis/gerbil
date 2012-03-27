@@ -51,9 +51,9 @@ void ViewerWindow::applyROI()
 	image = new multi_img(*full_image, roi);
 	}
 
-	multi_img log(*image);
-	log.apply_logarithm();
-	gradient = new multi_img(log.spec_gradient());
+	gradient = new multi_img(*image);
+	gradient->apply_logarithm();
+	*gradient = gradient->spec_gradient();
 
 	// calculate new norm ranges inside ROI
 	for (int i = 0; i < 2; ++i) {

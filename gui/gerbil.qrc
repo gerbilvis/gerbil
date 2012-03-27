@@ -18,4 +18,9 @@
         <file alias="mainicon2">resources/mainicon.png</file>
         <file alias="logoicon">logo/icon.png</file>
     </qresource>
+    <qresource prefix="/basic">
+        <file alias="arrow-down">resources/arrow-down.png</file>
+        <file alias="arrow-downright">resources/arrow-downright.png</file>
+        <file alias="arrow-right">resources/arrow-right.png</file>
+    </qresource>
 </RCC>

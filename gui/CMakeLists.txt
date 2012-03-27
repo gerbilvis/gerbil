@@ -14,7 +14,7 @@ vole_compile_library(
 	bandview
 	roiview
 	commandrunner
-#	view3d
+	foldingbar
 )
 
 vole_moc_library(
@@ -25,12 +25,13 @@ vole_moc_library(
 	bandview.h
 	roiview.h
 	commandrunner.h
-#	view3d.h
+	foldingbar.h
 )
 
 vole_ui_library(
 	multi_img_viewer.ui
 	viewerwindow.ui
+	foldingbar.ui
 )
 
 vole_add_resources(

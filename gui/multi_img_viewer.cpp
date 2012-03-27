@@ -1,4 +1,4 @@
-/*	
+/*
 	Copyright(c) 2010 Johannes Jordan <johannes.jordan@cs.fau.de>.
 
 	This file may be licensed under the terms of of the GNU General Public
@@ -37,6 +37,24 @@ multi_img_viewer::multi_img_viewer(QWidget *parent)
 			this, SLOT(updateMask(int)));
 
 	setAlpha(alphaSlider->value());
+
+	connect(topBar, SIGNAL(toggleFold()),
+			this, SLOT(toggleFold()));
+}
+
+void multi_img_viewer::toggleFold()
+{
+	if (payload->isVisible()) {
+		payload->setHidden(true);
+		topBar->fold();
+		setSizePolicy(QSizePolicy::Preferred, QSizePolicy::Preferred);
+	} else {
+		payload->setShown(true);
+		topBar->unfold();
+		QSizePolicy pol(QSizePolicy::Preferred, QSizePolicy::Expanding);
+		pol.setVerticalStretch(1);
+		setSizePolicy(pol);
+	}
 }
 
 void multi_img_viewer::setImage(const multi_img *img, bool gradient)
@@ -48,8 +66,9 @@ void multi_img_viewer::setImage(const multi_img *img, bool gradient)
 	maskholder = multi_img::Mask(image->height, image->width, (uchar)0);
 
 	QString title("<b>%1 Spectrum</b> [%2..%3]");
-	titleLabel->setText(title.arg(gradient ? "Spectral Gradient" : "Image")
-						.arg(image->minval).arg(image->maxval));
+	topBar->setTitle(title
+						  .arg(gradient ? "Spectral Gradient" : "Image")
+						  .arg(image->minval).arg(image->maxval));
 
 	viewport->gradient = gradient;
 	viewport->dimensionality = image->size();
