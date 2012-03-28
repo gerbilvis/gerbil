@@ -25,6 +25,10 @@ multi_img_viewer::multi_img_viewer(QWidget *parent)
 			this, SLOT(rebuild(int)));
 	connect(alphaSlider, SIGNAL(valueChanged(int)),
 			this, SLOT(setAlpha(int)));
+	connect(alphaSlider, SIGNAL(sliderPressed()),
+			viewport, SLOT(startNoHQ()));
+	connect(alphaSlider, SIGNAL(sliderReleased()),
+			viewport, SLOT(endNoHQ()));
 	connect(limiterButton, SIGNAL(toggled(bool)),
 			this, SLOT(toggleLimiters(bool)));
 	connect(limiterMenuButton, SIGNAL(clicked()),

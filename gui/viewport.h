@@ -16,6 +16,7 @@
 #include <vector>
 #include <QHash>
 #include <QLabel>
+#include <QTimer>
 #include <limits>
 
 struct Bin {
@@ -84,6 +85,10 @@ public slots:
 	{ drawRGB = enabled; update(); }
 	void activate();
 
+	// entry and exit point of user interaction with quick drawing
+	void startNoHQ();
+	void endNoHQ();
+
 signals:
 	void bandSelected(int dim, bool gradient);
 	void newOverlay(int dim);
@@ -151,9 +156,13 @@ private:
 	// drawing mode labelcolor vs. sRGB color
 	bool drawRGB;
 	// draw with antialiasing
-	bool drawAA;
+	bool drawHQ;
 	// did we draw with AA lately?
-	bool currentAA;
+	bool isHQ;
+	// do we want to draw with AA right now?
+	bool shouldHQ;
+	// this timer will re-enable high quality drawing after resize events
+	QTimer resizeTimer;
 
 	std::vector<QString> yaxis;
 	int yaxisWidth;

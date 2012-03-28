@@ -27,9 +27,14 @@ Viewport::Viewport(QWidget *parent)
 	  overlayMode(false),
 	  zoom(1.), shift(0), lasty(-1), holdSelection(false), activeLimiter(0),
 	  cacheValid(false), clearView(false), implicitClearView(false),
-	  drawMeans(true), drawRGB(false), drawAA(true), currentAA(false),
+	  drawMeans(true), drawRGB(false), drawHQ(true),
+	  isHQ(false), shouldHQ(true),
 	  yaxisWidth(0), vb(QGLBuffer::VertexBuffer)
-{}
+{
+	resizeTimer.setSingleShot(true);
+	resizeTimer.setInterval(250);
+	connect(&resizeTimer, SIGNAL(timeout()), this, SLOT(endNoHQ()));
+}
 
 Viewport::~Viewport()
 {
@@ -410,13 +415,14 @@ void Viewport::drawRegular()
 	QPainter painter(this);
 	QBrush background(QColor(15, 7, 15));
 	painter.fillRect(rect(), background);
-	currentAA = false;
-	if (drawAA) {
-		// draw without AA while user is messing around with mouse
-		if (QApplication::mouseButtons() == Qt::NoButton || !active) {
-			painter.setRenderHint(QPainter::Antialiasing);
-			currentAA = true;
-		}
+
+	isHQ = false;
+/*	// draw without AA while user is messing around with mouse
+	if (QApplication::mouseButtons() != Qt::NoButton && hasFocus())
+		shouldHQ = false;*/
+	if (drawHQ && shouldHQ) {
+		painter.setRenderHint(QPainter::Antialiasing);
+		isHQ = true;
 	}
 
 	drawLegend(painter);
@@ -459,8 +465,6 @@ void Viewport::activate()
 
 void Viewport::paintEvent(QPaintEvent *event)
 {
-	//vole::Stopwatch s("Viewport painting");
-
 	// return early if no data present. other variables may not be initialized
 	if (sets.empty())
 		return;
@@ -482,6 +486,10 @@ void Viewport::paintEvent(QPaintEvent *event)
 
 void Viewport::resizeEvent(QResizeEvent *)
 {
+	// quick drawing during resize
+	startNoHQ();
+	resizeTimer.start();
+
 	updateModelview();
 }
 
@@ -567,6 +575,7 @@ void Viewport::mouseMoveEvent(QMouseEvent *event)
 void Viewport::mousePressEvent(QMouseEvent *event)
 {
 	activate(); // give ourselves active role if we don't have it yet
+	startNoHQ();
 
 	if (event->button() == Qt::RightButton) {
 		this->setCursor(Qt::ClosedHandCursor);
@@ -587,8 +596,7 @@ void Viewport::mouseReleaseEvent(QMouseEvent * event)
 		lasty = -1;
 	}
 
-	if (drawAA && !currentAA)
-		update();
+	endNoHQ();
 }
 
 void Viewport::wheelEvent(QWheelEvent *event)
@@ -651,7 +659,7 @@ void Viewport::keyPressEvent(QKeyEvent *event)
 		}
 		break;
 	case Qt::Key_Space:
-		drawAA = !drawAA;
+		drawHQ = !drawHQ;
 		update();
 		break;
 	case Qt::Key_M:
@@ -673,6 +681,18 @@ void Viewport::killHover()
 	if (!implicitClearView)
 		// make sure the drawing happens before next overlay cache update
 		repaint();
+}
+
+void Viewport::startNoHQ()
+{
+	shouldHQ = false;
+}
+
+void Viewport::endNoHQ()
+{
+	shouldHQ = true; // make sure we draw high quality again
+	if (drawHQ && !isHQ)
+		update();
 }
 
 bool Viewport::updateLimiter(int dim, int bin)
