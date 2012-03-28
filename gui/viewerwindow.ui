@@ -2,14 +2,6 @@
 <ui version="4.0">
  <class>ViewerWindow</class>
  <widget class="QMainWindow" name="ViewerWindow">
-  <property name="geometry">
-   <rect>
-    <x>0</x>
-    <y>0</y>
-    <width>1284</width>
-    <height>1037</height>
-   </rect>
-  </property>
   <property name="windowTitle">
    <string>Multispectral Image Viewer</string>
   </property>

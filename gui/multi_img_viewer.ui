@@ -2,14 +2,6 @@
 <ui version="4.0">
  <class>multi_img_viewer</class>
  <widget class="QWidget" name="multi_img_viewer">
-  <property name="geometry">
-   <rect>
-    <x>0</x>
-    <y>0</y>
-    <width>142</width>
-    <height>465</height>
-   </rect>
-  </property>
   <layout class="QVBoxLayout" name="verticalLayout_2">
    <property name="leftMargin">
     <number>0</number>

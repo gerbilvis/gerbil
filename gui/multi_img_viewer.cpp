@@ -1,5 +1,5 @@
 /*
-	Copyright(c) 2010 Johannes Jordan <johannes.jordan@cs.fau.de>.
+	Copyright(c) 2012 Johannes Jordan <johannes.jordan@cs.fau.de>.
 
 	This file may be licensed under the terms of of the GNU General Public
 	License, version 3, as published by the Free Software Foundation. You can
@@ -124,7 +124,7 @@ void multi_img_viewer::createBins()
 {
 	assert(!labelColors.empty() && !labels.empty());
 
-	vole::Stopwatch watch;
+	// vole::Stopwatch watch;
 
 	// make sure the whole cache is built beforehand
 	image->rebuildPixels();
@@ -172,7 +172,7 @@ void multi_img_viewer::createBins()
 			sets[label].totalweight++;
 		}
 	}
-	watch.print_reset(" - bin creation");
+	//watch.print_reset(" - bin creation");
 
 	/* normalize means & calculate color */
 	for (unsigned int i = 0; i < sets.size(); ++i) {
@@ -186,11 +186,11 @@ void multi_img_viewer::createBins()
 			b.rgb = QColor(color[2]*255, color[1]*255, color[0]*255);
 		}
 	}
-	watch.print_reset(" - bin normalization + RGB");
+	//watch.print_reset(" - bin normalization + RGB");
 
 	/* shuffle indices with fisher-yates */
 	std::random_shuffle(shuffleIdx.begin(), shuffleIdx.end());
-	watch.print(" - index shuffle");
+	//watch.print(" - index shuffle");
 
 /* ** statistics **
 	int datapoints = 0;
