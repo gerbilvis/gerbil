@@ -27,12 +27,11 @@ Viewport::Viewport(QWidget *parent)
 	  overlayMode(false),
 	  zoom(1.), shift(0), lasty(-1), holdSelection(false), activeLimiter(0),
 	  cacheValid(false), clearView(false), implicitClearView(false),
-	  drawMeans(true), drawRGB(false), drawHQ(true),
-	  isHQ(false), shouldHQ(true),
+	  drawMeans(true), drawRGB(false), drawHQ(true), drawingState(HIGH_QUALITY),
 	  yaxisWidth(0), vb(QGLBuffer::VertexBuffer)
 {
 	resizeTimer.setSingleShot(true);
-	resizeTimer.setInterval(250);
+	resizeTimer.setInterval(150);
 	connect(&resizeTimer, SIGNAL(timeout()), this, SLOT(endNoHQ()));
 }
 
@@ -229,7 +228,10 @@ void Viewport::drawBins(QPainter &painter)
 	int start = ((showUnlabeled || ignoreLabels == 1) ? 0 : 1);
 	int end = (showLabeled ? sets.size() : 1);
 
-	for (unsigned int i = 0; i < shuffleIdx.size(); ++i) {
+	int total = shuffleIdx.size();
+	if (drawingState == RESIZE)
+		total /= 10;
+	for (unsigned int i = 0; i < total; ++i) {
 		std::pair<int, QByteArray> &idx = shuffleIdx[i];
 		if (idx.first < start || idx.first >= end) {
 			currind += dimensionality;
@@ -416,13 +418,12 @@ void Viewport::drawRegular()
 	QBrush background(QColor(15, 7, 15));
 	painter.fillRect(rect(), background);
 
-	isHQ = false;
-/*	// draw without AA while user is messing around with mouse
-	if (QApplication::mouseButtons() != Qt::NoButton && hasFocus())
-		shouldHQ = false;*/
-	if (drawHQ && shouldHQ) {
+	if (drawingState == HIGH_QUALITY) {
 		painter.setRenderHint(QPainter::Antialiasing);
-		isHQ = true;
+	} else {
+		// even if we had HQ last time, this time it will be dirty!
+		if (drawingState == HIGH_QUALITY_QUICK)
+			drawingState = QUICK;
 	}
 
 	drawLegend(painter);
@@ -487,7 +488,7 @@ void Viewport::paintEvent(QPaintEvent *event)
 void Viewport::resizeEvent(QResizeEvent *)
 {
 	// quick drawing during resize
-	startNoHQ();
+	startNoHQ(true);
 	resizeTimer.start();
 
 	updateModelview();
@@ -683,16 +684,28 @@ void Viewport::killHover()
 		repaint();
 }
 
-void Viewport::startNoHQ()
+void Viewport::startNoHQ(bool resize)
 {
-	shouldHQ = false;
+	if (resize)
+		drawingState = RESIZE;
+	else
+		drawingState = (drawingState == HIGH_QUALITY ? HIGH_QUALITY_QUICK : QUICK);
 }
 
 void Viewport::endNoHQ()
 {
-	shouldHQ = true; // make sure we draw high quality again
-	if (drawHQ && !isHQ)
+	if (drawHQ && (drawingState == QUICK || drawingState == RESIZE)) {
+		// we need to redraw, as last drawing was not HQ
+		drawingState = HIGH_QUALITY;
 		update();
+	} else if (!drawHQ && drawingState == RESIZE) {
+		// we need to redraw, as last drawing was for poor resize quality
+		drawingState = QUICK;
+		update();
+	} else {
+		// we don't need to redraw but just make sure the state is right
+		drawingState = (drawHQ ? HIGH_QUALITY : QUICK);
+	}
 }
 
 bool Viewport::updateLimiter(int dim, int bin)

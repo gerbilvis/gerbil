@@ -86,7 +86,7 @@ public slots:
 	void activate();
 
 	// entry and exit point of user interaction with quick drawing
-	void startNoHQ();
+	void startNoHQ(bool resize = false);
 	void endNoHQ();
 
 signals:
@@ -157,10 +157,13 @@ private:
 	bool drawRGB;
 	// draw with antialiasing
 	bool drawHQ;
-	// did we draw with AA lately?
-	bool isHQ;
-	// do we want to draw with AA right now?
-	bool shouldHQ;
+
+	enum {
+		HIGH_QUALITY,        // drawing HQ as usual
+		HIGH_QUALITY_QUICK,  // last update was HQ, quick updates requested
+		QUICK,               // last update not HQ, quick updates requested
+		RESIZE               // resize updates requested (last update invalid)
+	} drawingState;
 	// this timer will re-enable high quality drawing after resize events
 	QTimer resizeTimer;
 
