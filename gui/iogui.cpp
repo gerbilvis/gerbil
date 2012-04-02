@@ -30,14 +30,14 @@ bool IOGui::selectFilename(bool writing, const QString &name)
 	return (!filename.isEmpty());
 }
 
-cv::Mat IOGui::readFile(bool type, int height, int width)
+cv::Mat IOGui::readFile(int flags, int height, int width)
 {
 	assert(!filename.isEmpty());
 
 	cv::Mat image;
 	QString errorstr;
 	try {
-		image = cv::imread(filename.toStdString(), type);
+		image = cv::imread(filename.toStdString(), flags);
 	} catch (cv::Exception &e) {
 		errorstr = QString("The %1 could not be read.\nReason: %2"
 		"\nSupported are all image formats readable by OpenCV.")
@@ -65,12 +65,13 @@ cv::Mat IOGui::readFile(bool type, int height, int width)
 						.arg(shortdesc).arg(width).arg(height));
 		return cv::Mat();
 	}
+	return image;
 }
 
-cv::Mat IOGui::readFile(const QString &name, bool type, int height, int width)
+cv::Mat IOGui::readFile(const QString &name, int flags, int height, int width)
 {
 	bool success = selectFilename(false, name);
-	return (success ? readFile(type, height, width) : cv::Mat());
+	return (success ? readFile(flags, height, width) : cv::Mat());
 }
 
 void IOGui::writeFile(const cv::Mat &output)

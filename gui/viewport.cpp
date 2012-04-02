@@ -111,7 +111,7 @@ void Viewport::setLimiters(int label)
 			limiters[b] = std::make_pair(h, h);
 		}
 	} else {                       // label holds data
-		if (sets.size() > label && sets[label].totalweight > 0.f) {
+		if ((int)sets.size() > label && sets[label].totalweight > 0.f) {
 			// use range from this label
 			const std::vector<std::pair<int, int> > &b = sets[label].boundary;
 			limiters.assign(b.begin(), b.end());
@@ -231,7 +231,7 @@ void Viewport::drawBins(QPainter &painter)
 	int start = ((showUnlabeled || ignoreLabels == 1) ? 0 : 1);
 	int end = (showLabeled ? sets.size() : 1);
 
-	int total = shuffleIdx.size();
+	unsigned int total = shuffleIdx.size();
 	if (drawingState == RESIZE)
 		total /= 10;
 	for (unsigned int i = 0; i < total; ++i) {
@@ -720,7 +720,6 @@ void Viewport::startNoHQ(bool resize)
 
 void Viewport::endNoHQ()
 {
-	std::cerr << "endnohq: " << (gradient ? "grad" : "spec") << std::endl;
 	bool dirty = true;
 	if (drawingState == HIGH_QUALITY || drawingState == HIGH_QUALITY_QUICK)
 		dirty = false;

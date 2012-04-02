@@ -48,7 +48,7 @@ void ViewerWindow::applyROI()
 		multi_img tmpimg = full_image->spec_rescale(bands);
 		image = new multi_img(tmpimg, roi);
 	} else {
-	image = new multi_img(*full_image, roi);
+		image = new multi_img(*full_image, roi);
 	}
 
 	gradient = new multi_img(*image);
@@ -204,6 +204,8 @@ void ViewerWindow::initUI()
 		connect(v, SIGNAL(folding()),
 				vp, SLOT(folding()));
 		// connect same signals also to the _other_ viewport
+		connect(vp, SIGNAL(activated()),
+				v2, SLOT(setInactive()));
 		connect(v, SIGNAL(folding()),
 				vp2, SLOT(folding()));
 
@@ -224,8 +226,6 @@ void ViewerWindow::initUI()
 				vp, SLOT(killHover()));
 	}
 
-	updateRGB(true);
-
 	/// init bandsSlider
 	bandsLabel->setText(QString("%1 bands").arg(full_image->size()));
 	bandsSlider->setMaximum(full_image->size());
@@ -238,6 +238,8 @@ void ViewerWindow::initUI()
 	/// global shortcuts
 	QShortcut *scr = new QShortcut(Qt::CTRL + Qt::Key_S, this);
 	connect(scr, SIGNAL(activated()), this, SLOT(screenshot()));
+
+	updateRGB(true);
 }
 
 void ViewerWindow::bandsSliderMoved(int b)
@@ -477,9 +479,11 @@ ViewerWindow::getNormRange(normMode mode, int target,
 	case NORM_THEORETICAL:
 		// hack!
 		if (target == 0)
-			ret = std::make_pair(MULTI_IMG_MIN_DEFAULT, MULTI_IMG_MAX_DEFAULT);
+			ret = std::make_pair((multi_img::Value)MULTI_IMG_MIN_DEFAULT,
+			                     (multi_img::Value)MULTI_IMG_MAX_DEFAULT);
 		else
-			ret = std::make_pair(-log(MULTI_IMG_MAX_DEFAULT), log(MULTI_IMG_MAX_DEFAULT));
+			ret = std::make_pair((multi_img::Value)-log(MULTI_IMG_MAX_DEFAULT),
+			                     (multi_img::Value)log(MULTI_IMG_MAX_DEFAULT));
 		break;
 	default:
 		ret = cur; // keep previous setting

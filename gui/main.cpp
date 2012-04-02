@@ -41,10 +41,6 @@ int main(int argc, char **argv)
 	if (!labelfile.isEmpty())
 		window.loadLabeling(labelfile);
 	
-/*	// fancy 3d viewer
-	View3D window3d(image);
-	window3d.show();
-*/	
 	return app.exec();
 }
 

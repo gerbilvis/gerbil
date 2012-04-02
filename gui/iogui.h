@@ -12,10 +12,10 @@ public:
 
 	bool selectFilename(bool writing, const QString& filename = QString());
 
-	cv::Mat readFile(bool type = -1, int height = -1, int width = -1);
+	cv::Mat readFile(int flags = -1, int height = -1, int width = -1);
 	// convenience overload that calls selectFilename first
 	cv::Mat readFile(const QString& filename,
-					 bool type = -1, int height = -1, int width = -1);
+					 int flags = -1, int height = -1, int width = -1);
 
 	void writeFile(const cv::Mat &output);
 	// convenience overload that calls selectFilename first
