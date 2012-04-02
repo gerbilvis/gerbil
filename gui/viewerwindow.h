@@ -79,6 +79,8 @@ public slots:
 
 	void openContextMenu();
 
+	void screenshot();
+
 signals:
 	void alterLabel(const multi_img::Mask &mask, bool negative);
 	void newLabelColors(const QVector<QColor> &colors, bool changed);

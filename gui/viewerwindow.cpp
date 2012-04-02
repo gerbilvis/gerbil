@@ -1,4 +1,4 @@
-/*	
+/*
 	Copyright(c) 2010 Johannes Jordan <johannes.jordan@cs.fau.de>.
 
 	This file may be licensed under the terms of of the GNU General Public
@@ -7,6 +7,7 @@
 */
 
 #include "viewerwindow.h"
+#include "iogui.h"
 #include "commandrunner.h"
 
 #include <labeling.h>
@@ -17,9 +18,8 @@
 #include <QPainter>
 #include <QIcon>
 #include <QSignalMapper>
-#include <QMessageBox>
-#include <QFileDialog>
 #include <iostream>
+#include <QShortcut>
 
 ViewerWindow::ViewerWindow(multi_img *image, QWidget *parent)
 	: QMainWindow(parent),
@@ -231,6 +231,10 @@ void ViewerWindow::initUI()
 			this, SLOT(bandsSliderMoved(int)));
 	connect(bandsSlider, SIGNAL(sliderMoved(int)),
 			this, SLOT(bandsSliderMoved(int)));
+
+	/// global shortcuts
+	QShortcut *scr = new QShortcut(Qt::CTRL + Qt::Key_S, this);
+	connect(scr, SIGNAL(activated()), this, SLOT(screenshot()));
 }
 
 void ViewerWindow::bandsSliderMoved(int b)
@@ -1008,35 +1012,14 @@ void ViewerWindow::setI1Visible(bool visible)
 
 void ViewerWindow::loadLabeling(QString filename)
 {
-	if (filename.isEmpty())
-		filename = QFileDialog::getOpenFileName
-						   (this, "Open Labeling Image File");
-	if (filename.isEmpty())
+	IOGui io("Labeling Image File", "labeling image", this);
+	cv::Mat input = io.readFile(filename,
+								-1, full_image->width, full_image->height);
+	if (input.empty())
 		return;
-	QString errorstr;
-	vole::Labeling labeling;
-	try {
-		labeling = vole::Labeling(filename.toStdString(), false);
-	} catch (cv::Exception &e) {
-		errorstr = QString("The labeling file could not be read.\nReason: %1"
-		"\nSupported are all image formats readable by OpenCV.").arg(e.what());
-	}
-	if (labeling().empty()) {
-		errorstr = QString("The labeling file %1 could not be read."
-		"\nSupported are all image formats readable by OpenCV.").arg(filename);
-	}
 
-	if (!errorstr.isEmpty()) {
-		QMessageBox::critical(this, "Error loading labels", errorstr);
-		return;
-	}
-	if (labeling().rows != full_image->height || labeling().cols != full_image->width) {
-		QMessageBox::critical(this, "Labeling image does not match",
-				QString("The labeling image has wrong proportions."
-						"\nIt has to be of size %1x%2 for this image.")
-						.arg(full_image->width).arg(full_image->height));
-		return;
-	}
+	vole::Labeling labeling(input, false);
+
 	// if the user is operating within ROI, apply it to labeling as well */
 	if (roi != cv::Rect(0, 0, full_image->width, full_image->height))
 		labeling.setLabels(labeling.getLabels()(roi));
@@ -1046,35 +1029,11 @@ void ViewerWindow::loadLabeling(QString filename)
 
 void ViewerWindow::loadSeeds()
 {
-	QString filename = QFileDialog::getOpenFileName
-						   (this, "Open Seed Image File");
-	if (filename.isEmpty())
+	IOGui io("Seed Image File", "seed image", this);
+	cv::Mat1s seeding = io.readFile(QString(),
+									0, full_image->width, full_image->height);
+	if (seeding.empty())
 		return;
-	cv::Mat1s seeding;
-	QString errorstr;
-	try {
-		seeding = cv::imread(filename.toStdString(), 0);
-	} catch (cv::Exception &e) {
-		errorstr = QString("The seed file could not be read.\nReason: %1"
-		"\nSupported are all image formats readable by OpenCV.").arg(e.what());
-	}
-	if (seeding.empty()) {
-		errorstr = QString("The seed file %1 could not be read."
-		"\nSupported are all image formats readable by OpenCV.").arg(filename);
-	}
-
-	if (!errorstr.isEmpty()) {
-		QMessageBox::critical(this, "Error loading seeds", errorstr);
-		return;
-	}
-
-	if (seeding.rows != full_image->height || seeding.cols != full_image->width) {
-		QMessageBox::critical(this, "Seed image does not match",
-				QString("The seed image has wrong proportions."
-						"\nIt has to be of size %1x%2 for this image.")
-						.arg(full_image->width).arg(full_image->height));
-		return;
-	}
 
 	bandView->seedMap = seeding;
 
@@ -1088,24 +1047,23 @@ void ViewerWindow::loadSeeds()
 
 void ViewerWindow::saveLabeling()
 {
-	QString filename = QFileDialog::getSaveFileName
-						   (this, "Save Labeling as Image File");
-	if (filename.isEmpty())
-		return;
 	vole::Labeling labeling(bandView->labels);
 	cv::Mat3b output = labeling.bgr();
-	QString errorstr;
-	try {
-		bool success = cv::imwrite(filename.toStdString(), output);
-		if (!success)
-			errorstr = QString("Could not write to %1!").arg(filename);
-	} catch (cv::Exception &e) {
-		errorstr = QString("Could not write to %1!\nReason: %2")
-						  .arg(filename).arg(QString(e.what()));
-	}
 
-	if (!errorstr.isEmpty())
-		QMessageBox::critical(this, "Error writing file", errorstr);
+	IOGui io("Labeling As Image File", "labeling image", this);
+	io.writeFile(QString(), output);
+}
+
+void ViewerWindow::screenshot()
+{
+	// grabWindow reads from the display server, so GL parts are not missing
+	QPixmap shot = QPixmap::grabWindow(this->winId());
+
+	// we use OpenCV so the user can expect the same data type support
+	cv::Mat output = vole::QImage2Mat(shot.toImage());
+
+	IOGui io("Screenshot File", "screenshot", this);
+	io.writeFile(QString(), output);
 }
 
 void ViewerWindow::ROITrigger()

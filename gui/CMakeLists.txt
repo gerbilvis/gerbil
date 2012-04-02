@@ -15,6 +15,7 @@ vole_compile_library(
 	roiview
 	commandrunner
 	foldingbar
+	iogui
 )
 
 vole_moc_library(
@@ -26,6 +27,7 @@ vole_moc_library(
 	roiview.h
 	commandrunner.h
 	foldingbar.h
+	iogui.h
 )
 
 vole_ui_library(

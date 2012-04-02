@@ -7,6 +7,8 @@
 */
 
 #include "viewport.h"
+#include "iogui.h"
+#include "qtopencv.h"
 #include <stopwatch.h>
 #include <iostream>
 #include <cmath>
@@ -223,7 +225,8 @@ void Viewport::drawBins(QPainter &painter)
 	int currind = 0;
 
 	/* check if we implicitely have a clear view */
-	implicitClearView = (clearView || !active || (hover < 0 && !limiterMode));
+	implicitClearView = (clearView || !active || drawingState == SCREENSHOT ||
+						 (hover < 0 && !limiterMode));
 	/* make sure that viewport shows "unlabeled" in the ignore label case */
 	int start = ((showUnlabeled || ignoreLabels == 1) ? 0 : 1);
 	int end = (showLabeled ? sets.size() : 1);
@@ -298,6 +301,8 @@ void Viewport::drawBins(QPainter &painter)
 
 void Viewport::drawAxesFg(QPainter &painter)
 {
+	if (drawingState == SCREENSHOT)
+		return;
 	if (selection < 0 || selection >= dimensionality)
 		return;
 
@@ -387,16 +392,25 @@ void Viewport::drawLegend(QPainter &painter)
 
 		// only draw every xth label if we run out of space
 		int stepping = std::max<int>(1, 120 / rect.width());
-		if (i != selection) {
-			if (i % stepping || std::abs(i - selection) < stepping)
+
+		if (drawingState != SCREENSHOT) {
+			// select to draw selection and not its surroundings
+			if (i != selection) {
+				if (i % stepping || std::abs(i - selection) < stepping)
+					continue;
+			}
+		} else {
+			// select to draw only regular axis text
+			if (i % stepping)
 				continue;
 		}
 		rect.adjust(-50.f, 0.f, 50.f, 0.f);
 
-		if (i == selection)
+		bool highlight = (i == selection && drawingState != SCREENSHOT);
+		if (highlight)
 			painter.setPen(Qt::red);
 		painter.drawText(rect, Qt::AlignCenter, labels[i]);
-		if (i == selection)	// revert back color
+		if (highlight)	// revert back color
 			painter.setPen(Qt::white);
 	}
 
@@ -415,10 +429,12 @@ void Viewport::drawLegend(QPainter &painter)
 void Viewport::drawRegular()
 {
 	QPainter painter(this);
-	QBrush background(QColor(15, 7, 15));
-	painter.fillRect(rect(), background);
+	if (drawingState == SCREENSHOT)
+		painter.fillRect(rect(), Qt::black);
+	else
+		painter.fillRect(rect(), QColor(15, 7, 15));
 
-	if (drawingState == HIGH_QUALITY) {
+	if (drawingState == HIGH_QUALITY || drawingState == SCREENSHOT) {
 		painter.setRenderHint(QPainter::Antialiasing);
 	} else {
 		// even if we had HQ last time, this time it will be dirty!
@@ -464,7 +480,7 @@ void Viewport::activate()
 	}
 }
 
-void Viewport::paintEvent(QPaintEvent *event)
+void Viewport::paintEvent(QPaintEvent *)
 {
 	// return early if no data present. other variables may not be initialized
 	if (sets.empty())
@@ -624,6 +640,10 @@ void Viewport::keyPressEvent(QKeyEvent *event)
 	bool hoverdirt = false;
 
 	switch (event->key()) {
+	case Qt::Key_S:
+		screenshot();
+		break;
+
 	case Qt::Key_Plus:
 		emit addSelection();
 		break;
@@ -659,6 +679,7 @@ void Viewport::keyPressEvent(QKeyEvent *event)
 			dirty = true;
 		}
 		break;
+
 	case Qt::Key_Space:
 		drawHQ = !drawHQ;
 		update();
@@ -694,18 +715,15 @@ void Viewport::startNoHQ(bool resize)
 
 void Viewport::endNoHQ()
 {
-	if (drawHQ && (drawingState == QUICK || drawingState == RESIZE)) {
-		// we need to redraw, as last drawing was not HQ
-		drawingState = HIGH_QUALITY;
+	bool dirty = true;
+	if (drawingState == HIGH_QUALITY || drawingState == HIGH_QUALITY_QUICK)
+		dirty = false;
+	if (!drawHQ && drawingState == QUICK)
+		dirty = false;
+
+	drawingState = (drawHQ ? HIGH_QUALITY : QUICK);
+	if (dirty)
 		update();
-	} else if (!drawHQ && drawingState == RESIZE) {
-		// we need to redraw, as last drawing was for poor resize quality
-		drawingState = QUICK;
-		update();
-	} else {
-		// we don't need to redraw but just make sure the state is right
-		drawingState = (drawHQ ? HIGH_QUALITY : QUICK);
-	}
 }
 
 bool Viewport::updateLimiter(int dim, int bin)
@@ -726,4 +744,19 @@ bool Viewport::updateLimiter(int dim, int bin)
 	*target = bin;
 	activeLimiter = target;
 	return true;
+}
+
+void Viewport::screenshot()
+{
+	drawingState = SCREENSHOT;
+	repaint();
+	cacheImg = this->grabFrameBuffer();
+
+	// write out
+	cv::Mat output = vole::QImage2Mat(cacheImg);
+	IOGui io("Screenshot File", "screenshot", this);
+	io.writeFile(QString(), output);
+
+	// reset drawingState and draw again nicely
+	endNoHQ();
 }

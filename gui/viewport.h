@@ -89,6 +89,8 @@ public slots:
 	void startNoHQ(bool resize = false);
 	void endNoHQ();
 
+	void screenshot();
+
 signals:
 	void bandSelected(int dim, bool gradient);
 	void newOverlay(int dim);
@@ -162,7 +164,8 @@ private:
 		HIGH_QUALITY,        // drawing HQ as usual
 		HIGH_QUALITY_QUICK,  // last update was HQ, quick updates requested
 		QUICK,               // last update not HQ, quick updates requested
-		RESIZE               // resize updates requested (last update invalid)
+		RESIZE,              // resize updates requested (last update invalid)
+		SCREENSHOT           // screenshot update requested (special drawing)
 	} drawingState;
 	// this timer will re-enable high quality drawing after resize events
 	QTimer resizeTimer;
