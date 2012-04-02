@@ -182,6 +182,7 @@ void ViewerWindow::initUI()
 		multi_img_viewer *v = (i == 1 ? viewGRAD : viewIMG);
 		multi_img_viewer *v2 = (i == 0 ? viewGRAD : viewIMG);
 		const Viewport *vp = v->getViewport();
+		const Viewport *vp2 = v2->getViewport();
 
 		connect(applyButton, SIGNAL(clicked()),
 				v, SLOT(rebuild()));
@@ -195,14 +196,16 @@ void ViewerWindow::initUI()
 		connect(this, SIGNAL(newLabelColors(const QVector<QColor>&, bool)),
 				v, SLOT(updateLabelColors(const QVector<QColor>&, bool)));
 
-		connect(bandView, SIGNAL(pixelOverlay(int,int)),
-				v, SLOT(overlay(int,int)));
+		connect(bandView, SIGNAL(pixelOverlay(int, int)),
+				v, SLOT(overlay(int, int)));
 
 		connect(vp, SIGNAL(activated()),
 				vpmap, SLOT(map()));
-		// connect same signal also to the _other_ viewport
-		connect(vp, SIGNAL(activated()),
-				v2, SLOT(setInactive()));
+		connect(v, SIGNAL(folding()),
+				vp, SLOT(folding()));
+		// connect same signals also to the _other_ viewport
+		connect(v, SIGNAL(folding()),
+				vp2, SLOT(folding()));
 
 		connect(vp, SIGNAL(bandSelected(int, bool)),
 				this, SLOT(selectBand(int, bool)));

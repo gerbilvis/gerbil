@@ -29,12 +29,12 @@ Viewport::Viewport(QWidget *parent)
 	  overlayMode(false),
 	  zoom(1.), shift(0), lasty(-1), holdSelection(false), activeLimiter(0),
 	  cacheValid(false), clearView(false), implicitClearView(false),
-	  drawMeans(true), drawRGB(false), drawHQ(true), drawingState(HIGH_QUALITY),
+	  drawMeans(true), drawRGB(false), drawHQ(true), drawingState(FOLDING),
 	  yaxisWidth(0), vb(QGLBuffer::VertexBuffer)
 {
 	resizeTimer.setSingleShot(true);
-	resizeTimer.setInterval(150);
 	connect(&resizeTimer, SIGNAL(timeout()), this, SLOT(endNoHQ()));
+	resizeTimer.start(0);
 }
 
 Viewport::~Viewport()
@@ -434,6 +434,9 @@ void Viewport::drawRegular()
 	else
 		painter.fillRect(rect(), QColor(15, 7, 15));
 
+	if (drawingState == FOLDING)
+		return;
+
 	if (drawingState == HIGH_QUALITY || drawingState == SCREENSHOT) {
 		painter.setRenderHint(QPainter::Antialiasing);
 	} else {
@@ -503,9 +506,11 @@ void Viewport::paintEvent(QPaintEvent *)
 
 void Viewport::resizeEvent(QResizeEvent *)
 {
-	// quick drawing during resize
-	startNoHQ(true);
-	resizeTimer.start();
+	if (drawingState != FOLDING) {
+		// quick drawing during resize
+		startNoHQ(true);
+		resizeTimer.start(150);
+	}
 
 	updateModelview();
 }
@@ -715,6 +720,7 @@ void Viewport::startNoHQ(bool resize)
 
 void Viewport::endNoHQ()
 {
+	std::cerr << "endnohq: " << (gradient ? "grad" : "spec") << std::endl;
 	bool dirty = true;
 	if (drawingState == HIGH_QUALITY || drawingState == HIGH_QUALITY_QUICK)
 		dirty = false;

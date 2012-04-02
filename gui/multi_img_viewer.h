@@ -47,6 +47,7 @@ public slots:
 
 signals:
 	void newOverlay();
+	void folding();
 
 protected:
     void changeEvent(QEvent *e);

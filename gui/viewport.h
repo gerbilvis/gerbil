@@ -89,6 +89,9 @@ public slots:
 	void startNoHQ(bool resize = false);
 	void endNoHQ();
 
+	// acknowledge folding
+	void folding() { drawingState = FOLDING; resizeTimer.start(50); }
+
 	void screenshot();
 
 signals:
@@ -165,9 +168,10 @@ private:
 		HIGH_QUALITY_QUICK,  // last update was HQ, quick updates requested
 		QUICK,               // last update not HQ, quick updates requested
 		RESIZE,              // resize updates requested (last update invalid)
-		SCREENSHOT           // screenshot update requested (special drawing)
+		SCREENSHOT,          // screenshot update requested (special drawing)
+		FOLDING              // only draw blank during folding resize ops
 	} drawingState;
-	// this timer will re-enable high quality drawing after resize events
+	// this timer will re-enable regular drawing after resize/folding
 	QTimer resizeTimer;
 
 	std::vector<QString> yaxis;

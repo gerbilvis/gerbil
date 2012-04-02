@@ -49,10 +49,12 @@ multi_img_viewer::multi_img_viewer(QWidget *parent)
 void multi_img_viewer::toggleFold()
 {
 	if (payload->isVisible()) {
+		emit folding();
 		payload->setHidden(true);
 		topBar->fold();
 		setSizePolicy(QSizePolicy::Preferred, QSizePolicy::Preferred);
 	} else {
+		emit folding();
 		payload->setShown(true);
 		topBar->unfold();
 		QSizePolicy pol(QSizePolicy::Preferred, QSizePolicy::Expanding);
