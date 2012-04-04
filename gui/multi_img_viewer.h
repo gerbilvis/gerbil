@@ -14,24 +14,25 @@ class multi_img_viewer : public QWidget, private Ui::multi_img_viewer {
 public:
 	multi_img_viewer(QWidget *parent = 0);
 
+	const multi_img* getImage() { return image; }
 	Viewport* getViewport() { return viewport; }
 	const multi_img::Mask& getMask() { return maskholder; }
 
-	/* translate image value to value in our coordinate system */
-	inline multi_img::Value curpos(multi_img::Value val, int dim) {
-		multi_img::Value curpos = (val - image->minval) / binsize;
-		if (illuminant)
-			curpos /= (*illuminant)[dim];
-		return curpos;
-	}
-
-	const multi_img *image;
 	cv::Mat1s labels;
+
+	enum representation {
+		IMG = 0,
+		GRAD = 1,
+		IMGPCA = 2,
+		REPSIZE = 3
+	};
+
+	representation type;
 
 public slots:
 	void rebuild(int bins = 0);
 	void updateMask(int dim);
-	void setImage(const multi_img *image, bool gradient = false);
+	void setImage(const multi_img *image, representation which);
 	void setIlluminant(const std::vector<multi_img::Value> *, bool for_real);
 	void toggleFold();
 	void toggleLabeled(bool toggle);
@@ -50,6 +51,14 @@ signals:
 	void folding();
 
 protected:
+	/* translate image value to value in our coordinate system */
+	inline multi_img::Value curpos(multi_img::Value val, int dim) {
+		multi_img::Value curpos = (val - image->minval) / binsize;
+		if (illuminant)
+			curpos /= (*illuminant)[dim];
+		return curpos;
+	}
+
     void changeEvent(QEvent *e);
 	void createBins();
 
@@ -58,14 +67,15 @@ protected:
 	void fillMaskLimiters(const std::vector<std::pair<int, int> >& limits);
 	void updateMaskLimiters(const std::vector<std::pair<int, int> >&, int dim);
 
+	const multi_img *image;
 	const std::vector<multi_img::Value> *illuminant;
 	bool ignoreLabels;
+	multi_img::Mask maskholder;
+	bool maskValid;
 
 private:
 	void createLimiterMenu();
 
-	multi_img::Mask maskholder;
-	bool maskValid;
 	// current number of bins shown
 	int nbins;
 	// respective data range of each bin

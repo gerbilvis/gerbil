@@ -24,9 +24,18 @@
 ViewerWindow::ViewerWindow(multi_img *image, QWidget *parent)
 	: QMainWindow(parent),
 	  full_image(image), image(NULL), gradient(NULL),
-	  activeViewer(0), normIMG(NORM_OBSERVED), normGRAD(NORM_OBSERVED),
-	  usRunner(NULL), contextMenu(NULL)
+	  normIMG(NORM_OBSERVED), normGRAD(NORM_OBSERVED),
+	  usRunner(NULL), contextMenu(NULL),
+	  //viewers(multi_img_viewer::REPSIZE),
+	  activeViewer(0)
 {
+/*	viewers[multi_img_viewer::IMG] = viewIMG;
+	viewers[multi_img_viewer::GRAD] = viewGRAD;
+	viewers[multi_img_viewer::IMGPCA] = viewIMGPCA;*/
+	viewers.push_back(viewIMG);
+	viewers.push_back(viewGRAD);
+	viewers.push_back(viewIMGPCA);
+
 	initUI();
 	roiView->roi = QRect(0, 0, full_image->width, full_image->height);
 
@@ -68,7 +77,8 @@ void ViewerWindow::applyROI()
 	if (labels.empty() ||
 		labels.rows != image->height || labels.cols != image->width) {
 		labels = cv::Mat1s(image->height, image->width, (short)0);
-		viewIMG->labels = viewGRAD->labels = labels;
+		for (size_t i = 0; i < viewers.size(); ++i)
+			viewers[i]->labels = labels;
 	}
 	if (labelColors.empty())
 		setLabelColors(vole::Labeling::colors(2, true));
@@ -82,8 +92,9 @@ void ViewerWindow::applyROI()
 	updateRGB(false);
 
 	/* do setImage() last */
-	viewIMG->setImage(image);
-	viewGRAD->setImage(gradient, true);
+	viewIMG->setImage(image, multi_img_viewer::IMG);
+	viewIMGPCA->setImage(image, multi_img_viewer::IMGPCA); // TODO
+	viewGRAD->setImage(gradient, multi_img_viewer::GRAD);
 
 	bandDock->widget()->setEnabled(true);
 	rgbDock->widget()->setEnabled(true);
@@ -172,17 +183,16 @@ void ViewerWindow::initUI()
 
 	// for self-activation of viewports
 	QSignalMapper *vpmap = new QSignalMapper(this);
-	vpmap->setMapping(viewIMG->getViewport(), 0);
-	vpmap->setMapping(viewGRAD->getViewport(), 1);
+	for (size_t i = 0; i < viewers.size(); ++i) {
+		vpmap->setMapping(viewers[i]->getViewport(), (int)i);
+	}
 	connect(vpmap, SIGNAL(mapped(int)),
 			this, SLOT(setActive(int)));
 
-	for (int i = 0; i < 2; ++i)
+	for (size_t i = 0; i < viewers.size(); ++i)
 	{
-		multi_img_viewer *v = (i == 1 ? viewGRAD : viewIMG);
-		multi_img_viewer *v2 = (i == 0 ? viewGRAD : viewIMG);
+		multi_img_viewer *v = viewers[i];
 		const Viewport *vp = v->getViewport();
-		const Viewport *vp2 = v2->getViewport();
 
 		connect(applyButton, SIGNAL(clicked()),
 				v, SLOT(rebuild()));
@@ -201,15 +211,22 @@ void ViewerWindow::initUI()
 
 		connect(vp, SIGNAL(activated()),
 				vpmap, SLOT(map()));
-		connect(v, SIGNAL(folding()),
-				vp, SLOT(folding()));
-		// connect same signals also to the _other_ viewport
-		connect(vp, SIGNAL(activated()),
-				v2, SLOT(setInactive()));
-		connect(v, SIGNAL(folding()),
-				vp2, SLOT(folding()));
 
-		connect(vp, SIGNAL(bandSelected(int, bool)),
+		for (size_t j = 0; j < viewers.size(); ++j) {
+			multi_img_viewer *v2 = viewers[j];
+			const Viewport *vp2 = v->getViewport();
+			// connect folding signal to all viewports
+			connect(v, SIGNAL(folding()),
+					vp2, SLOT(folding()));
+
+			if (i == j)
+				continue;
+			// connect activation signal to all *other* viewers
+			connect(vp, SIGNAL(activated()),
+				v2, SLOT(setInactive()));
+		}
+
+		connect(vp, SIGNAL(bandSelected(int, bool)), // TODO: representation
 				this, SLOT(selectBand(int, bool)));
 
 		connect(v, SIGNAL(newOverlay()),
@@ -309,12 +326,15 @@ void ViewerWindow::setLabels(const vole::Labeling &labeling)
 	/* note: always update labels before updating label colors, for the case
 	   that there are less colors available than used in previous labeling */
 	cv::Mat1s labels = labeling();
-	viewIMG->labels = viewGRAD->labels = bandView->labels = labels;
+	// following assignments are probably redundant (OpenCV shallow copy)
+	bandView->labels = labels;
+	for (size_t i = 0; i < viewers.size(); ++i)
+		viewers[i]->labels = labels;
 
 	bool updated = setLabelColors(labeling.colors());
 	if (!updated) {
-		viewIMG->rebuild();
-		viewGRAD->rebuild();
+		for (size_t i = 0; i < viewers.size(); ++i)
+			viewers[i]->rebuild();
 		bandView->refresh();
 	}
 }
@@ -331,7 +351,7 @@ void ViewerWindow::createLabel()
 const QPixmap* ViewerWindow::getBand(int dim, bool grad)
 {
 	// select variables according to which set is asked for
-	std::vector<QPixmap*> &v = (grad ? gbands : ibands);
+	std::vector<QPixmap*> &v = (grad ? gbands : ibands); // TODO
 
 	if (!v[dim]) {
 		const multi_img *m = (grad ? gradient : image);
@@ -345,14 +365,14 @@ const QPixmap* ViewerWindow::getBand(int dim, bool grad)
 void ViewerWindow::updateBand()
 {
 	int band = activeViewer->getViewport()->selection;
-	selectBand(band, activeViewer == viewGRAD);
+	selectBand(band, activeViewer == viewGRAD); // TODO
 	bandView->update();
 }
 
 void ViewerWindow::selectBand(int dim, bool grad)
 {
 	bandView->setPixmap(*getBand(dim, grad));
-	const multi_img *m = (grad ? gradient : image);
+	const multi_img *m = (grad ? gradient : image); // TODO
 	std::string banddesc = m->meta[dim].str();
 	QString title;
 	if (banddesc.empty())
@@ -615,7 +635,7 @@ void ViewerWindow::clampNormUserRange()
 void ViewerWindow::initGraphsegUI()
 {
 	graphsegSourceBox->addItem("Image", 0);
-	graphsegSourceBox->addItem("Gradient", 1);
+	graphsegSourceBox->addItem("Gradient", 1); // TODO PCA
 	graphsegSourceBox->addItem("Shown Band", 2);
 	graphsegSourceBox->setCurrentIndex(0);
 
@@ -679,7 +699,7 @@ void ViewerWindow::startGraphseg()
 		runGraphseg(*gradient, conf);
 	} else {	// currently shown band, construct from selection in viewport
 		int band = activeViewer->getViewport()->selection;
-		const multi_img *img = activeViewer->image;
+		const multi_img *img = activeViewer->getImage();
 		multi_img i((*img)[band], img->minval, img->maxval);
 		runGraphseg(i, conf);
 	}
@@ -925,14 +945,14 @@ void ViewerWindow::unsupervisedSegCancelled() {}
 
 void ViewerWindow::setActive(int id)
 {
-	activeViewer = (id == 1 ? viewGRAD : viewIMG);
+	activeViewer = viewers[id];
 }
 
 void ViewerWindow::labelmask(bool negative)
 {
 	emit alterLabel(activeViewer->getMask(), negative);
-	viewIMG->rebuild();
-	viewGRAD->rebuild();
+	for (size_t i = 0; i < viewers.size(); ++i)
+		viewers[i]->rebuild();
 }
 
 void ViewerWindow::newOverlay()

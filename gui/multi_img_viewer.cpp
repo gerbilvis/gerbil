@@ -17,7 +17,7 @@ using namespace std;
 
 multi_img_viewer::multi_img_viewer(QWidget *parent)
 	: QWidget(parent), image(NULL), illuminant(NULL),
-	  ignoreLabels(false), limiterMenu(this)
+	  ignoreLabels(false), limiterMenu(this), type(IMG)
 {
 	setupUi(this);
 
@@ -63,20 +63,26 @@ void multi_img_viewer::toggleFold()
 	}
 }
 
-void multi_img_viewer::setImage(const multi_img *img, bool gradient)
+void multi_img_viewer::setImage(const multi_img *img, representation which)
 {
-	if (gradient)
+	type = which;
+	if (type != IMG)
 		rgbButton->setVisible(false);
 
 	image = img;
 	maskholder = multi_img::Mask(image->height, image->width, (uchar)0);
 
-	QString title("<b>%1 Spectrum</b> [%2..%3]");
-	topBar->setTitle(title
-						  .arg(gradient ? "Spectral Gradient" : "Image")
-						  .arg(image->minval).arg(image->maxval));
+	QString title;
+	if (type == IMG)
+		title = QString("<b>Image Spectrum</b> [%1..%2]");
+	if (type == GRAD)
+		title = QString("<b>Spectral Gradient Spectrum</b> [%1..%2]");
+	if (type == IMGPCA)
+		title = QString("<b>Image PCA</b> [%1..%2]");
 
-	viewport->gradient = gradient;
+	topBar->setTitle(title.arg(image->minval).arg(image->maxval));
+
+	viewport->gradient = (type == GRAD);
 	viewport->dimensionality = image->size();
 
 	/* intialize meta data */
@@ -92,6 +98,9 @@ void multi_img_viewer::setImage(const multi_img *img, bool gradient)
 void multi_img_viewer::setIlluminant(
 		const std::vector<multi_img::Value> *coeffs, bool for_real)
 {
+	if (type != IMG)
+		return;
+
 	if (for_real) {
 		// only set it to true, never to false again
 		viewport->illuminant_correction = true;

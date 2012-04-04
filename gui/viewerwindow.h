@@ -41,7 +41,7 @@ public slots:
 	void selectBand(int dim, bool gradient);
 	void addToLabel()   { labelmask(false); }
 	void remFromLabel() { labelmask(true); }
-	void setActive(int id); // id 0: viewIMG, 1: viewGRAD
+	void setActive(int id); // id mapping see initUI()
 	void newOverlay();
 
 	void startGraphseg();
@@ -110,7 +110,10 @@ protected:
 
 	// rgb pixmap
 	QPixmap full_rgb, rgb;
-	multi_img_viewer *activeViewer; // 0: IMG, 1: GRAD
+
+	// viewers
+	std::vector<multi_img_viewer*> viewers;
+	multi_img_viewer *activeViewer;
 
 	enum normMode {
 		NORM_OBSERVED = 0,

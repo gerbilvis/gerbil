@@ -226,6 +226,16 @@
          </widget>
         </item>
         <item>
+         <widget class="multi_img_viewer" name="viewIMGPCA" native="true">
+          <property name="sizePolicy">
+           <sizepolicy hsizetype="Preferred" vsizetype="Expanding">
+            <horstretch>0</horstretch>
+            <verstretch>1</verstretch>
+           </sizepolicy>
+          </property>
+         </widget>
+        </item>
+        <item>
          <widget class="multi_img_viewer" name="viewGRAD" native="true">
           <property name="sizePolicy">
            <sizepolicy hsizetype="Preferred" vsizetype="Expanding">
