@@ -17,7 +17,7 @@ using namespace std;
 
 multi_img_viewer::multi_img_viewer(QWidget *parent)
 	: QWidget(parent), image(NULL), illuminant(NULL),
-	  ignoreLabels(false), limiterMenu(this), type(IMG)
+	  ignoreLabels(false), limiterMenu(this)
 {
 	setupUi(this);
 
@@ -44,11 +44,12 @@ multi_img_viewer::multi_img_viewer(QWidget *parent)
 
 	connect(topBar, SIGNAL(toggleFold()),
 			this, SLOT(toggleFold()));
+
 }
 
 void multi_img_viewer::toggleFold()
 {
-	if (payload->isVisible()) {
+	if (!payload->isHidden()) {
 		emit folding();
 		payload->setHidden(true);
 		topBar->fold();
@@ -63,9 +64,8 @@ void multi_img_viewer::toggleFold()
 	}
 }
 
-void multi_img_viewer::setImage(const multi_img *img, representation which)
+void multi_img_viewer::setImage(const multi_img *img, representation type)
 {
-	type = which;
 	if (type != IMG)
 		rgbButton->setVisible(false);
 
@@ -79,10 +79,12 @@ void multi_img_viewer::setImage(const multi_img *img, representation which)
 		title = QString("<b>Spectral Gradient Spectrum</b> [%1..%2]");
 	if (type == IMGPCA)
 		title = QString("<b>Image PCA</b> [%1..%2]");
+	if (type == GRADPCA)
+		title = QString("<b>Spectral Gradient PCA</b> [%1..%2]");
 
 	topBar->setTitle(title.arg(image->minval).arg(image->maxval));
 
-	viewport->gradient = (type == GRAD);
+	viewport->type = type;
 	viewport->dimensionality = image->size();
 
 	/* intialize meta data */
@@ -98,7 +100,7 @@ void multi_img_viewer::setImage(const multi_img *img, representation which)
 void multi_img_viewer::setIlluminant(
 		const std::vector<multi_img::Value> *coeffs, bool for_real)
 {
-	if (type != IMG)
+	if (viewport->type != IMG)
 		return;
 
 	if (for_real) {

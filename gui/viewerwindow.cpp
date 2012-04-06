@@ -23,20 +23,21 @@
 
 ViewerWindow::ViewerWindow(multi_img *image, QWidget *parent)
 	: QMainWindow(parent),
-	  full_image(image), image(NULL), gradient(NULL),
+	  full_image(image), image(NULL), gradient(NULL), gradientpca(NULL),
 	  normIMG(NORM_OBSERVED), normGRAD(NORM_OBSERVED),
 	  usRunner(NULL), contextMenu(NULL),
-	  //viewers(multi_img_viewer::REPSIZE),
-	  activeViewer(0)
+	  viewers(REPSIZE), activeViewer(0)
 {
-/*	viewers[multi_img_viewer::IMG] = viewIMG;
-	viewers[multi_img_viewer::GRAD] = viewGRAD;
-	viewers[multi_img_viewer::IMGPCA] = viewIMGPCA;*/
-	viewers.push_back(viewIMG);
-	viewers.push_back(viewGRAD);
-	viewers.push_back(viewIMGPCA);
+	// create all objects
+	setupUi(this);
+	viewers[IMG] = viewIMG;
+	viewers[GRAD] = viewGRAD;
+	viewers[IMGPCA] = viewIMGPCA;
+	viewers[GRADPCA] = viewGRADPCA;
 
+	// do all the bling-bling
 	initUI();
+
 	roiView->roi = QRect(0, 0, full_image->width, full_image->height);
 
 	// default to full image if small enough
@@ -52,9 +53,9 @@ void ViewerWindow::applyROI()
 	delete image;
 	delete gradient;
 
-	size_t bands = bandsSlider->value();
-	if (bands > 0 && bands < full_image->size()) {
-		multi_img tmpimg = full_image->spec_rescale(bands);
+	size_t numbands = bandsSlider->value();
+	if (numbands > 0 && numbands < full_image->size()) {
+		multi_img tmpimg = full_image->spec_rescale(numbands);
 		image = new multi_img(tmpimg, roi);
 	} else {
 		image = new multi_img(*full_image, roi);
@@ -63,6 +64,15 @@ void ViewerWindow::applyROI()
 	gradient = new multi_img(*image);
 	gradient->apply_logarithm();
 	*gradient = gradient->spec_gradient();
+
+	{
+		cv::PCA pca(image->pca());
+		imagepca = new multi_img(image->project(pca));
+	}
+	{
+		cv::PCA pca(gradient->pca());
+		gradientpca = new multi_img(gradient->project(pca));
+	}
 
 	// calculate new norm ranges inside ROI
 	for (int i = 0; i < 2; ++i) {
@@ -84,17 +94,19 @@ void ViewerWindow::applyROI()
 		setLabelColors(vole::Labeling::colors(2, true));
 
 	/// second: re-initialize gui
-	/* empty caches */
-	ibands.assign(image->size(), NULL);
-	gbands.assign(gradient->size(), NULL);
-
-	updateBand();
-	updateRGB(false);
+	/* empty/init caches */
+	// note: each vector's size is atmost #bands (e.g., gradient has one less)
+	bands.assign(viewers.size(), std::vector<QPixmap*>(image->size(), NULL));
 
 	/* do setImage() last */
-	viewIMG->setImage(image, multi_img_viewer::IMG);
-	viewIMGPCA->setImage(image, multi_img_viewer::IMGPCA); // TODO
-	viewGRAD->setImage(gradient, multi_img_viewer::GRAD);
+	viewIMG->setImage(image, IMG);
+	viewIMGPCA->setImage(imagepca, IMGPCA);
+	viewGRAD->setImage(gradient, GRAD);
+	viewGRADPCA->setImage(gradientpca, GRADPCA);
+
+	// updateBand only works after image is set (it gets image from viewer)
+	updateBand();
+	updateRGB(false);
 
 	bandDock->widget()->setEnabled(true);
 	rgbDock->widget()->setEnabled(true);
@@ -104,7 +116,6 @@ void ViewerWindow::applyROI()
 void ViewerWindow::initUI()
 {
 	/* GUI elements */
-	setupUi(this);
 	initGraphsegUI();
 	initIlluminantUI();
 #ifdef WITH_SEG_MEANSHIFT
@@ -118,8 +129,11 @@ void ViewerWindow::initUI()
 	bandDock->widget()->setDisabled(true);
 	rgbDock->widget()->setDisabled(true);
 
+	// start with IMG, hide IMGPCA, GRADPCA at the beginning
 	activeViewer = viewIMG;
 	viewIMG->setActive();
+	viewIMGPCA->toggleFold();
+	viewGRADPCA->toggleFold();
 
 	// dock arrangement
 	tabifyDockWidget(labelDock, illumDock);
@@ -183,9 +197,8 @@ void ViewerWindow::initUI()
 
 	// for self-activation of viewports
 	QSignalMapper *vpmap = new QSignalMapper(this);
-	for (size_t i = 0; i < viewers.size(); ++i) {
+	for (size_t i = 0; i < viewers.size(); ++i)
 		vpmap->setMapping(viewers[i]->getViewport(), (int)i);
-	}
 	connect(vpmap, SIGNAL(mapped(int)),
 			this, SLOT(setActive(int)));
 
@@ -214,7 +227,7 @@ void ViewerWindow::initUI()
 
 		for (size_t j = 0; j < viewers.size(); ++j) {
 			multi_img_viewer *v2 = viewers[j];
-			const Viewport *vp2 = v->getViewport();
+			const Viewport *vp2 = v2->getViewport();
 			// connect folding signal to all viewports
 			connect(v, SIGNAL(folding()),
 					vp2, SLOT(folding()));
@@ -226,8 +239,8 @@ void ViewerWindow::initUI()
 				v2, SLOT(setInactive()));
 		}
 
-		connect(vp, SIGNAL(bandSelected(int, bool)), // TODO: representation
-				this, SLOT(selectBand(int, bool)));
+		connect(vp, SIGNAL(bandSelected(representation, int)),
+				this, SLOT(selectBand(representation, int)));
 
 		connect(v, SIGNAL(newOverlay()),
 				this, SLOT(newOverlay()));
@@ -348,13 +361,12 @@ void ViewerWindow::createLabel()
 	markerSelector->setCurrentIndex(index - 1);
 }
 
-const QPixmap* ViewerWindow::getBand(int dim, bool grad)
+const QPixmap* ViewerWindow::getBand(representation type, int dim)
 {
-	// select variables according to which set is asked for
-	std::vector<QPixmap*> &v = (grad ? gbands : ibands); // TODO
+	std::vector<QPixmap*> &v = bands[type];
 
 	if (!v[dim]) {
-		const multi_img *m = (grad ? gradient : image);
+		const multi_img *m = viewers[type]->getImage();
 		// create here
 		QImage img = m->export_qt(dim);
 		v[dim] = new QPixmap(QPixmap::fromImage(img));
@@ -364,24 +376,24 @@ const QPixmap* ViewerWindow::getBand(int dim, bool grad)
 
 void ViewerWindow::updateBand()
 {
-	int band = activeViewer->getViewport()->selection;
-	selectBand(band, activeViewer == viewGRAD); // TODO
+	selectBand(activeViewer->getViewport()->type,
+			   activeViewer->getViewport()->selection);
 	bandView->update();
 }
 
-void ViewerWindow::selectBand(int dim, bool grad)
+void ViewerWindow::selectBand(representation type, int dim)
 {
-	bandView->setPixmap(*getBand(dim, grad));
-	const multi_img *m = (grad ? gradient : image); // TODO
+	bandView->setPixmap(*getBand(type, dim));
+	const multi_img *m = viewers[type]->getImage();
 	std::string banddesc = m->meta[dim].str();
 	QString title;
 	if (banddesc.empty())
 		title = QString("%1 Band #%2")
-			.arg(grad ? "Gradient" : "Image")
+			.arg(type == GRAD ? "Gradient" : "Image") // TODO
 			.arg(dim+1);
 	else
 		title = QString("%1 Band %2")
-			.arg(grad ? "Gradient" : "Image")
+			.arg(type == GRAD ? "Gradient" : "Image") // TODO
 			.arg(banddesc.c_str());
 
 	bandDock->setWindowTitle(title);
@@ -597,11 +609,11 @@ void ViewerWindow::applyNormUserRange(bool update)
 		if (target == 0) {
 			viewIMG->rebuild(-1);
 			/* empty cache */
-			ibands.assign(image->size(), NULL);
+			bands[IMG].assign(image->size(), NULL);
 		} else {
 			viewGRAD->rebuild(-1);
 			/* empty cache */
-			gbands.assign(gradient->size(), NULL);
+			bands[GRAD].assign(gradient->size(), NULL);
 		}
 		updateBand();
 	}
@@ -627,7 +639,7 @@ void ViewerWindow::clampNormUserRange()
 		gradient->clamp();
 		viewGRAD->rebuild(-1);
 		/* empty cache */
-		gbands.assign(gradient->size(), NULL);
+		bands[GRAD].assign(gradient->size(), NULL);
 		updateBand();
 	}
 }
@@ -883,11 +895,11 @@ void ViewerWindow::startUnsupervisedSeg(bool findKL)
 
 	// prepare input image
 	boost::shared_ptr<multi_img> input(new multi_img(*full_image, roi)); // image data is not copied
-	int bands = usBandsSpinBox->value();
+	int numbands = usBandsSpinBox->value();
 	bool gradient = usGradientCheckBox->isChecked();
 
-	if (bands > 0 && bands < (int) input->size()) {
-		boost::shared_ptr<multi_img> input_tmp(new multi_img(input->spec_rescale(bands)));
+	if (numbands > 0 && numbands < (int) input->size()) {
+		boost::shared_ptr<multi_img> input_tmp(new multi_img(input->spec_rescale(numbands)));
 		input = input_tmp;
 	}
 

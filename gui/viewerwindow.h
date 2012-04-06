@@ -30,7 +30,7 @@ class ViewerWindow : public QMainWindow, private Ui::ViewerWindow {
 public:
 	ViewerWindow(multi_img *image, QWidget *parent = 0);
 
-	const QPixmap* getBand(int dim, bool gradient);
+	const QPixmap* getBand(representation type, int dim);
 	const inline Illuminant & getIlluminant(int temp);
 	const inline std::vector<multi_img::Value> & getIlluminantC(int temp);
 
@@ -38,7 +38,7 @@ public:
 
 public slots:
 	void reshapeDock(bool floating);
-	void selectBand(int dim, bool gradient);
+	void selectBand(representation type, int dim);
 	void addToLabel()   { labelmask(false); }
 	void remFromLabel() { labelmask(true); }
 	void setActive(int id); // id mapping see initUI()
@@ -100,11 +100,11 @@ protected:
 	void runGraphseg(const multi_img& input, const vole::GraphSegConfig &config);
 
 	// multispectral image and gradient
-	multi_img *full_image, *image, *gradient;
+	multi_img *full_image, *image, *gradient, *imagepca, *gradientpca;
 	// current region of interest
 	cv::Rect roi;
 	// bands from both image and gradient
-	std::vector<QPixmap*> ibands, gbands;
+	std::vector<std::vector<QPixmap*> > bands;
 	// label colors
 	QVector<QColor> labelColors;
 

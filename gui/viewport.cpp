@@ -30,7 +30,7 @@ Viewport::Viewport(QWidget *parent)
 	  zoom(1.), shift(0), lasty(-1), holdSelection(false), activeLimiter(0),
 	  cacheValid(false), clearView(false), implicitClearView(false),
 	  drawMeans(true), drawRGB(false), drawHQ(true), drawingState(FOLDING),
-	  yaxisWidth(0), vb(QGLBuffer::VertexBuffer)
+	  yaxisWidth(0), vb(QGLBuffer::VertexBuffer), type(IMG)
 {
 	resizeTimer.setSingleShot(true);
 	connect(&resizeTimer, SIGNAL(timeout()), this, SLOT(endNoHQ()));
@@ -188,10 +188,10 @@ void Viewport::updateModelview()
 	int htp = yaxisWidth - 6; // left padding for text (legend)
 
 	// if gradient, we discard one unit space intentionally for centering
-	int d = dimensionality - (gradient? 0 : 1);
+	int d = dimensionality - (type == GRAD ? 0 : 1);
 	qreal w = (wwidth  - 2*hp - htp)/(qreal)(d); // width of one unit
 	qreal h = (wheight - 2*vp - vtp)/(qreal)(nbins - 1); // height of one unit
-	int t = (gradient? w/2 : 0); // moving half a unit for centering
+	int t = (type == GRAD ? w/2 : 0); // moving half a unit for centering
 
 	modelview.reset();
 	modelview.translate(hp + htp + t, vp + vshift);
@@ -528,7 +528,7 @@ void Viewport::updateXY(int sel, int bin)
 			wasActive = true;
 			selection = sel;
 			emitOverlay = true;
-			emit bandSelected(sel, gradient);
+			emit bandSelected(type, sel);
 		}
 
 		// do this after the first chance to change selection (above)
@@ -566,7 +566,7 @@ void Viewport::enterEvent(QEvent *)
 /*	sloppy focus. debatable.
 	if (active)
 		return;
-	emit bandSelected(selection, gradient);
+	emit bandSelected(type, selection);
 	emit activated();
 	active = true;
 	update();
@@ -673,14 +673,14 @@ void Viewport::keyPressEvent(QKeyEvent *event)
 	case Qt::Key_Left:
 		if (selection > 0) {
 			selection--;
-			emit bandSelected(selection, gradient);
+			emit bandSelected(type, selection);
 			dirty = true;
 		}
 		break;
 	case Qt::Key_Right:
 		if (selection < dimensionality-1) {
 			selection++;
-			emit bandSelected(selection, gradient);
+			emit bandSelected(type, selection);
 			dirty = true;
 		}
 		break;

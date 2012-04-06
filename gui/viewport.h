@@ -46,6 +46,13 @@ struct BinSet {
 	std::vector<std::pair<int, int> > boundary;
 };
 
+enum representation {
+	IMG = 0,
+	GRAD = 1,
+	IMGPCA = 2,
+	GRADPCA = 3,
+	REPSIZE = 4
+};
 
 class Viewport : public QGLWidget
 {
@@ -59,7 +66,7 @@ public:
 	void setLimiters(int label);
 
 	int dimensionality;
-	bool gradient;
+	representation type;
 	std::vector<BinSet> sets;
 	std::vector<QString> labels;
 	QGLBuffer vb;
@@ -95,7 +102,7 @@ public slots:
 	void screenshot();
 
 signals:
-	void bandSelected(int dim, bool gradient);
+	void bandSelected(representation type, int dim);
 	void newOverlay(int dim);
 	void activated();
 	void addSelection();

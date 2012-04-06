@@ -20,19 +20,10 @@ public:
 
 	cv::Mat1s labels;
 
-	enum representation {
-		IMG = 0,
-		GRAD = 1,
-		IMGPCA = 2,
-		REPSIZE = 3
-	};
-
-	representation type;
-
 public slots:
 	void rebuild(int bins = 0);
 	void updateMask(int dim);
-	void setImage(const multi_img *image, representation which);
+	void setImage(const multi_img *image, representation type);
 	void setIlluminant(const std::vector<multi_img::Value> *, bool for_real);
 	void toggleFold();
 	void toggleLabeled(bool toggle);
