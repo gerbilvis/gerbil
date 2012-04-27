@@ -192,6 +192,7 @@ pair<vector<string>, vector<multi_img::BandDesc> >
 	if (base[0] != '/') {
 		char *f = strdup(filename.c_str()), *d = dirname(f);
 		base = string(d).append("/").append(base);
+		free(f);
 	}
 #else
 	std::cerr << "Warning: only absolute file paths accepted." << std::endl;
