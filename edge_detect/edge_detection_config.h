@@ -1,7 +1,7 @@
 #ifndef EDGE_DETECTION_CONFIG_H
 #define EDGE_DETECTION_CONFIG_H
 
-#include <config.h>
+#include <vole_config.h>
 #include <sm_config.h>
 #include <multi_img.h>
 

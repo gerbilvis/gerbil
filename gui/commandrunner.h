@@ -2,7 +2,7 @@
 #define COMMANDRUNNER_H
 
 #include <QThread>
-#include <config.h>
+#include <vole_config.h>
 #include <command.h>
 #include <progress_observer.h>
 
