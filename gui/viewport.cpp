@@ -133,6 +133,7 @@ void Viewport::prepareLines()
 							  "Vertex Buffer Objects not supported."
 							  "\nMake sure your graphics driver supports OpenGL 1.5 or later.");
 		QApplication::quit();
+		exit(1);
 	}
 	success = vb.bind();
 	if (!success) {
@@ -755,7 +756,7 @@ void Viewport::screenshot()
 {
 	drawingState = SCREENSHOT;
 	repaint();
-	cacheImg = this->grabFrameBuffer();
+	cacheImg = grabFrameBuffer();
 
 	// write out
 	cv::Mat output = vole::QImage2Mat(cacheImg);

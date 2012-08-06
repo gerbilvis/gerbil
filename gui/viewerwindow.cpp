@@ -44,6 +44,8 @@ ViewerWindow::ViewerWindow(multi_img *image, QWidget *parent)
 	if (full_image->width*full_image->height < 513*513) {
 		roi = cv::Rect(0, 0, full_image->width, full_image->height);
 		applyROI();
+	} else {
+		ROITrigger();
 	}
 }
 
@@ -1053,7 +1055,7 @@ void ViewerWindow::loadLabeling(QString filename)
 {
 	IOGui io("Labeling Image File", "labeling image", this);
 	cv::Mat input = io.readFile(filename,
-								-1, full_image->width, full_image->height);
+								-1, full_image->height, full_image->width);
 	if (input.empty())
 		return;
 
@@ -1070,7 +1072,7 @@ void ViewerWindow::loadSeeds()
 {
 	IOGui io("Seed Image File", "seed image", this);
 	cv::Mat1s seeding = io.readFile(QString(),
-									0, full_image->width, full_image->height);
+									0, full_image->height, full_image->width);
 	if (seeding.empty())
 		return;
 

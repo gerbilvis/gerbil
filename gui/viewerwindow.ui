@@ -20,7 +20,7 @@
     <item>
      <widget class="QStackedWidget" name="mainStack">
       <property name="currentIndex">
-       <number>0</number>
+       <number>1</number>
       </property>
       <widget class="QWidget" name="mainPage">
        <layout class="QVBoxLayout" name="verticalLayout_3">
@@ -1317,9 +1317,6 @@
            </item>
            <item>
             <widget class="QWidget" name="usLshWidget" native="true">
-             <property name="enabled">
-              <bool>false</bool>
-             </property>
              <layout class="QGridLayout" name="gridLayout_6">
               <property name="margin">
                <number>0</number>
