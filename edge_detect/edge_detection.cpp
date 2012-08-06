@@ -34,6 +34,7 @@ EdgeDetection::EdgeDetection(const vole::EdgeDetectionConfig &cfg)
 SOM* EdgeDetection::train(const multi_img &img)
 {
 	if (config.som_file.empty()) {
+		vole::Stopwatch running_time("Total running time");
 		SOM *som = new SOM(config, img.size());
 		std::cout << "# Generated SOM " << config.width << "x" << config.height << " with dimension " << img.size() << std::endl;
 
