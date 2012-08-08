@@ -743,6 +743,17 @@ void ViewerWindow::initUnsupervisedSegUI()
 	usBandsSpinBox->setValue(full_image->size());
 	usBandsSpinBox->setMaximum(full_image->size());
 
+	// we do not expose the density estimation functionality
+	usInitWidget->hide();
+	// we also do not expose options exclusive to unavailable methods
+#ifndef WITH_SEG_MEDIANSHIFT
+	usSkipPropWidget->hide();
+#endif
+#ifndef WITH_SEG_PROBSHIFT
+	usSpectralWidget->hide();
+	usMSPPWidget->hide();
+#endif
+
 	usInitJumpWidget->hide();
 	usInitPercentWidget->hide();
 	usFoundKLWidget->hide();
