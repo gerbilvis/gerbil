@@ -1,5 +1,5 @@
 /*
-	Copyright(c) 2010 Johannes Jordan <johannes.jordan@cs.fau.de>.
+	Copyright(c) 2012 Johannes Jordan <johannes.jordan@cs.fau.de>.
 
 	This file may be licensed under the terms of of the GNU General Public
 	License, version 3, as published by the Free Software Foundation. You can
@@ -23,7 +23,7 @@
 
 ViewerWindow::ViewerWindow(multi_img *image, QWidget *parent)
 	: QMainWindow(parent),
-	  full_image(image), image(NULL), gradient(NULL), gradientpca(NULL),
+	  full_image(image), image(NULL), gradient(NULL), imagepca(NULL), gradientpca(NULL),
 	  normIMG(NORM_OBSERVED), normGRAD(NORM_OBSERVED),
 	  usRunner(NULL), contextMenu(NULL),
 	  viewers(REPSIZE), activeViewer(0)
@@ -238,7 +238,7 @@ void ViewerWindow::initUI()
 				continue;
 			// connect activation signal to all *other* viewers
 			connect(vp, SIGNAL(activated()),
-				v2, SLOT(setInactive()));
+			        v2, SLOT(setInactive()));
 		}
 
 		connect(vp, SIGNAL(bandSelected(representation, int)),

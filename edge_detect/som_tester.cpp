@@ -1,3 +1,12 @@
+/*	
+	Copyright(c) 2012 Ralph Muessig	and Johannes Jordan
+	<johannes.jordan@cs.fau.de>.
+
+	This file may be licensed under the terms of of the GNU General Public
+	License, version 3, as published by the Free Software Foundation. You can
+	find it here: http://www.gnu.org/licenses/gpl.html
+*/
+
 #include "som_tester.h"
 
 #include <cv.h>

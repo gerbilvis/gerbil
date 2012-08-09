@@ -19,8 +19,6 @@ vole_compile_library(
 	"som_trainer"
 	"som_tester"
 	"som_distance"
-	"canny/myCanny"
-	"canny/_cvgeom.h" "canny/_cvimgproc.h"
 )
 
 vole_add_module()

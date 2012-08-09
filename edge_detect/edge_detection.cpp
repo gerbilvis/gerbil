@@ -1,3 +1,12 @@
+/*	
+	Copyright(c) 2012 Ralph Muessig	and Johannes Jordan
+	<johannes.jordan@cs.fau.de>.
+
+	This file may be licensed under the terms of of the GNU General Public
+	License, version 3, as published by the Free Software Foundation. You can
+	find it here: http://www.gnu.org/licenses/gpl.html
+*/
+
 //system includes
 #include <iostream>
 #include <sstream>
@@ -118,7 +127,9 @@ void EdgeDetection::printShortHelp() const
 
 void EdgeDetection::printHelp() const 
 {
-	std::cout << "Edge detection as described in Jordan, J., Elli A., Edge Detection in\n"
-				 "Multispectral Images Using the N-Dimensional Self-Organizing Map. ICIP 2011."
-				 << std::endl;
+	std::cout << "Edge detection in multispectral images using SOM." << std::endl;
+	std::cout << std::endl;
+	std::cout << "Please read \"Jordan, J., Angelopoulou E.: Edge Detection in Multispectral\n"
+	             "Images Using the N-Dimensional Self-Organizing Map.\" (ICIP 2011)"
+	          << std::endl;
 }

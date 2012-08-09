@@ -23,7 +23,7 @@
 #include <QImage>
 #include <QVector>
 #include <QMenu>
-#include <cv.h>
+#include <opencv2/core/core.hpp>
 
 class ViewerWindow : public QMainWindow, private Ui::ViewerWindow {
     Q_OBJECT
@@ -103,7 +103,7 @@ protected:
 	multi_img *full_image, *image, *gradient, *imagepca, *gradientpca;
 	// current region of interest
 	cv::Rect roi;
-	// bands from both image and gradient
+	// bands from all representations (image, gradient, PCA..)
 	std::vector<std::vector<QPixmap*> > bands;
 	// label colors
 	QVector<QColor> labelColors;

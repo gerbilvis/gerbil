@@ -44,7 +44,6 @@ multi_img_viewer::multi_img_viewer(QWidget *parent)
 
 	connect(topBar, SIGNAL(toggleFold()),
 			this, SLOT(toggleFold()));
-
 }
 
 void multi_img_viewer::toggleFold()
