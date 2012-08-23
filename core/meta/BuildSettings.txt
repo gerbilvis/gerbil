@@ -1,0 +1,17 @@
+set(this_module_name "meta")
+set(this_unit_memberships "core")
+set(this_extra_include_directories)
+set(this_build_library "vole_meta")
+set(this_module_variable "VOLE_META")
+set(this_module_description "Management Tools for the Vole Framework")
+set(this_module_general_requirements "VOLE_BOOST" "VOLE_BOOST_PROGRAM_OPTIONS" "BOOST_FILESYSTEM")
+
+# important for single build
+VoleAddCommand("create_new_command" "create_new_command.h" "CreateNewCommand")
+
+VoleRequiredModules()
+
+VoleCompileIfShell("create_new_command.cpp" "create_new_command.h")
+
+VoleCompileLibrary("create_new_command_config.cpp" "create_new_command_config.h") 
+

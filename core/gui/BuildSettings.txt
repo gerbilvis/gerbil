@@ -1,0 +1,194 @@
+set(this_module_name "gui")
+set(this_unit_memberships "core")
+set(this_extra_include_directories)
+set(this_build_library)
+set(this_build_executable_file "vole_gui")
+set(this_build_executable "gvole")
+set(this_module_variable "VOLE_GUI")
+set(this_module_description "GUI for the vole framework")
+set(this_module_general_requirements "VOLE_BOOST" "VOLE_BOOST_PROGRAM_OPTIONS" "VOLE_QT" "VOLE_OPENCV")
+VoleRequiredModules()
+# FIXME
+VoleUiIfGui("vole_gui.ui")
+VoleCompileIfGui(
+	main.cpp executionthread.cpp command_wrapper.cpp
+	vole_gui.cpp rectangle.cpp
+	blending_image.cpp
+	image_plane.cpp
+	blending_image.h
+	command_wrapper.h
+	draw_operation.h
+	executionthread.h
+	generated_gui_include_list.h
+	gui_command_thread.h
+	image_plane.h
+	mouse_move_operation.h
+	mouse_over_area.h
+	mouse_over_image_generator.h
+	rectangle.h
+	vole_gui.h
+)
+
+# manual moc'ing: Add all header files here for classes that should get a moc_* prefix
+#set(vole_gui_MOC_HDRS ${vole_gui_MOC_HDRS}
+VoleMocIfGui(
+	vole_gui.h rectangle.h image_plane.h executionthread.h
+	blending_image.h draw_operation.h command_wrapper.h
+)
+
+
+
+
+
+# if (VOLE_UNIT_MEMBERSHIP_TEST)
+# 	string(COMPARE EQUAL ${VOLE_CURRENT_UNIT} "core" VOLE_TMP_VAR)
+# 	if (NOT VOLE_TMP_VAR)
+# 		return()
+# 	endif (NOT VOLE_TMP_VAR)
+# 
+# 	# already processed
+# 	if (VOLE_GUI_FOUND)
+# 		return()
+# 	endif (VOLE_GUI_FOUND)
+# 
+# 	# somebody else needs it?
+# 	if (VOLE_GUI_REQUIRED)
+# 		set(VOLE_GUI ON)
+# 	endif (VOLE_GUI_REQUIRED)
+# 
+# 
+# 	option(VOLE_GUI "GUI for the vole framework" OFF)
+# 	if (VOLE_GUI)
+# 		set(VOLE_SOMETHING_CHANGED true)
+# 		set(VOLE_GUI_FOUND true)
+# 		set(VOLE_ADD_DEFINITIONS ${VOLE_ADD_DEFINITIONS} "-DVOLE_GUI")
+# 		set(VOLE_INCLUDE_DIRECTORIES ${VOLE_INCLUDE_DIRECTORIES}
+# 			${VOLE_THIS_COMPONENT_DIRECTORY} ${CMAKE_BINARY_OUTPUT_DIR})
+# 		message(STATUS "include dirs: ${VOLE_INCLUDE_DIRECTORIES}")
+# 		set(VOLE_ADD_SUBDIRECTORIES ${VOLE_ADD_SUBDIRECTORIES} ${VOLE_THIS_COMPONENT_DIRECTORY})
+# 
+# 		find_package(Qt4 REQUIRED)
+# 		# the next line sets up include and link directories and defines some variables
+# 		# that we will use.
+# 		# you can modify the behavior by setting some variables, e.g.
+# 		#   set(QT_USE_OPENGL TRUE)
+# 		# -> this will cause cmake to include and link against the OpenGL module
+# 		include(${QT_USE_FILE})
+# 
+# 		# register opencv
+# 		set(VOLE_OPENCV_REQUIRED true)
+# 		# register boost
+# 		set(VOLE_BOOST_REQUIRED true)
+# 		set(VOLE_BOOST_PROGRAM_OPTIONS_REQUIRED true)
+# 		set(VOLE_TMP_VAR "1.34")
+# 		string(COMPARE GREATER ${VOLE_TMP_VAR} ${VOLE_MINIMUM_BOOST_VERSION} VOLE_TMP_VAR2)
+# 		if (VOLE_TMP_VAR2)
+# 			set(VOLE_MINIMUM_BOOST_VERSION ${VOLE_TMP_VAR})
+# 		endif(VOLE_TMP_VAR2)
+# 
+# 	endif(VOLE_GUI)
+# return()
+# endif (VOLE_UNIT_MEMBERSHIP_TEST)
+# 
+# if (NOT VOLE_GUI)
+# 	return()
+# endif (NOT VOLE_GUI)
+# 
+# if (VOLE_ADD_TARGETS)
+# 
+# 	set(vole_gui_sources ${vole_gui_sources}
+# 		main.cpp executionthread.cpp command_wrapper.cpp
+# 		vole_gui.cpp rectangle.cpp
+# 		blending_image.cpp image_plane.cpp image_helper.cxx
+# 		mouse_move_operation.h
+# 		)
+# 
+# 	# manual moc'ing: Add all header files here for classes that should get a moc_* prefix
+# 	set(vole_gui_MOC_HDRS ${vole_gui_MOC_HDRS}
+# 		vole_gui.h rectangle.h image_plane.h executionthread.h
+# 		blending_image.h draw_operation.h command_wrapper.h
+# 	)
+# 
+# 	SET(vole_gui_UIS vole_gui.ui)
+# 
+# 	QT4_WRAP_UI(vole_gui_UIS_H ${vole_gui_UIS})
+# 
+# 	# Don't forget to include output directory, otherwise
+# 	# the UI file won't be wrapped!
+# #	include_directories(${CMAKE_CURRENT_BINARY_DIR})
+# 
+# 
+# 	# tell cmake to create .moc files for all files in the variable qtproject_SRCS
+# 	# that require such a file.
+# 	# note: this assumes that you use #include "header.moc" in your files
+# 	#qt4_automoc(${vole_gui_sources})
+# 
+# 	# manual moc'ing:
+# 	# After this call, foo_MOC_SRCS = moc_Class1.cxx moc_Class2.cxx moc_Class3.cxx.
+# 	QT4_WRAP_CPP(vole_gui_MOC_SRCS ${vole_gui_MOC_HDRS})
+# 	set(vole_gui_sources ${vole_gui_sources} ${vole_gui_MOC_SRCS})
+# 
+# 	# create an executable file named "qtproject" from the source files in the
+# 	# variable "qtproject_SRCS".
+# 	#Now add these generated files to the ADD_EXECUTABLE step
+# 	# If this is NOT done, then the ui_*.h files will not be generated
+# 	add_executable(gvole ${vole_gui_sources} ${vole_gui_UIS_H})
+# 
+# 	# link the "qtproject" target against the Qt libraries. which libraries
+# 	# exactly, is defined by the "include(${QT_USE_FILE})" line above, which sets
+# 	# up this variable.
+# 	target_link_libraries(gvole ${VOLE_LINK_LIBS}
+# 		vole_common
+# 		${QT_LIBRARIES})
+# 
+# endif (VOLE_ADD_TARGETS)
+# 
+# if(VOLE_DEPENDENCY_DECLARATION)
+# endif(VOLE_DEPENDENCY_DECLARATION)
+# 
+# ## sivichri
+# #IF(VOLE_SIVICHRI)
+# #	set(libs ${libs} "vole_sivichri")
+# #	set(vole_gui_sources ${vole_gui_sources} "commands/cmf.cpp")
+# #	set(vole_gui_MOC_HDRS ${vole_gui_MOC_HDRS} "commands/cmf.h")
+# #ENDIF(VOLE_SIVICHRI)
+# ## sivichri
+# #
+# ## resampling detection
+# #IF(VOLE_RESAMPLING_DETECTION)
+# #	set(libs ${libs} "vole_resampling")
+# #	set(vole_gui_sources ${vole_gui_sources} "commands/resampling_detection_gui.cpp")
+# #	set(vole_gui_MOC_HDRS ${vole_gui_MOC_HDRS} "commands/resampling_detection_gui.h")
+# #ENDIF(VOLE_RESAMPLING_DETECTION)
+# ## resampling detection
+# 
+# #iebv
+# #IF(VOLE_IEBV)
+# #	include_directories("commands/iebv/")
+# #	set(libs ${libs} "vole_iebv")
+# #	set(vole_gui_sources ${vole_gui_sources}
+# #		"commands/iebv_gui.cpp"
+# #		"commands/iebv/iebv_estimation_field.h"
+# #		"commands/iebv/iebv_estimation_field.cpp"
+# #		"commands/iebv/iebv_mouse_over_segments.cpp"
+# #		"commands/iebv/iebv_result_widget.cpp"
+# #		"commands/iebv/iebv_segment_accumulator.cpp"
+# #		"commands/iebv/iebv_result_accumulator_widget.cpp"
+# #		)
+# #	set(vole_gui_MOC_HDRS ${vole_gui_MOC_HDRS}
+# #		"commands/iebv_gui.h"
+# #		"commands/iebv/iebv_result_widget.h"
+# #		"commands/iebv/iebv_result_accumulator_widget.h"
+# #		)
+# #ENDIF(VOLE_IEBV)
+# ##iebv
+# 
+# ## lighting direction
+# #IF(VOLE_LIGHTINGDIRECTION)
+# #	set(libs ${libs} "vole_lighting_direction")
+# #	set(vole_gui_sources ${vole_gui_sources} "commands/ld.cpp")
+# #	set(vole_gui_MOC_HDRS ${vole_gui_MOC_HDRS} "commands/ld.h")
+# #ENDIF(VOLE_LIGHTINGDIRECTION)
+# ## lighting direction
+# 
+# 

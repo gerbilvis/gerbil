@@ -1,0 +1,32 @@
+set(this_module_name "common")
+set(this_unit_memberships "core")
+set(this_extra_include_directories)
+set(this_build_library "vole_common")
+set(this_build_executable)
+set(this_module_variable "VOLE_COMMON")
+set(this_module_description "Common classes used in the vole framework")
+set(this_module_general_requirements)
+
+#VoleRequiredModules()
+
+VoleCompileLibrary(
+	"hashes.cpp"
+	"config"
+	"filesystem_helpers"
+	"data_traits.h"
+	"global_defines.h"
+	"array1d.h" "array2d.h"
+	"hashes.h" "image_group.h" "image_list.h"
+	"index.h" "pixel.h"
+	"string_conversion"
+	"vole_storage"
+	"vole_error.h" "vole_exception.h" "vole_image.h"
+	"vole_limits"
+	"vole_user_paths"
+	"qtopencv"
+	"multi_img"
+	"multi_img_io"
+	"labeling"
+	"stopwatch"
+	"progress_observer"
+)
