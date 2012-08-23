@@ -1,0 +1,13 @@
+set(this_module_name "color_processing")
+set(this_unit_memberships "reflectance")
+set(this_extra_include_directories)
+set(this_build_library "color_processing")
+set(this_module_variable "VOLE_COLOR_PROCESSING")
+set(this_module_description "Color Processing Core Library")
+set(this_module_general_requirements "VOLE_OPENCV" "VOLE_BOOST" "VOLE_BOOST_PROGRAM_OPTIONS")
+set(this_module_precondition_requirements)
+SET(this_module_src
+	"pixel_operations.cpp"
+	"pixel_operations.h"
+) 
+

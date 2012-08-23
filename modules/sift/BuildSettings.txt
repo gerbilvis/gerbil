@@ -1,0 +1,22 @@
+set(this_module_name "sift")
+set(this_unit_memberships "core")
+set(this_extra_include_directories)
+set(this_build_library "vole_sift")
+set(this_module_variable "VOLE_SIFT")
+set(this_module_description "SIFT features (external library)")
+set(this_module_general_requirements "VOLE_OPENCV")
+
+VoleRequiredModules()
+
+VoleCompileLibrary(
+	"imgfeatures.cpp"
+	"sift.cpp"
+	"utils.cpp"
+#	"dspfeat.cpp"
+#	"kdtree.cpp"
+#	"match.cpp"
+#	"minpq.cpp"
+#	"siftfeat.cpp"
+#	"xform.cpp"
+)
+

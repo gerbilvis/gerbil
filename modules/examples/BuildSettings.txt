@@ -1,0 +1,25 @@
+set(this_module_name "examples")
+set(this_unit_memberships "core")
+set(this_extra_include_directories)
+set(this_build_library "vole_examples")
+set(this_module_variable "VOLE_examples")
+set(this_module_description "Examples for the core modules")
+set(this_module_general_requirements "VOLE_OPENCV" "VOLE_BOOST" "VOLE_BOOST_PROGRAM_OPTIONS")
+VoleRequiredModules("computational_geometry")
+
+VoleCompileLibrary(
+	"examples_config.h"
+	"examples_config.cpp")
+
+VoleCompileIfShell(
+	"example_graham_scan.h"
+	"example_graham_scan.cpp"
+	"example_connected_components.h"
+	"example_connected_components.cpp"
+	"example_minimum_enclosing_rectangle.h"
+	"example_minimum_enclosing_rectangle.cpp"
+)
+
+VoleAddCommand("ex_graham_scan" "example_graham_scan.h" "vole::examples::GrahamScan")
+VoleAddCommand("ex_connected_components" "example_connected_components.h" "vole::examples::ConnectedComponents")
+VoleAddCommand("ex_minimum_enclosing_rectangle" "example_minimum_enclosing_rectangle.h" "vole::examples::MinimumEnclosingRectangle")

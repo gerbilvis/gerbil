@@ -1,0 +1,72 @@
+set(this_module_name "superpixels")
+set(this_unit_memberships "core")
+set(this_extra_include_directories)
+set(this_build_library "superpixels")
+set(this_module_variable "Vole_Superpixels")
+set(this_module_description "Algorithms for Superpixel Segmentation")
+set(this_module_general_requirements "VOLE_OPENCV" "VOLE_BOOST" "VOLE_BOOST_PROGRAM_OPTIONS")
+
+VoleRequiredModules()
+
+VoleAddCommand("felzenszwalb" "commands/commandfelzenszwalb.h" "vole::CommandFelzenszwalb")
+VoleAddCommand("veksler" "commands/commandveksler.h" "vole::CommandVeksler")
+
+VoleCompileIfShell(
+	commands/commandfelzenszwalb.cpp
+	commands/commandfelzenszwalb.h
+	commands/felzenszwalbconfig.cpp
+	commands/felzenszwalbconfig.h
+
+	commands/commandveksler.cpp
+	commands/commandveksler.h
+	commands/vekslerconfig.cpp
+	commands/vekslerconfig.h
+)
+
+VoleCompileLibrary(
+	superpixelsegmentation.cpp
+	superpixelsegmentation.h
+
+	felzenszwalb/felzenszwalbsegmentation.cpp
+	felzenszwalb/felzenszwalbsegmentation.h
+
+	felzenszwalb/implementation/image.h
+	felzenszwalb/implementation/misc.h
+	felzenszwalb/implementation/segment-image.h
+	felzenszwalb/implementation/filter.h
+	felzenszwalb/implementation/segment-graph.h
+	felzenszwalb/implementation/disjoint-set.h
+	felzenszwalb/implementation/convolve.h
+	felzenszwalb/implementation/imconv.h
+
+	veksler/vekslersegmentation.cpp
+	veksler/vekslersegmentation.h
+
+	veksler/implementation/maxflow.cpp
+	veksler/implementation/graph.cpp
+	veksler/implementation/graph.h
+	veksler/implementation/superpixels.cpp
+	veksler/implementation/superpixels.h
+	veksler/implementation/block.h
+	veksler/implementation/energy.h
+
+	veksler/implementation/vlib/include/canny.h
+	veksler/implementation/vlib/include/draw.h
+	veksler/implementation/vlib/include/filter.h
+	veksler/implementation/vlib/include/imconv.h
+	veksler/implementation/vlib/include/misc.h
+	veksler/implementation/vlib/include/point.h
+	veksler/implementation/vlib/include/steer.h
+	veksler/implementation/vlib/include/chamfer.h
+	veksler/implementation/vlib/include/dt.h
+	veksler/implementation/vlib/include/grad.h
+	veksler/implementation/vlib/include/imutil.h
+	veksler/implementation/vlib/include/morph.h
+	veksler/implementation/vlib/include/pyramid.h
+	veksler/implementation/vlib/include/convolve.h
+	veksler/implementation/vlib/include/features.h
+	veksler/implementation/vlib/include/image.h
+	veksler/implementation/vlib/include/matrix.h
+	veksler/implementation/vlib/include/pnmfile.h
+	veksler/implementation/vlib/include/sample.h
+)

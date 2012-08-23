@@ -1,0 +1,19 @@
+set(this_module_name "seg_felzenszwalb")
+set(this_unit_memberships "reflectance")
+set(this_extra_include_directories)
+set(this_build_library "vole_seg_felzenszwalb")
+set(this_module_variable "VOLE_SEG_FELZENSZWALB")
+set(this_module_description "Superpixel Segmentation by Felzenszwalb and Huttenlocher")
+set(this_module_general_requirements "VOLE_OPENCV" "VOLE_BOOST" "VOLE_BOOST_PROGRAM_OPTIONS")
+set(this_module_precondition_requirements "color_processing")
+
+VoleRequiredModules("color_processing")
+
+VoleAddCommand("fhseg" "seg_felzenszwalb.h" "vole::segFelzenszwalb")
+
+VoleCompileLibrary(
+	"fh_segmentation.cxx" "fh_segmentation.h"
+	"seg_felzenszwalb_config.cxx" "seg_felzenszwalb_config.h"
+)
+
+VoleCompileIfShell("seg_felzenszwalb.cxx" "seg_felzenszwalb.h")

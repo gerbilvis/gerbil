@@ -1,0 +1,40 @@
+set(this_module_name "vlfeat")
+set(this_unit_memberships "core")
+#set(this_extra_include_directories "eval")
+set(this_build_library "vole_vlfeat")
+set(this_module_variable "vole_VLFeat")
+set(this_module_description "VLFeat Library (Downloaded from the Internet)")
+set(this_module_general_requirements "VOLE_OPENCV" "VOLE_BOOST" "VOLE_BOOST_PROGRAM_OPTIONS")
+VoleRequiredModules()
+
+VoleCompileLibrary(
+	"vl/aib.c"         "vl/aib.h"
+	"vl/dsift.c"       "vl/dsift.h"
+	"vl/float.th"
+	"vl/generic.c"     "vl/generic.h"
+	"vl/getopt_long.c" "vl/getopt_long.h"
+	"vl/heap.c"        "vl/heap.h" "vl/heap-t.h"
+	"vl/host.c"        "vl/host.h"
+	"vl/imop.c"        "vl/imop.h"
+	"vl/imopv.c"       "vl/imopv.h"
+	"vl/imopv_sse2.c"  "vl/imopv_sse2.h"
+	"vl/hikmeans.c"    "vl/hikmeans.h"
+	"vl/ikmeans.c"     "vl/ikmeans.h"
+	"vl/kdtree.c"      "vl/kdtree.h"
+	"vl/mathop.c"      "vl/mathop.h"
+	"vl/mathop_sse2.c" "vl/mathop_sse2.h"
+	"vl/mser.c"        "vl/mser.h"
+	"vl/pgm.c"         "vl/pgm.h"
+	"vl/quickshift.c"  "vl/quickshift.h"
+	"vl/random.c"      "vl/random.h"
+	"vl/rodrigues.c"   "vl/rodrigues.h"
+	"vl/sift.c"        "vl/sift.h"
+	"vl/stringop.c"    "vl/stringop.h"
+	"vole_quickshift.h"
+	"vole_quickshift.cpp"
+	"quickshift_config.h"
+	"quickshift_config.cpp"
+)
+
+VoleAddCommand("qs_demo" "quickshift_demo.h" "quickshiftDemo")
+VoleCompileIfShell("quickshift_demo.cpp" "quickshift_demo.h") 

@@ -1,0 +1,20 @@
+set(this_module_name "computational_geometry")
+set(this_unit_memberships "core")
+#set(this_extra_include_directories "eval")
+set(this_build_library "vole_comp_geometry")
+set(this_module_variable "VOLE_COMPUTATIONAL_GEOMETRY")
+set(this_module_description "Geometric routines like convex hull or minimum enclosing rectangle")
+set(this_module_general_requirements "VOLE_OPENCV" "VOLE_BOOST" "VOLE_BOOST_PROGRAM_OPTIONS")
+VoleRequiredModules()
+
+VoleCompileLibrary(
+	"graham_scan.h"
+	"graham_scan.cpp"
+	"minimum_enclosing_rectangle.h"
+	"minimum_enclosing_rectangle.cpp"
+	"morphological_operators.h"
+	"geometry_utilities.cpp"
+	"geometry_utilities.h"
+	"connected_components.h"
+	"connected_components.cpp"
+)
