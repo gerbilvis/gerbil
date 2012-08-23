@@ -1,0 +1,26 @@
+<RCC>
+    <qresource prefix="/toolbar">
+        <file alias="clear">resources/edit-clear.png</file>
+        <file alias="right">resources/right.png</file>
+        <file alias="add">resources/add.png</file>
+        <file alias="left">resources/left.png</file>
+        <file alias="remove">resources/remove.png</file>
+        <file alias="cut">resources/edit-cut.png</file>
+        <file alias="run">resources/run.png</file>
+        <file alias="limiter">resources/limiter.png</file>
+        <file alias="popup">resources/popup-arrow.png</file>
+        <file alias="roi">resources/roi.png</file>
+        <file alias="rgb">resources/colorwheel.png</file>
+        <file alias="windows">resources/windows.png</file>
+    </qresource>
+    <qresource prefix="/">
+        <file alias="mainicon">resources/mainicon.svg</file>
+        <file alias="mainicon2">resources/mainicon.png</file>
+        <file alias="logoicon">logo/icon.png</file>
+    </qresource>
+    <qresource prefix="/basic">
+        <file alias="arrow-down">resources/arrow-down.png</file>
+        <file alias="arrow-downright">resources/arrow-downright.png</file>
+        <file alias="arrow-right">resources/arrow-right.png</file>
+    </qresource>
+</RCC>
