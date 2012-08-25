@@ -1,4 +1,6 @@
 #include "viewerwindow.h"
+#include <background_task_queue.h>
+#include <tbb/compat/thread>
 #include <QApplication>
 #include <QFileDialog>
 #include <iostream>
@@ -9,6 +11,9 @@ int main(int argc, char **argv)
 
 	// start gui
 	QApplication app(argc, argv);
+
+	// start worker thread
+	std::thread background(std::tr1::ref(BackgroundTaskQueue::instance()));
 
 	// get input file name
 	std::string filename;
@@ -40,7 +45,15 @@ int main(int argc, char **argv)
 	// load labels
 	if (!labelfile.isEmpty())
 		window.loadLabeling(labelfile);
+
+	int retval = app.exec();
+
+	// terminate worker thread
+	BackgroundTaskQueue::instance().halt();
+
+	// wait until worker thread terminates
+	background.join();
 	
-	return app.exec();
+	return retval;
 }
 
