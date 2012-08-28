@@ -72,6 +72,7 @@ void BackgroundTaskQueue::operator()()
 		{
 			Lock lock(guard);
 			currentTask->done(!cancelled);
+			currentTask.reset();
 		}
 	}
 	std::cout << "BackgroundTaskQueue terminated." << std::endl;
