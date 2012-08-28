@@ -28,6 +28,10 @@
 	class Illuminant;
 #endif
 
+namespace MultiImg {
+	class BgrTbb;
+}
+
 /// Class that holds a multispectral image.
 /**
 	This class holds image data ranging from a single grayscale image to a
@@ -469,6 +473,8 @@ protected:
 	mutable std::vector<Pixel> pixels;
 	mutable Mask dirty;
 	mutable bool anydirt;
+
+	friend class MultiImg::BgrTbb;
 };
 
 #endif // opencv
