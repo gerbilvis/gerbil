@@ -9,7 +9,25 @@
 #ifndef MULTI_IMG_TASKS_H
 #define MULTI_IMG_TASKS_H
 
+#include "background_task.h"
+#include "shared_data.h"
 #include <multi_img.h>
+#include <opencv2/imgproc/imgproc.hpp>
 
+namespace MultiImg {
+
+class BgrSerial : public BackgroundTask {
+public:
+    BgrSerial(multi_img_ptr multi, mat_vec3f_ptr bgr) 
+		: multi(multi), bgr(bgr) {}
+	virtual ~BgrSerial() {};
+    virtual void run();
+    virtual void cancel() {}
+protected:
+    multi_img_ptr multi;
+	mat_vec3f_ptr bgr;
+};
+
+}
 
 #endif

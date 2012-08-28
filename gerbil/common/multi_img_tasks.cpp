@@ -7,3 +7,16 @@
 */
 
 #include "multi_img_tasks.h"
+
+namespace MultiImg {
+
+void BgrSerial::run() 
+{
+	SharedDataRead rlock(multi->lock);
+	cv::Mat_<cv::Vec3f> *newBgr = new cv::Mat_<cv::Vec3f>();
+	*newBgr = (*multi)->bgr(); 
+	SharedDataWrite wlock(bgr->lock);
+	delete bgr->swap(newBgr);
+}
+
+}
