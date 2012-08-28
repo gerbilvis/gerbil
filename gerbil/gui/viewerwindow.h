@@ -45,8 +45,28 @@ public:
 			: MultiImg::BgrSerial(multi, bgr), rgb(rgb) {}
 		virtual ~RgbSerial() {};
 		virtual void run();
-		virtual void cancel() {}
 	protected:
+		qimage_ptr rgb;
+	};
+
+	class RgbTbb : public MultiImg::BgrTbb {
+	public:
+		RgbTbb(multi_img_ptr multi, mat_vec3f_ptr bgr, qimage_ptr rgb) 
+			: MultiImg::BgrTbb(multi, bgr), rgb(rgb) {}
+		virtual ~RgbTbb() {}
+		virtual void run();
+	protected:
+		class Rgb {
+		public:
+			Rgb(multi_img_ptr &multi, cv::Mat_<cv::Vec3f> &bgr, QImage &rgb) 
+				: multi(multi), bgr(bgr), rgb(rgb) {}
+			void operator()(const tbb::blocked_range2d<int> &r) const;
+		private:
+			multi_img_ptr &multi;
+			cv::Mat_<cv::Vec3f> &bgr;
+			QImage &rgb;
+		};
+
 		qimage_ptr rgb;
 	};
 

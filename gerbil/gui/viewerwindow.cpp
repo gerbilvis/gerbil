@@ -275,7 +275,9 @@ void ViewerWindow::initUI()
 	QShortcut *scr = new QShortcut(Qt::CTRL + Qt::Key_S, this);
 	connect(scr, SIGNAL(activated()), this, SLOT(screenshot()));
 
-	BackgroundTaskPtr task(new ViewerWindow::RgbSerial(
+	//BackgroundTaskPtr task(new ViewerWindow::RgbSerial(
+	//	full_image, mat_vec3f_ptr(new SharedData<cv::Mat_<cv::Vec3f> >(new cv::Mat_<cv::Vec3f>)), full_rgb_temp));
+	BackgroundTaskPtr task(new ViewerWindow::RgbTbb(
 		full_image, mat_vec3f_ptr(new SharedData<cv::Mat_<cv::Vec3f> >(new cv::Mat_<cv::Vec3f>)), full_rgb_temp));
 	//QObject::connect(task.get(), SIGNAL(finished(bool), this, SLOT(updateRGB(bool)));
 	BackgroundTaskQueue::instance().push(task);
@@ -435,7 +437,9 @@ void ViewerWindow::applyIlluminant() {
 	if (roi.width > 0)
 		applyROI();
 
-	BackgroundTaskPtr task(new ViewerWindow::RgbSerial(
+	//BackgroundTaskPtr task(new ViewerWindow::RgbSerial(
+	//	full_image, mat_vec3f_ptr(new SharedData<cv::Mat_<cv::Vec3f> >(new cv::Mat_<cv::Vec3f>)), full_rgb_temp));
+	BackgroundTaskPtr task(new ViewerWindow::RgbTbb(
 		full_image, mat_vec3f_ptr(new SharedData<cv::Mat_<cv::Vec3f> >(new cv::Mat_<cv::Vec3f>)), full_rgb_temp));
 	//QObject::connect(task.get(), SIGNAL(finished(bool), this, SLOT(updateRGB(bool)));
 	BackgroundTaskQueue::instance().push(task);
@@ -461,6 +465,33 @@ void ViewerWindow::RgbSerial::run()
 	}
 	SharedDataWrite wlock(rgb->lock);
 	delete rgb->swap(newRgb);
+}
+
+void ViewerWindow::RgbTbb::run()
+{
+	MultiImg::BgrTbb::run();
+	SharedDataRead rlock(bgr->lock);
+	cv::Mat_<cv::Vec3f> &bgrmat = *(*bgr);
+	QImage *newRgb = new QImage(bgrmat.cols, bgrmat.rows, QImage::Format_ARGB32);
+
+	Rgb computeRgb(multi, bgrmat, *newRgb);
+	tbb::parallel_for(tbb::blocked_range2d<int>(0, bgrmat.rows, 0, bgrmat.cols), 
+		computeRgb, tbb::auto_partitioner(), stopper);
+
+	SharedDataWrite wlock(rgb->lock);
+	delete rgb->swap(newRgb);
+}
+
+void ViewerWindow::RgbTbb::Rgb::operator()(const tbb::blocked_range2d<int> &r) const
+{
+	for (int y = r.rows().begin(); y != r.rows().end(); ++y) {
+		cv::Vec3f *row = bgr[y];
+		QRgb *destrow = (QRgb*)rgb.scanLine(y);
+		for (int x = r.cols().begin(); x != r.cols().end(); ++x) {
+			cv::Vec3f &c = row[x];
+			destrow[x] = qRgb(c[2]*255., c[1]*255., c[0]*255.);
+		}
+	}
 }
 
 void ViewerWindow::updateRGB(bool success)
@@ -662,7 +693,9 @@ void ViewerWindow::clampNormUserRange()
 		if (roi.width > 0)
 			applyROI();
 
-		BackgroundTaskPtr task(new ViewerWindow::RgbSerial(
+		//BackgroundTaskPtr task(new ViewerWindow::RgbSerial(
+		//	full_image, mat_vec3f_ptr(new SharedData<cv::Mat_<cv::Vec3f> >(new cv::Mat_<cv::Vec3f>)), full_rgb_temp));
+		BackgroundTaskPtr task(new ViewerWindow::RgbTbb(
 			full_image, mat_vec3f_ptr(new SharedData<cv::Mat_<cv::Vec3f> >(new cv::Mat_<cv::Vec3f>)), full_rgb_temp));
 		//QObject::connect(task.get(), SIGNAL(finished(bool), this, SLOT(updateRGB(bool)));
 		BackgroundTaskQueue::instance().push(task);
