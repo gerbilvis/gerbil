@@ -6,6 +6,10 @@
 #include <iostream>
 #include <string>
 
+#ifdef __GNUC__
+#include <tr1/functional>
+#endif
+
 int main(int argc, char **argv)
 {
 
