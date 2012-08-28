@@ -9,7 +9,14 @@
 #ifndef SHARED_DATA_H
 #define SHARED_DATA_H
 
+#include <boost/shared_ptr.hpp>
 #include <boost/thread/shared_mutex.hpp>
+#include <boost/thread/locks.hpp>
+#include <opencv2/core/core.hpp>
+
+typedef boost::shared_mutex SharedDataGuard;
+typedef boost::shared_lock<SharedDataGuard> SharedDataRead; ///< read lock
+typedef boost::unique_lock<SharedDataGuard> SharedDataWrite; ///< write lock
 
 /** Templated wrapper class for any data shared between GUI thread and
     background worker thread. All data members of BackgroundTask that could
@@ -25,10 +32,7 @@
 template<class T>
 class SharedData {
 public:
-	typedef boost::shared_mutex Guard;
-	typedef boost::shared_mutex::scoped_lock Write; ///< write lock
-	typedef boost::shared_mutex::scoped_lock_shared Read; ///< read lock
-	Guard lock;
+	SharedDataGuard lock;
 
 	/** Construct empty wrapper. */
 	SharedData() : data(NULL) {}
@@ -52,5 +56,13 @@ private:
 	SharedData(const SharedData<T> &other); // avoid copying of the wrapper
 	SharedData<T> &operator=(const SharedData<T> &other); // avoid copying of the wrapper
 };
+
+class multi_img;
+typedef boost::shared_ptr<SharedData<multi_img> > multi_img_ptr;
+
+typedef boost::shared_ptr<SharedData<cv::Mat_<cv::Vec3f> > > mat_vec3f_ptr;
+
+class QImage;
+typedef boost::shared_ptr<SharedData<QImage> > qimage_ptr;
 
 #endif
