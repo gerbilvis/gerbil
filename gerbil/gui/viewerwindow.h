@@ -2,7 +2,10 @@
 #define VIEWERWINDOW_H
 
 #include "ui_viewerwindow.h"
+#include <shared_data.h>
+#include <background_task.h>
 #include <multi_img.h>
+#include <multi_img_tasks.h>
 #include <labeling.h>
 #include <illuminant.h>
 #include <progress_observer.h>
@@ -35,6 +38,17 @@ public:
 	const inline std::vector<multi_img::Value> & getIlluminantC(int temp);
 
 	static QIcon colorIcon(const QColor& color);
+
+	class RgbSerial : public MultiImg::BgrSerial {
+	public:
+		RgbSerial(multi_img_ptr multi, mat_vec3f_ptr bgr, qimage_ptr rgb) 
+			: MultiImg::BgrSerial(multi, bgr), rgb(rgb) {}
+		virtual ~RgbSerial() {};
+		virtual void run();
+		virtual void cancel() {}
+	protected:
+		qimage_ptr rgb;
+	};
 
 public slots:
 	void reshapeDock(bool floating);
@@ -81,6 +95,8 @@ public slots:
 
 	void screenshot();
 
+	void updateRGB(bool success);
+
 signals:
 	void alterLabel(const multi_img::Mask &mask, bool negative);
 	void newLabelColors(const QVector<QColor> &colors, bool changed);
@@ -100,7 +116,8 @@ protected:
 	void runGraphseg(const multi_img& input, const vole::GraphSegConfig &config);
 
 	// multispectral image and gradient
-	multi_img *full_image, *image, *gradient, *imagepca, *gradientpca;
+	multi_img_ptr full_image;
+	multi_img *image, *gradient, *imagepca, *gradientpca;
 	// current region of interest
 	cv::Rect roi;
 	// bands from all representations (image, gradient, PCA..)
@@ -110,6 +127,7 @@ protected:
 
 	// rgb pixmap
 	QPixmap full_rgb, rgb;
+	qimage_ptr full_rgb_temp; // QPixmap cannot be directly shared between threads
 
 	// viewers
 	std::vector<multi_img_viewer*> viewers;
@@ -132,7 +150,6 @@ private:
 #endif
 	void initNormalizationUI();
 	void updateBand();
-	void updateRGB(bool full);
 	void buildIlluminant(int temp);
 
 	// calculates norm range

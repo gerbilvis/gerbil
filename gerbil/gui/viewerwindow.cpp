@@ -10,6 +10,8 @@
 #include "iogui.h"
 #include "commandrunner.h"
 
+#include <background_task_queue.h>
+
 #include <labeling.h>
 #include <qtopencv.h>
 
@@ -23,8 +25,10 @@
 
 ViewerWindow::ViewerWindow(multi_img *image, QWidget *parent)
 	: QMainWindow(parent),
-	  full_image(image), image(NULL), gradient(NULL), imagepca(NULL), gradientpca(NULL),
+	  full_image(new SharedData<multi_img>(new multi_img(*image))),
+	  image(NULL), gradient(NULL), imagepca(NULL), gradientpca(NULL),
 	  normIMG(NORM_OBSERVED), normGRAD(NORM_OBSERVED),
+	  full_rgb_temp(new SharedData<QImage>(new QImage())),
 	  usRunner(NULL), contextMenu(NULL),
 	  viewers(REPSIZE), activeViewer(0)
 {
@@ -38,11 +42,11 @@ ViewerWindow::ViewerWindow(multi_img *image, QWidget *parent)
 	// do all the bling-bling
 	initUI();
 
-	roiView->roi = QRect(0, 0, full_image->width, full_image->height);
+	roiView->roi = QRect(0, 0, (*full_image)->width, (*full_image)->height);
 
 	// default to full image if small enough
-	if (full_image->width*full_image->height < 513*513) {
-		roi = cv::Rect(0, 0, full_image->width, full_image->height);
+	if ((*full_image)->width*(*full_image)->height < 513*513) {
+		roi = cv::Rect(0, 0, (*full_image)->width, (*full_image)->height);
 		applyROI();
 	} else {
 		ROITrigger();
@@ -56,11 +60,11 @@ void ViewerWindow::applyROI()
 	delete gradient;
 
 	size_t numbands = bandsSlider->value();
-	if (numbands > 0 && numbands < full_image->size()) {
-		multi_img tmpimg = full_image->spec_rescale(numbands);
+	if (numbands > 0 && numbands < (*full_image)->size()) {
+		multi_img tmpimg = (*full_image)->spec_rescale(numbands);
 		image = new multi_img(tmpimg, roi);
 	} else {
-		image = new multi_img(*full_image, roi);
+		image = new multi_img(**full_image, roi);
 	}
 
 	gradient = new multi_img(*image);
@@ -108,7 +112,7 @@ void ViewerWindow::applyROI()
 
 	// updateBand only works after image is set (it gets image from viewer)
 	updateBand();
-	updateRGB(false);
+	updateRGB(true);
 
 	bandDock->widget()->setEnabled(true);
 	rgbDock->widget()->setEnabled(true);
@@ -259,9 +263,9 @@ void ViewerWindow::initUI()
 	}
 
 	/// init bandsSlider
-	bandsLabel->setText(QString("%1 bands").arg(full_image->size()));
-	bandsSlider->setMaximum(full_image->size());
-	bandsSlider->setValue(full_image->size());
+	bandsLabel->setText(QString("%1 bands").arg((*full_image)->size()));
+	bandsSlider->setMaximum((*full_image)->size());
+	bandsSlider->setValue((*full_image)->size());
 	connect(bandsSlider, SIGNAL(valueChanged(int)),
 			this, SLOT(bandsSliderMoved(int)));
 	connect(bandsSlider, SIGNAL(sliderMoved(int)),
@@ -271,7 +275,11 @@ void ViewerWindow::initUI()
 	QShortcut *scr = new QShortcut(Qt::CTRL + Qt::Key_S, this);
 	connect(scr, SIGNAL(activated()), this, SLOT(screenshot()));
 
-	updateRGB(true);
+	BackgroundTaskPtr task(new ViewerWindow::RgbSerial(
+		full_image, mat_vec3f_ptr(new SharedData<cv::Mat_<cv::Vec3f> >(new cv::Mat_<cv::Vec3f>)), full_rgb_temp));
+	//QObject::connect(task.get(), SIGNAL(finished(bool), this, SLOT(updateRGB(bool)));
+	BackgroundTaskQueue::instance().push(task);
+	updateRGB(task->wait());
 }
 
 void ViewerWindow::bandsSliderMoved(int b)
@@ -413,44 +421,61 @@ void ViewerWindow::applyIlluminant() {
 	/* remove old illuminant */
 	if (i1 != 0) {
 		const Illuminant &il = getIlluminant(i1);
-		full_image->apply_illuminant(il, true);
+		(*full_image)->apply_illuminant(il, true);
 	}
 
 	/* add new illuminant */
 	if (i2 != 0) {
 		const Illuminant &il = getIlluminant(i2);
-		full_image->apply_illuminant(il);
+		(*full_image)->apply_illuminant(il);
 	}
 
 	viewIMG->setIlluminant((i2 ? &getIlluminantC(i2) : NULL), true);
 	/* rebuild  */
 	if (roi.width > 0)
 		applyROI();
-	updateRGB(true);
+
+	BackgroundTaskPtr task(new ViewerWindow::RgbSerial(
+		full_image, mat_vec3f_ptr(new SharedData<cv::Mat_<cv::Vec3f> >(new cv::Mat_<cv::Vec3f>)), full_rgb_temp));
+	//QObject::connect(task.get(), SIGNAL(finished(bool), this, SLOT(updateRGB(bool)));
+	BackgroundTaskQueue::instance().push(task);
+	updateRGB(task->wait());
 
 	/* reflect change in our own gui (will propagate to viewIMG) */
 	i1Box->setCurrentIndex(i2Box->currentIndex());
 }
 
-void ViewerWindow::updateRGB(bool full)
+void ViewerWindow::RgbSerial::run()
 {
-	if (full || full_rgb.isNull()) {
-		cv::Mat_<cv::Vec3f> bgrmat = full_image->bgr();
-		QImage img(bgrmat.cols, bgrmat.rows, QImage::Format_ARGB32);
-		for (int y = 0; y < bgrmat.rows; ++y) {
-			cv::Vec3f *row = bgrmat[y];
-			QRgb *destrow = (QRgb*)img.scanLine(y);
-			for (int x = 0; x < bgrmat.cols; ++x) {
-				cv::Vec3f &c = row[x];
-				destrow[x] = qRgb(c[2]*255., c[1]*255., c[0]*255.);
-			}
+	MultiImg::BgrSerial::run();
+	SharedDataRead rlock(bgr->lock);
+	cv::Mat_<cv::Vec3f> &bgrmat = *(*bgr);
+	QImage *newRgb = new QImage(bgrmat.cols, bgrmat.rows, QImage::Format_ARGB32);
+	for (int y = 0; y < bgrmat.rows; ++y) {
+		cv::Vec3f *row = bgrmat[y];
+		QRgb *destrow = (QRgb*)newRgb->scanLine(y);
+		for (int x = 0; x < bgrmat.cols; ++x) {
+			cv::Vec3f &c = row[x];
+			destrow[x] = qRgb(c[2]*255., c[1]*255., c[0]*255.);
 		}
-		full_rgb = QPixmap::fromImage(img);
 	}
-	if (full) {
-		roiView->setPixmap(full_rgb);
-		roiView->update();
+	SharedDataWrite wlock(rgb->lock);
+	delete rgb->swap(newRgb);
+}
+
+void ViewerWindow::updateRGB(bool success)
+{
+	if (!success)
+		return;
+
+	SharedDataWrite lock(full_rgb_temp->lock);
+	if (!(*full_rgb_temp)->isNull()) {
+		full_rgb = QPixmap::fromImage(**full_rgb_temp);
+		delete full_rgb_temp->swap(new QImage());
 	}
+	lock.unlock();
+	roiView->setPixmap(full_rgb);
+	roiView->update();
 	if (roi.width > 0) {
 		rgb = full_rgb.copy(roi.x, roi.y, roi.width, roi.height);
 		rgbView->setPixmap(rgb);
@@ -631,12 +656,17 @@ void ViewerWindow::clampNormUserRange()
 	/* if image is changed, change full image. for gradient, we cannot preserve
 		the gradient over ROI or illuminant changes, so it remains a local change */
 	if (target == 0) {
-		full_image->minval = image->minval;
-		full_image->maxval = image->maxval;
-		full_image->clamp();
+		(*full_image)->minval = image->minval;
+		(*full_image)->maxval = image->maxval;
+		(*full_image)->clamp();
 		if (roi.width > 0)
 			applyROI();
-		updateRGB(true);
+
+		BackgroundTaskPtr task(new ViewerWindow::RgbSerial(
+			full_image, mat_vec3f_ptr(new SharedData<cv::Mat_<cv::Vec3f> >(new cv::Mat_<cv::Vec3f>)), full_rgb_temp));
+		//QObject::connect(task.get(), SIGNAL(finished(bool), this, SLOT(updateRGB(bool)));
+		BackgroundTaskQueue::instance().push(task);
+		updateRGB(task->wait());
 	} else {
 		gradient->clamp();
 		viewGRAD->rebuild(-1);
@@ -740,8 +770,8 @@ void ViewerWindow::initUnsupervisedSegUI()
 	usBandwidthBox->addItem("fixed");
 	usBandwidthMethodChanged("adaptive");
 
-	usBandsSpinBox->setValue(full_image->size());
-	usBandsSpinBox->setMaximum(full_image->size());
+	usBandsSpinBox->setValue((*full_image)->size());
+	usBandsSpinBox->setMaximum((*full_image)->size());
 
 	// we do not expose the density estimation functionality
 	usInitWidget->hide();
@@ -907,7 +937,7 @@ void ViewerWindow::startUnsupervisedSeg(bool findKL)
 	usSettingsWidget->setDisabled(true);
 
 	// prepare input image
-	boost::shared_ptr<multi_img> input(new multi_img(*full_image, roi)); // image data is not copied
+	boost::shared_ptr<multi_img> input(new multi_img(**full_image, roi)); // image data is not copied
 	int numbands = usBandsSpinBox->value();
 	bool gradient = usGradientCheckBox->isChecked();
 
@@ -1012,9 +1042,9 @@ void ViewerWindow::buildIlluminant(int temp)
 	assert(temp > 0);
 	Illuminant il(temp);
 	std::vector<multi_img::Value> cf;
-	il.calcWeight(full_image->meta[0].center,
-				  full_image->meta[full_image->size()-1].center);
-	cf = full_image->getIllumCoeff(il);
+	il.calcWeight((*full_image)->meta[0].center,
+				  (*full_image)->meta[(*full_image)->size()-1].center);
+	cf = (*full_image)->getIllumCoeff(il);
 	illuminants[temp] = make_pair(il, cf);
 }
 
@@ -1066,14 +1096,14 @@ void ViewerWindow::loadLabeling(QString filename)
 {
 	IOGui io("Labeling Image File", "labeling image", this);
 	cv::Mat input = io.readFile(filename,
-								-1, full_image->height, full_image->width);
+								-1, (*full_image)->height, (*full_image)->width);
 	if (input.empty())
 		return;
 
 	vole::Labeling labeling(input, false);
 
 	// if the user is operating within ROI, apply it to labeling as well */
-	if (roi != cv::Rect(0, 0, full_image->width, full_image->height))
+	if (roi != cv::Rect(0, 0, (*full_image)->width, (*full_image)->height))
 		labeling.setLabels(labeling.getLabels()(roi));
 
 	setLabels(labeling);
@@ -1083,7 +1113,7 @@ void ViewerWindow::loadSeeds()
 {
 	IOGui io("Seed Image File", "seed image", this);
 	cv::Mat1s seeding = io.readFile(QString(),
-									0, full_image->height, full_image->width);
+									0, (*full_image)->height, (*full_image)->width);
 	if (seeding.empty())
 		return;
 
@@ -1132,12 +1162,12 @@ void ViewerWindow::ROIDecision(QAbstractButton *sender)
 		if (roi.width > 1)
 			roiView->roi = QRect(roi.x, roi.y, roi.width, roi.height);
 		else
-			roiView->roi = QRect(0, 0, full_image->width, full_image->height);
+			roiView->roi = QRect(0, 0, (*full_image)->width, (*full_image)->height);
 		roiView->update();
 	} else if (role == QDialogButtonBox::RejectRole) {
 		if (roi.width < 2) {
 			// implicit accept full image if no interest in ROI
-			roiView->roi = QRect(0, 0, full_image->width, full_image->height);
+			roiView->roi = QRect(0, 0, (*full_image)->width, (*full_image)->height);
 			apply = true;
 		} else {
 			// just get out of the view
