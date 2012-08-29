@@ -44,6 +44,7 @@ int main(int argc, char **argv)
 	
 	// regular viewer
 	ViewerWindow window(image);
+	image = NULL;
 	window.show();
 	
 	// load labels

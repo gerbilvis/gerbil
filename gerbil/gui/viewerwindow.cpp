@@ -25,7 +25,7 @@
 
 ViewerWindow::ViewerWindow(multi_img *image, QWidget *parent)
 	: QMainWindow(parent),
-	  full_image(new SharedData<multi_img>(new multi_img(*image))),
+	  full_image(new SharedData<multi_img>(image)),
 	  image(NULL), gradient(NULL), imagepca(NULL), gradientpca(NULL),
 	  normIMG(NORM_OBSERVED), normGRAD(NORM_OBSERVED),
 	  full_rgb_temp(new SharedData<QImage>(new QImage())),
