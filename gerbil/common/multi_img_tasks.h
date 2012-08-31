@@ -71,6 +71,40 @@ protected:
 	mat_vec3f_ptr bgr;
 };
 
+class GradientTbb : public BackgroundTask {
+public:
+	GradientTbb(multi_img_ptr source, multi_img_ptr current) 
+		: source(source), current(current) {}
+	virtual ~GradientTbb() {}
+	void run();
+	void cancel() { stopper.cancel_group_execution(); }
+protected:
+	tbb::task_group_context stopper;
+
+	class Log {
+	public:
+		Log(multi_img &source, multi_img &target) 
+			: source(source), target(target) {}
+		void operator()(const tbb::blocked_range<size_t> &r) const;
+	private:
+		multi_img &source;
+		multi_img &target;
+	};
+
+	class Grad {
+	public:
+		Grad(multi_img &source, multi_img &target) 
+			: source(source), target(target) {}
+		void operator()(const tbb::blocked_range<size_t> &r) const;
+	private:
+		multi_img &source;
+		multi_img &target;
+	};
+
+	multi_img_ptr source;
+	multi_img_ptr current;
+};
+
 }
 
 #endif
