@@ -30,6 +30,7 @@
 
 namespace MultiImg {
 	class BgrTbb;
+	class GradientTbb;
 }
 
 /// Class that holds a multispectral image.
@@ -104,7 +105,7 @@ public:
 
 	/// barebone constructor
 	multi_img(size_t size) : minval(0.), maxval(0.), width(0), height(0),
-							 meta(size), bands(size) {}
+							 meta(size), roi(0, 0, 0, 0), bands(size) {}
 
 	/// empty image constructor (to create synthetic images)
 	multi_img(int height, int width, size_t size);
@@ -459,6 +460,9 @@ public:
 
 	/// band meta-data
 	std::vector<BandDesc> meta;
+
+	/// ROI associated with image data
+	cv::Rect roi;
 	
 protected:
 	/// write back pixel cache into band data
@@ -475,6 +479,7 @@ protected:
 	mutable bool anydirt;
 
 	friend class MultiImg::BgrTbb;
+	friend class MultiImg::GradientTbb;
 };
 
 #endif // opencv

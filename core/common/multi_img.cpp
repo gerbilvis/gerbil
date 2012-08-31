@@ -19,6 +19,7 @@ multi_img::multi_img(const string& filename)
  : minval(0.), maxval(0.), width(0), height(0)
 {
 	read_image(filename);
+	roi = cv::Rect(0, 0, width, height);
 }
 
 multi_img::multi_img(const cv::Mat& image) : minval(0.), maxval(0.)
@@ -26,6 +27,7 @@ multi_img::multi_img(const cv::Mat& image) : minval(0.), maxval(0.)
 	assert(!image.empty());
 	/* we need to clone because opencv totally ignores const */
 	read_mat(image.clone());
+	roi = cv::Rect(0, 0, width, height);
 	// init cache metadata
 	resetPixels();
 }
@@ -35,6 +37,7 @@ multi_img::multi_img(const cv::Mat& image, Value srcmin, Value srcmax)
 {
 	assert(!image.empty());
 	read_mat(image.clone(), srcmin, srcmax);
+	roi = cv::Rect(0, 0, width, height);
 	// init cache metadata
 	resetPixels();
 }
@@ -45,6 +48,7 @@ multi_img & multi_img::operator=(const multi_img &a) {
 		width = a.width; height = a.height;
 		minval = a.minval; maxval = a.maxval;
 		meta = a.meta;
+		roi = a.roi;
 		bands.resize(a.bands.size());
 		for (size_t i = 0; i < bands.size(); ++i)
 			bands[i] = a.bands[i].clone();
@@ -56,6 +60,7 @@ multi_img & multi_img::operator=(const multi_img &a) {
 void multi_img::init(int h, int w, size_t d, Value minv, Value maxv) {
 	minval = minv; maxval = maxv;
 	height = h; width = w;
+	roi = cv::Rect(0, 0, 0, 0);
 	meta.resize(d);
 	bands.resize(d);
 	for (size_t i = 0; i < d; i++)
@@ -70,7 +75,7 @@ multi_img::multi_img(int height, int width, size_t size)
 
 multi_img::multi_img(const multi_img &a)
  : minval(a.minval), maxval(a.maxval), width(a.width), height(a.height),
-   meta(a.meta), bands(a.size())
+   meta(a.meta), roi(a.roi), bands(a.size())
 {
 	std::cerr << "multi_img: copy" << std::endl;
 	for (size_t i = 0; i < bands.size(); ++i)
@@ -80,7 +85,7 @@ multi_img::multi_img(const multi_img &a)
 
 multi_img::multi_img(const multi_img &a, const cv::Rect &roi)
  : minval(a.minval), maxval(a.maxval), width(roi.width), height(roi.height),
-   meta(a.meta), bands(a.size())
+   meta(a.meta), roi(roi), bands(a.size())
 {
 	std::cerr << "multi_img: reference w/ roi" << std::endl;
 	for (size_t i = 0; i < bands.size(); ++i)
@@ -92,7 +97,7 @@ multi_img::multi_img(const multi_img &a, const cv::Rect &roi)
 }
 
 multi_img::multi_img(const multi_img &a, unsigned int start, unsigned int end)
- : minval(a.minval), maxval(a.maxval), width(a.width), height(a.height)
+ : minval(a.minval), maxval(a.maxval), width(a.width), height(a.height), roi(a.roi)
 {
 	assert(start < a.size() && end < a.size());
 	std::cerr << "multi_img: reference w/ spectral crop" << std::endl;
