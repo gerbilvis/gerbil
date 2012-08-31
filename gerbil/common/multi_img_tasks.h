@@ -105,6 +105,50 @@ protected:
 	multi_img_ptr current;
 };
 
+class PcaTbb : public BackgroundTask {
+public:
+	PcaTbb(multi_img_ptr source, multi_img_ptr current, unsigned int components = 0) 
+		: source(source), current(current), components(components) {}
+	virtual ~PcaTbb() {}
+	void run();
+	void cancel() { stopper.cancel_group_execution(); }
+protected:
+	tbb::task_group_context stopper;
+
+	class Prolog {
+	public:
+		Prolog(multi_img &source, cv::Mat_<multi_img::Value> &target) 
+			: source(source), target(target) {}
+		void operator()(const tbb::blocked_range<size_t> &r) const;
+	private:
+		multi_img &source;
+		cv::Mat_<multi_img::Value> &target;
+	};
+
+	class Projection {
+	public:
+		Projection(cv::Mat_<multi_img::Value> &source, multi_img &target, cv::PCA &pca) 
+			: source(source), target(target), pca(pca) {}
+		void operator()(const tbb::blocked_range<size_t> &r) const;
+	private:
+		cv::Mat_<multi_img::Value> &source;
+		multi_img &target;
+		cv::PCA &pca;
+	};
+
+	class Epilog {
+	public:
+		Epilog(multi_img &multi) : multi(multi) {}
+		void operator()(const tbb::blocked_range<size_t> &r) const;
+	private:
+		multi_img &multi;
+	};
+
+	multi_img_ptr source;
+	multi_img_ptr current;
+	unsigned int components;
+};
+
 }
 
 #endif

@@ -195,4 +195,71 @@ void GradientTbb::Grad::operator()(const tbb::blocked_range<size_t> &r) const
 	}
 }
 
+void PcaTbb::run() 
+{
+	SharedDataRead rlock(source->lock);
+
+	cv::Mat_<multi_img::Value> pixels(
+		(*source)->size(), (*source)->width * (*source)->height);
+	Prolog computeProlog(**source, pixels);
+	tbb::parallel_for(tbb::blocked_range<size_t>(0, (*source)->size()), 
+		computeProlog, tbb::auto_partitioner(), stopper);
+
+	cv::PCA pca(pixels, cv::noArray(), CV_PCA_DATA_AS_COL, components);
+
+	multi_img *result = new multi_img(
+		(*source)->width, (*source)->height, pca.eigenvectors.rows);
+	Projection computeProjection(pixels, *result, pca);
+	tbb::parallel_for(tbb::blocked_range<size_t>(0, result->pixels.size()), 
+		computeProjection, tbb::auto_partitioner(), stopper);
+
+	Epilog computeEpilog(*result);
+	tbb::parallel_for(tbb::blocked_range<size_t>(0, result->size()), 
+		computeEpilog, tbb::auto_partitioner(), stopper);
+
+	result->dirty.setTo(0);
+	result->anydirt = false;
+	std::pair<multi_img::Value, multi_img::Value> range = result->data_range();
+	result->minval = range.first;
+	result->maxval = range.second;
+
+	if (stopper.is_group_execution_cancelled()) {
+		stopper.reset();
+		delete result;
+		return;
+	} else {
+		SharedDataWrite wlock(current->lock);
+		delete current->swap(result);
+	}
+}
+
+void PcaTbb::Prolog::operator()(const tbb::blocked_range<size_t> &r) const
+{
+	for (size_t d = r.begin(); d != r.end(); ++d) {
+		multi_img::Band &src = source.bands[d];
+		multi_img::BandConstIt it; size_t i;
+		for (it = src.begin(), i = 0; it != src.end(); ++it, ++i)
+			target(d, i) = *it;
+	}
+}
+
+void PcaTbb::Projection::operator()(const tbb::blocked_range<size_t> &r) const
+{
+	for (size_t i = r.begin(); i != r.end(); ++i) {
+		cv::Mat_<multi_img::Value> input = source.col(i);
+		cv::Mat_<multi_img::Value> output(target.pixels[i]);
+		pca.project(input, output);
+	}
+}
+
+void PcaTbb::Epilog::operator()(const tbb::blocked_range<size_t> &r) const
+{
+	for (size_t d = r.begin(); d != r.end(); ++d) {
+		multi_img::Band &dst = multi.bands[d];
+		multi_img::BandIt it; size_t i;
+		for (it = dst.begin(), i = 0; it != dst.end(); ++it, ++i)
+			*it = multi.pixels[i][d];
+	}
+}
+
 }
