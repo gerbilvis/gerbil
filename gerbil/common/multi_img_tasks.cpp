@@ -137,11 +137,13 @@ void GradientTbb::run()
 
 	multi_img temp((*source)->height, (*source)->width, (*source)->size());
 	for (std::vector<cv::Rect>::iterator it = calc.begin(); it != calc.end(); ++it) {
-		multi_img srcScope(**source, *it);
-		multi_img tmpScope(temp, *it);
-		Log computeLog(srcScope, tmpScope);
-		tbb::parallel_for(tbb::blocked_range<size_t>(0, temp.size()), 
-			computeLog, tbb::auto_partitioner(), stopper);
+		if (it->width > 0 && it->height > 0) {
+			multi_img srcScope(**source, *it);
+			multi_img tmpScope(temp, *it);
+			Log computeLog(srcScope, tmpScope);
+			tbb::parallel_for(tbb::blocked_range<size_t>(0, temp.size()), 
+				computeLog, tbb::auto_partitioner(), stopper);
+		}
 	}
 	temp.minval = 0.;
 	temp.maxval = log((*source)->maxval);
@@ -149,11 +151,13 @@ void GradientTbb::run()
 	srcReadLock.unlock();
 
 	for (std::vector<cv::Rect>::iterator it = calc.begin(); it != calc.end(); ++it) {
-		multi_img tmpScope(temp, *it);
-		multi_img tgtScope(*target, *it);
-		Grad computeGrad(tmpScope, tgtScope);
-		tbb::parallel_for(tbb::blocked_range<size_t>(0, target->size()), 
-			computeGrad, tbb::auto_partitioner(), stopper);
+		if (it->width > 0 && it->height > 0) {
+			multi_img tmpScope(temp, *it);
+			multi_img tgtScope(*target, *it);
+			Grad computeGrad(tmpScope, tgtScope);
+			tbb::parallel_for(tbb::blocked_range<size_t>(0, target->size()), 
+				computeGrad, tbb::auto_partitioner(), stopper);
+		}
 	}
 	target->minval = -temp.maxval;
 	target->maxval = temp.maxval;
