@@ -247,7 +247,7 @@ void PcaTbb::Projection::operator()(const tbb::blocked_range<size_t> &r) const
 {
 	for (size_t i = r.begin(); i != r.end(); ++i) {
 		cv::Mat_<multi_img::Value> input = source.col(i);
-		cv::Mat_<multi_img::Value> output(target.pixels[i]);
+		cv::Mat_<multi_img::Value> output(target.pixels[i], false);
 		pca.project(input, output);
 	}
 }
