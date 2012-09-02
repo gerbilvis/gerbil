@@ -89,6 +89,33 @@ protected:
 	mat_vec3f_ptr bgr;
 };
 
+class RescaleTbb : public BackgroundTask {
+public:
+	RescaleTbb(multi_img_ptr source, multi_img_ptr target, size_t newsize, 
+		cv::Rect targetRoi = cv::Rect(0, 0, 0, 0)) 
+		: BackgroundTask(targetRoi), source(source), target(target), newsize(newsize) {}
+	virtual ~RescaleTbb() {}
+	void run();
+	void cancel() { stopper.cancel_group_execution(); }
+protected:
+	tbb::task_group_context stopper;
+
+	class Resize {
+	public:
+		Resize(multi_img &source, multi_img &target, size_t newsize) 
+			: source(source), target(target), newsize(newsize) {}
+		void operator()(const tbb::blocked_range2d<int> &r) const;
+	private:
+		multi_img &source;
+		multi_img &target;
+		size_t newsize;
+	};
+
+	multi_img_ptr source;
+	multi_img_ptr target;
+	size_t newsize;
+};
+
 class GradientTbb : public BackgroundTask {
 public:
 	GradientTbb(multi_img_ptr source, multi_img_ptr current, 

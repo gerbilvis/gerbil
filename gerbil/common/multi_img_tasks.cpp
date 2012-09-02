@@ -111,6 +111,65 @@ void BgrTbb::Bgr::operator()(const tbb::blocked_range2d<int> &r) const
 	}
 }
 
+void RescaleTbb::run() 
+{
+	SharedDataRead rlock(source->lock);
+
+	multi_img temp(**source, cv::Rect(0, 0, (*source)->width, (*source)->height));
+	CommonTbb::RebuildPixels rebuildPixels(temp);
+	tbb::parallel_for(tbb::blocked_range<size_t>(0, temp.size()), 
+		rebuildPixels, tbb::auto_partitioner(), stopper);
+	temp.dirty.setTo(0);
+	temp.anydirt = false;
+
+	multi_img *result = new multi_img(
+		(*source)->width, (*source)->height, newsize);
+	result->minval = temp.minval;
+	result->maxval = temp.maxval;
+	Resize computeResize(temp, *result, newsize);
+	tbb::parallel_for(tbb::blocked_range2d<int>(0, temp.height, 0, temp.width), 
+		computeResize, tbb::auto_partitioner(), stopper);
+
+	CommonTbb::ApplyCache applyCache(*result);
+	tbb::parallel_for(tbb::blocked_range<size_t>(0, result->size()), 
+		applyCache, tbb::auto_partitioner(), stopper);
+	result->dirty.setTo(0);
+	result->anydirt = false;
+
+	{
+		cv::Mat_<float> tmpmeta1(cv::Size(1, temp.meta.size())), tmpmeta2;
+		std::vector<multi_img::BandDesc>::const_iterator it;
+		unsigned int i;
+		for (it = temp.meta.begin(), i = 0; it != temp.meta.end(); it++, i++) {
+			tmpmeta1(0, i) = it->center;
+		}
+		cv::resize(tmpmeta1, tmpmeta2, cv::Size(1, newsize));
+		for (size_t b = 0; b < newsize; b++) {
+			result->meta[b] = multi_img::BandDesc(tmpmeta2(0, b));
+		}
+	}
+
+	if (stopper.is_group_execution_cancelled()) {
+		stopper.reset();
+		delete result;
+		return;
+	} else {
+		SharedDataWrite wlock(target->lock);
+		delete target->swap(result);
+	}
+}
+
+void RescaleTbb::Resize::operator()(const tbb::blocked_range2d<int> &r) const
+{
+	for (int row = r.rows().begin(); row != r.rows().end(); ++row) {
+		for (int col = r.cols().begin(); col != r.cols().end(); ++col) {
+			cv::Mat_<multi_img::Value> src(source.pixels[row * source.width + col], false);
+			cv::Mat_<multi_img::Value> dst(target.pixels[row * source.width + col], false);
+			cv::resize(src, dst, cv::Size(1, newsize));
+		}
+	}
+}
+
 void GradientTbb::run() 
 {
 	SharedDataRead srcReadLock(source->lock);
