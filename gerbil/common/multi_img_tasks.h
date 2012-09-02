@@ -73,8 +73,9 @@ protected:
 
 class GradientTbb : public BackgroundTask {
 public:
-	GradientTbb(multi_img_ptr source, multi_img_ptr current) 
-		: source(source), current(current) {}
+	GradientTbb(multi_img_ptr source, multi_img_ptr current, 
+		cv::Rect targetRoi = cv::Rect(0, 0, 0, 0)) 
+		: BackgroundTask(targetRoi), source(source), current(current) {}
 	virtual ~GradientTbb() {}
 	void run();
 	void cancel() { stopper.cancel_group_execution(); }
@@ -107,8 +108,9 @@ protected:
 
 class PcaTbb : public BackgroundTask {
 public:
-	PcaTbb(multi_img_ptr source, multi_img_ptr current, unsigned int components = 0) 
-		: source(source), current(current), components(components) {}
+	PcaTbb(multi_img_ptr source, multi_img_ptr current, unsigned int components = 0, 
+		cv::Rect targetRoi = cv::Rect(0, 0, 0, 0)) 
+		: BackgroundTask(targetRoi), source(source), current(current), components(components) {}
 	virtual ~PcaTbb() {}
 	void run();
 	void cancel() { stopper.cancel_group_execution(); }

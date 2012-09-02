@@ -34,7 +34,8 @@ class BackgroundTask {
 #endif
 
 public:
-	BackgroundTask() : terminated(false), success(false) {};
+	BackgroundTask(cv::Rect targetRoi = cv::Rect(0, 0, 0, 0)) 
+		: terminated(false), success(false), targetRoi(targetRoi) {};
 	virtual ~BackgroundTask() {};
 
 	/** Task-specific algorithm implemented in the inheritor. It depends
