@@ -29,6 +29,10 @@
 #endif
 
 namespace MultiImg {
+	namespace CommonTbb {
+		class RebuildPixels;
+		class ApplyCache;
+	}
 	class BgrTbb;
 	class GradientTbb;
 	class PcaTbb;
@@ -479,6 +483,8 @@ protected:
 	mutable Mask dirty;
 	mutable bool anydirt;
 
+	friend class MultiImg::CommonTbb::RebuildPixels;
+	friend class MultiImg::CommonTbb::ApplyCache;
 	friend class MultiImg::BgrTbb;
 	friend class MultiImg::GradientTbb;
 	friend class MultiImg::PcaTbb;
