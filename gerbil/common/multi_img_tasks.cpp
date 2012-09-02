@@ -16,6 +16,30 @@ namespace CIEObserver {
 
 namespace MultiImg {
 
+namespace CommonTbb {
+
+void CommonTbb::RebuildPixels::operator()(const tbb::blocked_range<size_t> &r) const
+{
+	for (size_t d = r.begin(); d != r.end(); ++d) {
+		multi_img::Band &src = multi.bands[d];
+		multi_img::BandConstIt it; size_t i;
+		for (it = src.begin(), i = 0; it != src.end(); ++it, ++i)
+			multi.pixels[i][d] = *it;
+	}
+}
+
+void CommonTbb::ApplyCache::operator()(const tbb::blocked_range<size_t> &r) const
+{
+	for (size_t d = r.begin(); d != r.end(); ++d) {
+		multi_img::Band &dst = multi.bands[d];
+		multi_img::BandIt it; size_t i;
+		for (it = dst.begin(), i = 0; it != dst.end(); ++it, ++i)
+			*it = multi.pixels[i][d];
+	}
+}
+
+}
+
 void BgrSerial::run() 
 {
 	SharedDataRead rlock(multi->lock);
@@ -201,9 +225,9 @@ void PcaTbb::run()
 
 	cv::Mat_<multi_img::Value> pixels(
 		(*source)->size(), (*source)->width * (*source)->height);
-	Prolog computeProlog(**source, pixels);
+	Pixels computePixels(**source, pixels);
 	tbb::parallel_for(tbb::blocked_range<size_t>(0, (*source)->size()), 
-		computeProlog, tbb::auto_partitioner(), stopper);
+		computePixels, tbb::auto_partitioner(), stopper);
 
 	cv::PCA pca(pixels, cv::noArray(), CV_PCA_DATA_AS_COL, components);
 
@@ -213,9 +237,9 @@ void PcaTbb::run()
 	tbb::parallel_for(tbb::blocked_range<size_t>(0, result->pixels.size()), 
 		computeProjection, tbb::auto_partitioner(), stopper);
 
-	Epilog computeEpilog(*result);
+	CommonTbb::ApplyCache applyCache(*result);
 	tbb::parallel_for(tbb::blocked_range<size_t>(0, result->size()), 
-		computeEpilog, tbb::auto_partitioner(), stopper);
+		applyCache, tbb::auto_partitioner(), stopper);
 
 	result->dirty.setTo(0);
 	result->anydirt = false;
@@ -233,7 +257,7 @@ void PcaTbb::run()
 	}
 }
 
-void PcaTbb::Prolog::operator()(const tbb::blocked_range<size_t> &r) const
+void PcaTbb::Pixels::operator()(const tbb::blocked_range<size_t> &r) const
 {
 	for (size_t d = r.begin(); d != r.end(); ++d) {
 		multi_img::Band &src = source.bands[d];
@@ -249,16 +273,6 @@ void PcaTbb::Projection::operator()(const tbb::blocked_range<size_t> &r) const
 		cv::Mat_<multi_img::Value> input = source.col(i);
 		cv::Mat_<multi_img::Value> output(target.pixels[i], false);
 		pca.project(input, output);
-	}
-}
-
-void PcaTbb::Epilog::operator()(const tbb::blocked_range<size_t> &r) const
-{
-	for (size_t d = r.begin(); d != r.end(); ++d) {
-		multi_img::Band &dst = multi.bands[d];
-		multi_img::BandIt it; size_t i;
-		for (it = dst.begin(), i = 0; it != dst.end(); ++it, ++i)
-			*it = multi.pixels[i][d];
 	}
 }
 

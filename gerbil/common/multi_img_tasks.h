@@ -21,6 +21,24 @@
 
 namespace MultiImg {
 
+namespace CommonTbb {
+	class RebuildPixels {
+	public:
+		RebuildPixels(multi_img &multi) : multi(multi) {}
+		void operator()(const tbb::blocked_range<size_t> &r) const;
+	private:
+		multi_img &multi;
+	};
+
+	class ApplyCache {
+	public:
+		ApplyCache(multi_img &multi) : multi(multi) {}
+		void operator()(const tbb::blocked_range<size_t> &r) const;
+	private:
+		multi_img &multi;
+	};
+}
+
 class BgrSerial : public BackgroundTask {
 public:
 	BgrSerial(multi_img_ptr multi, mat_vec3f_ptr bgr) 
@@ -117,9 +135,9 @@ public:
 protected:
 	tbb::task_group_context stopper;
 
-	class Prolog {
+	class Pixels {
 	public:
-		Prolog(multi_img &source, cv::Mat_<multi_img::Value> &target) 
+		Pixels(multi_img &source, cv::Mat_<multi_img::Value> &target) 
 			: source(source), target(target) {}
 		void operator()(const tbb::blocked_range<size_t> &r) const;
 	private:
@@ -136,14 +154,6 @@ protected:
 		cv::Mat_<multi_img::Value> &source;
 		multi_img &target;
 		cv::PCA &pca;
-	};
-
-	class Epilog {
-	public:
-		Epilog(multi_img &multi) : multi(multi) {}
-		void operator()(const tbb::blocked_range<size_t> &r) const;
-	private:
-		multi_img &multi;
 	};
 
 	multi_img_ptr source;
