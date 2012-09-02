@@ -60,7 +60,7 @@ void BgrTbb::run()
 		if (idx < 0 || idx > 94)
 			continue;
 
-		Xyz computeXyz(multi, xyz, i, idx);
+		Xyz computeXyz(**multi, xyz, i, idx);
 		tbb::parallel_for(tbb::blocked_range2d<int>(0, xyz.rows, 0, xyz.cols), 
 			computeXyz, tbb::auto_partitioner(), stopper);
 
@@ -71,7 +71,7 @@ void BgrTbb::run()
 		greensum = 1.f;
 
 	cv::Mat_<cv::Vec3f> *newBgr = new cv::Mat_<cv::Vec3f>((*multi)->height, (*multi)->width);
-	Bgr computeBgr(multi, xyz, *newBgr, greensum);
+	Bgr computeBgr(**multi, xyz, *newBgr, greensum);
 	tbb::parallel_for(tbb::blocked_range2d<int>(0, newBgr->rows, 0, newBgr->cols), 
 		computeBgr, tbb::auto_partitioner(), stopper);
 
@@ -90,7 +90,7 @@ void BgrTbb::Xyz::operator()(const tbb::blocked_range2d<int> &r) const
 	for (int i = r.rows().begin(); i != r.rows().end(); ++i) {
 		for (int j = r.cols().begin(); j != r.cols().end(); ++j) {
 			cv::Vec3f &v = xyz(i, j);
-			float intensity = (*multi)->bands[band](i, j) * 1.f/(*multi)->maxval;
+			float intensity = multi.bands[band](i, j) * 1.f / multi.maxval;
 			v[0] += CIEObserver::x[cie] * intensity;
 			v[1] += CIEObserver::y[cie] * intensity;
 			v[2] += CIEObserver::z[cie] * intensity;
@@ -106,7 +106,7 @@ void BgrTbb::Bgr::operator()(const tbb::blocked_range2d<int> &r) const
 			cv::Vec3f &vd = bgr(i, j);
 			for (unsigned int j = 0; j < 3; ++j)
 				vs[j] /= greensum;
-			(*multi)->xyz2bgr(vs, vd);
+			multi.xyz2bgr(vs, vd);
 		}
 	}
 }

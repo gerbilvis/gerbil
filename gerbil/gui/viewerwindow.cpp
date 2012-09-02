@@ -474,7 +474,7 @@ void ViewerWindow::RgbTbb::run()
 	cv::Mat_<cv::Vec3f> &bgrmat = *(*bgr);
 	QImage *newRgb = new QImage(bgrmat.cols, bgrmat.rows, QImage::Format_ARGB32);
 
-	Rgb computeRgb(multi, bgrmat, *newRgb);
+	Rgb computeRgb(bgrmat, *newRgb);
 	tbb::parallel_for(tbb::blocked_range2d<int>(0, bgrmat.rows, 0, bgrmat.cols), 
 		computeRgb, tbb::auto_partitioner(), stopper);
 

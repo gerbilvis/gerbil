@@ -63,11 +63,11 @@ protected:
 
 	class Xyz {
 	public:
-		Xyz(multi_img_ptr &multi, cv::Mat_<cv::Vec3f> &xyz, size_t band, int cie) 
+		Xyz(multi_img &multi, cv::Mat_<cv::Vec3f> &xyz, size_t band, int cie) 
 			: multi(multi), xyz(xyz), band(band), cie(cie) {}
 		void operator()(const tbb::blocked_range2d<int> &r) const;
 	private:
-		multi_img_ptr &multi;
+		multi_img &multi;
 		cv::Mat_<cv::Vec3f> &xyz;
 		size_t band;
 		int cie;
@@ -75,11 +75,11 @@ protected:
 
 	class Bgr {
 	public:
-		Bgr(multi_img_ptr &multi, cv::Mat_<cv::Vec3f> &xyz, cv::Mat_<cv::Vec3f> &bgr, float greensum) 
+		Bgr(multi_img &multi, cv::Mat_<cv::Vec3f> &xyz, cv::Mat_<cv::Vec3f> &bgr, float greensum) 
 			: multi(multi), xyz(xyz), bgr(bgr), greensum(greensum) {}
 		void operator()(const tbb::blocked_range2d<int> &r) const;
 	private:
-		multi_img_ptr &multi;
+		multi_img &multi;
 		cv::Mat_<cv::Vec3f> &xyz;
 		cv::Mat_<cv::Vec3f> &bgr;
 		float greensum;

@@ -58,11 +58,10 @@ public:
 	protected:
 		class Rgb {
 		public:
-			Rgb(multi_img_ptr &multi, cv::Mat_<cv::Vec3f> &bgr, QImage &rgb) 
-				: multi(multi), bgr(bgr), rgb(rgb) {}
+			Rgb(cv::Mat_<cv::Vec3f> &bgr, QImage &rgb) 
+				: bgr(bgr), rgb(rgb) {}
 			void operator()(const tbb::blocked_range2d<int> &r) const;
 		private:
-			multi_img_ptr &multi;
 			cv::Mat_<cv::Vec3f> &bgr;
 			QImage &rgb;
 		};
