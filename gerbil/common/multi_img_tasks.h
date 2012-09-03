@@ -91,9 +91,9 @@ protected:
 
 class RescaleTbb : public BackgroundTask {
 public:
-	RescaleTbb(multi_img_ptr source, multi_img_ptr target, size_t newsize, 
+	RescaleTbb(multi_img_ptr source, multi_img_ptr current, size_t newsize, 
 		cv::Rect targetRoi = cv::Rect(0, 0, 0, 0)) 
-		: BackgroundTask(targetRoi), source(source), target(target), newsize(newsize) {}
+		: BackgroundTask(targetRoi), source(source), current(current), newsize(newsize) {}
 	virtual ~RescaleTbb() {}
 	void run();
 	void cancel() { stopper.cancel_group_execution(); }
@@ -112,7 +112,7 @@ protected:
 	};
 
 	multi_img_ptr source;
-	multi_img_ptr target;
+	multi_img_ptr current;
 	size_t newsize;
 };
 

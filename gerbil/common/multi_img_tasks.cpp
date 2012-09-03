@@ -122,19 +122,19 @@ void RescaleTbb::run()
 	temp.dirty.setTo(0);
 	temp.anydirt = false;
 
-	multi_img *result = new multi_img(
+	multi_img *target = new multi_img(
 		(*source)->width, (*source)->height, newsize);
-	result->minval = temp.minval;
-	result->maxval = temp.maxval;
-	Resize computeResize(temp, *result, newsize);
+	target->minval = temp.minval;
+	target->maxval = temp.maxval;
+	Resize computeResize(temp, *target, newsize);
 	tbb::parallel_for(tbb::blocked_range2d<int>(0, temp.height, 0, temp.width), 
 		computeResize, tbb::auto_partitioner(), stopper);
 
-	CommonTbb::ApplyCache applyCache(*result);
-	tbb::parallel_for(tbb::blocked_range<size_t>(0, result->size()), 
+	CommonTbb::ApplyCache applyCache(*target);
+	tbb::parallel_for(tbb::blocked_range<size_t>(0, target->size()), 
 		applyCache, tbb::auto_partitioner(), stopper);
-	result->dirty.setTo(0);
-	result->anydirt = false;
+	target->dirty.setTo(0);
+	target->anydirt = false;
 
 	{
 		cv::Mat_<float> tmpmeta1(cv::Size(1, temp.meta.size())), tmpmeta2;
@@ -145,17 +145,17 @@ void RescaleTbb::run()
 		}
 		cv::resize(tmpmeta1, tmpmeta2, cv::Size(1, newsize));
 		for (size_t b = 0; b < newsize; b++) {
-			result->meta[b] = multi_img::BandDesc(tmpmeta2(0, b));
+			target->meta[b] = multi_img::BandDesc(tmpmeta2(0, b));
 		}
 	}
 
 	if (stopper.is_group_execution_cancelled()) {
 		stopper.reset();
-		delete result;
+		delete target;
 		return;
 	} else {
-		SharedDataWrite wlock(target->lock);
-		delete target->swap(result);
+		SharedDataWrite wlock(current->lock);
+		delete current->swap(target);
 	}
 }
 
@@ -290,29 +290,29 @@ void PcaTbb::run()
 
 	cv::PCA pca(pixels, cv::noArray(), CV_PCA_DATA_AS_COL, components);
 
-	multi_img *result = new multi_img(
+	multi_img *target = new multi_img(
 		(*source)->width, (*source)->height, pca.eigenvectors.rows);
-	Projection computeProjection(pixels, *result, pca);
-	tbb::parallel_for(tbb::blocked_range<size_t>(0, result->pixels.size()), 
+	Projection computeProjection(pixels, *target, pca);
+	tbb::parallel_for(tbb::blocked_range<size_t>(0, target->pixels.size()), 
 		computeProjection, tbb::auto_partitioner(), stopper);
 
-	CommonTbb::ApplyCache applyCache(*result);
-	tbb::parallel_for(tbb::blocked_range<size_t>(0, result->size()), 
+	CommonTbb::ApplyCache applyCache(*target);
+	tbb::parallel_for(tbb::blocked_range<size_t>(0, target->size()), 
 		applyCache, tbb::auto_partitioner(), stopper);
 
-	result->dirty.setTo(0);
-	result->anydirt = false;
-	std::pair<multi_img::Value, multi_img::Value> range = result->data_range();
-	result->minval = range.first;
-	result->maxval = range.second;
+	target->dirty.setTo(0);
+	target->anydirt = false;
+	std::pair<multi_img::Value, multi_img::Value> range = target->data_range();
+	target->minval = range.first;
+	target->maxval = range.second;
 
 	if (stopper.is_group_execution_cancelled()) {
 		stopper.reset();
-		delete result;
+		delete target;
 		return;
 	} else {
 		SharedDataWrite wlock(current->lock);
-		delete current->swap(result);
+		delete current->swap(target);
 	}
 }
 
