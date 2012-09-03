@@ -65,6 +65,9 @@ void BgrTbb::run()
 			computeXyz, tbb::auto_partitioner(), stopper);
 
 		greensum += CIEObserver::y[idx];
+
+		if (stopper.is_group_execution_cancelled())
+			break;
 	}
 
 	if (greensum == 0.f)
@@ -76,7 +79,6 @@ void BgrTbb::run()
 		computeBgr, tbb::auto_partitioner(), stopper);
 
 	if (stopper.is_group_execution_cancelled()) {
-		stopper.reset();
 		delete newBgr;
 		return;
 	} else {
@@ -123,7 +125,6 @@ void Band2QImageTbb::run()
 		computeConversion, tbb::auto_partitioner(), stopper);
 
 	if (stopper.is_group_execution_cancelled()) {
-		stopper.reset();
 		delete target;
 		return;
 	} else {
@@ -176,7 +177,7 @@ void RescaleTbb::run()
 		target->dirty.setTo(0);
 		target->anydirt = false;
 
-		{
+		if (!stopper.is_group_execution_cancelled()) {
 			cv::Mat_<float> tmpmeta1(cv::Size(1, temp->meta.size())), tmpmeta2;
 			std::vector<multi_img::BandDesc>::const_iterator it;
 			unsigned int i;
@@ -197,7 +198,6 @@ void RescaleTbb::run()
 	}
 
 	if (stopper.is_group_execution_cancelled()) {
-		stopper.reset();
 		delete target;
 		return;
 	} else {
@@ -260,6 +260,9 @@ void GradientTbb::run()
 			multi_img::Band curBand = (*current)->bands[i](copyCur);
 			multi_img::Band tgtBand = target->bands[i](copySrc);
 			curBand.copyTo(tgtBand);
+
+			if (stopper.is_group_execution_cancelled())
+				break;
 		}
 	}
 
@@ -274,6 +277,9 @@ void GradientTbb::run()
 			tbb::parallel_for(tbb::blocked_range<size_t>(0, temp.size()), 
 				computeLog, tbb::auto_partitioner(), stopper);
 		}
+
+		if (stopper.is_group_execution_cancelled()) 
+			break;
 	}
 	temp.minval = 0.;
 	temp.maxval = log((*source)->maxval);
@@ -289,6 +295,9 @@ void GradientTbb::run()
 			tbb::parallel_for(tbb::blocked_range<size_t>(0, target->size()), 
 				computeGrad, tbb::auto_partitioner(), stopper);
 		}
+
+		if (stopper.is_group_execution_cancelled())
+			break;
 	}
 	target->minval = -temp.maxval;
 	target->maxval = temp.maxval;
@@ -301,7 +310,6 @@ void GradientTbb::run()
 	target->anydirt = false;
 
 	if (stopper.is_group_execution_cancelled()) {
-		stopper.reset();
 		delete target;
 		return;
 	} else {
@@ -353,15 +361,16 @@ void PcaTbb::run()
 	tbb::parallel_for(tbb::blocked_range<size_t>(0, target->size()), 
 		applyCache, tbb::auto_partitioner(), stopper);
 
-	target->dirty.setTo(0);
-	target->anydirt = false;
-	std::pair<multi_img::Value, multi_img::Value> range = target->data_range();
-	target->minval = range.first;
-	target->maxval = range.second;
-	target->roi = (*source)->roi;
+	if (!stopper.is_group_execution_cancelled()) {
+		target->dirty.setTo(0);
+		target->anydirt = false;
+		std::pair<multi_img::Value, multi_img::Value> range = target->data_range();
+		target->minval = range.first;
+		target->maxval = range.second;
+		target->roi = (*source)->roi;
+	}
 
 	if (stopper.is_group_execution_cancelled()) {
-		stopper.reset();
 		delete target;
 		return;
 	} else {

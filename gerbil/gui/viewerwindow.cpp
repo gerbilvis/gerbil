@@ -470,6 +470,9 @@ void ViewerWindow::RgbSerial::run()
 void ViewerWindow::RgbTbb::run()
 {
 	MultiImg::BgrTbb::run();
+	if (stopper.is_group_execution_cancelled())
+		return;
+
 	SharedDataRead rlock(bgr->lock);
 	cv::Mat_<cv::Vec3f> &bgrmat = *(*bgr);
 	QImage *newRgb = new QImage(bgrmat.cols, bgrmat.rows, QImage::Format_ARGB32);
@@ -478,8 +481,13 @@ void ViewerWindow::RgbTbb::run()
 	tbb::parallel_for(tbb::blocked_range2d<int>(0, bgrmat.rows, 0, bgrmat.cols), 
 		computeRgb, tbb::auto_partitioner(), stopper);
 
-	SharedDataWrite wlock(rgb->lock);
-	delete rgb->swap(newRgb);
+	if (stopper.is_group_execution_cancelled()) {
+		delete newRgb;
+		return;
+	} else {
+		SharedDataWrite wlock(rgb->lock);
+		delete rgb->swap(newRgb);
+	}
 }
 
 void ViewerWindow::RgbTbb::Rgb::operator()(const tbb::blocked_range2d<int> &r) const
