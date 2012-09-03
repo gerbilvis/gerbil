@@ -34,6 +34,7 @@ namespace MultiImg {
 		class ApplyCache;
 	}
 	class BgrTbb;
+	class Band2QImageTbb;
 	class RescaleTbb;
 	class GradientTbb;
 	class PcaTbb;
@@ -487,6 +488,7 @@ protected:
 	friend class MultiImg::CommonTbb::RebuildPixels;
 	friend class MultiImg::CommonTbb::ApplyCache;
 	friend class MultiImg::BgrTbb;
+	friend class MultiImg::Band2QImageTbb;
 	friend class MultiImg::RescaleTbb;
 	friend class MultiImg::GradientTbb;
 	friend class MultiImg::PcaTbb;
