@@ -111,6 +111,41 @@ void BgrTbb::Bgr::operator()(const tbb::blocked_range2d<int> &r) const
 	}
 }
 
+#ifdef WITH_QT
+void Band2QImageTbb::run() 
+{
+	SharedDataRead rlock(multi->lock);
+
+	multi_img::Band &source = (*multi)->bands[band];
+	QImage *target = new QImage(source.cols, source.rows, QImage::Format_ARGB32);
+	Conversion computeConversion(source, *target, minval, maxval);
+	tbb::parallel_for(tbb::blocked_range2d<int>(0, source.rows, 0, source.cols), 
+		computeConversion, tbb::auto_partitioner(), stopper);
+
+	if (stopper.is_group_execution_cancelled()) {
+		stopper.reset();
+		delete target;
+		return;
+	} else {
+		SharedDataWrite wlock(image->lock);
+		delete image->swap(target);
+	}
+}
+
+void Band2QImageTbb::Conversion::operator()(const tbb::blocked_range2d<int> &r) const
+{
+	multi_img::Value scale = 255.0 / (maxval - minval);
+	for (int y = r.rows().begin(); y != r.rows().end(); ++y) {
+		const multi_img::Value *srcrow = band[y];
+		QRgb *destrow = (QRgb*)image.scanLine(y);
+		for (int x = r.cols().begin(); x != r.cols().end(); ++x) {
+			unsigned int color = (srcrow[x] - minval) * scale;
+			destrow[x] = qRgba(color, color, color, 255);
+		}
+	}
+}
+#endif
+
 void RescaleTbb::run() 
 {
 	SharedDataRead rlock(source->lock);

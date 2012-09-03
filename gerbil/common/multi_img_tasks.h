@@ -19,6 +19,11 @@
 #include <tbb/partitioner.h>
 #include <tbb/parallel_for.h>
 
+#ifdef WITH_QT
+#include <QImage>
+#include <QColor>
+#endif
+
 namespace MultiImg {
 
 namespace CommonTbb {
@@ -88,6 +93,39 @@ protected:
 	multi_img_ptr multi;
 	mat_vec3f_ptr bgr;
 };
+
+#ifdef WITH_QT
+class Band2QImageTbb : public BackgroundTask {
+public:
+	Band2QImageTbb(multi_img_ptr multi, qimage_ptr image, size_t band,
+		multi_img::Value minval, multi_img::Value maxval)
+		: multi(multi), image(image), band(band), minval(minval), maxval(maxval) {}
+	virtual ~Band2QImageTbb() {}
+	void run();
+	void cancel() { stopper.cancel_group_execution(); }
+protected:
+	tbb::task_group_context stopper;
+
+	class Conversion {
+	public:
+		Conversion(multi_img::Band &band, QImage &image,
+			multi_img::Value minval, multi_img::Value maxval)
+			: band(band), image(image), minval(minval), maxval(maxval) {}
+		void operator()(const tbb::blocked_range2d<int> &r) const;
+	private:
+		multi_img::Band &band;
+		QImage &image;
+		multi_img::Value minval;
+		multi_img::Value maxval;
+	};
+
+	multi_img_ptr multi;
+	qimage_ptr image;
+	size_t band;
+	multi_img::Value minval;
+	multi_img::Value maxval;
+};
+#endif
 
 class RescaleTbb : public BackgroundTask {
 public:
