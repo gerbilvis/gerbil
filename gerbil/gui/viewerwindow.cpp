@@ -80,17 +80,6 @@ void ViewerWindow::applyROI()
 	BackgroundTaskQueue::instance().push(taskGradient);
 	taskGradient->wait();
 
-	/*
-	{
-		cv::PCA pca((*image)->pca());
-		imagepca = new multi_img((*image)->project(pca));
-	}
-	{
-		cv::PCA pca((*gradient)->pca());
-		gradientpca = new multi_img((*gradient)->project(pca));
-	}
-	*/
-
 	{
 		BackgroundTaskPtr taskPca(new MultiImg::PcaTbb(
 			image, imagepca, 0, roi));
