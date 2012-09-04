@@ -16,6 +16,7 @@
 
 #ifdef WITH_OPENCV2 // theoretically, vole could be built w/o opencv..
 
+#include <cfloat>
 #include <vector>
 #include <sstream>
 #include <iostream>
@@ -38,6 +39,7 @@ namespace MultiImg {
 	class RescaleTbb;
 	class GradientTbb;
 	class PcaTbb;
+	class DataRangeTbb;
 }
 
 /// Class that holds a multispectral image.
@@ -66,6 +68,8 @@ public:
 
 	/// value type (use float to save memory, double for higher precision)
 	typedef float Value;
+	static const float ValueMin;
+	static const float ValueMax;
 	static const int ValueType = CV_32F;
 	/// a spectral band
 	typedef cv::Mat_<Value> Band;
@@ -492,6 +496,7 @@ protected:
 	friend class MultiImg::RescaleTbb;
 	friend class MultiImg::GradientTbb;
 	friend class MultiImg::PcaTbb;
+	friend class MultiImg::DataRangeTbb;
 };
 
 #endif // opencv

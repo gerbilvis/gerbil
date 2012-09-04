@@ -15,6 +15,9 @@
 
 using namespace std;
 
+const float multi_img::ValueMin = -FLT_MAX;
+const float multi_img::ValueMax = FLT_MAX;
+
 multi_img::multi_img(const string& filename)
  : minval(0.), maxval(0.), width(0), height(0)
 {
