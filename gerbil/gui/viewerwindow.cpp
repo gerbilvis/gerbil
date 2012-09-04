@@ -26,7 +26,8 @@
 ViewerWindow::ViewerWindow(multi_img *image, QWidget *parent)
 	: QMainWindow(parent),
 	  full_image(new SharedData<multi_img>(image)),
-	  image(NULL), gradient(NULL), imagepca(NULL), gradientpca(NULL),
+	  image(new SharedData<multi_img>(new multi_img(0, 0, 0))), 
+	  gradient(NULL), imagepca(NULL), gradientpca(NULL),
 	  normIMG(NORM_OBSERVED), normGRAD(NORM_OBSERVED),
 	  full_rgb_temp(new SharedData<QImage>(new QImage())),
 	  usRunner(NULL), contextMenu(NULL),
@@ -56,24 +57,28 @@ ViewerWindow::ViewerWindow(multi_img *image, QWidget *parent)
 void ViewerWindow::applyROI()
 {
 	/// first: set up new working images
-	delete image;
-	delete gradient;
 
 	size_t numbands = bandsSlider->value();
-	if (numbands > 0 && numbands < (*full_image)->size()) {
-		multi_img tmpimg = (*full_image)->spec_rescale(numbands);
-		image = new multi_img(tmpimg, roi);
-	} else {
-		image = new multi_img(**full_image, roi);
-	}
+	if (numbands <= 0)
+		numbands = 1;
+	if (numbands > (*full_image)->size())
+		numbands = (*full_image)->size();
 
-	gradient = new multi_img(*image);
+	multi_img_ptr scoped_image(
+		new SharedData<multi_img>(new multi_img(**full_image, roi)));
+	BackgroundTaskPtr taskRescale(new MultiImg::RescaleTbb(
+		scoped_image, image, numbands, roi));
+	//QObject::connect(taskRescale.get(), SIGNAL(finished(bool), , SLOT());
+	BackgroundTaskQueue::instance().push(taskRescale);
+	taskRescale->wait();
+
+	gradient = new multi_img(**image);
 	gradient->apply_logarithm();
 	*gradient = gradient->spec_gradient();
 
 	{
-		cv::PCA pca(image->pca());
-		imagepca = new multi_img(image->project(pca));
+		cv::PCA pca((*image)->pca());
+		imagepca = new multi_img((*image)->project(pca));
 	}
 	{
 		cv::PCA pca(gradient->pca());
@@ -91,8 +96,8 @@ void ViewerWindow::applyROI()
 	/* set labeling, and label colors (depend on ROI size) */
 	cv::Mat1s &labels = bandView->labels;
 	if (labels.empty() ||
-		labels.rows != image->height || labels.cols != image->width) {
-		labels = cv::Mat1s(image->height, image->width, (short)0);
+		labels.rows != (*image)->height || labels.cols != (*image)->width) {
+		labels = cv::Mat1s((*image)->height, (*image)->width, (short)0);
 		for (size_t i = 0; i < viewers.size(); ++i)
 			viewers[i]->labels = labels;
 	}
@@ -102,10 +107,10 @@ void ViewerWindow::applyROI()
 	/// second: re-initialize gui
 	/* empty/init caches */
 	// note: each vector's size is atmost #bands (e.g., gradient has one less)
-	bands.assign(viewers.size(), std::vector<QPixmap*>(image->size(), NULL));
+	bands.assign(viewers.size(), std::vector<QPixmap*>((*image)->size(), NULL));
 
 	/* do setImage() last */
-	viewIMG->setImage(image, IMG);
+	viewIMG->setImage(&(**image), IMG);
 	viewIMGPCA->setImage(imagepca, IMGPCA);
 	viewGRAD->setImage(gradient, GRAD);
 	viewGRADPCA->setImage(gradientpca, GRADPCA);
@@ -275,13 +280,13 @@ void ViewerWindow::initUI()
 	QShortcut *scr = new QShortcut(Qt::CTRL + Qt::Key_S, this);
 	connect(scr, SIGNAL(activated()), this, SLOT(screenshot()));
 
-	//BackgroundTaskPtr task(new ViewerWindow::RgbSerial(
+	//BackgroundTaskPtr taskRgb(new ViewerWindow::RgbSerial(
 	//	full_image, mat_vec3f_ptr(new SharedData<cv::Mat_<cv::Vec3f> >(new cv::Mat_<cv::Vec3f>)), full_rgb_temp));
-	BackgroundTaskPtr task(new ViewerWindow::RgbTbb(
+	BackgroundTaskPtr taskRgb(new ViewerWindow::RgbTbb(
 		full_image, mat_vec3f_ptr(new SharedData<cv::Mat_<cv::Vec3f> >(new cv::Mat_<cv::Vec3f>)), full_rgb_temp));
-	//QObject::connect(task.get(), SIGNAL(finished(bool), this, SLOT(updateRGB(bool)));
-	BackgroundTaskQueue::instance().push(task);
-	updateRGB(task->wait());
+	//QObject::connect(taskRgb.get(), SIGNAL(finished(bool)), this, SLOT(updateRGB(bool)));
+	BackgroundTaskQueue::instance().push(taskRgb);
+	updateRGB(taskRgb->wait());
 }
 
 void ViewerWindow::bandsSliderMoved(int b)
@@ -347,7 +352,7 @@ bool ViewerWindow::setLabelColors(const std::vector<cv::Vec3b> &colors)
 
 void ViewerWindow::setLabels(const vole::Labeling &labeling)
 {
-	assert(labeling().rows == image->height && labeling().cols == image->width);
+	assert(labeling().rows == (*image)->height && labeling().cols == (*image)->width);
 	/* note: always update labels before updating label colors, for the case
 	   that there are less colors available than used in previous labeling */
 	cv::Mat1s labels = labeling();
@@ -437,13 +442,13 @@ void ViewerWindow::applyIlluminant() {
 	if (roi.width > 0)
 		applyROI();
 
-	//BackgroundTaskPtr task(new ViewerWindow::RgbSerial(
+	//BackgroundTaskPtr taskRgb(new ViewerWindow::RgbSerial(
 	//	full_image, mat_vec3f_ptr(new SharedData<cv::Mat_<cv::Vec3f> >(new cv::Mat_<cv::Vec3f>)), full_rgb_temp));
-	BackgroundTaskPtr task(new ViewerWindow::RgbTbb(
+	BackgroundTaskPtr taskRgb(new ViewerWindow::RgbTbb(
 		full_image, mat_vec3f_ptr(new SharedData<cv::Mat_<cv::Vec3f> >(new cv::Mat_<cv::Vec3f>)), full_rgb_temp));
-	//QObject::connect(task.get(), SIGNAL(finished(bool), this, SLOT(updateRGB(bool)));
-	BackgroundTaskQueue::instance().push(task);
-	updateRGB(task->wait());
+	//QObject::connect(taskRgb.get(), SIGNAL(finished(bool)), this, SLOT(updateRGB(bool)));
+	BackgroundTaskQueue::instance().push(taskRgb);
+	updateRGB(taskRgb->wait());
 
 	/* reflect change in our own gui (will propagate to viewIMG) */
 	i1Box->setCurrentIndex(i2Box->currentIndex());
@@ -568,7 +573,7 @@ std::pair<multi_img::Value, multi_img::Value>
 ViewerWindow::getNormRange(normMode mode, int target,
 						   std::pair<multi_img::Value, multi_img::Value> cur)
 {
-	const multi_img *img = (target == 0 ? image : gradient);
+	const multi_img *img = (target == 0 ? &(**image) : gradient);
 	std::pair<multi_img::Value, multi_img::Value> ret;
 	switch (mode) {
 	case NORM_OBSERVED:
@@ -604,7 +609,7 @@ void ViewerWindow::updateImageRange(int target)
 {
 	const std::pair<multi_img::Value, multi_img::Value> &r =
 			(target == 0 ? normIMGRange : normGRADRange);
-	multi_img *i = (target == 0 ? image : gradient);
+	multi_img *i = (target == 0 ? &(**image) : gradient);
 	i->minval = r.first;
 	i->maxval = r.second;
 }
@@ -675,7 +680,7 @@ void ViewerWindow::applyNormUserRange(bool update)
 		if (target == 0) {
 			viewIMG->rebuild(-1);
 			/* empty cache */
-			bands[IMG].assign(image->size(), NULL);
+			bands[IMG].assign((*image)->size(), NULL);
 		} else {
 			viewGRAD->rebuild(-1);
 			/* empty cache */
@@ -695,19 +700,19 @@ void ViewerWindow::clampNormUserRange()
 	/* if image is changed, change full image. for gradient, we cannot preserve
 		the gradient over ROI or illuminant changes, so it remains a local change */
 	if (target == 0) {
-		(*full_image)->minval = image->minval;
-		(*full_image)->maxval = image->maxval;
+		(*full_image)->minval = (*image)->minval;
+		(*full_image)->maxval = (*image)->maxval;
 		(*full_image)->clamp();
 		if (roi.width > 0)
 			applyROI();
 
-		//BackgroundTaskPtr task(new ViewerWindow::RgbSerial(
+		//BackgroundTaskPtr taskRgb(new ViewerWindow::RgbSerial(
 		//	full_image, mat_vec3f_ptr(new SharedData<cv::Mat_<cv::Vec3f> >(new cv::Mat_<cv::Vec3f>)), full_rgb_temp));
-		BackgroundTaskPtr task(new ViewerWindow::RgbTbb(
+		BackgroundTaskPtr taskRgb(new ViewerWindow::RgbTbb(
 			full_image, mat_vec3f_ptr(new SharedData<cv::Mat_<cv::Vec3f> >(new cv::Mat_<cv::Vec3f>)), full_rgb_temp));
-		//QObject::connect(task.get(), SIGNAL(finished(bool), this, SLOT(updateRGB(bool)));
-		BackgroundTaskQueue::instance().push(task);
-		updateRGB(task->wait());
+		//QObject::connect(taskRgb.get(), SIGNAL(finished(bool)), this, SLOT(updateRGB(bool)));
+		BackgroundTaskQueue::instance().push(taskRgb);
+		updateRGB(taskRgb->wait());
 	} else {
 		gradient->clamp();
 		viewGRAD->rebuild(-1);
@@ -779,7 +784,7 @@ void ViewerWindow::startGraphseg()
 	int src = graphsegSourceBox->itemData(graphsegSourceBox->currentIndex())
 								 .value<int>();
 	if (src == 0) {
-		runGraphseg(*image, conf);
+		runGraphseg(**image, conf);
 	} else if (src == 1) {
 		runGraphseg(*gradient, conf);
 	} else {	// currently shown band, construct from selection in viewport
@@ -1058,10 +1063,10 @@ void ViewerWindow::newOverlay()
 
 void ViewerWindow::reshapeDock(bool floating)
 {
-	if (!floating || !image)
+	if (!floating || (*image)->height == 0)
 		return;
 
-	float src_aspect = image->width/(float)image->height;
+	float src_aspect = (*image)->width/(float)(*image)->height;
 	float dest_aspect = bandView->width()/(float)bandView->height();
 	// we force the dock aspect ratio to fit band image aspect ratio.
 	// this is not 100% correct
