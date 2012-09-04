@@ -163,7 +163,7 @@ void RescaleTbb::run()
 	multi_img *target = NULL;
 	if (newsize != temp->size()) {
 
-		target = new multi_img((*source)->width, (*source)->height, newsize);
+		target = new multi_img((*source)->height, (*source)->width, newsize);
 		target->minval = temp->minval;
 		target->maxval = temp->maxval;
 		target->roi = temp->roi;
@@ -352,7 +352,7 @@ void PcaTbb::run()
 	cv::PCA pca(pixels, cv::noArray(), CV_PCA_DATA_AS_COL, components);
 
 	multi_img *target = new multi_img(
-		(*source)->width, (*source)->height, pca.eigenvectors.rows);
+		(*source)->height, (*source)->width, pca.eigenvectors.rows);
 	Projection computeProjection(pixels, *target, pca);
 	tbb::parallel_for(tbb::blocked_range<size_t>(0, target->pixels.size()), 
 		computeProjection, tbb::auto_partitioner(), stopper);
