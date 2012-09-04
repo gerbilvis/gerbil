@@ -126,7 +126,7 @@ protected:
     void changeEvent(QEvent *e);
 
 	/* helper functions */
-	void applyROI();
+	void applyROI(bool reuse);
 	void labelmask(bool negative);
 	// returns true if updates were triggered, false if not (trigger yourself!)
 	bool setLabelColors(const std::vector<cv::Vec3b> &colors);

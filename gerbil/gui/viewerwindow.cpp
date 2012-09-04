@@ -50,15 +50,23 @@ ViewerWindow::ViewerWindow(multi_img *image, QWidget *parent)
 	// default to full image if small enough
 	if ((*full_image)->width*(*full_image)->height < 513*513) {
 		roi = cv::Rect(0, 0, (*full_image)->width, (*full_image)->height);
-		applyROI();
+		applyROI(false);
 	} else {
 		ROITrigger();
 	}
 }
 
-void ViewerWindow::applyROI()
+void ViewerWindow::applyROI(bool reuse)
 {
 	/// first: set up new working images
+
+	if (!reuse) {
+		cv::Rect empty(0, 0, 0, 0);
+		(*image)->roi = empty;
+		(*gradient)->roi = empty;
+		(*imagepca)->roi = empty;
+		(*gradientpca)->roi = empty;
+	}
 
 	size_t numbands = bandsSlider->value();
 	if (numbands <= 0)
@@ -303,7 +311,7 @@ void ViewerWindow::bandsSliderMoved(int b)
 {
 	bandsLabel->setText(QString("%1 bands").arg(b));
 	if (!bandsSlider->isSliderDown())
-		applyROI();
+		applyROI(false);
 }
 
 #ifdef WITH_SEG_MEANSHIFT
@@ -450,7 +458,7 @@ void ViewerWindow::applyIlluminant() {
 	viewIMG->setIlluminant((i2 ? &getIlluminantC(i2) : NULL), true);
 	/* rebuild  */
 	if (roi.width > 0)
-		applyROI();
+		applyROI(false);
 
 	//BackgroundTaskPtr taskRgb(new ViewerWindow::RgbSerial(
 	//	full_image, mat_vec3f_ptr(new SharedData<cv::Mat_<cv::Vec3f> >(new cv::Mat_<cv::Vec3f>)), full_rgb_temp));
@@ -714,7 +722,7 @@ void ViewerWindow::clampNormUserRange()
 		(*full_image)->maxval = (*image)->maxval;
 		(*full_image)->clamp();
 		if (roi.width > 0)
-			applyROI();
+			applyROI(false);
 
 		//BackgroundTaskPtr taskRgb(new ViewerWindow::RgbSerial(
 		//	full_image, mat_vec3f_ptr(new SharedData<cv::Mat_<cv::Vec3f> >(new cv::Mat_<cv::Vec3f>)), full_rgb_temp));
@@ -1234,7 +1242,7 @@ void ViewerWindow::ROIDecision(QAbstractButton *sender)
 	if (apply) {
 		const QRect &r = roiView->roi;
 		roi = cv::Rect(r.x(), r.y(), r.width(), r.height());
-		applyROI();
+		applyROI(true);
 	}
 }
 
