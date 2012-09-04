@@ -26,8 +26,9 @@
 ViewerWindow::ViewerWindow(multi_img *image, QWidget *parent)
 	: QMainWindow(parent),
 	  full_image(new SharedData<multi_img>(image)),
-	  image(new SharedData<multi_img>(new multi_img(0, 0, 0))), 
-	  gradient(NULL), imagepca(NULL), gradientpca(NULL),
+	  image(new SharedData<multi_img>(new multi_img(0, 0, 0))),
+	  gradient(new SharedData<multi_img>(new multi_img(0, 0, 0))),
+	  imagepca(NULL), gradientpca(NULL),
 	  normIMG(NORM_OBSERVED), normGRAD(NORM_OBSERVED),
 	  full_rgb_temp(new SharedData<QImage>(new QImage())),
 	  usRunner(NULL), contextMenu(NULL),
@@ -72,17 +73,19 @@ void ViewerWindow::applyROI()
 	BackgroundTaskQueue::instance().push(taskRescale);
 	taskRescale->wait();
 
-	gradient = new multi_img(**image);
-	gradient->apply_logarithm();
-	*gradient = gradient->spec_gradient();
+	BackgroundTaskPtr taskGradient(new MultiImg::GradientTbb(
+		image, gradient, roi));
+	//QObject::connect(taskGradient.get(), SIGNAL(finished(bool), , SLOT());
+	BackgroundTaskQueue::instance().push(taskGradient);
+	taskGradient->wait();
 
 	{
 		cv::PCA pca((*image)->pca());
 		imagepca = new multi_img((*image)->project(pca));
 	}
 	{
-		cv::PCA pca(gradient->pca());
-		gradientpca = new multi_img(gradient->project(pca));
+		cv::PCA pca((*gradient)->pca());
+		gradientpca = new multi_img((*gradient)->project(pca));
 	}
 
 	// calculate new norm ranges inside ROI
@@ -112,7 +115,7 @@ void ViewerWindow::applyROI()
 	/* do setImage() last */
 	viewIMG->setImage(&(**image), IMG);
 	viewIMGPCA->setImage(imagepca, IMGPCA);
-	viewGRAD->setImage(gradient, GRAD);
+	viewGRAD->setImage(&(**gradient), GRAD);
 	viewGRADPCA->setImage(gradientpca, GRADPCA);
 
 	// updateBand only works after image is set (it gets image from viewer)
@@ -573,7 +576,7 @@ std::pair<multi_img::Value, multi_img::Value>
 ViewerWindow::getNormRange(normMode mode, int target,
 						   std::pair<multi_img::Value, multi_img::Value> cur)
 {
-	const multi_img *img = (target == 0 ? &(**image) : gradient);
+	const multi_img *img = (target == 0 ? &(**image) : &(**gradient));
 	std::pair<multi_img::Value, multi_img::Value> ret;
 	switch (mode) {
 	case NORM_OBSERVED:
@@ -609,7 +612,7 @@ void ViewerWindow::updateImageRange(int target)
 {
 	const std::pair<multi_img::Value, multi_img::Value> &r =
 			(target == 0 ? normIMGRange : normGRADRange);
-	multi_img *i = (target == 0 ? &(**image) : gradient);
+	multi_img *i = (target == 0 ? &(**image) : &(**gradient));
 	i->minval = r.first;
 	i->maxval = r.second;
 }
@@ -684,7 +687,7 @@ void ViewerWindow::applyNormUserRange(bool update)
 		} else {
 			viewGRAD->rebuild(-1);
 			/* empty cache */
-			bands[GRAD].assign(gradient->size(), NULL);
+			bands[GRAD].assign((*gradient)->size(), NULL);
 		}
 		updateBand();
 	}
@@ -714,10 +717,10 @@ void ViewerWindow::clampNormUserRange()
 		BackgroundTaskQueue::instance().push(taskRgb);
 		updateRGB(taskRgb->wait());
 	} else {
-		gradient->clamp();
+		(*gradient)->clamp();
 		viewGRAD->rebuild(-1);
 		/* empty cache */
-		bands[GRAD].assign(gradient->size(), NULL);
+		bands[GRAD].assign((*gradient)->size(), NULL);
 		updateBand();
 	}
 }
@@ -786,7 +789,7 @@ void ViewerWindow::startGraphseg()
 	if (src == 0) {
 		runGraphseg(**image, conf);
 	} else if (src == 1) {
-		runGraphseg(*gradient, conf);
+		runGraphseg(**gradient, conf);
 	} else {	// currently shown band, construct from selection in viewport
 		int band = activeViewer->getViewport()->selection;
 		const multi_img *img = activeViewer->getImage();

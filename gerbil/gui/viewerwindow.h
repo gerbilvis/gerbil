@@ -135,8 +135,8 @@ protected:
 	void runGraphseg(const multi_img& input, const vole::GraphSegConfig &config);
 
 	// multispectral image and gradient
-	multi_img_ptr full_image, image;
-	multi_img *gradient, *imagepca, *gradientpca;
+	multi_img_ptr full_image, image, gradient;
+	multi_img *imagepca, *gradientpca;
 	// current region of interest
 	cv::Rect roi;
 	// bands from all representations (image, gradient, PCA..)
