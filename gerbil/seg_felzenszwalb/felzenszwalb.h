@@ -1,0 +1,66 @@
+/*
+Copyright (C) 2006 Pedro Felzenszwalb, 2012 Johannes Jordan
+
+This program is free software; you can redistribute it and/or modify
+it under the terms of the GNU General Public License as published by
+the Free Software Foundation; either version 2 of the License, or
+(at your option) any later version.
+
+This program is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU General Public License for more details.
+
+You should have received a copy of the GNU General Public License
+along with this program; if not, write to the Free Software
+Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307 USA
+*/
+
+#ifndef FELZENSZWALB_H
+#define FELZENSZWALB_H
+
+#include <multi_img.h>
+#include <similarity_measure.h>
+
+namespace gerbil {
+  namespace felzenszwalb {
+
+	// disjoint-set forests using union-by-rank and path compression (sort of).
+	struct uni_elt {
+		int rank;
+		int p;
+		int size;
+	};
+
+	class universe {
+	public:
+		universe(int elements);
+		~universe();
+		int find(int x);
+		void join(int x, int y);
+		int size(int x) const { return elts[x].size; }
+		int num_sets() const { return num; }
+
+	private:
+		uni_elt *elts;
+		int num;
+	};
+
+	// graph
+	struct edge {
+		float w;
+		int a, b;
+	};
+
+	inline bool operator<(const edge &a, const edge &b) {
+		return a.w < b.w;
+	}
+
+	universe* segment_graph(int n_vertices, int n_edges, edge *edges, float c);
+	cv::Mat1i segment_image(const multi_img &im,
+						   vole::SimilarityMeasure<multi_img::Value> *distfun,
+						   float c, int min_size);
+  }
+}
+
+#endif
