@@ -54,13 +54,13 @@ multi_img multi_img::spec_rescale(size_t newsize) const
 
 	/// interpolate wavelength metadata accordingly
 	{
-		cv::Mat_<float> tmpmeta1(cv::Size(1, meta.size())), tmpmeta2;
+		cv::Mat_<float> tmpmeta1(cv::Size(meta.size(), 1)), tmpmeta2;
 		std::vector<BandDesc>::const_iterator it;
 		unsigned int i;
 		for (it = meta.begin(), i = 0; it != meta.end(); it++, i++) {
 			tmpmeta1(0, i) = it->center;
 		}
-		cv::resize(tmpmeta1, tmpmeta2, cv::Size(1, newsize));
+		cv::resize(tmpmeta1, tmpmeta2, cv::Size(newsize, 1));
 		for (size_t b = 0; b < newsize; b++) {
 			ret.meta[b] = BandDesc(tmpmeta2(0, b));
 		}
