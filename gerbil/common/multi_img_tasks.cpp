@@ -178,13 +178,13 @@ void RescaleTbb::run()
 		target->anydirt = false;
 
 		if (!stopper.is_group_execution_cancelled()) {
-			cv::Mat_<float> tmpmeta1(cv::Size(1, temp->meta.size())), tmpmeta2;
+			cv::Mat_<float> tmpmeta1(cv::Size(temp->meta.size(), 1)), tmpmeta2;
 			std::vector<multi_img::BandDesc>::const_iterator it;
 			unsigned int i;
 			for (it = temp->meta.begin(), i = 0; it != temp->meta.end(); it++, i++) {
 				tmpmeta1(0, i) = it->center;
 			}
-			cv::resize(tmpmeta1, tmpmeta2, cv::Size(1, newsize));
+			cv::resize(tmpmeta1, tmpmeta2, cv::Size(newsize, 1));
 			for (size_t b = 0; b < newsize; b++) {
 				target->meta[b] = multi_img::BandDesc(tmpmeta2(0, b));
 			}
