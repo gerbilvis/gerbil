@@ -252,9 +252,10 @@ void FAMS::ComputeScores(float* scores, LSH &lsh) {
 
 // perform an FAMS iteration
 
-unsigned int FAMS::DoMeanShiftAdaptiveIteration(const std::vector<unsigned int>& res,
-												unsigned short *old,
-												unsigned short *ret) {
+unsigned int FAMS::DoMeanShiftAdaptiveIteration(
+			const std::vector<unsigned int>& res,
+			unsigned short *old, unsigned short *ret)
+{
 	double total_weight = 0;
 	int    i, j;
 	double dist;

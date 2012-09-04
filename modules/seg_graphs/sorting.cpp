@@ -303,7 +303,7 @@ bool Score::operator<(const Score& score) const
 /* =============================================================== */
 void sortRange(float * F, int * Es, int M, bool reverse)
 /* =============================================================== */
-/* sort values of array F ascending, Es includes the edge nr. */
+/* sort values of array F ascending (default), Es stores the edge nr. */
 {
 	std::vector<Score> data(M);
 

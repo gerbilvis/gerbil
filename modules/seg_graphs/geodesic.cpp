@@ -103,7 +103,7 @@ void Graph::gageodilate_union_find(float *F) {
 	sortRange(F, Es, edges.size());
 
 	/* first pass */
-	for (unsigned int k = edges.size() - 1; k >= 0; k--) {
+	for (int k = (int)edges.size() - 1; k >= 0; k--) {
 		p = Es[k];
 		for (i = 1; i <= degree2; i += 1) {
 			n = neighbor_edge(p, i);

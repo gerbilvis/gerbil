@@ -93,9 +93,9 @@ inline double LNorm<float>::getSimilarity(const std::vector<float> &v1, const st
 	{
 		const float* x1 = &v1[0];
 		const float* x2 = &v2[0];
-		unsigned int i = 0;
+		int i = 0;
 		__m128 vret = _mm_set1_ps(0.0f);
-		for (; i < v1.size() - 4; i += 4) {
+		for (; i < (int)v1.size() - 4; i += 4) {
 			__m128 vec1 = _mm_load_ps(x1);
 			__m128 vec2 = _mm_load_ps(x2);
 			__m128 vdiff = _mm_sub_ps(vec1, vec2);
@@ -145,9 +145,9 @@ inline double LNorm<double>::getSimilarity(const std::vector<double> &v1, const 
 	{
 		const double* x1 = &v1[0];
 		const double* x2 = &v2[0];
-		unsigned int i = 0;
+		int i = 0;
 		__m128d vret = _mm_set1_pd(0.0);
-		for (; i < v1.size() - 2; i += 2) {
+		for (; i < (int)v1.size() - 2; i += 2) {
 			__m128d vec1 = _mm_load_pd(x1);
 			__m128d vec2 = _mm_load_pd(x2);
 			__m128d vdiff = _mm_sub_pd(vec1, vec2);
