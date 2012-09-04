@@ -9,10 +9,16 @@
 #ifndef SHARED_DATA_H
 #define SHARED_DATA_H
 
+#include <multi_img.h>
+#include <utility>
 #include <boost/shared_ptr.hpp>
 #include <boost/thread/shared_mutex.hpp>
 #include <boost/thread/locks.hpp>
 #include <opencv2/core/core.hpp>
+
+#ifdef WITH_QT
+#include <QImage>
+#endif
 
 typedef boost::shared_mutex SharedDataGuard;
 typedef boost::shared_lock<SharedDataGuard> SharedDataRead; ///< read lock
@@ -57,12 +63,9 @@ private:
 	SharedData<T> &operator=(const SharedData<T> &other); // avoid copying of the wrapper
 };
 
-class multi_img;
 typedef boost::shared_ptr<SharedData<multi_img> > multi_img_ptr;
-
 typedef boost::shared_ptr<SharedData<cv::Mat_<cv::Vec3f> > > mat_vec3f_ptr;
-
-class QImage;
 typedef boost::shared_ptr<SharedData<QImage> > qimage_ptr;
+typedef boost::shared_ptr<SharedData<std::pair<multi_img::Value, multi_img::Value> > > data_range_ptr;
 
 #endif

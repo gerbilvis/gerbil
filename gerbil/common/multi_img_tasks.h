@@ -18,6 +18,7 @@
 #include <tbb/blocked_range2d.h>
 #include <tbb/partitioner.h>
 #include <tbb/parallel_for.h>
+#include <tbb/parallel_reduce.h>
 
 #ifdef WITH_QT
 #include <QImage>
@@ -224,6 +225,37 @@ protected:
 	multi_img_ptr source;
 	multi_img_ptr current;
 	unsigned int components;
+};
+
+class DataRangeTbb : public BackgroundTask {
+public:
+	DataRangeTbb(multi_img_ptr multi, data_range_ptr range, 
+		cv::Rect targetRoi = cv::Rect(0, 0, 0, 0)) 
+		: BackgroundTask(targetRoi), multi(multi), range(range) {}
+	virtual ~DataRangeTbb() {}
+	void run();
+	void cancel() { stopper.cancel_group_execution(); }
+protected:
+	tbb::task_group_context stopper;
+
+	class Range {
+	public:
+		Range(multi_img &multi) 
+			: multi(multi), min(multi_img::ValueMax), max(multi_img::ValueMin) {}
+		Range(Range &toSplit, tbb::split) 
+			: multi(toSplit.multi), min(multi_img::ValueMax), max(multi_img::ValueMin) {} 
+		void operator()(const tbb::blocked_range<size_t> &r);
+		void join(Range &toJoin);
+		multi_img::Value GetMin() { return min; }
+		multi_img::Value GetMax() { return max; }
+	private:
+		multi_img &multi;
+		multi_img::Value min;
+		multi_img::Value max;
+	};
+
+	multi_img_ptr multi;
+	data_range_ptr range;
 };
 
 }
