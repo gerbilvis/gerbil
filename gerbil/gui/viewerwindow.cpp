@@ -28,7 +28,8 @@ ViewerWindow::ViewerWindow(multi_img *image, QWidget *parent)
 	  full_image(new SharedData<multi_img>(image)),
 	  image(new SharedData<multi_img>(new multi_img(0, 0, 0))),
 	  gradient(new SharedData<multi_img>(new multi_img(0, 0, 0))),
-	  imagepca(NULL), gradientpca(NULL),
+	  imagepca(new SharedData<multi_img>(new multi_img(0, 0, 0))),
+	  gradientpca(new SharedData<multi_img>(new multi_img(0, 0, 0))),
 	  normIMG(NORM_OBSERVED), normGRAD(NORM_OBSERVED),
 	  full_rgb_temp(new SharedData<QImage>(new QImage())),
 	  usRunner(NULL), contextMenu(NULL),
@@ -79,6 +80,7 @@ void ViewerWindow::applyROI()
 	BackgroundTaskQueue::instance().push(taskGradient);
 	taskGradient->wait();
 
+	/*
 	{
 		cv::PCA pca((*image)->pca());
 		imagepca = new multi_img((*image)->project(pca));
@@ -86,6 +88,22 @@ void ViewerWindow::applyROI()
 	{
 		cv::PCA pca((*gradient)->pca());
 		gradientpca = new multi_img((*gradient)->project(pca));
+	}
+	*/
+
+	{
+		BackgroundTaskPtr taskPca(new MultiImg::PcaTbb(
+			image, imagepca, 0, roi));
+		//QObject::connect(taskPca.get(), SIGNAL(finished(bool), , SLOT());
+		BackgroundTaskQueue::instance().push(taskPca);
+		taskPca->wait();
+	}
+	{
+		BackgroundTaskPtr taskPca(new MultiImg::PcaTbb(
+			gradient, gradientpca, 0, roi));
+		//QObject::connect(taskPca.get(), SIGNAL(finished(bool), , SLOT());
+		BackgroundTaskQueue::instance().push(taskPca);
+		taskPca->wait();
 	}
 
 	// calculate new norm ranges inside ROI
@@ -114,9 +132,9 @@ void ViewerWindow::applyROI()
 
 	/* do setImage() last */
 	viewIMG->setImage(&(**image), IMG);
-	viewIMGPCA->setImage(imagepca, IMGPCA);
+	viewIMGPCA->setImage(&(**imagepca), IMGPCA);
 	viewGRAD->setImage(&(**gradient), GRAD);
-	viewGRADPCA->setImage(gradientpca, GRADPCA);
+	viewGRADPCA->setImage(&(**gradientpca), GRADPCA);
 
 	// updateBand only works after image is set (it gets image from viewer)
 	updateBand();
