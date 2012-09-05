@@ -29,7 +29,7 @@
 #ifdef WITH_QT
 class BackgroundTask : public QObject {
 	Q_OBJECT
-#elif
+#else
 class BackgroundTask {
 #endif
 
