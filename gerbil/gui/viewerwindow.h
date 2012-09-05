@@ -39,6 +39,66 @@ public:
 
 	static QIcon colorIcon(const QColor& color);
 
+public slots:
+	void reshapeDock(bool floating);
+	void selectBand(representation type, int dim);
+	void addToLabel()   { labelmask(false); }
+	void remFromLabel() { labelmask(true); }
+	void setActive(int id); // id mapping see initUI()
+	void newOverlay();
+
+	void startGraphseg();
+
+	void startUnsupervisedSeg(bool findKL = false);
+	void startFindKL();
+	void segmentationFinished();
+	void segmentationApply(std::map<std::string, boost::any>);
+
+	void applyIlluminant();
+	void setI1(int index);
+	void setI1Visible(bool);
+	void bandsSliderMoved(int b);
+
+	void usMethodChanged(int idx);
+	void usInitMethodChanged(int idx);
+	void usBandwidthMethodChanged(const QString &current);
+	void unsupervisedSegCancelled();
+
+	void normTargetChanged(bool usecurrent = false);
+	void normModeSelected(int mode, bool targetchange = false, bool usecurrent = false);
+	void normModeFixed();
+	void applyNormUserRange(bool update = true);
+	void clampNormUserRange();
+
+	void loadLabeling(QString filename = "");
+	void loadSeeds();
+	void saveLabeling();
+	// add new label (color)
+	void createLabel();
+
+	void ROITrigger();
+	void ROIDecision(QAbstractButton *sender);
+	void ROISelection(const QRect &roi);
+
+	void openContextMenu();
+
+	void screenshot();
+
+	void updateRGB(bool success);
+
+signals:
+	void alterLabel(const multi_img::Mask &mask, bool negative);
+	void newLabelColors(const QVector<QColor> &colors, bool changed);
+	void drawOverlay(const multi_img::Mask &mask);
+	void seedingDone(bool yeah = false);
+
+protected:
+	enum normMode {
+		NORM_OBSERVED = 0,
+		NORM_THEORETICAL = 1,
+		NORM_FIXED = 2
+	};
+
 	class RgbSerial : public MultiImg::BgrSerial {
 	public:
 		RgbSerial(multi_img_ptr multi, mat_vec3f_ptr bgr, qimage_ptr rgb) 
@@ -69,60 +129,21 @@ public:
 		qimage_ptr rgb;
 	};
 
-public slots:
-	void reshapeDock(bool floating);
-	void selectBand(representation type, int dim);
-	void addToLabel()   { labelmask(false); }
-	void remFromLabel() { labelmask(true); }
-	void setActive(int id); // id mapping see initUI()
-	void newOverlay();
+	class NormRangeTbb : public MultiImg::DataRangeTbb {
+	public:
+		NormRangeTbb(multi_img_ptr multi, data_range_ptr range, 
+			normMode mode, int target, bool update,
+			cv::Rect targetRoi = cv::Rect(0, 0, 0, 0)) 
+			: MultiImg::DataRangeTbb(multi, range, targetRoi), 
+			mode(mode), target(target), update(update) {}
+		virtual ~NormRangeTbb() {}
+		virtual void run();
+	protected:
+		normMode mode;
+		int target;
+		bool update;
+	};
 
-	void startGraphseg();
-
-	void startUnsupervisedSeg(bool findKL = false);
-	void startFindKL();
-	void segmentationFinished();
-	void segmentationApply(std::map<std::string, boost::any>);
-
-	void applyIlluminant();
-	void setI1(int index);
-	void setI1Visible(bool);
-	void bandsSliderMoved(int b);
-
-	void usMethodChanged(int idx);
-	void usInitMethodChanged(int idx);
-	void usBandwidthMethodChanged(const QString &current);
-	void unsupervisedSegCancelled();
-
-	void normTargetChanged();
-	void normModeSelected(int mode, bool targetchange = false);
-	void normModeFixed();
-	void applyNormUserRange(bool update = true);
-	void clampNormUserRange();
-
-	void loadLabeling(QString filename = "");
-	void loadSeeds();
-	void saveLabeling();
-	// add new label (color)
-	void createLabel();
-
-	void ROITrigger();
-	void ROIDecision(QAbstractButton *sender);
-	void ROISelection(const QRect &roi);
-
-	void openContextMenu();
-
-	void screenshot();
-
-	void updateRGB(bool success);
-
-signals:
-	void alterLabel(const multi_img::Mask &mask, bool negative);
-	void newLabelColors(const QVector<QColor> &colors, bool changed);
-	void drawOverlay(const multi_img::Mask &mask);
-	void seedingDone(bool yeah = false);
-
-protected:
     void changeEvent(QEvent *e);
 
 	/* helper functions */
@@ -151,13 +172,8 @@ protected:
 	std::vector<multi_img_viewer*> viewers;
 	multi_img_viewer *activeViewer;
 
-	enum normMode {
-		NORM_OBSERVED = 0,
-		NORM_THEORETICAL = 1,
-		NORM_FIXED = 2
-	};
 	normMode normIMG, normGRAD;
-	std::pair<multi_img::Value, multi_img::Value> normIMGRange, normGRADRange;
+	data_range_ptr normIMGRange, normGRADRange;
 
 private:
 	void initUI();
@@ -169,16 +185,6 @@ private:
 	void initNormalizationUI();
 	void updateBand();
 	void buildIlluminant(int temp);
-
-	// calculates norm range
-	std::pair<multi_img::Value, multi_img::Value>
-			getNormRange(normMode mode, int target,
-						 std::pair<multi_img::Value, multi_img::Value> cur);
-
-	// updates target's norm range member variable
-	void setNormRange(int target);
-	// updates target data range acc. to norm range member variable
-	void updateImageRange(int target);
 
 	// cache for illumination coefficients
 	typedef std::map<int, std::pair<

@@ -31,6 +31,10 @@ ViewerWindow::ViewerWindow(multi_img *image, QWidget *parent)
 	  imagepca(new SharedData<multi_img>(new multi_img(0, 0, 0))),
 	  gradientpca(new SharedData<multi_img>(new multi_img(0, 0, 0))),
 	  normIMG(NORM_OBSERVED), normGRAD(NORM_OBSERVED),
+	  normIMGRange(new SharedData<std::pair<multi_img::Value, multi_img::Value> >(
+	  		new std::pair<multi_img::Value, multi_img::Value>(0, 0))),
+	  normGRADRange(new SharedData<std::pair<multi_img::Value, multi_img::Value> >(
+	  		new std::pair<multi_img::Value, multi_img::Value>(0, 0))),
 	  full_rgb_temp(new SharedData<QImage>(new QImage())),
 	  usRunner(NULL), contextMenu(NULL),
 	  viewers(REPSIZE), activeViewer(0)
@@ -78,38 +82,47 @@ void ViewerWindow::applyROI(bool reuse)
 		new SharedData<multi_img>(new multi_img(**full_image, roi)));
 	BackgroundTaskPtr taskRescale(new MultiImg::RescaleTbb(
 		scoped_image, image, numbands, roi));
-	//QObject::connect(taskRescale.get(), SIGNAL(finished(bool), , SLOT());
+	//QObject::connect(taskRescale.get(), SIGNAL(finished(bool)), , SLOT());
 	BackgroundTaskQueue::instance().push(taskRescale);
 	taskRescale->wait();
 
 	BackgroundTaskPtr taskGradient(new MultiImg::GradientTbb(
 		image, gradient, roi));
-	//QObject::connect(taskGradient.get(), SIGNAL(finished(bool), , SLOT());
+	//QObject::connect(taskGradient.get(), SIGNAL(finished(bool)), , SLOT());
 	BackgroundTaskQueue::instance().push(taskGradient);
 	taskGradient->wait();
 
 	{
 		BackgroundTaskPtr taskPca(new MultiImg::PcaTbb(
 			image, imagepca, 0, roi));
-		//QObject::connect(taskPca.get(), SIGNAL(finished(bool), , SLOT());
+		//QObject::connect(taskPca.get(), SIGNAL(finished(bool)), , SLOT());
 		BackgroundTaskQueue::instance().push(taskPca);
 		taskPca->wait();
 	}
 	{
 		BackgroundTaskPtr taskPca(new MultiImg::PcaTbb(
 			gradient, gradientpca, 0, roi));
-		//QObject::connect(taskPca.get(), SIGNAL(finished(bool), , SLOT());
+		//QObject::connect(taskPca.get(), SIGNAL(finished(bool)), , SLOT());
 		BackgroundTaskQueue::instance().push(taskPca);
 		taskPca->wait();
 	}
 
 	// calculate new norm ranges inside ROI
-	for (int i = 0; i < 2; ++i) {
-		setNormRange(i);
-		updateImageRange(i);
-	}
+
+	BackgroundTaskPtr taskImgNormRange(new NormRangeTbb(
+		image, normIMGRange, normIMG, 0, true, roi));
+	//QObject::connect(taskImgNormRange.get(), SIGNAL(finished(bool)), , SLOT());
+	BackgroundTaskQueue::instance().push(taskImgNormRange);
+	taskImgNormRange->wait();
+
+	BackgroundTaskPtr taskGradNormRange(new NormRangeTbb(
+		gradient, normGRADRange, normGRAD, 1, true, roi));
+	//QObject::connect(taskGradNormRange.get(), SIGNAL(finished(bool)), , SLOT());
+	BackgroundTaskQueue::instance().push(taskGradNormRange);
+	taskGradNormRange->wait();
+
 	// gui update (if norm ranges changed)
-	normTargetChanged();
+	normTargetChanged(true);
 
 	/* set labeling, and label colors (depend on ROI size) */
 	cv::Mat1s &labels = bandView->labels;
@@ -298,8 +311,6 @@ void ViewerWindow::initUI()
 	QShortcut *scr = new QShortcut(Qt::CTRL + Qt::Key_S, this);
 	connect(scr, SIGNAL(activated()), this, SLOT(screenshot()));
 
-	//BackgroundTaskPtr taskRgb(new ViewerWindow::RgbSerial(
-	//	full_image, mat_vec3f_ptr(new SharedData<cv::Mat_<cv::Vec3f> >(new cv::Mat_<cv::Vec3f>)), full_rgb_temp));
 	BackgroundTaskPtr taskRgb(new ViewerWindow::RgbTbb(
 		full_image, mat_vec3f_ptr(new SharedData<cv::Mat_<cv::Vec3f> >(new cv::Mat_<cv::Vec3f>)), full_rgb_temp));
 	//QObject::connect(taskRgb.get(), SIGNAL(finished(bool)), this, SLOT(updateRGB(bool)));
@@ -460,8 +471,6 @@ void ViewerWindow::applyIlluminant() {
 	if (roi.width > 0)
 		applyROI(false);
 
-	//BackgroundTaskPtr taskRgb(new ViewerWindow::RgbSerial(
-	//	full_image, mat_vec3f_ptr(new SharedData<cv::Mat_<cv::Vec3f> >(new cv::Mat_<cv::Vec3f>)), full_rgb_temp));
 	BackgroundTaskPtr taskRgb(new ViewerWindow::RgbTbb(
 		full_image, mat_vec3f_ptr(new SharedData<cv::Mat_<cv::Vec3f> >(new cv::Mat_<cv::Vec3f>)), full_rgb_temp));
 	//QObject::connect(taskRgb.get(), SIGNAL(finished(bool)), this, SLOT(updateRGB(bool)));
@@ -587,52 +596,38 @@ void ViewerWindow::initNormalizationUI()
 			this, SLOT(clampNormUserRange()));
 }
 
-std::pair<multi_img::Value, multi_img::Value>
-ViewerWindow::getNormRange(normMode mode, int target,
-						   std::pair<multi_img::Value, multi_img::Value> cur)
+void ViewerWindow::NormRangeTbb::run()
 {
-	const multi_img *img = (target == 0 ? &(**image) : &(**gradient));
-	std::pair<multi_img::Value, multi_img::Value> ret;
 	switch (mode) {
 	case NORM_OBSERVED:
-		ret = img->data_range();
+		MultiImg::DataRangeTbb::run();
 		break;
 	case NORM_THEORETICAL:
-		// hack!
-		if (target == 0)
-			ret = std::make_pair((multi_img::Value)MULTI_IMG_MIN_DEFAULT,
-			                     (multi_img::Value)MULTI_IMG_MAX_DEFAULT);
-		else
-			ret = std::make_pair((multi_img::Value)-log(MULTI_IMG_MAX_DEFAULT),
-			                     (multi_img::Value)log(MULTI_IMG_MAX_DEFAULT));
+		if (!stopper.is_group_execution_cancelled()) {
+			SharedDataWrite wlock(range->lock);
+			// hack!
+			if (target == 0) {
+				(*range)->first = (multi_img::Value)MULTI_IMG_MIN_DEFAULT;
+				(*range)->second = (multi_img::Value)MULTI_IMG_MAX_DEFAULT;
+			} else {
+				(*range)->first = (multi_img::Value)-log(MULTI_IMG_MAX_DEFAULT);
+				(*range)->second = (multi_img::Value)log(MULTI_IMG_MAX_DEFAULT);
+			}
+		}
 		break;
 	default:
-		ret = cur; // keep previous setting
+		break; // keep previous setting
 	}
-	return ret;
+
+	if (!stopper.is_group_execution_cancelled() && update) {
+		SharedDataRead rlock(range->lock);
+		SharedDataWrite wlock(multi->lock);
+		(*multi)->minval = (*range)->first;
+		(*multi)->maxval = (*range)->second;
+	}
 }
 
-void ViewerWindow::setNormRange(int target)
-{
-	// select respective normalization mode, range variable and image
-	normMode m = (target == 0 ? normIMG : normGRAD);
-	std::pair<multi_img::Value, multi_img::Value> &r =
-			(target == 0 ? normIMGRange : normGRADRange);
-
-	// set range according to mode
-	r = getNormRange(m, target, r);
-}
-
-void ViewerWindow::updateImageRange(int target)
-{
-	const std::pair<multi_img::Value, multi_img::Value> &r =
-			(target == 0 ? normIMGRange : normGRADRange);
-	multi_img *i = (target == 0 ? &(**image) : &(**gradient));
-	i->minval = r.first;
-	i->maxval = r.second;
-}
-
-void ViewerWindow::normTargetChanged()
+void ViewerWindow::normTargetChanged(bool usecurrent)
 {
 	/* reset gui to current settings */
 	int target = (normIButton->isChecked() ? 0 : 1);
@@ -642,27 +637,44 @@ void ViewerWindow::normTargetChanged()
 	normModeBox->setCurrentIndex(m);
 
 	// update norm range spin boxes
-	normModeSelected(m, true);
+	normModeSelected(m, true, usecurrent);
 }
 
-void ViewerWindow::normModeSelected(int mode, bool targetchange)
+void ViewerWindow::normModeSelected(int mode, bool targetchange, bool usecurrent)
 {
 	normMode nm = static_cast<normMode>(mode);
 	if (nm == NORM_FIXED && !targetchange) // user edits from currenty viewed values
 		return;
 
 	int target = (normIButton->isChecked() ? 0 : 1);
-	const std::pair<multi_img::Value, multi_img::Value> &cur =
-			(target == 0 ? normIMGRange : normGRADRange);
 
-	std::pair<multi_img::Value, multi_img::Value> r
-			= getNormRange(nm, target, cur);
+	if (!usecurrent) {
+		BackgroundTaskPtr taskNormRange(new NormRangeTbb(
+			(target == 0 ? image : gradient), 
+			(target == 0 ? normIMGRange : normGRADRange), 
+			nm, target, false));
+		//QObject::connect(taskNormRange.get(), SIGNAL(finished(bool)), , SLOT());
+		BackgroundTaskQueue::instance().push(taskNormRange);
+		taskNormRange->wait();
+	}
+
+	double min;
+	double max;
+	if (target == 0) {
+		SharedDataRead rlock(normIMGRange->lock);
+		min = (*normIMGRange)->first;
+		max = (*normIMGRange)->second;
+	} else {
+		SharedDataRead rlock(normGRADRange->lock);
+		min = (*normGRADRange)->first;
+		max = (*normGRADRange)->second;
+	}
 
 	// prevent signal loop
 	normMinBox->blockSignals(true);
 	normMaxBox->blockSignals(true);
-	normMinBox->setValue(r.first);
-	normMaxBox->setValue(r.second);
+	normMinBox->setValue(min);
+	normMaxBox->setValue(max);
 	normMinBox->blockSignals(false);
 	normMaxBox->blockSignals(false);
 }
@@ -682,16 +694,24 @@ void ViewerWindow::applyNormUserRange(bool update)
 	nm = static_cast<normMode>(normModeBox->currentIndex());
 
 	// set internal range
-	std::pair<multi_img::Value, multi_img::Value> &r =
-				(target == 0 ? normIMGRange : normGRADRange);
-	r.first = normMinBox->value();
-	r.second = normMaxBox->value();
+	if (target == 0) {
+		SharedDataWrite wlock(normIMGRange->lock);
+		(*normIMGRange)->first = normMinBox->value();
+		(*normIMGRange)->second = normMaxBox->value();
+	} else {
+		SharedDataWrite wlock(normGRADRange->lock);
+		(*normGRADRange)->first = normMinBox->value();
+		(*normGRADRange)->second = normMaxBox->value();
+	}
 
 	// if available, overwrite with more precise values than in the spin boxes.
-	setNormRange(target);
-
-	// update image
-	updateImageRange(target);
+	BackgroundTaskPtr taskNormRange(new NormRangeTbb(
+		(target == 0 ? image : gradient), 
+		(target == 0 ? normIMGRange : normGRADRange), 
+		(target == 0 ? normIMG : normGRAD), target, true));
+	//QObject::connect(taskNormRange.get(), SIGNAL(finished(bool)), , SLOT());
+	BackgroundTaskQueue::instance().push(taskNormRange);
+	taskNormRange->wait();
 
 	if (update) {
 		// re-initialize gui (duplication from applyROI())
@@ -724,8 +744,6 @@ void ViewerWindow::clampNormUserRange()
 		if (roi.width > 0)
 			applyROI(false);
 
-		//BackgroundTaskPtr taskRgb(new ViewerWindow::RgbSerial(
-		//	full_image, mat_vec3f_ptr(new SharedData<cv::Mat_<cv::Vec3f> >(new cv::Mat_<cv::Vec3f>)), full_rgb_temp));
 		BackgroundTaskPtr taskRgb(new ViewerWindow::RgbTbb(
 			full_image, mat_vec3f_ptr(new SharedData<cv::Mat_<cv::Vec3f> >(new cv::Mat_<cv::Vec3f>)), full_rgb_temp));
 		//QObject::connect(taskRgb.get(), SIGNAL(finished(bool)), this, SLOT(updateRGB(bool)));
