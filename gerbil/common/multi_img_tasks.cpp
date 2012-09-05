@@ -120,7 +120,7 @@ void Band2QImageTbb::run()
 
 	multi_img::Band &source = (*multi)->bands[band];
 	QImage *target = new QImage(source.cols, source.rows, QImage::Format_ARGB32);
-	Conversion computeConversion(source, *target, minval, maxval);
+	Conversion computeConversion(source, *target, (*multi)->minval, (*multi)->maxval);
 	tbb::parallel_for(tbb::blocked_range2d<int>(0, source.rows, 0, source.cols), 
 		computeConversion, tbb::auto_partitioner(), stopper);
 

@@ -98,9 +98,8 @@ protected:
 #ifdef WITH_QT
 class Band2QImageTbb : public BackgroundTask {
 public:
-	Band2QImageTbb(multi_img_ptr multi, qimage_ptr image, size_t band,
-		multi_img::Value minval, multi_img::Value maxval)
-		: multi(multi), image(image), band(band), minval(minval), maxval(maxval) {}
+	Band2QImageTbb(multi_img_ptr multi, qimage_ptr image, size_t band)
+		: multi(multi), image(image), band(band) {}
 	virtual ~Band2QImageTbb() {}
 	virtual void run();
 	virtual void cancel() { stopper.cancel_group_execution(); }
@@ -123,8 +122,6 @@ protected:
 	multi_img_ptr multi;
 	qimage_ptr image;
 	size_t band;
-	multi_img::Value minval;
-	multi_img::Value maxval;
 };
 #endif
 

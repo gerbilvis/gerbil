@@ -412,10 +412,24 @@ const QPixmap* ViewerWindow::getBand(representation type, int dim)
 	std::vector<QPixmap*> &v = bands[type];
 
 	if (!v[dim]) {
-		const multi_img *m = viewers[type]->getImage();
-		// create here
-		QImage img = m->export_qt(dim);
-		v[dim] = new QPixmap(QPixmap::fromImage(img));
+		multi_img_ptr multi; // = viewers[type]->getImage();
+		if (type == IMG)
+			multi = image;
+		else if (type == GRAD)
+			multi = gradient;
+		else if (type == IMGPCA)
+			multi = imagepca;
+		else //if (type == GRADPCA)
+			multi = gradientpca;
+
+		qimage_ptr qimg(new SharedData<QImage>(new QImage()));
+
+		BackgroundTaskPtr taskExport(new MultiImg::Band2QImageTbb(multi, qimg, dim));
+		//QObject::connect(taskExport.get(), SIGNAL(finished(bool)), , SLOT());
+		BackgroundTaskQueue::instance().push(taskExport);
+		taskExport->wait();
+
+		v[dim] = new QPixmap(QPixmap::fromImage(**qimg));
 	}
 	return v[dim];
 }
