@@ -33,6 +33,7 @@ namespace MultiImg {
 	namespace CommonTbb {
 		class RebuildPixels;
 		class ApplyCache;
+		class DetermineRange;
 	}
 	class BgrTbb;
 	class Band2QImageTbb;
@@ -491,6 +492,7 @@ protected:
 
 	friend class MultiImg::CommonTbb::RebuildPixels;
 	friend class MultiImg::CommonTbb::ApplyCache;
+	friend class MultiImg::CommonTbb::DetermineRange;
 	friend class MultiImg::BgrTbb;
 	friend class MultiImg::Band2QImageTbb;
 	friend class MultiImg::RescaleTbb;
