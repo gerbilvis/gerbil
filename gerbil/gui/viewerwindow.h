@@ -104,7 +104,7 @@ protected:
 		RgbSerial(multi_img_ptr multi, mat_vec3f_ptr bgr, qimage_ptr rgb) 
 			: MultiImg::BgrSerial(multi, bgr), rgb(rgb) {}
 		virtual ~RgbSerial() {};
-		virtual void run();
+		virtual bool run();
 	protected:
 		qimage_ptr rgb;
 	};
@@ -114,7 +114,7 @@ protected:
 		RgbTbb(multi_img_ptr multi, mat_vec3f_ptr bgr, qimage_ptr rgb) 
 			: MultiImg::BgrTbb(multi, bgr), rgb(rgb) {}
 		virtual ~RgbTbb() {}
-		virtual void run();
+		virtual bool run();
 	protected:
 		class Rgb {
 		public:
@@ -137,7 +137,7 @@ protected:
 			: MultiImg::DataRangeTbb(multi, range, targetRoi), 
 			mode(mode), target(target), update(update) {}
 		virtual ~NormRangeTbb() {}
-		virtual void run();
+		virtual bool run();
 	protected:
 		normMode mode;
 		int target;

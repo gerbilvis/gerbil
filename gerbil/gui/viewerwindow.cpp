@@ -495,9 +495,10 @@ void ViewerWindow::applyIlluminant() {
 	i1Box->setCurrentIndex(i2Box->currentIndex());
 }
 
-void ViewerWindow::RgbSerial::run()
+bool ViewerWindow::RgbSerial::run()
 {
-	MultiImg::BgrSerial::run();
+	if (!MultiImg::BgrSerial::run())
+		return false;
 	SharedDataRead rlock(bgr->lock);
 	cv::Mat_<cv::Vec3f> &bgrmat = *(*bgr);
 	QImage *newRgb = new QImage(bgrmat.cols, bgrmat.rows, QImage::Format_ARGB32);
@@ -511,13 +512,15 @@ void ViewerWindow::RgbSerial::run()
 	}
 	SharedDataWrite wlock(rgb->lock);
 	delete rgb->swap(newRgb);
+	return true;
 }
 
-void ViewerWindow::RgbTbb::run()
+bool ViewerWindow::RgbTbb::run()
 {
-	MultiImg::BgrTbb::run();
+	if (!MultiImg::BgrTbb::run())
+		return false;
 	if (stopper.is_group_execution_cancelled())
-		return;
+		return false;
 
 	SharedDataRead rlock(bgr->lock);
 	cv::Mat_<cv::Vec3f> &bgrmat = *(*bgr);
@@ -529,10 +532,11 @@ void ViewerWindow::RgbTbb::run()
 
 	if (stopper.is_group_execution_cancelled()) {
 		delete newRgb;
-		return;
+		return false;
 	} else {
 		SharedDataWrite wlock(rgb->lock);
 		delete rgb->swap(newRgb);
+		return true;
 	}
 }
 
@@ -610,11 +614,12 @@ void ViewerWindow::initNormalizationUI()
 			this, SLOT(clampNormUserRange()));
 }
 
-void ViewerWindow::NormRangeTbb::run()
+bool ViewerWindow::NormRangeTbb::run()
 {
 	switch (mode) {
 	case NORM_OBSERVED:
-		MultiImg::DataRangeTbb::run();
+		if (!MultiImg::DataRangeTbb::run())
+			return false;
 		break;
 	case NORM_THEORETICAL:
 		if (!stopper.is_group_execution_cancelled()) {
@@ -638,6 +643,9 @@ void ViewerWindow::NormRangeTbb::run()
 		SharedDataWrite wlock(multi->lock);
 		(*multi)->minval = (*range)->first;
 		(*multi)->maxval = (*range)->second;
+		return true;
+	} else {
+		return false;
 	}
 }
 

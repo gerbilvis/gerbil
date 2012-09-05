@@ -41,7 +41,7 @@ public:
 	/** Task-specific algorithm implemented in the inheritor. It depends
 	    on the actual implementation what technologies and what amount
 		of parallelism is used for the calculation. */
-	virtual void run() = 0;
+	virtual bool run() = 0;
 	/** Task-specific cancellation routine implemented in the inheritor.
 	    Since not all technologies support cancellation, it is not guaranteed
 		that call to this function actually cancels the task. */

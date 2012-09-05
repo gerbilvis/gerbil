@@ -66,7 +66,7 @@ public:
 	BgrSerial(multi_img_ptr multi, mat_vec3f_ptr bgr) 
 		: multi(multi), bgr(bgr) {}
 	virtual ~BgrSerial() {};
-	virtual void run();
+	virtual bool run();
 	virtual void cancel() {}
 protected:
 	multi_img_ptr multi;
@@ -79,7 +79,7 @@ public:
 		cv::Rect targetRoi = cv::Rect(0, 0, 0, 0)) 
 		: BackgroundTask(targetRoi), multi(multi), bgr(bgr) {}
 	virtual ~BgrTbb() {}
-	virtual void run();
+	virtual bool run();
 	virtual void cancel() { stopper.cancel_group_execution(); }
 protected:
 	tbb::task_group_context stopper;
@@ -119,7 +119,7 @@ public:
 		cv::Rect targetRoi = cv::Rect(0, 0, 0, 0))
 		: BackgroundTask(targetRoi), multi(multi), image(image), band(band) {}
 	virtual ~Band2QImageTbb() {}
-	virtual void run();
+	virtual bool run();
 	virtual void cancel() { stopper.cancel_group_execution(); }
 protected:
 	tbb::task_group_context stopper;
@@ -150,7 +150,7 @@ public:
 		: BackgroundTask(targetRoi), source(source), current(current), 
 		newsize(newsize), includecache(includecache) {}
 	virtual ~RescaleTbb() {}
-	virtual void run();
+	virtual bool run();
 	virtual void cancel() { stopper.cancel_group_execution(); }
 protected:
 	tbb::task_group_context stopper;
@@ -179,7 +179,7 @@ public:
 		: BackgroundTask(targetRoi), source(source), 
 		current(current), includecache(includecache) {}
 	virtual ~GradientTbb() {}
-	virtual void run();
+	virtual bool run();
 	virtual void cancel() { stopper.cancel_group_execution(); }
 protected:
 	tbb::task_group_context stopper;
@@ -216,7 +216,7 @@ public:
 		: BackgroundTask(targetRoi), source(source), current(current), 
 		components(components), includecache(includecache) {}
 	virtual ~PcaTbb() {}
-	virtual void run();
+	virtual bool run();
 	virtual void cancel() { stopper.cancel_group_execution(); }
 protected:
 	tbb::task_group_context stopper;
@@ -254,7 +254,7 @@ public:
 		cv::Rect targetRoi = cv::Rect(0, 0, 0, 0)) 
 		: BackgroundTask(targetRoi), multi(multi), range(range) {}
 	virtual ~DataRangeTbb() {}
-	virtual void run();
+	virtual bool run();
 	virtual void cancel() { stopper.cancel_group_execution(); }
 protected:
 	tbb::task_group_context stopper;

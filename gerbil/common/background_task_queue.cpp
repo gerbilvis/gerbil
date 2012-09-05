@@ -68,10 +68,10 @@ void BackgroundTaskQueue::operator()()
 		if (!pop()) {
 			break; // Thread termination.
 		}
-		currentTask->run();
+		bool success = currentTask->run();
 		{
 			Lock lock(guard);
-			currentTask->done(!cancelled);
+			currentTask->done(!cancelled && success);
 			currentTask.reset();
 		}
 	}

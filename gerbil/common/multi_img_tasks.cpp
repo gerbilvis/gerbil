@@ -58,16 +58,17 @@ void CommonTbb::DetermineRange::join(DetermineRange &toJoin)
 
 }
 
-void BgrSerial::run() 
+bool BgrSerial::run() 
 {
 	SharedDataRead rlock(multi->lock);
 	cv::Mat_<cv::Vec3f> *newBgr = new cv::Mat_<cv::Vec3f>();
 	*newBgr = (*multi)->bgr(); 
 	SharedDataWrite wlock(bgr->lock);
 	delete bgr->swap(newBgr);
+	return true;
 }
 
-void BgrTbb::run() 
+bool BgrTbb::run() 
 {
 	SharedDataRead rlock(multi->lock);
 
@@ -98,10 +99,11 @@ void BgrTbb::run()
 
 	if (stopper.is_group_execution_cancelled()) {
 		delete newBgr;
-		return;
+		return false;
 	} else {
 		SharedDataWrite wlock(bgr->lock);
 		delete bgr->swap(newBgr);
+		return true;
 	}
 }
 
@@ -132,12 +134,12 @@ void BgrTbb::Bgr::operator()(const tbb::blocked_range2d<int> &r) const
 }
 
 #ifdef WITH_QT
-void Band2QImageTbb::run() 
+bool Band2QImageTbb::run() 
 {
 	SharedDataRead rlock(multi->lock);
 
 	if (band >= (*multi)->size()) {
-		return;
+		return false;
 	}
 
 	multi_img::Band &source = (*multi)->bands[band];
@@ -148,10 +150,11 @@ void Band2QImageTbb::run()
 
 	if (stopper.is_group_execution_cancelled()) {
 		delete target;
-		return;
+		return false;
 	} else {
 		SharedDataWrite wlock(image->lock);
 		delete image->swap(target);
+		return true;
 	}
 }
 
@@ -169,7 +172,7 @@ void Band2QImageTbb::Conversion::operator()(const tbb::blocked_range2d<int> &r) 
 }
 #endif
 
-void RescaleTbb::run() 
+bool RescaleTbb::run() 
 {
 	SharedDataRead rlock(source->lock);
 
@@ -224,10 +227,11 @@ void RescaleTbb::run()
 
 	if (stopper.is_group_execution_cancelled()) {
 		delete target;
-		return;
+		return false;
 	} else {
 		SharedDataWrite wlock(current->lock);
 		delete current->swap(target);
+		return true;
 	}
 }
 
@@ -242,7 +246,7 @@ void RescaleTbb::Resize::operator()(const tbb::blocked_range2d<int> &r) const
 	}
 }
 
-void GradientTbb::run() 
+bool GradientTbb::run() 
 {
 	SharedDataRead srcReadLock(source->lock);
 	SharedDataRead curReadLock(current->lock);
@@ -340,10 +344,11 @@ void GradientTbb::run()
 
 	if (stopper.is_group_execution_cancelled()) {
 		delete target;
-		return;
+		return false;
 	} else {
 		SharedDataWrite wlock(current->lock);
 		delete current->swap(target);
+		return true;
 	}
 }
 
@@ -368,7 +373,7 @@ void GradientTbb::Grad::operator()(const tbb::blocked_range<size_t> &r) const
 	}
 }
 
-void PcaTbb::run() 
+bool PcaTbb::run() 
 {
 	SharedDataRead rlock(source->lock);
 
@@ -407,10 +412,11 @@ void PcaTbb::run()
 
 	if (stopper.is_group_execution_cancelled()) {
 		delete target;
-		return;
+		return false;
 	} else {
 		SharedDataWrite wlock(current->lock);
 		delete current->swap(target);
+		return true;
 	}
 }
 
@@ -433,7 +439,7 @@ void PcaTbb::Projection::operator()(const tbb::blocked_range<size_t> &r) const
 	}
 }
 
-void DataRangeTbb::run() 
+bool DataRangeTbb::run() 
 {
 	SharedDataRead rlock(multi->lock);
 
@@ -445,6 +451,9 @@ void DataRangeTbb::run()
 		SharedDataWrite wlock(range->lock);
 		(*range)->first = determineRange.GetMin();
 		(*range)->second = determineRange.GetMax();
+		return true;
+	} else {
+		return false;
 	}
 }
 
