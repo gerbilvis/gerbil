@@ -43,6 +43,22 @@ namespace CommonTbb {
 	private:
 		multi_img &multi;
 	};
+
+	class DetermineRange {
+	public:
+		DetermineRange(multi_img &multi) 
+			: multi(multi), min(multi_img::ValueMax), max(multi_img::ValueMin) {}
+		DetermineRange(DetermineRange &toSplit, tbb::split) 
+			: multi(toSplit.multi), min(multi_img::ValueMax), max(multi_img::ValueMin) {} 
+		void operator()(const tbb::blocked_range<size_t> &r);
+		void join(DetermineRange &toJoin);
+		multi_img::Value GetMin() { return min; }
+		multi_img::Value GetMax() { return max; }
+	private:
+		multi_img &multi;
+		multi_img::Value min;
+		multi_img::Value max;
+	};
 }
 
 class BgrSerial : public BackgroundTask {
@@ -240,22 +256,6 @@ public:
 	virtual void cancel() { stopper.cancel_group_execution(); }
 protected:
 	tbb::task_group_context stopper;
-
-	class Range {
-	public:
-		Range(multi_img &multi) 
-			: multi(multi), min(multi_img::ValueMax), max(multi_img::ValueMin) {}
-		Range(Range &toSplit, tbb::split) 
-			: multi(toSplit.multi), min(multi_img::ValueMax), max(multi_img::ValueMin) {} 
-		void operator()(const tbb::blocked_range<size_t> &r);
-		void join(Range &toJoin);
-		multi_img::Value GetMin() { return min; }
-		multi_img::Value GetMax() { return max; }
-	private:
-		multi_img &multi;
-		multi_img::Value min;
-		multi_img::Value max;
-	};
 
 	multi_img_ptr multi;
 	data_range_ptr range;

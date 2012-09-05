@@ -38,6 +38,24 @@ void CommonTbb::ApplyCache::operator()(const tbb::blocked_range<size_t> &r) cons
 	}
 }
 
+void CommonTbb::DetermineRange::operator()(const tbb::blocked_range<size_t> &r)
+{
+	double tmp1, tmp2;
+	for (size_t d = r.begin(); d != r.end(); ++d) {
+		cv::minMaxLoc(multi.bands[d], &tmp1, &tmp2);
+		min = std::min<multi_img::Value>(min, (multi_img::Value)tmp1);
+		max = std::max<multi_img::Value>(max, (multi_img::Value)tmp2);
+	}
+}
+
+void CommonTbb::DetermineRange::join(DetermineRange &toJoin)
+{
+	if (toJoin.min < min)
+		min = toJoin.min;
+	if (toJoin.max > max)
+		max = toJoin.max;
+}
+
 }
 
 void BgrSerial::run() 
@@ -412,33 +430,15 @@ void DataRangeTbb::run()
 {
 	SharedDataRead rlock(multi->lock);
 
-	Range computeRange(**multi);
+	CommonTbb::DetermineRange determineRange(**multi);
 	tbb::parallel_reduce(tbb::blocked_range<size_t>(0, (*multi)->size()), 
-		computeRange, tbb::auto_partitioner(), stopper);
+		determineRange, tbb::auto_partitioner(), stopper);
 
 	if (!stopper.is_group_execution_cancelled()) {
 		SharedDataWrite wlock(range->lock);
-		(*range)->first = computeRange.GetMin();
-		(*range)->second = computeRange.GetMax();
+		(*range)->first = determineRange.GetMin();
+		(*range)->second = determineRange.GetMax();
 	}
-}
-
-void DataRangeTbb::Range::operator()(const tbb::blocked_range<size_t> &r)
-{
-	double tmp1, tmp2;
-	for (size_t d = r.begin(); d != r.end(); ++d) {
-		cv::minMaxLoc(multi.bands[d], &tmp1, &tmp2);
-		min = std::min<multi_img::Value>(min, (multi_img::Value)tmp1);
-		max = std::max<multi_img::Value>(max, (multi_img::Value)tmp2);
-	}
-}
-
-void  DataRangeTbb::Range::join(Range &toJoin)
-{
-	if (toJoin.min < min)
-		min = toJoin.min;
-	if (toJoin.max > max)
-		max = toJoin.max;
 }
 
 }
