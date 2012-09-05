@@ -75,8 +75,9 @@ protected:
 
 class BgrTbb : public BackgroundTask {
 public:
-	BgrTbb(multi_img_ptr multi, mat_vec3f_ptr bgr) 
-		: multi(multi), bgr(bgr) {}
+	BgrTbb(multi_img_ptr multi, mat_vec3f_ptr bgr,
+		cv::Rect targetRoi = cv::Rect(0, 0, 0, 0)) 
+		: BackgroundTask(targetRoi), multi(multi), bgr(bgr) {}
 	virtual ~BgrTbb() {}
 	virtual void run();
 	virtual void cancel() { stopper.cancel_group_execution(); }
@@ -114,8 +115,9 @@ protected:
 #ifdef WITH_QT
 class Band2QImageTbb : public BackgroundTask {
 public:
-	Band2QImageTbb(multi_img_ptr multi, qimage_ptr image, size_t band)
-		: multi(multi), image(image), band(band) {}
+	Band2QImageTbb(multi_img_ptr multi, qimage_ptr image, size_t band,
+		cv::Rect targetRoi = cv::Rect(0, 0, 0, 0))
+		: BackgroundTask(targetRoi), multi(multi), image(image), band(band) {}
 	virtual ~Band2QImageTbb() {}
 	virtual void run();
 	virtual void cancel() { stopper.cancel_group_execution(); }
