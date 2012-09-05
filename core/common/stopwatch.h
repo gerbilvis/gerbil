@@ -9,9 +9,9 @@
 #ifndef STOPWATCH_H
 #define STOPWATCH_H
 
-#ifdef WITH_OPENCV2 // theoretically, vole could be built w/o opencv..
+#ifdef WITH_OPENCV2 // we use OpenCV tick counter (could be replaced)
 
-#include <cv.h>
+#include <opencv2/core/core.hpp>
 #include <string>
 #include <sstream>
 #include <iostream>

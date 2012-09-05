@@ -11,7 +11,7 @@
 
 #ifdef WITH_OPENCV2 // theoretically, vole could be built w/o opencv..
 
-#include <cv.h>
+#include <opencv2/core/core.hpp>
 #include <string>
 #include <sstream>
 #include <iostream>

@@ -11,15 +11,11 @@
 #include "multi_img.h"
 #include "qtopencv.h"
 
+#include <opencv2/highgui/highgui.hpp>
 #include <iostream>
 #include <fstream>
 #include <string>
 #include <vector>
-#include <highgui.h>
-
-#ifdef WITH_QT
-	#include <QImage>
-#endif
 
 using namespace std;
 
