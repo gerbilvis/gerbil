@@ -197,6 +197,9 @@ void RescaleTbb::run()
 		target = temp;
 	}
 
+	if (!includecache)
+		target->resetPixels();
+
 	if (stopper.is_group_execution_cancelled()) {
 		delete target;
 		return;
@@ -303,11 +306,15 @@ void GradientTbb::run()
 	target->maxval = temp.maxval;
 	target->roi = temp.roi;
 
-	CommonTbb::RebuildPixels rebuildPixels(*target);
-	tbb::parallel_for(tbb::blocked_range<size_t>(0, target->size()), 
-		rebuildPixels, tbb::auto_partitioner(), stopper);
-	target->dirty.setTo(0);
-	target->anydirt = false;
+	if (includecache) {
+		CommonTbb::RebuildPixels rebuildPixels(*target);
+		tbb::parallel_for(tbb::blocked_range<size_t>(0, target->size()), 
+			rebuildPixels, tbb::auto_partitioner(), stopper);
+		target->dirty.setTo(0);
+		target->anydirt = false;
+	} else {
+		target->resetPixels();
+	}
 
 	if (stopper.is_group_execution_cancelled()) {
 		delete target;
@@ -369,6 +376,9 @@ void PcaTbb::run()
 		target->maxval = range.second;
 		target->roi = (*source)->roi;
 	}
+
+	if (!includecache)
+		target->resetPixels();
 
 	if (stopper.is_group_execution_cancelled()) {
 		delete target;
