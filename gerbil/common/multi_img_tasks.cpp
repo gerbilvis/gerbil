@@ -136,6 +136,10 @@ void Band2QImageTbb::run()
 {
 	SharedDataRead rlock(multi->lock);
 
+	if (band >= (*multi)->size()) {
+		return;
+	}
+
 	multi_img::Band &source = (*multi)->bands[band];
 	QImage *target = new QImage(source.cols, source.rows, QImage::Format_ARGB32);
 	Conversion computeConversion(source, *target, (*multi)->minval, (*multi)->maxval);
