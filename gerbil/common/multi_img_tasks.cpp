@@ -386,12 +386,15 @@ void PcaTbb::run()
 	tbb::parallel_for(tbb::blocked_range<size_t>(0, target->size()), 
 		applyCache, tbb::auto_partitioner(), stopper);
 
+	CommonTbb::DetermineRange determineRange(*target);
+	tbb::parallel_reduce(tbb::blocked_range<size_t>(0, target->size()), 
+		determineRange, tbb::auto_partitioner(), stopper);
+
 	if (!stopper.is_group_execution_cancelled()) {
 		target->dirty.setTo(0);
 		target->anydirt = false;
-		std::pair<multi_img::Value, multi_img::Value> range = target->data_range();
-		target->minval = range.first;
-		target->maxval = range.second;
+		target->minval = determineRange.GetMin();
+		target->maxval = determineRange.GetMax();
 		target->roi = (*source)->roi;
 	}
 
