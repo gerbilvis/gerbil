@@ -10,8 +10,7 @@
 #include "som_trainer.h"
 
 #include <stopwatch.h>
-
-#include <cv.h>
+#include <opencv2/core/core.hpp>
 
 #include <iostream>
 #include <fstream>

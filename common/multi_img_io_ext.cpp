@@ -7,7 +7,7 @@
 */
 
 #include <multi_img.h>
-#include <highgui.h>
+#include <opencv2/highgui/highgui.hpp>
 
 #ifdef WITH_BOOST
 	#include "boost/filesystem.hpp"

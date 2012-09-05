@@ -9,8 +9,8 @@
 
 #include "som_tester.h"
 
-#include <cv.h>
-#include <highgui.h>
+#include <opencv2/core/core.hpp>
+#include <opencv2/highgui/highgui.hpp>
 
 SOMTester::SOMTester(const SOM &map, const multi_img &img, const vole::EdgeDetectionConfig &conf)
     : som(map), image(img), config(conf),

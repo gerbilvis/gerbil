@@ -11,7 +11,6 @@
 #define NEURON_H
 
 #include <multi_img.h>
-#include <cv.h>
 #include <vector>
 #include <cmath>
 
