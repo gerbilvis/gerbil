@@ -760,9 +760,19 @@ void ViewerWindow::clampNormUserRange()
 	/* if image is changed, change full image. for gradient, we cannot preserve
 		the gradient over ROI or illuminant changes, so it remains a local change */
 	if (target == 0) {
+		SharedDataRead rlock(image->lock);
+		SharedDataWrite wlock(full_image->lock);
 		(*full_image)->minval = (*image)->minval;
 		(*full_image)->maxval = (*image)->maxval;
-		(*full_image)->clamp();
+		wlock.unlock();
+		rlock.unlock();
+
+		BackgroundTaskPtr taskClamp(new MultiImg::ClampTbb(
+			full_image, cv::Rect(0, 0, 0, 0), false));
+		//QObject::connect(taskClamp.get(), SIGNAL(finished(bool)), , SLOT());
+		BackgroundTaskQueue::instance().push(taskClamp);
+		taskClamp->wait();
+
 		if (roi.width > 0)
 			applyROI(false);
 
@@ -772,7 +782,11 @@ void ViewerWindow::clampNormUserRange()
 		BackgroundTaskQueue::instance().push(taskRgb);
 		updateRGB(taskRgb->wait());
 	} else {
-		(*gradient)->clamp();
+		BackgroundTaskPtr taskClamp(new MultiImg::ClampTbb(gradient));
+		//QObject::connect(taskClamp.get(), SIGNAL(finished(bool)), , SLOT());
+		BackgroundTaskQueue::instance().push(taskClamp);
+		taskClamp->wait();
+
 		viewGRAD->rebuild(-1);
 		/* empty cache */
 		bands[GRAD].assign((*gradient)->size(), NULL);
