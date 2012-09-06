@@ -457,4 +457,51 @@ bool DataRangeTbb::run()
 	}
 }
 
+bool ClampTbb::run() 
+{
+	SharedDataRead rlock(multi->lock);
+
+	multi_img *target = new multi_img((*multi)->height, (*multi)->width, (*multi)->size());
+	target->roi = (*multi)->roi;
+	target->meta = (*multi)->meta;
+	target->minval = (*multi)->minval;
+	target->maxval = (*multi)->maxval;
+
+	Clamp computeClamp(**multi, *target);
+	tbb::parallel_for(tbb::blocked_range<size_t>(0, target->size()), 
+		computeClamp, tbb::auto_partitioner(), stopper);
+
+	if (includecache) {
+		CommonTbb::RebuildPixels rebuildPixels(*target);
+		tbb::parallel_for(tbb::blocked_range<size_t>(0, target->size()), 
+			rebuildPixels, tbb::auto_partitioner(), stopper);
+		target->dirty.setTo(0);
+		target->anydirt = false;
+	} else {
+		target->resetPixels();
+	}
+
+	rlock.unlock();
+
+	if (stopper.is_group_execution_cancelled()) {
+		delete target;
+		return false;
+	} else {
+		SharedDataWrite wlock(multi->lock);
+		delete multi->swap(target);
+		return true;
+	}
+}
+
+void ClampTbb::Clamp::operator()(const tbb::blocked_range<size_t> &r) const
+{
+	for (size_t d = r.begin(); d != r.end(); ++d) {
+		multi_img::Band &src = source.bands[d];
+		multi_img::Band &tgt = target.bands[d];
+		cv::max(src, source.minval, tgt);
+		cv::min(src, source.maxval, tgt);
+
+	}
+}
+
 }

@@ -263,6 +263,30 @@ protected:
 	data_range_ptr range;
 };
 
+class ClampTbb : public BackgroundTask {
+public:
+	ClampTbb(multi_img_ptr multi,
+		cv::Rect targetRoi = cv::Rect(0, 0, 0, 0), bool includecache = true) 
+		: BackgroundTask(targetRoi), multi(multi), includecache(includecache) {}
+	virtual ~ClampTbb() {}
+	virtual bool run();
+	virtual void cancel() { stopper.cancel_group_execution(); }
+protected:
+	tbb::task_group_context stopper;
+
+	class Clamp {
+	public:
+		Clamp(multi_img &source, multi_img &target) : source(source), target(target) {}
+		void operator()(const tbb::blocked_range<size_t> &r) const;
+	private:
+		multi_img &source;
+		multi_img &target;
+	};
+
+	multi_img_ptr multi;
+	bool includecache;
+};
+
 }
 
 #endif
