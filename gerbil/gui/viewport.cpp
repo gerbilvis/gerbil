@@ -30,7 +30,7 @@ Viewport::Viewport(QWidget *parent)
 	  zoom(1.), shift(0), lasty(-1), holdSelection(false), activeLimiter(0),
 	  cacheValid(false), clearView(false), implicitClearView(false),
 	  drawMeans(true), drawRGB(false), drawHQ(true), drawingState(FOLDING),
-	  yaxisWidth(0), vb(QGLBuffer::VertexBuffer), type(IMG)
+	  yaxisWidth(0), vb(QGLBuffer::VertexBuffer), type(IMG), image(NULL)
 {
 	resizeTimer.setSingleShot(true);
 	connect(&resizeTimer, SIGNAL(timeout()), this, SLOT(endNoHQ()));
@@ -122,6 +122,23 @@ void Viewport::setLimiters(int label)
 
 void Viewport::prepareLines()
 {
+	shuffleIdx.clear();
+	cv::Vec3f color;
+	multi_img::Pixel pixel(dimensionality);
+	for (unsigned int i = 0; i < sets.size(); ++i) {
+		BinSet &s = sets[i];
+		QHash<QByteArray, Bin>::iterator it;
+		for (it = s.bins.begin(); it != s.bins.end(); ++it) {
+			Bin &b = it.value();
+			for (int d = 0; d < dimensionality; ++d)
+				pixel[d] = b.means[d] / b.weight;
+			color = image->bgr(pixel);
+			b.rgb = QColor(color[2]*255, color[1]*255, color[0]*255);
+			shuffleIdx.push_back(make_pair(i, it.key()));
+		}
+	}
+	std::random_shuffle(shuffleIdx.begin(), shuffleIdx.end());
+
 	// vole::Stopwatch watch("prepareLines");
 	unsigned int total = shuffleIdx.size();
 
@@ -162,7 +179,7 @@ void Viewport::prepareLines()
 		for (int d = 0; d < dimensionality; ++d) {
 			qreal curpos;
 			if (drawMeans) {
-				curpos = (b.means[d] - minval)/binsize;
+				curpos = ((b.means[d] / b.weight) - minval) / binsize;
 			} else {
 				curpos = (unsigned char)K[d] + 0.5;
 				if (illuminant_correction && illuminant)

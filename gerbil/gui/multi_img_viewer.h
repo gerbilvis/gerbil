@@ -5,6 +5,15 @@
 #include "viewport.h"
 #include "multi_img.h"
 
+#include <shared_data.h>
+#include <background_task.h>
+
+#include <tbb/task.h>
+#include <tbb/blocked_range.h>
+#include <tbb/blocked_range2d.h>
+#include <tbb/partitioner.h>
+#include <tbb/parallel_for.h>
+
 #include <vector>
 #include <QMenu>
 #include <cv.h>
@@ -42,6 +51,71 @@ signals:
 	void folding();
 
 protected:
+	class BinsTbb : public BackgroundTask {
+	public:
+		BinsTbb(multi_img_ptr multi, label_ptr labels, 
+			QVector<QColor> colors, int nbins, multi_img::Value binsize, 
+			std::vector<multi_img::Value> illuminant, sets_ptr current, sets_ptr temp,
+			std::vector<cv::Rect> sub, std::vector<cv::Rect> add, bool apply,
+			cv::Rect targetRoi = cv::Rect(0, 0, 0, 0)) 
+			: BackgroundTask(targetRoi), multi(multi), labels(labels), colors(colors),
+			nbins(nbins), binsize(binsize), illuminant(illuminant),
+			current(current), temp(temp), sub(sub), add(add), apply(apply) {}
+		virtual ~BinsTbb() {}
+		virtual bool run();
+		virtual void cancel() { stopper.cancel_group_execution(); }
+	protected:
+		tbb::task_group_context stopper;
+
+		class Substract {
+		public:
+			Substract(multi_img &multi, cv::Mat1s &labels, int nbins, multi_img::Value binsize, 
+				std::vector<multi_img::Value> &illuminant, std::vector<BinSet> &sets, cv::Rect region) 
+				: multi(multi), labels(labels), nbins(nbins), binsize(binsize), 
+				illuminant(illuminant), sets(sets), region(region) {}
+			void operator()(const tbb::blocked_range2d<int> &r) const;
+		private:
+			multi_img &multi;
+			cv::Mat1s &labels;
+			int nbins;
+			multi_img::Value binsize;
+			std::vector<multi_img::Value> &illuminant;
+			std::vector<BinSet> &sets;
+			cv::Rect region;
+		};
+
+		class Add {
+		public:
+			Add(multi_img &multi, cv::Mat1s &labels, int nbins, multi_img::Value binsize, 
+				std::vector<multi_img::Value> &illuminant, std::vector<BinSet> &sets, cv::Rect region) 
+				: multi(multi), labels(labels), nbins(nbins), binsize(binsize), 
+				illuminant(illuminant), sets(sets), region(region) {}
+			void operator()(const tbb::blocked_range2d<int> &r) const;
+		private:
+			multi_img &multi;
+			cv::Mat1s &labels;
+			int nbins;
+			multi_img::Value binsize;
+			std::vector<multi_img::Value> &illuminant;
+			std::vector<BinSet> &sets;
+			cv::Rect region;
+		};
+
+		multi_img_ptr multi;
+		label_ptr labels;
+		QVector<QColor> colors;
+		int nbins;
+		multi_img::Value binsize;
+		std::vector<multi_img::Value> illuminant;
+
+		sets_ptr current;
+		sets_ptr temp;
+		
+		std::vector<cv::Rect> sub;
+		std::vector<cv::Rect> add;
+		bool apply;
+	};
+
 	/* translate image value to value in our coordinate system */
 	inline multi_img::Value curpos(multi_img::Value val, int dim) {
 		multi_img::Value curpos = (val - image->minval) / binsize;

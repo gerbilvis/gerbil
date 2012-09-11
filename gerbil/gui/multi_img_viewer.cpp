@@ -85,6 +85,7 @@ void multi_img_viewer::setImage(const multi_img *img, representation type)
 
 	viewport->type = type;
 	viewport->dimensionality = image->size();
+	viewport->image = img;
 
 	/* intialize meta data */
 	viewport->labels.resize(image->size());
@@ -144,8 +145,8 @@ void multi_img_viewer::createBins()
 	int dim = image->size();
 
 	vector<BinSet> &sets = viewport->sets;
-	vector<std::pair<int, QByteArray> > &shuffleIdx = viewport->shuffleIdx;
-	sets.clear(); shuffleIdx.clear();
+	//vector<std::pair<int, QByteArray> > &shuffleIdx = viewport->shuffleIdx;
+	sets.clear(); //shuffleIdx.clear();
 	for (int i = 0; i < labelColors.size(); ++i)
 		sets.push_back(BinSet(labelColors[i], dim));
 
@@ -176,7 +177,7 @@ void multi_img_viewer::createBins()
 			if (!s.bins.contains(hashkey)) {
 				s.bins.insert(hashkey, Bin(pixel));
 				// add to initial shuffle index
-				shuffleIdx.push_back(make_pair(label, hashkey));
+				//shuffleIdx.push_back(make_pair(label, hashkey));
 			} else {
 				s.bins[hashkey].add(pixel);
 			}
@@ -187,6 +188,7 @@ void multi_img_viewer::createBins()
 	//watch.print_reset(" - bin creation");
 
 	/* normalize means & calculate color */
+	/*
 	for (unsigned int i = 0; i < sets.size(); ++i) {
 		BinSet &s = sets[i];
 		QHash<QByteArray, Bin>::iterator it;
@@ -198,10 +200,11 @@ void multi_img_viewer::createBins()
 			b.rgb = QColor(color[2]*255, color[1]*255, color[0]*255);
 		}
 	}
+	*/
 	//watch.print_reset(" - bin normalization + RGB");
 
 	/* shuffle indices with fisher-yates */
-	std::random_shuffle(shuffleIdx.begin(), shuffleIdx.end());
+	//std::random_shuffle(shuffleIdx.begin(), shuffleIdx.end());
 	//watch.print(" - index shuffle");
 
 /* ** statistics **
@@ -211,6 +214,75 @@ void multi_img_viewer::createBins()
 	cerr << (viewport->gradient? "Gradient View" : "Intensity View") << " shows ";
 	cerr << datapoints << " datapoints." << endl;
 */
+}
+
+bool multi_img_viewer::BinsTbb::run() 
+{
+	SharedDataRead multi_rlock(multi->lock);
+	SharedDataRead labels_rlock(labels->lock);
+	bool reuse = (!add.empty() || !sub.empty());
+
+	std::vector<BinSet> *result;
+	if (!reuse) {
+		result = new std::vector<BinSet>();
+		for (int i = 0; i < colors.size(); ++i) {
+			result->push_back(BinSet(colors[i], (*multi)->size()));
+		}
+		add.push_back(cv::Rect(0, 0, (*multi)->width, (*multi)->height));
+	} else {
+		SharedDataWrite temp_wlock(temp->lock);
+		result = temp->swap(NULL);
+		if (!result) {
+			SharedDataRead current_rlock(current->lock);
+			result = new std::vector<BinSet>(**current);
+		}
+	}
+
+	std::vector<cv::Rect>::iterator it;
+	for (it = sub.begin(); it != sub.end(); ++it) {
+		Substract substract(**multi, **labels, nbins, binsize, illuminant, **temp, *it);
+		tbb::parallel_for(
+			tbb::blocked_range2d<int>(0, (*labels)->rows, 0, (*labels)->cols), 
+				substract, tbb::auto_partitioner(), stopper);
+	}
+	for (it = add.begin(); it != add.end(); ++it) {
+		Add add(**multi, **labels, nbins, binsize, illuminant, **temp, *it);
+		tbb::parallel_for(
+			tbb::blocked_range2d<int>(0, (*labels)->rows, 0, (*labels)->cols), 
+				add, tbb::auto_partitioner(), stopper);
+	}
+
+	if (stopper.is_group_execution_cancelled()) {
+		delete result;
+		return false;
+	} else {
+		if (!reuse || apply) {
+			SharedDataWrite current_wlock(current->lock);
+			delete current->swap(result);
+		} else {
+			SharedDataWrite temp_wlock(temp->lock);
+			temp->swap(result);
+		}
+		return true;
+	}
+}
+
+void multi_img_viewer::BinsTbb::Substract::operator()(const tbb::blocked_range2d<int> &r) const
+{
+	for (int i = r.rows().begin(); i != r.rows().end(); ++i) {
+		for (int j = r.cols().begin(); j != r.cols().end(); ++j) {
+
+		}
+	}
+}
+
+void multi_img_viewer::BinsTbb::Add::operator()(const tbb::blocked_range2d<int> &r) const
+{
+	for (int i = r.rows().begin(); i != r.rows().end(); ++i) {
+		for (int j = r.cols().begin(); j != r.cols().end(); ++j) {
+
+		}
+	}
 }
 
 /* create mask of single-band user selection */

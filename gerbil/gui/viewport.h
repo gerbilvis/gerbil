@@ -10,6 +10,7 @@
 #define VIEWPORT_H
 
 #include <multi_img.h>
+#include <shared_data.h>
 #include <cv.h>
 #include <QGLWidget>
 #include <QGLBuffer>
@@ -46,6 +47,8 @@ struct BinSet {
 	std::vector<std::pair<int, int> > boundary;
 };
 
+typedef boost::shared_ptr<SharedData<std::vector<BinSet> > > sets_ptr;
+
 enum representation {
 	IMG = 0,
 	GRAD = 1,
@@ -66,6 +69,7 @@ public:
 	void setLimiters(int label);
 
 	int dimensionality;
+	const multi_img *image;
 	representation type;
 	std::vector<BinSet> sets;
 	std::vector<QString> labels;
