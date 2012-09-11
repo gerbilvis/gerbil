@@ -55,11 +55,12 @@ protected:
 	public:
 		BinsTbb(multi_img_ptr multi, label_ptr labels, 
 			QVector<QColor> colors, int nbins, multi_img::Value binsize, 
-			std::vector<multi_img::Value> illuminant, sets_ptr current, sets_ptr temp,
+			std::vector<multi_img::Value> illuminant, bool ignoreLabels, 
+			sets_ptr current, sets_ptr temp,
 			std::vector<cv::Rect> sub, std::vector<cv::Rect> add, bool apply,
 			cv::Rect targetRoi = cv::Rect(0, 0, 0, 0)) 
 			: BackgroundTask(targetRoi), multi(multi), labels(labels), colors(colors),
-			nbins(nbins), binsize(binsize), illuminant(illuminant),
+			nbins(nbins), binsize(binsize), illuminant(illuminant), ignoreLabels(ignoreLabels),
 			current(current), temp(temp), sub(sub), add(add), apply(apply) {}
 		virtual ~BinsTbb() {}
 		virtual bool run();
@@ -67,46 +68,34 @@ protected:
 	protected:
 		tbb::task_group_context stopper;
 
-		class Substract {
+		class Accumulate {
 		public:
-			Substract(multi_img &multi, cv::Mat1s &labels, int nbins, multi_img::Value binsize, 
-				std::vector<multi_img::Value> &illuminant, std::vector<BinSet> &sets, cv::Rect region) 
-				: multi(multi), labels(labels), nbins(nbins), binsize(binsize), 
-				illuminant(illuminant), sets(sets), region(region) {}
+			Accumulate(bool substract, multi_img &multi, cv::Mat1s &labels, 
+				int nbins, multi_img::Value binsize, bool ignoreLabels,
+				std::vector<multi_img::Value> &illuminant, 
+				std::vector<BinSet> &sets, cv::Rect region) 
+				: substract(substract), multi(multi), labels(labels), nbins(nbins), binsize(binsize), 
+				illuminant(illuminant), ignoreLabels(ignoreLabels), sets(sets), region(region) {}
 			void operator()(const tbb::blocked_range2d<int> &r) const;
 		private:
+			bool substract;
 			multi_img &multi;
 			cv::Mat1s &labels;
 			int nbins;
 			multi_img::Value binsize;
+			bool ignoreLabels;
 			std::vector<multi_img::Value> &illuminant;
 			std::vector<BinSet> &sets;
 			cv::Rect region;
 		};
-
-		class Add {
-		public:
-			Add(multi_img &multi, cv::Mat1s &labels, int nbins, multi_img::Value binsize, 
-				std::vector<multi_img::Value> &illuminant, std::vector<BinSet> &sets, cv::Rect region) 
-				: multi(multi), labels(labels), nbins(nbins), binsize(binsize), 
-				illuminant(illuminant), sets(sets), region(region) {}
-			void operator()(const tbb::blocked_range2d<int> &r) const;
-		private:
-			multi_img &multi;
-			cv::Mat1s &labels;
-			int nbins;
-			multi_img::Value binsize;
-			std::vector<multi_img::Value> &illuminant;
-			std::vector<BinSet> &sets;
-			cv::Rect region;
-		};
-
+		
 		multi_img_ptr multi;
 		label_ptr labels;
 		QVector<QColor> colors;
 		int nbins;
 		multi_img::Value binsize;
 		std::vector<multi_img::Value> illuminant;
+		bool ignoreLabels;
 
 		sets_ptr current;
 		sets_ptr temp;

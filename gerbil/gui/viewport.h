@@ -19,16 +19,27 @@
 #include <QLabel>
 #include <QTimer>
 #include <limits>
+#include <tbb/concurrent_hash_map.h>
+#include <tbb/atomic.h>
 
 struct Bin {
-	Bin() {}
+	Bin() : weight(0.f) {}
 	Bin(const multi_img::Pixel& initial_means)
 	 : weight(1.f), means(initial_means) {} //, points(initial_means.size()) {}
 
 	inline void add(const multi_img::Pixel& p) {
 		weight += 1.f;
+		if (means.empty())
+			means.resize(p.size(), 0.f);
 		std::transform(means.begin(), means.end(), p.begin(), means.begin(),
 					   std::plus<multi_img::Value>());
+	}
+
+	inline void sub(const multi_img::Pixel& p) {
+		weight -= 1.f;
+		assert(!means.empty());
+		std::transform(means.begin(), means.end(), p.begin(), means.begin(),
+					   std::minus<multi_img::Value>());
 	}
 
 	float weight;
@@ -39,11 +50,12 @@ struct Bin {
 
 struct BinSet {
 	BinSet(const QColor &c, int size)
-		: label(c), totalweight(0.f),
-		boundary(size, std::make_pair((int)255, (int)0)) {}
+		: label(c), boundary(size, std::make_pair((int)255, (int)0)) { totalweight = 0; }
 	QColor label;
-	QHash<QByteArray, Bin> bins;
-	float totalweight;
+	typedef std::basic_string<unsigned char> HashKey;
+	typedef tbb::concurrent_hash_map<HashKey, Bin> HashMap;
+	HashMap bins;
+	tbb::atomic<int> totalweight;
 	std::vector<std::pair<int, int> > boundary;
 };
 
@@ -74,7 +86,7 @@ public:
 	std::vector<BinSet> sets;
 	std::vector<QString> labels;
 	QGLBuffer vb;
-	std::vector<std::pair<int, QByteArray> > shuffleIdx;
+	std::vector<std::pair<int, BinSet::HashKey> > shuffleIdx;
 
 	const std::vector<multi_img::Value> *illuminant;
 	bool illuminant_correction;

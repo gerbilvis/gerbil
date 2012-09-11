@@ -135,6 +135,7 @@ void multi_img_viewer::rebuild(int bins)
 
 void multi_img_viewer::createBins()
 {
+	/*
 	assert(!labelColors.empty() && !labels.empty());
 
 	// vole::Stopwatch watch;
@@ -162,15 +163,15 @@ void multi_img_viewer::createBins()
 			QByteArray hashkey;
 			for (int d = 0; d < dim; ++d) {
 				int pos = floor(curpos(pixel[d], d));
-				/* multi_img::minval/maxval are only theoretical bounds,
-				   so they could be violated */
+				// multi_img::minval/maxval are only theoretical bounds,
+				//   so they could be violated
 				pos = max(pos, 0); pos = min(pos, nbins-1);
 				hashkey[d] = (unsigned char)pos;
 
-				/* cache observed range; can be used for limiter init later */
-				std::pair<int, int> &range = s.boundary[d];
-				range.first = std::min<int>(range.first, pos);
-				range.second = std::max<int>(range.second, pos);
+				// cache observed range; can be used for limiter init later 
+				//std::pair<int, int> &range = s.boundary[d];
+				//range.first = std::min<int>(range.first, pos);
+				//range.second = std::max<int>(range.second, pos);
 			}
 
 			// put into our set
@@ -186,6 +187,7 @@ void multi_img_viewer::createBins()
 		}
 	}
 	//watch.print_reset(" - bin creation");
+	*/
 
 	/* normalize means & calculate color */
 	/*
@@ -240,13 +242,15 @@ bool multi_img_viewer::BinsTbb::run()
 
 	std::vector<cv::Rect>::iterator it;
 	for (it = sub.begin(); it != sub.end(); ++it) {
-		Substract substract(**multi, **labels, nbins, binsize, illuminant, **temp, *it);
+		Accumulate substract(
+			true, **multi, **labels, nbins, binsize, ignoreLabels, illuminant, **temp, *it);
 		tbb::parallel_for(
 			tbb::blocked_range2d<int>(0, (*labels)->rows, 0, (*labels)->cols), 
 				substract, tbb::auto_partitioner(), stopper);
 	}
 	for (it = add.begin(); it != add.end(); ++it) {
-		Add add(**multi, **labels, nbins, binsize, illuminant, **temp, *it);
+		Accumulate add(
+			false, **multi, **labels, nbins, binsize, ignoreLabels, illuminant, **temp, *it);
 		tbb::parallel_for(
 			tbb::blocked_range2d<int>(0, (*labels)->rows, 0, (*labels)->cols), 
 				add, tbb::auto_partitioner(), stopper);
@@ -267,20 +271,42 @@ bool multi_img_viewer::BinsTbb::run()
 	}
 }
 
-void multi_img_viewer::BinsTbb::Substract::operator()(const tbb::blocked_range2d<int> &r) const
+void multi_img_viewer::BinsTbb::Accumulate::operator()(const tbb::blocked_range2d<int> &r) const
 {
-	for (int i = r.rows().begin(); i != r.rows().end(); ++i) {
-		for (int j = r.cols().begin(); j != r.cols().end(); ++j) {
+	for (int y = r.rows().begin(); y != r.rows().end(); ++y) {
+		short *lr = labels[y];
+		for (int x = r.cols().begin(); x != r.cols().end(); ++x) {
+			int label = (ignoreLabels ? 0 : lr[x]);
+			label = (label >= sets.size()) ? 0 : label;
+			const multi_img::Pixel& pixel = multi(y, x);
+			BinSet &s = sets[label];
 
-		}
-	}
-}
+			BinSet::HashKey hashkey(multi.size(), 0);
+			for (int d = 0; d < multi.size(); ++d) {
+				multi_img::Value curpos = (pixel[d] - multi.minval) / binsize;
+				if (!illuminant.empty())
+					curpos /= illuminant[d];
+				int pos = floor(curpos);
+				pos = max(pos, 0); pos = min(pos, nbins-1);
+				hashkey[d] = (unsigned char)pos;
+			}
 
-void multi_img_viewer::BinsTbb::Add::operator()(const tbb::blocked_range2d<int> &r) const
-{
-	for (int i = r.rows().begin(); i != r.rows().end(); ++i) {
-		for (int j = r.cols().begin(); j != r.cols().end(); ++j) {
-
+			if (substract) {
+				BinSet::HashMap::accessor ac;
+				s.bins.insert(ac, hashkey);
+				ac->second.add(pixel);
+				ac.release();
+				s.totalweight++; // atomic
+			} else {
+				BinSet::HashMap::accessor ac;
+				if (s.bins.find(ac, hashkey)) {
+					ac->second.sub(pixel);
+					if (ac->second.weight == 0.f)
+						s.bins.erase(ac);
+				}
+				ac.release();
+				s.totalweight--; // atomic
+			}
 		}
 	}
 }

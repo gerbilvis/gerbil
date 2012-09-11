@@ -111,7 +111,7 @@ void Viewport::setLimiters(int label)
 			limiters[b] = std::make_pair(h, h);
 		}
 	} else {                       // label holds data
-		if ((int)sets.size() > label && sets[label].totalweight > 0.f) {
+		if ((int)sets.size() > label && sets[label].totalweight > 0) {
 			// use range from this label
 			const std::vector<std::pair<int, int> > &b = sets[label].boundary;
 			limiters.assign(b.begin(), b.end());
@@ -127,14 +127,18 @@ void Viewport::prepareLines()
 	multi_img::Pixel pixel(dimensionality);
 	for (unsigned int i = 0; i < sets.size(); ++i) {
 		BinSet &s = sets[i];
-		QHash<QByteArray, Bin>::iterator it;
+		BinSet::HashMap::iterator it;
 		for (it = s.bins.begin(); it != s.bins.end(); ++it) {
-			Bin &b = it.value();
-			for (int d = 0; d < dimensionality; ++d)
+			Bin &b = it->second;
+			for (int d = 0; d < dimensionality; ++d) {
 				pixel[d] = b.means[d] / b.weight;
+				std::pair<int, int> &range = s.boundary[d];
+				range.first = std::min<int>(range.first, (it->first)[d]);
+				range.second = std::max<int>(range.second, (it->first)[d]);
+			}
 			color = image->bgr(pixel);
 			b.rgb = QColor(color[2]*255, color[1]*255, color[0]*255);
-			shuffleIdx.push_back(make_pair(i, it.key()));
+			shuffleIdx.push_back(make_pair(i, it->first));
 		}
 	}
 	std::random_shuffle(shuffleIdx.begin(), shuffleIdx.end());
@@ -172,10 +176,10 @@ void Viewport::prepareLines()
 
 	int vidx = 0;
 	for (unsigned int i = 0; i < total; ++i) {
-		std::pair<int, QByteArray> &idx = shuffleIdx[i];
+		std::pair<int, BinSet::HashKey> &idx = shuffleIdx[i];
 		BinSet &s = sets[idx.first];
-		QByteArray &K = idx.second;
-		Bin &b = s.bins[K];
+		BinSet::HashKey &K = idx.second;
+		Bin &b = s.bins.equal_range(K).first->second;
 		for (int d = 0; d < dimensionality; ++d) {
 			qreal curpos;
 			if (drawMeans) {
@@ -253,15 +257,15 @@ void Viewport::drawBins(QPainter &painter)
 	if (drawingState == RESIZE)
 		total /= 10;
 	for (unsigned int i = 0; i < total; ++i) {
-		std::pair<int, QByteArray> &idx = shuffleIdx[i];
+		std::pair<int, BinSet::HashKey> &idx = shuffleIdx[i];
 		if (idx.first < start || idx.first >= end) {
 			currind += dimensionality;
 			continue;
 		}
 
 		BinSet &s = sets[idx.first];
-		QByteArray &K = idx.second;
-		Bin &b = s.bins[K];
+		BinSet::HashKey &K = idx.second;
+		Bin &b = s.bins.equal_range(K).first->second;
 
 		QColor &basecolor = s.label;
 		QColor color = (drawRGB ? b.rgb : basecolor);
@@ -273,10 +277,10 @@ void Viewport::drawBins(QPainter &painter)
 		   this should be configurable. */
 		if (i == 0)
 			alpha = useralpha *
-					(0.01 + 0.99*(log(b.weight+1) / log(s.totalweight)));
+					(0.01 + 0.99*(log(b.weight+1) / log((float)s.totalweight)));
 		else
 			alpha = useralpha *
-					(log(b.weight+1) / log(s.totalweight));
+					(log(b.weight+1) / log((float)s.totalweight));
 		color.setAlphaF(min(alpha, 1.));
 
 		bool highlighted = false;
