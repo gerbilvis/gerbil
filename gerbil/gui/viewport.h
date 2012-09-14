@@ -70,6 +70,20 @@ enum representation {
 };
 
 struct ViewportCtx {
+	ViewportCtx &operator=(const ViewportCtx &other) {
+		wait = other.wait;
+		reset = other.reset;
+		dimensionality = other.dimensionality;
+		type = other.type;
+		meta = other.meta;
+		labels = other.labels;
+		illuminant_correction = other.illuminant_correction;
+		nbins = other.nbins;
+		binsize = other.binsize;
+		minval = other.minval;
+		maxval = other.maxval;
+	}
+
 	tbb::atomic<int> wait;
 	tbb::atomic<int> reset;
 	size_t dimensionality;
