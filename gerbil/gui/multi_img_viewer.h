@@ -54,14 +54,15 @@ protected:
 	class BinsTbb : public BackgroundTask {
 	public:
 		BinsTbb(multi_img_ptr multi, label_ptr labels, 
-			QVector<QColor> colors, int nbins, multi_img::Value binsize, 
-			std::vector<multi_img::Value> illuminant, bool ignoreLabels, 
-			sets_ptr current, sets_ptr temp,
+			QVector<QColor> colors, bool ignoreLabels, 
+			std::vector<multi_img::Value> illuminant, 
+			ViewportCtx args, vpctx_ptr context, 
+			sets_ptr current, sets_ptr temp, 
 			std::vector<cv::Rect> sub, std::vector<cv::Rect> add, bool apply,
 			cv::Rect targetRoi = cv::Rect(0, 0, 0, 0)) 
 			: BackgroundTask(targetRoi), multi(multi), labels(labels), colors(colors),
-			nbins(nbins), binsize(binsize), illuminant(illuminant), ignoreLabels(ignoreLabels),
-			current(current), temp(temp), sub(sub), add(add), apply(apply) {}
+			ignoreLabels(ignoreLabels), illuminant(illuminant), args(args),
+			context(context), current(current), temp(temp), sub(sub), add(add), apply(apply) {}
 		virtual ~BinsTbb() {}
 		virtual bool run();
 		virtual void cancel() { stopper.cancel_group_execution(); }
@@ -92,11 +93,11 @@ protected:
 		multi_img_ptr multi;
 		label_ptr labels;
 		QVector<QColor> colors;
-		int nbins;
-		multi_img::Value binsize;
-		std::vector<multi_img::Value> illuminant;
 		bool ignoreLabels;
+		std::vector<multi_img::Value> illuminant;
+		ViewportCtx args;
 
+		vpctx_ptr context;
 		sets_ptr current;
 		sets_ptr temp;
 		

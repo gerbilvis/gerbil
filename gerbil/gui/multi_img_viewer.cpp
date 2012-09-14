@@ -127,6 +127,7 @@ void multi_img_viewer::rebuild(int bins)
 		}
 		binsize = (image->maxval - image->minval)/(multi_img::Value)(nbins-1);
 		viewport->reset(nbins, binsize, image->minval);
+		// maxval = minv + (multi_img::Value)(bins - 1)*bsize;
 	}
 	createBins();
 	viewport->prepareLines();
@@ -243,14 +244,14 @@ bool multi_img_viewer::BinsTbb::run()
 	std::vector<cv::Rect>::iterator it;
 	for (it = sub.begin(); it != sub.end(); ++it) {
 		Accumulate substract(
-			true, **multi, **labels, nbins, binsize, ignoreLabels, illuminant, **temp, *it);
+			true, **multi, **labels, args.nbins, args.binsize, ignoreLabels, illuminant, **temp, *it);
 		tbb::parallel_for(
 			tbb::blocked_range2d<int>(0, (*labels)->rows, 0, (*labels)->cols), 
 				substract, tbb::auto_partitioner(), stopper);
 	}
 	for (it = add.begin(); it != add.end(); ++it) {
 		Accumulate add(
-			false, **multi, **labels, nbins, binsize, ignoreLabels, illuminant, **temp, *it);
+			false, **multi, **labels, args.nbins, args.binsize, ignoreLabels, illuminant, **temp, *it);
 		tbb::parallel_for(
 			tbb::blocked_range2d<int>(0, (*labels)->rows, 0, (*labels)->cols), 
 				add, tbb::auto_partitioner(), stopper);
@@ -261,7 +262,9 @@ bool multi_img_viewer::BinsTbb::run()
 		return false;
 	} else {
 		if (!reuse || apply) {
+			SharedDataWrite context_wlock(context->lock);
 			SharedDataWrite current_wlock(current->lock);
+			**context = args;
 			delete current->swap(result);
 		} else {
 			SharedDataWrite temp_wlock(temp->lock);
