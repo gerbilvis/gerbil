@@ -279,6 +279,8 @@ public:
 
 	/// return sRGB color space representation of a multispectral pixel
 	cv::Vec3f bgr(const Pixel &p) const;
+	static cv::Vec3f bgr(const Pixel &p, 
+		size_t dim, std::vector<BandDesc> &meta, Value maxval);
 #endif
 
 //@}
@@ -439,6 +441,8 @@ public:
 	/// helper function to create XYZ color space representation
 	/// of a multispectral pixel
 	void pixel2xyz(const Pixel &p, cv::Vec3f &xyz) const;
+	static void pixel2xyz(const Pixel &p, cv::Vec3f &xyz, 
+		size_t dim, std::vector<BandDesc> &meta, Value maxval);
 
 	/// helper function to do conversion from xyz to sRGB color space
 	static void xyz2bgr(const cv::Vec3f &xyz, cv::Vec3f &rgb);
