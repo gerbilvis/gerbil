@@ -23,15 +23,19 @@ using namespace std;
 
 Viewport::Viewport(QWidget *parent)
 	: QGLWidget(QGLFormat(QGL::SampleBuffers), parent),
-	  illuminant(NULL), selection(0), hover(-1), limiterMode(false),
+	  ctx(new SharedData<ViewportCtx>(new ViewportCtx())),
+	  sets(new SharedData<std::vector<BinSet> >(new std::vector<BinSet>())),
+	  selection(0), hover(-1), limiterMode(false),
 	  active(false), wasActive(false), useralpha(1.f),
 	  showLabeled(true), showUnlabeled(true), ignoreLabels(false),
 	  overlayMode(false),
 	  zoom(1.), shift(0), lasty(-1), holdSelection(false), activeLimiter(0),
 	  cacheValid(false), clearView(false), implicitClearView(false),
 	  drawMeans(true), drawRGB(false), drawHQ(true), drawingState(FOLDING),
-	  yaxisWidth(0), vb(QGLBuffer::VertexBuffer), type(IMG), image(NULL)
+	  yaxisWidth(0), vb(QGLBuffer::VertexBuffer)
 {
+	(*ctx)->wait = 1;
+	(*ctx)->reset = 1;
 	resizeTimer.setSingleShot(true);
 	connect(&resizeTimer, SIGNAL(timeout()), this, SLOT(endNoHQ()));
 	resizeTimer.start(0);
@@ -41,13 +45,8 @@ Viewport::~Viewport()
 {
 }
 
-void Viewport::reset(int bins, multi_img::Value bsize, multi_img::Value minv)
+void Viewport::reset()
 {
-	nbins = bins;
-	binsize = bsize;
-	minval = minv;
-	maxval = minv + (multi_img::Value)(bins - 1)*bsize;
-
 	// reset hover value that would become inappropr.
 	hover = -1;
 	// reset limiters to most-lazy values
@@ -68,8 +67,9 @@ void Viewport::updateYAxis()
 	std::vector<float> ycoord(amount);
 	float maximum = 0.f;
 	for (int i = 0; i < amount; ++i) {
-		float ifrac = (float)i*0.25*(float)(nbins - 1);
-		ycoord[i] = maxval - ifrac*binsize;
+		SharedDataRead ctxlock(ctx->lock);
+		float ifrac = (float)i*0.25*(float)((*ctx)->nbins - 1);
+		ycoord[i] = (*ctx)->maxval - ifrac * (*ctx)->binsize;
 		maximum = std::max(maximum, std::abs(ycoord[i]));
 	}
 
@@ -104,16 +104,18 @@ void Viewport::updateYAxis()
 void Viewport::setLimiters(int label)
 {
 	if (label < 1) {	// not label
-		limiters.assign(dimensionality, make_pair(0, nbins-1));
+		SharedDataRead ctxlock(ctx->lock);
+		limiters.assign((*ctx)->dimensionality, make_pair(0, (*ctx)->nbins-1));
 		if (label == -1) {	// use hover data
 			int b = selection;
 			int h = hover;
 			limiters[b] = std::make_pair(h, h);
 		}
 	} else {                       // label holds data
-		if ((int)sets.size() > label && sets[label].totalweight > 0) {
+		SharedDataRead setslock(sets->lock);
+		if ((int)(*sets)->size() > label && (**sets)[label].totalweight > 0) {
 			// use range from this label
-			const std::vector<std::pair<int, int> > &b = sets[label].boundary;
+			const std::vector<std::pair<int, int> > &b = (**sets)[label].boundary;
 			limiters.assign(b.begin(), b.end());
 		} else
 			setLimiters(0);
@@ -122,21 +124,27 @@ void Viewport::setLimiters(int label)
 
 void Viewport::prepareLines()
 {
+	SharedDataRead ctxlock(ctx->lock);
+	SharedDataRead setslock(sets->lock);
+	(*ctx)->wait.fetch_and_store(0);
+	if ((*ctx)->reset.fetch_and_store(0))
+		reset();
+
 	shuffleIdx.clear();
 	cv::Vec3f color;
-	multi_img::Pixel pixel(dimensionality);
+	multi_img::Pixel pixel((*ctx)->dimensionality);
 	for (unsigned int i = 0; i < sets.size(); ++i) {
 		BinSet &s = sets[i];
 		BinSet::HashMap::iterator it;
 		for (it = s.bins.begin(); it != s.bins.end(); ++it) {
 			Bin &b = it->second;
-			for (int d = 0; d < dimensionality; ++d) {
+			for (int d = 0; d < (*ctx)->dimensionality; ++d) {
 				pixel[d] = b.means[d] / b.weight;
 				std::pair<int, int> &range = s.boundary[d];
 				range.first = std::min<int>(range.first, (it->first)[d]);
 				range.second = std::max<int>(range.second, (it->first)[d]);
 			}
-			color = image->bgr(pixel);
+			color = multi_img::bgr(pixel, (*ctx)->dimensionality, (*ctx)->meta, (*ctx)->maxval);
 			b.rgb = QColor(color[2]*255, color[1]*255, color[0]*255);
 			shuffleIdx.push_back(make_pair(i, it->first));
 		}
@@ -164,7 +172,7 @@ void Viewport::prepareLines()
 			" johannes.jordan@cs.fau.de. Thank you for your help!");
 		return;
 	}
-	vb.allocate(total * dimensionality * sizeof(GLfloat) * 2);
+	vb.allocate(total * (*ctx)->dimensionality * sizeof(GLfloat) * 2);
 	GLfloat *varr = (GLfloat*)vb.map(QGLBuffer::WriteOnly);
 	if (!varr) {
 		QMessageBox::critical(this, "Drawing Error",
@@ -177,17 +185,17 @@ void Viewport::prepareLines()
 	int vidx = 0;
 	for (unsigned int i = 0; i < total; ++i) {
 		std::pair<int, BinSet::HashKey> &idx = shuffleIdx[i];
-		BinSet &s = sets[idx.first];
+		BinSet &s = (**sets)[idx.first];
 		BinSet::HashKey &K = idx.second;
 		Bin &b = s.bins.equal_range(K).first->second;
-		for (int d = 0; d < dimensionality; ++d) {
+		for (int d = 0; d < (*ctx)->dimensionality; ++d) {
 			qreal curpos;
 			if (drawMeans) {
-				curpos = ((b.means[d] / b.weight) - minval) / binsize;
+				curpos = ((b.means[d] / b.weight) - (*ctx)->minval) / (*ctx)->binsize;
 			} else {
 				curpos = (unsigned char)K[d] + 0.5;
-				if (illuminant_correction && illuminant)
-					curpos *= (*illuminant)[d];
+				if ((*ctx)->illuminant_correction && !illuminant.empty())
+					curpos *= illuminant[d];
 			}
 			//b.points[d] = QPointF(d, curpos);
 			varr[vidx++] = d;
@@ -200,6 +208,8 @@ void Viewport::prepareLines()
 
 void Viewport::updateModelview()
 {
+	SharedDataRead ctxlock(ctx->lock);
+
 	/* apply zoom and translation in window coordinates */
 	qreal wwidth = width();
 	qreal wheight = height()*zoom;
@@ -210,15 +220,15 @@ void Viewport::updateModelview()
 	int htp = yaxisWidth - 6; // left padding for text (legend)
 
 	// if gradient, we discard one unit space intentionally for centering
-	int d = dimensionality - (type == GRAD ? 0 : 1);
+	int d = (*ctx)->dimensionality - ((*ctx)->type == GRAD ? 0 : 1);
 	qreal w = (wwidth  - 2*hp - htp)/(qreal)(d); // width of one unit
-	qreal h = (wheight - 2*vp - vtp)/(qreal)(nbins - 1); // height of one unit
-	int t = (type == GRAD ? w/2 : 0); // moving half a unit for centering
+	qreal h = (wheight - 2*vp - vtp)/(qreal)((*ctx)->nbins - 1); // height of one unit
+	int t = ((*ctx)->type == GRAD ? w/2 : 0); // moving half a unit for centering
 
 	modelview.reset();
 	modelview.translate(hp + htp + t, vp + vshift);
 	modelview.scale(w, -1*h); // -1 low values at bottom
-	modelview.translate(0, -(nbins -1)); // shift for low values at bottom
+	modelview.translate(0, -((*ctx)->nbins -1)); // shift for low values at bottom
 
 	// set inverse
 	modelviewI = modelview.inverted();
@@ -226,6 +236,9 @@ void Viewport::updateModelview()
 
 void Viewport::drawBins(QPainter &painter)
 {
+	SharedDataRead ctxlock(ctx->lock);
+	SharedDataRead setslock(sets->lock);
+
 	// vole::Stopwatch watch("drawBins");
 	painter.beginNativePainting();
 	glEnable(GL_BLEND);
@@ -251,7 +264,7 @@ void Viewport::drawBins(QPainter &painter)
 						 (hover < 0 && !limiterMode));
 	/* make sure that viewport shows "unlabeled" in the ignore label case */
 	int start = ((showUnlabeled || ignoreLabels == 1) ? 0 : 1);
-	int end = (showLabeled ? sets.size() : 1);
+	int end = (showLabeled ? (*sets)->size() : 1);
 
 	unsigned int total = shuffleIdx.size();
 	if (drawingState == RESIZE)
@@ -259,11 +272,11 @@ void Viewport::drawBins(QPainter &painter)
 	for (unsigned int i = 0; i < total; ++i) {
 		std::pair<int, BinSet::HashKey> &idx = shuffleIdx[i];
 		if (idx.first < start || idx.first >= end) {
-			currind += dimensionality;
+			currind += (*ctx)->dimensionality;
 			continue;
 		}
 
-		BinSet &s = sets[idx.first];
+		BinSet &s = (**sets)[idx.first];
 		BinSet::HashKey &K = idx.second;
 		Bin &b = s.bins.equal_range(K).first->second;
 
@@ -287,7 +300,7 @@ void Viewport::drawBins(QPainter &painter)
 		if (!implicitClearView) {
 			if (limiterMode) {
 				highlighted = true;
-				for (int i = 0; i < dimensionality; ++i) {
+				for (int i = 0; i < (*ctx)->dimensionality; ++i) {
 					unsigned char k = K[i];
 					if (k < limiters[i].first || k > limiters[i].second)
 						highlighted = false;
@@ -313,8 +326,8 @@ void Viewport::drawBins(QPainter &painter)
 		//painter.setPen(color);
 		//painter.drawPolyline(b.points);
 		qglColor(color);
-		glDrawArrays(GL_LINE_STRIP, currind, dimensionality);
-		currind += dimensionality;
+		glDrawArrays(GL_LINE_STRIP, currind, (*ctx)->dimensionality);
+		currind += (*ctx)->dimensionality;
 	}
 	vb.release();
 		glDisable(GL_DEPTH_TEST);
@@ -323,9 +336,11 @@ void Viewport::drawBins(QPainter &painter)
 
 void Viewport::drawAxesFg(QPainter &painter)
 {
+	SharedDataRead ctxlock(ctx->lock);
+
 	if (drawingState == SCREENSHOT)
 		return;
-	if (selection < 0 || selection >= dimensionality)
+	if (selection < 0 || selection >= (*ctx)->dimensionality)
 		return;
 
 	// draw selection in foreground
@@ -333,21 +348,21 @@ void Viewport::drawAxesFg(QPainter &painter)
 		painter.setPen(Qt::red);
 	else
 		painter.setPen(Qt::gray);
-	qreal top = (nbins-1);
-	if (illuminant)
-		top *= illuminant->at(selection);
+	qreal top = ((*ctx)->nbins-1);
+	if (!illuminant.empty())
+		top *= illuminant.at(selection);
 	painter.drawLine(QPointF(selection, 0.), QPointF(selection, top));
 
 	// draw limiters
 	if (limiterMode) {
 		painter.setPen(Qt::red);
-		for (int i = 0; i < dimensionality; ++i) {
+		for (int i = 0; i < (*ctx)->dimensionality; ++i) {
 			qreal y1 = limiters[i].first, y2 = limiters[i].second;
-			if (illuminant) {
-				y1 *= illuminant->at(selection);
-				y2 *= illuminant->at(selection);
+			if (!illuminant.empty()) {
+				y1 *= illuminant.at(selection);
+				y2 *= illuminant.at(selection);
 			}
-			qreal h = nbins*0.01;
+			qreal h = (*ctx)->nbins*0.01;
 			if (h > y2 - y1)	// don't let them overlap, looks uncool
 				h = y2 - y1;
 			QPolygonF polygon;
@@ -367,24 +382,26 @@ void Viewport::drawAxesFg(QPainter &painter)
 }
 void Viewport::drawAxesBg(QPainter &painter)
 {
+	SharedDataRead ctxlock(ctx->lock);
+
 	// draw axes in background
 	painter.setPen(QColor(64, 64, 64));
 	QPolygonF poly;
-	if (illuminant) {
-		for (int i = 0; i < dimensionality; ++i) {
-			qreal top = (nbins-1) * illuminant->at(i);
+	if (!illuminant.empty()) {
+		for (int i = 0; i < (*ctx)->dimensionality; ++i) {
+			qreal top = ((*ctx)->nbins-1) * illuminant.at(i);
 			painter.drawLine(QPointF(i, 0.), QPointF(i, top));
 			poly << QPointF(i, top);
 		}
-		poly << QPointF(dimensionality-1, nbins-1);
-		poly << QPointF(0, nbins-1);
+		poly << QPointF((*ctx)->dimensionality-1, (*ctx)->nbins-1);
+		poly << QPointF(0, (*ctx)->nbins-1);
 	} else {
-		for (int i = 0; i < dimensionality; ++i)
-			painter.drawLine(i, 0, i, nbins-1);
+		for (int i = 0; i < (*ctx)->dimensionality; ++i)
+			painter.drawLine(i, 0, i, (*ctx)->nbins-1);
 	}
 
 	// visualize illuminant
-	if (illuminant) {
+	if (!illuminant.empty()) {
 		QPolygonF poly2 = modelview.map(poly);
 		poly2.translate(0., -5.);
 		painter.restore();
@@ -393,7 +410,7 @@ void Viewport::drawAxesBg(QPainter &painter)
 		painter.setPen(Qt::NoPen);
 		painter.drawPolygon(poly2);
 		painter.setPen(Qt::white);
-		poly2.remove(dimensionality, 2);
+		poly2.remove((*ctx)->dimensionality, 2);
 		painter.drawPolyline(poly2);
 		painter.save();
 		painter.setWorldTransform(modelview);
@@ -402,11 +419,13 @@ void Viewport::drawAxesBg(QPainter &painter)
 
 void Viewport::drawLegend(QPainter &painter)
 {
-	assert(labels.size() == (unsigned int)dimensionality);
+	SharedDataRead ctxlock(ctx->lock);
+
+	assert((*ctx)->labels.size() == (unsigned int)(*ctx)->dimensionality);
 
 	painter.setPen(Qt::white);
 	/// x-axis
-	for (int i = 0; i < dimensionality; ++i) {
+	for (int i = 0; i < (*ctx)->dimensionality; ++i) {
 		QPointF l = modelview.map(QPointF(i - 1.f, 0.f));
 		QPointF r = modelview.map(QPointF(i + 1.f, 0.f));
 		QRectF rect(l, r);
@@ -431,15 +450,15 @@ void Viewport::drawLegend(QPainter &painter)
 		bool highlight = (i == selection && drawingState != SCREENSHOT);
 		if (highlight)
 			painter.setPen(Qt::red);
-		painter.drawText(rect, Qt::AlignCenter, labels[i]);
+		painter.drawText(rect, Qt::AlignCenter, (*ctx)->labels[i]);
 		if (highlight)	// revert back color
 			painter.setPen(Qt::white);
 	}
 
 	/// y-axis
 	for (size_t i = 0; i < yaxis.size(); ++i) {
-		float ifrac = (float)(i)/(float)(yaxis.size()-1) * (float)(nbins - 1);
-		QPointF b = modelview.map(QPointF(0.f, (float)(nbins - 1) - ifrac));
+		float ifrac = (float)(i)/(float)(yaxis.size()-1) * (float)((*ctx)->nbins - 1);
+		QPointF b = modelview.map(QPointF(0.f, (float)((*ctx)->nbins - 1) - ifrac));
 		b += QPointF(-8.f, 20.f); // draw left of data, vcenter alignment
 		QPointF t = b;
 		t -= QPointF(200.f, 40.f); // draw left of data, vcenter alignment
@@ -507,8 +526,11 @@ void Viewport::activate()
 
 void Viewport::paintEvent(QPaintEvent *)
 {
+	SharedDataRead ctxlock(ctx->lock);
+	SharedDataRead setslock(sets->lock);
+
 	// return early if no data present. other variables may not be initialized
-	if (sets.empty())
+	if ((*sets)->empty() || (*ctx)->wait)
 		return;
 
 	if (!overlayMode) {
@@ -526,6 +548,14 @@ void Viewport::paintEvent(QPaintEvent *)
 	drawOverlay();
 }
 
+void Viewport::rebuild()
+{
+	SharedDataRead ctxlock(ctx->lock);
+	SharedDataRead setslock(sets->lock);
+	prepareLines();
+	update();
+}
+
 void Viewport::resizeEvent(QResizeEvent *)
 {
 	if (drawingState != FOLDING) {
@@ -539,9 +569,11 @@ void Viewport::resizeEvent(QResizeEvent *)
 
 void Viewport::updateXY(int sel, int bin)
 {
+	SharedDataRead ctxlock(ctx->lock);
+
 	bool emitOverlay = !wasActive;
 
-	if (sel >= 0 && sel < dimensionality) {
+	if (sel >= 0 && sel < (*ctx)->dimensionality) {
 		/// first handle sel -> band selection
 
 		/* emit new band if either new selection or first input after
@@ -550,7 +582,7 @@ void Viewport::updateXY(int sel, int bin)
 			wasActive = true;
 			selection = sel;
 			emitOverlay = true;
-			emit bandSelected(type, sel);
+			emit bandSelected((*ctx)->type, sel);
 		}
 
 		// do this after the first chance to change selection (above)
@@ -558,10 +590,10 @@ void Viewport::updateXY(int sel, int bin)
 			holdSelection = true;
 
 		/// second handle bin -> intensity highlight
-		if (illuminant && illuminant_correction)	/* correct y for illuminant */
-			bin = std::floor(bin / illuminant->at(sel) + 0.5f);
+		if (!illuminant.empty() && (*ctx)->illuminant_correction)	/* correct y for illuminant */
+			bin = std::floor(bin / illuminant.at(sel) + 0.5f);
 
-		if (bin >= 0 && bin < nbins) {
+		if (bin >= 0 && bin < (*ctx)->nbins) {
 			if (!limiterMode && (hover != bin)) {
 				hover = bin;
 				emitOverlay = true;
@@ -588,7 +620,8 @@ void Viewport::enterEvent(QEvent *)
 /*	sloppy focus. debatable.
 	if (active)
 		return;
-	emit bandSelected(type, selection);
+	SharedDataRead ctxlock(ctx->lock);
+	emit bandSelected((*ctx)->type, selection);
 	emit activated();
 	active = true;
 	update();
@@ -679,10 +712,13 @@ void Viewport::keyPressEvent(QKeyEvent *event)
 		break;
 
 	case Qt::Key_Up:
-		if (!limiterMode && hover < nbins-2) {
-			hover++;
-			hoverdirt = true;
-			dirty = true;
+		{
+			SharedDataRead ctxlock(ctx->lock);
+			if (!limiterMode && hover < (*ctx)->nbins-2) {
+				hover++;
+				hoverdirt = true;
+				dirty = true;
+			}
 		}
 		break;
 	case Qt::Key_Down:
@@ -693,17 +729,23 @@ void Viewport::keyPressEvent(QKeyEvent *event)
 		}
 		break;
 	case Qt::Key_Left:
-		if (selection > 0) {
-			selection--;
-			emit bandSelected(type, selection);
-			dirty = true;
+		{
+			SharedDataRead ctxlock(ctx->lock);
+			if (selection > 0) {
+				selection--;
+				emit bandSelected((*ctx)->type, selection);
+				dirty = true;
+			}
 		}
 		break;
 	case Qt::Key_Right:
-		if (selection < dimensionality-1) {
-			selection++;
-			emit bandSelected(type, selection);
-			dirty = true;
+		{
+			SharedDataRead ctxlock(ctx->lock);
+			if (selection < (*ctx)->dimensionality-1) {
+				selection++;
+				emit bandSelected((*ctx)->type, selection);
+				dirty = true;
+			}
 		}
 		break;
 
@@ -713,8 +755,7 @@ void Viewport::keyPressEvent(QKeyEvent *event)
 		break;
 	case Qt::Key_M:
 		drawMeans = !drawMeans;
-		prepareLines();
-		update();
+		rebuild();
 	}
 
 	if (dirty) {

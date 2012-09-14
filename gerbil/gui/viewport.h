@@ -69,6 +69,22 @@ enum representation {
 	REPSIZE = 4
 };
 
+struct ViewportCtx {
+	tbb::atomic<int> wait;
+	tbb::atomic<int> reset;
+	size_t dimensionality;
+	representation type;
+	std::vector<multi_img::BandDesc> meta;
+	std::vector<QString> labels;
+	bool illuminant_correction;
+	int nbins;
+	multi_img::Value binsize;
+	multi_img::Value minval;
+	multi_img::Value maxval;
+};
+
+typedef boost::shared_ptr<SharedData<ViewportCtx> > vpctx_ptr;
+
 class Viewport : public QGLWidget
 {
 	Q_OBJECT
@@ -77,19 +93,15 @@ public:
 	~Viewport();
 
 	void prepareLines();
-	void reset(int nbins, multi_img::Value binsize, multi_img::Value minval);
 	void setLimiters(int label);
 
-	int dimensionality;
-	const multi_img *image;
-	representation type;
-	std::vector<BinSet> sets;
-	std::vector<QString> labels;
+	vpctx_ptr ctx;
+	sets_ptr sets;
+
 	QGLBuffer vb;
 	std::vector<std::pair<int, BinSet::HashKey> > shuffleIdx;
 
-	const std::vector<multi_img::Value> *illuminant;
-	bool illuminant_correction;
+	std::vector<multi_img::Value> illuminant;
 
 	int selection, hover;
 	bool limiterMode;
@@ -117,6 +129,8 @@ public slots:
 
 	void screenshot();
 
+	void rebuild();
+
 signals:
 	void bandSelected(representation type, int dim);
 	void newOverlay(int dim);
@@ -125,6 +139,7 @@ signals:
 	void remSelection();
 
 protected:
+	void reset();
 	void paintEvent(QPaintEvent*);
 	void resizeEvent(QResizeEvent*);
 	void enterEvent(QEvent*);
@@ -153,10 +168,6 @@ protected:
 
 	// helper for limiter handling
 	bool updateLimiter(int dim, int bin);
-
-	// cached information about image
-	int nbins;
-	multi_img::Value binsize, minval, maxval;
 
 private:
 	// modelview matrix and its inverse
