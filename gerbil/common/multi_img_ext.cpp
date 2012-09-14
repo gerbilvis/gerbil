@@ -75,10 +75,11 @@ namespace CIEObserver {	// 10 degree 1964 CIE observer coefficients
 	float z[] = { 5.35027E-07f, 4.0283E-06f, 2.61437E-05f, 0.00014622f, 0.000704776f, 0.0029278f, 0.0104822f, 0.032344f, 0.0860109f, 0.19712f, 0.389366f, 0.65676f, 0.972542f, 1.2825f, 1.55348f, 1.7985f, 1.96728f, 2.0273f, 1.9948f, 1.9007f, 1.74537f, 1.5549f, 1.31756f, 1.0302f, 0.772125f, 0.5706f, 0.415254f, 0.302356f, 0.218502f, 0.159249f, 0.112044f, 0.082248f, 0.060709f, 0.04305f, 0.030451f, 0.020584f, 0.013676f, 0.007918f, 0.003988f, 0.001091f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f };
 }
 
-void multi_img::pixel2xyz(const Pixel &p, cv::Vec3f &v) const
+void multi_img::pixel2xyz(const Pixel &p, cv::Vec3f &v, 
+	size_t dim, std::vector<BandDesc> &meta, Value maxval)
 {
 	float greensum = 0.;
-	for (size_t i = 0; i < p.size(); ++i) {
+	for (size_t i = 0; i < dim; ++i) {
 		int idx = ((int)(meta[i].center + 0.5f) - 360) / 5;
 		if (idx < 0 || idx > 94)
 			continue;
@@ -92,6 +93,11 @@ void multi_img::pixel2xyz(const Pixel &p, cv::Vec3f &v) const
 		return;
 	for (unsigned int i = 0; i < 3; ++i)
 		v[i] /= greensum;
+}
+
+void multi_img::pixel2xyz(const Pixel &p, cv::Vec3f &v) const
+{
+	pixel2xyz(p, v, p.size(), meta, maxval);
 }
 
 void multi_img::xyz2bgr(const cv::Vec3f &vs, cv::Vec3f &vd)
@@ -155,6 +161,15 @@ cv::Vec3f multi_img::bgr(const Pixel &p) const
 {
 	cv::Vec3f xyz, ret;
 	pixel2xyz(p, xyz);
+	xyz2bgr(xyz, ret);
+	return ret;
+}
+
+cv::Vec3f multi_img::bgr(const Pixel &p, size_t dim, 
+	std::vector<BandDesc> &meta, Value maxval)
+{
+	cv::Vec3f xyz, ret;
+	pixel2xyz(p, xyz, dim, meta, maxval);
 	xyz2bgr(xyz, ret);
 	return ret;
 }
