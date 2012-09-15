@@ -12,7 +12,7 @@
 #include <multi_img.h>
 #include <utility>
 #include <boost/shared_ptr.hpp>
-#include <boost/thread/shared_mutex.hpp>
+#include <boost/thread/recursive_mutex.hpp>
 #include <boost/thread/locks.hpp>
 #include <opencv2/core/core.hpp>
 
@@ -20,21 +20,46 @@
 #include <QImage>
 #endif
 
-typedef boost::shared_mutex SharedDataGuard;
-typedef boost::shared_lock<SharedDataGuard> SharedDataRead; ///< read lock
-typedef boost::unique_lock<SharedDataGuard> SharedDataWrite; ///< write lock
+/** Optimally, there should be boost::shared_mutex to allow more than one
+    thread to hold data concurrently. Because shared_mutex is not recursive
+	(not even for read access), it would however need fundamental refactoring
+	of currently existing classes to avoid deadlocks. Since it is not expected
+	there to be more than two foreground threads holding data (e.g. one for GUI
+	event loop and second for OpenGL rendering), usage of recursive_mutex seems
+	to be reasonable tradeoff between low footprint on existing code and
+	concurrency guarantees. */
+typedef boost::recursive_mutex SharedDataGuard;
+/** Lock that should be used by foreground threads (GUI, OpenGL) to prevent
+    background worker thread to swap embedded raw pointer. Note that the lock 
+	does not prevent other parties to modify the data in-place, that is if you 
+	need mutual exclusion on the targeted data itself, you should equip the 
+	targeted data by a mutex of your choice and properly lock on it depending 
+	on a particular scenario. Often, the possible in-place modification of
+	data by foreground threads can be avoided by temporarily disabling user
+	input in the corresponding part of the GUI. */
+typedef boost::unique_lock<SharedDataGuard> SharedDataHold;
+/** Lock that should be used by background worker thread to swap embedded raw
+    pointer once the calculation of new version of data is finished. Note that
+	this should enforce usage of a simple variant of read-copy-update pattern.
+	Simple in a sense that there can be only one swapper thread, which is
+	expected to be background worker thread dispatching background tasks
+	from the queue. Also note that it is perfectly fine if background worker
+	modify locked data in-place instead of using RCU pattern - this might be 
+	reasonable if it involves assignment of only a couple of primitive values. */
+typedef boost::unique_lock<SharedDataGuard> SharedDataSwap;
 
-/** Templated wrapper class for any data shared between GUI thread and
-    background worker thread. All data members of BackgroundTask that could
-	be potentially accessed concurrently by GUI and worker thread shall
-	be wrapped in this class. Synchronization is based on read-write lock.
-	Locking must be done explicitly by code accessing the internal data.
-	Wrapper sharing between threads must be done via pointer to avoid
-	having two or more wrappers of the same data. To simplify this scenario, 
-	wrapper is expected to be further wrapped into shared pointer in which 
-	case the access to the internal data must be done by double deference.
-	Wrapping the wrapper into shared pointer also avoids ownership 
-	assignment to one of the threads. */
+/** Templated wrapper class for any data shared between foreground presentation
+    threads (GUI, OpenGL) and background worker thread. All data members of 
+	BackgroundTask that are expected to be accessed by presentation thread while
+	worker thread is calculating new version of that data shall	be wrapped in 
+	this class. Synchronization is based on recursive mutex and read-copy-update
+	pattern (read comments above for details). Locking must be done explicitly 
+	by code accessing the internal data. Wrapper sharing between threads must 
+	be done via pointer to avoid having two or more wrappers of the same data. 
+	To simplify this scenario, wrapper is expected to be further wrapped into 
+	shared pointer in which case the access to the internal data must be done 
+	by double deference. Wrapping the wrapper into shared pointer also avoids 
+	ownership assignment to one of the threads. */
 template<class T>
 class SharedData {
 public:

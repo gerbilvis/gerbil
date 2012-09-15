@@ -69,7 +69,7 @@ void Viewport::updateYAxis()
 	std::vector<float> ycoord(amount);
 	float maximum = 0.f;
 	for (int i = 0; i < amount; ++i) {
-		SharedDataRead ctxlock(ctx->lock);
+		SharedDataHold ctxlock(ctx->lock);
 		float ifrac = (float)i*0.25*(float)((*ctx)->nbins - 1);
 		ycoord[i] = (*ctx)->maxval - ifrac * (*ctx)->binsize;
 		maximum = std::max(maximum, std::abs(ycoord[i]));
@@ -106,7 +106,7 @@ void Viewport::updateYAxis()
 void Viewport::setLimiters(int label)
 {
 	if (label < 1) {	// not label
-		SharedDataRead ctxlock(ctx->lock);
+		SharedDataHold ctxlock(ctx->lock);
 		limiters.assign((*ctx)->dimensionality, make_pair(0, (*ctx)->nbins-1));
 		if (label == -1) {	// use hover data
 			int b = selection;
@@ -114,7 +114,7 @@ void Viewport::setLimiters(int label)
 			limiters[b] = std::make_pair(h, h);
 		}
 	} else {                       // label holds data
-		SharedDataRead setslock(sets->lock);
+		SharedDataHold setslock(sets->lock);
 		if ((int)(*sets)->size() > label && (**sets)[label].totalweight > 0) {
 			// use range from this label
 			const std::vector<std::pair<int, int> > &b = (**sets)[label].boundary;
@@ -126,8 +126,8 @@ void Viewport::setLimiters(int label)
 
 void Viewport::prepareLines()
 {
-	SharedDataRead ctxlock(ctx->lock);
-	SharedDataRead setslock(sets->lock);
+	SharedDataHold ctxlock(ctx->lock);
+	SharedDataHold setslock(sets->lock);
 	(*ctx)->wait.fetch_and_store(0);
 	if ((*ctx)->reset.fetch_and_store(0))
 		reset();
@@ -210,7 +210,7 @@ void Viewport::prepareLines()
 
 void Viewport::updateModelview()
 {
-	SharedDataRead ctxlock(ctx->lock);
+	SharedDataHold ctxlock(ctx->lock);
 
 	/* apply zoom and translation in window coordinates */
 	qreal wwidth = width();
@@ -238,8 +238,8 @@ void Viewport::updateModelview()
 
 void Viewport::drawBins(QPainter &painter)
 {
-	SharedDataRead ctxlock(ctx->lock);
-	SharedDataRead setslock(sets->lock);
+	SharedDataHold ctxlock(ctx->lock);
+	SharedDataHold setslock(sets->lock);
 
 	// vole::Stopwatch watch("drawBins");
 	painter.beginNativePainting();
@@ -338,7 +338,7 @@ void Viewport::drawBins(QPainter &painter)
 
 void Viewport::drawAxesFg(QPainter &painter)
 {
-	SharedDataRead ctxlock(ctx->lock);
+	SharedDataHold ctxlock(ctx->lock);
 
 	if (drawingState == SCREENSHOT)
 		return;
@@ -384,7 +384,7 @@ void Viewport::drawAxesFg(QPainter &painter)
 }
 void Viewport::drawAxesBg(QPainter &painter)
 {
-	SharedDataRead ctxlock(ctx->lock);
+	SharedDataHold ctxlock(ctx->lock);
 
 	// draw axes in background
 	painter.setPen(QColor(64, 64, 64));
@@ -421,7 +421,7 @@ void Viewport::drawAxesBg(QPainter &painter)
 
 void Viewport::drawLegend(QPainter &painter)
 {
-	SharedDataRead ctxlock(ctx->lock);
+	SharedDataHold ctxlock(ctx->lock);
 
 	assert((*ctx)->labels.size() == (unsigned int)(*ctx)->dimensionality);
 
@@ -528,8 +528,8 @@ void Viewport::activate()
 
 void Viewport::paintEvent(QPaintEvent *)
 {
-	SharedDataRead ctxlock(ctx->lock);
-	SharedDataRead setslock(sets->lock);
+	SharedDataHold ctxlock(ctx->lock);
+	SharedDataHold setslock(sets->lock);
 
 	// return early if no data present. other variables may not be initialized
 	if ((*sets)->empty() || (*ctx)->wait)
@@ -552,8 +552,8 @@ void Viewport::paintEvent(QPaintEvent *)
 
 void Viewport::rebuild()
 {
-	SharedDataRead ctxlock(ctx->lock);
-	SharedDataRead setslock(sets->lock);
+	SharedDataHold ctxlock(ctx->lock);
+	SharedDataHold setslock(sets->lock);
 	prepareLines();
 	update();
 }
@@ -571,7 +571,7 @@ void Viewport::resizeEvent(QResizeEvent *)
 
 void Viewport::updateXY(int sel, int bin)
 {
-	SharedDataRead ctxlock(ctx->lock);
+	SharedDataHold ctxlock(ctx->lock);
 
 	bool emitOverlay = !wasActive;
 
@@ -622,10 +622,11 @@ void Viewport::enterEvent(QEvent *)
 /*	sloppy focus. debatable.
 	if (active)
 		return;
-	SharedDataRead ctxlock(ctx->lock);
+	SharedDataHold ctxlock(ctx->lock);
 	emit bandSelected((*ctx)->type, selection);
 	emit activated();
 	active = true;
+	ctxlock.unlock();
 	update();
 	emit newOverlay(-1);
 */
@@ -715,7 +716,7 @@ void Viewport::keyPressEvent(QKeyEvent *event)
 
 	case Qt::Key_Up:
 		{
-			SharedDataRead ctxlock(ctx->lock);
+			SharedDataHold ctxlock(ctx->lock);
 			if (!limiterMode && hover < (*ctx)->nbins-2) {
 				hover++;
 				hoverdirt = true;
@@ -732,7 +733,7 @@ void Viewport::keyPressEvent(QKeyEvent *event)
 		break;
 	case Qt::Key_Left:
 		{
-			SharedDataRead ctxlock(ctx->lock);
+			SharedDataHold ctxlock(ctx->lock);
 			if (selection > 0) {
 				selection--;
 				emit bandSelected((*ctx)->type, selection);
@@ -742,7 +743,7 @@ void Viewport::keyPressEvent(QKeyEvent *event)
 		break;
 	case Qt::Key_Right:
 		{
-			SharedDataRead ctxlock(ctx->lock);
+			SharedDataHold ctxlock(ctx->lock);
 			if (selection < (*ctx)->dimensionality-1) {
 				selection++;
 				emit bandSelected((*ctx)->type, selection);

@@ -265,9 +265,10 @@ protected:
 
 class ClampTbb : public BackgroundTask {
 public:
-	ClampTbb(multi_img_ptr multi,
+	ClampTbb(multi_img_ptr multi, multi_img::Value minval, multi_img::Value maxval,
 		cv::Rect targetRoi = cv::Rect(0, 0, 0, 0), bool includecache = true) 
-		: BackgroundTask(targetRoi), multi(multi), includecache(includecache) {}
+		: BackgroundTask(targetRoi), multi(multi), 
+		minval(minval), maxval(maxval), includecache(includecache) {}
 	virtual ~ClampTbb() {}
 	virtual bool run();
 	virtual void cancel() { stopper.cancel_group_execution(); }
@@ -284,6 +285,8 @@ protected:
 	};
 
 	multi_img_ptr multi;
+	multi_img::Value minval;
+	multi_img::Value maxval;
 	bool includecache;
 };
 

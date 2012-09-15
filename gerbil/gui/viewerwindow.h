@@ -131,16 +131,19 @@ protected:
 
 	class NormRangeTbb : public MultiImg::DataRangeTbb {
 	public:
-		NormRangeTbb(multi_img_ptr multi, data_range_ptr range, 
-			normMode mode, int target, bool update,
+		NormRangeTbb(multi_img_ptr multi, 
+			data_range_ptr range, normMode mode, int target, 
+			multi_img::Value minval, multi_img::Value maxval, bool update,
 			cv::Rect targetRoi = cv::Rect(0, 0, 0, 0)) 
 			: MultiImg::DataRangeTbb(multi, range, targetRoi), 
-			mode(mode), target(target), update(update) {}
+			mode(mode), target(target), minval(minval), maxval(maxval), update(update) {}
 		virtual ~NormRangeTbb() {}
 		virtual bool run();
 	protected:
 		normMode mode;
 		int target;
+		multi_img::Value minval;
+		multi_img::Value maxval;
 		bool update;
 	};
 

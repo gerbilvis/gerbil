@@ -60,18 +60,15 @@ void CommonTbb::DetermineRange::join(DetermineRange &toJoin)
 
 bool BgrSerial::run() 
 {
-	SharedDataRead rlock(multi->lock);
 	cv::Mat_<cv::Vec3f> *newBgr = new cv::Mat_<cv::Vec3f>();
 	*newBgr = (*multi)->bgr(); 
-	SharedDataWrite wlock(bgr->lock);
+	SharedDataSwap lock(bgr->lock);
 	delete bgr->swap(newBgr);
 	return true;
 }
 
 bool BgrTbb::run() 
 {
-	SharedDataRead rlock(multi->lock);
-
 	cv::Mat_<cv::Vec3f> xyz((*multi)->height, (*multi)->width, 0.);
 	float greensum = 0.f;
 	for (size_t i = 0; i < (*multi)->size(); ++i) {
@@ -101,7 +98,7 @@ bool BgrTbb::run()
 		delete newBgr;
 		return false;
 	} else {
-		SharedDataWrite wlock(bgr->lock);
+		SharedDataSwap lock(bgr->lock);
 		delete bgr->swap(newBgr);
 		return true;
 	}
@@ -136,8 +133,6 @@ void BgrTbb::Bgr::operator()(const tbb::blocked_range2d<int> &r) const
 #ifdef WITH_QT
 bool Band2QImageTbb::run() 
 {
-	SharedDataRead rlock(multi->lock);
-
 	if (band >= (*multi)->size()) {
 		return false;
 	}
@@ -152,7 +147,7 @@ bool Band2QImageTbb::run()
 		delete target;
 		return false;
 	} else {
-		SharedDataWrite wlock(image->lock);
+		SharedDataSwap lock(image->lock);
 		delete image->swap(target);
 		return true;
 	}
@@ -174,8 +169,6 @@ void Band2QImageTbb::Conversion::operator()(const tbb::blocked_range2d<int> &r) 
 
 bool RescaleTbb::run() 
 {
-	SharedDataRead rlock(source->lock);
-
 	multi_img *temp = new multi_img(**source, 
 		cv::Rect(0, 0, (*source)->width, (*source)->height));
 	temp->roi = (*source)->roi;
@@ -229,7 +222,7 @@ bool RescaleTbb::run()
 		delete target;
 		return false;
 	} else {
-		SharedDataWrite wlock(current->lock);
+		SharedDataSwap lock(current->lock);
 		delete current->swap(target);
 		return true;
 	}
@@ -248,9 +241,6 @@ void RescaleTbb::Resize::operator()(const tbb::blocked_range2d<int> &r) const
 
 bool GradientTbb::run() 
 {
-	SharedDataRead srcReadLock(source->lock);
-	SharedDataRead curReadLock(current->lock);
-
 	cv::Rect copyGlob = (*source)->roi & (*current)->roi;
 	cv::Rect copySrc(0, 0, 0, 0);
 	cv::Rect copyCur(0, 0, 0, 0);
@@ -346,7 +336,7 @@ bool GradientTbb::run()
 		delete target;
 		return false;
 	} else {
-		SharedDataWrite wlock(current->lock);
+		SharedDataSwap lock(current->lock);
 		delete current->swap(target);
 		return true;
 	}
@@ -375,8 +365,6 @@ void GradientTbb::Grad::operator()(const tbb::blocked_range<size_t> &r) const
 
 bool PcaTbb::run() 
 {
-	SharedDataRead rlock(source->lock);
-
 	cv::Mat_<multi_img::Value> pixels(
 		(*source)->size(), (*source)->width * (*source)->height);
 	Pixels computePixels(**source, pixels);
@@ -414,7 +402,7 @@ bool PcaTbb::run()
 		delete target;
 		return false;
 	} else {
-		SharedDataWrite wlock(current->lock);
+		SharedDataSwap lock(current->lock);
 		delete current->swap(target);
 		return true;
 	}
@@ -441,14 +429,12 @@ void PcaTbb::Projection::operator()(const tbb::blocked_range<size_t> &r) const
 
 bool DataRangeTbb::run() 
 {
-	SharedDataRead rlock(multi->lock);
-
 	CommonTbb::DetermineRange determineRange(**multi);
 	tbb::parallel_reduce(tbb::blocked_range<size_t>(0, (*multi)->size()), 
 		determineRange, tbb::auto_partitioner(), stopper);
 
 	if (!stopper.is_group_execution_cancelled()) {
-		SharedDataWrite wlock(range->lock);
+		SharedDataSwap lock(range->lock);
 		(*range)->first = determineRange.GetMin();
 		(*range)->second = determineRange.GetMax();
 		return true;
@@ -459,13 +445,11 @@ bool DataRangeTbb::run()
 
 bool ClampTbb::run() 
 {
-	SharedDataRead rlock(multi->lock);
-
 	multi_img *target = new multi_img((*multi)->height, (*multi)->width, (*multi)->size());
 	target->roi = (*multi)->roi;
 	target->meta = (*multi)->meta;
-	target->minval = (*multi)->minval;
-	target->maxval = (*multi)->maxval;
+	target->minval = minval;
+	target->maxval = maxval;
 
 	Clamp computeClamp(**multi, *target);
 	tbb::parallel_for(tbb::blocked_range<size_t>(0, target->size()), 
@@ -487,7 +471,7 @@ bool ClampTbb::run()
 		delete target;
 		return false;
 	} else {
-		SharedDataWrite wlock(multi->lock);
+		SharedDataSwap lock(multi->lock);
 		delete multi->swap(target);
 		return true;
 	}

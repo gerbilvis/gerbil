@@ -499,7 +499,6 @@ bool ViewerWindow::RgbSerial::run()
 {
 	if (!MultiImg::BgrSerial::run())
 		return false;
-	SharedDataRead rlock(bgr->lock);
 	cv::Mat_<cv::Vec3f> &bgrmat = *(*bgr);
 	QImage *newRgb = new QImage(bgrmat.cols, bgrmat.rows, QImage::Format_ARGB32);
 	for (int y = 0; y < bgrmat.rows; ++y) {
@@ -510,7 +509,7 @@ bool ViewerWindow::RgbSerial::run()
 			destrow[x] = qRgb(c[2]*255., c[1]*255., c[0]*255.);
 		}
 	}
-	SharedDataWrite wlock(rgb->lock);
+	SharedDataSwap lock(rgb->lock);
 	delete rgb->swap(newRgb);
 	return true;
 }
@@ -522,7 +521,6 @@ bool ViewerWindow::RgbTbb::run()
 	if (stopper.is_group_execution_cancelled())
 		return false;
 
-	SharedDataRead rlock(bgr->lock);
 	cv::Mat_<cv::Vec3f> &bgrmat = *(*bgr);
 	QImage *newRgb = new QImage(bgrmat.cols, bgrmat.rows, QImage::Format_ARGB32);
 
@@ -534,7 +532,7 @@ bool ViewerWindow::RgbTbb::run()
 		delete newRgb;
 		return false;
 	} else {
-		SharedDataWrite wlock(rgb->lock);
+		SharedDataSwap lock(rgb->lock);
 		delete rgb->swap(newRgb);
 		return true;
 	}
@@ -557,12 +555,12 @@ void ViewerWindow::updateRGB(bool success)
 	if (!success)
 		return;
 
-	SharedDataWrite lock(full_rgb_temp->lock);
+	SharedDataHold hlock(full_rgb_temp->lock);
 	if (!(*full_rgb_temp)->isNull()) {
 		full_rgb = QPixmap::fromImage(**full_rgb_temp);
-		delete full_rgb_temp->swap(new QImage());
 	}
-	lock.unlock();
+	hlock.unlock();
+
 	roiView->setPixmap(full_rgb);
 	roiView->update();
 	if (roi.width > 0) {
@@ -623,7 +621,7 @@ bool ViewerWindow::NormRangeTbb::run()
 		break;
 	case NORM_THEORETICAL:
 		if (!stopper.is_group_execution_cancelled()) {
-			SharedDataWrite wlock(range->lock);
+			SharedDataSwap lock(range->lock);
 			// hack!
 			if (target == 0) {
 				(*range)->first = (multi_img::Value)MULTI_IMG_MIN_DEFAULT;
@@ -635,12 +633,17 @@ bool ViewerWindow::NormRangeTbb::run()
 		}
 		break;
 	default:
-		break; // keep previous setting
+		if (!stopper.is_group_execution_cancelled()) {
+			SharedDataSwap lock(range->lock);
+			// keep previous setting
+			(*range)->first = minval;
+			(*range)->second = maxval;
+		}
+		break; 
 	}
 
 	if (!stopper.is_group_execution_cancelled() && update) {
-		SharedDataRead rlock(range->lock);
-		SharedDataWrite wlock(multi->lock);
+		SharedDataSwap lock(multi->lock);
 		(*multi)->minval = (*range)->first;
 		(*multi)->maxval = (*range)->second;
 		return true;
@@ -671,10 +674,22 @@ void ViewerWindow::normModeSelected(int mode, bool targetchange, bool usecurrent
 	int target = (normIButton->isChecked() ? 0 : 1);
 
 	if (!usecurrent) {
+		multi_img::Value min;
+		multi_img::Value max;
+		if (target == 0) {
+			SharedDataHold hlock(normIMGRange->lock);
+			min = (*normIMGRange)->first;
+			max = (*normIMGRange)->second;
+		} else {
+			SharedDataHold hlock(normGRADRange->lock);
+			min = (*normGRADRange)->first;
+			max = (*normGRADRange)->second;
+		}
+
 		BackgroundTaskPtr taskNormRange(new NormRangeTbb(
 			(target == 0 ? image : gradient), 
 			(target == 0 ? normIMGRange : normGRADRange), 
-			nm, target, false));
+			nm, target, min, max, false));
 		//QObject::connect(taskNormRange.get(), SIGNAL(finished(bool)), , SLOT(), Qt::QueuedConnection);
 		BackgroundTaskQueue::instance().push(taskNormRange);
 		taskNormRange->wait();
@@ -683,11 +698,11 @@ void ViewerWindow::normModeSelected(int mode, bool targetchange, bool usecurrent
 	double min;
 	double max;
 	if (target == 0) {
-		SharedDataRead rlock(normIMGRange->lock);
+		SharedDataHold hlock(normIMGRange->lock);
 		min = (*normIMGRange)->first;
 		max = (*normIMGRange)->second;
 	} else {
-		SharedDataRead rlock(normGRADRange->lock);
+		SharedDataHold hlock(normGRADRange->lock);
 		min = (*normGRADRange)->first;
 		max = (*normGRADRange)->second;
 	}
@@ -715,22 +730,11 @@ void ViewerWindow::applyNormUserRange(bool update)
 	normMode &nm = (target == 0 ? normIMG : normGRAD);
 	nm = static_cast<normMode>(normModeBox->currentIndex());
 
-	// set internal range
-	if (target == 0) {
-		SharedDataWrite wlock(normIMGRange->lock);
-		(*normIMGRange)->first = normMinBox->value();
-		(*normIMGRange)->second = normMaxBox->value();
-	} else {
-		SharedDataWrite wlock(normGRADRange->lock);
-		(*normGRADRange)->first = normMinBox->value();
-		(*normGRADRange)->second = normMaxBox->value();
-	}
-
 	// if available, overwrite with more precise values than in the spin boxes.
 	BackgroundTaskPtr taskNormRange(new NormRangeTbb(
 		(target == 0 ? image : gradient), 
 		(target == 0 ? normIMGRange : normGRADRange), 
-		(target == 0 ? normIMG : normGRAD), target, true));
+		(target == 0 ? normIMG : normGRAD), target, normMinBox->value(), normMaxBox->value(), true));
 	//QObject::connect(taskNormRange.get(), SIGNAL(finished(bool)), , SLOT(), Qt::QueuedConnection);
 	BackgroundTaskQueue::instance().push(taskNormRange);
 	taskNormRange->wait();
@@ -760,15 +764,13 @@ void ViewerWindow::clampNormUserRange()
 	/* if image is changed, change full image. for gradient, we cannot preserve
 		the gradient over ROI or illuminant changes, so it remains a local change */
 	if (target == 0) {
-		SharedDataRead rlock(image->lock);
-		SharedDataWrite wlock(full_image->lock);
-		(*full_image)->minval = (*image)->minval;
-		(*full_image)->maxval = (*image)->maxval;
-		wlock.unlock();
-		rlock.unlock();
+		SharedDataHold hlock(image->lock);
+		multi_img::Value min = (*image)->minval;
+		multi_img::Value max = (*image)->maxval;
+		hlock.unlock();
 
 		BackgroundTaskPtr taskClamp(new MultiImg::ClampTbb(
-			full_image, cv::Rect(0, 0, 0, 0), false));
+			full_image, min, max, cv::Rect(0, 0, 0, 0), false));
 		//QObject::connect(taskClamp.get(), SIGNAL(finished(bool)), , SLOT(), Qt::QueuedConnection);
 		BackgroundTaskQueue::instance().push(taskClamp);
 		taskClamp->wait();
@@ -782,7 +784,12 @@ void ViewerWindow::clampNormUserRange()
 		BackgroundTaskQueue::instance().push(taskRgb);
 		updateRGB(taskRgb->wait());
 	} else {
-		BackgroundTaskPtr taskClamp(new MultiImg::ClampTbb(gradient));
+		SharedDataHold hlock(gradient->lock);
+		multi_img::Value min = (*gradient)->minval;
+		multi_img::Value max = (*gradient)->maxval;
+		hlock.unlock();
+
+		BackgroundTaskPtr taskClamp(new MultiImg::ClampTbb(gradient, min, max));
 		//QObject::connect(taskClamp.get(), SIGNAL(finished(bool)), , SLOT(), Qt::QueuedConnection);
 		BackgroundTaskQueue::instance().push(taskClamp);
 		taskClamp->wait();

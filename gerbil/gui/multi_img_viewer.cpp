@@ -66,7 +66,7 @@ void multi_img_viewer::toggleFold()
 
 void multi_img_viewer::subImage(sets_ptr temp, const std::vector<cv::Rect> &regions, cv::Rect roi)
 {
-	SharedDataRead ctxlock(viewport->ctx->lock);
+	SharedDataHold ctxlock(viewport->ctx->lock);
 	ViewportCtx args = **viewport->ctx;
 	ctxlock.unlock();
 
@@ -94,11 +94,11 @@ void multi_img_viewer::setTitle(representation type, multi_img::Value min, multi
 
 void multi_img_viewer::addImage(sets_ptr temp, const std::vector<cv::Rect> &regions, cv::Rect roi)
 {
-	SharedDataRead ctxlock(viewport->ctx->lock);
+	SharedDataHold ctxlock(viewport->ctx->lock);
 	ViewportCtx args = **viewport->ctx;
 	ctxlock.unlock();
 
-	SharedDataRead imagelock(image->lock);
+	SharedDataHold imagelock(image->lock);
 
 	maskholder = multi_img::Mask((*image)->height, (*image)->width, (uchar)0);
 
@@ -129,7 +129,7 @@ void multi_img_viewer::addImage(sets_ptr temp, const std::vector<cv::Rect> &regi
 
 void multi_img_viewer::setImage(multi_img_ptr img, representation type, cv::Rect roi)
 {
-	SharedDataRead ctxlock(viewport->ctx->lock);
+	SharedDataHold ctxlock(viewport->ctx->lock);
 	ViewportCtx args = **viewport->ctx;
 	ctxlock.unlock();
 
@@ -138,7 +138,7 @@ void multi_img_viewer::setImage(multi_img_ptr img, representation type, cv::Rect
 
 	image = img;
 
-	SharedDataRead imagelock(image->lock);
+	SharedDataHold imagelock(image->lock);
 
 	maskholder = multi_img::Mask((*image)->height, (*image)->width, (uchar)0);
 
@@ -182,7 +182,7 @@ void multi_img_viewer::setIlluminant(
 	if (!image.get())
 		return;
 
-	SharedDataRead ctxlock(viewport->ctx->lock);
+	SharedDataHold ctxlock(viewport->ctx->lock);
 
 	if ((*viewport->ctx)->type != IMG)
 		return;
@@ -223,7 +223,7 @@ void multi_img_viewer::updateBinning(int bins)
 		task.reset();
 	}
 
-	SharedDataRead ctxlock(viewport->ctx->lock);
+	SharedDataHold ctxlock(viewport->ctx->lock);
 	ViewportCtx args = **viewport->ctx;
 	ctxlock.unlock();
 
@@ -231,7 +231,7 @@ void multi_img_viewer::updateBinning(int bins)
 		args.nbins = bins;
 		binLabel->setText(QString("%1 bins").arg(bins));
 	}
-	SharedDataRead imagelock(image->lock);
+	SharedDataHold imagelock(image->lock);
 	args.minval = (*image)->minval;
 	args.maxval = (*image)->maxval;
 	args.binsize = ((*image)->maxval - (*image)->minval) / (multi_img::Value)(bins - 1);
@@ -256,7 +256,7 @@ void multi_img_viewer::updateLabels()
 		task.reset();
 	}
 
-	SharedDataRead ctxlock(viewport->ctx->lock);
+	SharedDataHold ctxlock(viewport->ctx->lock);
 	ViewportCtx args = **viewport->ctx;
 	ctxlock.unlock();
 
@@ -277,8 +277,6 @@ void multi_img_viewer::render(bool necessary)
 
 bool multi_img_viewer::BinsTbb::run() 
 {
-	SharedDataRead multi_rlock(multi->lock);
-	SharedDataRead labels_rlock(labels->lock);
 	bool reuse = (!add.empty() || !sub.empty());
 
 	std::vector<BinSet> *result;
@@ -289,10 +287,9 @@ bool multi_img_viewer::BinsTbb::run()
 		}
 		add.push_back(cv::Rect(0, 0, (*multi)->width, (*multi)->height));
 	} else {
-		SharedDataWrite temp_wlock(temp->lock);
+		SharedDataSwap temp_wlock(temp->lock);
 		result = temp->swap(NULL);
 		if (!result) {
-			SharedDataRead current_rlock(current->lock);
 			result = new std::vector<BinSet>(**current);
 		}
 	}
@@ -318,12 +315,12 @@ bool multi_img_viewer::BinsTbb::run()
 		return false;
 	} else {
 		if (!reuse || apply) {
-			SharedDataWrite context_wlock(context->lock);
-			SharedDataWrite current_wlock(current->lock);
+			SharedDataSwap context_wlock(context->lock);
+			SharedDataSwap current_wlock(current->lock);
 			**context = args;
 			delete current->swap(result);
 		} else {
-			SharedDataWrite temp_wlock(temp->lock);
+			SharedDataSwap temp_wlock(temp->lock);
 			temp->swap(result);
 		}
 		return true;
@@ -373,7 +370,7 @@ void multi_img_viewer::BinsTbb::Accumulate::operator()(const tbb::blocked_range2
 /* create mask of single-band user selection */
 void multi_img_viewer::fillMaskSingle(int dim, int sel)
 {
-	SharedDataRead imagelock(image->lock);
+	SharedDataHold imagelock(image->lock);
 	maskholder.setTo(0);
 
 	multi_img::MaskIt itm = maskholder.begin();
@@ -387,7 +384,7 @@ void multi_img_viewer::fillMaskSingle(int dim, int sel)
 
 void multi_img_viewer::fillMaskLimiters(const std::vector<std::pair<int, int> >& l)
 {
-	SharedDataRead imagelock(image->lock);
+	SharedDataHold imagelock(image->lock);
 	maskholder.setTo(1);
 
 	for (int y = 0; y < (*image)->height; ++y) {
@@ -408,7 +405,7 @@ void multi_img_viewer::fillMaskLimiters(const std::vector<std::pair<int, int> >&
 void multi_img_viewer::updateMaskLimiters(
 		const std::vector<std::pair<int, int> >& l, int dim)
 {
-	SharedDataRead imagelock(image->lock);
+	SharedDataHold imagelock(image->lock);
 	for (int y = 0; y < (*image)->height; ++y) {
 		uchar *mrow = maskholder[y];
 		const multi_img::Value *brow = (**image)[dim][y];
@@ -446,7 +443,7 @@ void multi_img_viewer::updateMask(int dim)
 
 void multi_img_viewer::overlay(int x, int y)
 {
-	SharedDataRead imagelock(image->lock);
+	SharedDataHold imagelock(image->lock);
 	const multi_img::Pixel &pixel = (**image)(y, x);
 	QPolygonF &points = viewport->overlayPoints;
 	points.resize((*image)->size());
@@ -502,7 +499,7 @@ void multi_img_viewer::updateLabelColors(const QVector<QColor> &colors, bool cha
 	if (!image.get())
 		return;
 
-	SharedDataRead ctxlock(viewport->ctx->lock);
+	SharedDataHold ctxlock(viewport->ctx->lock);
 	ViewportCtx args = **viewport->ctx;
 	ctxlock.unlock();
 
@@ -546,7 +543,7 @@ void multi_img_viewer::toggleLabels(bool toggle)
 		task.reset();
 	}
 
-	SharedDataRead ctxlock(viewport->ctx->lock);
+	SharedDataHold ctxlock(viewport->ctx->lock);
 	ViewportCtx args = **viewport->ctx;
 	ctxlock.unlock();
 
