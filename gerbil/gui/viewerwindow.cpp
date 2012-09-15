@@ -82,27 +82,27 @@ void ViewerWindow::applyROI(bool reuse)
 		new SharedData<multi_img>(new multi_img(**full_image, roi)));
 	BackgroundTaskPtr taskRescale(new MultiImg::RescaleTbb(
 		scoped_image, image, numbands, roi));
-	//QObject::connect(taskRescale.get(), SIGNAL(finished(bool)), , SLOT());
+	//QObject::connect(taskRescale.get(), SIGNAL(finished(bool)), , SLOT(), Qt::QueuedConnection);
 	BackgroundTaskQueue::instance().push(taskRescale);
 	taskRescale->wait();
 
 	BackgroundTaskPtr taskGradient(new MultiImg::GradientTbb(
 		image, gradient, roi));
-	//QObject::connect(taskGradient.get(), SIGNAL(finished(bool)), , SLOT());
+	//QObject::connect(taskGradient.get(), SIGNAL(finished(bool)), , SLOT(), Qt::QueuedConnection);
 	BackgroundTaskQueue::instance().push(taskGradient);
 	taskGradient->wait();
 
 	{
 		BackgroundTaskPtr taskPca(new MultiImg::PcaTbb(
 			image, imagepca, 0, roi));
-		//QObject::connect(taskPca.get(), SIGNAL(finished(bool)), , SLOT());
+		//QObject::connect(taskPca.get(), SIGNAL(finished(bool)), , SLOT(), Qt::QueuedConnection);
 		BackgroundTaskQueue::instance().push(taskPca);
 		taskPca->wait();
 	}
 	{
 		BackgroundTaskPtr taskPca(new MultiImg::PcaTbb(
 			gradient, gradientpca, 0, roi));
-		//QObject::connect(taskPca.get(), SIGNAL(finished(bool)), , SLOT());
+		//QObject::connect(taskPca.get(), SIGNAL(finished(bool)), , SLOT(), Qt::QueuedConnection);
 		BackgroundTaskQueue::instance().push(taskPca);
 		taskPca->wait();
 	}
@@ -111,13 +111,13 @@ void ViewerWindow::applyROI(bool reuse)
 
 	BackgroundTaskPtr taskImgNormRange(new NormRangeTbb(
 		image, normIMGRange, normIMG, 0, true, roi));
-	//QObject::connect(taskImgNormRange.get(), SIGNAL(finished(bool)), , SLOT());
+	//QObject::connect(taskImgNormRange.get(), SIGNAL(finished(bool)), , SLOT(), Qt::QueuedConnection);
 	BackgroundTaskQueue::instance().push(taskImgNormRange);
 	taskImgNormRange->wait();
 
 	BackgroundTaskPtr taskGradNormRange(new NormRangeTbb(
 		gradient, normGRADRange, normGRAD, 1, true, roi));
-	//QObject::connect(taskGradNormRange.get(), SIGNAL(finished(bool)), , SLOT());
+	//QObject::connect(taskGradNormRange.get(), SIGNAL(finished(bool)), , SLOT(), Qt::QueuedConnection);
 	BackgroundTaskQueue::instance().push(taskGradNormRange);
 	taskGradNormRange->wait();
 
@@ -250,7 +250,7 @@ void ViewerWindow::initUI()
 		const Viewport *vp = v->getViewport();
 
 		connect(applyButton, SIGNAL(clicked()),
-				v, SLOT(rebuild()));
+				v, SLOT(updateLabels()));
 		connect(markButton, SIGNAL(toggled(bool)),
 				v, SLOT(toggleLabeled(bool)));
 		connect(nonmarkButton, SIGNAL(toggled(bool)),
@@ -313,7 +313,7 @@ void ViewerWindow::initUI()
 
 	BackgroundTaskPtr taskRgb(new ViewerWindow::RgbTbb(
 		full_image, mat_vec3f_ptr(new SharedData<cv::Mat_<cv::Vec3f> >(new cv::Mat_<cv::Vec3f>)), full_rgb_temp));
-	//QObject::connect(taskRgb.get(), SIGNAL(finished(bool)), this, SLOT(updateRGB(bool)));
+	//QObject::connect(taskRgb.get(), SIGNAL(finished(bool)), this, SLOT(updateRGB(bool)), Qt::QueuedConnection);
 	BackgroundTaskQueue::instance().push(taskRgb);
 	updateRGB(taskRgb->wait());
 }
@@ -425,7 +425,7 @@ const QPixmap* ViewerWindow::getBand(representation type, int dim)
 		qimage_ptr qimg(new SharedData<QImage>(new QImage()));
 
 		BackgroundTaskPtr taskExport(new MultiImg::Band2QImageTbb(multi, qimg, dim));
-		//QObject::connect(taskExport.get(), SIGNAL(finished(bool)), , SLOT());
+		//QObject::connect(taskExport.get(), SIGNAL(finished(bool)), , SLOT(), Qt::QueuedConnection);
 		BackgroundTaskQueue::instance().push(taskExport);
 		taskExport->wait();
 
@@ -487,7 +487,7 @@ void ViewerWindow::applyIlluminant() {
 
 	BackgroundTaskPtr taskRgb(new ViewerWindow::RgbTbb(
 		full_image, mat_vec3f_ptr(new SharedData<cv::Mat_<cv::Vec3f> >(new cv::Mat_<cv::Vec3f>)), full_rgb_temp));
-	//QObject::connect(taskRgb.get(), SIGNAL(finished(bool)), this, SLOT(updateRGB(bool)));
+	//QObject::connect(taskRgb.get(), SIGNAL(finished(bool)), this, SLOT(updateRGB(bool)), Qt::QueuedConnection);
 	BackgroundTaskQueue::instance().push(taskRgb);
 	updateRGB(taskRgb->wait());
 
@@ -675,7 +675,7 @@ void ViewerWindow::normModeSelected(int mode, bool targetchange, bool usecurrent
 			(target == 0 ? image : gradient), 
 			(target == 0 ? normIMGRange : normGRADRange), 
 			nm, target, false));
-		//QObject::connect(taskNormRange.get(), SIGNAL(finished(bool)), , SLOT());
+		//QObject::connect(taskNormRange.get(), SIGNAL(finished(bool)), , SLOT(), Qt::QueuedConnection);
 		BackgroundTaskQueue::instance().push(taskNormRange);
 		taskNormRange->wait();
 	}
@@ -731,7 +731,7 @@ void ViewerWindow::applyNormUserRange(bool update)
 		(target == 0 ? image : gradient), 
 		(target == 0 ? normIMGRange : normGRADRange), 
 		(target == 0 ? normIMG : normGRAD), target, true));
-	//QObject::connect(taskNormRange.get(), SIGNAL(finished(bool)), , SLOT());
+	//QObject::connect(taskNormRange.get(), SIGNAL(finished(bool)), , SLOT(), Qt::QueuedConnection);
 	BackgroundTaskQueue::instance().push(taskNormRange);
 	taskNormRange->wait();
 
@@ -769,7 +769,7 @@ void ViewerWindow::clampNormUserRange()
 
 		BackgroundTaskPtr taskClamp(new MultiImg::ClampTbb(
 			full_image, cv::Rect(0, 0, 0, 0), false));
-		//QObject::connect(taskClamp.get(), SIGNAL(finished(bool)), , SLOT());
+		//QObject::connect(taskClamp.get(), SIGNAL(finished(bool)), , SLOT(), Qt::QueuedConnection);
 		BackgroundTaskQueue::instance().push(taskClamp);
 		taskClamp->wait();
 
@@ -778,12 +778,12 @@ void ViewerWindow::clampNormUserRange()
 
 		BackgroundTaskPtr taskRgb(new ViewerWindow::RgbTbb(
 			full_image, mat_vec3f_ptr(new SharedData<cv::Mat_<cv::Vec3f> >(new cv::Mat_<cv::Vec3f>)), full_rgb_temp));
-		//QObject::connect(taskRgb.get(), SIGNAL(finished(bool)), this, SLOT(updateRGB(bool)));
+		//QObject::connect(taskRgb.get(), SIGNAL(finished(bool)), this, SLOT(updateRGB(bool)), Qt::QueuedConnection);
 		BackgroundTaskQueue::instance().push(taskRgb);
 		updateRGB(taskRgb->wait());
 	} else {
 		BackgroundTaskPtr taskClamp(new MultiImg::ClampTbb(gradient));
-		//QObject::connect(taskClamp.get(), SIGNAL(finished(bool)), , SLOT());
+		//QObject::connect(taskClamp.get(), SIGNAL(finished(bool)), , SLOT(), Qt::QueuedConnection);
 		BackgroundTaskQueue::instance().push(taskClamp);
 		taskClamp->wait();
 
