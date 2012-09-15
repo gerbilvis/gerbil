@@ -77,6 +77,7 @@ struct ViewportCtx {
 		type = other.type;
 		meta = other.meta;
 		labels = other.labels;
+		ignoreLabels = other.ignoreLabels;
 		illuminant_correction = other.illuminant_correction;
 		nbins = other.nbins;
 		binsize = other.binsize;
@@ -90,6 +91,7 @@ struct ViewportCtx {
 	representation type;
 	std::vector<multi_img::BandDesc> meta;
 	std::vector<QString> labels;
+	bool ignoreLabels;
 	bool illuminant_correction;
 	int nbins;
 	multi_img::Value binsize;

@@ -12,17 +12,18 @@
 #include <cv.h>
 #include <iostream>
 #include <QThread>
+#include <background_task_queue.h>
 
 using namespace std;
 
 multi_img_viewer::multi_img_viewer(QWidget *parent)
-	: QWidget(parent), image(NULL), illuminant(NULL),
-	  ignoreLabels(false), limiterMenu(this)
+	: QWidget(parent),
+	  limiterMenu(this)
 {
 	setupUi(this);
 
 	connect(binSlider, SIGNAL(valueChanged(int)),
-			this, SLOT(rebuild(int)));
+			this, SLOT(updateBinning(int)));
 	connect(alphaSlider, SIGNAL(valueChanged(int)),
 			this, SLOT(setAlpha(int)));
 	connect(alphaSlider, SIGNAL(sliderPressed()),
@@ -63,14 +64,21 @@ void multi_img_viewer::toggleFold()
 	}
 }
 
-void multi_img_viewer::setImage(const multi_img *img, representation type)
+void multi_img_viewer::subImage(sets_ptr temp, const std::vector<cv::Rect> &regions, cv::Rect roi)
 {
-	if (type != IMG)
-		rgbButton->setVisible(false);
+	SharedDataRead ctxlock(viewport->ctx->lock);
+	ViewportCtx args = **viewport->ctx;
+	ctxlock.unlock();
 
-	image = img;
-	maskholder = multi_img::Mask(image->height, image->width, (uchar)0);
+	BackgroundTaskPtr taskBins(new BinsTbb(
+		image, labels, labelColors, illuminant, args, viewport->ctx, viewport->sets,
+		temp, regions, std::vector<cv::Rect>(), false, roi));
+	BackgroundTaskQueue::instance().push(taskBins);
+	render(taskBins->wait());
+}
 
+void multi_img_viewer::setTitle(representation type, multi_img::Value min, multi_img::Value::max)
+{
 	QString title;
 	if (type == IMG)
 		title = QString("<b>Image Spectrum</b> [%1..%2]");
@@ -81,142 +89,190 @@ void multi_img_viewer::setImage(const multi_img *img, representation type)
 	if (type == GRADPCA)
 		title = QString("<b>Spectral Gradient PCA</b> [%1..%2]");
 
-	topBar->setTitle(title.arg(image->minval).arg(image->maxval));
+	topBar->setTitle(title.arg(min).arg(max));
+}
 
-	viewport->type = type;
-	viewport->dimensionality = image->size();
-	viewport->image = img;
+void multi_img_viewer::addImage(sets_ptr temp, const std::vector<cv::Rect> &regions, cv::Rect roi)
+{
+	SharedDataRead ctxlock(viewport->ctx->lock);
+	ViewportCtx args = **viewport->ctx;
+	ctxlock.unlock();
+
+	SharedDataRead imagelock(image->lock);
+
+	maskholder = multi_img::Mask((*image)->height, (*image)->width, (uchar)0);
+
+	setTitle(args.type, (*image)->minval, (*image)->maxval);
 
 	/* intialize meta data */
-	viewport->labels.resize(image->size());
-	for (unsigned int i = 0; i < image->size(); ++i) {
-		if (!image->meta[i].empty)
-			viewport->labels[i].setNum(image->meta[i].center);
+	args.labels.resize((*image)->size());
+	for (unsigned int i = 0; i < (*image)->size(); ++i) {
+		if (!(*image)->meta[i].empty)
+			args.labels[i].setNum((*image)->meta[i].center);
 	}
+	args.meta = (*image)->meta;
 
-	rebuild(binSlider->value());
+	args.minval = (*image)->minval;
+	args.maxval = (*image)->maxval;
+	args.binsize = ((*image)->maxval - (*image)->minval) / (multi_img::Value)(bins - 1);
+	imagelock.unlock();
+	args.reset.fetch_and_store(1);
+	args.wait.fetch_and_store(1);
+
+	BackgroundTaskPtr taskBins(new BinsTbb(
+		image, labels, labelColors, illuminant, args, viewport->ctx, viewport->sets,
+		temp, std::vector<cv::Rect>(), regions, true, roi));
+	//QObject::connect(taskBins.get(), SIGNAL(finished(bool)), this, SLOT(render(bool)));
+	BackgroundTaskQueue::instance().push(taskBins);
+	render(taskBins->wait());
+}
+
+void multi_img_viewer::setImage(multi_img_ptr img, representation type, cv::Rect roi)
+{
+	SharedDataRead ctxlock(viewport->ctx->lock);
+	ViewportCtx args = **viewport->ctx;
+	ctxlock.unlock();
+
+	if (type != IMG)
+		rgbButton->setVisible(false);
+
+	image = img;
+
+	SharedDataRead imagelock(image->lock);
+
+	maskholder = multi_img::Mask((*image)->height, (*image)->width, (uchar)0);
+
+	setTitle(type, (*image)->minval, (*image)->maxval);
+
+	args.type = type;
+	args.dimensionality = (*image)->size();
+
+	/* intialize meta data */
+	args.labels.resize((*image)->size());
+	for (unsigned int i = 0; i < (*image)->size(); ++i) {
+		if (!(*image)->meta[i].empty)
+			args.labels[i].setNum((*image)->meta[i].center);
+	}
+	args.meta = (*image)->meta;
+
+	int bins = binSlider->value();
+	if (bins > 0) {
+		args.nbins = bins;
+		binLabel->setText(QString("%1 bins").arg(bins));
+	}
+	args.minval = (*image)->minval;
+	args.maxval = (*image)->maxval;
+	args.binsize = ((*image)->maxval - (*image)->minval) / (multi_img::Value)(bins - 1);
+	imagelock.unlock();
+	args.reset.fetch_and_store(1);
+	args.wait.fetch_and_store(1);
+
+	BackgroundTaskPtr taskBins(new BinsTbb(
+		image, labels, labelColors, illuminant, args, viewport->ctx, viewport->sets,
+		new SharedData<std::vector<BinSet> >(NULL), std::vector<cv::Rect>(), 
+		std::vector<cv::Rect>(), true, roi));
+	//QObject::connect(taskBins.get(), SIGNAL(finished(bool)), this, SLOT(render(bool)));
+	BackgroundTaskQueue::instance().push(taskBins);
+	render(taskBins->wait());
 }
 
 void multi_img_viewer::setIlluminant(
-		const std::vector<multi_img::Value> *coeffs, bool for_real)
+		const std::vector<multi_img::Value> &coeffs, bool for_real)
 {
-	if (viewport->type != IMG)
+	if (!image.get())
+		return;
+
+	SharedDataRead ctxlock(viewport->ctx->lock);
+
+	if ((*viewport->ctx)->type != IMG)
 		return;
 
 	if (for_real) {
+		if (task.get()) {
+			task.get()->cancel();
+			task.reset();
+		}
+
+		ViewportCtx args = **viewport->ctx;
 		// only set it to true, never to false again
-		viewport->illuminant_correction = true;
+		ctxlock.unlock();
+		args.illuminant_correction = true;
+		args.wait.fetch_and_store(1);
 
 		illuminant = coeffs;
-		rebuild();
+		
+		task.reset(new BinsTbb(
+			image, labels, labelColors, illuminant, args, viewport->ctx, viewport->sets));
+		//QObject::connect(task.get(), SIGNAL(finished(bool)), this, SLOT(render(bool)), Qt::QueuedConnection);
+		BackgroundTaskQueue::instance().push(task);
+		render(task->wait());
 	} else {
-		viewport->illuminant = coeffs;
+		(*viewport->ctx)->illuminant = coeffs;
+		ctxlock.unlock();
 		viewport->update();
 	}
 }
 
-void multi_img_viewer::rebuild(int bins)
+void multi_img_viewer::updateBinning(int bins)
 {
-	if (!image)
+	if (!image.get())
 		return;
 
-	if (bins > 0 || bins == -1) { // number of bins or binning changed
-		if (bins > 0) {
-			nbins = bins;
-			binLabel->setText(QString("%1 bins").arg(bins));
-		}
-		binsize = (image->maxval - image->minval)/(multi_img::Value)(nbins-1);
-		viewport->reset(nbins, binsize, image->minval);
-		// maxval = minv + (multi_img::Value)(bins - 1)*bsize;
+	if (task.get()) {
+		task.get()->cancel();
+		task.reset();
 	}
-	createBins();
-	viewport->prepareLines();
-	viewport->update();
+
+	SharedDataRead ctxlock(viewport->ctx->lock);
+	ViewportCtx args = **viewport->ctx;
+	ctxlock.unlock();
+
+	if (bins > 0) {
+		args.nbins = bins;
+		binLabel->setText(QString("%1 bins").arg(bins));
+	}
+	SharedDataRead imagelock(image->lock);
+	args.minval = (*image)->minval;
+	args.maxval = (*image)->maxval;
+	args.binsize = ((*image)->maxval - (*image)->minval) / (multi_img::Value)(bins - 1);
+	imagelock.unlock();
+	args.reset.fetch_and_store(1);
+	args.wait.fetch_and_store(1);
+
+	task.reset(new BinsTbb(
+		image, labels, labelColors, illuminant, args, viewport->ctx, viewport->sets));
+	//QObject::connect(task.get(), SIGNAL(finished(bool)), this, SLOT(render(bool)), Qt::QueuedConnection);
+	BackgroundTaskQueue::instance().push(task);
+	render(task->wait());
 }
 
-void multi_img_viewer::createBins()
+void multi_img_viewer::updateLabels()
 {
-	/*
-	assert(!labelColors.empty() && !labels.empty());
+	if (!image.get())
+		return;
 
-	// vole::Stopwatch watch;
-
-	// make sure the whole cache is built beforehand
-	image->rebuildPixels();
-
-	int dim = image->size();
-
-	vector<BinSet> &sets = viewport->sets;
-	//vector<std::pair<int, QByteArray> > &shuffleIdx = viewport->shuffleIdx;
-	sets.clear(); //shuffleIdx.clear();
-	for (int i = 0; i < labelColors.size(); ++i)
-		sets.push_back(BinSet(labelColors[i], dim));
-
-	for (int y = 0; y < labels.rows; ++y) {
-		short *lr = labels[y];
-		for (int x = 0; x < labels.cols; ++x) {
-			// test the labeling
-			int label = (ignoreLabels ? 0 : lr[x]);
-			const multi_img::Pixel& pixel = (*image)(y, x);
-			BinSet &s = sets[label];
-
-			// create hash key and line array at once
-			QByteArray hashkey;
-			for (int d = 0; d < dim; ++d) {
-				int pos = floor(curpos(pixel[d], d));
-				// multi_img::minval/maxval are only theoretical bounds,
-				//   so they could be violated
-				pos = max(pos, 0); pos = min(pos, nbins-1);
-				hashkey[d] = (unsigned char)pos;
-
-				// cache observed range; can be used for limiter init later 
-				//std::pair<int, int> &range = s.boundary[d];
-				//range.first = std::min<int>(range.first, pos);
-				//range.second = std::max<int>(range.second, pos);
-			}
-
-			// put into our set
-			if (!s.bins.contains(hashkey)) {
-				s.bins.insert(hashkey, Bin(pixel));
-				// add to initial shuffle index
-				//shuffleIdx.push_back(make_pair(label, hashkey));
-			} else {
-				s.bins[hashkey].add(pixel);
-			}
-
-			sets[label].totalweight++;
-		}
+	if (task.get()) {
+		task.get()->cancel();
+		task.reset();
 	}
-	//watch.print_reset(" - bin creation");
-	*/
 
-	/* normalize means & calculate color */
-	/*
-	for (unsigned int i = 0; i < sets.size(); ++i) {
-		BinSet &s = sets[i];
-		QHash<QByteArray, Bin>::iterator it;
-		for (it = s.bins.begin(); it != s.bins.end(); ++it) {
-			Bin &b = it.value();
-			for (int d = 0; d < dim; ++d)
-				b.means[d] /= b.weight;
-			cv::Vec3f color = image->bgr(b.means);
-			b.rgb = QColor(color[2]*255, color[1]*255, color[0]*255);
-		}
-	}
-	*/
-	//watch.print_reset(" - bin normalization + RGB");
+	SharedDataRead ctxlock(viewport->ctx->lock);
+	ViewportCtx args = **viewport->ctx;
+	ctxlock.unlock();
 
-	/* shuffle indices with fisher-yates */
-	//std::random_shuffle(shuffleIdx.begin(), shuffleIdx.end());
-	//watch.print(" - index shuffle");
+	args.wait.fetch_and_store(1);
 
-/* ** statistics **
-	int datapoints = 0;
-	for (unsigned int i = 0; i < sets.size(); ++i)
-		datapoints += sets[i].bins.count();
-	cerr << (viewport->gradient? "Gradient View" : "Intensity View") << " shows ";
-	cerr << datapoints << " datapoints." << endl;
-*/
+	task.reset(new BinsTbb(
+		image, labels, labelColors, illuminant, args, viewport->ctx, viewport->sets));
+	//QObject::connect(task.get(), SIGNAL(finished(bool)), this, SLOT(render(bool)), Qt::QueuedConnection);
+	BackgroundTaskQueue::instance().push(task);
+	render(task->wait());
+}
+
+void multi_img_viewer::render(bool necessary)
+{
+	if (neccessary)
+		viewport->rebuild();
 }
 
 bool multi_img_viewer::BinsTbb::run() 
@@ -244,14 +300,14 @@ bool multi_img_viewer::BinsTbb::run()
 	std::vector<cv::Rect>::iterator it;
 	for (it = sub.begin(); it != sub.end(); ++it) {
 		Accumulate substract(
-			true, **multi, **labels, args.nbins, args.binsize, ignoreLabels, illuminant, **temp, *it);
+			true, **multi, **labels, args.nbins, args.binsize, args.ignoreLabels, illuminant, **temp, *it);
 		tbb::parallel_for(
 			tbb::blocked_range2d<int>(0, (*labels)->rows, 0, (*labels)->cols), 
 				substract, tbb::auto_partitioner(), stopper);
 	}
 	for (it = add.begin(); it != add.end(); ++it) {
 		Accumulate add(
-			false, **multi, **labels, args.nbins, args.binsize, ignoreLabels, illuminant, **temp, *it);
+			false, **multi, **labels, args.nbins, args.binsize, args.ignoreLabels, illuminant, **temp, *it);
 		tbb::parallel_for(
 			tbb::blocked_range2d<int>(0, (*labels)->rows, 0, (*labels)->cols), 
 				add, tbb::auto_partitioner(), stopper);
@@ -317,10 +373,11 @@ void multi_img_viewer::BinsTbb::Accumulate::operator()(const tbb::blocked_range2
 /* create mask of single-band user selection */
 void multi_img_viewer::fillMaskSingle(int dim, int sel)
 {
+	SharedDataRead imagelock(image->lock);
 	maskholder.setTo(0);
 
 	multi_img::MaskIt itm = maskholder.begin();
-	multi_img::BandConstIt itb = (*image)[dim].begin();
+	multi_img::BandConstIt itb = (**image)[dim].begin();
 	for (; itm != maskholder.end(); ++itb, ++itm) {
 		int pos = floor(curpos(*itb, dim));
 		if (pos == sel)
@@ -330,13 +387,14 @@ void multi_img_viewer::fillMaskSingle(int dim, int sel)
 
 void multi_img_viewer::fillMaskLimiters(const std::vector<std::pair<int, int> >& l)
 {
+	SharedDataRead imagelock(image->lock);
 	maskholder.setTo(1);
 
-	for (int y = 0; y < image->height; ++y) {
+	for (int y = 0; y < (*image)->height; ++y) {
 		uchar *row = maskholder[y];
-		for (int x = 0; x < image->width; ++x) {
-			const multi_img::Pixel& p = (*image)(y, x);
-			for (unsigned int d = 0; d < image->size(); ++d) {
+		for (int x = 0; x < (*image)->width; ++x) {
+			const multi_img::Pixel& p = (**image)(y, x);
+			for (unsigned int d = 0; d < (*image)->size(); ++d) {
 				int pos = floor(curpos(p[d], d));
 				if (pos < l[d].first || pos > l[d].second) {
 					row[x] = 0;
@@ -350,17 +408,18 @@ void multi_img_viewer::fillMaskLimiters(const std::vector<std::pair<int, int> >&
 void multi_img_viewer::updateMaskLimiters(
 		const std::vector<std::pair<int, int> >& l, int dim)
 {
-	for (int y = 0; y < image->height; ++y) {
+	SharedDataRead imagelock(image->lock);
+	for (int y = 0; y < (*image)->height; ++y) {
 		uchar *mrow = maskholder[y];
-		const multi_img::Value *brow = (*image)[dim][y];
-		for (int x = 0; x < image->width; ++x) {
+		const multi_img::Value *brow = (**image)[dim][y];
+		for (int x = 0; x < (*image)->width; ++x) {
 			int pos = floor(curpos(brow[x], dim));
 			if (pos < l[dim].first || pos > l[dim].second) {
 				mrow[x] = 0;
 			} else if (mrow[x] == 0) { // we need to do exhaustive test
 				mrow[x] = 1;
-				const multi_img::Pixel& p = (*image)(y, x);
-				for (unsigned int d = 0; d < image->size(); ++d) {
+				const multi_img::Pixel& p = (**image)(y, x);
+				for (unsigned int d = 0; d < (*image)->size(); ++d) {
 					int pos = floor(curpos(p[d], d));
 					if (pos < l[d].first || pos > l[d].second) {
 						mrow[x] = 0;
@@ -387,11 +446,12 @@ void multi_img_viewer::updateMask(int dim)
 
 void multi_img_viewer::overlay(int x, int y)
 {
-	const multi_img::Pixel &pixel = (*image)(y, x);
+	SharedDataRead imagelock(image->lock);
+	const multi_img::Pixel &pixel = (**image)(y, x);
 	QPolygonF &points = viewport->overlayPoints;
-	points.resize(image->size());
+	points.resize((*image)->size());
 
-	for (unsigned int d = 0; d < image->size(); ++d)
+	for (unsigned int d = 0; d < (*image)->size(); ++d)
 		points[d] = QPointF(d, curpos(pixel[d], d));
 
 	viewport->overlayMode = true;
@@ -439,10 +499,29 @@ void multi_img_viewer::showLimiterMenu()
 
 void multi_img_viewer::updateLabelColors(const QVector<QColor> &colors, bool changed)
 {
+	if (!image.get())
+		return;
+
+	SharedDataRead ctxlock(viewport->ctx->lock);
+	ViewportCtx args = **viewport->ctx;
+	ctxlock.unlock();
+
+	args.wait.fetch_and_store(1);
+
 	labelColors = colors;
 	createLimiterMenu();
-	if (changed)
-		rebuild();
+	if (changed) {
+		if (task.get()) {
+			task.get()->cancel();
+			task.reset();
+		}
+
+		task.reset(new BinsTbb(
+			image, labels, labelColors, illuminant, args, viewport->ctx, viewport->sets));
+		//QObject::connect(task.get(), SIGNAL(finished(bool)), this, SLOT(render(bool)), Qt::QueuedConnection);
+		BackgroundTaskQueue::instance().push(task);
+		render(task->wait());
+	}
 }
 
 void multi_img_viewer::toggleLabeled(bool toggle)
@@ -459,9 +538,26 @@ void multi_img_viewer::toggleUnlabeled(bool toggle)
 
 void multi_img_viewer::toggleLabels(bool toggle)
 {
-	ignoreLabels = toggle;
-	viewport->ignoreLabels = toggle;
-	rebuild();
+	if (!image.get())
+		return;
+
+	if (task.get()) {
+		task.get()->cancel();
+		task.reset();
+	}
+
+	SharedDataRead ctxlock(viewport->ctx->lock);
+	ViewportCtx args = **viewport->ctx;
+	ctxlock.unlock();
+
+	args.ignoreLabels = toggle;
+	args.wait.fetch_and_store(1);
+
+	task.reset(new BinsTbb(
+		image, labels, labelColors, illuminant, args, viewport->ctx, viewport->sets));
+	//QObject::connect(task.get(), SIGNAL(finished(bool)), this, SLOT(render(bool)), Qt::QueuedConnection);
+	BackgroundTaskQueue::instance().push(task);
+	render(task->wait());
 }
 
 void multi_img_viewer::toggleLimiters(bool toggle)

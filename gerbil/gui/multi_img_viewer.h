@@ -23,17 +23,20 @@ class multi_img_viewer : public QWidget, private Ui::multi_img_viewer {
 public:
 	multi_img_viewer(QWidget *parent = 0);
 
-	const multi_img* getImage() { return image; }
+	multi_img_ptr getImage() { return image; }
 	Viewport* getViewport() { return viewport; }
 	const multi_img::Mask& getMask() { return maskholder; }
 
-	cv::Mat1s labels;
+	label_ptr labels;
 
 public slots:
-	void rebuild(int bins = 0);
 	void updateMask(int dim);
-	void setImage(const multi_img *image, representation type);
-	void setIlluminant(const std::vector<multi_img::Value> *, bool for_real);
+	void subImage(sets_ptr temp, const std::vector<cv::Rect> &regions, cv::Rect roi);
+	void addImage(sets_ptr temp, const std::vector<cv::Rect> &regions, cv::Rect roi);
+	void setImage(multi_img_ptr image, representation type, cv::Rect roi);
+	void setIlluminant(const std::vector<multi_img::Value> &, bool for_real);
+	void updateBinning(int bins);
+	void updateLabels();
 	void toggleFold();
 	void toggleLabeled(bool toggle);
 	void toggleUnlabeled(bool toggle);
@@ -54,15 +57,16 @@ protected:
 	class BinsTbb : public BackgroundTask {
 	public:
 		BinsTbb(multi_img_ptr multi, label_ptr labels, 
-			QVector<QColor> colors, bool ignoreLabels, 
-			std::vector<multi_img::Value> illuminant, 
-			ViewportCtx args, vpctx_ptr context, 
-			sets_ptr current, sets_ptr temp, 
-			std::vector<cv::Rect> sub, std::vector<cv::Rect> add, bool apply,
-			cv::Rect targetRoi = cv::Rect(0, 0, 0, 0)) 
+			const QVector<QColor> &colors,
+			const std::vector<multi_img::Value> &illuminant, 
+			const ViewportCtx &args, vpctx_ptr context, 
+			sets_ptr current, sets_ptr temp = new SharedData<std::vector<BinSet> >(NULL), 
+			const std::vector<cv::Rect> &sub = std::vector<cv::Rect>(),
+			const std::vector<cv::Rect> &add = std::vector<cv::Rect>(), 
+			bool apply = true, cv::Rect targetRoi = cv::Rect(0, 0, 0, 0)) 
 			: BackgroundTask(targetRoi), multi(multi), labels(labels), colors(colors),
-			ignoreLabels(ignoreLabels), illuminant(illuminant), args(args),
-			context(context), current(current), temp(temp), sub(sub), add(add), apply(apply) {}
+			illuminant(illuminant), args(args), context(context), 
+			current(current), temp(temp), sub(sub), add(add), apply(apply) {}
 		virtual ~BinsTbb() {}
 		virtual bool run();
 		virtual void cancel() { stopper.cancel_group_execution(); }
@@ -93,7 +97,6 @@ protected:
 		multi_img_ptr multi;
 		label_ptr labels;
 		QVector<QColor> colors;
-		bool ignoreLabels;
 		std::vector<multi_img::Value> illuminant;
 		ViewportCtx args;
 
@@ -108,25 +111,30 @@ protected:
 
 	/* translate image value to value in our coordinate system */
 	inline multi_img::Value curpos(multi_img::Value val, int dim) {
-		multi_img::Value curpos = (val - image->minval) / binsize;
-		if (illuminant)
-			curpos /= (*illuminant)[dim];
+		multi_img::Value curpos = (val - (*image)->minval) / binsize;
+		if (!illuminant.empty())
+			curpos /= illuminant[dim];
 		return curpos;
 	}
 
+	BackgroundTaskPtr task;
+
     void changeEvent(QEvent *e);
-	void createBins();
 
 	// helpers for createMask
 	void fillMaskSingle(int dim, int sel);
 	void fillMaskLimiters(const std::vector<std::pair<int, int> >& limits);
 	void updateMaskLimiters(const std::vector<std::pair<int, int> >&, int dim);
+	void setTitle(representation type, multi_img::Value min, multi_img::Value::max);
 
-	const multi_img *image;
-	const std::vector<multi_img::Value> *illuminant;
+	multi_img_ptr image;
+	std::vector<multi_img::Value> illuminant;
 	bool ignoreLabels;
 	multi_img::Mask maskholder;
 	bool maskValid;
+
+protected slots:
+	void render(bool necessary);
 
 private:
 	void createLimiterMenu();

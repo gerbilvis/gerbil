@@ -27,7 +27,7 @@ Viewport::Viewport(QWidget *parent)
 	  sets(new SharedData<std::vector<BinSet> >(new std::vector<BinSet>())),
 	  selection(0), hover(-1), limiterMode(false),
 	  active(false), wasActive(false), useralpha(1.f),
-	  showLabeled(true), showUnlabeled(true), ignoreLabels(false),
+	  showLabeled(true), showUnlabeled(true),
 	  overlayMode(false),
 	  zoom(1.), shift(0), lasty(-1), holdSelection(false), activeLimiter(0),
 	  cacheValid(false), clearView(false), implicitClearView(false),
@@ -36,6 +36,8 @@ Viewport::Viewport(QWidget *parent)
 {
 	(*ctx)->wait = 1;
 	(*ctx)->reset = 1;
+	(*ctx)->illuminant_correction = false;
+	(*ctx)->ignoreLabels = false;
 	resizeTimer.setSingleShot(true);
 	connect(&resizeTimer, SIGNAL(timeout()), this, SLOT(endNoHQ()));
 	resizeTimer.start(0);
