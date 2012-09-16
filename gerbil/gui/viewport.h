@@ -78,7 +78,6 @@ struct ViewportCtx {
 		meta = other.meta;
 		labels = other.labels;
 		ignoreLabels = other.ignoreLabels;
-		illuminant_correction = other.illuminant_correction;
 		nbins = other.nbins;
 		binsize = other.binsize;
 		minval = other.minval;
@@ -92,7 +91,6 @@ struct ViewportCtx {
 	std::vector<multi_img::BandDesc> meta;
 	std::vector<QString> labels;
 	bool ignoreLabels;
-	bool illuminant_correction;
 	int nbins;
 	multi_img::Value binsize;
 	multi_img::Value minval;
@@ -117,6 +115,7 @@ public:
 	QGLBuffer vb;
 	std::vector<std::pair<int, BinSet::HashKey> > shuffleIdx;
 
+	bool illuminant_correction;
 	std::vector<multi_img::Value> illuminant;
 
 	int selection, hover;

@@ -393,7 +393,7 @@ void ViewerWindow::setLabels(const vole::Labeling &labeling)
 	bool updated = setLabelColors(labeling.colors());
 	if (!updated) {
 		for (size_t i = 0; i < viewers.size(); ++i)
-			viewers[i]->rebuild();
+			viewers[i]->updateLabels();
 		bandView->refresh();
 	}
 }
@@ -742,11 +742,11 @@ void ViewerWindow::applyNormUserRange(bool update)
 	if (update) {
 		// re-initialize gui (duplication from applyROI())
 		if (target == 0) {
-			viewIMG->rebuild(-1);
+			viewIMG->updateBinning(-1);
 			/* empty cache */
 			bands[IMG].assign((*image)->size(), NULL);
 		} else {
-			viewGRAD->rebuild(-1);
+			viewGRAD->updateBinning(-1);
 			/* empty cache */
 			bands[GRAD].assign((*gradient)->size(), NULL);
 		}
@@ -794,7 +794,7 @@ void ViewerWindow::clampNormUserRange()
 		BackgroundTaskQueue::instance().push(taskClamp);
 		taskClamp->wait();
 
-		viewGRAD->rebuild(-1);
+		viewGRAD->updateBinning(-1);
 		/* empty cache */
 		bands[GRAD].assign((*gradient)->size(), NULL);
 		updateBand();
@@ -1132,7 +1132,7 @@ void ViewerWindow::labelmask(bool negative)
 {
 	emit alterLabel(activeViewer->getMask(), negative);
 	for (size_t i = 0; i < viewers.size(); ++i)
-		viewers[i]->rebuild();
+		viewers[i]->updateLabels();
 }
 
 void ViewerWindow::newOverlay()

@@ -74,7 +74,7 @@ void multi_img_viewer::subImage(sets_ptr temp, const std::vector<cv::Rect> &regi
 		image, labels, labelColors, illuminant, args, viewport->ctx, viewport->sets,
 		temp, regions, std::vector<cv::Rect>(), false, roi));
 	BackgroundTaskQueue::instance().push(taskBins);
-	render(taskBins->wait());
+	taskBins->wait();
 }
 
 void multi_img_viewer::setTitle(representation type, multi_img::Value min, multi_img::Value::max)
@@ -187,28 +187,14 @@ void multi_img_viewer::setIlluminant(
 	if ((*viewport->ctx)->type != IMG)
 		return;
 
+	ctxlock.unlock();
+
 	if (for_real) {
-		if (task.get()) {
-			task.get()->cancel();
-			task.reset();
-		}
-
-		ViewportCtx args = **viewport->ctx;
 		// only set it to true, never to false again
-		ctxlock.unlock();
-		args.illuminant_correction = true;
-		args.wait.fetch_and_store(1);
-
+		viewport->illuminant_correction = true;
 		illuminant = coeffs;
-		
-		task.reset(new BinsTbb(
-			image, labels, labelColors, illuminant, args, viewport->ctx, viewport->sets));
-		//QObject::connect(task.get(), SIGNAL(finished(bool)), this, SLOT(render(bool)), Qt::QueuedConnection);
-		BackgroundTaskQueue::instance().push(task);
-		render(task->wait());
 	} else {
-		(*viewport->ctx)->illuminant = coeffs;
-		ctxlock.unlock();
+		viewport->illuminant = coeffs;
 		viewport->update();
 	}
 }

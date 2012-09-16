@@ -28,7 +28,7 @@ Viewport::Viewport(QWidget *parent)
 	  selection(0), hover(-1), limiterMode(false),
 	  active(false), wasActive(false), useralpha(1.f),
 	  showLabeled(true), showUnlabeled(true),
-	  overlayMode(false),
+	  overlayMode(false), illuminant_correction(false),
 	  zoom(1.), shift(0), lasty(-1), holdSelection(false), activeLimiter(0),
 	  cacheValid(false), clearView(false), implicitClearView(false),
 	  drawMeans(true), drawRGB(false), drawHQ(true), drawingState(FOLDING),
@@ -36,7 +36,6 @@ Viewport::Viewport(QWidget *parent)
 {
 	(*ctx)->wait = 1;
 	(*ctx)->reset = 1;
-	(*ctx)->illuminant_correction = false;
 	(*ctx)->ignoreLabels = false;
 	resizeTimer.setSingleShot(true);
 	connect(&resizeTimer, SIGNAL(timeout()), this, SLOT(endNoHQ()));
@@ -196,7 +195,7 @@ void Viewport::prepareLines()
 				curpos = ((b.means[d] / b.weight) - (*ctx)->minval) / (*ctx)->binsize;
 			} else {
 				curpos = (unsigned char)K[d] + 0.5;
-				if ((*ctx)->illuminant_correction && !illuminant.empty())
+				if (illuminant_correction && !illuminant.empty())
 					curpos *= illuminant[d];
 			}
 			//b.points[d] = QPointF(d, curpos);
@@ -592,7 +591,7 @@ void Viewport::updateXY(int sel, int bin)
 			holdSelection = true;
 
 		/// second handle bin -> intensity highlight
-		if (!illuminant.empty() && (*ctx)->illuminant_correction)	/* correct y for illuminant */
+		if (!illuminant.empty() && illuminant_correction)	/* correct y for illuminant */
 			bin = std::floor(bin / illuminant.at(sel) + 0.5f);
 
 		if (bin >= 0 && bin < (*ctx)->nbins) {

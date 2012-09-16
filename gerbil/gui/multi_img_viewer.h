@@ -29,6 +29,8 @@ public:
 
 	label_ptr labels;
 
+	BackgroundTaskPtr task;
+
 public slots:
 	void updateMask(int dim);
 	void subImage(sets_ptr temp, const std::vector<cv::Rect> &regions, cv::Rect roi);
@@ -116,8 +118,6 @@ protected:
 			curpos /= illuminant[dim];
 		return curpos;
 	}
-
-	BackgroundTaskPtr task;
 
     void changeEvent(QEvent *e);
 
