@@ -52,7 +52,9 @@ void BackgroundTaskQueue::cancelTasks(cv::Rect &roi)
 	std::deque<BackgroundTaskPtr>::iterator it = taskQueue.begin();
 	while (it != taskQueue.end()) {
 		if ((*it)->roi() == roi) {
-			taskQueue.erase(it);
+			it = taskQueue.erase(it);
+		} else {
+			++it;
 		}
 	}
 	if (currentTask->roi() == roi) {
