@@ -30,6 +30,7 @@ ViewerWindow::ViewerWindow(multi_img *image, QWidget *parent)
 	  gradient(new SharedData<multi_img>(new multi_img(0, 0, 0))),
 	  imagepca(new SharedData<multi_img>(new multi_img(0, 0, 0))),
 	  gradientpca(new SharedData<multi_img>(new multi_img(0, 0, 0))),
+	  full_labels(image->height, image->width, (short)0),
 	  normIMG(NORM_OBSERVED), normGRAD(NORM_OBSERVED),
 	  normIMGRange(new SharedData<std::pair<multi_img::Value, multi_img::Value> >(
 	  		new std::pair<multi_img::Value, multi_img::Value>(0, 0))),
@@ -125,13 +126,10 @@ void ViewerWindow::applyROI(bool reuse)
 	normTargetChanged(true);
 
 	/* set labeling, and label colors (depend on ROI size) */
-	cv::Mat1s &labels = bandView->labels;
-	if (labels.empty() ||
-		labels.rows != (*image)->height || labels.cols != (*image)->width) {
-		labels = cv::Mat1s((*image)->height, (*image)->width, (short)0);
-		for (size_t i = 0; i < viewers.size(); ++i)
-			viewers[i]->labels = labels;
-	}
+	labels = cv::Mat1s(full_labels, roi);
+	bandView->labels = labels;
+	for (size_t i = 0; i < viewers.size(); ++i)
+		viewers[i]->labels = labels;
 	if (labelColors.empty())
 		setLabelColors(vole::Labeling::colors(2, true));
 
@@ -196,7 +194,7 @@ void ViewerWindow::initUI()
 	connect(markerSelector, SIGNAL(currentIndexChanged(int)),
 			bandView, SLOT(changeLabel(int)));
 	connect(clearButton, SIGNAL(clicked()),
-			bandView, SLOT(clearLabelPixels()));
+			this, SLOT(labelflush()));
 
 	connect(bandView, SIGNAL(newLabel()),
 			this, SLOT(createLabel()));
@@ -229,6 +227,8 @@ void ViewerWindow::initUI()
 			this, SLOT(remFromLabel()));
 	connect(this, SIGNAL(alterLabel(const multi_img::Mask&,bool)),
 			bandView, SLOT(alterLabel(const multi_img::Mask&,bool)));
+	connect(this, SIGNAL(clearLabel()),
+			bandView, SLOT(clearLabelPixels()));
 	connect(this, SIGNAL(drawOverlay(const multi_img::Mask&)),
 			bandView, SLOT(drawOverlay(const multi_img::Mask&)));
 
@@ -263,6 +263,8 @@ void ViewerWindow::initUI()
 
 		connect(bandView, SIGNAL(pixelOverlay(int, int)),
 				v, SLOT(overlay(int, int)));
+		connect(bandView, SIGNAL(pixelLabel(int, int, short)),
+				v, SLOT(setLabelPixel(int, int, short)));
 
 		connect(vp, SIGNAL(activated()),
 				vpmap, SLOT(map()));
@@ -480,7 +482,8 @@ void ViewerWindow::applyIlluminant() {
 		(*full_image)->apply_illuminant(il);
 	}
 
-	viewIMG->setIlluminant((i2 ? &getIlluminantC(i2) : NULL), true);
+	std::vector<multi_img::Value> empty;
+	viewIMG->setIlluminant((i2 ? getIlluminantC(i2) : empty), true);
 	/* rebuild  */
 	if (roi.width > 0)
 		applyROI(false);
@@ -841,7 +844,9 @@ void ViewerWindow::runGraphseg(const multi_img& input,
 	result = seg.execute(input, bandView->seedMap);
 
 	/* add segmentation to current labeling */
-	bandView->alterLabel(result, false);
+	emit alterLabel(result, false);
+	for (size_t i = 0; i < viewers.size(); ++i)
+		viewers[i]->updateLabels();
 
 	emit seedingDone();
 }
@@ -1128,6 +1133,13 @@ void ViewerWindow::setActive(int id)
 	activeViewer = viewers[id];
 }
 
+void ViewerWindow::labelflush()
+{
+	emit clearLabel();
+	for (size_t i = 0; i < viewers.size(); ++i)
+		viewers[i]->updateLabels();
+}
+
 void ViewerWindow::labelmask(bool negative)
 {
 	emit alterLabel(activeViewer->getMask(), negative);
@@ -1200,10 +1212,11 @@ void ViewerWindow::setI1(int index) {
 	if (i1 > 0) {
 		i1Check->setEnabled(true);
 		if (i1Check->isChecked())
-			viewIMG->setIlluminant(&getIlluminantC(i1), false);
+			viewIMG->setIlluminant(getIlluminantC(i1), false);
 	} else {
 		i1Check->setEnabled(false);
-		viewIMG->setIlluminant(NULL, false);
+		std::vector<multi_img::Value> empty;
+		viewIMG->setIlluminant(empty, false);
 	}
 }
 
@@ -1211,9 +1224,10 @@ void ViewerWindow::setI1Visible(bool visible)
 {
 	if (visible) {
 		int i1 = i1Box->itemData(i1Box->currentIndex()).value<int>();
-		viewIMG->setIlluminant(&getIlluminantC(i1), false);
+		viewIMG->setIlluminant(getIlluminantC(i1), false);
 	} else {
-		viewIMG->setIlluminant(NULL, false);
+		std::vector<multi_img::Value> empty;
+		viewIMG->setIlluminant(empty, false);
 	}
 }
 

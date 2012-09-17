@@ -251,6 +251,7 @@ void BandView::cursorAction(QMouseEvent *ev, bool click)
 	if (ev->buttons() & Qt::LeftButton) {
 		if (!seedMode)
 			labels(y, x) = curLabel;
+			//emit pixelLabel(x, y, curLabel);
 		else
 			seedMap(y, x) = 0;
 		updateCache(x, y);
@@ -259,6 +260,7 @@ void BandView::cursorAction(QMouseEvent *ev, bool click)
 		if (!seedMode) {
 			if (labels(y, x) == curLabel) {
 				labels(y, x) = 0;
+				//emit pixelLabel(x, y, 0);
 				updateCache(x, y);
 				if (!grandupdate)
 					updatePoint(cursor);

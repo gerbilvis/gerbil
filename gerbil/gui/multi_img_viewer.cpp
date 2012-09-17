@@ -64,6 +64,32 @@ void multi_img_viewer::toggleFold()
 	}
 }
 
+void multi_img_viewer::setLabelPixel(int x, int y, short label)
+{
+	std::vector<cv::Rect> sub;
+	std::vector<cv::Rect> add;
+	sub.push_back(cv::Rect(x, y, 1, 1));
+	add.push_back(cv::Rect(x, y, 1, 1));
+
+	SharedDataHold ctxlock(viewport->ctx->lock);
+	ViewportCtx args = **viewport->ctx;
+	ctxlock.unlock();
+
+	BackgroundTaskPtr taskSub(new BinsTbb(
+		image, labels, labelColors, illuminant, args, viewport->ctx, viewport->sets,
+		new SharedData<std::vector<BinSet> >(NULL), sub, std::vector<cv::Rect>(), true, false));
+	BackgroundTaskQueue::instance().push(taskSub);
+	taskSub->wait();
+
+	labels(y, x) = label;
+
+	BackgroundTaskPtr taskAdd(new BinsTbb(
+		image, labels, labelColors, illuminant, args, viewport->ctx, viewport->sets,
+		new SharedData<std::vector<BinSet> >(NULL), std::vector<cv::Rect>(), add, true, false));
+	BackgroundTaskQueue::instance().push(taskAdd);
+	render(taskAdd->wait());
+}
+
 void multi_img_viewer::subImage(sets_ptr temp, const std::vector<cv::Rect> &regions, cv::Rect roi)
 {
 	SharedDataHold ctxlock(viewport->ctx->lock);
@@ -72,7 +98,7 @@ void multi_img_viewer::subImage(sets_ptr temp, const std::vector<cv::Rect> &regi
 
 	BackgroundTaskPtr taskBins(new BinsTbb(
 		image, labels, labelColors, illuminant, args, viewport->ctx, viewport->sets,
-		temp, regions, std::vector<cv::Rect>(), false, roi));
+		temp, regions, std::vector<cv::Rect>(), false, false, roi));
 	BackgroundTaskQueue::instance().push(taskBins);
 	taskBins->wait();
 }
@@ -121,7 +147,7 @@ void multi_img_viewer::addImage(sets_ptr temp, const std::vector<cv::Rect> &regi
 
 	BackgroundTaskPtr taskBins(new BinsTbb(
 		image, labels, labelColors, illuminant, args, viewport->ctx, viewport->sets,
-		temp, std::vector<cv::Rect>(), regions, true, roi));
+		temp, std::vector<cv::Rect>(), regions, false, true, roi));
 	//QObject::connect(taskBins.get(), SIGNAL(finished(bool)), this, SLOT(render(bool)));
 	BackgroundTaskQueue::instance().push(taskBins);
 	render(taskBins->wait());
@@ -170,7 +196,7 @@ void multi_img_viewer::setImage(multi_img_ptr img, representation type, cv::Rect
 	BackgroundTaskPtr taskBins(new BinsTbb(
 		image, labels, labelColors, illuminant, args, viewport->ctx, viewport->sets,
 		new SharedData<std::vector<BinSet> >(NULL), std::vector<cv::Rect>(), 
-		std::vector<cv::Rect>(), true, roi));
+		std::vector<cv::Rect>(), false, true, roi));
 	//QObject::connect(taskBins.get(), SIGNAL(finished(bool)), this, SLOT(render(bool)));
 	BackgroundTaskQueue::instance().push(taskBins);
 	render(taskBins->wait());
@@ -263,7 +289,7 @@ void multi_img_viewer::render(bool necessary)
 
 bool multi_img_viewer::BinsTbb::run() 
 {
-	bool reuse = (!add.empty() || !sub.empty());
+	bool reuse = ((!add.empty() || !sub.empty()) && !inplace);
 
 	std::vector<BinSet> *result;
 	if (!reuse) {
@@ -280,19 +306,39 @@ bool multi_img_viewer::BinsTbb::run()
 		}
 	}
 
+	
+	std::vector<BinSet> *result;
+	SharedDataSwap current_lock(current->lock, boost::defer_lock_t);
+	if (reuse) {
+		SharedDataSwap temp_wlock(temp->lock);
+		result = temp->swap(NULL);
+		if (!result) {
+			result = new std::vector<BinSet>(**current);
+		}
+	} else if (inplace) {
+		current_lock.lock();
+		result = &(**current);
+	} else {
+		result = new std::vector<BinSet>();
+		for (int i = 0; i < colors.size(); ++i) {
+			result->push_back(BinSet(colors[i], (*multi)->size()));
+		}
+		add.push_back(cv::Rect(0, 0, (*multi)->width, (*multi)->height));
+	}
+
 	std::vector<cv::Rect>::iterator it;
 	for (it = sub.begin(); it != sub.end(); ++it) {
 		Accumulate substract(
-			true, **multi, **labels, args.nbins, args.binsize, args.ignoreLabels, illuminant, **temp, *it);
+			true, **multi, labels, args.nbins, args.binsize, args.ignoreLabels, illuminant, *result, *it);
 		tbb::parallel_for(
-			tbb::blocked_range2d<int>(0, (*labels)->rows, 0, (*labels)->cols), 
+			tbb::blocked_range2d<int>(0, labels.rows, 0, labels.cols), 
 				substract, tbb::auto_partitioner(), stopper);
 	}
 	for (it = add.begin(); it != add.end(); ++it) {
 		Accumulate add(
-			false, **multi, **labels, args.nbins, args.binsize, args.ignoreLabels, illuminant, **temp, *it);
+			false, **multi, labels, args.nbins, args.binsize, args.ignoreLabels, illuminant, *result, *it);
 		tbb::parallel_for(
-			tbb::blocked_range2d<int>(0, (*labels)->rows, 0, (*labels)->cols), 
+			tbb::blocked_range2d<int>(0, labels.rows, 0, labels.cols), 
 				add, tbb::auto_partitioner(), stopper);
 	}
 
@@ -300,14 +346,16 @@ bool multi_img_viewer::BinsTbb::run()
 		delete result;
 		return false;
 	} else {
-		if (!reuse || apply) {
+		if (reuse && !apply) {
+			SharedDataSwap temp_wlock(temp->lock);
+			temp->swap(result);
+		} else if (inplace) {
+			current_lock.unlock();
+		} else {
 			SharedDataSwap context_wlock(context->lock);
 			SharedDataSwap current_wlock(current->lock);
 			**context = args;
 			delete current->swap(result);
-		} else {
-			SharedDataSwap temp_wlock(temp->lock);
-			temp->swap(result);
 		}
 		return true;
 	}

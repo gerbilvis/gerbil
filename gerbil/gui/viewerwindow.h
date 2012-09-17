@@ -87,6 +87,7 @@ public slots:
 	void updateRGB(bool success);
 
 signals:
+	void clearLabel();
 	void alterLabel(const multi_img::Mask &mask, bool negative);
 	void newLabelColors(const QVector<QColor> &colors, bool changed);
 	void drawOverlay(const multi_img::Mask &mask);
@@ -150,6 +151,7 @@ protected:
     void changeEvent(QEvent *e);
 
 	/* helper functions */
+	void labelflush();
 	void applyROI(bool reuse);
 	void labelmask(bool negative);
 	// returns true if updates were triggered, false if not (trigger yourself!)
@@ -166,6 +168,8 @@ protected:
 	std::vector<std::vector<QPixmap*> > bands;
 	// label colors
 	QVector<QColor> labelColors;
+	// full image labels and roi scoped labels
+	cv::Mat1s full_labels, labels;
 
 	// rgb pixmap
 	QPixmap full_rgb, rgb;

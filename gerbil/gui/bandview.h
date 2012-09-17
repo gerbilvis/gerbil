@@ -35,6 +35,7 @@ public slots:
 
 signals:
 	void pixelOverlay(int x, int y);
+	void pixelLabel(int x, int y, short label);
 	void killHover();
 	void newLabel(); // user requested another label
 

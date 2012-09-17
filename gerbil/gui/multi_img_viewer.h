@@ -27,12 +27,13 @@ public:
 	Viewport* getViewport() { return viewport; }
 	const multi_img::Mask& getMask() { return maskholder; }
 
-	label_ptr labels;
+	cv::Mat1s labels;
 
 	BackgroundTaskPtr task;
 
 public slots:
 	void updateMask(int dim);
+	void setLabelPixel(int x, int y, short label);
 	void subImage(sets_ptr temp, const std::vector<cv::Rect> &regions, cv::Rect roi);
 	void addImage(sets_ptr temp, const std::vector<cv::Rect> &regions, cv::Rect roi);
 	void setImage(multi_img_ptr image, representation type, cv::Rect roi);
@@ -58,17 +59,17 @@ signals:
 protected:
 	class BinsTbb : public BackgroundTask {
 	public:
-		BinsTbb(multi_img_ptr multi, label_ptr labels, 
+		BinsTbb(multi_img_ptr multi, const cv::Mat1s &labels, 
 			const QVector<QColor> &colors,
 			const std::vector<multi_img::Value> &illuminant, 
 			const ViewportCtx &args, vpctx_ptr context, 
 			sets_ptr current, sets_ptr temp = new SharedData<std::vector<BinSet> >(NULL), 
 			const std::vector<cv::Rect> &sub = std::vector<cv::Rect>(),
 			const std::vector<cv::Rect> &add = std::vector<cv::Rect>(), 
-			bool apply = true, cv::Rect targetRoi = cv::Rect(0, 0, 0, 0)) 
+			bool inplace = false, bool apply = true, cv::Rect targetRoi = cv::Rect(0, 0, 0, 0)) 
 			: BackgroundTask(targetRoi), multi(multi), labels(labels), colors(colors),
 			illuminant(illuminant), args(args), context(context), 
-			current(current), temp(temp), sub(sub), add(add), apply(apply) {}
+			current(current), temp(temp), sub(sub), add(add), inplace(inplace), apply(apply) {}
 		virtual ~BinsTbb() {}
 		virtual bool run();
 		virtual void cancel() { stopper.cancel_group_execution(); }
@@ -97,7 +98,7 @@ protected:
 		};
 		
 		multi_img_ptr multi;
-		label_ptr labels;
+		cv::Mat1s labels;
 		QVector<QColor> colors;
 		std::vector<multi_img::Value> illuminant;
 		ViewportCtx args;
@@ -108,6 +109,7 @@ protected:
 		
 		std::vector<cv::Rect> sub;
 		std::vector<cv::Rect> add;
+		bool inplace;
 		bool apply;
 	};
 
