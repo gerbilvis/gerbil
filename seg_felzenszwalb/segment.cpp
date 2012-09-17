@@ -22,9 +22,9 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307 USA
 namespace gerbil {
   namespace felzenszwalb {
 
-cv::Mat1i segment_image(const multi_img &im,
-					   vole::SimilarityMeasure<multi_img::Value> *distfun,
-					   float c, int min_size)
+std::pair<cv::Mat1i, segmap> segment_image(const multi_img &im,
+							 vole::SimilarityMeasure<multi_img::Value> *distfun,
+							 float c, int min_size)
 {
 	int width = im.width;
 	int height = im.height;
@@ -87,17 +87,25 @@ cv::Mat1i segment_image(const multi_img &im,
 	}
 	delete[] edges;
 
-	cv::Mat1i output(height, width);
+	// create index map and sets of segments
+	cv::Mat1i indices(height, width);
+	segmap segments;
 
 	for (int y = 0; y < height; y++) {
-		int *row = output[y];
+		int *row = indices[y];
 		for (int x = 0; x < width; x++) {
-			row[x] = u->find(y * width + x);
+			int coord = y * width + x;
+			int index = u->find(coord);
+			if (segments.find(index) == segments.end())
+				segments[index] = std::vector<int>(1, coord);
+			else
+				segments[index].push_back(coord);
+			row[x] = index;
 		}
 	}
 
 	delete u;
-	return output;
+	return std::make_pair(indices, segments);
 }
 
 } } // namespace

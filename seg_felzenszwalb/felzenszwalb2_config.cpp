@@ -6,7 +6,7 @@
 	find it here: http://www.gnu.org/licenses/gpl.html
 */
 
-#include "felzenszwalb_config.h"
+#include "felzenszwalb2_config.h"
 
 using namespace boost::program_options;
 

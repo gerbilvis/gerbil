@@ -36,12 +36,26 @@ int FelzenszwalbShell::execute() {
 	/* TODO: optional smoothing, and/or using imginput */
 
 	input.rebuildPixels(false);
-	cv::Mat1i result = felzenszwalb::segment_image
-			(input, distfun, config.c, config.min_size);
+	std::pair<cv::Mat1i, felzenszwalb::segmap> result =
+		 felzenszwalb::segment_image(input, distfun, config.c, config.min_size);
+
+	if (config.verbosity > 0) {	// statistical output
+		const felzenszwalb::segmap &segmap = result.second;
+		cv::Mat1i sizes(segmap.size(), 1);
+		cv::Mat1i::iterator sit = sizes.begin();
+		felzenszwalb::segmap::const_iterator mit = segmap.begin();
+		for (; mit != segmap.end(); ++sit, ++mit)
+			*sit = mit->second.size();
+		cv::Scalar mean, stddev;
+		cv::meanStdDev(sizes, mean, stddev);
+		std::cout << "Found " << result.second.size() << " segments"
+				  << " of avg. size " << mean[0]
+				  << " (± " << stddev[0] << ")." << std::endl;
+	}
 
 	vole::Labeling output;
 	output.yellowcursor = false;
-	output.read(result, false);
+	output.read(result.first, false);
 
 	std::string output_name = config.output_file;
 	cv::imwrite(output_name, output.bgr());

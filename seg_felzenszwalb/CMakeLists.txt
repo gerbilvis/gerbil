@@ -15,7 +15,7 @@ vole_add_command("felzenszwalb" "felzenszwalb_shell.h" "gerbil::FelzenszwalbShel
 vole_compile_library(
 	"felzenszwalb"
 	"segment" "graph"
-	"felzenszwalb_config"
+	"felzenszwalb2_config"
 )
 
 vole_add_module()
