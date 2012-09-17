@@ -77,7 +77,7 @@ void multi_img_viewer::setLabelPixel(int x, int y, short label)
 
 	BackgroundTaskPtr taskSub(new BinsTbb(
 		image, labels, labelColors, illuminant, args, viewport->ctx, viewport->sets,
-		new SharedData<std::vector<BinSet> >(NULL), sub, std::vector<cv::Rect>(), true, false));
+		sets_ptr(new SharedData<std::vector<BinSet> >(NULL)), sub, std::vector<cv::Rect>(), true, false));
 	BackgroundTaskQueue::instance().push(taskSub);
 	taskSub->wait();
 
@@ -85,7 +85,7 @@ void multi_img_viewer::setLabelPixel(int x, int y, short label)
 
 	BackgroundTaskPtr taskAdd(new BinsTbb(
 		image, labels, labelColors, illuminant, args, viewport->ctx, viewport->sets,
-		new SharedData<std::vector<BinSet> >(NULL), std::vector<cv::Rect>(), add, true, false));
+		sets_ptr(new SharedData<std::vector<BinSet> >(NULL)), std::vector<cv::Rect>(), add, true, false));
 	BackgroundTaskQueue::instance().push(taskAdd);
 	render(taskAdd->wait());
 }
@@ -103,7 +103,7 @@ void multi_img_viewer::subImage(sets_ptr temp, const std::vector<cv::Rect> &regi
 	taskBins->wait();
 }
 
-void multi_img_viewer::setTitle(representation type, multi_img::Value min, multi_img::Value::max)
+void multi_img_viewer::setTitle(representation type, multi_img::Value min, multi_img::Value max)
 {
 	QString title;
 	if (type == IMG)
@@ -140,7 +140,9 @@ void multi_img_viewer::addImage(sets_ptr temp, const std::vector<cv::Rect> &regi
 
 	args.minval = (*image)->minval;
 	args.maxval = (*image)->maxval;
-	args.binsize = ((*image)->maxval - (*image)->minval) / (multi_img::Value)(bins - 1);
+	args.binsize = ((*image)->maxval - (*image)->minval) / (multi_img::Value)((*image)->size() - 1);
+	binsize = args.binsize;
+
 	imagelock.unlock();
 	args.reset.fetch_and_store(1);
 	args.wait.fetch_and_store(1);
@@ -189,13 +191,14 @@ void multi_img_viewer::setImage(multi_img_ptr img, representation type, cv::Rect
 	args.minval = (*image)->minval;
 	args.maxval = (*image)->maxval;
 	args.binsize = ((*image)->maxval - (*image)->minval) / (multi_img::Value)(bins - 1);
+	binsize = args.binsize;
 	imagelock.unlock();
 	args.reset.fetch_and_store(1);
 	args.wait.fetch_and_store(1);
 
 	BackgroundTaskPtr taskBins(new BinsTbb(
 		image, labels, labelColors, illuminant, args, viewport->ctx, viewport->sets,
-		new SharedData<std::vector<BinSet> >(NULL), std::vector<cv::Rect>(), 
+		sets_ptr(new SharedData<std::vector<BinSet> >(NULL)), std::vector<cv::Rect>(), 
 		std::vector<cv::Rect>(), false, true, roi));
 	//QObject::connect(taskBins.get(), SIGNAL(finished(bool)), this, SLOT(render(bool)));
 	BackgroundTaskQueue::instance().push(taskBins);
@@ -247,6 +250,7 @@ void multi_img_viewer::updateBinning(int bins)
 	args.minval = (*image)->minval;
 	args.maxval = (*image)->maxval;
 	args.binsize = ((*image)->maxval - (*image)->minval) / (multi_img::Value)(bins - 1);
+	binsize = args.binsize;
 	imagelock.unlock();
 	args.reset.fetch_and_store(1);
 	args.wait.fetch_and_store(1);
@@ -283,7 +287,7 @@ void multi_img_viewer::updateLabels()
 
 void multi_img_viewer::render(bool necessary)
 {
-	if (neccessary)
+	if (necessary)
 		viewport->rebuild();
 }
 
@@ -292,23 +296,7 @@ bool multi_img_viewer::BinsTbb::run()
 	bool reuse = ((!add.empty() || !sub.empty()) && !inplace);
 
 	std::vector<BinSet> *result;
-	if (!reuse) {
-		result = new std::vector<BinSet>();
-		for (int i = 0; i < colors.size(); ++i) {
-			result->push_back(BinSet(colors[i], (*multi)->size()));
-		}
-		add.push_back(cv::Rect(0, 0, (*multi)->width, (*multi)->height));
-	} else {
-		SharedDataSwap temp_wlock(temp->lock);
-		result = temp->swap(NULL);
-		if (!result) {
-			result = new std::vector<BinSet>(**current);
-		}
-	}
-
-	
-	std::vector<BinSet> *result;
-	SharedDataSwap current_lock(current->lock, boost::defer_lock_t);
+	SharedDataSwap current_lock(current->lock, boost::defer_lock_t());
 	if (reuse) {
 		SharedDataSwap temp_wlock(temp->lock);
 		result = temp->swap(NULL);
@@ -383,12 +371,6 @@ void multi_img_viewer::BinsTbb::Accumulate::operator()(const tbb::blocked_range2
 
 			if (substract) {
 				BinSet::HashMap::accessor ac;
-				s.bins.insert(ac, hashkey);
-				ac->second.add(pixel);
-				ac.release();
-				s.totalweight++; // atomic
-			} else {
-				BinSet::HashMap::accessor ac;
 				if (s.bins.find(ac, hashkey)) {
 					ac->second.sub(pixel);
 					if (ac->second.weight == 0.f)
@@ -396,6 +378,12 @@ void multi_img_viewer::BinsTbb::Accumulate::operator()(const tbb::blocked_range2
 				}
 				ac.release();
 				s.totalweight--; // atomic
+			} else {
+				BinSet::HashMap::accessor ac;
+				s.bins.insert(ac, hashkey);
+				ac->second.add(pixel);
+				ac.release();
+				s.totalweight++; // atomic
 			}
 		}
 	}
@@ -530,9 +518,6 @@ void multi_img_viewer::showLimiterMenu()
 
 void multi_img_viewer::updateLabelColors(const QVector<QColor> &colors, bool changed)
 {
-	if (!image.get())
-		return;
-
 	SharedDataHold ctxlock(viewport->ctx->lock);
 	ViewportCtx args = **viewport->ctx;
 	ctxlock.unlock();
@@ -542,6 +527,9 @@ void multi_img_viewer::updateLabelColors(const QVector<QColor> &colors, bool cha
 	labelColors = colors;
 	createLimiterMenu();
 	if (changed) {
+		if (!image.get())
+			return;
+
 		if (task.get()) {
 			task.get()->cancel();
 			task.reset();

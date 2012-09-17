@@ -116,17 +116,31 @@ void ViewerWindow::applyROI(bool reuse)
 
 	// calculate new norm ranges inside ROI
 
-	BackgroundTaskPtr taskImgNormRange(new NormRangeTbb(
-		image, normIMGRange, normIMG, 0, true, roi));
-	//QObject::connect(taskImgNormRange.get(), SIGNAL(finished(bool)), , SLOT(), Qt::QueuedConnection);
-	BackgroundTaskQueue::instance().push(taskImgNormRange);
-	taskImgNormRange->wait();
+	{
+		SharedDataHold hlock(normIMGRange->lock);
+		double min = (*normIMGRange)->first;
+		double max = (*normIMGRange)->second;
+		hlock.unlock();
 
-	BackgroundTaskPtr taskGradNormRange(new NormRangeTbb(
-		gradient, normGRADRange, normGRAD, 1, true, roi));
-	//QObject::connect(taskGradNormRange.get(), SIGNAL(finished(bool)), , SLOT(), Qt::QueuedConnection);
-	BackgroundTaskQueue::instance().push(taskGradNormRange);
-	taskGradNormRange->wait();
+		BackgroundTaskPtr taskImgNormRange(new NormRangeTbb(
+			image, normIMGRange, normIMG, 0, min, max, true, roi));
+		//QObject::connect(taskImgNormRange.get(), SIGNAL(finished(bool)), , SLOT(), Qt::QueuedConnection);
+		BackgroundTaskQueue::instance().push(taskImgNormRange);
+		taskImgNormRange->wait();
+	}
+
+	{
+		SharedDataHold hlock(normGRADRange->lock);
+		double min = (*normGRADRange)->first;
+		double max = (*normGRADRange)->second;
+		hlock.unlock();
+
+		BackgroundTaskPtr taskGradNormRange(new NormRangeTbb(
+			gradient, normGRADRange, normGRAD, 1, min, max, true, roi));
+		//QObject::connect(taskGradNormRange.get(), SIGNAL(finished(bool)), , SLOT(), Qt::QueuedConnection);
+		BackgroundTaskQueue::instance().push(taskGradNormRange);
+		taskGradNormRange->wait();
+	}
 
 	// gui update (if norm ranges changed)
 	normTargetChanged(true);
@@ -145,10 +159,10 @@ void ViewerWindow::applyROI(bool reuse)
 	bands.assign(viewers.size(), std::vector<QPixmap*>(numbands, NULL));
 
 	/* do setImage() last */
-	viewIMG->setImage(image, IMG);
-	viewIMGPCA->setImage(imagepca, IMGPCA);
-	viewGRAD->setImage(gradient, GRAD);
-	viewGRADPCA->setImage(gradientpca, GRADPCA);
+	viewIMG->setImage(image, IMG, roi);
+	viewIMGPCA->setImage(imagepca, IMGPCA, roi);
+	viewGRAD->setImage(gradient, GRAD, roi);
+	viewGRADPCA->setImage(gradientpca, GRADPCA, roi);
 
 	// updateBand only works after image is set (it gets image from viewer)
 	updateBand();
@@ -438,16 +452,18 @@ const QPixmap* ViewerWindow::getBand(representation type, int dim)
 
 void ViewerWindow::updateBand()
 {
-	selectBand(activeViewer->getViewport()->type,
-			   activeViewer->getViewport()->selection);
+	selectBand(activeViewer->getType(),
+			   activeViewer->getSelection());
 	bandView->update();
 }
 
 void ViewerWindow::selectBand(representation type, int dim)
 {
 	bandView->setPixmap(*getBand(type, dim));
-	const multi_img *m = viewers[type]->getImage();
-	std::string banddesc = m->meta[dim].str();
+	multi_img_ptr m = viewers[type]->getImage();
+	SharedDataHold hlock(m->lock);
+	std::string banddesc = (*m)->meta[dim].str();
+	hlock.unlock();
 	QString title;
 	if (banddesc.empty())
 		title = QString("%1 Band #%2")
@@ -878,7 +894,7 @@ void ViewerWindow::startGraphseg()
 	} else if (src == 1) {
 		runGraphseg(gradient, conf);
 	} else {	// currently shown band, construct from selection in viewport
-		int band = activeViewer->getViewport()->selection;
+		int band = activeViewer->getSelection();
 		multi_img_ptr img = activeViewer->getImage();
 		SharedDataHold img_lock(img->lock);
 		multi_img_ptr i(new SharedData<multi_img>(
@@ -1255,7 +1271,7 @@ void ViewerWindow::loadLabeling(QString filename)
 	full_image_lock.unlock();
 
 	IOGui io("Labeling Image File", "labeling image", this);
-	cv::Mat input = io.readFile(filename, -1, height, ->width);
+	cv::Mat input = io.readFile(filename, -1, height, width);
 	if (input.empty())
 		return;
 

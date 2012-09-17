@@ -285,8 +285,6 @@ bool GradientTbb::run()
 		}
 	}
 
-	curReadLock.unlock();
-
 	multi_img temp((*source)->height, (*source)->width, (*source)->size());
 	for (std::vector<cv::Rect>::iterator it = calc.begin(); it != calc.end(); ++it) {
 		if (it->width > 0 && it->height > 0) {
@@ -303,8 +301,6 @@ bool GradientTbb::run()
 	temp.minval = 0.;
 	temp.maxval = log((*source)->maxval);
 	temp.roi = (*source)->roi;
-
-	srcReadLock.unlock();
 
 	for (std::vector<cv::Rect>::iterator it = calc.begin(); it != calc.end(); ++it) {
 		if (it->width > 0 && it->height > 0) {
@@ -464,8 +460,6 @@ bool ClampTbb::run()
 	} else {
 		target->resetPixels();
 	}
-
-	rlock.unlock();
 
 	if (stopper.is_group_execution_cancelled()) {
 		delete target;

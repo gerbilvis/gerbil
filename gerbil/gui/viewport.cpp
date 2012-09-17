@@ -134,8 +134,8 @@ void Viewport::prepareLines()
 	shuffleIdx.clear();
 	cv::Vec3f color;
 	multi_img::Pixel pixel((*ctx)->dimensionality);
-	for (unsigned int i = 0; i < sets.size(); ++i) {
-		BinSet &s = sets[i];
+	for (unsigned int i = 0; i < (*sets)->size(); ++i) {
+		BinSet &s = (**sets)[i];
 		BinSet::HashMap::iterator it;
 		for (it = s.bins.begin(); it != s.bins.end(); ++it) {
 			Bin &b = it->second;

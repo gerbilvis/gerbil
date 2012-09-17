@@ -76,7 +76,7 @@ namespace CIEObserver {	// 10 degree 1964 CIE observer coefficients
 }
 
 void multi_img::pixel2xyz(const Pixel &p, cv::Vec3f &v, 
-	size_t dim, std::vector<BandDesc> &meta, Value maxval)
+	size_t dim, const std::vector<BandDesc> &meta, Value maxval)
 {
 	float greensum = 0.;
 	for (size_t i = 0; i < dim; ++i) {

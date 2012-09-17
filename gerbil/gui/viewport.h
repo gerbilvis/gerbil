@@ -82,6 +82,7 @@ struct ViewportCtx {
 		binsize = other.binsize;
 		minval = other.minval;
 		maxval = other.maxval;
+		return *this;
 	}
 
 	tbb::atomic<int> wait;

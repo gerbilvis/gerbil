@@ -151,7 +151,6 @@ protected:
     void changeEvent(QEvent *e);
 
 	/* helper functions */
-	void labelflush();
 	void applyROI(bool reuse);
 	void labelmask(bool negative);
 	// returns true if updates were triggered, false if not (trigger yourself!)
@@ -181,6 +180,9 @@ protected:
 
 	normMode normIMG, normGRAD;
 	data_range_ptr normIMGRange, normGRADRange;
+
+protected slots:
+	void labelflush();
 
 private:
 	void initUI();

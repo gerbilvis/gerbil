@@ -26,6 +26,8 @@ public:
 	multi_img_ptr getImage() { return image; }
 	Viewport* getViewport() { return viewport; }
 	const multi_img::Mask& getMask() { return maskholder; }
+	int getSelection() { return viewport->selection; }
+	representation getType() { SharedDataHold l(viewport->ctx->lock); return (*viewport->ctx)->type; }
 
 	cv::Mat1s labels;
 
@@ -63,7 +65,7 @@ protected:
 			const QVector<QColor> &colors,
 			const std::vector<multi_img::Value> &illuminant, 
 			const ViewportCtx &args, vpctx_ptr context, 
-			sets_ptr current, sets_ptr temp = new SharedData<std::vector<BinSet> >(NULL), 
+			sets_ptr current, sets_ptr temp = sets_ptr(new SharedData<std::vector<BinSet> >(NULL)), 
 			const std::vector<cv::Rect> &sub = std::vector<cv::Rect>(),
 			const std::vector<cv::Rect> &add = std::vector<cv::Rect>(), 
 			bool inplace = false, bool apply = true, cv::Rect targetRoi = cv::Rect(0, 0, 0, 0)) 
@@ -127,7 +129,7 @@ protected:
 	void fillMaskSingle(int dim, int sel);
 	void fillMaskLimiters(const std::vector<std::pair<int, int> >& limits);
 	void updateMaskLimiters(const std::vector<std::pair<int, int> >&, int dim);
-	void setTitle(representation type, multi_img::Value min, multi_img::Value::max);
+	void setTitle(representation type, multi_img::Value min, multi_img::Value max);
 
 	multi_img_ptr image;
 	std::vector<multi_img::Value> illuminant;
@@ -141,8 +143,6 @@ protected slots:
 private:
 	void createLimiterMenu();
 
-	// current number of bins shown
-	int nbins;
 	// respective data range of each bin
 	multi_img::Value binsize;
 	QMenu limiterMenu;
