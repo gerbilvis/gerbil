@@ -66,6 +66,10 @@ void ViewerWindow::applyROI(bool reuse)
 	/// first: set up new working images
 
 	if (!reuse) {
+		SharedDataHold image_lock(image->lock);
+		SharedDataHold gradient_lock(gradient->lock);
+		SharedDataHold imagepca_lock(imagepca->lock);
+		SharedDataHold gradientpca_lock(gradientpca->lock);
 		cv::Rect empty(0, 0, 0, 0);
 		(*image)->roi = empty;
 		(*gradient)->roi = empty;
@@ -73,14 +77,16 @@ void ViewerWindow::applyROI(bool reuse)
 		(*gradientpca)->roi = empty;
 	}
 
+	SharedDataHold full_image_lock(full_image->lock);
 	size_t numbands = bandsSlider->value();
 	if (numbands <= 0)
 		numbands = 1;
 	if (numbands > (*full_image)->size())
 		numbands = (*full_image)->size();
-
 	multi_img_ptr scoped_image(
 		new SharedData<multi_img>(new multi_img(**full_image, roi)));
+	full_image_lock.unlock();
+
 	BackgroundTaskPtr taskRescale(new MultiImg::RescaleTbb(
 		scoped_image, image, numbands, roi));
 	//QObject::connect(taskRescale.get(), SIGNAL(finished(bool)), , SLOT(), Qt::QueuedConnection);
@@ -136,13 +142,13 @@ void ViewerWindow::applyROI(bool reuse)
 	/// second: re-initialize gui
 	/* empty/init caches */
 	// note: each vector's size is atmost #bands (e.g., gradient has one less)
-	bands.assign(viewers.size(), std::vector<QPixmap*>((*image)->size(), NULL));
+	bands.assign(viewers.size(), std::vector<QPixmap*>(numbands, NULL));
 
 	/* do setImage() last */
-	viewIMG->setImage(&(**image), IMG);
-	viewIMGPCA->setImage(&(**imagepca), IMGPCA);
-	viewGRAD->setImage(&(**gradient), GRAD);
-	viewGRADPCA->setImage(&(**gradientpca), GRADPCA);
+	viewIMG->setImage(image, IMG);
+	viewIMGPCA->setImage(imagepca, IMGPCA);
+	viewGRAD->setImage(gradient, GRAD);
+	viewGRADPCA->setImage(gradientpca, GRADPCA);
 
 	// updateBand only works after image is set (it gets image from viewer)
 	updateBand();
@@ -383,7 +389,10 @@ bool ViewerWindow::setLabelColors(const std::vector<cv::Vec3b> &colors)
 
 void ViewerWindow::setLabels(const vole::Labeling &labeling)
 {
+	SharedDataHold image_lock(image->lock);
 	assert(labeling().rows == (*image)->height && labeling().cols == (*image)->width);
+	image_lock.unlock();
+
 	/* note: always update labels before updating label colors, for the case
 	   that there are less colors available than used in previous labeling */
 	cv::Mat1s labels = labeling();
@@ -414,16 +423,7 @@ const QPixmap* ViewerWindow::getBand(representation type, int dim)
 	std::vector<QPixmap*> &v = bands[type];
 
 	if (!v[dim]) {
-		multi_img_ptr multi; // = viewers[type]->getImage();
-		if (type == IMG)
-			multi = image;
-		else if (type == GRAD)
-			multi = gradient;
-		else if (type == IMGPCA)
-			multi = imagepca;
-		else //if (type == GRADPCA)
-			multi = gradientpca;
-
+		multi_img_ptr multi = viewers[type]->getImage();
 		qimage_ptr qimg(new SharedData<QImage>(new QImage()));
 
 		BackgroundTaskPtr taskExport(new MultiImg::Band2QImageTbb(multi, qimg, dim));
@@ -473,13 +473,15 @@ void ViewerWindow::applyIlluminant() {
 	/* remove old illuminant */
 	if (i1 != 0) {
 		const Illuminant &il = getIlluminant(i1);
-		(*full_image)->apply_illuminant(il, true);
+		SharedDataHold full_image_lock(full_image->lock);
+		(*full_image)->apply_illuminant(il, true); // TODO put to background
 	}
 
 	/* add new illuminant */
 	if (i2 != 0) {
 		const Illuminant &il = getIlluminant(i2);
-		(*full_image)->apply_illuminant(il);
+		SharedDataHold full_image_lock(full_image->lock);
+		(*full_image)->apply_illuminant(il); // TODO put to background
 	}
 
 	std::vector<multi_img::Value> empty;
@@ -747,6 +749,7 @@ void ViewerWindow::applyNormUserRange(bool update)
 		if (target == 0) {
 			viewIMG->updateBinning(-1);
 			/* empty cache */
+			SharedDataHold image_lock(image->lock);
 			bands[IMG].assign((*image)->size(), NULL);
 		} else {
 			viewGRAD->updateBinning(-1);
@@ -790,6 +793,7 @@ void ViewerWindow::clampNormUserRange()
 		SharedDataHold hlock(gradient->lock);
 		multi_img::Value min = (*gradient)->minval;
 		multi_img::Value max = (*gradient)->maxval;
+		size_t dim = (*gradient)->size();
 		hlock.unlock();
 
 		BackgroundTaskPtr taskClamp(new MultiImg::ClampTbb(gradient, min, max));
@@ -799,7 +803,7 @@ void ViewerWindow::clampNormUserRange()
 
 		viewGRAD->updateBinning(-1);
 		/* empty cache */
-		bands[GRAD].assign((*gradient)->size(), NULL);
+		bands[GRAD].assign(dim, NULL);
 		updateBand();
 	}
 }
@@ -836,12 +840,14 @@ void ViewerWindow::initGraphsegUI()
 			graphsegButton, SLOT(setChecked(bool)));
 }
 
-void ViewerWindow::runGraphseg(const multi_img& input,
+void ViewerWindow::runGraphseg(multi_img_ptr input,
 							   const vole::GraphSegConfig &config)
 {
 	vole::GraphSeg seg(config);
 	multi_img::Mask result;
-	result = seg.execute(input, bandView->seedMap);
+	SharedDataHold input_lock(input->lock);
+	result = seg.execute(**input, bandView->seedMap);
+	input_lock.unlock();
 
 	/* add segmentation to current labeling */
 	emit alterLabel(result, false);
@@ -868,13 +874,16 @@ void ViewerWindow::startGraphseg()
 	int src = graphsegSourceBox->itemData(graphsegSourceBox->currentIndex())
 								 .value<int>();
 	if (src == 0) {
-		runGraphseg(**image, conf);
+		runGraphseg(image, conf);
 	} else if (src == 1) {
-		runGraphseg(**gradient, conf);
+		runGraphseg(gradient, conf);
 	} else {	// currently shown band, construct from selection in viewport
 		int band = activeViewer->getViewport()->selection;
-		const multi_img *img = activeViewer->getImage();
-		multi_img i((*img)[band], img->minval, img->maxval);
+		multi_img_ptr img = activeViewer->getImage();
+		SharedDataHold img_lock(img->lock);
+		multi_img_ptr i(new SharedData<multi_img>(
+			new multi_img((**img)[band], (*img)->minval, (*img)->maxval)));
+		img_lock.unlock();
 		runGraphseg(i, conf);
 	}
 }
@@ -900,8 +909,10 @@ void ViewerWindow::initUnsupervisedSegUI()
 	usBandwidthBox->addItem("fixed");
 	usBandwidthMethodChanged("adaptive");
 
+	SharedDataHold full_image_lock(full_image->lock);
 	usBandsSpinBox->setValue((*full_image)->size());
 	usBandsSpinBox->setMaximum((*full_image)->size());
+	full_image_lock.unlock();
 
 	// we do not expose the density estimation functionality
 	usInitWidget->hide();
@@ -1067,7 +1078,9 @@ void ViewerWindow::startUnsupervisedSeg(bool findKL)
 	usSettingsWidget->setDisabled(true);
 
 	// prepare input image
+	SharedDataHold full_image_lock(full_image->lock);
 	boost::shared_ptr<multi_img> input(new multi_img(**full_image, roi)); // image data is not copied
+	full_image_lock.unlock();
 	int numbands = usBandsSpinBox->value();
 	bool gradient = usGradientCheckBox->isChecked();
 
@@ -1154,11 +1167,13 @@ void ViewerWindow::newOverlay()
 
 void ViewerWindow::reshapeDock(bool floating)
 {
+	SharedDataHold image_lock(image->lock);
 	if (!floating || (*image)->height == 0)
 		return;
 
 	float src_aspect = (*image)->width/(float)(*image)->height;
 	float dest_aspect = bandView->width()/(float)bandView->height();
+	image_lock.unlock();
 	// we force the dock aspect ratio to fit band image aspect ratio.
 	// this is not 100% correct
 	if (src_aspect > dest_aspect) {
@@ -1179,6 +1194,7 @@ void ViewerWindow::buildIlluminant(int temp)
 	assert(temp > 0);
 	Illuminant il(temp);
 	std::vector<multi_img::Value> cf;
+	SharedDataHold full_image_lock(full_image->lock);
 	il.calcWeight((*full_image)->meta[0].center,
 				  (*full_image)->meta[(*full_image)->size()-1].center);
 	cf = (*full_image)->getIllumCoeff(il);
@@ -1233,16 +1249,20 @@ void ViewerWindow::setI1Visible(bool visible)
 
 void ViewerWindow::loadLabeling(QString filename)
 {
+	SharedDataHold full_image_lock(full_image->lock);
+	int height = (*full_image)->height;
+	int width = (*full_image)->width;
+	full_image_lock.unlock();
+
 	IOGui io("Labeling Image File", "labeling image", this);
-	cv::Mat input = io.readFile(filename,
-								-1, (*full_image)->height, (*full_image)->width);
+	cv::Mat input = io.readFile(filename, -1, height, ->width);
 	if (input.empty())
 		return;
 
 	vole::Labeling labeling(input, false);
 
 	// if the user is operating within ROI, apply it to labeling as well */
-	if (roi != cv::Rect(0, 0, (*full_image)->width, (*full_image)->height))
+	if (roi != cv::Rect(0, 0, width, height))
 		labeling.setLabels(labeling.getLabels()(roi));
 
 	setLabels(labeling);
@@ -1250,9 +1270,13 @@ void ViewerWindow::loadLabeling(QString filename)
 
 void ViewerWindow::loadSeeds()
 {
+	SharedDataHold full_image_lock(full_image->lock);
+	int height = (*full_image)->height;
+	int width = (*full_image)->width;
+	full_image_lock.unlock();
+
 	IOGui io("Seed Image File", "seed image", this);
-	cv::Mat1s seeding = io.readFile(QString(),
-									0, (*full_image)->height, (*full_image)->width);
+	cv::Mat1s seeding = io.readFile(QString(), 0, height, width);
 	if (seeding.empty())
 		return;
 
@@ -1297,16 +1321,21 @@ void ViewerWindow::ROIDecision(QAbstractButton *sender)
 	QDialogButtonBox::ButtonRole role = roiButtons->buttonRole(sender);
 	bool apply = (role == QDialogButtonBox::ApplyRole);
 
+	SharedDataHold full_image_lock(full_image->lock);
+	int height = (*full_image)->height;
+	int width = (*full_image)->width;
+	full_image_lock.unlock();
+
 	if (role == QDialogButtonBox::ResetRole) {
 		if (roi.width > 1)
 			roiView->roi = QRect(roi.x, roi.y, roi.width, roi.height);
 		else
-			roiView->roi = QRect(0, 0, (*full_image)->width, (*full_image)->height);
+			roiView->roi = QRect(0, 0, width, height);
 		roiView->update();
 	} else if (role == QDialogButtonBox::RejectRole) {
 		if (roi.width < 2) {
 			// implicit accept full image if no interest in ROI
-			roiView->roi = QRect(0, 0, (*full_image)->width, (*full_image)->height);
+			roiView->roi = QRect(0, 0, width, height);
 			apply = true;
 		} else {
 			// just get out of the view

@@ -158,7 +158,7 @@ protected:
 	bool setLabelColors(const std::vector<cv::Vec3b> &colors);
 	void setLabels(const vole::Labeling &labeling);
 
-	void runGraphseg(const multi_img& input, const vole::GraphSegConfig &config);
+	void runGraphseg(multi_img_ptr input, const vole::GraphSegConfig &config);
 
 	// multispectral image and gradient
 	multi_img_ptr full_image, image, gradient, imagepca, gradientpca;
