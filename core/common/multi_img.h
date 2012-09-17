@@ -442,7 +442,7 @@ public:
 	/// of a multispectral pixel
 	void pixel2xyz(const Pixel &p, cv::Vec3f &xyz) const;
 	static void pixel2xyz(const Pixel &p, cv::Vec3f &xyz, 
-		size_t dim, std::vector<BandDesc> &meta, Value maxval);
+		size_t dim, const std::vector<BandDesc> &meta, Value maxval);
 
 	/// helper function to do conversion from xyz to sRGB color space
 	static void xyz2bgr(const cv::Vec3f &xyz, cv::Vec3f &rgb);
