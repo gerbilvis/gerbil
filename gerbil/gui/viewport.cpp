@@ -123,6 +123,37 @@ void Viewport::setLimiters(int label)
 	}
 }
 
+void Viewport::PreprocessBins::operator()(const BinSet::HashMap::range_type &r)
+{
+	cv::Vec3f color;
+	multi_img::Pixel pixel(dimensionality);
+	BinSet::HashMap::iterator it;
+    for (it = r.begin(); it != r.end(); it++) {
+		Bin &b = it->second;
+		for (int d = 0; d < dimensionality; ++d) {
+			pixel[d] = b.means[d] / b.weight;
+			std::pair<int, int> &range = ranges[d];
+			range.first = std::min<int>(range.first, (it->first)[d]);
+			range.second = std::max<int>(range.second, (it->first)[d]);
+		}
+		color = multi_img::bgr(pixel, dimensionality, meta, maxval);
+		b.rgb = QColor(color[2]*255, color[1]*255, color[0]*255);
+		shuffleIdx.push_back(make_pair(label, it->first));
+	}
+}
+
+void Viewport::PreprocessBins::join(PreprocessBins &toJoin)
+{
+	for (int d = 0; d < dimensionality; ++d) {
+		std::pair<int, int> &local = ranges[d];
+		std::pair<int, int> &remote = toJoin.ranges[d];
+		if (local.first < remote.first)
+			local.first = remote.first;
+		if (local.second > remote.second)
+			local.second = remote.second;
+	}
+}
+
 void Viewport::prepareLines()
 {
 	SharedDataHold ctxlock(ctx->lock);
@@ -132,23 +163,13 @@ void Viewport::prepareLines()
 		reset();
 
 	shuffleIdx.clear();
-	cv::Vec3f color;
-	multi_img::Pixel pixel((*ctx)->dimensionality);
 	for (unsigned int i = 0; i < (*sets)->size(); ++i) {
 		BinSet &s = (**sets)[i];
-		BinSet::HashMap::iterator it;
-		for (it = s.bins.begin(); it != s.bins.end(); ++it) {
-			Bin &b = it->second;
-			for (int d = 0; d < (*ctx)->dimensionality; ++d) {
-				pixel[d] = b.means[d] / b.weight;
-				std::pair<int, int> &range = s.boundary[d];
-				range.first = std::min<int>(range.first, (it->first)[d]);
-				range.second = std::max<int>(range.second, (it->first)[d]);
-			}
-			color = multi_img::bgr(pixel, (*ctx)->dimensionality, (*ctx)->meta, (*ctx)->maxval);
-			b.rgb = QColor(color[2]*255, color[1]*255, color[0]*255);
-			shuffleIdx.push_back(make_pair(i, it->first));
-		}
+		PreprocessBins preprocess(i, (*ctx)->dimensionality, 
+			(*ctx)->maxval, (*ctx)->meta, shuffleIdx);
+		tbb::parallel_reduce(BinSet::HashMap::range_type(s.bins),
+			preprocess, tbb::auto_partitioner());
+		s.boundary = preprocess.GetRanges();
 	}
 	std::random_shuffle(shuffleIdx.begin(), shuffleIdx.end());
 

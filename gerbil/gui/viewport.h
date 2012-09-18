@@ -18,8 +18,15 @@
 #include <QLabel>
 #include <QTimer>
 #include <limits>
-#include <tbb/concurrent_hash_map.h>
 #include <tbb/atomic.h>
+#include <tbb/concurrent_vector.h>
+#include <tbb/concurrent_hash_map.h>
+#include <tbb/task.h>
+#include <tbb/blocked_range.h>
+#include <tbb/blocked_range2d.h>
+#include <tbb/partitioner.h>
+#include <tbb/parallel_for.h>
+#include <tbb/parallel_reduce.h>
 
 struct Bin {
 	Bin() : weight(0.f) {}
@@ -113,7 +120,7 @@ public:
 	sets_ptr sets;
 
 	QGLBuffer vb;
-	std::vector<std::pair<int, BinSet::HashKey> > shuffleIdx;
+	tbb::concurrent_vector<std::pair<int, BinSet::HashKey> > shuffleIdx;
 
 	bool illuminant_correction;
 	std::vector<multi_img::Value> illuminant;
@@ -183,6 +190,29 @@ protected:
 
 	// helper for limiter handling
 	bool updateLimiter(int dim, int bin);
+
+	class PreprocessBins {
+	public:
+		PreprocessBins(int label, size_t dimensionality, multi_img::Value maxval, 
+			std::vector<multi_img::BandDesc> &meta, 
+			tbb::concurrent_vector<std::pair<int, BinSet::HashKey> > &shuffleIdx) 
+			: label(label), dimensionality(dimensionality), maxval(maxval), meta(meta),
+			shuffleIdx(shuffleIdx), ranges(dimensionality, std::pair<int, int>(INT_MAX, INT_MIN)) {}
+		PreprocessBins(PreprocessBins &toSplit, tbb::split) 
+			: label(toSplit.label), dimensionality(toSplit.dimensionality), 
+			maxval(toSplit.maxval), meta(toSplit.meta),
+			shuffleIdx(toSplit.shuffleIdx), ranges(dimensionality, std::pair<int, int>(INT_MAX, INT_MIN)) {} 
+		void operator()(const BinSet::HashMap::range_type &r);
+		void join(PreprocessBins &toJoin);
+		std::vector<std::pair<int, int> > GetRanges() { return ranges; }
+	private:
+		int label;
+		size_t dimensionality;
+		multi_img::Value maxval;
+		std::vector<multi_img::BandDesc> &meta;
+		tbb::concurrent_vector<std::pair<int, BinSet::HashKey> > &shuffleIdx;
+		std::vector<std::pair<int, int> > ranges;
+	};
 
 private:
 	// modelview matrix and its inverse
