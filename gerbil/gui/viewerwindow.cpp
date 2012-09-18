@@ -538,15 +538,21 @@ void ViewerWindow::applyIlluminant() {
 	/* remove old illuminant */
 	if (i1 != 0) {
 		const Illuminant &il = getIlluminant(i1);
-		SharedDataHold full_image_lock(full_image->lock);
-		(*full_image)->apply_illuminant(il, true); // TODO put to background
+		BackgroundTaskPtr taskIllum(new MultiImg::IlluminantTbb(
+			full_image, il, true, cv::Rect(0, 0, 0, 0), false));
+		//QObject::connect(taskIllum.get(), SIGNAL(finished(bool)), , SLOT(), Qt::QueuedConnection);
+		BackgroundTaskQueue::instance().push(taskIllum);
+		taskIllum->wait();
 	}
 
 	/* add new illuminant */
 	if (i2 != 0) {
 		const Illuminant &il = getIlluminant(i2);
-		SharedDataHold full_image_lock(full_image->lock);
-		(*full_image)->apply_illuminant(il); // TODO put to background
+		BackgroundTaskPtr taskIllum(new MultiImg::IlluminantTbb(
+			full_image, il, false, cv::Rect(0, 0, 0, 0), false));
+		//QObject::connect(taskIllum.get(), SIGNAL(finished(bool)), , SLOT(), Qt::QueuedConnection);
+		BackgroundTaskQueue::instance().push(taskIllum);
+		taskIllum->wait();
 	}
 
 	std::vector<multi_img::Value> empty;
