@@ -11,6 +11,7 @@
 
 #include "background_task.h"
 #include "shared_data.h"
+#include "illuminant.h"
 #include <multi_img.h>
 #include <opencv2/imgproc/imgproc.hpp>
 #include <tbb/task.h>
@@ -291,6 +292,36 @@ protected:
 	multi_img_ptr multi;
 	multi_img::Value minval;
 	multi_img::Value maxval;
+	bool includecache;
+};
+
+class IlluminantTbb : public BackgroundTask {
+public:
+	IlluminantTbb(multi_img_ptr multi, const Illuminant& il, bool remove,
+		cv::Rect targetRoi = cv::Rect(0, 0, 0, 0), bool includecache = true) 
+		: BackgroundTask(targetRoi), multi(multi), 
+		il(il), remove(remove), includecache(includecache) {}
+	virtual ~IlluminantTbb() {}
+	virtual bool run();
+	virtual void cancel() { stopper.cancel_group_execution(); }
+protected:
+	tbb::task_group_context stopper;
+
+	class Illumination {
+	public:
+		Illumination(multi_img &source, multi_img &target, Illuminant& il, bool remove) 
+			: source(source), target(target), il(il), remove(remove) {}
+		void operator()(const tbb::blocked_range<size_t> &r) const;
+	private:
+		multi_img &source;
+		multi_img &target;
+		Illuminant &il; 
+		bool remove;
+	};
+
+	multi_img_ptr multi;
+	Illuminant il; 
+	bool remove;
 	bool includecache;
 };
 

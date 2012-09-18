@@ -489,7 +489,55 @@ void ClampTbb::Clamp::operator()(const tbb::blocked_range<size_t> &r) const
 		multi_img::Band &tgt = target.bands[d];
 		cv::max(src, source.minval, tgt);
 		cv::min(src, source.maxval, tgt);
+	}
+}
 
+bool IlluminantTbb::run() 
+{
+	multi_img *target = new multi_img((*multi)->height, (*multi)->width, (*multi)->size());
+	target->roi = (*multi)->roi;
+	target->meta = (*multi)->meta;
+	target->minval = (*multi)->minval;
+	target->maxval = (*multi)->maxval;
+
+	Illumination computeIllumination(**multi, *target, il, remove);
+	tbb::parallel_for(tbb::blocked_range<size_t>(0, target->size()), 
+		computeIllumination, tbb::auto_partitioner(), stopper);
+
+	if (includecache) {
+		CommonTbb::RebuildPixels rebuildPixels(*target);
+		tbb::parallel_for(tbb::blocked_range<size_t>(0, target->size()), 
+			rebuildPixels, tbb::auto_partitioner(), stopper);
+		target->dirty.setTo(0);
+		target->anydirt = false;
+	} else {
+		target->resetPixels();
+	}
+
+	if (stopper.is_group_execution_cancelled()) {
+		delete target;
+		return false;
+	} else {
+		SharedDataSwap lock(multi->lock);
+		delete multi->swap(target);
+		return true;
+	}
+}
+
+void IlluminantTbb::Illumination::operator()(const tbb::blocked_range<size_t> &r) const
+{
+	if (remove) {
+		for (size_t d = r.begin(); d != r.end(); ++d) {
+			multi_img::Band &src = source.bands[d];
+			multi_img::Band &tgt = target.bands[d];
+			tgt = src / (multi_img::Value)il.at(source.meta[d].center);
+		}
+	} else {
+		for (size_t d = r.begin(); d != r.end(); ++d) {
+			multi_img::Band &src = source.bands[d];
+			multi_img::Band &tgt = target.bands[d];
+			tgt = src * (multi_img::Value)il.at(source.meta[d].center);
+		}
 	}
 }
 
