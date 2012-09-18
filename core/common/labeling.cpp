@@ -64,14 +64,24 @@ void Labeling::read(const cv::Mat &src, bool binary)
 		labelColors.push_back(cv::Vec3b(255, 255, 255));
 		labelcount = 2;
 	} else {
-		float maxv = (src.depth() == CV_16U ? 65535.f : 255.f);
+		float maxv = (src.depth() == CV_16S ? 32767.f : 255.f);
+		if (src.depth() != CV_8U) {
+			double tmp1, tmp2;
+			cv::minMaxLoc(src, &tmp1, &tmp2);
+			maxv = tmp2;
+		}
 		int bins = maxv + 1;
 		if (src.channels() == 1) {
 			vector<int> indices(bins, 0);
 			for (int y = 0; y < src.rows; ++y) {
 				for (int x = 0; x < src.cols; ++x) {
-					short intensity = (src.depth() == CV_16U ?
-									 src.at<short>(y, x) : src.at<uchar>(y, x));
+					int intensity;
+					if (src.depth() == CV_16S)
+						intensity = src.at<short>(y, x);
+					else if (src.depth() == CV_8U)
+						intensity = src.at<uchar>(y, x);
+					else
+						intensity = src.at<int>(y, x);
 					indices[intensity]++;
 				}
 			}
@@ -88,8 +98,13 @@ void Labeling::read(const cv::Mat &src, bool binary)
 			labels = cv::Mat1s(src.rows, src.cols);
 			for (int y = 0; y < src.rows; ++y) {
 				for (int x = 0; x < src.cols; ++x) {
-					short intensity = (src.depth() == CV_16U ?
-									 src.at<short>(y, x) : src.at<uchar>(y, x));
+					int intensity;
+					if (src.depth() == CV_16S)
+						intensity = src.at<short>(y, x);
+					else if (src.depth() == CV_8U)
+						intensity = src.at<uchar>(y, x);
+					else
+						intensity = src.at<int>(y, x);
 					labels(y, x) = indices[intensity];
 				}
 			}
