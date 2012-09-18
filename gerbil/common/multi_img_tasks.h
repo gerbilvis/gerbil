@@ -27,6 +27,10 @@
 
 namespace MultiImg {
 
+namespace Auxiliary {
+	int RectComplement(int width, int height, cv::Rect r, std::vector<cv::Rect> &result);
+}
+
 namespace CommonTbb {
 	class RebuildPixels {
 	public:

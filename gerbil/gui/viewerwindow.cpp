@@ -77,6 +77,47 @@ void ViewerWindow::applyROI(bool reuse)
 		(*gradientpca)->roi = empty;
 	}
 
+	SharedDataHold image_lock(image->lock);
+	cv::Rect oldRoi = (*image)->roi;
+	cv::Rect newRoi = roi;
+	image_lock.unlock();
+
+	cv::Rect isecGlob = oldRoi & newRoi;
+	cv::Rect isecOld(0, 0, 0, 0);
+	cv::Rect isecNew(0, 0, 0, 0);
+	if (isecGlob.width > 0 && isecGlob.height > 0) {
+		isecOld.x = isecGlob.x - oldRoi.x;
+		isecOld.y = isecGlob.y - oldRoi.y;
+		isecOld.width = isecGlob.width;
+		isecOld.height = isecGlob.height;
+
+		isecNew.x = isecGlob.x - newRoi.x;
+		isecNew.y = isecGlob.y - newRoi.y;
+		isecNew.width = isecGlob.width;
+		isecNew.height = isecGlob.height;
+	}
+
+	std::vector<cv::Rect> sub;
+	int subArea = MultiImg::Auxiliary::RectComplement(
+		oldRoi.width, oldRoi.height, isecOld, sub);
+
+	std::vector<cv::Rect> add;
+	int addArea = MultiImg::Auxiliary::RectComplement(
+		newRoi.width, newRoi.height, isecNew, add);
+
+	bool profitable = (subArea + addArea) < (newRoi.width * newRoi.height);
+
+	sets_ptr tmp_sets_image(new SharedData<std::vector<BinSet> >(NULL));
+	sets_ptr tmp_sets_imagepca(new SharedData<std::vector<BinSet> >(NULL));
+	sets_ptr tmp_sets_gradient(new SharedData<std::vector<BinSet> >(NULL));
+	sets_ptr tmp_sets_gradientpca(new SharedData<std::vector<BinSet> >(NULL));
+	if (reuse && profitable) {
+		viewIMG->subImage(tmp_sets_image, sub, roi);
+		viewIMGPCA->subImage(tmp_sets_imagepca, sub, roi);
+		viewGRAD->subImage(tmp_sets_gradient, sub, roi);
+		viewGRADPCA->subImage(tmp_sets_gradientpca, sub, roi);
+	}
+
 	SharedDataHold full_image_lock(full_image->lock);
 	size_t numbands = bandsSlider->value();
 	if (numbands <= 0)
@@ -159,10 +200,17 @@ void ViewerWindow::applyROI(bool reuse)
 	bands.assign(viewers.size(), std::vector<QPixmap*>(numbands, NULL));
 
 	/* do setImage() last */
-	viewIMG->setImage(image, IMG, roi);
-	viewIMGPCA->setImage(imagepca, IMGPCA, roi);
-	viewGRAD->setImage(gradient, GRAD, roi);
-	viewGRADPCA->setImage(gradientpca, GRADPCA, roi);
+	if (reuse && profitable) {
+		viewIMG->addImage(tmp_sets_image, add, roi);
+		viewIMGPCA->addImage(tmp_sets_imagepca, add, roi);
+		viewGRAD->addImage(tmp_sets_gradient, add, roi);
+		viewGRADPCA->addImage(tmp_sets_gradientpca, add, roi);
+	} else {
+		viewIMG->setImage(image, IMG, roi);
+		viewIMGPCA->setImage(imagepca, IMGPCA, roi);
+		viewGRAD->setImage(gradient, GRAD, roi);
+		viewGRADPCA->setImage(gradientpca, GRADPCA, roi);
+	}
 
 	// updateBand only works after image is set (it gets image from viewer)
 	updateBand();
