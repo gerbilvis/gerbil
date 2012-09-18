@@ -4,7 +4,6 @@
 #include "medianshift_config.h"
 #include "progress_observer.h"
 #include <multi_img.h>
-#include <cv.h>
 #include <lsh.h>
 
 /// maximum number of shift iterations

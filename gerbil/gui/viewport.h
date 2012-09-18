@@ -10,9 +10,7 @@
 #define VIEWPORT_H
 
 #include <multi_img.h>
-#include <shared_data.h>
-#include <cv.h>
-#include <QGLWidget>
+#include <shared_data.h>#include <QGLWidget>
 #include <QGLBuffer>
 #include <vector>
 #include <QHash>

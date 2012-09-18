@@ -9,7 +9,7 @@
 #include "multi_img_viewer.h"
 #include "viewerwindow.h"
 #include <stopwatch.h>
-#include <cv.h>
+#include <opencv2/core/core.hpp>
 #include <iostream>
 #include <QThread>
 #include <background_task_queue.h>

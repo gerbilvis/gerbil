@@ -15,7 +15,7 @@
 #include <labeling.h>
 #include <qtopencv.h>
 
-#include <highgui.h>
+#include <opencv2/highgui/highgui.hpp>
 
 #include <QPainter>
 #include <QIcon>

@@ -3,7 +3,6 @@
 
 #include "scaledview.h"
 
-#include <cv.h>
 
 class ROIView : public ScaledView
 {

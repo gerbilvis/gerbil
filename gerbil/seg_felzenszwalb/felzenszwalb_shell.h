@@ -1,7 +1,7 @@
 #ifndef FELZENSZWALB_SHELL_H
 #define FELZENSZWALB_SHELL_H
 
-#include "felzenszwalb_config.h"
+#include "felzenszwalb2_config.h"
 #include <command.h>
 
 namespace gerbil {

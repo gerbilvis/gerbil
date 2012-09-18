@@ -3,7 +3,6 @@
 
 #include "self_organizing_map.h"
 #include <multi_img.h>
-#include <cv.h>
 #include <vector>
 
 class SOMTester

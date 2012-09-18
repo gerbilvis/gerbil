@@ -16,7 +16,6 @@
 
 #include <vector>
 #include <QMenu>
-#include <cv.h>
 
 class multi_img_viewer : public QWidget, private Ui::multi_img_viewer {
     Q_OBJECT

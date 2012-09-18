@@ -10,7 +10,7 @@
 #include <lsh.h>
 
 #include <multi_img.h>
-#include <highgui.h>
+#include <opencv2/highgui/highgui.hpp>
 #include <iostream>
 #include <iomanip>
 #include <cstdio>
