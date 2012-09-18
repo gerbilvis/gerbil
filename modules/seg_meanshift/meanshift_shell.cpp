@@ -9,9 +9,8 @@
 #include "meanshift_shell.h"
 #include "meanshift.h"
 
-#include <cv.h>
-#include <highgui.h>
 #include <multi_img.h>
+#include <opencv2/highgui/highgui.hpp>
 #include <iostream>
 #include <string.h>
 #include <labeling.h>
@@ -32,7 +31,7 @@ MeanShiftShell::~MeanShiftShell() {}
 
 
 int MeanShiftShell::execute() {
-	multi_img input = ImgInput(config.inputconfig).execute();
+	multi_img input = ImgInput(config.input).execute();
 	if (input.empty())
 		return -1;
 
@@ -47,10 +46,13 @@ int MeanShiftShell::execute() {
 	}
 
 	cv::Mat1s labels_mask = ms.execute(input);
+	if (labels_mask.empty())
+		return 0;
+
 	Labeling labels = labels_mask;
 	labels.yellowcursor = false;
 
-	/// write out beautifully colored label image
+	// write out beautifully colored label image
 	std::string output_name = config.output_directory + "/" + "segmentation_rgb.png";
 	cv::imwrite(output_name, labels.bgr());
 

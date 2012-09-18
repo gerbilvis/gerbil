@@ -3,7 +3,6 @@
 
 #include "imginput_config.h"
 #include <multi_img.h>
-#include <cv.h>
 
 namespace vole {
 

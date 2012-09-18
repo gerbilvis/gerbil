@@ -19,7 +19,11 @@ namespace vole {
 ENUM_MAGIC(ms_sampling)
 
 MeanShiftConfig::MeanShiftConfig(const std::string& prefix)
-	: Config(prefix), inputconfig("input") {
+#ifdef WITH_SEG_FELZENSZWALB2
+	: Config(prefix), input("input"), superpixel("superpixel") {
+#else
+	: Config(prefix), input("input") {
+#endif
 	use_LSH = false;
 	K = 20;
 	L = 10;
@@ -50,7 +54,7 @@ std::string MeanShiftConfig::getString() const {
 	if (prefix_enabled) {
 		s << "[" << prefix << "]" << std::endl;
 	} else {
-		s << inputconfig.getString()
+		s << input.getString()
 		  << "output=" << output_directory << "\t# Working directory" << std::endl
 		  << "doFindKL=" << (findKL ? "true" : "false") << std::endl
 		  << "Kmin=" << Kmin << std::endl
@@ -58,6 +62,9 @@ std::string MeanShiftConfig::getString() const {
 		  << "epsilon=" << epsilon << std::endl
 			;
 	}
+#ifdef WITH_SEG_FELZENSZWALB2
+	s << superpixel.getString();
+#endif
 	s << "useLSH=" << (use_LSH ? "true" : "false") << std::endl
 	  << "K=" << K << std::endl
 	  << "L=" << L << std::endl
@@ -85,8 +92,12 @@ void MeanShiftConfig::initBoostOptions() {
 			("pilotk", value(&k)->default_value(k),
 			 "number of neighbors used in the construction of the pilot density")
 			("initmethod", value(&starting)->default_value(starting),
-			 "start mean shift from all points (ALL), every Xth point (JUMP), "
+			 "start mean shift from ALL points, every Xth point (JUMP), "
+#ifdef WITH_SEG_FELZENSZWALB2
+			 "a random selection of points (PERCENT), or SUPERPIXEL segmentation")
+#else
 			 "or a random selection of points (PERCENT)")
+#endif
 			("initjump", value(&jump)->default_value(jump),
 			 "use points with indices 1+(jump*[1..infty])")
 			("initpercent", value(&percent)->default_value(percent),
@@ -95,11 +106,14 @@ void MeanShiftConfig::initBoostOptions() {
 			 "use fixed bandwidth*dimensionality for mean shift window (else: adaptive)")
 
 	;
+#ifdef WITH_SEG_FELZENSZWALB2
+	options.add(superpixel.options);
+#endif
 
 	if (prefix_enabled)	// skip input/output options
 		return;
 
-	options.add(inputconfig.options);
+	options.add(input.options);
 
 	options.add_options()
 			(key("output,O"), value(&output_directory)->default_value(output_directory),

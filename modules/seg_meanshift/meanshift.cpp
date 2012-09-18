@@ -8,10 +8,15 @@
 
 #include "meanshift.h"
 #include "mfams.h"
-
 #include <multi_img.h>
-#include <cv.h>
-#include <highgui.h>
+
+#ifdef WITH_SEG_FELZENSZWALB2
+#include <felzenszwalb.h>
+#include <sm_factory.h>
+#endif
+
+#include <opencv2/core/core.hpp>
+#include <opencv2/highgui/highgui.hpp>
 #include <iostream>
 #include <cstdio>
 
@@ -44,6 +49,24 @@ cv::Mat1s MeanShift::execute(const multi_img& input, ProgressObserver *progress,
 
 	cfams.ImportPoints(input);
 
+#ifdef WITH_SEG_FELZENSZWALB2
+	// superpixel setup
+	cv::Mat1i sp_translate;
+	gerbil::felzenszwalb::segmap sp_map;
+	if (config.starting == SUPERPIXEL) {
+		vole::SimilarityMeasure<multi_img::Value> *distfun;
+		distfun = vole::SMFactory<multi_img::Value>::spawn
+				(config.superpixel.similarity);
+		assert(distfun);
+		std::pair<cv::Mat1i, gerbil::felzenszwalb::segmap> result =
+			 gerbil::felzenszwalb::segment_image(input, distfun,
+							   config.superpixel.c, config.superpixel.min_size);
+		sp_translate = result.first;
+		std::swap(sp_map, result.second);
+	}
+	std::cout << "SP: " << sp_map.size() << " segments" << std::endl;
+#endif
+
 	// actually run MS
 	int cancel;
 	switch (config.starting) {
@@ -55,6 +78,10 @@ cv::Mat1s MeanShift::execute(const multi_img& input, ProgressObserver *progress,
 		cancel = cfams.RunFAMS(config, config.percent,
 				  config.bandwidth);
 		break;
+#ifdef WITH_SEG_FELZENSZWALB2
+	case SUPERPIXEL:
+		break;
+#endif
 	default:
 		cancel = cfams.RunFAMS(config, config.bandwidth, bandwidths);
 	}
@@ -74,6 +101,10 @@ cv::Mat1s MeanShift::execute(const multi_img& input, ProgressObserver *progress,
 	if (config.starting == ALL) {
 		// save image which holds segment indices of each pixel
 		return cfams.segmentImage(false);
+#ifdef WITH_SEG_FELZENSZWALB2
+	} else if (config.starting == SUPERPIXEL) {
+		return cv::Mat1s();
+#endif
 	} else {
 		std::cerr << "Note: As mean shift is not run on all input points, no "
 				"output images were created." << std::endl;

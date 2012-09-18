@@ -2,6 +2,7 @@
 #define MEANSHIFT_CONFIG_H
 
 #include "vole_config.h"
+#include <felzenszwalb2_config.h>
 #include <imginput.h>
 
 namespace vole {
@@ -9,9 +10,16 @@ namespace vole {
 enum ms_sampling {
 	ALL,
 	JUMP,
-	PERCENT
+	PERCENT,
+#ifdef WITH_SEG_FELZENSZWALB2
+	SUPERPIXEL,
+#endif
 };
+#ifdef WITH_SEG_FELZENSZWALB2
+#define ms_samplingString {"ALL", "JUMP", "PERCENT", "SUPERPIXEL"}
+#else
 #define ms_samplingString {"ALL", "JUMP", "PERCENT"}
+#endif
 
 /**
  * Configuration parameters for the graph cut / power watershed segmentation
@@ -22,7 +30,12 @@ public:
 	MeanShiftConfig(const std::string& prefix = std::string());
 
 	// input configuration
-	ImgInputConfig inputconfig;
+	ImgInputConfig input;
+
+#ifdef WITH_SEG_FELZENSZWALB2
+	// superpixel configuration for SUPERPIXEL sampling
+	gerbil::FelzenszwalbConfig superpixel;
+#endif
 
 	/// working directory
 	std::string output_directory;

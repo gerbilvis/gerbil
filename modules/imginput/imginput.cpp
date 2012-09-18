@@ -1,6 +1,5 @@
-#include <imginput.h>
-#include <multi_img.h>
-#include <string.h>
+#include "imginput.h"
+#include <string>
 #include <vector>
 
 using std::vector;

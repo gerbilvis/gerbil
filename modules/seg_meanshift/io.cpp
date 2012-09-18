@@ -1,11 +1,11 @@
+#include <opencv2/core/core.hpp>
+#include <opencv2/highgui/highgui.hpp>
 #include <cstdio>
 #include <cstdlib>
 #include <cstring>
 #include <cassert>
 #include <iostream>
 #include <fstream>
-#include <cv.h>
-#include <highgui.h>
 #include "mfams.h"
 
 using namespace std;

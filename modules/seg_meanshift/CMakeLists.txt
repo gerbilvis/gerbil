@@ -4,6 +4,7 @@ vole_module_variable("Vole_Seg_MeanShift")
 
 vole_add_required_dependencies("OPENCV" "BOOST" "BOOST_PROGRAM_OPTIONS" "BOOST_FILESYSTEM")
 vole_add_required_modules("imginput" "lsh")
+vole_add_optional_modules("seg_felzenszwalb2")
 
 vole_compile_library(
 	"meanshift_shell"

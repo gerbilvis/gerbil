@@ -29,11 +29,8 @@
 
 
 // OpenCV
-#include "ml.h"
-#include "cv.h"
-
-// for imread, imshow etc.
-#include "highgui.h"
+#include <opencv2/core/core.hpp>
+#include <opencv2/highgui/highgui.hpp>
 
 namespace vole {
 

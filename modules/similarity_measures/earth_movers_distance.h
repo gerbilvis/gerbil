@@ -50,12 +50,7 @@ inline double EarthMoversDistance<T>::getSimilarity(const cv::Mat_<T> &img1, con
 		sig2(i, 1) = (float)i;
 	}
 
-/* old CV code, in current SVN is not necessary anymore */
-	CvMat tmpSig1 = CvMat(sig1);
-	CvMat tmpSig2 = CvMat(sig2);
-	return cvCalcEMD2( &tmpSig1, &tmpSig2, CV_DIST_L2);
-/* use following instead in the future */
-//	return cv::calcEMD2( &tmpSig1, &tmpSig2, CV_DIST_L2);
+	return cv::EMD(sig1, sig2, CV_DIST_L2);
 }
 
 } // namespace
