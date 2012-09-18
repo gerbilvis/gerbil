@@ -42,6 +42,7 @@ namespace MultiImg {
 	class PcaTbb;
 	class DataRangeTbb;
 	class ClampTbb;
+	class IlluminantTbb;
 }
 
 /// Class that holds a multispectral image.
@@ -505,6 +506,7 @@ protected:
 	friend class MultiImg::PcaTbb;
 	friend class MultiImg::DataRangeTbb;
 	friend class MultiImg::ClampTbb;
+	friend class MultiImg::IlluminantTbb;
 };
 
 #endif // opencv
