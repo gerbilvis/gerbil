@@ -317,16 +317,16 @@ bool multi_img_viewer::BinsTbb::run()
 	std::vector<cv::Rect>::iterator it;
 	for (it = sub.begin(); it != sub.end(); ++it) {
 		Accumulate substract(
-			true, **multi, labels, args.nbins, args.binsize, args.ignoreLabels, illuminant, *result, *it);
+			true, **multi, labels, args.nbins, args.binsize, args.ignoreLabels, illuminant, *result);
 		tbb::parallel_for(
-			tbb::blocked_range2d<int>(0, labels.rows, 0, labels.cols), 
+			tbb::blocked_range2d<int>(it->y, it->y + it->height, it->x, it->x + it->width), 
 				substract, tbb::auto_partitioner(), stopper);
 	}
 	for (it = add.begin(); it != add.end(); ++it) {
 		Accumulate add(
-			false, **multi, labels, args.nbins, args.binsize, args.ignoreLabels, illuminant, *result, *it);
+			false, **multi, labels, args.nbins, args.binsize, args.ignoreLabels, illuminant, *result);
 		tbb::parallel_for(
-			tbb::blocked_range2d<int>(0, labels.rows, 0, labels.cols), 
+			tbb::blocked_range2d<int>(it->y, it->y + it->height, it->x, it->x + it->width), 
 				add, tbb::auto_partitioner(), stopper);
 	}
 

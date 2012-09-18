@@ -82,9 +82,9 @@ protected:
 			Accumulate(bool substract, multi_img &multi, cv::Mat1s &labels, 
 				int nbins, multi_img::Value binsize, bool ignoreLabels,
 				std::vector<multi_img::Value> &illuminant, 
-				std::vector<BinSet> &sets, cv::Rect region) 
+				std::vector<BinSet> &sets) 
 				: substract(substract), multi(multi), labels(labels), nbins(nbins), binsize(binsize), 
-				illuminant(illuminant), ignoreLabels(ignoreLabels), sets(sets), region(region) {}
+				illuminant(illuminant), ignoreLabels(ignoreLabels), sets(sets) {}
 			void operator()(const tbb::blocked_range2d<int> &r) const;
 		private:
 			bool substract;
@@ -95,7 +95,6 @@ protected:
 			bool ignoreLabels;
 			std::vector<multi_img::Value> &illuminant;
 			std::vector<BinSet> &sets;
-			cv::Rect region;
 		};
 		
 		multi_img_ptr multi;
