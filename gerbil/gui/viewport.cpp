@@ -174,7 +174,6 @@ void Viewport::prepareLines()
 	std::random_shuffle(shuffleIdx.begin(), shuffleIdx.end());
 
 	// vole::Stopwatch watch("prepareLines");
-	unsigned int total = shuffleIdx.size();
 
 	makeCurrent();
 	vb.setUsagePattern(QGLBuffer::StaticDraw);
@@ -194,7 +193,7 @@ void Viewport::prepareLines()
 			" johannes.jordan@cs.fau.de. Thank you for your help!");
 		return;
 	}
-	vb.allocate(total * (*ctx)->dimensionality * sizeof(GLfloat) * 2);
+	vb.allocate(shuffleIdx.size() * (*ctx)->dimensionality * sizeof(GLfloat) * 2);
 	GLfloat *varr = (GLfloat*)vb.map(QGLBuffer::WriteOnly);
 	if (!varr) {
 		QMessageBox::critical(this, "Drawing Error",
@@ -204,28 +203,36 @@ void Viewport::prepareLines()
 		return;
 	}
 
-	int vidx = 0;
-	for (unsigned int i = 0; i < total; ++i) {
+	GenerateVertices generate(drawMeans, (*ctx)->dimensionality, (*ctx)->minval, (*ctx)->binsize, 
+		illuminant_correction, illuminant, **sets, shuffleIdx, varr);
+	tbb::parallel_for(tbb::blocked_range<size_t>(0, shuffleIdx.size()),
+		generate, tbb::auto_partitioner());
+
+	vb.unmap();
+	vb.release();
+}
+
+void Viewport::GenerateVertices::operator()(const tbb::blocked_range<size_t> &r) const
+{
+	for (size_t i = r.begin(); i != r.end(); ++i) {
 		std::pair<int, BinSet::HashKey> &idx = shuffleIdx[i];
-		BinSet &s = (**sets)[idx.first];
+		BinSet &s = sets[idx.first];
 		BinSet::HashKey &K = idx.second;
 		Bin &b = s.bins.equal_range(K).first->second;
-		for (int d = 0; d < (*ctx)->dimensionality; ++d) {
+		int vidx = i * 2 * dimensionality;
+		for (int d = 0; d < dimensionality; ++d) {
 			qreal curpos;
 			if (drawMeans) {
-				curpos = ((b.means[d] / b.weight) - (*ctx)->minval) / (*ctx)->binsize;
+				curpos = ((b.means[d] / b.weight) - minval) / binsize;
 			} else {
 				curpos = (unsigned char)K[d] + 0.5;
 				if (illuminant_correction && !illuminant.empty())
 					curpos *= illuminant[d];
 			}
-			//b.points[d] = QPointF(d, curpos);
 			varr[vidx++] = d;
 			varr[vidx++] = curpos;
 		}
 	}
-	vb.unmap();
-	vb.release();
 }
 
 void Viewport::updateModelview()

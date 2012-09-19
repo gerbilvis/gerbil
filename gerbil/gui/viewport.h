@@ -214,6 +214,27 @@ protected:
 		std::vector<std::pair<int, int> > ranges;
 	};
 
+	class GenerateVertices {
+	public:
+		GenerateVertices(bool drawMeans, size_t dimensionality, multi_img::Value minval, multi_img::Value binsize,
+			bool illuminant_correction, std::vector<multi_img::Value> &illuminant, std::vector<BinSet> &sets,
+			tbb::concurrent_vector<std::pair<int, BinSet::HashKey> > &shuffleIdx, GLfloat *varr) 
+			: drawMeans(drawMeans), dimensionality(dimensionality), minval(minval), binsize(binsize),
+			illuminant_correction(illuminant_correction), illuminant(illuminant), sets(sets),
+			shuffleIdx(shuffleIdx), varr(varr) {}
+		void operator()(const tbb::blocked_range<size_t> &r) const;
+	private:
+		bool drawMeans;
+		size_t dimensionality;
+		multi_img::Value minval;
+		multi_img::Value binsize;
+		bool illuminant_correction;
+		std::vector<multi_img::Value> &illuminant;
+		std::vector<BinSet> &sets;
+		tbb::concurrent_vector<std::pair<int, BinSet::HashKey> > &shuffleIdx;
+		GLfloat *varr;
+	};
+
 private:
 	// modelview matrix and its inverse
 	QTransform modelview, modelviewI;
