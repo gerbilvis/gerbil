@@ -45,6 +45,10 @@ multi_img_viewer::multi_img_viewer(QWidget *parent)
 
 	connect(topBar, SIGNAL(toggleFold()),
 			this, SLOT(toggleFold()));
+
+	timer.setSingleShot(true);
+	timer.setInterval(500);
+	QObject::connect(&timer, SIGNAL(timeout()), this, SLOT(render()));
 }
 
 void multi_img_viewer::toggleFold()
@@ -87,7 +91,9 @@ void multi_img_viewer::setLabelPixel(int x, int y, short label)
 		image, labels, labelColors, illuminant, args, viewport->ctx, viewport->sets,
 		sets_ptr(new SharedData<std::vector<BinSet> >(NULL)), std::vector<cv::Rect>(), add, true, false));
 	BackgroundTaskQueue::instance().push(taskAdd);
-	render(taskAdd->wait());
+	taskAdd->wait();
+
+	timer.start();
 }
 
 void multi_img_viewer::subImage(sets_ptr temp, const std::vector<cv::Rect> &regions, cv::Rect roi)
@@ -308,6 +314,9 @@ bool multi_img_viewer::BinsTbb::run()
 	} else if (inplace) {
 		current_lock.lock();
 		result = &(**current);
+		for (int i = result->size(); i < colors.size(); ++i) {
+			result->push_back(BinSet(colors[i], (*multi)->size()));
+		}
 	} else {
 		result = new std::vector<BinSet>();
 		for (int i = 0; i < colors.size(); ++i) {

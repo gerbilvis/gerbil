@@ -16,6 +16,7 @@
 
 #include <vector>
 #include <QMenu>
+#include <QTimer>
 
 class multi_img_viewer : public QWidget, private Ui::multi_img_viewer {
     Q_OBJECT
@@ -136,7 +137,7 @@ protected:
 	bool maskValid;
 
 protected slots:
-	void render(bool necessary);
+	void render(bool necessary = true);
 
 private:
 	void createLimiterMenu();
@@ -145,6 +146,7 @@ private:
 	multi_img::Value binsize;
 	QMenu limiterMenu;
 	QVector<QColor> labelColors;
+	QTimer timer;
 };
 
 #endif // MULTI_IMG_VIEWER_H
