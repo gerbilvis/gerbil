@@ -127,6 +127,7 @@ void multi_img_viewer::rebuild(int bins)
 			   but here it fits petr's branch better */
 			if (viewport->selection >= bins)
 				viewport->selection = 0;
+		}
 		binsize = (image->maxval - image->minval)/(multi_img::Value)(nbins-1);
 		viewport->reset(nbins, binsize, image->minval);
 	}
