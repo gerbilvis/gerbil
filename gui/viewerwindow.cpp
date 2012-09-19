@@ -56,7 +56,7 @@ void ViewerWindow::applyROI()
 	delete gradient;
 
 	size_t numbands = bandsSlider->value();
-	if (numbands > 0 && numbands < full_image->size()) {
+	if (numbands > 2 && numbands < full_image->size()) {
 		multi_img tmpimg = full_image->spec_rescale(numbands);
 		image = new multi_img(tmpimg, roi);
 	} else {

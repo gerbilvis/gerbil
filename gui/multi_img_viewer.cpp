@@ -123,7 +123,10 @@ void multi_img_viewer::rebuild(int bins)
 		if (bins > 0) {
 			nbins = bins;
 			binLabel->setText(QString("%1 bins").arg(bins));
-		}
+			/* this should be in viewport->reset(),
+			   but here it fits petr's branch better */
+			if (viewport->selection >= bins)
+				viewport->selection = 0;
 		binsize = (image->maxval - image->minval)/(multi_img::Value)(nbins-1);
 		viewport->reset(nbins, binsize, image->minval);
 	}
