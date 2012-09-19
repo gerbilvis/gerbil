@@ -188,6 +188,8 @@ void multi_img_viewer::setImage(multi_img_ptr img, representation type, cv::Rect
 		args.nbins = bins;
 		binLabel->setText(QString("%1 bins").arg(bins));
 	}
+	if (viewport->selection >= bins)
+		viewport->selection = 0;
 	args.minval = (*image)->minval;
 	args.maxval = (*image)->maxval;
 	args.binsize = ((*image)->maxval - (*image)->minval) / (multi_img::Value)(bins - 1);
