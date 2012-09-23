@@ -14,6 +14,8 @@
 #include <QThread>
 #include <background_task_queue.h>
 
+#define REUSE_THRESHOLD 0.1
+
 using namespace std;
 
 multi_img_viewer::multi_img_viewer(QWidget *parent)
@@ -134,28 +136,35 @@ void multi_img_viewer::addImage(sets_ptr temp, const std::vector<cv::Rect> &regi
 
 	maskholder = multi_img::Mask((*image)->height, (*image)->width, (uchar)0);
 
-	setTitle(args.type, (*image)->minval, (*image)->maxval);
+	bool reuse = ((fabs(args.minval) * REUSE_THRESHOLD) > (fabs(args.minval - (*image)->minval))) &&
+		((fabs(args.maxval) * REUSE_THRESHOLD) > (fabs(args.maxval - (*image)->maxval)));
+	
+	if (!reuse) {
+		setTitle(args.type, (*image)->minval, (*image)->maxval);
 
-	/* intialize meta data */
-	args.labels.resize((*image)->size());
-	for (unsigned int i = 0; i < (*image)->size(); ++i) {
-		if (!(*image)->meta[i].empty)
-			args.labels[i].setNum((*image)->meta[i].center);
+		/* intialize meta data */
+		args.labels.resize((*image)->size());
+		for (unsigned int i = 0; i < (*image)->size(); ++i) {
+			if (!(*image)->meta[i].empty)
+				args.labels[i].setNum((*image)->meta[i].center);
+		}
+		args.meta = (*image)->meta;
+
+		args.minval = (*image)->minval;
+		args.maxval = (*image)->maxval;
+		args.binsize = ((*image)->maxval - (*image)->minval) / (multi_img::Value)(binSlider->value() - 1);
+		binsize = args.binsize;
+		minval = args.minval;
 	}
-	args.meta = (*image)->meta;
-
-	args.minval = (*image)->minval;
-	args.maxval = (*image)->maxval;
-	args.binsize = ((*image)->maxval - (*image)->minval) / (multi_img::Value)((*image)->size() - 1);
-	binsize = args.binsize;
 
 	imagelock.unlock();
 	args.reset.fetch_and_store(1);
 	args.wait.fetch_and_store(1);
 
+	std::vector<cv::Rect> empty;
 	BackgroundTaskPtr taskBins(new BinsTbb(
 		image, labels, labelColors, illuminant, args, viewport->ctx, viewport->sets,
-		temp, std::vector<cv::Rect>(), regions, false, true, roi));
+		temp, empty, reuse ? regions : empty, false, true, roi));
 	//QObject::connect(taskBins.get(), SIGNAL(finished(bool)), this, SLOT(render(bool)));
 	BackgroundTaskQueue::instance().push(taskBins);
 	render(taskBins->wait());
@@ -200,6 +209,7 @@ void multi_img_viewer::setImage(multi_img_ptr img, representation type, cv::Rect
 	args.maxval = (*image)->maxval;
 	args.binsize = ((*image)->maxval - (*image)->minval) / (multi_img::Value)(bins - 1);
 	binsize = args.binsize;
+	minval = args.minval;
 	imagelock.unlock();
 	args.reset.fetch_and_store(1);
 	args.wait.fetch_and_store(1);
@@ -259,6 +269,7 @@ void multi_img_viewer::updateBinning(int bins)
 	args.maxval = (*image)->maxval;
 	args.binsize = ((*image)->maxval - (*image)->minval) / (multi_img::Value)(bins - 1);
 	binsize = args.binsize;
+	minval = args.minval;
 	imagelock.unlock();
 	args.reset.fetch_and_store(1);
 	args.wait.fetch_and_store(1);
@@ -328,14 +339,14 @@ bool multi_img_viewer::BinsTbb::run()
 	std::vector<cv::Rect>::iterator it;
 	for (it = sub.begin(); it != sub.end(); ++it) {
 		Accumulate substract(
-			true, **multi, labels, args.nbins, args.binsize, args.ignoreLabels, illuminant, *result);
+			true, **multi, labels, args.nbins, args.binsize, args.minval, args.ignoreLabels, illuminant, *result);
 		tbb::parallel_for(
 			tbb::blocked_range2d<int>(it->y, it->y + it->height, it->x, it->x + it->width), 
 				substract, tbb::auto_partitioner(), stopper);
 	}
 	for (it = add.begin(); it != add.end(); ++it) {
 		Accumulate add(
-			false, **multi, labels, args.nbins, args.binsize, args.ignoreLabels, illuminant, *result);
+			false, **multi, labels, args.nbins, args.binsize, args.minval, args.ignoreLabels, illuminant, *result);
 		tbb::parallel_for(
 			tbb::blocked_range2d<int>(it->y, it->y + it->height, it->x, it->x + it->width), 
 				add, tbb::auto_partitioner(), stopper);
@@ -372,7 +383,7 @@ void multi_img_viewer::BinsTbb::Accumulate::operator()(const tbb::blocked_range2
 
 			BinSet::HashKey hashkey(multi.size(), 0);
 			for (int d = 0; d < multi.size(); ++d) {
-				multi_img::Value curpos = (pixel[d] - multi.minval) / binsize;
+				multi_img::Value curpos = (pixel[d] - minval) / binsize;
 				if (!illuminant.empty())
 					curpos /= illuminant[d];
 				int pos = floor(curpos);

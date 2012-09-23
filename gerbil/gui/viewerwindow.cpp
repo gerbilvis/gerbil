@@ -105,8 +105,7 @@ void ViewerWindow::applyROI(bool reuse)
 	int addArea = MultiImg::Auxiliary::RectComplement(
 		newRoi.width, newRoi.height, isecNew, add);
 
-	//bool profitable = (subArea + addArea) < (newRoi.width * newRoi.height);
-	bool profitable = false; 
+	bool profitable = (subArea + addArea) < (newRoi.width * newRoi.height);
 
 	sets_ptr tmp_sets_image(new SharedData<std::vector<BinSet> >(NULL));
 	sets_ptr tmp_sets_imagepca(new SharedData<std::vector<BinSet> >(NULL));

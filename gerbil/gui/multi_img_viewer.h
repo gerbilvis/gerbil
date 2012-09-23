@@ -81,11 +81,11 @@ protected:
 		class Accumulate {
 		public:
 			Accumulate(bool substract, multi_img &multi, cv::Mat1s &labels, 
-				int nbins, multi_img::Value binsize, bool ignoreLabels,
+				int nbins, multi_img::Value binsize, multi_img::Value minval, bool ignoreLabels,
 				std::vector<multi_img::Value> &illuminant, 
 				std::vector<BinSet> &sets) 
-				: substract(substract), multi(multi), labels(labels), nbins(nbins), binsize(binsize), 
-				illuminant(illuminant), ignoreLabels(ignoreLabels), sets(sets) {}
+				: substract(substract), multi(multi), labels(labels), nbins(nbins), binsize(binsize),
+				minval(minval), illuminant(illuminant), ignoreLabels(ignoreLabels), sets(sets) {}
 			void operator()(const tbb::blocked_range2d<int> &r) const;
 		private:
 			bool substract;
@@ -93,6 +93,7 @@ protected:
 			cv::Mat1s &labels;
 			int nbins;
 			multi_img::Value binsize;
+			multi_img::Value minval;
 			bool ignoreLabels;
 			std::vector<multi_img::Value> &illuminant;
 			std::vector<BinSet> &sets;
@@ -116,7 +117,7 @@ protected:
 
 	/* translate image value to value in our coordinate system */
 	inline multi_img::Value curpos(multi_img::Value val, int dim) {
-		multi_img::Value curpos = (val - (*image)->minval) / binsize;
+		multi_img::Value curpos = (val - minval) / binsize;
 		if (!illuminant.empty())
 			curpos /= illuminant[dim];
 		return curpos;
@@ -144,6 +145,7 @@ private:
 
 	// respective data range of each bin
 	multi_img::Value binsize;
+	multi_img::Value minval;
 	QMenu limiterMenu;
 	QVector<QColor> labelColors;
 	QTimer timer;
