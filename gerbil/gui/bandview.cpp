@@ -20,7 +20,11 @@ BandView::BandView(QWidget *parent)
 	  overlay(0), showLabels(true), seedMode(false), labelAlpha(63),
 	  seedColorsA(std::make_pair(
             QColor(255, 0, 0, labelAlpha), QColor(255, 255, 0, labelAlpha)))
-{}
+{
+	timer.setSingleShot(true);
+	timer.setInterval(500);
+	QObject::connect(&timer, SIGNAL(timeout()), this, SLOT(commitLabelChanges()));
+}
 
 void BandView::refresh()
 {
@@ -63,8 +67,10 @@ void BandView::paintEvent(QPaintEvent *ev)
 		painter.fillRect(this->rect(), QBrush(Qt::gray, Qt::BDiagPattern));
 		return;
 	}
-	if (!cacheValid)
+	if (!cacheValid) {
+		commitLabelChanges();
 		updateCache();
+	}
 
 	//painter.setRenderHint(QPainter::Antialiasing); too slow!
 
@@ -168,9 +174,10 @@ void BandView::markCachePixelS(QPainter &p, int x, int y)
 	}
 }
 
-void BandView::updateCache(int x, int y)
+void BandView::updateCache(int x, int y, short label)
 {
 	if (!cacheValid) {
+		commitLabelChanges();
 		updateCache();
 		return;
 	}
@@ -185,7 +192,7 @@ void BandView::updateCache(int x, int y)
 	
 	// if needed, color pixel
 	QColor *col = 0;
-	short val = (seedMode ? seedMap(y, x) : labels(y, x));
+	short val = (seedMode ? seedMap(y, x) : label);
 	if (seedMode) {
 		if (val == 255)
 			col = &seedColorsA.first;
@@ -249,19 +256,21 @@ void BandView::cursorAction(QMouseEvent *ev, bool click)
 
 	// paint
 	if (ev->buttons() & Qt::LeftButton) {
-		if (!seedMode)
-			//labels(y, x) = curLabel;
-			emit pixelLabel(x, y, curLabel);
-		else
+		if (!seedMode) {
+			uncommitedLabels[std::make_pair(x, y)] = curLabel;
+			updateCache(x, y, curLabel);
+			timer.start();
+		} else {
 			seedMap(y, x) = 0;
-		updateCache(x, y);
+			updateCache(x, y);
+		}
 	// erase
 	} else if (ev->buttons() & Qt::RightButton) {
 		if (!seedMode) {
 			if (labels(y, x) == curLabel) {
-				//labels(y, x) = 0;
-				emit pixelLabel(x, y, 0);
-				updateCache(x, y);
+				uncommitedLabels[std::make_pair(x, y)] = 0;
+				updateCache(x, y, 0);
+				timer.start();
 				if (!grandupdate)
 					updatePoint(cursor);
 			}
@@ -278,6 +287,18 @@ void BandView::cursorAction(QMouseEvent *ev, bool click)
 	if (grandupdate) {
 		overlay = NULL;
 		update();
+	}
+}
+
+void BandView::commitLabelChanges()
+{
+	if (!uncommitedLabels.empty()) {
+		emit subPixels(uncommitedLabels);
+		std::map<std::pair<int, int>, short>::iterator it;
+		for (it = uncommitedLabels.begin(); it != uncommitedLabels.end(); ++it)
+			labels(it->first.second, it->first.first) = it->second;
+		emit addPixels(uncommitedLabels);
+		uncommitedLabels.clear();
 	}
 }
 

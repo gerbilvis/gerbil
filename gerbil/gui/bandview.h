@@ -4,7 +4,9 @@
 #include "scaledview.h"
 
 #include <multi_img.h>
+#include <map>
 #include <QPen>
+#include <QTimer>
 
 class BandView : public ScaledView
 {
@@ -35,17 +37,24 @@ public slots:
 
 signals:
 	void pixelOverlay(int x, int y);
-	void pixelLabel(int x, int y, short label);
+	void subPixels(const std::map<std::pair<int, int>, short> &points);
+	void addPixels(const std::map<std::pair<int, int>, short> &points);
 	void killHover();
 	void newLabel(); // user requested another label
+
+protected slots:
+	void commitLabelChanges();
 
 private:
 	void cursorAction(QMouseEvent *ev, bool click = false);
 	inline void markCachePixel(QPainter &p, int x, int y);
 	inline void markCachePixelS(QPainter &p, int x, int y);
 	void updateCache();
-	void updateCache(int x, int y);
+	void updateCache(int x, int y, short label = 0);
 	void updatePoint(const QPointF &p);
+
+	QTimer timer;
+	std::map<std::pair<int, int>, short> uncommitedLabels;
 
 	QPixmap cachedPixmap;
 	bool cacheValid;

@@ -47,10 +47,6 @@ multi_img_viewer::multi_img_viewer(QWidget *parent)
 
 	connect(topBar, SIGNAL(toggleFold()),
 			this, SLOT(toggleFold()));
-
-	timer.setSingleShot(true);
-	timer.setInterval(500);
-	QObject::connect(&timer, SIGNAL(timeout()), this, SLOT(render()));
 }
 
 void multi_img_viewer::toggleFold()
@@ -70,12 +66,13 @@ void multi_img_viewer::toggleFold()
 	}
 }
 
-void multi_img_viewer::setLabelPixel(int x, int y, short label)
+void multi_img_viewer::subPixels(const std::map<std::pair<int, int>, short> &points)
 {
-	std::vector<cv::Rect> sub;
-	std::vector<cv::Rect> add;
-	sub.push_back(cv::Rect(x, y, 1, 1));
-	add.push_back(cv::Rect(x, y, 1, 1));
+	std::vector<cv::Rect> sub(points.size());
+	std::map<std::pair<int, int>, short>::const_iterator it;
+	for (it = points.begin(); it != points.end(); ++it) {
+		sub.push_back(cv::Rect(it->first.first, it->first.second, 1, 1));
+	}
 
 	SharedDataHold ctxlock(viewport->ctx->lock);
 	ViewportCtx args = **viewport->ctx;
@@ -86,16 +83,25 @@ void multi_img_viewer::setLabelPixel(int x, int y, short label)
 		sets_ptr(new SharedData<std::vector<BinSet> >(NULL)), sub, std::vector<cv::Rect>(), true, false));
 	BackgroundTaskQueue::instance().push(taskSub);
 	taskSub->wait();
+}
 
-	labels(y, x) = label;
+void multi_img_viewer::addPixels(const std::map<std::pair<int, int>, short> &points)
+{
+	std::vector<cv::Rect> add(points.size());
+	std::map<std::pair<int, int>, short>::const_iterator it;
+	for (it = points.begin(); it != points.end(); ++it) {
+		add.push_back(cv::Rect(it->first.first, it->first.second, 1, 1));
+	}
+
+	SharedDataHold ctxlock(viewport->ctx->lock);
+	ViewportCtx args = **viewport->ctx;
+	ctxlock.unlock();
 
 	BackgroundTaskPtr taskAdd(new BinsTbb(
 		image, labels, labelColors, illuminant, args, viewport->ctx, viewport->sets,
 		sets_ptr(new SharedData<std::vector<BinSet> >(NULL)), std::vector<cv::Rect>(), add, true, false));
 	BackgroundTaskQueue::instance().push(taskAdd);
-	taskAdd->wait();
-
-	timer.start();
+	render(taskAdd->wait());
 }
 
 void multi_img_viewer::subImage(sets_ptr temp, const std::vector<cv::Rect> &regions, cv::Rect roi)

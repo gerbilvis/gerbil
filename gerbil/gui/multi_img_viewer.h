@@ -15,8 +15,8 @@
 #include <tbb/parallel_for.h>
 
 #include <vector>
+#include <map>
 #include <QMenu>
-#include <QTimer>
 
 class multi_img_viewer : public QWidget, private Ui::multi_img_viewer {
     Q_OBJECT
@@ -35,7 +35,8 @@ public:
 
 public slots:
 	void updateMask(int dim);
-	void setLabelPixel(int x, int y, short label);
+	void subPixels(const std::map<std::pair<int, int>, short> &points);
+	void addPixels(const std::map<std::pair<int, int>, short> &points);
 	void subImage(sets_ptr temp, const std::vector<cv::Rect> &regions, cv::Rect roi);
 	void addImage(sets_ptr temp, const std::vector<cv::Rect> &regions, cv::Rect roi);
 	void setImage(multi_img_ptr image, representation type, cv::Rect roi);
@@ -148,7 +149,6 @@ private:
 	multi_img::Value minval;
 	QMenu limiterMenu;
 	QVector<QColor> labelColors;
-	QTimer timer;
 };
 
 #endif // MULTI_IMG_VIEWER_H

@@ -331,8 +331,10 @@ void ViewerWindow::initUI()
 
 		connect(bandView, SIGNAL(pixelOverlay(int, int)),
 				v, SLOT(overlay(int, int)));
-		connect(bandView, SIGNAL(pixelLabel(int, int, short)),
-				v, SLOT(setLabelPixel(int, int, short)));
+		connect(bandView, SIGNAL(subPixels(const std::map<std::pair<int, int>, short> &)),
+				v, SLOT(subPixels(const std::map<std::pair<int, int>, short> &)));
+		connect(bandView, SIGNAL(addPixels(const std::map<std::pair<int, int>, short> &)),
+				v, SLOT(addPixels(const std::map<std::pair<int, int>, short> &)));
 
 		connect(vp, SIGNAL(activated()),
 				vpmap, SLOT(map()));
