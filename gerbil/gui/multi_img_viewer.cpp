@@ -213,7 +213,7 @@ void multi_img_viewer::setImage(multi_img_ptr img, representation type, cv::Rect
 		viewport->selection = 0;
 	args.minval = (*image)->minval;
 	args.maxval = (*image)->maxval;
-	args.binsize = ((*image)->maxval - (*image)->minval) / (multi_img::Value)(bins - 1);
+	args.binsize = ((*image)->maxval - (*image)->minval) / (multi_img::Value)(args.nbins - 1);
 	binsize = args.binsize;
 	minval = args.minval;
 	imagelock.unlock();
@@ -273,7 +273,7 @@ void multi_img_viewer::updateBinning(int bins)
 	SharedDataHold imagelock(image->lock);
 	args.minval = (*image)->minval;
 	args.maxval = (*image)->maxval;
-	args.binsize = ((*image)->maxval - (*image)->minval) / (multi_img::Value)(bins - 1);
+	args.binsize = ((*image)->maxval - (*image)->minval) / (multi_img::Value)(args.nbins - 1);
 	binsize = args.binsize;
 	minval = args.minval;
 	imagelock.unlock();
