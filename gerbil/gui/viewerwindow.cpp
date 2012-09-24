@@ -490,10 +490,12 @@ const QPixmap* ViewerWindow::getBand(representation type, int dim)
 		multi_img_ptr multi = viewers[type]->getImage();
 		qimage_ptr qimg(new SharedData<QImage>(new QImage()));
 
-		BackgroundTaskPtr taskExport(new MultiImg::Band2QImageTbb(multi, qimg, dim));
-		//QObject::connect(taskExport.get(), SIGNAL(finished(bool)), , SLOT(), Qt::QueuedConnection);
-		BackgroundTaskQueue::instance().push(taskExport);
-		taskExport->wait();
+		SharedDataHold hlock(multi->lock);
+
+		BackgroundTaskPtr taskConvert(new MultiImg::Band2QImageTbb(multi, qimg, dim));
+		taskConvert->run();
+
+		hlock.unlock();
 
 		v[dim] = new QPixmap(QPixmap::fromImage(**qimg));
 	}
