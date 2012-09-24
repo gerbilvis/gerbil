@@ -21,9 +21,8 @@ BandView::BandView(QWidget *parent)
 	  seedColorsA(std::make_pair(
             QColor(255, 0, 0, labelAlpha), QColor(255, 255, 0, labelAlpha)))
 {
-	timer.setSingleShot(true);
-	timer.setInterval(500);
-	QObject::connect(&timer, SIGNAL(timeout()), this, SLOT(commitLabelChanges()));
+	labelTimer.setSingleShot(true);
+	labelTimer.setInterval(500);
 }
 
 void BandView::refresh()
@@ -210,6 +209,8 @@ void BandView::updateCache(int x, int y, short label)
 
 void BandView::alterLabel(const multi_img::Mask &mask, bool negative)
 {
+	uncommitedLabels.clear();
+
 	if (negative)
 		labels.setTo(0, mask.mul(labels == curLabel));
 	else
@@ -220,6 +221,7 @@ void BandView::alterLabel(const multi_img::Mask &mask, bool negative)
 
 void BandView::setLabels(multi_img::Mask l)
 {
+	uncommitedLabels.clear();
 	l.copyTo(labels);
 
 	refresh();
@@ -259,7 +261,7 @@ void BandView::cursorAction(QMouseEvent *ev, bool click)
 		if (!seedMode) {
 			uncommitedLabels[std::make_pair(x, y)] = curLabel;
 			updateCache(x, y, curLabel);
-			timer.start();
+			labelTimer.start();
 		} else {
 			seedMap(y, x) = 0;
 			updateCache(x, y);
@@ -270,7 +272,7 @@ void BandView::cursorAction(QMouseEvent *ev, bool click)
 			if (labels(y, x) == curLabel) {
 				uncommitedLabels[std::make_pair(x, y)] = 0;
 				updateCache(x, y, 0);
-				timer.start();
+				labelTimer.start();
 				if (!grandupdate)
 					updatePoint(cursor);
 			}
@@ -302,6 +304,15 @@ void BandView::commitLabelChanges()
 	}
 }
 
+void BandView::updateLabels()
+{
+	std::map<std::pair<int, int>, short>::iterator it;
+	for (it = uncommitedLabels.begin(); it != uncommitedLabels.end(); ++it)
+		labels(it->first.second, it->first.first) = it->second;
+	uncommitedLabels.clear();
+	emit refreshLabels();
+}
+
 void BandView::updatePoint(const QPointF &p)
 {
 	QPoint damagetl = scaler.map(QPoint(p.x() - 2, p.y() - 2));
@@ -315,6 +326,7 @@ void BandView::clearLabelPixels()
 		seedMap.setTo(127);
 	} else {
 		labels.setTo(0, labels == curLabel);
+		uncommitedLabels.clear();
 	}
 
 	refresh();
@@ -323,6 +335,7 @@ void BandView::clearLabelPixels()
 void BandView::clearAllLabels()
 {
 	labels.setTo(0);
+	uncommitedLabels.clear();
 
 	refresh();
 }

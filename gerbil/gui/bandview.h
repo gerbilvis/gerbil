@@ -18,6 +18,7 @@ public:
 
 	void setPixmap(const QPixmap &pixmap);
 
+	QTimer labelTimer;
 	cv::Mat1s labels;
 	cv::Mat1s seedMap; // mat1s to be consistent with labels matrix
 
@@ -28,6 +29,8 @@ public slots:
 	void clearAllLabels(); /// TODO: add a button for this
 	void alterLabel(const multi_img::Mask &mask, bool negative);
 	void setLabels(multi_img::Mask l);
+	void updateLabels();
+	void commitLabelChanges();
 	void drawOverlay(const multi_img::Mask &mask);
 
 	void setLabelColors(const QVector<QColor> &labelColors, bool changed);
@@ -39,11 +42,9 @@ signals:
 	void pixelOverlay(int x, int y);
 	void subPixels(const std::map<std::pair<int, int>, short> &points);
 	void addPixels(const std::map<std::pair<int, int>, short> &points);
+	void refreshLabels();
 	void killHover();
 	void newLabel(); // user requested another label
-
-protected slots:
-	void commitLabelChanges();
 
 private:
 	void cursorAction(QMouseEvent *ev, bool click = false);
@@ -53,7 +54,6 @@ private:
 	void updateCache(int x, int y, short label = 0);
 	void updatePoint(const QPointF &p);
 
-	QTimer timer;
 	std::map<std::pair<int, int>, short> uncommitedLabels;
 
 	QPixmap cachedPixmap;

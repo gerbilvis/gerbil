@@ -299,6 +299,10 @@ void ViewerWindow::initUI()
 			bandView, SLOT(clearLabelPixels()));
 	connect(this, SIGNAL(drawOverlay(const multi_img::Mask&)),
 			bandView, SLOT(drawOverlay(const multi_img::Mask&)));
+	connect(applyButton, SIGNAL(clicked()),
+			bandView, SLOT(updateLabels()));
+	connect(&bandView->labelTimer, SIGNAL(timeout()), 
+			bandView, SLOT(commitLabelChanges()));
 
 	connect(this, SIGNAL(newLabelColors(const QVector<QColor>&, bool)),
 			bandView, SLOT(setLabelColors(const QVector<QColor>&, bool)));
@@ -317,7 +321,7 @@ void ViewerWindow::initUI()
 		multi_img_viewer *v = viewers[i];
 		const Viewport *vp = v->getViewport();
 
-		connect(applyButton, SIGNAL(clicked()),
+		connect(bandView, SIGNAL(refreshLabels()),
 				v, SLOT(updateLabels()));
 		connect(markButton, SIGNAL(toggled(bool)),
 				v, SLOT(toggleLabeled(bool)));
