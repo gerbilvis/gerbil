@@ -50,15 +50,14 @@ ViewerWindow::ViewerWindow(multi_img *image, QWidget *parent)
 	// do all the bling-bling
 	initUI();
 
-	roiView->roi = QRect(0, 0, (*full_image)->width, (*full_image)->height);
-
 	// default to full image if small enough
-	if ((*full_image)->width*(*full_image)->height < 513*513) {
-		roi = cv::Rect(0, 0, (*full_image)->width, (*full_image)->height);
-		applyROI(false);
-	} else {
-		ROITrigger();
-	}
+	roiView->roi = QRect(0, 0, 
+		(*full_image)->width < 513 ? (*full_image)->width : 512, 
+		(*full_image)->height < 513 ? (*full_image)->height : 512);
+
+	roi = cv::Rect(roiView->roi.x(), roiView->roi.y(), 
+		roiView->roi.width(), roiView->roi.height());
+	applyROI(false);
 }
 
 void ViewerWindow::applyROI(bool reuse)
@@ -236,6 +235,7 @@ void ViewerWindow::initUI()
 
 	bandDock->widget()->setDisabled(true);
 	rgbDock->widget()->setDisabled(true);
+	rgbDock->hide();
 
 	// start with IMG, hide IMGPCA, GRADPCA at the beginning
 	activeViewer = viewIMG;
@@ -278,7 +278,6 @@ void ViewerWindow::initUI()
 	// signals for ROI
 	connect(roiButtons, SIGNAL(clicked(QAbstractButton*)),
 			this, SLOT(ROIDecision(QAbstractButton*)));
-	connect(roiButton, SIGNAL(clicked()), this, SLOT(ROITrigger()));
 	connect(roiView, SIGNAL(newSelection(QRect)),
 			this, SLOT(ROISelection(QRect)));
 
@@ -1389,11 +1388,6 @@ void ViewerWindow::screenshot()
 	io.writeFile(QString(), output);
 }
 
-void ViewerWindow::ROITrigger()
-{
-	mainStack->setCurrentIndex(1);
-}
-
 void ViewerWindow::ROIDecision(QAbstractButton *sender)
 {
 	QDialogButtonBox::ButtonRole role = roiButtons->buttonRole(sender);
@@ -1410,15 +1404,6 @@ void ViewerWindow::ROIDecision(QAbstractButton *sender)
 		else
 			roiView->roi = QRect(0, 0, width, height);
 		roiView->update();
-	} else if (role == QDialogButtonBox::RejectRole) {
-		if (roi.width < 2) {
-			// implicit accept full image if no interest in ROI
-			roiView->roi = QRect(0, 0, width, height);
-			apply = true;
-		} else {
-			// just get out of the view
-			mainStack->setCurrentIndex(0);
-		}
 	}
 
 	if (apply) {

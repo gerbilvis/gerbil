@@ -76,7 +76,6 @@ public slots:
 	// add new label (color)
 	void createLabel();
 
-	void ROITrigger();
 	void ROIDecision(QAbstractButton *sender);
 	void ROISelection(const QRect &roi);
 
