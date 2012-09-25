@@ -235,7 +235,7 @@ void ViewerWindow::initUI()
 
 	bandDock->widget()->setDisabled(true);
 	rgbDock->widget()->setDisabled(true);
-	rgbDock->hide();
+	tabifyDockWidget(rgbDock, roiDock);
 
 	// start with IMG, hide IMGPCA, GRADPCA at the beginning
 	activeViewer = viewIMG;
