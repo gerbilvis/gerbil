@@ -525,6 +525,17 @@ void Viewport::drawRegular()
 	drawAxesFg(painter);
 	// if you save and not restore, qt will lament about it
 	painter.restore();
+
+	if (!isEnabled()) {
+		painter.save();
+		painter.fillRect(rect(), QColor(0, 0, 0, 127));
+		painter.setPen(Qt::green);
+		QFont font(font());
+		font.setPointSize(font.pointSize() * 2);
+		painter.setFont(font);
+		painter.drawText(rect(), Qt::AlignCenter, tr("Calculating..."));
+		painter.restore();
+	}
 }
 
 void Viewport::drawOverlay()

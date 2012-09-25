@@ -51,11 +51,26 @@ void ScaledView::paintEvent(QPaintEvent *ev)
 		return;
 	}
 
+	painter.save();
+
 	painter.setRenderHint(QPainter::SmoothPixmapTransform);
 
 	painter.setWorldTransform(scaler);
 	QRect damaged = scalerI.mapRect(ev->rect());
 	painter.drawPixmap(damaged, *pixmap, damaged);
+
+	painter.restore();
+
+	if (!isEnabled()) {
+		painter.save();
+		painter.fillRect(rect(), QColor(0, 0, 0, 127));
+		painter.setPen(Qt::green);
+		QFont font(font());
+		font.setPointSize(font.pointSize() * 2);
+		painter.setFont(font);
+		painter.drawText(rect(), Qt::AlignCenter, tr("Calculating..."));
+		painter.restore();
+	}
 }
 
 void ScaledView::cursorAction(QMouseEvent *ev, bool click)

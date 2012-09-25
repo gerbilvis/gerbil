@@ -71,6 +71,8 @@ void BandView::paintEvent(QPaintEvent *ev)
 		updateCache();
 	}
 
+	painter.save();
+
 	//painter.setRenderHint(QPainter::Antialiasing); too slow!
 
 	painter.setWorldTransform(scaler);
@@ -120,6 +122,19 @@ void BandView::paintEvent(QPaintEvent *ev)
 		painter.setPen(pen);
 		painter.setBrush(Qt::NoBrush);
 		painter.drawRect(0, 0, pixmap->width(), pixmap->height());
+	}
+
+	painter.restore();
+
+	if (!isEnabled()) {
+		painter.save();
+		painter.fillRect(rect(), QColor(0, 0, 0, 127));
+		painter.setPen(Qt::green);
+		QFont font(font());
+		font.setPointSize(font.pointSize() * 2);
+		painter.setFont(font);
+		painter.drawText(rect(), Qt::AlignCenter, tr("Calculating..."));
+		painter.restore();
 	}
 }
 
