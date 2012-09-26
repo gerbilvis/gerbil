@@ -527,14 +527,7 @@ void Viewport::drawRegular()
 	painter.restore();
 
 	if (!isEnabled()) {
-		painter.save();
-		painter.fillRect(rect(), QColor(0, 0, 0, 127));
-		painter.setPen(Qt::green);
-		QFont font(font());
-		font.setPointSize(font.pointSize() * 2);
-		painter.setFont(font);
-		painter.drawText(rect(), Qt::AlignCenter, tr("Calculating..."));
-		painter.restore();
+		drawWaitMessage(painter);
 	}
 }
 
@@ -555,6 +548,18 @@ void Viewport::drawOverlay()
 	painter.drawPolyline(poly);
 }
 
+void Viewport::drawWaitMessage(QPainter &painter)
+{
+	painter.save();
+	painter.fillRect(rect(), QColor(0, 0, 0, 127));
+	painter.setPen(Qt::green);
+	QFont font(font());
+	font.setPointSize(font.pointSize() * 2);
+	painter.setFont(font);
+	painter.drawText(rect(), Qt::AlignCenter, tr("Calculating..."));
+	painter.restore();
+}
+
 void Viewport::activate()
 {
 	if (!active) {
@@ -570,8 +575,11 @@ void Viewport::paintEvent(QPaintEvent *)
 	SharedDataHold setslock(sets->lock);
 
 	// return early if no data present. other variables may not be initialized
-	if ((*sets)->empty() || (*ctx)->wait)
+	if ((*sets)->empty() || (*ctx)->wait) {
+		QPainter painter(this);
+		drawWaitMessage(painter);
 		return;
+	}
 
 	if (!overlayMode) {
 		drawRegular();

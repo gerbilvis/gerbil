@@ -118,7 +118,9 @@ protected:
 
 	/* translate image value to value in our coordinate system */
 	inline multi_img::Value curpos(multi_img::Value val, int dim) {
-		multi_img::Value curpos = (val - minval) / binsize;
+		SharedDataHold ctxlock(viewport->ctx->lock);
+		multi_img::Value curpos = 
+			(val - (*viewport->ctx)->minval) / (*viewport->ctx)->binsize;
 		if (!illuminant.empty())
 			curpos /= illuminant[dim];
 		return curpos;
@@ -137,6 +139,8 @@ protected:
 	bool ignoreLabels;
 	multi_img::Mask maskholder;
 	bool maskValid;
+	bool maskReset;
+	bool titleReset;
 
 protected slots:
 	void render(bool necessary = true);
@@ -145,8 +149,6 @@ private:
 	void createLimiterMenu();
 
 	// respective data range of each bin
-	multi_img::Value binsize;
-	multi_img::Value minval;
 	QMenu limiterMenu;
 	QVector<QColor> labelColors;
 };

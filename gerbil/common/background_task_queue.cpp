@@ -57,7 +57,7 @@ void BackgroundTaskQueue::cancelTasks(cv::Rect &roi)
 			++it;
 		}
 	}
-	if (currentTask->roi() == roi) {
+	if (currentTask.get() && currentTask->roi() == roi) {
 		cancelled = true;
 		currentTask->cancel();
 	}

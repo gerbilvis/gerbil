@@ -64,6 +64,7 @@ void BandView::paintEvent(QPaintEvent *ev)
 	QPainter painter(this);
 	if (!pixmap) {
 		painter.fillRect(this->rect(), QBrush(Qt::gray, Qt::BDiagPattern));
+		drawWaitMessage(painter);
 		return;
 	}
 	if (!cacheValid) {
@@ -127,14 +128,7 @@ void BandView::paintEvent(QPaintEvent *ev)
 	painter.restore();
 
 	if (!isEnabled()) {
-		painter.save();
-		painter.fillRect(rect(), QColor(0, 0, 0, 127));
-		painter.setPen(Qt::green);
-		QFont font(font());
-		font.setPointSize(font.pointSize() * 2);
-		painter.setFont(font);
-		painter.drawText(rect(), Qt::AlignCenter, tr("Calculating..."));
-		painter.restore();
+		drawWaitMessage(painter);
 	}
 }
 

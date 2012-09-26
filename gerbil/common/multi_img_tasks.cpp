@@ -82,6 +82,14 @@ void CommonTbb::DetermineRange::join(DetermineRange &toJoin)
 
 }
 
+bool ScopeImage::run() 
+{
+	multi_img *target =  new multi_img(**full, targetRoi);
+	SharedDataSwap lock(scoped->lock);
+	delete scoped->swap(target);
+	return true;
+}
+
 bool BgrSerial::run() 
 {
 	cv::Mat_<cv::Vec3f> *newBgr = new cv::Mat_<cv::Vec3f>();

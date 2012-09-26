@@ -39,7 +39,25 @@ public:
 
 	static QIcon colorIcon(const QColor& color);
 
+	enum TaskType {
+		TT_NONE,
+		TT_BAND_COUNT,
+		TT_APPLY_ILLUM,
+		TT_NORM_RANGE,
+		TT_CLAMP_RANGE,
+		TT_SELECT_ROI
+	};
+
 public slots:
+	void setGUIEnabled(bool enable, TaskType tt = TT_NONE);
+	void imgCalculationComplete(bool success);
+	void gradCalculationComplete(bool success);
+	void imgPcaCalculationComplete(bool success);
+	void gradPcaCalculationComplete(bool success);
+	void finishViewerRefresh(int viewer);
+	void finishROIChange(bool success);
+	void finishTask(bool success);
+
 	void reshapeDock(bool floating);
 	void selectBand(representation type, int dim);
 	void addToLabel()   { labelmask(false); }
@@ -101,9 +119,10 @@ protected:
 
 	class RgbSerial : public MultiImg::BgrSerial {
 	public:
-		RgbSerial(multi_img_ptr multi, mat_vec3f_ptr bgr, qimage_ptr rgb) 
-			: MultiImg::BgrSerial(multi, bgr), rgb(rgb) {}
-		virtual ~RgbSerial() {};
+		RgbSerial(multi_img_ptr multi, mat_vec3f_ptr bgr, qimage_ptr rgb,
+			cv::Rect targetRoi = cv::Rect(0, 0, 0, 0)) 
+			: MultiImg::BgrSerial(multi, bgr, targetRoi), rgb(rgb) {}
+		virtual ~RgbSerial() {}
 		virtual bool run();
 	protected:
 		qimage_ptr rgb;
@@ -111,8 +130,9 @@ protected:
 
 	class RgbTbb : public MultiImg::BgrTbb {
 	public:
-		RgbTbb(multi_img_ptr multi, mat_vec3f_ptr bgr, qimage_ptr rgb) 
-			: MultiImg::BgrTbb(multi, bgr), rgb(rgb) {}
+		RgbTbb(multi_img_ptr multi, mat_vec3f_ptr bgr, qimage_ptr rgb,
+			cv::Rect targetRoi = cv::Rect(0, 0, 0, 0)) 
+			: MultiImg::BgrTbb(multi, bgr, targetRoi), rgb(rgb) {}
 		virtual ~RgbTbb() {}
 		virtual bool run();
 	protected:
@@ -202,6 +222,8 @@ private:
 	CommandRunner *usRunner;
 
 	QMenu *contextMenu;
+
+	TaskType runningTask;
 };
 
 #endif // VIEWERWINDOW_H

@@ -27,11 +27,12 @@
 #include <tbb/partitioner.h>
 #include <tbb/parallel_for.h>
 #include <tbb/parallel_reduce.h>
+#include <tbb/tbb_allocator.h>
 
 struct Bin {
 	Bin() : weight(0.f) {}
 	Bin(const multi_img::Pixel& initial_means)
-	 : weight(1.f), means(initial_means) {} //, points(initial_means.size()) {}
+		: weight(1.f), means(initial_means) {} //, points(initial_means.size()) {}
 
 	inline void add(const multi_img::Pixel& p) {
 		weight += 1.f;
@@ -80,28 +81,40 @@ struct ViewportCtx {
 		wait = other.wait;
 		reset = other.reset;
 		dimensionality = other.dimensionality;
+		dimensionalityValid = other.dimensionalityValid;
 		type = other.type;
 		meta = other.meta;
+		metaValid = other.metaValid;
 		labels = other.labels;
+		labelsValid = other.labelsValid;
 		ignoreLabels = other.ignoreLabels;
 		nbins = other.nbins;
 		binsize = other.binsize;
+		binsizeValid = other.binsizeValid;
 		minval = other.minval;
+		minvalValid = other.minvalValid;
 		maxval = other.maxval;
+		maxvalValid = other.maxvalValid;
 		return *this;
 	}
 
 	tbb::atomic<int> wait;
 	tbb::atomic<int> reset;
 	size_t dimensionality;
+	bool dimensionalityValid;
 	representation type;
 	std::vector<multi_img::BandDesc> meta;
+	bool metaValid;
 	std::vector<QString> labels;
+	bool labelsValid;
 	bool ignoreLabels;
 	int nbins;
 	multi_img::Value binsize;
+	bool binsizeValid;
 	multi_img::Value minval;
+	bool minvalValid;
 	multi_img::Value maxval;
+	bool maxvalValid;
 };
 
 typedef boost::shared_ptr<SharedData<ViewportCtx> > vpctx_ptr;
@@ -187,6 +200,7 @@ protected:
 	void drawLegend(QPainter&);
 	void drawRegular();
 	void drawOverlay();
+	void drawWaitMessage(QPainter&);
 
 	// helper for limiter handling
 	bool updateLimiter(int dim, int bin);

@@ -66,10 +66,23 @@ namespace CommonTbb {
 	};
 }
 
+class ScopeImage : public BackgroundTask {
+public:
+	ScopeImage(multi_img_ptr full, multi_img_ptr scoped, cv::Rect roi) 
+		: BackgroundTask(roi), full(full), scoped(scoped) {}
+	virtual ~ScopeImage() {};
+	virtual bool run();
+	virtual void cancel() {}
+protected:
+	multi_img_ptr full;
+	multi_img_ptr scoped;
+};
+
 class BgrSerial : public BackgroundTask {
 public:
-	BgrSerial(multi_img_ptr multi, mat_vec3f_ptr bgr) 
-		: multi(multi), bgr(bgr) {}
+	BgrSerial(multi_img_ptr multi, mat_vec3f_ptr bgr,
+		cv::Rect targetRoi = cv::Rect(0, 0, 0, 0)) 
+		: BackgroundTask(targetRoi), multi(multi), bgr(bgr) {}
 	virtual ~BgrSerial() {};
 	virtual bool run();
 	virtual void cancel() {}

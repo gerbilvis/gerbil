@@ -114,7 +114,6 @@ void multi_img_viewer::subImage(sets_ptr temp, const std::vector<cv::Rect> &regi
 		image, labels, labelColors, illuminant, args, viewport->ctx, viewport->sets,
 		temp, regions, std::vector<cv::Rect>(), false, false, roi));
 	BackgroundTaskQueue::instance().push(taskBins);
-	taskBins->wait();
 }
 
 void multi_img_viewer::setTitle(representation type, multi_img::Value min, multi_img::Value max)
@@ -138,42 +137,23 @@ void multi_img_viewer::addImage(sets_ptr temp, const std::vector<cv::Rect> &regi
 	ViewportCtx args = **viewport->ctx;
 	ctxlock.unlock();
 
-	SharedDataHold imagelock(image->lock);
+	maskReset = true;
+	titleReset = true;
 
-	maskholder = multi_img::Mask((*image)->height, (*image)->width, (uchar)0);
+	args.labelsValid = false;
+	args.metaValid = false;
+	args.minvalValid = false;
+	args.maxvalValid = false;
+	args.binsizeValid = false;
 
-	bool reuse = ((fabs(args.minval) * REUSE_THRESHOLD) > (fabs(args.minval - (*image)->minval))) &&
-		((fabs(args.maxval) * REUSE_THRESHOLD) > (fabs(args.maxval - (*image)->maxval)));
-	
-	if (!reuse) {
-		setTitle(args.type, (*image)->minval, (*image)->maxval);
-
-		/* intialize meta data */
-		args.labels.resize((*image)->size());
-		for (unsigned int i = 0; i < (*image)->size(); ++i) {
-			if (!(*image)->meta[i].empty)
-				args.labels[i].setNum((*image)->meta[i].center);
-		}
-		args.meta = (*image)->meta;
-
-		args.minval = (*image)->minval;
-		args.maxval = (*image)->maxval;
-		args.binsize = ((*image)->maxval - (*image)->minval) / (multi_img::Value)(binSlider->value() - 1);
-		binsize = args.binsize;
-		minval = args.minval;
-	}
-
-	imagelock.unlock();
 	args.reset.fetch_and_store(1);
 	args.wait.fetch_and_store(1);
 
-	std::vector<cv::Rect> empty;
 	BackgroundTaskPtr taskBins(new BinsTbb(
 		image, labels, labelColors, illuminant, args, viewport->ctx, viewport->sets,
-		temp, empty, reuse ? regions : empty, false, true, roi));
-	//QObject::connect(taskBins.get(), SIGNAL(finished(bool)), this, SLOT(render(bool)));
+		temp, std::vector<cv::Rect>(), regions, false, true, roi));
+	QObject::connect(taskBins.get(), SIGNAL(finished(bool)), this, SLOT(render(bool)));
 	BackgroundTaskQueue::instance().push(taskBins);
-	render(taskBins->wait());
 }
 
 void multi_img_viewer::setImage(multi_img_ptr img, representation type, cv::Rect roi)
@@ -187,22 +167,7 @@ void multi_img_viewer::setImage(multi_img_ptr img, representation type, cv::Rect
 
 	image = img;
 
-	SharedDataHold imagelock(image->lock);
-
-	maskholder = multi_img::Mask((*image)->height, (*image)->width, (uchar)0);
-
-	setTitle(type, (*image)->minval, (*image)->maxval);
-
 	args.type = type;
-	args.dimensionality = (*image)->size();
-
-	/* intialize meta data */
-	args.labels.resize((*image)->size());
-	for (unsigned int i = 0; i < (*image)->size(); ++i) {
-		if (!(*image)->meta[i].empty)
-			args.labels[i].setNum((*image)->meta[i].center);
-	}
-	args.meta = (*image)->meta;
 
 	int bins = binSlider->value();
 	if (bins > 0) {
@@ -211,12 +176,17 @@ void multi_img_viewer::setImage(multi_img_ptr img, representation type, cv::Rect
 	}
 	if (viewport->selection >= bins)
 		viewport->selection = 0;
-	args.minval = (*image)->minval;
-	args.maxval = (*image)->maxval;
-	args.binsize = ((*image)->maxval - (*image)->minval) / (multi_img::Value)(args.nbins - 1);
-	binsize = args.binsize;
-	minval = args.minval;
-	imagelock.unlock();
+
+	maskReset = true;
+	titleReset = true;
+
+	args.dimensionalityValid = false;
+	args.labelsValid = false;
+	args.metaValid = false;
+	args.minvalValid = false;
+	args.maxvalValid = false;
+	args.binsizeValid = false;
+
 	args.reset.fetch_and_store(1);
 	args.wait.fetch_and_store(1);
 
@@ -224,9 +194,8 @@ void multi_img_viewer::setImage(multi_img_ptr img, representation type, cv::Rect
 		image, labels, labelColors, illuminant, args, viewport->ctx, viewport->sets,
 		sets_ptr(new SharedData<std::vector<BinSet> >(NULL)), std::vector<cv::Rect>(), 
 		std::vector<cv::Rect>(), false, true, roi));
-	//QObject::connect(taskBins.get(), SIGNAL(finished(bool)), this, SLOT(render(bool)));
+	QObject::connect(taskBins.get(), SIGNAL(finished(bool)), this, SLOT(render(bool)));
 	BackgroundTaskQueue::instance().push(taskBins);
-	render(taskBins->wait());
 }
 
 void multi_img_viewer::setIlluminant(
@@ -270,13 +239,11 @@ void multi_img_viewer::updateBinning(int bins)
 		args.nbins = bins;
 		binLabel->setText(QString("%1 bins").arg(bins));
 	}
-	SharedDataHold imagelock(image->lock);
-	args.minval = (*image)->minval;
-	args.maxval = (*image)->maxval;
-	args.binsize = ((*image)->maxval - (*image)->minval) / (multi_img::Value)(args.nbins - 1);
-	binsize = args.binsize;
-	minval = args.minval;
-	imagelock.unlock();
+
+	args.minvalValid = false;
+	args.maxvalValid = false;
+	args.binsizeValid = false;
+
 	args.reset.fetch_and_store(1);
 	args.wait.fetch_and_store(1);
 
@@ -312,13 +279,34 @@ void multi_img_viewer::updateLabels()
 
 void multi_img_viewer::render(bool necessary)
 {
-	if (necessary)
+	if (necessary) {
+		if (maskReset) {
+			SharedDataHold imagelock(image->lock);
+			maskholder = multi_img::Mask((*image)->height, (*image)->width, (uchar)0);
+			maskReset = false;
+		}
+		if (titleReset) {
+			SharedDataHold ctxlock(viewport->ctx->lock);
+			setTitle((*viewport->ctx)->type, (*viewport->ctx)->minval, (*viewport->ctx)->maxval);
+			titleReset = false;
+		}
 		viewport->rebuild();
+	}
 }
 
 bool multi_img_viewer::BinsTbb::run() 
 {
 	bool reuse = ((!add.empty() || !sub.empty()) && !inplace);
+	bool keepOldContext = false;
+	if (reuse) {
+		keepOldContext = ((fabs(args.minval) * REUSE_THRESHOLD) > (fabs(args.minval - (*multi)->minval))) &&
+			((fabs(args.maxval) * REUSE_THRESHOLD) > (fabs(args.maxval - (*multi)->maxval)));
+		if (!keepOldContext) {
+			reuse = false;
+			add.clear();
+			sub.clear();
+		}
+	}
 
 	std::vector<BinSet> *result;
 	SharedDataSwap current_lock(current->lock, boost::defer_lock_t());
@@ -340,6 +328,47 @@ bool multi_img_viewer::BinsTbb::run()
 			result->push_back(BinSet(colors[i], (*multi)->size()));
 		}
 		add.push_back(cv::Rect(0, 0, (*multi)->width, (*multi)->height));
+	}
+
+	if (!args.dimensionalityValid) {
+		if (!keepOldContext)
+			args.dimensionality = (*multi)->size();
+		args.dimensionalityValid = true;
+	}
+
+	if (!args.metaValid) {
+		if (!keepOldContext)
+			args.meta = (*multi)->meta;
+		args.metaValid = true;
+	}
+
+	if (!args.labelsValid) {
+		if (!keepOldContext) {
+			args.labels.resize((*multi)->size());
+			for (unsigned int i = 0; i < (*multi)->size(); ++i) {
+				if (!(*multi)->meta[i].empty)
+					args.labels[i].setNum((*multi)->meta[i].center);
+			}
+		}
+		args.labelsValid = true;
+	}
+
+	if (!args.binsizeValid) {
+		if (!keepOldContext)
+			args.binsize = ((*multi)->maxval - (*multi)->minval) / (multi_img::Value)(args.nbins - 1);
+		args.binsizeValid = true;
+	}
+
+	if (!args.minvalValid) {
+		if (!keepOldContext)
+			args.minval = (*multi)->minval;
+		args.minvalValid = true;
+	}
+
+	if (!args.maxvalValid) {
+		if (!keepOldContext)
+			args.maxval = (*multi)->maxval;
+		args.maxvalValid = true;
 	}
 
 	std::vector<cv::Rect>::iterator it;

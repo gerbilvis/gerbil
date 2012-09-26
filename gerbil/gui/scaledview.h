@@ -16,6 +16,7 @@ public:
 
 protected:
 	virtual void cursorAction(QMouseEvent *ev, bool click = false);
+	void drawWaitMessage(QPainter &painter);
 
 	qreal scale;
 	QTransform scaler, scalerI;
