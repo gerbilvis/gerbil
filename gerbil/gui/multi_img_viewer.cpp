@@ -416,7 +416,7 @@ void multi_img_viewer::BinsTbb::Accumulate::operator()(const tbb::blocked_range2
 			const multi_img::Pixel& pixel = multi(y, x);
 			BinSet &s = sets[label];
 
-			BinSet::HashKey hashkey(multi.size(), 0);
+			BinSet::HashKey hashkey(boost::extents[multi.size()]);
 			for (int d = 0; d < multi.size(); ++d) {
 				multi_img::Value curpos = (pixel[d] - minval) / binsize;
 				if (!illuminant.empty())
