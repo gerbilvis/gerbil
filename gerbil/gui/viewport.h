@@ -9,25 +9,6 @@
 #ifndef VIEWPORT_H
 #define VIEWPORT_H
 
-#include <multi_img.h>
-#include <shared_data.h>
-#include <QGLWidget>
-#include <QGLBuffer>
-#include <vector>
-#include <QLabel>
-#include <QTimer>
-#include <limits>
-#include <tbb/atomic.h>
-#include <tbb/concurrent_vector.h>
-#include <tbb/concurrent_hash_map.h>
-#include <tbb/task.h>
-#include <tbb/blocked_range.h>
-#include <tbb/blocked_range2d.h>
-#include <tbb/partitioner.h>
-#include <tbb/parallel_for.h>
-#include <tbb/parallel_reduce.h>
-#include <tbb/tbb_allocator.h>
-
 // Boost multi_array has portability problems (at least for Boost 1.51 and below).
 #ifndef __GNUC__
 #pragma warning(disable:4996) // disable MSVC Checked Iterators warnings
@@ -52,6 +33,25 @@ inline size_t tbb_hasher(const boost::multi_array<T, 1> &a) {
 }
 
 }
+
+#include <multi_img.h>
+#include <shared_data.h>
+#include <QGLWidget>
+#include <QGLBuffer>
+#include <vector>
+#include <QLabel>
+#include <QTimer>
+#include <limits>
+#include <tbb/atomic.h>
+#include <tbb/concurrent_vector.h>
+#include <tbb/concurrent_hash_map.h>
+#include <tbb/task.h>
+#include <tbb/blocked_range.h>
+#include <tbb/blocked_range2d.h>
+#include <tbb/partitioner.h>
+#include <tbb/parallel_for.h>
+#include <tbb/parallel_reduce.h>
+#include <tbb/tbb_allocator.h>
 
 struct Bin {
 	Bin() : weight(0.f) {}
