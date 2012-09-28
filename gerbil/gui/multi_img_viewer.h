@@ -28,10 +28,9 @@ public:
 	const multi_img::Mask& getMask() { return maskholder; }
 	int getSelection() { return viewport->selection; }
 	representation getType() { SharedDataHold l(viewport->ctx->lock); return (*viewport->ctx)->type; }
+	void enableBinSlider(bool enable) { binSlider->setEnabled(enable); }
 
 	cv::Mat1s labels;
-
-	BackgroundTaskPtr task;
 
 public slots:
 	void updateMask(int dim);
@@ -41,7 +40,9 @@ public slots:
 	void addImage(sets_ptr temp, const std::vector<cv::Rect> &regions, cv::Rect roi);
 	void setImage(multi_img_ptr image, representation type, cv::Rect roi);
 	void setIlluminant(const std::vector<multi_img::Value> &, bool for_real);
+	void changeBinCount(int bins);
 	void updateBinning(int bins);
+	void finishBinCountChange(bool success);
 	void updateLabels();
 	void toggleFold();
 	void toggleLabeled(bool toggle);
@@ -58,6 +59,8 @@ public slots:
 signals:
 	void newOverlay();
 	void folding();
+	void setGUIEnabled(bool enable, TaskType tt);
+	void finishTask(bool success);
 
 protected:
 	class BinsTbb : public BackgroundTask {

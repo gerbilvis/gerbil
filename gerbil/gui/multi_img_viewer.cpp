@@ -25,7 +25,7 @@ multi_img_viewer::multi_img_viewer(QWidget *parent)
 	setupUi(this);
 
 	connect(binSlider, SIGNAL(valueChanged(int)),
-			this, SLOT(updateBinning(int)));
+			this, SLOT(changeBinCount(int)));
 	connect(alphaSlider, SIGNAL(valueChanged(int)),
 			this, SLOT(setAlpha(int)));
 	connect(alphaSlider, SIGNAL(sliderPressed()),
@@ -221,15 +221,30 @@ void multi_img_viewer::setIlluminant(
 	}
 }
 
+void multi_img_viewer::changeBinCount(int bins)
+{
+	BackgroundTaskQueue::instance().cancelTasks();
+
+	setGUIEnabled(false, TT_BIN_COUNT);
+	binSlider->setEnabled(true);
+	alphaSlider->setEnabled(false);
+	limiterButton->setEnabled(false);
+	limiterMenuButton->setEnabled(false);
+	rgbButton->setEnabled(false);
+	viewport->setEnabled(false);
+
+	updateBinning(bins);
+
+	BackgroundTaskPtr taskEpilog(new BackgroundTask());
+	QObject::connect(taskEpilog.get(), SIGNAL(finished(bool)), 
+		this, SLOT(finishBinCountChange(bool)), Qt::QueuedConnection);
+	BackgroundTaskQueue::instance().push(taskEpilog);
+}
+
 void multi_img_viewer::updateBinning(int bins)
 {
 	if (!image.get())
 		return;
-
-	if (task.get()) {
-		task.get()->cancel();
-		task.reset();
-	}
 
 	SharedDataHold ctxlock(viewport->ctx->lock);
 	ViewportCtx args = **viewport->ctx;
@@ -247,11 +262,22 @@ void multi_img_viewer::updateBinning(int bins)
 	args.reset.fetch_and_store(1);
 	args.wait.fetch_and_store(1);
 
-	task.reset(new BinsTbb(
+	BackgroundTaskPtr taskBins(new BinsTbb(
 		image, labels, labelColors, illuminant, args, viewport->ctx, viewport->sets));
-	//QObject::connect(task.get(), SIGNAL(finished(bool)), this, SLOT(render(bool)), Qt::QueuedConnection);
-	BackgroundTaskQueue::instance().push(task);
-	render(task->wait());
+	QObject::connect(taskBins.get(), SIGNAL(finished(bool)), this, SLOT(render(bool)), Qt::QueuedConnection);
+	BackgroundTaskQueue::instance().push(taskBins);
+}
+
+void multi_img_viewer::finishBinCountChange(bool success)
+{
+	if (success) {
+		viewport->setEnabled(true);
+		rgbButton->setEnabled(true);
+		limiterMenuButton->setEnabled(true);
+		limiterButton->setEnabled(true);
+		alphaSlider->setEnabled(true);
+		emit finishTask(success);
+	}
 }
 
 void multi_img_viewer::updateLabels()
@@ -259,22 +285,17 @@ void multi_img_viewer::updateLabels()
 	if (!image.get())
 		return;
 
-	if (task.get()) {
-		task.get()->cancel();
-		task.reset();
-	}
-
 	SharedDataHold ctxlock(viewport->ctx->lock);
 	ViewportCtx args = **viewport->ctx;
 	ctxlock.unlock();
 
 	args.wait.fetch_and_store(1);
 
-	task.reset(new BinsTbb(
+	BackgroundTaskPtr taskBins(new BinsTbb(
 		image, labels, labelColors, illuminant, args, viewport->ctx, viewport->sets));
-	//QObject::connect(task.get(), SIGNAL(finished(bool)), this, SLOT(render(bool)), Qt::QueuedConnection);
-	BackgroundTaskQueue::instance().push(task);
-	render(task->wait());
+	//QObject::connect(taskBins.get(), SIGNAL(finished(bool)), this, SLOT(render(bool)), Qt::QueuedConnection);
+	BackgroundTaskQueue::instance().push(taskBins);
+	render(taskBins->wait());
 }
 
 void multi_img_viewer::render(bool necessary)
@@ -587,16 +608,11 @@ void multi_img_viewer::updateLabelColors(const QVector<QColor> &colors, bool cha
 		if (!image.get())
 			return;
 
-		if (task.get()) {
-			task.get()->cancel();
-			task.reset();
-		}
-
-		task.reset(new BinsTbb(
+		BackgroundTaskPtr taskBins(new BinsTbb(
 			image, labels, labelColors, illuminant, args, viewport->ctx, viewport->sets));
-		//QObject::connect(task.get(), SIGNAL(finished(bool)), this, SLOT(render(bool)), Qt::QueuedConnection);
-		BackgroundTaskQueue::instance().push(task);
-		render(task->wait());
+		//QObject::connect(taskBins.get(), SIGNAL(finished(bool)), this, SLOT(render(bool)), Qt::QueuedConnection);
+		BackgroundTaskQueue::instance().push(taskBins);
+		render(taskBins->wait());
 	}
 }
 
@@ -617,11 +633,6 @@ void multi_img_viewer::toggleLabels(bool toggle)
 	if (!image.get())
 		return;
 
-	if (task.get()) {
-		task.get()->cancel();
-		task.reset();
-	}
-
 	SharedDataHold ctxlock(viewport->ctx->lock);
 	ViewportCtx args = **viewport->ctx;
 	ctxlock.unlock();
@@ -629,11 +640,11 @@ void multi_img_viewer::toggleLabels(bool toggle)
 	args.ignoreLabels = toggle;
 	args.wait.fetch_and_store(1);
 
-	task.reset(new BinsTbb(
+	BackgroundTaskPtr taskBins(new BinsTbb(
 		image, labels, labelColors, illuminant, args, viewport->ctx, viewport->sets));
-	//QObject::connect(task.get(), SIGNAL(finished(bool)), this, SLOT(render(bool)), Qt::QueuedConnection);
-	BackgroundTaskQueue::instance().push(task);
-	render(task->wait());
+	//QObject::connect(taskBins.get(), SIGNAL(finished(bool)), this, SLOT(render(bool)), Qt::QueuedConnection);
+	BackgroundTaskQueue::instance().push(taskBins);
+	render(taskBins->wait());
 }
 
 void multi_img_viewer::toggleLimiters(bool toggle)

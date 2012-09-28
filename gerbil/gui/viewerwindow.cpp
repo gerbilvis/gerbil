@@ -59,7 +59,6 @@ ViewerWindow::ViewerWindow(multi_img *image, QWidget *parent)
 	roi = cv::Rect(roiView->roi.x(), roiView->roi.y(), 
 		roiView->roi.width(), roiView->roi.height());
 
-	runningTask = TT_SELECT_ROI;
 	setGUIEnabled(false, TT_SELECT_ROI);
 
 	applyROI(false);
@@ -74,7 +73,6 @@ void ViewerWindow::finishTask(bool success)
 {
 	if (success) {
 		setGUIEnabled(true);
-		runningTask = TT_NONE;
 	}
 }
 
@@ -446,6 +444,11 @@ void ViewerWindow::initUI()
 		connect(vp, SIGNAL(bandSelected(representation, int)),
 				this, SLOT(selectBand(representation, int)));
 
+		connect(v, SIGNAL(setGUIEnabled(bool, TaskType)),
+				this, SLOT(setGUIEnabled(bool, TaskType)));
+		connect(v, SIGNAL(finishTask(bool)),
+				this, SLOT(finishTask(bool)));
+
 		connect(v, SIGNAL(newOverlay()),
 				this, SLOT(newOverlay()));
 		connect(vp, SIGNAL(newOverlay(int)),
@@ -486,19 +489,25 @@ void ViewerWindow::setGUIEnabled(bool enable, TaskType tt)
 	addButton->setEnabled(enable);
 	remButton->setEnabled(enable);
 
-	viewIMG->setEnabled(enable);
-	viewGRAD->setEnabled(enable);
-	viewIMGPCA->setEnabled(enable);
-	viewGRADPCA->setEnabled(enable);
+	viewIMG->enableBinSlider(enable);
+	viewIMG->setEnabled(enable || tt == TT_BIN_COUNT);
+	viewGRAD->enableBinSlider(enable);
+	viewGRAD->setEnabled(enable || tt == TT_BIN_COUNT);
+	viewIMGPCA->enableBinSlider(enable);
+	viewIMGPCA->setEnabled(enable || tt == TT_BIN_COUNT);
+	viewGRADPCA->enableBinSlider(enable);
+	viewGRADPCA->setEnabled(enable || tt == TT_BIN_COUNT);
 
 	applyButton->setEnabled(enable);
 	clearButton->setEnabled(enable);
 	bandView->setEnabled(enable);
 	graphsegWidget->setEnabled(enable);
 
-	normDock->setEnabled(enable || tt == TT_NORM_RANGE || tt == TT_CLAMP_RANGE);
+	normDock->setEnabled(enable || tt == TT_NORM_RANGE || tt == TT_CLAMP_RANGE_IMG ||  tt == TT_CLAMP_RANGE_GRAD);
+	normIButton->setEnabled(enable || tt == TT_NORM_RANGE || tt == TT_CLAMP_RANGE_IMG);
+	normGButton->setEnabled(enable || tt == TT_NORM_RANGE ||  tt == TT_CLAMP_RANGE_GRAD);
 	normApplyButton->setEnabled(enable || tt == TT_NORM_RANGE);
-	normClampButton->setEnabled(enable || tt == TT_CLAMP_RANGE);
+	normClampButton->setEnabled(enable || tt == TT_CLAMP_RANGE_IMG ||  tt == TT_CLAMP_RANGE_GRAD);
 
 	labelDock->setEnabled(enable);
 
@@ -509,6 +518,8 @@ void ViewerWindow::setGUIEnabled(bool enable, TaskType tt)
 	usDock->setEnabled(enable);
 
 	roiDock->setEnabled(enable || tt == TT_SELECT_ROI);
+
+	runningTask = tt;
 }
 
 void ViewerWindow::bandsSliderMoved(int b)
@@ -517,7 +528,6 @@ void ViewerWindow::bandsSliderMoved(int b)
 	if (!bandsSlider->isSliderDown()) {
 		BackgroundTaskQueue::instance().cancelTasks(roi);
 		
-		runningTask = TT_BAND_COUNT;
 		setGUIEnabled(false, TT_BAND_COUNT);
 
 		applyROI(false);
@@ -672,7 +682,6 @@ void ViewerWindow::applyIlluminant() {
 	i1Check->setVisible(true);
 
 	BackgroundTaskQueue::instance().cancelTasks(roi);
-	runningTask = TT_APPLY_ILLUM;
 	setGUIEnabled(false, TT_APPLY_ILLUM);
 
 	/* remove old illuminant */
@@ -906,7 +915,6 @@ void ViewerWindow::normModeSelected(int mode, bool targetchange, bool usecurrent
 			(target == 0 ? image : gradient), 
 			(target == 0 ? normIMGRange : normGRADRange), 
 			nm, target, min, max, false));
-		//QObject::connect(taskNormRange.get(), SIGNAL(finished(bool)), , SLOT(), Qt::QueuedConnection);
 		BackgroundTaskQueue::instance().push(taskNormRange);
 		taskNormRange->wait();
 	}
@@ -938,7 +946,7 @@ void ViewerWindow::normModeFixed()
 		normModeBox->setCurrentIndex(2);
 }
 
-void ViewerWindow::applyNormUserRange(bool update)
+void ViewerWindow::applyNormUserRange()
 {
 	int target = (normIButton->isChecked() ? 0 : 1);
 
@@ -946,53 +954,82 @@ void ViewerWindow::applyNormUserRange(bool update)
 	normMode &nm = (target == 0 ? normIMG : normGRAD);
 	nm = static_cast<normMode>(normModeBox->currentIndex());
 
+	BackgroundTaskQueue::instance().cancelTasks();
+	setGUIEnabled(false, TT_NORM_RANGE);
+
 	// if available, overwrite with more precise values than in the spin boxes.
 	BackgroundTaskPtr taskNormRange(new NormRangeTbb(
 		(target == 0 ? image : gradient), 
 		(target == 0 ? normIMGRange : normGRADRange), 
 		(target == 0 ? normIMG : normGRAD), target, normMinBox->value(), normMaxBox->value(), true));
-	//QObject::connect(taskNormRange.get(), SIGNAL(finished(bool)), , SLOT(), Qt::QueuedConnection);
 	BackgroundTaskQueue::instance().push(taskNormRange);
-	taskNormRange->wait();
 
-	if (update) {
-		// re-initialize gui (duplication from applyROI())
-		if (target == 0) {
-			viewIMG->updateBinning(-1);
-			/* empty cache */
-			SharedDataHold hlock(image->lock);
-			bands[IMG].assign((*image)->size(), NULL);
-		} else {
-			viewGRAD->updateBinning(-1);
-			/* empty cache */
-			SharedDataHold hlock(gradient->lock);
-			bands[GRAD].assign((*gradient)->size(), NULL);
-		}
+	// re-initialize gui (duplication from applyROI())
+	if (target == 0) {
+		viewIMG->updateBinning(-1);
+
+		BackgroundTaskPtr taskFinishNorm(new BackgroundTask());
+		QObject::connect(taskFinishNorm.get(), SIGNAL(finished(bool)), 
+			this, SLOT(finishNormRangeImgChange(bool)), Qt::QueuedConnection);
+		BackgroundTaskQueue::instance().push(taskFinishNorm);
+	} else {
+		viewGRAD->updateBinning(-1);
+
+		BackgroundTaskPtr taskFinishNorm(new BackgroundTask());
+		QObject::connect(taskFinishNorm.get(), SIGNAL(finished(bool)), 
+			this, SLOT(finishNormRangeGradChange(bool)), Qt::QueuedConnection);
+		BackgroundTaskQueue::instance().push(taskFinishNorm);
+	}
+
+	BackgroundTaskPtr taskEpilog(new BackgroundTask());
+	QObject::connect(taskEpilog.get(), SIGNAL(finished(bool)), 
+		this, SLOT(finishTask(bool)), Qt::QueuedConnection);
+	BackgroundTaskQueue::instance().push(taskEpilog);
+}
+
+void ViewerWindow::finishNormRangeImgChange(bool success)
+{
+	if (success) {
+		SharedDataHold hlock(image->lock);
+		bands[GRAD].assign((*image)->size(), NULL);
+		hlock.unlock();
+		updateBand();
+	}
+}
+
+void ViewerWindow::finishNormRangeGradChange(bool success)
+{
+	if (success) {
+		SharedDataHold hlock(gradient->lock);
+		bands[GRAD].assign((*gradient)->size(), NULL);
+		hlock.unlock();
 		updateBand();
 	}
 }
 
 void ViewerWindow::clampNormUserRange()
 {
-	// make sure internal settings are consistent
-	applyNormUserRange(false);
-
 	int target = (normIButton->isChecked() ? 0 : 1);
+
+	// set internal norm mode
+	normMode &nm = (target == 0 ? normIMG : normGRAD);
+	nm = static_cast<normMode>(normModeBox->currentIndex());
 
 	/* if image is changed, change full image. for gradient, we cannot preserve
 		the gradient over ROI or illuminant changes, so it remains a local change */
 	if (target == 0) {
-		SharedDataHold hlock(image->lock);
-		multi_img::Value min = (*image)->minval;
-		multi_img::Value max = (*image)->maxval;
-		hlock.unlock();
-
 		BackgroundTaskQueue::instance().cancelTasks(roi);
-		runningTask = TT_CLAMP_RANGE;
-		setGUIEnabled(false, TT_CLAMP_RANGE);
+		setGUIEnabled(false, TT_CLAMP_RANGE_IMG);
+
+		// if available, overwrite with more precise values than in the spin boxes.
+		BackgroundTaskPtr taskNormRange(new NormRangeTbb(
+			(target == 0 ? image : gradient), 
+			(target == 0 ? normIMGRange : normGRADRange), 
+			(target == 0 ? normIMG : normGRAD), target, normMinBox->value(), normMaxBox->value(), true, roi));
+		BackgroundTaskQueue::instance().push(taskNormRange);
 
 		BackgroundTaskPtr taskClamp(new MultiImg::ClampTbb(
-			full_image, min, max, roi, false));
+			full_image, image, roi, false));
 		BackgroundTaskQueue::instance().push(taskClamp);
 
 		applyROI(false);
@@ -1008,21 +1045,30 @@ void ViewerWindow::clampNormUserRange()
 			this, SLOT(finishTask(bool)), Qt::QueuedConnection);
 		BackgroundTaskQueue::instance().push(taskEpilog);
 	} else {
-		SharedDataHold hlock(gradient->lock);
-		multi_img::Value min = (*gradient)->minval;
-		multi_img::Value max = (*gradient)->maxval;
-		size_t dim = (*gradient)->size();
-		hlock.unlock();
+		BackgroundTaskQueue::instance().cancelTasks();
+		setGUIEnabled(false, TT_CLAMP_RANGE_GRAD);
 
-		BackgroundTaskPtr taskClamp(new MultiImg::ClampTbb(gradient, min, max));
-		//QObject::connect(taskClamp.get(), SIGNAL(finished(bool)), , SLOT(), Qt::QueuedConnection);
+		// if available, overwrite with more precise values than in the spin boxes.
+		BackgroundTaskPtr taskNormRange(new NormRangeTbb(
+			(target == 0 ? image : gradient), 
+			(target == 0 ? normIMGRange : normGRADRange), 
+			(target == 0 ? normIMG : normGRAD), target, normMinBox->value(), normMaxBox->value(), true));
+		BackgroundTaskQueue::instance().push(taskNormRange);
+
+		BackgroundTaskPtr taskClamp(new MultiImg::ClampTbb(gradient, gradient));
 		BackgroundTaskQueue::instance().push(taskClamp);
-		taskClamp->wait();
 
 		viewGRAD->updateBinning(-1);
-		/* empty cache */
-		bands[GRAD].assign(dim, NULL);
-		updateBand();
+
+		BackgroundTaskPtr taskFinishClamp(new BackgroundTask());
+		QObject::connect(taskFinishClamp.get(), SIGNAL(finished(bool)), 
+			this, SLOT(finishNormRangeGradChange(bool)), Qt::QueuedConnection);
+		BackgroundTaskQueue::instance().push(taskFinishClamp);
+
+		BackgroundTaskPtr taskEpilog(new BackgroundTask());
+		QObject::connect(taskEpilog.get(), SIGNAL(finished(bool)), 
+			this, SLOT(finishTask(bool)), Qt::QueuedConnection);
+		BackgroundTaskQueue::instance().push(taskEpilog);
 	}
 }
 
@@ -1557,7 +1603,6 @@ void ViewerWindow::ROIDecision(QAbstractButton *sender)
 		const QRect &r = roiView->roi;
 		roi = cv::Rect(r.x(), r.y(), r.width(), r.height());
 		
-		runningTask = TT_SELECT_ROI;
 		setGUIEnabled(false, TT_SELECT_ROI);
 
 		applyROI(reuse);

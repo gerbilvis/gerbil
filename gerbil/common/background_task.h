@@ -87,4 +87,15 @@ protected:
 
 typedef boost::shared_ptr<BackgroundTask> BackgroundTaskPtr;
 
+enum TaskType {
+	TT_NONE,
+	TT_BAND_COUNT,
+	TT_BIN_COUNT,
+	TT_APPLY_ILLUM,
+	TT_NORM_RANGE,
+	TT_CLAMP_RANGE_IMG,
+	TT_CLAMP_RANGE_GRAD,
+	TT_SELECT_ROI
+};
+
 #endif

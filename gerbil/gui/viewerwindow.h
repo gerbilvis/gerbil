@@ -39,15 +39,6 @@ public:
 
 	static QIcon colorIcon(const QColor& color);
 
-	enum TaskType {
-		TT_NONE,
-		TT_BAND_COUNT,
-		TT_APPLY_ILLUM,
-		TT_NORM_RANGE,
-		TT_CLAMP_RANGE,
-		TT_SELECT_ROI
-	};
-
 public slots:
 	void setGUIEnabled(bool enable, TaskType tt = TT_NONE);
 	void imgCalculationComplete(bool success);
@@ -56,6 +47,8 @@ public slots:
 	void gradPcaCalculationComplete(bool success);
 	void finishViewerRefresh(int viewer);
 	void finishROIChange(bool success);
+	void finishNormRangeImgChange(bool success);
+	void finishNormRangeGradChange(bool success);
 	void finishTask(bool success);
 
 	void reshapeDock(bool floating);
@@ -85,7 +78,7 @@ public slots:
 	void normTargetChanged(bool usecurrent = false);
 	void normModeSelected(int mode, bool targetchange = false, bool usecurrent = false);
 	void normModeFixed();
-	void applyNormUserRange(bool update = true);
+	void applyNormUserRange();
 	void clampNormUserRange();
 
 	void loadLabeling(QString filename = "");

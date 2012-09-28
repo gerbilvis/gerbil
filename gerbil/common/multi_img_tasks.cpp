@@ -463,8 +463,8 @@ bool ClampTbb::run()
 	multi_img *target = new multi_img((*multi)->height, (*multi)->width, (*multi)->size());
 	target->roi = (*multi)->roi;
 	target->meta = (*multi)->meta;
-	target->minval = minval;
-	target->maxval = maxval;
+	target->minval = (*minmax)->minval;
+	target->maxval = (*minmax)->maxval;
 
 	Clamp computeClamp(**multi, *target);
 	tbb::parallel_for(tbb::blocked_range<size_t>(0, target->size()), 
@@ -495,8 +495,8 @@ void ClampTbb::Clamp::operator()(const tbb::blocked_range<size_t> &r) const
 	for (size_t d = r.begin(); d != r.end(); ++d) {
 		multi_img::Band &src = source.bands[d];
 		multi_img::Band &tgt = target.bands[d];
-		cv::max(src, source.minval, tgt);
-		cv::min(src, source.maxval, tgt);
+		cv::max(src, target.minval, tgt);
+		cv::min(tgt, target.maxval, tgt);
 	}
 }
 
