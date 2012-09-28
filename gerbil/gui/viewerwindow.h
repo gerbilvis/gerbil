@@ -96,6 +96,7 @@ public slots:
 	void screenshot();
 
 	void updateRGB(bool success);
+	void refreshLabelsInViewers();
 
 signals:
 	void clearLabel();

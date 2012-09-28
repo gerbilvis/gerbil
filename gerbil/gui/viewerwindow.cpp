@@ -390,6 +390,8 @@ void ViewerWindow::initUI()
 			bandView, SLOT(updateLabels()));
 	connect(&bandView->labelTimer, SIGNAL(timeout()), 
 			bandView, SLOT(commitLabelChanges()));
+	connect(bandView, SIGNAL(refreshLabels()),
+			this, SLOT(refreshLabelsInViewers()));
 
 	connect(this, SIGNAL(newLabelColors(const QVector<QColor>&, bool)),
 			bandView, SLOT(setLabelColors(const QVector<QColor>&, bool)));
@@ -408,15 +410,10 @@ void ViewerWindow::initUI()
 		multi_img_viewer *v = viewers[i];
 		const Viewport *vp = v->getViewport();
 
-		connect(bandView, SIGNAL(refreshLabels()),
-				v, SLOT(updateLabels()));
 		connect(markButton, SIGNAL(toggled(bool)),
 				v, SLOT(toggleLabeled(bool)));
 		connect(nonmarkButton, SIGNAL(toggled(bool)),
 				v, SLOT(toggleUnlabeled(bool)));
-
-		connect(this, SIGNAL(newLabelColors(const QVector<QColor>&, bool)),
-				v, SLOT(updateLabelColors(const QVector<QColor>&, bool)));
 
 		connect(bandView, SIGNAL(pixelOverlay(int, int)),
 				v, SLOT(overlay(int, int)));
@@ -606,6 +603,20 @@ bool ViewerWindow::setLabelColors(const std::vector<cv::Vec3b> &colors)
 
 	// tell others about colors
 	emit newLabelColors(labelColors, changed);
+
+	if (changed) 
+		setGUIEnabled(false);
+
+	for (size_t i = 0; i < viewers.size(); ++i)
+		viewers[i]->updateLabelColors(labelColors, changed);
+
+	if (changed) {
+		BackgroundTaskPtr taskEpilog(new BackgroundTask());
+		QObject::connect(taskEpilog.get(), SIGNAL(finished(bool)), 
+			this, SLOT(finishTask(bool)), Qt::QueuedConnection);
+		BackgroundTaskQueue::instance().push(taskEpilog);
+	}
+
 	return changed;
 }
 
@@ -625,10 +636,21 @@ void ViewerWindow::setLabels(const vole::Labeling &labeling)
 
 	bool updated = setLabelColors(labeling.colors());
 	if (!updated) {
-		for (size_t i = 0; i < viewers.size(); ++i)
-			viewers[i]->updateLabels();
 		bandView->refresh();
+		refreshLabelsInViewers();
 	}
+}
+
+void ViewerWindow::refreshLabelsInViewers()
+{
+	setGUIEnabled(false);
+	for (size_t i = 0; i < viewers.size(); ++i)
+		viewers[i]->updateLabels();
+
+	BackgroundTaskPtr taskEpilog(new BackgroundTask());
+	QObject::connect(taskEpilog.get(), SIGNAL(finished(bool)), 
+		this, SLOT(finishTask(bool)), Qt::QueuedConnection);
+	BackgroundTaskQueue::instance().push(taskEpilog);
 }
 
 void ViewerWindow::createLabel()
@@ -1131,8 +1153,7 @@ void ViewerWindow::runGraphseg(multi_img_ptr input,
 
 	/* add segmentation to current labeling */
 	emit alterLabel(result, false);
-	for (size_t i = 0; i < viewers.size(); ++i)
-		viewers[i]->updateLabels();
+	refreshLabelsInViewers();
 
 	emit seedingDone();
 }
@@ -1429,15 +1450,13 @@ void ViewerWindow::setActive(int id)
 void ViewerWindow::labelflush()
 {
 	emit clearLabel();
-	for (size_t i = 0; i < viewers.size(); ++i)
-		viewers[i]->updateLabels();
+	refreshLabelsInViewers();
 }
 
 void ViewerWindow::labelmask(bool negative)
 {
 	emit alterLabel(activeViewer->getMask(), negative);
-	for (size_t i = 0; i < viewers.size(); ++i)
-		viewers[i]->updateLabels();
+	refreshLabelsInViewers();
 }
 
 void ViewerWindow::newOverlay()
