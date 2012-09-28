@@ -642,9 +642,8 @@ void multi_img_viewer::toggleLabels(bool toggle)
 
 	BackgroundTaskPtr taskBins(new BinsTbb(
 		image, labels, labelColors, illuminant, args, viewport->ctx, viewport->sets));
-	//QObject::connect(taskBins.get(), SIGNAL(finished(bool)), this, SLOT(render(bool)), Qt::QueuedConnection);
+	QObject::connect(taskBins.get(), SIGNAL(finished(bool)), this, SLOT(render(bool)), Qt::QueuedConnection);
 	BackgroundTaskQueue::instance().push(taskBins);
-	render(taskBins->wait());
 }
 
 void multi_img_viewer::toggleLimiters(bool toggle)

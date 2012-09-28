@@ -69,6 +69,7 @@ public slots:
 	void setI1(int index);
 	void setI1Visible(bool);
 	void bandsSliderMoved(int b);
+	void toggleLabels(bool toggle);
 
 	void usMethodChanged(int idx);
 	void usInitMethodChanged(int idx);

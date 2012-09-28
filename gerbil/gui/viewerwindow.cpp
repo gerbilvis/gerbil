@@ -352,6 +352,9 @@ void ViewerWindow::initUI()
 	connect(bandView, SIGNAL(newLabel()),
 			this, SLOT(createLabel()));
 
+	connect(ignoreButton, SIGNAL(toggled(bool)),
+			this, SLOT(toggleLabels(bool)));
+
 	// label buttons
 	connect(lLoadButton, SIGNAL(clicked()),
 			this, SLOT(loadLabeling()));
@@ -411,8 +414,6 @@ void ViewerWindow::initUI()
 				v, SLOT(toggleLabeled(bool)));
 		connect(nonmarkButton, SIGNAL(toggled(bool)),
 				v, SLOT(toggleUnlabeled(bool)));
-		connect(ignoreButton, SIGNAL(toggled(bool)),
-				v, SLOT(toggleLabels(bool)));
 
 		connect(this, SIGNAL(newLabelColors(const QVector<QColor>&, bool)),
 				v, SLOT(updateLabelColors(const QVector<QColor>&, bool)));
@@ -485,7 +486,7 @@ void ViewerWindow::initUI()
 void ViewerWindow::setGUIEnabled(bool enable, TaskType tt)
 {
 	bandsSlider->setEnabled(enable || tt == TT_BAND_COUNT);
-	ignoreButton->setEnabled(enable);
+	ignoreButton->setEnabled(enable || tt == TT_TOGGLE_LABELS);
 	addButton->setEnabled(enable);
 	remButton->setEnabled(enable);
 
@@ -506,6 +507,7 @@ void ViewerWindow::setGUIEnabled(bool enable, TaskType tt)
 	normDock->setEnabled(enable || tt == TT_NORM_RANGE || tt == TT_CLAMP_RANGE_IMG ||  tt == TT_CLAMP_RANGE_GRAD);
 	normIButton->setEnabled(enable || tt == TT_NORM_RANGE || tt == TT_CLAMP_RANGE_IMG);
 	normGButton->setEnabled(enable || tt == TT_NORM_RANGE ||  tt == TT_CLAMP_RANGE_GRAD);
+	normModeBox->setEnabled(enable);
 	normApplyButton->setEnabled(enable || tt == TT_NORM_RANGE);
 	normClampButton->setEnabled(enable || tt == TT_CLAMP_RANGE_IMG ||  tt == TT_CLAMP_RANGE_GRAD);
 
@@ -537,6 +539,20 @@ void ViewerWindow::bandsSliderMoved(int b)
 			this, SLOT(finishTask(bool)), Qt::QueuedConnection);
 		BackgroundTaskQueue::instance().push(taskEpilog);
 	}
+}
+
+void ViewerWindow::toggleLabels(bool toggle)
+{
+	BackgroundTaskQueue::instance().cancelTasks();
+	setGUIEnabled(false, TT_TOGGLE_LABELS);
+
+	for (size_t i = 0; i < viewers.size(); ++i)
+		viewers[i]->toggleLabels(toggle);
+
+	BackgroundTaskPtr taskEpilog(new BackgroundTask());
+	QObject::connect(taskEpilog.get(), SIGNAL(finished(bool)), 
+		this, SLOT(finishTask(bool)), Qt::QueuedConnection);
+	BackgroundTaskQueue::instance().push(taskEpilog);
 }
 
 #ifdef WITH_SEG_MEANSHIFT
@@ -915,7 +931,8 @@ void ViewerWindow::normModeSelected(int mode, bool targetchange, bool usecurrent
 			(target == 0 ? image : gradient), 
 			(target == 0 ? normIMGRange : normGRADRange), 
 			nm, target, min, max, false));
-		taskNormRange->run();
+		BackgroundTaskQueue::instance().push(taskNormRange);
+		taskNormRange->wait();
 	}
 
 	double min;
