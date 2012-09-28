@@ -478,8 +478,8 @@ void ViewerWindow::initUI()
 
 	BackgroundTaskPtr taskRgb(new ViewerWindow::RgbTbb(
 		full_image, mat_vec3f_ptr(new SharedData<cv::Mat_<cv::Vec3f> >(new cv::Mat_<cv::Vec3f>)), full_rgb_temp));
-	BackgroundTaskQueue::instance().push(taskRgb);
-	updateRGB(taskRgb->wait());
+	taskRgb->run();
+	updateRGB(true);
 }
 
 void ViewerWindow::setGUIEnabled(bool enable, TaskType tt)
@@ -915,8 +915,7 @@ void ViewerWindow::normModeSelected(int mode, bool targetchange, bool usecurrent
 			(target == 0 ? image : gradient), 
 			(target == 0 ? normIMGRange : normGRADRange), 
 			nm, target, min, max, false));
-		BackgroundTaskQueue::instance().push(taskNormRange);
-		taskNormRange->wait();
+		taskNormRange->run();
 	}
 
 	double min;
