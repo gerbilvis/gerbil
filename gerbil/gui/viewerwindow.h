@@ -49,6 +49,7 @@ public slots:
 	void finishROIChange(bool success);
 	void finishNormRangeImgChange(bool success);
 	void finishNormRangeGradChange(bool success);
+	void finishGraphSeg(bool success);
 	void finishTask(bool success);
 
 	void reshapeDock(bool floating);
@@ -162,6 +163,20 @@ protected:
 		bool update;
 	};
 
+	class GraphsegBackground : public BackgroundTask {
+	public:
+		GraphsegBackground(const vole::GraphSegConfig &config, multi_img_ptr input, 
+			const cv::Mat1s &seedMap, boost::shared_ptr<multi_img::Mask> result) 
+			: config(config), input(input), seedMap(seedMap), result(result) {}
+		virtual ~GraphsegBackground() {}
+		virtual bool run();
+	protected:
+		vole::GraphSegConfig config;
+		multi_img_ptr input;
+		cv::Mat1s seedMap;
+		boost::shared_ptr<multi_img::Mask> result;
+	};
+
     void changeEvent(QEvent *e);
 
 	/* helper functions */
@@ -219,6 +234,8 @@ private:
 	QMenu *contextMenu;
 
 	TaskType runningTask;
+
+	boost::shared_ptr<multi_img::Mask> graphsegResult;
 };
 
 #endif // VIEWERWINDOW_H

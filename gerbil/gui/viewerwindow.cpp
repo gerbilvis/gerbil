@@ -38,7 +38,8 @@ ViewerWindow::ViewerWindow(multi_img *image, QWidget *parent)
 	  		new std::pair<multi_img::Value, multi_img::Value>(0, 0))),
 	  full_rgb_temp(new SharedData<QImage>(new QImage())),
 	  usRunner(NULL), contextMenu(NULL),
-	  viewers(REPSIZE), activeViewer(0)
+	  viewers(REPSIZE), activeViewer(0),
+	  graphsegResult(new multi_img::Mask())
 {
 	// create all objects
 	setupUi(this);
@@ -1145,17 +1146,30 @@ void ViewerWindow::initGraphsegUI()
 void ViewerWindow::runGraphseg(multi_img_ptr input,
 							   const vole::GraphSegConfig &config)
 {
+	setGUIEnabled(false);
+	BackgroundTaskPtr taskGraphseg(new GraphsegBackground(
+		config, input, bandView->seedMap, graphsegResult));
+	QObject::connect(taskGraphseg.get(), SIGNAL(finished(bool)), 
+		this, SLOT(finishGraphSeg(bool)), Qt::QueuedConnection);
+	BackgroundTaskQueue::instance().push(taskGraphseg);
+}
+
+bool ViewerWindow::GraphsegBackground::run()
+{
 	vole::GraphSeg seg(config);
-	multi_img::Mask result;
-	SharedDataHold input_lock(input->lock);
-	result = seg.execute(**input, bandView->seedMap);
-	input_lock.unlock();
+	*(result.get()) = seg.execute(**input, seedMap);
+	return true;
+}
 
-	/* add segmentation to current labeling */
-	emit alterLabel(result, false);
-	refreshLabelsInViewers();
+void ViewerWindow::finishGraphSeg(bool success)
+{
+	if (success) {
+		/* add segmentation to current labeling */
+		emit alterLabel(*(graphsegResult.get()), false);
+		refreshLabelsInViewers();
 
-	emit seedingDone();
+		emit seedingDone();
+	}
 }
 
 void ViewerWindow::startGraphseg()
