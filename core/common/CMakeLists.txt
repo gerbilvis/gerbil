@@ -3,7 +3,7 @@ vole_module_description("Common classes used in the vole framework")
 vole_module_variable("Vole_Common")
 
 vole_add_required_dependencies()
-vole_add_optional_dependencies("BOOST_PROGRAM_OPTIONS" "QT" "OPENCV" "BOOST_PYTHON" "PYTHON" "NUMPY")
+vole_add_optional_dependencies("BOOST_PROGRAM_OPTIONS" "QT" "OPENCV")
 vole_add_optional_modules("gerbil_common")
 
 vole_compile_library(

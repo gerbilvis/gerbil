@@ -103,7 +103,6 @@ vole::Command* grab_command(int argc, char** argv, const vole::Modules &m) {
 
 bool parse_opts(int argc, char** argv, vole::Command *cmd, bool single) {
 	string configfile, placeholder;
-	string command = cmd->getName();
 	vole::Config& config = cmd->getConfig();
 
 	try {
