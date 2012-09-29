@@ -14,7 +14,6 @@
 //Version     : v0.2
 /////////////////////////////////////////////////////////////////////////////
 
-
 #include <cstdlib>
 #include <cstring>
 #include <ctime>
@@ -23,16 +22,22 @@
 #include <algorithm>
 #include <iterator>
 #include <functional>
+#include <tbb/parallel_for.h>
+#include <tbb/parallel_reduce.h>
+
 #include "mfams.h"
-#include "lsh.h"
+#include <lshreader.h>
+
 
 using namespace std;
 
-FAMS::FAMS(bool use_LSH) : hasPoints_(0), nsel_(0), npm_(0), use_LSH_(use_LSH) {}
+FAMS::FAMS(const vole::MeanShiftConfig &cfg, vole::ProgressObserver *po)
+	: hasPoints_(0), nsel_(0), npm_(0), config(cfg),
+	  progressObserver(po), progress(0.f), lsh_(NULL)
+{}
 
 FAMS::~FAMS() {
 	CleanPoints();
-	CleanSelected();
 	CleanPrunedModes();
 }
 
@@ -42,18 +47,7 @@ void FAMS::CleanPoints() {
 
 	delete [] points_;
 	delete [] data_;
-	delete [] rr_;
 	hasPoints_ = 0;
-}
-
-void FAMS::CleanSelected() {
-	if (!nsel_)
-		return;
-
-	delete [] psel_;
-	delete [] modes_;
-	delete [] hmodes_;
-	nsel_ = 0;
 }
 
 void FAMS::CleanPrunedModes() {
@@ -69,99 +63,123 @@ void FAMS::CleanPrunedModes() {
 void FAMS::SelectMsPoints(double percent, int jump) {
 	if (!hasPoints_)
 		return;
-	int i;
+
 	int tsel;
 	if (percent > 0.) {
 		tsel = (int)(n_ * percent / 100.0);
-		if (tsel != nsel_) {
-			CleanSelected();
-			nsel_   = tsel;
-			psel_   = new int[nsel_];
-			modes_  = new unsigned short[nsel_ * d_];
-			hmodes_ = new unsigned int[nsel_];
-		}
-		for (i = 0; i < nsel_;  i++)
-			psel_[i] = __min(n_ - 1, (int)(drand48() * n_));
 	} else  {
 		tsel = (int)ceil(n_ / (jump + 0.0));
-		if (tsel != nsel_) {
-			CleanSelected();
-			nsel_   = tsel;
-			psel_   = new int[nsel_];
-			modes_  = new unsigned short[nsel_ * d_];
-			hmodes_ = new unsigned int[nsel_];
-		}
-		for (i = 0; i < nsel_; i++)
-			psel_[i] = i * jump;
+	}
+
+	if (tsel != nsel_) {
+		nsel_   = tsel;
+		psel_.resize(nsel_);
+		modes_.resize(nsel_ * d_);
+		hmodes_.resize(nsel_);
+	}
+
+	if (percent > 0.) {
+		for (int i = 0; i < nsel_;  i++)
+			psel_[i] = &points_[std::min(n_ - 1, (int)(drand48() * n_))];
+	} else {
+		for (int i = 0; i < nsel_; i++)
+			psel_[i] = &points_[i * jump];
 	}
 }
 
+void FAMS::ImportMsPoints(std::vector<fams_point> &points) {
+	nsel_ = points.size();
+	psel_.resize(nsel_);
+	modes_.resize(nsel_ * d_);
+	hmodes_.resize(nsel_);
+	for (int i = 0; i < nsel_; i++)
+		psel_[i] = &points[i];
+}
 
-// compute the pilot h_i's for the data points
-bool FAMS::ComputePilot(LSH &lsh) {
-	const int     win_j = 10, max_win = 7000;
-	int           i, j;
-	unsigned int  nn;
-	unsigned int  wjd = (unsigned int)(win_j * d_);
-	unsigned int dbg_noknn = 0;
+void FAMS::ComputePilotPoint::operator ()(const tbb::blocked_range<int> &r)
+{
+	const int win_j = 10, max_win = 7000;
+	const int mwpwj = max_win / win_j;
+	unsigned int nn;
+	unsigned int wjd = (unsigned int)(win_j * fams.d_);
 
-	bgLog("compute bandwidths...");
-	unsigned int dbg_acc = 0;
-	for (j = 0; j < n_; j++) {
+	LSHReader *lsh = NULL;
+	if (fams.lsh_)
+		lsh = new LSHReader(*fams.lsh_);
+
+	int done = 0;
+	for (size_t j = r.begin(); j != r.end(); ++j) {
 		int numn = 0;
-		int numns[max_win / win_j];
+		int numns[mwpwj];
 		memset(numns, 0, sizeof(numns));
-		int nel;
 
-		if (!use_LSH_) {
-			nel = n_;
-			for (i = 0; i < nel; i++) {
-				fams_pointp pt = &points_[i];
-				nn = DistL1(points_[j], *pt) / wjd;
-				if (nn < max_win / win_j)
+		if (!lsh) {
+			for (int i = 0; i < fams.n_; i++) {
+				nn = fams.DistL1(fams.points_[j], fams.points_[i]) / wjd;
+				if (nn < mwpwj)
 					numns[nn]++;
 			}
-		} else  {
-			lsh.query(j);
-			const std::vector<unsigned int> &lshResult = lsh.getResult();
-			for (unsigned int i = 0; i < lshResult.size(); i++) {
-				fams_pointp pt = &points_[lshResult[i]];
-				nn = DistL1(points_[j], *pt) / wjd;
-				if (nn < max_win / win_j)
+		} else {
+			lsh->query(j);
+			const std::vector<unsigned int> &lshResult = lsh->getResult();
+			for (int i = 0; i < lshResult.size(); i++) {
+				nn = fams.DistL1(fams.points_[j], fams.points_[lshResult[i]])
+						/ wjd;
+				if (nn < mwpwj)
 					numns[nn]++;
 			}
 		}
 
 		// determine distance to k-nearest neighbour
-		for (nn = 0; nn < max_win / win_j; nn++) {
+		for (nn = 0; nn < mwpwj; nn++) {
 			numn += numns[nn];
-			if (numn > k_) {
+			if (numn > fams.config.k) {
 				break;
 			}
 		}
 
-		if (numn <= k_) {
+		if (numn <= fams.config.k) {
 			dbg_noknn++;
 		}
 
-		points_[j].window_ = (nn + 1) * wjd;
+		fams.points_[j].window_ = (nn + 1) * wjd;
+		fams.points_[j].weightdp2_ = pow(
+					FAMS_FLOAT_SHIFT / fams.points_[j].window_,
+					(fams.d_ + 2) * FAMS_ALPHA);
 
-		dbg_acc += points_[j].window_;
+		dbg_acc += fams.points_[j].window_;
 
-		if (!progressUpdate(20*j/n_)) {
-			bgLog("ComputePilot aborted.\n");
-			return false;
+		if ((++done % (fams.n_ / 20)) == 0) {
+			bgLog("+");
+			bool cont = fams.progressUpdate((float)done/(float)fams.n_ * 20.f,
+				false);
+			if (!cont) {
+				bgLog("ComputePilot aborted.\n");
+				return;
+			}
+			done = 0;
 		}
 	}
-	cout << "Avg. window size: " << dbg_acc / n_ << endl;
-	bgLog("No kNN found for %2.2f%% of all points\n", (float) dbg_noknn / n_ * 100);
-	
-	for (j = 0; j < n_; j++) {
-		points_[j].weightdp2_ = pow(
-				FAMS_FLOAT_SHIFT / points_[j].window_, (d_ + 2) * FAMS_ALPHA);
-	}
+	fams.progressUpdate((float)done/(float)fams.n_ * 20.f, false);
+	delete lsh;
+}
 
-	return true;
+// compute the pilot h_i's for the data points
+bool FAMS::ComputePilot() {
+	bgLog("compute bandwidths...");
+
+	if (config.use_LSH)
+		assert(lsh_);
+
+	ComputePilotPoint comp(*this);
+	tbb::parallel_reduce(tbb::blocked_range<int>(0, n_),
+						 comp);
+
+	cout << "Avg. window size: " << comp.dbg_acc / n_ << endl;
+	bgLog("No kNN found for %2.2f%% of all points\n",
+		  (float) comp.dbg_noknn / n_ * 100);
+
+	return !(progress < 0.f); // in case of abort, progress is set to -1
 }
 
 // compute real bandwiths for selected points
@@ -171,111 +189,103 @@ void FAMS::ComputeRealBandwidths(unsigned int h) {
 	unsigned int nn;
 	unsigned int wjd;
 	wjd =        (unsigned int)(win_j * d_);
-	int          who;
 	if (h == 0) {
 		for (j = 0; j < nsel_; j++) {
-			who = psel_[j];
 			int numn = 0;
 			int numns[max_win / win_j];
 			memset(numns, 0, sizeof(numns));
 			for (i = 0; i < n_; i++) {
-				fams_pointp pt = &points_[i];
-				nn = DistL1(points_[who], *pt) / wjd;
+				nn = DistL1(*psel_[j], points_[i]) / wjd;
 				if (nn < max_win / win_j)
 					numns[nn]++;
 			}
 			for (nn = 0; nn < max_win / win_j; nn++) {
 				numn += numns[nn];
-				if (numn > k_) {
+				if (numn > config.k) {
 					break;
 				}
 			}
-			points_[who].window_ = (nn + 1) * win_j;
+			psel_[j]->window_ = (nn + 1) * win_j;
 		}
 	} else{
 		for (j = 0; j < nsel_; j++) {
-			who = psel_[j];
-			points_[who].window_ = h;
+			psel_[j]->window_ = h;
 		}
 	}
 }
 
 // compute the pilot h_i's for the data points
-void FAMS::ComputeScores(float* scores, LSH &lsh) {
+void FAMS::ComputeScores(float* scores, LSHReader &lsh, int L) {
 	const int    win_j = 10, max_win = 7000;
-	int          j, who;
+	int          j;
 	unsigned int nn;
 	unsigned int wjd = (unsigned int)(win_j * d_);
-	memset(scores, 0, L_ * sizeof(float));
+	memset(scores, 0, L * sizeof(float));
 	for (j = 0; j < nsel_; j++) {
-		who = psel_[j];
 		int nl = 0;
 		int numns[max_win / win_j];
 		memset(numns, 0, sizeof(numns));
 
-		lsh.query(points_[who].data_);
+		lsh.query(psel_[j]->data_);
 		const std::vector<unsigned int>& lshResult = lsh.getResult();
 		const std::vector<int>& num_l = lsh.getNumByPartition();
 
 		for (int i = 0; i < (int) lshResult.size(); i++) {
-			fams_pointp pt = &points_[lshResult[i]];
-			nn = DistL1(points_[who], *pt) / wjd;
+			nn = DistL1(*psel_[j], points_[lshResult[i]]) / wjd;
 			if (nn < max_win / win_j)
 				numns[nn]++;
 
 			if (i == (num_l[nl] - 1)) {
-				/// partition boundary
-				/// current [0;i] represents the result after evaluating nl partitions
+				// partition boundary
+				/* current [0;i] represents the result after evaluating
+				   nl partitions */
 
-				/// calculate distance to k-nearest neighbour in this result
+				// calculate distance to k-nearest neighbour in this result
 				int numn = 0;
 				for (nn = 0; nn < max_win / win_j; nn++) {
 					numn += numns[nn];
-					if (numn > k_)
+					if (numn > config.k)
 						break;
 				}
 
-				/// assign score for this value of L and
-				/// any next partitions if they didn't add anything to the result
-				for (; nl < L_ && (num_l[nl] - 1) == i; nl++) {
-					assert(nl < L_);
-					scores[nl] +=
-							(float)(((nn + 1.0) * win_j) / points_[who].window_);
+				// assign score for this value of L and
+				// any next partitions if they didn't add anything to the result
+				for (; nl < L && (num_l[nl] - 1) == i; nl++) {
+					assert(nl < L);
+					scores[nl] += (float)(((nn + 1.0) * win_j) /
+										   psel_[j]->window_);
 				}
 			}
 		}
 	}
-	for (j = 0; j < L_; j++)
+	for (j = 0; j < L; j++)
 		scores[j] /= nsel_;
 }
 
 
-// perform an FAMS iteration
-
-unsigned int FAMS::DoMeanShiftAdaptiveIteration(
-			const std::vector<unsigned int>& res,
-			unsigned short *old, unsigned short *ret)
+// perform a FAMS iteration
+unsigned int FAMS::DoMSAdaptiveIteration(
+			const std::vector<unsigned int> *res,
+			unsigned short *old, unsigned short *ret) const
 {
 	double total_weight = 0;
 	int    i, j;
 	double dist;
-	for (i = 0; i < d_; i++)
-		rr_[i] = 0;
-	int nel = (use_LSH_ ? res.size() : n_);
-	fams_pointp  ptp;
-	unsigned int crtH = 0; /// init to please compiler, this value will never be read
+	std::vector<double> rr(d_, 0.);
+	int nel = (config.use_LSH ? res->size() : n_);
+	unsigned int crtH = 0;
 	double       hmdist = 1e100;
 	for (i = 0; i < nel; i++) {
-		ptp = (use_LSH_ ? &points_[res[i]] : &points_[i]);
-		if (DistL1Data(old, *ptp, (*ptp).window_, dist)) {
-			double x = 1.0 - (dist / (*ptp).window_);
-			double w = (*(ptp)).weightdp2_ * x * x;
+		fams_point &ptp = (config.use_LSH ? points_[(*res)[i]] : points_[i]);
+		if (DistL1Data(old, ptp, ptp.window_, dist)) {
+			double x = 1.0 - (dist / ptp.window_);
+			double w = ptp.weightdp2_ * x * x;
 			total_weight += w;
 			for (j = 0; j < d_; j++)
-				rr_[j] += (*(ptp)).data_[j] * w;
+				rr[j] += ptp.data_[j] * w;
 			if (dist < hmdist) {
 				hmdist = dist;
-				crtH   = (*ptp).window_;
+				crtH   = ptp.window_;
 			}
 		}
 	}
@@ -283,24 +293,24 @@ unsigned int FAMS::DoMeanShiftAdaptiveIteration(
 		return 0;
 	}
 	for (i = 0; i < d_; i++)
-		ret[i] = (unsigned short)(rr_[i] / total_weight);
+		ret[i] = (unsigned short)(rr[i] / total_weight);
 
 	return crtH;
 }
 
+void FAMS::MeanShiftPoint::operator ()(const tbb::blocked_range<int> &r)
+const
+{
+	LSHReader *lsh = NULL;
+	if (fams.lsh_)
+		lsh = new LSHReader(*fams.lsh_);
 
-// perform FAMS starting from a subset of the data points.
-// return true on successful finish (not cancelled by ProgressObserver)
-bool FAMS::DoFAMS(LSH &lsh) {
-	int           jj;
 	unsigned short *oldMean;
 	unsigned short *crtMean;
-	oldMean = new unsigned short[d_];
-	crtMean = new unsigned short[d_];
-	memset(oldMean, 0, sizeof(*oldMean) * d_);
-	memset(crtMean, 0, sizeof(*crtMean) * d_);
-	fams_pointp    currentpt;
-	int who;
+	oldMean = new unsigned short[fams.d_];
+	crtMean = new unsigned short[fams.d_];
+	memset(oldMean, 0, sizeof(*oldMean) * fams.d_);
+	memset(crtMean, 0, sizeof(*crtMean) * fams.d_);
 	unsigned int   newH;
 	unsigned int   *crtH;
 
@@ -308,85 +318,107 @@ bool FAMS::DoFAMS(LSH &lsh) {
 		unsigned short *m;
 		unsigned int *h;
 	};
-	struct mode *tMode = new struct mode[n_];
+	struct mode *tMode = new struct mode[fams.n_];
 
-	bgLog(" Start MS iterations");
-	int myPt = max(1, nsel_ / 10); /// minimum 1 to prevent division by zero
-	for (jj = 0; jj < nsel_; jj++) {
-		if ((jj % myPt) == 0) {
-			bgLog(".");
-			if (!progressUpdate(20+(80*jj)/nsel_)) {
-				delete [] oldMean;
-				delete [] crtMean;
-				delete [] tMode;
-				bgLog("DoFAMS aborted.\n");
-				return false;
-			}
-		}
+	int done = 0;
+	for (int jj = r.begin(); jj != r.end(); ++jj) {
 
-		who       = psel_[jj];
-		currentpt = &points_[who];
-		memcpy(crtMean, currentpt->data_, dataSize_);
-		crtH      = &hmodes_[jj];
+		fams_point *currentpt = fams.psel_[jj];
+		memcpy(crtMean, currentpt->data_, fams.dataSize_);
+		crtH      = &fams.hmodes_[jj];
 		*crtH     = currentpt->window_;
 		tMode[jj].m = (unsigned short*)1;
 
-		for (int iter = 0; NotEq(oldMean, crtMean) && (iter < FAMS_MAXITER);
-			 iter++)
-		{
+		for (int iter = 0; fams.NotEq(oldMean, crtMean) &&
+			 (iter < FAMS_MAXITER); iter++) {
 			const std::vector<unsigned int> *lshResult = NULL;
-			if (use_LSH_) {
+			if (lsh) {
 				struct mode* solp;
-				solp = (struct mode*) lsh.query(crtMean, &tMode[jj]);
-				/// NULL means no solution cache hit
-				/// 1 means there's no actual solution yet
+				solp = (struct mode*) lsh->query(crtMean, &tMode[jj]);
+				// NULL means no solution cache hit
+				// 1 means there's no actual solution yet
 				if (solp != NULL && solp->m != (unsigned short*) 1) {
-					/// early trajectory termination, break loop
+					// early trajectory termination, break loop
 
-					tMode[jj].m = &modes_[jj * d_];
-					memcpy(tMode[jj].m, solp->m, dataSize_);
+					tMode[jj].m = &fams.modes_[jj * fams.d_];
+					memcpy(tMode[jj].m, solp->m, fams.dataSize_);
 
-					tMode[jj].h = &hmodes_[jj];
+					tMode[jj].h = &fams.hmodes_[jj];
 					*(tMode[jj].h) = *(solp->h);
 					break;
 				}
-				lsh.query(crtMean);
-				lshResult = &lsh.getResult();
+				lsh->query(crtMean);
+				lshResult = &lsh->getResult();
 			}
-			memcpy(oldMean, crtMean, dataSize_);
+			memcpy(oldMean, crtMean, fams.dataSize_);
 			if (!(newH =
-				  DoMeanShiftAdaptiveIteration(*lshResult, oldMean, crtMean))) {
-				/// oldMean is final mean -> break loop
-				memcpy(crtMean, oldMean, dataSize_);
+				  fams.DoMSAdaptiveIteration(lshResult, oldMean, crtMean))) {
+				// oldMean is final mean -> break loop
+				memcpy(crtMean, oldMean, fams.dataSize_);
 				break;
 			}
 			*crtH = newH;
 		}
 
 		if (tMode[jj].m == (unsigned short*)1) {
-			tMode[jj].m = &modes_[jj * d_];
-			memcpy(tMode[jj].m, crtMean, dataSize_);
-			tMode[jj].h = &hmodes_[jj];
+			tMode[jj].m = &fams.modes_[jj * fams.d_];
+			memcpy(tMode[jj].m, crtMean, fams.dataSize_);
+			tMode[jj].h = &fams.hmodes_[jj];
+		}
+
+		if ((++done % (fams.nsel_ / 80)) == 0) {
+			bgLog(".");
+			bool cont = fams.progressUpdate((float)done/
+											(float)fams.nsel_ * 80.f, false);
+			if (!cont) {
+				delete [] oldMean;
+				delete [] crtMean;
+				delete [] tMode;
+				delete lsh;
+				bgLog("FinishFAMS aborted.\n");
+				return;
+			}
+			done = 0;
 		}
 	}
+	fams.progressUpdate((float)done/(float)fams.nsel_ * 80.f, false);
 
-	delete [] oldMean;
-	delete [] crtMean;
-	delete [] tMode;
+	delete[] oldMean;
+	delete[] crtMean;
+	delete[] tMode;
+	delete lsh;
+}
+
+// perform FAMS starting from a subset of the data points.
+// return true on successful finish (not cancelled by ProgressObserver)
+bool FAMS::FinishFAMS() {
+	bgLog(" Start MS iterations");
+
+	if (config.use_LSH)
+		assert(lsh_);
+
+	tbb::parallel_for(tbb::blocked_range<int>(0, nsel_),
+					  MeanShiftPoint(*this));
+
+	delete lsh_; // cleanup
+	lsh_ = NULL;
 	bgLog("done.\n");
-	return true;
+	return !(progress < 0.f); // in case of abort, progress is set to -1
 }
 
 
-// The function is modified in order to use the image data after mode pruning is done.
-int FAMS::PruneModes(int hprune, int npmin) {
+void FAMS::PruneModes() {
+	int hprune = FAMS_PRUNE_WINDOW;
+	int npmin = config.pruneMinN;
 	// compute jump
 	int jm = (int)ceil(((double)nsel_) / FAMS_PRUNE_MAXP);
 
-	bgLog(" Join Modes with adaptive h/%d, min pt=%d, jump=%d (-> looking at %d modes)\n", (int) pow(2.f,FAMS_PRUNE_HDIV), npmin, jm, nsel_/jm);
+	bgLog(" Join Modes with adaptive h/%d, min pt=%d, jump=%d"
+		  "(-> looking at %d modes)\n", (int) pow(2.f,FAMS_PRUNE_HDIV), npmin,
+		  jm, nsel_/jm);
 	bgLog("            pass 1");
 	if (nsel_ < 1)
-		return 1;
+		return;
 	hprune *= d_;
 
 	int            *mcount, *mcount2, *mycount;
@@ -407,7 +439,6 @@ int FAMS::PruneModes(int hprune, int npmin) {
 	indmymodes  = new int[nsel_];
 
 	int i, j, k, cd, cm, maxm, idx, idx1, idx2, idx3, cd1, cd2;
-	int mycm, newhprune;
 	idx  = 0;
 	idx1 = 0;
 	idx2 = 0;
@@ -420,7 +451,7 @@ int FAMS::PruneModes(int hprune, int npmin) {
 	memset(mycount, 0, nsel_ * sizeof(int));
 
 
-	//copy the image data before mode pruning.
+	// copy the image data before mode pruning.
 	for (j = 0; j < nsel_; j++) {
 		for (i = 0; i < d_; i++) {
 			mymodes[idx] = modes_[idx];
@@ -445,7 +476,7 @@ int FAMS::PruneModes(int hprune, int npmin) {
 		if ((cm % myPt) == 0)
 			bgLog(".");
 
-		pmodes = modes_ + cm * d_;
+		pmodes = &modes_[cm * d_];
 
 		// compute closest mode
 		cminDist = d_ * 1e7;
@@ -464,25 +495,24 @@ int FAMS::PruneModes(int hprune, int npmin) {
 		}
 		// join
 
-		assert(hmodes_[cm] > 0); /// good & cheap indicator for serious failure in DoFAMS()
+		// good & cheap indicator for serious failure in DoFAMS()
+		assert(hmodes_[cm] > 0);
 
 		hprune = hmodes_[cm] >> FAMS_PRUNE_HDIV;
 
-		newhprune = hmodes_[cm] * 2;
-
 		if (cminDist < hprune) {
-			/// already in, just add
-			/// add mode of current point (cm) to closed known mode
-			/// put result in mymodes
+			// already in, just add
+			// add mode of current point (cm) to closed known mode
+			// put result in mymodes
 
 			for (cd = 0; cd < d_; cd++) {
 				cmodes[iminDist * d_ + cd] += pmodes[cd];
 				mymodes[cm * d_ + cd]       = cmodes[iminDist * d_ + cd];
 			}
-			/// increase counter
+			// increase counter
 			mcount[iminDist] += 1;
 
-			/// "normalize" entry in mymodes
+			// "normalize" entry in mymodes
 			for (cd1 = 0; cd1 < d_; cd1++) {
 				mymodes[cm * d_ +
 						cd1] = mymodes[cm * d_ + cd1] / mcount[iminDist];
@@ -513,7 +543,8 @@ int FAMS::PruneModes(int hprune, int npmin) {
 	}
 
 	oldmaxm = maxm;
-	bgLog("done (%d modes left, %d of them have been invalidated)\n", maxm, invalidc);
+	bgLog("done (%d modes left, %d of them have been invalidated)\n", maxm,
+		  invalidc);
 	bgLog("            pass 2");
 
 	// put the modes in the order of importance (count)
@@ -534,10 +565,11 @@ int FAMS::PruneModes(int hprune, int npmin) {
 
 	bgLog("ignoring %d modes smaller than %d points\n", (maxm - nrel), npmin);
 	if (nrel > FAMS_PRUNE_MAXM) {
-		bgLog("exceeded FAMS_PRUNE_MAXM, only keeping %d modes\n", FAMS_PRUNE_MAXM);
+		bgLog("exceeded FAMS_PRUNE_MAXM, only keeping %d modes\n",
+			  FAMS_PRUNE_MAXM);
 	}
 
-	nrel = __min(nrel, FAMS_PRUNE_MAXM);
+	nrel = std::min(nrel, FAMS_PRUNE_MAXM);
 
 	// rearange only relevant modes
 	mcount2 = new int[nrel];
@@ -559,8 +591,7 @@ int FAMS::PruneModes(int hprune, int npmin) {
 	int  num;
 	flag     = false;
 	num      = 1;
-	mycm     = 0;
-	pmodes   = modes_ + mycm * d_;
+	pmodes   = &modes_[0];
 	cminDist = d_ * 1e7;
 	iminDist = -1;
 
@@ -586,7 +617,7 @@ int FAMS::PruneModes(int hprune, int npmin) {
 		/*if (mcount[cm])
 		   continue;*/
 
-		pmodes = modes_ + cm * d_;
+		pmodes = &modes_[cm * d_];
 
 		// compute closest mode
 		cminDist = d_ * 1e7;
@@ -603,8 +634,9 @@ int FAMS::PruneModes(int hprune, int npmin) {
 		}
 		// join
 		hprune = hmodes_[cm] >> FAMS_PRUNE_HDIV;
-		/* if the closet mode is found, the avg pixel value for that mode is calculated
-		   by divding mymodes with mcount(the number of pixels having that mode)*/
+		/* if the closet mode is found, the avg pixel value for that mode is
+		 * calculated by divding mymodes with mcount(the number of pixels
+		 * having that mode)*/
 		if (iminDist >= 0) {
 			// aready in, just add
 			for (cd = 0; cd < d_; cd++) {
@@ -623,7 +655,8 @@ int FAMS::PruneModes(int hprune, int npmin) {
 		}
 	}
 
-	/*Copy the current values all the pixels as per their mode to array 'testmymodes'*/
+	/*Copy the current values all the pixels as per their mode to array
+	 *'testmymodes'*/
 	for (j = 0; j < nsel_; j++) {
 		for (i = 0; i < d_; i++) {
 			testmymodes[idx3] = mymodes[idx3];
@@ -631,7 +664,8 @@ int FAMS::PruneModes(int hprune, int npmin) {
 			idx3++;
 		}
 	}
-	/*For all the pixels having same mode, an average value of that mode is assigned */
+	/*For all the pixels having same mode, an average value of that mode is
+	 * assigned */
 	for (i = 0; i < maxm; i++) {
 		for (j = 0; j < nsel_; j++) {
 			if (i == indmymodes[j]) {
@@ -649,7 +683,7 @@ int FAMS::PruneModes(int hprune, int npmin) {
 	}
 
 
-// All the pixels having same mode have the same pixel value.
+	// All the pixels having same mode have the same pixel value.
 	for (i = 0; i < maxm; i++) {
 		for (j = 0; j < nsel_; j++) {
 			if (i == indmymodes[j]) {
@@ -662,9 +696,7 @@ int FAMS::PruneModes(int hprune, int npmin) {
 		}
 	}
 
-
-
-	// put the modes in the order of importance (count)
+	// sort modes in the order of importance (count)
 	xtemp.resize(maxm);
 	for (i = 0; i < maxm; ++i) {
 		xtemp[i] = make_pair(mcount2[i], i);
@@ -680,7 +712,8 @@ int FAMS::PruneModes(int hprune, int npmin) {
 			break;
 	}
 
-	bgLog("once more ignoring %d modes smaller than %d points\n", (maxm - nrel), npmin);
+	bgLog("once more ignoring %d modes smaller than %d points\n",
+		  (maxm - nrel), npmin);
 
 	CleanPrunedModes();
 	prunedmodes_  = new unsigned short[d_ * nrel];
@@ -702,13 +735,15 @@ int FAMS::PruneModes(int hprune, int npmin) {
 	delete [] mcount;
 
 	bgLog("done\n");
-	return 1;
 }
 
 
 // main function to find K and L
-std::pair<int,int> FAMS::FindKL(int Kmin, int Kmax, int Kjump, int Lmax, int k,
-				 float width, float epsilon) {
+std::pair<int,int> FAMS::FindKL() {
+	int Kmin = config.Kmin, Kmax = config.K, Kjump = config.Kjump;
+	int Lmax = config.L, k = config.K;
+	float width = config.bandwidth, epsilon = config.epsilon;
+
 	bgLog("Find optimal K and L, K=%d:%d:%d, Lmax=%d, k=%d, Err=%.2g\n",
 		  Kmin, Kjump, Kmax, Lmax, k, epsilon);
 
@@ -723,7 +758,6 @@ std::pair<int,int> FAMS::FindKL(int Kmin, int Kmax, int Kjump, int Lmax, int k,
 		adaptive = false;
 		hWidth   = (int)(65535.0 * (width) / (maxVal_ - minVal_));
 	}
-	k_       = k;
 	epsilon += 1;
 
 	/// sanity checks
@@ -769,9 +803,10 @@ std::pair<int,int> FAMS::FindKL(int Kmin, int Kmax, int Kjump, int Lmax, int k,
 			}
 		}
 		bgLog(".");
-		if (!progressUpdate(50*(Kmax-Kcrt)/(Kmax-Kmin))) {
-				bgLog("FindKL aborted\n");
-				return std::make_pair(0, 0);
+		bool cont = progressUpdate(50.f * (Kmax-Kcrt)/(Kmax-Kmin));
+		if (!cont) {
+			bgLog("FindKL aborted\n");
+			return std::make_pair(0, 0);
 		}
 
 		// update Lcrt to reduce running time!
@@ -782,13 +817,14 @@ std::pair<int,int> FAMS::FindKL(int Kmin, int Kmax, int Kjump, int Lmax, int k,
 	bgLog("done\n");
 
 	//start finding the pair with best running time
-	double run_times[FAMS_FKL_TIMES];
+	int64 run_times[FAMS_FKL_TIMES];
 	int iBest = -1;
 	int i;
-	double timeBest = -1;
+	int64 timeBest = -1;
 	bgLog(" select best pair\n");
 	for (i = 0; i < nBest; i++) {
-		if (!progressUpdate(50 + 50*i/nBest)) {
+		bool cont = progressUpdate(50.f + 50.f * i/nBest);
+		if (!cont) {
 			bgLog("FindKL aborted\n");
 			return std::make_pair(0, 0);
 		}
@@ -799,6 +835,7 @@ std::pair<int,int> FAMS::FindKL(int Kmin, int Kmax, int Kjump, int Lmax, int k,
 			run_times[ntimes] =
 				DoFindKLIteration(KBest[i], LBest[i], &scores[ntimes * Lcrt]);
 		sort(&run_times[0], &run_times[FAMS_FKL_TIMES]);
+		// compare with median
 		if ((timeBest == -1) || (timeBest > run_times[FAMS_FKL_TIMES / 2])) {
 			iBest    = i;
 			timeBest = run_times[FAMS_FKL_TIMES / 2];
@@ -817,93 +854,82 @@ std::pair<int,int> FAMS::FindKL(int Kmin, int Kmax, int Kjump, int Lmax, int k,
 }
 
 
-double FAMS::DoFindKLIteration(int K, int L, float* scores) {
-	K_ = K;
-	L_ = L;
-
+int64 FAMS::DoFindKLIteration(int K, int L, float* scores) {
 	LSH lsh(data_, n_, d_, K, L);
+	LSHReader lshreader(lsh);
 
-	//Compute Scores
-	timer_start();
-	ComputeScores(scores, lsh);
-	double run_time = timer_elapsed(0);
-
-	return run_time;
+	// Compute Scores
+	int64 ticks = cv::getTickCount();
+	ComputeScores(scores, lshreader, L);
+	return cv::getTickCount() - ticks;
 }
 
-// main function to run FAMS
-int FAMS::RunFAMS(const vole::MeanShiftConfig &config, double percent, int jump, float width,
-				  vector<double> *bandwidths) {
-	if (use_LSH_)
+// initialize lsh, bandwidths
+bool FAMS::PrepareFAMS(vector<double> *bandwidths) {
+	assert(hasPoints_);
+
+	if (config.use_LSH) {
 		bgLog("Running FAMS with K=%d L=%d\n", config.K, config.L);
-	else
-		bgLog("Running FAMS without LSH (use --lsh.enabled)\n");
-	if (hasPoints_ == 0) {
-		bgLog("You need to load points first!\n");
-		return 1;
+		lsh_ = new LSH(data_, n_, d_, config.K, config.L);
+	} else {
+		bgLog("Running FAMS without LSH (try --useLSH)\n");
 	}
-
-	K_ = config.K; L_ = config.L; k_ = config.k;
-	SelectMsPoints(percent, jump);
-
-	LSH lsh(data_, n_, d_, K_, L_);
 
 	//Compute pilot if necessary
 	bgLog(" Run pilot ");
 	bool cont = true;
-	bool adaptive = (width > 0. || bandwidths != NULL) ? false : true;
-	if (adaptive) {
+	bool adaptive = !(config.bandwidth > 0. || bandwidths != NULL);
+
+	if (adaptive) {  // adaptive bandwidths
 		bgLog("adaptive...");
-		cont = ComputePilot(lsh);
-	} else  {
+		cont = ComputePilot();
+	} else if (bandwidths != NULL) {  // preset bandwidths
+		bgLog("fixed bandwidth (local value)...");
+		assert(bandwidths->size() == n_);
+		cout << "maxVal_ = " << maxVal_ << endl;
+		cout << "minVal_ = " << minVal_ << endl;
+		for (int i = 0; i < n_; i++) {
+			double width = bandwidths->at(i);
+			unsigned int hWidth =
+					(unsigned int)(65535.0 * width / (maxVal_ - minVal_));
 
-		if (bandwidths != NULL) {
-			bgLog("fixed bandwidth (local value)...");
-			assert(bandwidths->size() == n_);
-			cout << "maxVal_ = " << maxVal_ << endl;
-			cout << "minVal_ = " << minVal_ << endl;
-			for (int i = 0; i < n_; i++) {
-				double width = bandwidths->at(i);
-				unsigned int hWidth   = (unsigned int)(65535.0 * width / (maxVal_ - minVal_));
-
-				points_[i].window_ = hWidth;
-
-				points_[i].weightdp2_ = pow(
-						FAMS_FLOAT_SHIFT / points_[i].window_, (d_ + 2) * FAMS_ALPHA);
-			}
-		} else {
-			bgLog("fixed bandwidth (global value)...");
-			int hWidth   = (int)(65535.0 * (width) / (maxVal_ - minVal_));
-			unsigned int hwd = (unsigned int)(hWidth * d_);
-			cout << "Window size: " << hwd << endl;
-			for (int i = 0; i < n_; i++) {
-				points_[i].window_    = hwd;
-				points_[i].weightdp2_ = 1;
-			}
+			points_[i].window_ = hWidth;
+			points_[i].weightdp2_ = pow(
+						FAMS_FLOAT_SHIFT / points_[i].window_,
+						(d_ + 2) * FAMS_ALPHA);
+		}
+	} else {  // fixed bandwidth for all points
+		bgLog("fixed bandwidth (global value)...");
+		int hWidth = (int)(65535.0 * (config.bandwidth)
+						   / (maxVal_ - minVal_));
+		unsigned int hwd = (unsigned int)(hWidth * d_);
+		cout << "Window size: " << hwd << endl;
+		for (int i = 0; i < n_; i++) {
+			points_[i].window_    = hwd;
+			points_[i].weightdp2_ = 1;
 		}
 	}
 
-	if (cont) {
-		bgLog("done.\n");
-		cont = DoFAMS(lsh);
-	}
-
-	if (cont) {
-		// join modes
-		PruneModes(FAMS_PRUNE_WINDOW, config.pruneMinN);
-	}
-
 	if (!cont) {
-		bgLog("RunFAMS aborted.\n");
-		return 1;
+		delete lsh_;
+		lsh_ = NULL;
 	}
-	return 0;
+	bgLog("done.\n");
+	return cont;
 }
 
-bool FAMS::progressUpdate(int percent)
+bool FAMS::progressUpdate(float percent, bool absolute)
 {
 	if (progressObserver == NULL)
 		return true;
 
-	return progressObserver->update(percent);
+	tbb::mutex::scoped_lock(progressMutex);
+	if (absolute)
+		progress = percent;
+	else
+		progress += percent;
+	bool cont = progressObserver->update(progress);
+	if (!cont)
+		progress = -1.f;
+	return cont;
 }

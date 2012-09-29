@@ -15,14 +15,20 @@
 #endif
 
 #include "progress_observer.h"
+#include "meanshift_config.h"
 
 #include <cmath>
-// for segment image
-#include <cv.h>
-#include "meanshift_config.h"
-#include "auxiliary.h"
-#include "multi_img.h"
-#include "lsh.h"
+#include <cstdarg>
+#include <cstdio>
+#include <opencv2/core/core.hpp> // for segment image & timer functionality
+#include <multi_img.h>
+#include <lsh.h>
+#include <lshreader.h>
+#include <tbb/blocked_range.h>
+#include <tbb/task_scheduler_init.h>
+#include <tbb/mutex.h>
+#include <emmintrin.h>
+
 // Algorithm constants
 
 /* Find K L */
@@ -32,8 +38,6 @@
 #define FAMS_FKL_TIMES    10
 
 /* FAMS main algorithm */
-// do speedup or not
-#define FAMS_DO_SPEEDUP    1
 // maximum MS iterations
 #define FAMS_MAXITER       100
 // weight power
@@ -45,7 +49,7 @@
 // min number of points assoc to a reported mode
 /*The original version had FAMS_PRUNE_MINN value 40. After testing
    it was observed that the value of 50 produces better results */
-// now set at runtime to allow using meanshift for post-processing with very few points
+// now runtime setting to allow meanshift post-processing with very few points
 //#define FAMS_PRUNE_MINN      50
 // max number of modes
 #define FAMS_PRUNE_MAXM      100
@@ -56,130 +60,197 @@
 #define FAMS_PRUNE_HDIV      1
 #define FAMS_FLOAT_SHIFT     100000.0
 
-typedef struct fams_point {
-	unsigned short *data_;
-	unsigned short usedFlag_;
-	// size of ms window around this point (L1)
-	unsigned int   window_;
-	double         weightdp2_;
-	fams_point& operator=(struct fams_point& d2) {
-		usedFlag_  = d2.usedFlag_;
+struct fams_point {
+	/*fams_point& operator=(const fams_point& d2) {
 		weightdp2_ = d2.weightdp2_;
 		window_    = d2.window_;
 		data_      = d2.data_;
 		return *this;
-	};
-} fams_point;
-typedef fams_point*   fams_pointp;
+	}*/ // useless?!
+
+	unsigned short *data_;
+	// size of ms window around this point (L1)
+	unsigned int   window_;
+	double         weightdp2_;
+};
 
 class FAMS
 {
 public:
 
-FAMS(bool use_LSH);
-~FAMS();
+	struct ComputePilotPoint {
+		ComputePilotPoint(FAMS& master)
+			: fams(master), dbg_acc(0.), dbg_noknn(0) {}
+		ComputePilotPoint(ComputePilotPoint& other, tbb::split)
+			: fams(other.fams), dbg_acc(0.), dbg_noknn(0) {}
+		void operator()(const tbb::blocked_range<int> &r);
+		void join(ComputePilotPoint &other)
+		{
+			dbg_acc += other.dbg_acc;
+			dbg_noknn += other.dbg_noknn;
+		}
 
-vole::ProgressObserver *progressObserver;
+		FAMS& fams;
+		double dbg_acc; // double, as it can go over limit of 32 bit integer
+		unsigned int dbg_noknn;
+	};
 
-bool LoadPoints(char* filename);
-bool ImportPoints(const multi_img& img);
-void CleanPoints();
-void CleanSelected();
-void CleanPrunedModes();
-void SelectMsPoints(double percent, int jump);
+	struct MeanShiftPoint {
+		MeanShiftPoint(FAMS& master)
+			: fams(master) {}
+		void operator()(const tbb::blocked_range<int> &r) const;
 
-int RunFAMS(const vole::MeanShiftConfig &config, double percent, int jump, float width,
-			vector<double> *bandwidths = NULL);
-inline int RunFAMS(const vole::MeanShiftConfig &config, float width, vector<double> *bandwidths) {
-					return RunFAMS(config, 0., 1, width, bandwidths); }
-inline int RunFAMS(const vole::MeanShiftConfig &config, int jump, float width) {
-					return RunFAMS(config, 0., jump, width); }
-inline int RunFAMS(const vole::MeanShiftConfig &config, double percent, float width) {
-					return RunFAMS(config, percent, 1, width); }
-			
-bool ComputePilot(LSH &lsh);
-bool DoFAMS(LSH &lsh);
-unsigned int DoMeanShiftAdaptiveIteration(const std::vector<unsigned int>& res,
-										  unsigned short *old,
-										  unsigned short *ret);
-void SaveModes(const std::string& filebase);
+		FAMS& fams;
+	};
 
-void SaveMymodes(const std::string& filebase);
-void CreatePpm(char *fn);
-int LoadBandwidths(const char* fn);
-void SaveBandwidths(const char* fn);
-std::pair<int, int> FindKL(int Kmin, int Kmax, int Kjump, int Lmax, int k_neigh,
-		   float width, float epsilon);
-void ComputeRealBandwidths(unsigned int h);
-double DoFindKLIteration(int K, int L, float* scores);
-void ComputeScores(float* scores, LSH &lsh);
-int PruneModes(int hprune, int npmin);
-void SavePrunedModes(const std::string& filebase);
+	friend class ComputePilotPoint;
+	friend class MeanShiftPoint;
 
-// returns 2D, 1 color image that uses color markers to show image segments
-cv::Mat1s segmentImage(bool normalize = false);
+	FAMS(const vole::MeanShiftConfig& config, vole::ProgressObserver* po=NULL);
+	~FAMS();
 
-// distance in L1 between two data elements
-inline unsigned int DistL1(fams_point& in_pt1, fams_point& in_pt2) {
-	int          in_i;
-	unsigned int in_res = 0;
-	for (in_i = 0; in_i < d_; in_i++)
-		in_res += abs(in_pt1.data_[in_i] - in_pt2.data_[in_i]);
-	return in_res;
-}
+	int getDimensionality() const { return d_; }
+	const fams_point* getPoints() const { return points_; }
+	const int* getModePerPixel() const { return indmymodes; }
 
-/*
-   a boolean function which computes the distance if it is less than dist into
-   dist_res.
-   It returns a boolean value
- */
+	bool LoadPoints(char* filename);
+	bool ImportPoints(const multi_img& img);
+	void CleanPoints();
+	void CleanPrunedModes();
+	void SelectMsPoints(double percent, int jump);
+	void ImportMsPoints(std::vector<fams_point> &points);
 
-inline bool DistL1Data(unsigned short* in_d1, fams_point& in_pt2,
-					   double in_dist,
-					   double& in_res) {
-	in_res = 0;
-	for (int in_i = 0; in_i < d_ && (in_res < in_dist); in_i++)
-		in_res += abs(in_d1[in_i] - in_pt2.data_[in_i]);
-	return(in_res < in_dist);
-}
+	/** optional argument bandwidths provides pre-calculated
+	 *  per-point bandwidth
+	 */
+	bool PrepareFAMS(vector<double> *bandwidths = NULL);
+	bool FinishFAMS();
+	void PruneModes();
 
-inline bool NotEq(unsigned short* in_d1, unsigned short* in_d2) {
-	for (int in_i = 0; in_i < d_; in_i++)
-		if (in_d1[in_i] != in_d2[in_i])
-			return true;
-	return false;
-}
+	void SaveModes(const std::string& filebase);
 
-// interval of input data
-float minVal_, maxVal_;
+	void SaveMymodes(const std::string& filebase);
+	void CreatePpm(char *fn);
+	std::pair<int, int> FindKL();
+	void ComputeRealBandwidths(unsigned int h);
+	int64 DoFindKLIteration(int K, int L, float* scores);
+	void ComputeScores(float* scores, LSHReader &lsh, int L);
+	void SavePrunedModes(const std::string& filebase);
 
-// input points
-fams_point    *points_;
-unsigned short*data_;
-int           hasPoints_;
-int           n_, d_, w_, h_; // number of points, number of dimensions
-int           dataSize_;
-double        *rr_;           //temp work
+	// returns 2D intensity image containing segment indices
+	cv::Mat1s segmentImage();
 
-// selected points on which MS is run
-int           *psel_;
-int           nsel_;
-unsigned short*modes_;
-unsigned int  *hmodes_;
-int           npm_;
-unsigned short*prunedmodes_;
-int           *nprunedmodes_;
-float         *mymodes;
-int           *indmymodes;
-float         *testmymodes;
-float         *tmpmymodes;
-// alg params
-int K_, L_, k_;
-bool use_LSH_;
+	// distance in L1 between two data elements
+	inline unsigned int DistL1(fams_point& in_pt1, fams_point& in_pt2) const {
+		int i = 0;
+		unsigned int ret = 0;
+		__m128i vret = _mm_setzero_si128();
+		__m128i vzero = _mm_setzero_si128();
+		for (; i < d_ - 8; i += 8) {
+			__m128i vec1 = _mm_loadu_si128((__m128i*)&in_pt1.data_[i]);
+			__m128i vec2 = _mm_loadu_si128((__m128i*)&in_pt2.data_[i]);
+			__m128i v1i1 = _mm_unpacklo_epi16(vec1, vzero);
+			__m128i v1i2 = _mm_unpackhi_epi16(vec1, vzero);
+			__m128i v2i1 = _mm_unpacklo_epi16(vec2, vzero);
+			__m128i v2i2 = _mm_unpackhi_epi16(vec2, vzero);
+			__m128i diff1 = _mm_sub_epi32(v1i1, v2i1);
+			__m128i diff2 = _mm_sub_epi32(v1i2, v2i2);
+			__m128i mask1 = _mm_srai_epi32(diff1, 31); // shift 32-1 bits
+			__m128i mask2 = _mm_srai_epi32(diff2, 31);
+			__m128i abs1 = _mm_xor_si128(_mm_add_epi32(diff1, mask1), mask1);
+			__m128i abs2 = _mm_xor_si128(_mm_add_epi32(diff2, mask2), mask2);
+			vret = _mm_add_epi32(abs1, _mm_add_epi32(abs2, vret));
+		}
+		ret += *((unsigned int*)&vret + 0);
+		ret += *((unsigned int*)&vret + 1);
+		ret += *((unsigned int*)&vret + 2);
+		ret += *((unsigned int*)&vret + 3);
+		for (; i < d_; i++) {
+			ret += abs(in_pt1.data_[i] - in_pt2.data_[i]);
+		}
 
-private:
-bool progressUpdate(int percent);
+		return ret;
+	}
+
+	/*
+	   a boolean function which computes the distance if it is less than dist
+	   into dist_res.
+	   It returns a boolean value
+	 */
+	inline bool DistL1Data(unsigned short* in_d1, fams_point& in_pt2,
+						   double in_dist,
+						   double& in_res) const {
+		in_res = 0;
+		for (int in_i = 0; in_i < d_ && (in_res < in_dist); in_i++)
+			in_res += abs(in_d1[in_i] - in_pt2.data_[in_i]);
+		return(in_res < in_dist);
+	}
+
+	inline bool NotEq(unsigned short* in_d1, unsigned short* in_d2) const {
+		for (int in_i = 0; in_i < d_; in_i++)
+			if (in_d1[in_i] != in_d2[in_i])
+				return true;
+		return false;
+	}
+
+	inline static void bgLog(const char *varStr, ...)
+	{
+		//obtain argument list using ANSI standard...
+		va_list argList;
+		va_start(argList, varStr);
+
+		//print the output string to stderr using
+		vfprintf(stderr, varStr, argList);
+		va_end(argList);
+		fflush(stderr);
+	}
+
+	int           n_, d_, w_, h_; // number of points, number of dimensions
+
+protected:
+	bool ComputePilot();
+	unsigned int DoMSAdaptiveIteration(
+			const std::vector<unsigned int> *res,
+			unsigned short *old, unsigned short *ret) const;
+
+	// tells whether to continue, takes recent progress
+	bool progressUpdate(float percent, bool absolute = true);
+
+	// interval of input data
+	float minVal_, maxVal_;
+
+	// input points
+	fams_point    *points_;
+	unsigned short*data_;
+	int           hasPoints_;
+	int           dataSize_;
+
+	// selected points on which MS is run
+	std::vector<fams_point*> psel_;
+	int           nsel_;
+	std::vector<unsigned short> modes_;
+	std::vector<unsigned int>  hmodes_;
+	int           npm_;
+	unsigned short*prunedmodes_;
+	int           *nprunedmodes_;
+	float         *mymodes;
+	int           *indmymodes;
+	float         *testmymodes;
+	float         *tmpmymodes;
+
+	// LSH used during ordinary run
+	LSH *lsh_;
+	// alg params
+	const vole::MeanShiftConfig &config;
+
+	// observer for progress tracking
+	vole::ProgressObserver *progressObserver;
+	float progress;
+	tbb::mutex progressMutex;
+
+	tbb::task_scheduler_init tbbinit;
 };
+
 
 #endif
 

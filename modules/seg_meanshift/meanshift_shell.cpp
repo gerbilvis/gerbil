@@ -45,10 +45,18 @@ int MeanShiftShell::execute() {
 		return 0;
 	}
 
+#ifdef WITH_SEG_FELZENSZWALB2
+	if (config.starting == SUPERPIXEL)
+		config.pruneMinN = 1;
+#endif
+
 	cv::Mat1s labels_mask = ms.execute(input);
 	if (labels_mask.empty())
 		return 0;
 
+	double mi, ma;
+	cv::minMaxLoc(labels_mask, &mi, &ma);
+	std::cerr << "min: " << mi << " \tmax: " << ma << std::endl;
 	Labeling labels = labels_mask;
 	labels.yellowcursor = false;
 

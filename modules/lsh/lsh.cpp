@@ -1,4 +1,4 @@
-/*	
+/*
 	Copyright(c) 2011 Daniel Danner,
 	Johannes Jordan <johannes.jordan@cs.fau.de>.
 
@@ -31,10 +31,7 @@ LSH::LSH(data_t *data, int npoints, int dims, int K, int L, bool dataDrivenParti
 
 		/// variety of hashes should depend solely on dims and K
 		/// (original implementation used 3 * npoints * L / 256, but has fixed bucket lengths)
-		nbuckets(GetPrime(dims * K)),
-
-		/// metadata array is initialized to 0, so first query gets tag 1
-		queryTag(1)
+		nbuckets(GetPrime(dims * K))
 {
 #ifdef DEBUG
 	fprintf(stderr, "nbuckets=%d, bucketSize=%d\n", nbuckets, bucketSize);
@@ -43,17 +40,6 @@ LSH::LSH(data_t *data, int npoints, int dims, int K, int L, bool dataDrivenParti
 	/// sanity checks
 	assert(K > 0);
 	assert(L > 0);
-
-	/// initialize metadata array
-	queryTags.assign(npoints, 0);
-
-	/// initialize result state
-	result.valid = false;
-
-	/// initialize shortcut table
-	/// loosely based on original implementation, but should actually use nsel instead of npoints
-	shortcutTableSize = GetPrime(npoints * 4);
-	shortcutTable.assign(shortcutTableSize, vector<ShortcutEntry>());
 
 	/// initialize L hash tables, with nbuckets each
 	tables.assign(L, Htable(nbuckets));
@@ -201,136 +187,6 @@ pair<int, int> LSH::hashFunc(const std::vector<bool>& boolVec, int partIdx) cons
 	}
 
 	return make_pair(primary, secondary);
-}
-
-/// perform query on given coordinates
-/// (expects array with dims elements)
-const void* LSH::query(const data_t *point, const void *endResult)
-{
-	vector<vector<bool> > boolVecs(L);
-	vector<int> primaryHashes(L);
-	vector<int> secondaryHashes(L);
-
-	/// determine boolean vector for all partitions
-	for (int l = 0; l < L; l++) {
-		boolVecs[l] = getBoolVec(point, partitions[l]);
-		std::pair<int, int> hashes = hashFunc(boolVecs[l], l);
-		primaryHashes[l] = hashes.first;
-		secondaryHashes[l] = hashes.second;
-	}
-
-	/// result caching for early trajectory termination
-	if (endResult != NULL) {
-		/// compute two hashes of all primary hashes
-		int shortcutHash1 = 0;
-		int shortcutHash2 = 0;
-		for (int l = 0; l < L; l++) {
-			shortcutHash1 += primaryHashes[l] * hashCoeffs[l];
-		}
-		for (int l = 0; l < L / 2; l++) {
-			shortcutHash2 += primaryHashes[l + L/2] * hashCoeffs[l];
-		}
-
-		shortcutHash1 = abs(shortcutHash1) % shortcutTableSize;
-
-		/// find match in result cache
-		vector<ShortcutEntry> &bucket = shortcutTable.at(shortcutHash1);
-		vector<ShortcutEntry>::const_iterator bucketIt = bucket.begin();
-
-		const void *match = NULL;
-		for (; bucketIt != bucket.end(); ++bucketIt) {
-			const ShortcutEntry &entry = *bucketIt;
-			if (entry.secondaryHash == shortcutHash2) {
-				match = entry.p;
-				break;
-			}
-		}
-
-		if (match != NULL) {
-			return match;
-		} else {
-			/// no match, insert into result cache
-			ShortcutEntry newentry;
-			newentry.p = endResult;
-			newentry.secondaryHash = shortcutHash2;
-			shortcutTable.at(shortcutHash1).push_back(newentry);
-		}
-	}
-
-	/// compare with vectors from previous query
-	if (result.valid && primaryHashes == result.primaryHashes) {
-#ifdef DEBUG_VERBOSE
-		fprintf(stderr, "LSH::query() cache hit! (%d points)\n", (int) result.points.size());
-#endif // DEBUG_VERBOSE
-		/// cache hit, keep result unchanged
-		return NULL;
-	}
-
-	/// mark result valid
-	result.valid = true;
-	result.primaryHashes = primaryHashes;
-
-	/// clear and prepare result vectors
-	result.points.clear();
-	result.numByPartition.clear();
-	result.numByPartition.reserve(L);
-
-	/// for each partition...
-	for (int l = 0; l < L; l++) {
-		int primaryHash = abs(primaryHashes[l]) % nbuckets;
-		int secondaryHash = secondaryHashes[l];
-
-#ifdef DEBUG_VERBOSE
-		fprintf(stderr, "LSH::query() l=%d, hash=%d, hash2=%d\n", l, primaryHash, hashes.second);
-#endif // DEBUG_VERBOSE
-
-		/// inspect all entries in bucket
-		vector<Entry> &bucket = tables[l][primaryHash];
-		vector<Entry>::iterator bucketIt;
-
-		for (bucketIt = bucket.begin(); bucketIt != bucket.end(); ++bucketIt) {
-			Entry &entry = *bucketIt;
-			int p = entry.point;
-			if (queryTags[p] == queryTag)
-				continue; /// already in result
-			if (entry.secondaryHash != secondaryHash)
-				continue; /// no match
-
-			/// mark point
-			queryTags[p] = queryTag;
-
-			/// add to result
-#ifdef DEBUG_VERBOSE
-			std::cerr << "LSH::query() push_back: " << p << std::endl;
-#endif // DEBUG_VERBOSE
-			result.points.push_back(p);
-		}
-
-		result.numByPartition.push_back(result.points.size());
-	}
-
-#ifdef DEBUG_VERBOSE
-	std::cerr << "LSH::query() returned " << result.points.size() << " points"  << std::endl;
-#endif // DEBUG_VERBOSE
-
-	queryTag++;
-
-	return NULL;
-}
-
-void LSH::query(unsigned int point)
-{
-	query(&data[point * dims], NULL);
-}
-
-const std::vector<unsigned int>& LSH::getResult() const
-{
-	return result.points;
-}
-
-const std::vector<int>& LSH::getNumByPartition() const
-{
-	return result.numByPartition;
 }
 
 vector< vector<unsigned int> > LSH::getLargestBuckets(double p) const

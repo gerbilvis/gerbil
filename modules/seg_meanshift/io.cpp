@@ -81,7 +81,6 @@ bool FAMS::LoadPoints(char* filename) {
 
 	// data_ holds all the data, points only reference it w/ pointers
 	data_      = new unsigned short[n_ * d_];
-	rr_        = new double[d_]; // TODO: get rid of!
 
 	for (i = 0; i < length; i++)
 		data_[i] = (unsigned short)(65535.0 * (pttemp[i] - minVal_) / deltaVal);
@@ -91,7 +90,6 @@ bool FAMS::LoadPoints(char* filename) {
 	unsigned short *dtempp;
 	for (i = 0, dtempp = data_; i < n_; i++, dtempp += d_) {
 		points_[i].data_     = dtempp;
-		points_[i].usedFlag_ = 0;
 	}
 	bgLog("done\n");
 	return true;
@@ -112,7 +110,6 @@ bool FAMS::ImportPoints(const multi_img& img) {
 
 	// setup storage
 	dataSize_ = d_ * sizeof(unsigned short); // size of one point
-	rr_ = new double[d_]; // TODO: get rid of!
 
 	// let multi_img do the hard work
 	data_ = img.export_interleaved(true);
@@ -123,14 +120,13 @@ bool FAMS::ImportPoints(const multi_img& img) {
 	unsigned short *loc;
 	for (i = 0, loc = data_; i < n_; i++, loc += d_) {
 		points_[i].data_     = loc;
-		points_[i].usedFlag_ = 0;
 	}
 	bgLog("done\n");
 	return true;
 }
 
 void FAMS::SaveMymodes(const std::string& filebase) {
-	FILE* fp = fopen((filebase + ".modes.my.txt").c_str(), "wb");
+	FILE* fp = fopen((filebase + "modes.my.txt").c_str(), "wb");
 
 	int i, j, idx;
 	idx = 0;
@@ -148,20 +144,16 @@ void FAMS::SaveMymodes(const std::string& filebase) {
 	fclose(fp);
 }
 
-cv::Mat1s FAMS::segmentImage(bool normalize) {
+cv::Mat1s FAMS::segmentImage() {
 	// mean shift was run on _all_ points
 	assert(w_ * h_ == nsel_);
 	cv::Mat1s ret(h_, w_);
 	
-	register int i;
-	unsigned char maxval = 0;
-	cv::Mat1s::iterator it;
-	for (i = 0, it = ret.begin(); it != ret.end(); ++it, ++i) {
-		*it = __min(indmymodes[i], 255) + 1; /// keep clear of zero
-		maxval = __max(maxval, *it);
+	cv::Mat1s::iterator it = ret.begin();
+	for (int i = 0; it != ret.end(); ++it, ++i) {
+		// keep clear of zero
+		*it = indmymodes[i] + 1;
 	}
-	if (normalize)
-		ret *= (255./(double)maxval);
 	
 	return ret;
 }
@@ -209,7 +201,7 @@ void FAMS::SaveModes(const std::string& filebase) {
 	if (nsel_ < 1)
 		return;
 
-	FILE* fd = fopen((filebase + ".modes.txt").c_str(), "wb");
+	FILE* fd = fopen((filebase + "modes.txt").c_str(), "wb");
 	int i, j, idx;
 	idx = 0;
 	for (i = 0; i < nsel_; i++) {
@@ -226,7 +218,7 @@ void FAMS::SaveModes(const std::string& filebase) {
 void FAMS::SavePrunedModes(const std::string& filebase) {
 	if (npm_ < 1)
 		return;
-	FILE* fd = fopen((filebase + ".modes.joined.txt").c_str(), "wb");
+	FILE* fd = fopen((filebase + "modes.joined.txt").c_str(), "wb");
 	int i, j, idx;
 	idx = 0;
 	for (i = 0; i < npm_; i++) {

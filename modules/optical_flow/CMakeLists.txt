@@ -2,7 +2,7 @@ vole_module_name("optical_flow")
 vole_module_description("Algorithms for Optical Flow computation")
 vole_module_variable("Vole_OpticalFlow")
 
-vole_add_required_dependencies("OPENCV" "BOOST" "BOOST_PROGRAM_OPTIONS" "BOOST_SERIALIZATION" "BOOST_PYTHON" "PYTHON" "TBB")
+vole_add_required_dependencies("OPENCV" "BOOST" "BOOST_PROGRAM_OPTIONS" "BOOST_SERIALIZATION" "TBB")
 vole_add_required_modules()
 
 vole_compile_library(
@@ -27,7 +27,6 @@ vole_add_python_module("_pyramidalhornschunck" "commands/pyvole_pyramidalhornsch
 vole_add_python_module("_flow" "commands/pyvole_flow.cpp")
 
 vole_compile_library(
-
   hornschunckopticalflow.hpp
   hornschunckopticalflow.cpp
   pyramidalhornschunckopticalflow.hpp

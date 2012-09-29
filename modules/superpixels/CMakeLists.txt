@@ -2,7 +2,7 @@ vole_module_name("superpixels")
 vole_module_description("Algorithms for Superpixel Segmentation")
 vole_module_variable("Vole_Superpixels")
 
-vole_add_required_dependencies("OPENCV" "BOOST" "BOOST_PROGRAM_OPTIONS" "BOOST_SERIALIZATION" "BOOST_PYTHON" "PYTHON")
+vole_add_required_dependencies("OPENCV" "BOOST" "BOOST_PROGRAM_OPTIONS" "BOOST_SERIALIZATION")
 vole_add_required_modules("cache" "rbase")
 
 vole_compile_library(
@@ -19,15 +19,22 @@ vole_compile_library(
 	commands/patches_config.cpp
 	commands/patches_config.h
 
+	commands/command_gridseg.cpp
+	commands/command_gridseg.h
+	commands/gridseg_config.cpp
+	commands/gridseg_config.h
+
 	commands/command_overlay_segmentation.cpp
 	commands/command_overlay_segmentation.h
 	commands/overlay_segmentation_config.cpp
 	commands/overlay_segmentation_config.h
+
 )
 
 vole_add_command("felzenszwalb" "commands/command_felzenszwalb.h" "vole::CommandFelzenszwalb")
 vole_add_command("veksler" "commands/command_veksler.h" "vole::CommandVeksler")
 vole_add_command("seg_overlay" "commands/command_overlay_segmentation.h" "vole::CommandOverlaySegmentation")
+vole_add_command("gridseg" "commands/command_gridseg.h" "vole::CommandGridSeg")
 
 # module names MUST BE EQUAL to the ones defined in the pyvole_bla.cpp
 # BOOST_PYTHON_MODULE(module_name)

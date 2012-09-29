@@ -91,28 +91,22 @@ inline double LNorm<float>::getSimilarity(const std::vector<float> &v1, const st
 		break;
 	case cv::NORM_L2:
 	{
-		const float* x1 = &v1[0];
-		const float* x2 = &v2[0];
 		int i = 0;
-		__m128 vret = _mm_set1_ps(0.0f);
+		__m128 vret = _mm_setzero_ps();
 		for (; i < (int)v1.size() - 4; i += 4) {
-			__m128 vec1 = _mm_load_ps(x1);
-			__m128 vec2 = _mm_load_ps(x2);
+			__m128 vec1 = _mm_load_ps(&v1[i]);
+			__m128 vec2 = _mm_load_ps(&v2[i]);
 			__m128 vdiff = _mm_sub_ps(vec1, vec2);
 			__m128 vdiff2 = _mm_mul_ps(vdiff, vdiff);
 			vret = _mm_add_ps(vret, vdiff2);
-			x1 += 4;
-			x2 += 4;
 		}
 		ret += *((float*)&vret + 0);
 		ret += *((float*)&vret + 1);
 		ret += *((float*)&vret + 2);
 		ret += *((float*)&vret + 3);
 		for (; i < v1.size(); i++) {
-			float diff = *x1 - *x2;
+			float diff = v1[i] - v2[i];
 			ret += diff * diff;
-			x1++;
-			x2++;
 		}
 		ret = std::sqrt(ret);
 		break;
@@ -146,7 +140,7 @@ inline double LNorm<double>::getSimilarity(const std::vector<double> &v1, const 
 		const double* x1 = &v1[0];
 		const double* x2 = &v2[0];
 		int i = 0;
-		__m128d vret = _mm_set1_pd(0.0);
+		__m128d vret = _mm_setzero_pd();
 		for (; i < (int)v1.size() - 2; i += 2) {
 			__m128d vec1 = _mm_load_pd(x1);
 			__m128d vec2 = _mm_load_pd(x2);

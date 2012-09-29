@@ -83,9 +83,9 @@ void MeanShiftConfig::initBoostOptions() {
 	options.add_options()
 			("useLSH", bool_switch(&use_LSH)->default_value(use_LSH),
 			 "use locality-sensitive hashing")
-			("K", value(&K)->default_value(K),
+			("lshK", value(&K)->default_value(K),
 			 "K for LSH")
-			("L", value(&L)->default_value(L),
+			("lshL", value(&L)->default_value(L),
 			 "L for LSH")
 			("seed", value(&seed)->default_value(seed),
 			 "random seed (0 means time-based)")
