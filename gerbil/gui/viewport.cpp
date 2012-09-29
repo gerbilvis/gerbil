@@ -133,8 +133,8 @@ void Viewport::PreprocessBins::operator()(const BinSet::HashMap::range_type &r)
 		for (int d = 0; d < dimensionality; ++d) {
 			pixel[d] = b.means[d] / b.weight;
 			std::pair<int, int> &range = ranges[d];
-			range.first = std::min<int>(range.first, (it->first)[d]);
-			range.second = std::max<int>(range.second, (it->first)[d]);
+			range.first = std::min<int>(range.first, (int)(it->first)[d]);
+			range.second = std::max<int>(range.second, (int)(it->first)[d]);
 		}
 		color = multi_img::bgr(pixel, dimensionality, meta, maxval);
 		b.rgb = QColor(color[2]*255, color[1]*255, color[0]*255);
