@@ -438,10 +438,12 @@ void multi_img_viewer::BinsTbb::Accumulate::operator()(const tbb::blocked_range2
 
 			BinSet::HashKey hashkey(boost::extents[multi.size()]);
 			for (int d = 0; d < multi.size(); ++d) {
+				/*
 				multi_img::Value curpos = (pixel[d] - minval) / binsize;
 				if (!illuminant.empty())
 					curpos /= illuminant[d];
-				int pos = floor(curpos);
+				*/
+				int pos = floor(curpos(pixel[d], d, minval, binsize, illuminant));
 				pos = max(pos, 0); pos = min(pos, nbins-1);
 				hashkey[d] = (unsigned char)pos;
 			}
@@ -469,62 +471,133 @@ void multi_img_viewer::BinsTbb::Accumulate::operator()(const tbb::blocked_range2
 /* create mask of single-band user selection */
 void multi_img_viewer::fillMaskSingle(int dim, int sel)
 {
-	SharedDataHold imagelock(image->lock);
-	maskholder.setTo(0);
+	struct Body {
+		multi_img::Mask &mask;
+		const multi_img::Band &band;
+		int dim; 
+		int sel;
+		multi_img::Value minval;
+		multi_img::Value binsize;
+		const std::vector<multi_img::Value> &illuminant;
 
-	multi_img::MaskIt itm = maskholder.begin();
-	multi_img::BandConstIt itb = (**image)[dim].begin();
-	for (; itm != maskholder.end(); ++itb, ++itm) {
-		int pos = floor(curpos(*itb, dim));
-		if (pos == sel)
-			*itm = 1;
-	}
+		Body(multi_img::Mask &mask, const multi_img::Band &band, int dim, int sel,
+			multi_img::Value minval, multi_img::Value binsize, 
+			const std::vector<multi_img::Value> &illuminant)
+			: mask(mask), band(band), dim(dim), sel(sel), minval(minval), 
+			binsize(binsize), illuminant(illuminant) {}
+
+		void operator()(const tbb::blocked_range2d<size_t> &r) const {
+			for (int y = r.rows().begin(); y != r.rows().end(); ++y) {
+				unsigned char *mrow = mask[y];
+				const multi_img::Value *brow = band[y];
+				for (int x = r.cols().begin(); x != r.cols().end(); ++x) {
+					int pos = floor(curpos(brow[x], dim, minval, binsize, illuminant));
+						mrow[x] = (pos == sel) ? 1 : 0;
+				}
+			}
+		}
+	};
+
+	SharedDataHold imagelock(image->lock);
+	SharedDataHold ctxlock(viewport->ctx->lock);
+	Body body(maskholder, (**image)[dim], dim, sel, 
+		(*viewport->ctx)->minval, (*viewport->ctx)->binsize, illuminant);
+	tbb::parallel_for(tbb::blocked_range2d<size_t>(
+		0, maskholder.rows, 0, maskholder.cols), body);
 }
 
 void multi_img_viewer::fillMaskLimiters(const std::vector<std::pair<int, int> >& l)
 {
-	SharedDataHold imagelock(image->lock);
-	maskholder.setTo(1);
+	struct Body {
+		multi_img::Mask &mask;
+		const multi_img &image;
+		multi_img::Value minval;
+		multi_img::Value binsize;
+		const std::vector<multi_img::Value> &illuminant;
+		const std::vector<std::pair<int, int> > &l;
 
-	for (int y = 0; y < (*image)->height; ++y) {
-		uchar *row = maskholder[y];
-		for (int x = 0; x < (*image)->width; ++x) {
-			const multi_img::Pixel& p = (**image)(y, x);
-			for (unsigned int d = 0; d < (*image)->size(); ++d) {
-				int pos = floor(curpos(p[d], d));
-				if (pos < l[d].first || pos > l[d].second) {
-					row[x] = 0;
-					break;
+		Body(multi_img::Mask &mask, const multi_img &image,
+			multi_img::Value minval, multi_img::Value binsize, 
+			const std::vector<multi_img::Value> &illuminant,
+			const std::vector<std::pair<int, int> > &l)
+			: mask(mask), image(image), minval(minval), 
+			binsize(binsize), illuminant(illuminant), l(l) {}
+
+		void operator()(const tbb::blocked_range2d<size_t> &r) const {
+			for (int y = r.rows().begin(); y != r.rows().end(); ++y) {
+				unsigned char *row = mask[y];
+				for (int x = r.cols().begin(); x != r.cols().end(); ++x) {
+					row[x] = 1;
+					const multi_img::Pixel &p = image(y, x);
+					for (unsigned int d = 0; d < image.size(); ++d) {
+						int pos = floor(curpos(p[d], d, minval, binsize, illuminant));
+						if (pos < l[d].first || pos > l[d].second) {
+							row[x] = 0;
+							break;
+						}
+					}
 				}
 			}
 		}
-	}
+	};
+
+	SharedDataHold imagelock(image->lock);
+	SharedDataHold ctxlock(viewport->ctx->lock);
+	Body body(maskholder, **image, (*viewport->ctx)->minval, 
+		(*viewport->ctx)->binsize, illuminant, l);
+	tbb::parallel_for(tbb::blocked_range2d<size_t>(
+		0,(*image)->height, 0, (*image)->width), body);
 }
 
 void multi_img_viewer::updateMaskLimiters(
 		const std::vector<std::pair<int, int> >& l, int dim)
 {
-	SharedDataHold imagelock(image->lock);
-	for (int y = 0; y < (*image)->height; ++y) {
-		uchar *mrow = maskholder[y];
-		const multi_img::Value *brow = (**image)[dim][y];
-		for (int x = 0; x < (*image)->width; ++x) {
-			int pos = floor(curpos(brow[x], dim));
-			if (pos < l[dim].first || pos > l[dim].second) {
-				mrow[x] = 0;
-			} else if (mrow[x] == 0) { // we need to do exhaustive test
-				mrow[x] = 1;
-				const multi_img::Pixel& p = (**image)(y, x);
-				for (unsigned int d = 0; d < (*image)->size(); ++d) {
-					int pos = floor(curpos(p[d], d));
-					if (pos < l[d].first || pos > l[d].second) {
+	struct Body {
+		multi_img::Mask &mask;
+		const multi_img &image;
+		int dim;
+		multi_img::Value minval;
+		multi_img::Value binsize;
+		const std::vector<multi_img::Value> &illuminant;
+		const std::vector<std::pair<int, int> > &l;
+
+		Body(multi_img::Mask &mask, const multi_img &image, int dim,
+			multi_img::Value minval, multi_img::Value binsize, 
+			const std::vector<multi_img::Value> &illuminant,
+			const std::vector<std::pair<int, int> > &l)
+			: mask(mask), image(image), dim(dim), minval(minval), 
+			binsize(binsize), illuminant(illuminant), l(l) {}
+
+		void operator()(const tbb::blocked_range2d<size_t> &r) const {
+			for (int y = r.rows().begin(); y != r.rows().end(); ++y) {
+				unsigned char *mrow = mask[y];
+				const multi_img::Value *brow = image[dim][y];
+				for (int x = r.cols().begin(); x != r.cols().end(); ++x) {
+					int pos = floor(curpos(brow[x], dim, minval, binsize, illuminant));
+					if (pos < l[dim].first || pos > l[dim].second) {
 						mrow[x] = 0;
-						break;
+					} else if (mrow[x] == 0) { // we need to do exhaustive test
+						mrow[x] = 1;
+						const multi_img::Pixel& p = image(y, x);
+						for (unsigned int d = 0; d < image.size(); ++d) {
+							int pos = floor(curpos(p[d], d, minval, binsize, illuminant));
+							if (pos < l[d].first || pos > l[d].second) {
+								mrow[x] = 0;
+								break;
+							}
+						}
 					}
 				}
 			}
 		}
-	}
+	};
+
+	SharedDataHold imagelock(image->lock);
+	SharedDataHold ctxlock(viewport->ctx->lock);
+	Body body(maskholder, **image, dim, (*viewport->ctx)->minval, 
+		(*viewport->ctx)->binsize, illuminant, l);
+	tbb::parallel_for(tbb::blocked_range2d<size_t>(
+		0,(*image)->height, 0, (*image)->width), body);
 }
 
 void multi_img_viewer::updateMask(int dim)
@@ -543,12 +616,15 @@ void multi_img_viewer::updateMask(int dim)
 void multi_img_viewer::overlay(int x, int y)
 {
 	SharedDataHold imagelock(image->lock);
+	SharedDataHold ctxlock(viewport->ctx->lock);
 	const multi_img::Pixel &pixel = (**image)(y, x);
 	QPolygonF &points = viewport->overlayPoints;
 	points.resize((*image)->size());
 
-	for (unsigned int d = 0; d < (*image)->size(); ++d)
-		points[d] = QPointF(d, curpos(pixel[d], d));
+	for (unsigned int d = 0; d < (*image)->size(); ++d) {
+		points[d] = QPointF(d, curpos(pixel[d], d, 
+			(*viewport->ctx)->minval, (*viewport->ctx)->binsize, illuminant));
+	}
 
 	viewport->overlayMode = true;
 	viewport->repaint();

@@ -13,6 +13,9 @@
 #include <QPaintEvent>
 #include <iostream>
 #include <cmath>
+#include <tbb/task.h>
+#include <tbb/blocked_range2d.h>
+#include <tbb/parallel_for.h>
 
 BandView::BandView(QWidget *parent)
 	: ScaledView(parent),
@@ -142,23 +145,44 @@ void BandView::updateCache()
 	QPainter painter(&cachedPixmap);
 //	painter.setCompositionMode(QPainter::CompositionMode_Darken);
 
-	QImage dest(pixmap->width(), pixmap->height(), QImage::Format_ARGB32);
-	dest.fill(qRgba(0, 0, 0, 0));
-	for (int y = 0; y < pixmap->height(); ++y) {
-		const short *srcrow = (seedMode ? seedMap[y] : labels[y]);
-		QRgb *destrow = (QRgb*)dest.scanLine(y);
-		for (int x = 0; x < pixmap->width(); ++x) {
-			short val = srcrow[x];
-			if (seedMode) {
-				if (val == 255)
-					destrow[x] = seedColorsA.first.rgba();
-				else if (val == 0)
-					destrow[x] = seedColorsA.second.rgba();
-			} else if (val > 0) {
-				destrow[x] = labelColorsA[val].rgba();
+	struct Body {
+		QImage &dest;
+		bool seedMode;
+		const cv::Mat1s &labels;
+		const cv::Mat1s &seedMap;
+		const QVector<QColor> &labelColorsA;
+		const std::pair<QColor, QColor> &seedColorsA;
+
+		Body(QImage &dest, bool seedMode, const cv::Mat1s &labels, const cv::Mat1s &seedMap,
+			const QVector<QColor> &labelColorsA, const std::pair<QColor, QColor> &seedColorsA)
+			: dest(dest), seedMode(seedMode), labels(labels), seedMap(seedMap),
+			labelColorsA(labelColorsA), seedColorsA(seedColorsA) {}
+
+		void operator()(const tbb::blocked_range2d<size_t> &r) const {
+			for (int y = r.rows().begin(); y != r.rows().end(); ++y) {
+				const short *srcrow = (seedMode ? seedMap[y] : labels[y]);
+				QRgb *destrow = (QRgb*)dest.scanLine(y);
+				for (int x = r.cols().begin(); x != r.cols().end(); ++x) {
+					short val = srcrow[x];
+					destrow[x] = qRgba(0, 0, 0, 0);
+					if (seedMode) {
+						if (val == 255)
+							destrow[x] = seedColorsA.first.rgba();
+						else if (val == 0)
+							destrow[x] = seedColorsA.second.rgba();
+					} else if (val > 0) {
+						destrow[x] = labelColorsA[val].rgba();
+					}
+				}
 			}
 		}
-	}
+	};
+
+	QImage dest(pixmap->width(), pixmap->height(), QImage::Format_ARGB32);
+	Body body(dest, seedMode, labels, seedMap, labelColorsA, seedColorsA);
+	tbb::parallel_for(tbb::blocked_range2d<size_t>(
+		0, pixmap->height(), 0, pixmap->width()), body);
+
 	painter.drawImage(0, 0, dest);
 }
 
@@ -326,7 +350,7 @@ void BandView::updatePoint(const QPointF &p)
 {
 	QPoint damagetl = scaler.map(QPoint(p.x() - 2, p.y() - 2));
 	QPoint damagebr = scaler.map(QPoint(p.x() + 2, p.y() + 2));
-	update(QRect(damagetl, damagebr));
+	repaint(QRect(damagetl, damagebr));
 }
 
 void BandView::clearLabelPixels()
