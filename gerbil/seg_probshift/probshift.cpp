@@ -18,6 +18,7 @@
 #include <iostream>
 #include <fstream>
 #include <lsh.h>
+#include <lshreader.h>
 
 #include <slepceps.h>
 #include <petscmat.h>
@@ -147,12 +148,17 @@ cv::Mat1s ProbShift::execute(const multi_img& input, const std::string& base, Pr
 		flannIndex->knnSearch(pointsMat, queriesIndices, queriesDists, maxwin, paramSearch);
 		cout << "done" << endl;
 	}
-#pragma omp parallel
-	{
-	// thread-local LSH instance
-	LSH *lsh = NULL;
+
+	LSH *lsh_data = NULL;
 	if (config.useLSH)
-		lsh = new LSH(data, npoints, input.size(), config.lshK, config.lshL);
+		lsh_data = new LSH(data, npoints, input.size(), config.lshK, config.lshL);
+
+#pragma omp parallel
+{
+	// thread-local LSH reader
+	LSHReader *lsh = NULL;
+	if (lsh_data)
+		lsh = new LSHReader(*lsh_data);
 
 	// thread-local votes
 	vector< Mat_<double> > localvotes(npoints);
@@ -181,7 +187,7 @@ cv::Mat1s ProbShift::execute(const multi_img& input, const std::string& base, Pr
 //		for (int i = 0; i < (int) npoints; ++i)
 //			queryIndices[i] = i;
 
-		if (config.useLSH) {
+		if (lsh) {
 			lsh->query(currentp);
 			const vector<unsigned int> &lshResult = lsh->getResult();
 			queryIndices.assign(lshResult.begin(), lshResult.end());
@@ -338,21 +344,19 @@ cv::Mat1s ProbShift::execute(const multi_img& input, const std::string& base, Pr
 		}
 	}
 
-// join votes
-#pragma omp critical
+	// clean up
+	delete lsh;
+	// join votes
+	#pragma omp critical
 	{
 		for (unsigned int i = 0; i < votes.size(); ++i) {
 			votes[i] += localvotes[i];
 		}
 	}
-
-	// clean up
-	if (lsh)
-		delete lsh;
 } // end omp parallel
-
-	if (flannIndex)
-		delete flannIndex;
+	// clean up
+	delete lsh_data;
+	delete flannIndex;
 
 	if (tooSmallNeighborhood)
 		cout << tooSmallNeighborhood << " neighborhoods could have been larger but ran out of candidates (adjust LSH parameters or maximum window size)" << endl;

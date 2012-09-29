@@ -45,7 +45,7 @@ int FelzenszwalbShell::execute() {
 		cv::Mat1i::iterator sit = sizes.begin();
 		felzenszwalb::segmap::const_iterator mit = segmap.begin();
 		for (; mit != segmap.end(); ++sit, ++mit)
-			*sit = mit->second.size();
+			*sit = mit->size();
 		cv::Scalar mean, stddev;
 		cv::meanStdDev(sizes, mean, stddev);
 		std::cout << "Found " << result.second.size() << " segments"
@@ -55,7 +55,7 @@ int FelzenszwalbShell::execute() {
 
 	vole::Labeling output;
 	output.yellowcursor = false;
-	output.read(result.first, false);
+	output.read(result.first, false); // TODO: we get consecutive index now!
 
 	std::string output_name = config.output_file;
 	cv::imwrite(output_name, output.bgr());

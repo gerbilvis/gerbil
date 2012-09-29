@@ -21,12 +21,11 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307 USA
 
 #include <multi_img.h>
 #include <similarity_measure.h>
-#include <boost/unordered_map.hpp>
 
 namespace gerbil {
   namespace felzenszwalb {
 
-	typedef boost::unordered_map<int, std::vector<int> > segmap;
+	typedef std::vector<std::vector<int> > segmap;
 
 	// disjoint-set forests using union-by-rank and path compression (sort of).
 	struct uni_elt {

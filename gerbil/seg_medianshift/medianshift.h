@@ -5,6 +5,7 @@
 #include "progress_observer.h"
 #include <multi_img.h>
 #include <lsh.h>
+#include <lshreader.h>
 
 /// maximum number of shift iterations
 #define MEDIANSHIFT_MAXITER 5
@@ -73,7 +74,7 @@ private:
 	}
 
 	/// geodesic propagation of modes to whole image
-	vector<unsigned int> propagateModes(LSH &lsh, const vector<unsigned int> &modes, const multi_img &image, const vector<double> &windowSizes);
+	vector<unsigned int> propagateModes(LSHReader &lsh, const vector<unsigned int> &modes, const multi_img &image, const vector<double> &windowSizes);
 
 	/// update progress if an observer exists
 	bool progressUpdate(int percent);

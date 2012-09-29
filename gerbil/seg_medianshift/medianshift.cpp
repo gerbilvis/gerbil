@@ -8,6 +8,7 @@
 
 #include "medianshift.h"
 #include <lsh.h>
+#include <lshreader.h>
 
 #include <multi_img.h>
 #include <opencv2/highgui/highgui.hpp>
@@ -167,8 +168,10 @@ cv::Mat1s MedianShift::execute(const multi_img& input, ProgressObserver *progres
 //	cout << "using fixed seed 42" << endl;
 //	srand(42);
 
-	LSH lsh = LSH(data, npoints, inputp->size(), config.K, config.L, false);
-	LSH lsh_ddp = LSH(data, npoints, inputp->size(), config.K, config.L, true);
+	LSH lsh_data(data, npoints, inputp->size(), config.K, config.L, false);
+	LSHReader lsh(lsh_data);
+	LSH lsh_ddp_data(data, npoints, inputp->size(), config.K, config.L, true);
+	LSHReader lsh_ddp(lsh_ddp_data);
 
 	cout << "Computing adaptive window sizes using k=" << config.k << endl;
 
@@ -229,7 +232,7 @@ cv::Mat1s MedianShift::execute(const multi_img& input, ProgressObserver *progres
 	if (config.signifThresh >= 0) {
 		cout << "Significant mode detection: starting with medians of largest LSH buckets (threshold " << config.signifThresh << ")" << endl;
 
-		vector< vector<unsigned int> > largest = lsh.getLargestBuckets(config.signifThresh);
+		vector< vector<unsigned int> > largest = lsh.lsh.getLargestBuckets(config.signifThresh);
 
 		vector< vector<unsigned int> >::const_iterator buckets_it;
 		for (buckets_it = largest.begin(); buckets_it < largest.end(); ++buckets_it) {
@@ -326,7 +329,8 @@ cv::Mat1s MedianShift::execute(const multi_img& input, ProgressObserver *progres
 
 	double radiusFactor = 1;
 	for (int iterc = 0; iterc < MEDIANSHIFT_MAXITER; ++iterc) {
-		LSH lsh_modes = LSH(data, npoints, inputp->size(), config.K, config.L, false, *prevModes);
+		LSH lsh_modes_data = LSH(data, npoints, inputp->size(), config.K, config.L, false, *prevModes);
+		LSHReader lsh_modes(lsh_modes_data);
 
 		vector<unsigned int> *newModes = new vector<unsigned int>();
 		vector<unsigned int> *newWeights = new vector<unsigned int>();
@@ -425,7 +429,8 @@ cv::Mat1s MedianShift::execute(const multi_img& input, ProgressObserver *progres
 			ret(i - (i % ret.cols), i % ret.cols) = m + 1;
 		}
 	} else {
-		LSH lsh_new = LSH(data, npoints, inputp->size(), config.K, config.L, true);
+		LSH lsh_new_data(data, npoints, inputp->size(), config.K, config.L, true);
+		LSHReader lsh_new(lsh_new_data);
 		vector<unsigned int> assigned = propagateModes(lsh_new, *prevModes, *inputp, windowSizes);
 
 		unsigned int i = 0;
@@ -441,7 +446,7 @@ cv::Mat1s MedianShift::execute(const multi_img& input, ProgressObserver *progres
 	return ret;
 }
 
-vector<unsigned int> MedianShift::propagateModes(LSH &lsh, const vector<unsigned int> &modes, const multi_img &img, const vector<double> &windowSizes) {
+vector<unsigned int> MedianShift::propagateModes(LSHReader &lsh, const vector<unsigned int> &modes, const multi_img &img, const vector<double> &windowSizes) {
 	const unsigned int npoints = img.width * img.height;
 	std::priority_queue<GpItem> queue;
 

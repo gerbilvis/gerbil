@@ -18,6 +18,7 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307 USA
 
 #include "felzenszwalb.h"
 #include <cstdlib>
+#include <boost/unordered_map.hpp>
 
 namespace gerbil {
   namespace felzenszwalb {
@@ -90,18 +91,19 @@ std::pair<cv::Mat1i, segmap> segment_image(const multi_img &im,
 	// create index map and sets of segments
 	cv::Mat1i indices(height, width);
 	segmap segments;
+	// provide mapping between old universe index and new sequential index
+	boost::unordered_map<int, int> mapping;
 
-	for (int y = 0; y < height; y++) {
-		int *row = indices[y];
-		for (int x = 0; x < width; x++) {
-			int coord = y * width + x;
-			int index = u->find(coord);
-			if (segments.find(index) == segments.end())
-				segments[index] = std::vector<int>(1, coord);
-			else
-				segments[index].push_back(coord);
-			row[x] = index;
+	cv::Mat1i::iterator it = indices.begin();
+	for (int coord = 0; it != indices.end(); ++it, ++coord) {
+		int index = u->find(coord);
+		if (mapping.find(index) == mapping.end()) {
+			mapping[index] = segments.size();
+			segments.push_back(std::vector<int>(1, coord));
+		} else {
+			segments[mapping[index]].push_back(coord);
 		}
+		*it = mapping[index];
 	}
 
 	delete u;

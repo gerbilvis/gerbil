@@ -162,8 +162,8 @@ void ViewerWindow::applyROI(bool reuse)
 
 	SharedDataHold full_image_lock(full_image->lock);
 	size_t numbands = bandsSlider->value();
-	if (numbands <= 0)
-		numbands = 1;
+	if (numbands <= 2)
+		numbands = 3;
 	if (numbands > (*full_image)->size())
 		numbands = (*full_image)->size();
 	full_image_lock.unlock();
@@ -192,8 +192,7 @@ void ViewerWindow::applyROI(bool reuse)
 	}
 
 	if (reuse && profitable) {
-		viewIMG->addImage(tmp_sets_image, add, roi);
-	} else {
+		viewIMG->addImage(tmp_sets_image, add, roi);	} else {
 		viewIMG->setImage(image, IMG, roi);
 	}
 

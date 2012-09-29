@@ -305,6 +305,10 @@ void multi_img_viewer::render(bool necessary)
 			SharedDataHold imagelock(image->lock);
 			maskholder = multi_img::Mask((*image)->height, (*image)->width, (uchar)0);
 			maskReset = false;
+			/* this should be in viewport->reset(),
+			   but here it fits petr's branch better */
+			if (viewport->selection >= bins)
+				viewport->selection = 0;
 		}
 		if (titleReset) {
 			SharedDataHold ctxlock(viewport->ctx->lock);
