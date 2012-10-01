@@ -23,7 +23,7 @@ public:
 	/** Put task into queue for later calculation. */
 	void push(BackgroundTaskPtr &task);
 	/** Cancel all tasks associated with the given ROI. */
-	void cancelTasks(cv::Rect &roi = cv::Rect(0, 0, 0, 0));
+	void cancelTasks(const cv::Rect &roi = cv::Rect(0, 0, 0, 0));
 
 	/** Background worker thread's main(). */
 	void operator()(); 

@@ -46,7 +46,7 @@ void BackgroundTaskQueue::push(BackgroundTaskPtr &task)
 	future.notify_all();
 }
 
-void BackgroundTaskQueue::cancelTasks(cv::Rect &roi) 
+void BackgroundTaskQueue::cancelTasks(const cv::Rect &roi) 
 {
 	Lock lock(guard);
 	std::deque<BackgroundTaskPtr>::iterator it = taskQueue.begin();
