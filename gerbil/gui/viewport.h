@@ -191,6 +191,9 @@ public slots:
 
 	void rebuild();
 
+protected slots:
+	void continueDrawing();
+
 signals:
 	void bandSelected(representation type, int dim);
 	void newOverlay(int dim);
@@ -312,6 +315,9 @@ private:
 	} drawingState;
 	// this timer will re-enable regular drawing after resize/folding
 	QTimer resizeTimer;
+
+	QTimer renderTimer;
+	unsigned int renderedLines;
 
 	std::vector<QString> yaxis;
 	int yaxisWidth;

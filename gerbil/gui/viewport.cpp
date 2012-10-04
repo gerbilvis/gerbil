@@ -41,6 +41,9 @@ Viewport::Viewport(QWidget *parent)
 	resizeTimer.setSingleShot(true);
 	connect(&resizeTimer, SIGNAL(timeout()), this, SLOT(endNoHQ()));
 	resizeTimer.start(0);
+	renderTimer.setSingleShot(true);
+	connect(&renderTimer, SIGNAL(timeout()), this, SLOT(continueDrawing()));
+	renderedLines = 0;
 }
 
 Viewport::~Viewport()
@@ -264,6 +267,8 @@ void Viewport::updateModelview()
 	modelviewI = modelview.inverted();
 }
 
+#define RENDER_STEP 10000
+
 void Viewport::drawBins(QPainter &painter)
 {
 	SharedDataHold ctxlock(ctx->lock);
@@ -273,7 +278,8 @@ void Viewport::drawBins(QPainter &painter)
 	painter.beginNativePainting();
 	glEnable(GL_BLEND);
 	glEnable(GL_DEPTH_TEST);
-	glClear(GL_DEPTH_BUFFER_BIT);
+	if (renderedLines == 0)
+		glClear(GL_DEPTH_BUFFER_BIT);
 	glDepthFunc(GL_LESS);
 	glBlendFunc(GL_SRC_ALPHA,GL_ONE_MINUS_SRC_ALPHA);
 	bool success = vb.bind();
@@ -287,7 +293,7 @@ void Viewport::drawBins(QPainter &painter)
 	}
 	glEnableClientState(GL_VERTEX_ARRAY);
 	glVertexPointer(2, GL_FLOAT, 0, 0);
-	int currind = 0;
+	int currind = renderedLines * (*ctx)->dimensionality;
 
 	/* check if we implicitely have a clear view */
 	implicitClearView = (clearView || !active || drawingState == SCREENSHOT ||
@@ -297,12 +303,14 @@ void Viewport::drawBins(QPainter &painter)
 	int end = (showLabeled ? (*sets)->size() : 1);
 
 	unsigned int total = shuffleIdx.size();
-	if (drawingState == RESIZE)
-		total /= 10;
-	for (unsigned int i = 0; i < total; ++i) {
+	unsigned int first = renderedLines;
+	unsigned int last = (renderedLines + RENDER_STEP) < total ? (renderedLines + RENDER_STEP) : total;
+	for (unsigned int i = first; i < last; ++i) {
 		std::pair<int, BinSet::HashKey> &idx = shuffleIdx[i];
 		if (idx.first < start || idx.first >= end) {
 			currind += (*ctx)->dimensionality;
+			if (last < total)
+				++last; // increase loop count
 			continue;
 		}
 
@@ -362,6 +370,15 @@ void Viewport::drawBins(QPainter &painter)
 	vb.release();
 		glDisable(GL_DEPTH_TEST);
 		painter.endNativePainting();
+
+	renderedLines += (last - first);
+	if (renderedLines < total && isEnabled()) {
+		if (renderedLines <= RENDER_STEP) {
+			renderTimer.start(150);
+		} else {
+			renderTimer.start(0);
+		}
+	}
 }
 
 void Viewport::drawAxesFg(QPainter &painter)
@@ -532,6 +549,28 @@ void Viewport::drawRegular()
 	}
 }
 
+void Viewport::continueDrawing()
+{
+	cacheValid = false;
+	QPainter painter(this);
+
+	if (drawingState == FOLDING)
+		return;
+
+	if (drawingState == HIGH_QUALITY || drawingState == SCREENSHOT)
+		painter.setRenderHint(QPainter::Antialiasing);
+
+	painter.save();
+	painter.setWorldTransform(modelview);
+	drawBins(painter);
+	drawAxesFg(painter);
+	painter.restore();
+
+	if (!isEnabled()) {
+		drawWaitMessage(painter);
+	}
+}
+
 void Viewport::drawOverlay()
 {
 	QPainter painter(this);
@@ -572,6 +611,9 @@ void Viewport::activate()
 
 void Viewport::paintEvent(QPaintEvent *)
 {
+	renderTimer.stop();
+	renderedLines = 0;
+
 	SharedDataHold ctxlock(ctx->lock);
 	SharedDataHold setslock(sets->lock);
 
