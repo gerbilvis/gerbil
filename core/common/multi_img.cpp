@@ -90,7 +90,7 @@ multi_img::multi_img(const multi_img &a, const cv::Rect &roi)
  : minval(a.minval), maxval(a.maxval), width(roi.width), height(roi.height),
    meta(a.meta), roi(roi), bands(a.size())
 {
-	std::cerr << "multi_img: reference w/ roi" << std::endl;
+	//std::cerr << "multi_img: reference w/ roi" << std::endl;
 	for (size_t i = 0; i < bands.size(); ++i)
 		bands[i] = Band(a.bands[i], roi);
 	/* FIXME: - inconsistent to other copy constr.

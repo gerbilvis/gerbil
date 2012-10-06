@@ -39,6 +39,7 @@ namespace MultiImg {
 	class Band2QImageTbb;
 	class RescaleTbb;
 	class GradientTbb;
+	class GradientCuda;
 	class PcaTbb;
 	class DataRangeTbb;
 	class ClampTbb;
@@ -503,6 +504,7 @@ protected:
 	friend class MultiImg::Band2QImageTbb;
 	friend class MultiImg::RescaleTbb;
 	friend class MultiImg::GradientTbb;
+	friend class MultiImg::GradientCuda;
 	friend class MultiImg::PcaTbb;
 	friend class MultiImg::DataRangeTbb;
 	friend class MultiImg::ClampTbb;
