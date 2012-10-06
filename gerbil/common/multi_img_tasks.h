@@ -337,6 +337,22 @@ protected:
 	bool includecache;
 };
 
+class ClampCuda : public BackgroundTask {
+public:
+	ClampCuda(multi_img_ptr multi, multi_img_ptr minmax,
+		cv::Rect targetRoi = cv::Rect(0, 0, 0, 0), bool includecache = true) 
+		: BackgroundTask(targetRoi), multi(multi), minmax(minmax), includecache(includecache) {}
+	virtual ~ClampCuda() {}
+	virtual bool run();
+	virtual void cancel() { stopper.cancel_group_execution(); }
+protected:
+	tbb::task_group_context stopper;
+
+	multi_img_ptr multi;
+	multi_img_ptr minmax;
+	bool includecache;
+};
+
 class IlluminantTbb : public BackgroundTask {
 public:
 	IlluminantTbb(multi_img_ptr multi, const Illuminant& il, bool remove,

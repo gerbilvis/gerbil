@@ -593,9 +593,13 @@ bool ClampTbb::run()
 	target->minval = (*minmax)->minval;
 	target->maxval = (*minmax)->maxval;
 
+	vole::Stopwatch s;
+
 	Clamp computeClamp(**multi, *target);
 	tbb::parallel_for(tbb::blocked_range<size_t>(0, target->size()), 
 		computeClamp, tbb::auto_partitioner(), stopper);
+
+	STOPWATCH_PRINT(s, "Clamp TBB")
 
 	if (includecache) {
 		CommonTbb::RebuildPixels rebuildPixels(*target);
@@ -624,6 +628,46 @@ void ClampTbb::Clamp::operator()(const tbb::blocked_range<size_t> &r) const
 		multi_img::Band &tgt = target.bands[d];
 		cv::max(src, target.minval, tgt);
 		cv::min(tgt, target.maxval, tgt);
+	}
+}
+
+bool ClampCuda::run() 
+{
+	multi_img *target = new multi_img((*multi)->height, (*multi)->width, (*multi)->size());
+	target->roi = (*multi)->roi;
+	target->meta = (*multi)->meta;
+	target->minval = (*minmax)->minval;
+	target->maxval = (*minmax)->maxval;
+
+	vole::Stopwatch s;
+
+	cv::gpu::GpuMat band((*multi)->height, (*multi)->width, multi_img::ValueType);
+	for (size_t d = 0; d != target->size(); ++d) {
+		band.upload((*multi)->bands[d]);
+		cv::gpu::max(band, target->minval, band);
+		cv::gpu::min(band, target->maxval, band);
+		band.download(target->bands[d]);
+	}
+
+	STOPWATCH_PRINT(s, "Clamp CUDA")
+
+	if (includecache) {
+		CommonTbb::RebuildPixels rebuildPixels(*target);
+		tbb::parallel_for(tbb::blocked_range<size_t>(0, target->size()), 
+			rebuildPixels, tbb::auto_partitioner(), stopper);
+		target->dirty.setTo(0);
+		target->anydirt = false;
+	} else {
+		target->resetPixels();
+	}
+
+	if (stopper.is_group_execution_cancelled()) {
+		delete target;
+		return false;
+	} else {
+		SharedDataSwap lock(multi->lock);
+		delete multi->swap(target);
+		return true;
 	}
 }
 

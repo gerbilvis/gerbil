@@ -25,8 +25,9 @@
 #include <iostream>
 #include <QShortcut>
 
-#define USE_CUDA_GRADIENT		1
-#define USE_CUDA_DATARANGE		0
+#define USE_CUDA_GRADIENT       1
+#define USE_CUDA_DATARANGE      0
+#define USE_CUDA_CLAMP          0
 
 ViewerWindow::ViewerWindow(multi_img *image, QWidget *parent)
 	: QMainWindow(parent),
@@ -1154,9 +1155,15 @@ void ViewerWindow::clampNormUserRange()
 			BackgroundTaskQueue::instance().push(taskNormRange);
 		}
 
-		BackgroundTaskPtr taskClamp(new MultiImg::ClampTbb(
-			full_image, image, roi, false));
-		BackgroundTaskQueue::instance().push(taskClamp);
+		if (cv::gpu::getCudaEnabledDeviceCount() > 0 && USE_CUDA_CLAMP) {
+			BackgroundTaskPtr taskClamp(new MultiImg::ClampCuda(
+				full_image, image, roi, false));
+			BackgroundTaskQueue::instance().push(taskClamp);
+		} else {
+			BackgroundTaskPtr taskClamp(new MultiImg::ClampTbb(
+				full_image, image, roi, false));
+			BackgroundTaskQueue::instance().push(taskClamp);
+		}
 
 		applyROI(false);
 		rgbDock->setEnabled(false);
@@ -1189,8 +1196,13 @@ void ViewerWindow::clampNormUserRange()
 			BackgroundTaskQueue::instance().push(taskNormRange);
 		}
 
-		BackgroundTaskPtr taskClamp(new MultiImg::ClampTbb(gradient, gradient));
-		BackgroundTaskQueue::instance().push(taskClamp);
+		if (cv::gpu::getCudaEnabledDeviceCount() > 0 && USE_CUDA_CLAMP) {
+			BackgroundTaskPtr taskClamp(new MultiImg::ClampCuda(gradient, gradient));
+			BackgroundTaskQueue::instance().push(taskClamp);
+		} else {
+			BackgroundTaskPtr taskClamp(new MultiImg::ClampTbb(gradient, gradient));
+			BackgroundTaskQueue::instance().push(taskClamp);
+		}
 
 		viewGRAD->updateBinning(-1);
 
