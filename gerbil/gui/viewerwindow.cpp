@@ -17,12 +17,15 @@
 #include <qtopencv.h>
 
 #include <opencv2/highgui/highgui.hpp>
+#include <opencv2/gpu/gpu.hpp>
 
 #include <QPainter>
 #include <QIcon>
 #include <QSignalMapper>
 #include <iostream>
 #include <QShortcut>
+
+#define USE_CUDA 1
 
 ViewerWindow::ViewerWindow(multi_img *image, QWidget *parent)
 	: QMainWindow(parent),
@@ -201,9 +204,15 @@ void ViewerWindow::applyROI(bool reuse)
 		this, SLOT(imgCalculationComplete(bool)), Qt::QueuedConnection);
 	BackgroundTaskQueue::instance().push(taskImgFinish);
 
-	BackgroundTaskPtr taskGradient(new MultiImg::GradientTbb(
-		image, gradient, roi));
-	BackgroundTaskQueue::instance().push(taskGradient);
+	if (cv::gpu::getCudaEnabledDeviceCount() > 0 && USE_CUDA) {
+		BackgroundTaskPtr taskGradient(new MultiImg::GradientCuda(
+			image, gradient, roi));
+		BackgroundTaskQueue::instance().push(taskGradient);
+	} else {
+		BackgroundTaskPtr taskGradient(new MultiImg::GradientTbb(
+			image, gradient, roi));
+		BackgroundTaskQueue::instance().push(taskGradient);
+	}
 
 	{
 		SharedDataHold hlock(normGRADRange->lock);

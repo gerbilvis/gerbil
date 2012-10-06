@@ -227,6 +227,22 @@ protected:
 	bool includecache;
 };
 
+class GradientCuda : public BackgroundTask {
+public:
+	GradientCuda(multi_img_ptr source, multi_img_ptr current, 
+		cv::Rect targetRoi = cv::Rect(0, 0, 0, 0), bool includecache = true) 
+		: BackgroundTask(targetRoi), source(source), 
+		current(current), includecache(includecache) {}
+	virtual ~GradientCuda() {}
+	virtual bool run();
+	virtual void cancel() { stopper.cancel_group_execution(); }
+protected:
+	tbb::task_group_context stopper;
+	multi_img_ptr source;
+	multi_img_ptr current;
+	bool includecache;
+};
+
 class PcaTbb : public BackgroundTask {
 public:
 	PcaTbb(multi_img_ptr source, multi_img_ptr current, unsigned int components = 0, 

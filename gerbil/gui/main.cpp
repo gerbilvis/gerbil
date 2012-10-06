@@ -16,6 +16,11 @@ int main(int argc, char **argv)
 {
 	if (cv::gpu::getCudaEnabledDeviceCount() > 0) {
 		cv::gpu::DeviceInfo info;
+
+		std::cout << "Initializing CUDA..." << std::endl;
+		info.totalMemory(); // trigger CUDA initialization (just-in-time compilation etc.)
+		std::cout << std::endl;
+
 		std::cout << "Found CUDA compatible device: " << std::endl;
 		std::cout << "Device ID: " << info.deviceID() << std::endl;
 		std::cout << "Device name: " << info.name() << std::endl;
@@ -27,6 +32,7 @@ int main(int argc, char **argv)
 		std::cout << "Shared atomics support: " << info.supports(cv::gpu::SHARED_ATOMICS) << std::endl;
 		std::cout << "Native double support: " << info.supports(cv::gpu::NATIVE_DOUBLE) << std::endl;
 		std::cout << std::endl;
+
 		std::cout << "OpenCV GPU module information: " << std::endl;
 		std::cout << "Compute capability 1.0 [PTX:BIN]: " <<  
 			cv::gpu::TargetArchs::hasPtx(1, 0) << ":" << 
