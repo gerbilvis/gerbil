@@ -42,6 +42,7 @@ namespace MultiImg {
 	class GradientCuda;
 	class PcaTbb;
 	class DataRangeTbb;
+	class DataRangeCuda;
 	class ClampTbb;
 	class IlluminantTbb;
 }
@@ -507,6 +508,7 @@ protected:
 	friend class MultiImg::GradientCuda;
 	friend class MultiImg::PcaTbb;
 	friend class MultiImg::DataRangeTbb;
+	friend class MultiImg::DataRangeCuda;
 	friend class MultiImg::ClampTbb;
 	friend class MultiImg::IlluminantTbb;
 };
