@@ -172,6 +172,24 @@ protected:
 		bool update;
 	};
 
+	class NormRangeCuda : public MultiImg::DataRangeCuda {
+	public:
+		NormRangeCuda(multi_img_ptr multi, 
+			data_range_ptr range, normMode mode, int target, 
+			multi_img::Value minval, multi_img::Value maxval, bool update,
+			cv::Rect targetRoi = cv::Rect(0, 0, 0, 0)) 
+			: MultiImg::DataRangeCuda(multi, range, targetRoi), 
+			mode(mode), target(target), minval(minval), maxval(maxval), update(update) {}
+		virtual ~NormRangeCuda() {}
+		virtual bool run();
+	protected:
+		normMode mode;
+		int target;
+		multi_img::Value minval;
+		multi_img::Value maxval;
+		bool update;
+	};
+
 	class GraphsegBackground : public BackgroundTask {
 	public:
 		GraphsegBackground(const vole::GraphSegConfig &config, multi_img_ptr input, 

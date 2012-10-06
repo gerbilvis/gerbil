@@ -297,6 +297,21 @@ protected:
 	data_range_ptr range;
 };
 
+class DataRangeCuda : public BackgroundTask {
+public:
+	DataRangeCuda(multi_img_ptr multi, data_range_ptr range, 
+		cv::Rect targetRoi = cv::Rect(0, 0, 0, 0)) 
+		: BackgroundTask(targetRoi), multi(multi), range(range) {}
+	virtual ~DataRangeCuda() {}
+	virtual bool run();
+	virtual void cancel() { stopper.cancel_group_execution(); }
+protected:
+	tbb::task_group_context stopper;
+
+	multi_img_ptr multi;
+	data_range_ptr range;
+};
+
 class ClampTbb : public BackgroundTask {
 public:
 	ClampTbb(multi_img_ptr multi, multi_img_ptr minmax,

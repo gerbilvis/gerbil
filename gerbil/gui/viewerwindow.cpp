@@ -25,7 +25,8 @@
 #include <iostream>
 #include <QShortcut>
 
-#define USE_CUDA 1
+#define USE_CUDA_GRADIENT		1
+#define USE_CUDA_DATARANGE		0
 
 ViewerWindow::ViewerWindow(multi_img *image, QWidget *parent)
 	: QMainWindow(parent),
@@ -189,9 +190,15 @@ void ViewerWindow::applyROI(bool reuse)
 		double max = (*normIMGRange)->second;
 		hlock.unlock();
 
-		BackgroundTaskPtr taskImgNormRange(new NormRangeTbb(
-			image, normIMGRange, normIMG, 0, min, max, true, roi));
-		BackgroundTaskQueue::instance().push(taskImgNormRange);
+		if (cv::gpu::getCudaEnabledDeviceCount() > 0 && USE_CUDA_DATARANGE) {
+			BackgroundTaskPtr taskImgNormRange(new NormRangeCuda(
+				image, normIMGRange, normIMG, 0, min, max, true, roi));
+			BackgroundTaskQueue::instance().push(taskImgNormRange);
+		} else {
+			BackgroundTaskPtr taskImgNormRange(new NormRangeTbb(
+				image, normIMGRange, normIMG, 0, min, max, true, roi));
+			BackgroundTaskQueue::instance().push(taskImgNormRange);
+		}
 	}
 
 	if (reuse && profitable) {
@@ -204,7 +211,7 @@ void ViewerWindow::applyROI(bool reuse)
 		this, SLOT(imgCalculationComplete(bool)), Qt::QueuedConnection);
 	BackgroundTaskQueue::instance().push(taskImgFinish);
 
-	if (cv::gpu::getCudaEnabledDeviceCount() > 0 && USE_CUDA) {
+	if (cv::gpu::getCudaEnabledDeviceCount() > 0 && USE_CUDA_GRADIENT) {
 		BackgroundTaskPtr taskGradient(new MultiImg::GradientCuda(
 			image, gradient, roi));
 		BackgroundTaskQueue::instance().push(taskGradient);
@@ -220,9 +227,15 @@ void ViewerWindow::applyROI(bool reuse)
 		double max = (*normGRADRange)->second;
 		hlock.unlock();
 
-		BackgroundTaskPtr taskGradNormRange(new NormRangeTbb(
-			gradient, normGRADRange, normGRAD, 1, min, max, true, roi));
-		BackgroundTaskQueue::instance().push(taskGradNormRange);
+		if (cv::gpu::getCudaEnabledDeviceCount() > 0 && USE_CUDA_DATARANGE) {
+			BackgroundTaskPtr taskGradNormRange(new NormRangeCuda(
+				gradient, normGRADRange, normGRAD, 1, min, max, true, roi));
+			BackgroundTaskQueue::instance().push(taskGradNormRange);
+		} else {
+			BackgroundTaskPtr taskGradNormRange(new NormRangeTbb(
+				gradient, normGRADRange, normGRAD, 1, min, max, true, roi));
+			BackgroundTaskQueue::instance().push(taskGradNormRange);
+		}
 	}
 
 	if (reuse && profitable) {
@@ -925,6 +938,46 @@ bool ViewerWindow::NormRangeTbb::run()
 	}
 }
 
+bool ViewerWindow::NormRangeCuda::run()
+{
+	switch (mode) {
+	case NORM_OBSERVED:
+		if (!MultiImg::DataRangeCuda::run())
+			return false;
+		break;
+	case NORM_THEORETICAL:
+		if (!stopper.is_group_execution_cancelled()) {
+			SharedDataSwap lock(range->lock);
+			// hack!
+			if (target == 0) {
+				(*range)->first = (multi_img::Value)MULTI_IMG_MIN_DEFAULT;
+				(*range)->second = (multi_img::Value)MULTI_IMG_MAX_DEFAULT;
+			} else {
+				(*range)->first = (multi_img::Value)-log(MULTI_IMG_MAX_DEFAULT);
+				(*range)->second = (multi_img::Value)log(MULTI_IMG_MAX_DEFAULT);
+			}
+		}
+		break;
+	default:
+		if (!stopper.is_group_execution_cancelled()) {
+			SharedDataSwap lock(range->lock);
+			// keep previous setting
+			(*range)->first = minval;
+			(*range)->second = maxval;
+		}
+		break; 
+	}
+
+	if (!stopper.is_group_execution_cancelled() && update) {
+		SharedDataSwap lock(multi->lock);
+		(*multi)->minval = (*range)->first;
+		(*multi)->maxval = (*range)->second;
+		return true;
+	} else {
+		return false;
+	}
+}
+
 void ViewerWindow::normTargetChanged(bool usecurrent)
 {
 	/* reset gui to current settings */
@@ -959,12 +1012,21 @@ void ViewerWindow::normModeSelected(int mode, bool targetchange, bool usecurrent
 			max = (*normGRADRange)->second;
 		}
 
-		BackgroundTaskPtr taskNormRange(new NormRangeTbb(
-			(target == 0 ? image : gradient), 
-			(target == 0 ? normIMGRange : normGRADRange), 
-			nm, target, min, max, false));
-		BackgroundTaskQueue::instance().push(taskNormRange);
-		taskNormRange->wait();
+		if (cv::gpu::getCudaEnabledDeviceCount() > 0 && USE_CUDA_DATARANGE) {
+			BackgroundTaskPtr taskNormRange(new NormRangeCuda(
+				(target == 0 ? image : gradient), 
+				(target == 0 ? normIMGRange : normGRADRange), 
+				nm, target, min, max, false));
+			BackgroundTaskQueue::instance().push(taskNormRange);
+			taskNormRange->wait();
+		} else {
+			BackgroundTaskPtr taskNormRange(new NormRangeTbb(
+				(target == 0 ? image : gradient), 
+				(target == 0 ? normIMGRange : normGRADRange), 
+				nm, target, min, max, false));
+			BackgroundTaskQueue::instance().push(taskNormRange);
+			taskNormRange->wait();
+		}
 	}
 
 	double min;
@@ -1006,11 +1068,19 @@ void ViewerWindow::applyNormUserRange()
 	setGUIEnabled(false, TT_NORM_RANGE);
 
 	// if available, overwrite with more precise values than in the spin boxes.
-	BackgroundTaskPtr taskNormRange(new NormRangeTbb(
-		(target == 0 ? image : gradient), 
-		(target == 0 ? normIMGRange : normGRADRange), 
-		(target == 0 ? normIMG : normGRAD), target, normMinBox->value(), normMaxBox->value(), true));
-	BackgroundTaskQueue::instance().push(taskNormRange);
+	if (cv::gpu::getCudaEnabledDeviceCount() > 0 && USE_CUDA_DATARANGE) {
+		BackgroundTaskPtr taskNormRange(new NormRangeCuda(
+			(target == 0 ? image : gradient), 
+			(target == 0 ? normIMGRange : normGRADRange), 
+			(target == 0 ? normIMG : normGRAD), target, normMinBox->value(), normMaxBox->value(), true));
+		BackgroundTaskQueue::instance().push(taskNormRange);
+	} else {
+		BackgroundTaskPtr taskNormRange(new NormRangeTbb(
+			(target == 0 ? image : gradient), 
+			(target == 0 ? normIMGRange : normGRADRange), 
+			(target == 0 ? normIMG : normGRAD), target, normMinBox->value(), normMaxBox->value(), true));
+		BackgroundTaskQueue::instance().push(taskNormRange);
+	}
 
 	// re-initialize gui (duplication from applyROI())
 	if (target == 0) {
@@ -1070,11 +1140,19 @@ void ViewerWindow::clampNormUserRange()
 		setGUIEnabled(false, TT_CLAMP_RANGE_IMG);
 
 		// if available, overwrite with more precise values than in the spin boxes.
-		BackgroundTaskPtr taskNormRange(new NormRangeTbb(
-			(target == 0 ? image : gradient), 
-			(target == 0 ? normIMGRange : normGRADRange), 
-			(target == 0 ? normIMG : normGRAD), target, normMinBox->value(), normMaxBox->value(), true, roi));
-		BackgroundTaskQueue::instance().push(taskNormRange);
+		if (cv::gpu::getCudaEnabledDeviceCount() > 0 && USE_CUDA_DATARANGE) {
+			BackgroundTaskPtr taskNormRange(new NormRangeCuda(
+				(target == 0 ? image : gradient), 
+				(target == 0 ? normIMGRange : normGRADRange), 
+				(target == 0 ? normIMG : normGRAD), target, normMinBox->value(), normMaxBox->value(), true, roi));
+			BackgroundTaskQueue::instance().push(taskNormRange);
+		} else {
+			BackgroundTaskPtr taskNormRange(new NormRangeTbb(
+				(target == 0 ? image : gradient), 
+				(target == 0 ? normIMGRange : normGRADRange), 
+				(target == 0 ? normIMG : normGRAD), target, normMinBox->value(), normMaxBox->value(), true, roi));
+			BackgroundTaskQueue::instance().push(taskNormRange);
+		}
 
 		BackgroundTaskPtr taskClamp(new MultiImg::ClampTbb(
 			full_image, image, roi, false));
@@ -1097,11 +1175,19 @@ void ViewerWindow::clampNormUserRange()
 		setGUIEnabled(false, TT_CLAMP_RANGE_GRAD);
 
 		// if available, overwrite with more precise values than in the spin boxes.
-		BackgroundTaskPtr taskNormRange(new NormRangeTbb(
-			(target == 0 ? image : gradient), 
-			(target == 0 ? normIMGRange : normGRADRange), 
-			(target == 0 ? normIMG : normGRAD), target, normMinBox->value(), normMaxBox->value(), true));
-		BackgroundTaskQueue::instance().push(taskNormRange);
+		if (cv::gpu::getCudaEnabledDeviceCount() > 0 && USE_CUDA_DATARANGE) {
+			BackgroundTaskPtr taskNormRange(new NormRangeCuda(
+				(target == 0 ? image : gradient), 
+				(target == 0 ? normIMGRange : normGRADRange), 
+				(target == 0 ? normIMG : normGRAD), target, normMinBox->value(), normMaxBox->value(), true));
+			BackgroundTaskQueue::instance().push(taskNormRange);
+		} else {
+			BackgroundTaskPtr taskNormRange(new NormRangeTbb(
+				(target == 0 ? image : gradient), 
+				(target == 0 ? normIMGRange : normGRADRange), 
+				(target == 0 ? normIMG : normGRAD), target, normMinBox->value(), normMaxBox->value(), true));
+			BackgroundTaskQueue::instance().push(taskNormRange);
+		}
 
 		BackgroundTaskPtr taskClamp(new MultiImg::ClampTbb(gradient, gradient));
 		BackgroundTaskQueue::instance().push(taskClamp);

@@ -345,7 +345,7 @@ bool GradientTbb::run()
 	target->maxval = temp.maxval;
 	target->roi = temp.roi;
 
-	STOPWATCH_PRINT(s, "gradient TBB")
+	STOPWATCH_PRINT(s, "Gradient TBB")
 
 	if (includecache) {
 		CommonTbb::RebuildPixels rebuildPixels(*target);
@@ -452,7 +452,7 @@ bool GradientCuda::run()
 	target->maxval = log((*source)->maxval);
 	target->roi = (*source)->roi;
 
-	STOPWATCH_PRINT(s, "gradient CUDA")
+	STOPWATCH_PRINT(s, "Gradient CUDA")
 
 	if (includecache) {
 		CommonTbb::RebuildPixels rebuildPixels(*target);
@@ -540,14 +540,45 @@ void PcaTbb::Projection::operator()(const tbb::blocked_range<size_t> &r) const
 
 bool DataRangeTbb::run() 
 {
+	vole::Stopwatch s;
+
 	CommonTbb::DetermineRange determineRange(**multi);
 	tbb::parallel_reduce(tbb::blocked_range<size_t>(0, (*multi)->size()), 
 		determineRange, tbb::auto_partitioner(), stopper);
+
+	STOPWATCH_PRINT(s, "DataRange TBB")
 
 	if (!stopper.is_group_execution_cancelled()) {
 		SharedDataSwap lock(range->lock);
 		(*range)->first = determineRange.GetMin();
 		(*range)->second = determineRange.GetMax();
+		return true;
+	} else {
+		return false;
+	}
+}
+
+bool DataRangeCuda::run() 
+{
+	vole::Stopwatch s;
+
+	double tmp1, tmp2;
+	multi_img::Value min = multi_img::ValueMax;
+	multi_img::Value max = multi_img::ValueMin;
+	cv::gpu::GpuMat band((*multi)->height, (*multi)->width, multi_img::ValueType);
+	for (size_t d = 0; d != (*multi)->size(); ++d) {
+		band.upload((*multi)->bands[d]);
+		cv::gpu::minMaxLoc(band, &tmp1, &tmp2);
+		min = std::min<multi_img::Value>(min, (multi_img::Value)tmp1);
+		max = std::max<multi_img::Value>(max, (multi_img::Value)tmp2);
+	}
+
+	STOPWATCH_PRINT(s, "DataRange CUDA")
+
+	if (!stopper.is_group_execution_cancelled()) {
+		SharedDataSwap lock(range->lock);
+		(*range)->first = min;
+		(*range)->second = max;
 		return true;
 	} else {
 		return false;
