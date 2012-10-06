@@ -46,6 +46,7 @@ namespace MultiImg {
 	class ClampTbb;
 	class ClampCuda;
 	class IlluminantTbb;
+	class IlluminantCuda;
 }
 
 /// Class that holds a multispectral image.
@@ -513,6 +514,7 @@ protected:
 	friend class MultiImg::ClampTbb;
 	friend class MultiImg::ClampCuda;
 	friend class MultiImg::IlluminantTbb;
+	friend class MultiImg::IlluminantCuda;
 };
 
 #endif // opencv
