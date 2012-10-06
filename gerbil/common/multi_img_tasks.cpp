@@ -679,9 +679,13 @@ bool IlluminantTbb::run()
 	target->minval = (*multi)->minval;
 	target->maxval = (*multi)->maxval;
 
+	vole::Stopwatch s;
+
 	Illumination computeIllumination(**multi, *target, il, remove);
 	tbb::parallel_for(tbb::blocked_range<size_t>(0, target->size()), 
 		computeIllumination, tbb::auto_partitioner(), stopper);
+
+	STOPWATCH_PRINT(s, "Illuminant TBB")
 
 	if (includecache) {
 		CommonTbb::RebuildPixels rebuildPixels(*target);
@@ -717,6 +721,53 @@ void IlluminantTbb::Illumination::operator()(const tbb::blocked_range<size_t> &r
 			multi_img::Band &tgt = target.bands[d];
 			tgt = src * (multi_img::Value)il.at(source.meta[d].center);
 		}
+	}
+}
+
+bool IlluminantCuda::run() 
+{
+	multi_img *target = new multi_img((*multi)->height, (*multi)->width, (*multi)->size());
+	target->roi = (*multi)->roi;
+	target->meta = (*multi)->meta;
+	target->minval = (*multi)->minval;
+	target->maxval = (*multi)->maxval;
+
+	vole::Stopwatch s;
+
+	cv::gpu::GpuMat band((*multi)->height, (*multi)->width, multi_img::ValueType);
+	if (remove) {
+		for (size_t d = 0; d != target->size(); ++d) {
+			band.upload((*multi)->bands[d]);
+			cv::gpu::divide(band, (multi_img::Value)il.at((*multi)->meta[d].center), band);
+			band.download(target->bands[d]);
+		}
+	} else {
+		for (size_t d = 0; d != target->size(); ++d) {
+			band.upload((*multi)->bands[d]);
+			cv::gpu::multiply(band, (multi_img::Value)il.at((*multi)->meta[d].center), band);
+			band.download(target->bands[d]);
+		}
+	}
+
+	STOPWATCH_PRINT(s, "Illuminant CUDA")
+
+	if (includecache) {
+		CommonTbb::RebuildPixels rebuildPixels(*target);
+		tbb::parallel_for(tbb::blocked_range<size_t>(0, target->size()), 
+			rebuildPixels, tbb::auto_partitioner(), stopper);
+		target->dirty.setTo(0);
+		target->anydirt = false;
+	} else {
+		target->resetPixels();
+	}
+
+	if (stopper.is_group_execution_cancelled()) {
+		delete target;
+		return false;
+	} else {
+		SharedDataSwap lock(multi->lock);
+		delete multi->swap(target);
+		return true;
 	}
 }
 

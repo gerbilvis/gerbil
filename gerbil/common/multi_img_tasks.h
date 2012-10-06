@@ -383,6 +383,24 @@ protected:
 	bool includecache;
 };
 
+class IlluminantCuda : public BackgroundTask {
+public:
+	IlluminantCuda(multi_img_ptr multi, const Illuminant& il, bool remove,
+		cv::Rect targetRoi = cv::Rect(0, 0, 0, 0), bool includecache = true) 
+		: BackgroundTask(targetRoi), multi(multi), 
+		il(il), remove(remove), includecache(includecache) {}
+	virtual ~IlluminantCuda() {}
+	virtual bool run();
+	virtual void cancel() { stopper.cancel_group_execution(); }
+protected:
+	tbb::task_group_context stopper;
+
+	multi_img_ptr multi;
+	Illuminant il; 
+	bool remove;
+	bool includecache;
+};
+
 }
 
 #endif

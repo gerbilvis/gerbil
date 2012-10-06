@@ -28,6 +28,7 @@
 #define USE_CUDA_GRADIENT       1
 #define USE_CUDA_DATARANGE      0
 #define USE_CUDA_CLAMP          0
+#define USE_CUDA_ILLUMINANT     0
 
 ViewerWindow::ViewerWindow(multi_img *image, QWidget *parent)
 	: QMainWindow(parent),
@@ -749,17 +750,29 @@ void ViewerWindow::applyIlluminant() {
 	/* remove old illuminant */
 	if (i1 != 0) {
 		const Illuminant &il = getIlluminant(i1);
-		BackgroundTaskPtr taskIllum(new MultiImg::IlluminantTbb(
-			full_image, il, true, roi, false));
-		BackgroundTaskQueue::instance().push(taskIllum);
+		if (cv::gpu::getCudaEnabledDeviceCount() > 0 && USE_CUDA_ILLUMINANT) {
+			BackgroundTaskPtr taskIllum(new MultiImg::IlluminantCuda(
+				full_image, il, true, roi, false));
+			BackgroundTaskQueue::instance().push(taskIllum);
+		} else {
+			BackgroundTaskPtr taskIllum(new MultiImg::IlluminantTbb(
+				full_image, il, true, roi, false));
+			BackgroundTaskQueue::instance().push(taskIllum);
+		}
 	}
 
 	/* add new illuminant */
 	if (i2 != 0) {
 		const Illuminant &il = getIlluminant(i2);
-		BackgroundTaskPtr taskIllum(new MultiImg::IlluminantTbb(
-			full_image, il, false, roi, false));
-		BackgroundTaskQueue::instance().push(taskIllum);
+		if (cv::gpu::getCudaEnabledDeviceCount() > 0 && USE_CUDA_ILLUMINANT) {
+			BackgroundTaskPtr taskIllum(new MultiImg::IlluminantCuda(
+				full_image, il, false, roi, false));
+			BackgroundTaskQueue::instance().push(taskIllum);
+		} else {
+			BackgroundTaskPtr taskIllum(new MultiImg::IlluminantTbb(
+				full_image, il, false, roi, false));
+			BackgroundTaskQueue::instance().push(taskIllum);
+		}
 	}
 
 	std::vector<multi_img::Value> empty;
