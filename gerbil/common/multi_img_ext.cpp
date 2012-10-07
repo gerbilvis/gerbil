@@ -9,6 +9,10 @@
 #include <multi_img.h>
 #include "illuminant.h"
 
+#include <mmintrin.h>
+#include <xmmintrin.h>
+#include <emmintrin.h>
+
 multi_img multi_img::spec_gradient() const
 {
 	multi_img ret(size() - 1);
@@ -78,21 +82,42 @@ namespace CIEObserver {	// 10 degree 1964 CIE observer coefficients
 void multi_img::pixel2xyz(const Pixel &p, cv::Vec3f &v, 
 	size_t dim, const std::vector<BandDesc> &meta, Value maxval)
 {
+	int idx;
+	float intensity;
 	float greensum = 0.;
+	float factor = 1.f / maxval;
 	for (size_t i = 0; i < dim; ++i) {
-		int idx = ((int)(meta[i].center + 0.5f) - 360) / 5;
+		idx = ((int)(meta[i].center + 0.5f) - 360) / 5;
 		if (idx < 0 || idx > 94)
 			continue;
-		float intensity = p[i] * 1.f/maxval;
+		intensity = p[i] * factor;
+
+		/*
 		v[0] += CIEObserver::x[idx] * intensity;
 		v[1] += CIEObserver::y[idx] * intensity;
 		v[2] += CIEObserver::z[idx] * intensity;
+		*/
+
+		__m128 cie_reg = _mm_setr_ps(CIEObserver::x[idx], 0.f, CIEObserver::y[idx], CIEObserver::z[idx]);
+		__m128 v_reg = _mm_loadh_pi(_mm_load_ss(&v[0]), (__m64*)&v[1]);
+		__m128 res_reg = _mm_add_ps(v_reg, _mm_mul_ps(cie_reg, _mm_load1_ps(&intensity)));
+		_mm_storeh_pi((__m64*)&v[1], res_reg);
+		_mm_store_ss(&v[0], res_reg);
+
 		greensum += CIEObserver::y[idx];
 	}
 	if (greensum == 0.f)	// we didn't collect valuable data.
 		return;
+
+	/*
 	for (unsigned int i = 0; i < 3; ++i)
 		v[i] /= greensum;
+	*/
+
+	__m128 v_reg = _mm_loadh_pi(_mm_load_ss(&v[0]), (__m64*)&v[1]);
+	__m128 res_reg = _mm_div_ps(v_reg, _mm_load1_ps(&greensum));
+	_mm_storeh_pi((__m64*)&v[1], res_reg);
+	_mm_store_ss(&v[0], res_reg);
 }
 
 void multi_img::pixel2xyz(const Pixel &p, cv::Vec3f &v) const
@@ -103,16 +128,44 @@ void multi_img::pixel2xyz(const Pixel &p, cv::Vec3f &v) const
 void multi_img::xyz2bgr(const cv::Vec3f &vs, cv::Vec3f &vd)
 {
 	/* Inverse M for sRGB, D65 */
+	/*
 	vd[2] =  3.2404542f * vs[0] + -1.5371385f * vs[1] + -0.4985314f * vs[2];
 	vd[1] = -0.9692660f * vs[0] +  1.8760108f * vs[1] +  0.0415560f * vs[2];
 	vd[0] =  0.0556434f * vs[0] + -0.2040259f * vs[1] +  1.0572252f * vs[2];
+	*/
+
+	_mm_setr_ps(0.0556434f, 0.f, -0.9692660f, 3.2404542f);
+	_mm_setr_ps(-0.2040259f, 0.f, 1.8760108f, -1.5371385f);
+	_mm_setr_ps(1.0572252f, 0.f, 0.0415560f, -0.4985314f);
+	_mm_load1_ps(&vs[0]);
+	_mm_load1_ps(&vs[1]);
+	_mm_load1_ps(&vs[2]);
+
+	__m128 vd_reg = _mm_add_ps(
+		_mm_mul_ps(
+			_mm_setr_ps(0.0556434f, 0.f, -0.9692660f, 3.2404542f),
+			_mm_load1_ps(&vs[0])),
+		_mm_add_ps(
+			_mm_mul_ps(
+				_mm_setr_ps(-0.2040259f, 0.f, 1.8760108f, -1.5371385f),
+				_mm_load1_ps(&vs[1])),
+			_mm_mul_ps(
+				_mm_setr_ps(1.0572252f, 0.f, 0.0415560f, -0.4985314f),
+				_mm_load1_ps(&vs[2]))));
+
+	__m128 sanitized_reg = _mm_min_ps(
+		_mm_max_ps(vd_reg, _mm_setzero_ps()),
+		_mm_setr_ps(1.f, 1.f, 1.f, 1.f));
+
+	_mm_storeh_pi((__m64*)&vd[1], sanitized_reg);
+	_mm_store_ss(&vd[0], sanitized_reg);
 
 	/* default Gamma correction for sRGB */
 	float gamma = 1.f/2.4f;
 	for (unsigned int i = 0; i < 3; ++i) {
 		// sanitize first
-		vd[i] = std::max<float>(vd[i], 0.f);
-		vd[i] = std::min<float>(vd[i], 1.f);
+		//vd[i] = std::max<float>(vd[i], 0.f);
+		//vd[i] = std::min<float>(vd[i], 1.f);
 		// now apply gamma the sRGB way
 		if (vd[i] > 0.0031308f)
 			vd[i] = 1.055f * std::pow(vd[i], gamma) - 0.055f;
