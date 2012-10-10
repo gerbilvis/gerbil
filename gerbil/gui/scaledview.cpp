@@ -72,9 +72,9 @@ void ScaledView::drawWaitMessage(QPainter &painter)
 	painter.save();
 	painter.fillRect(rect(), QColor(0, 0, 0, 127));
 	painter.setPen(Qt::green);
-	QFont font(font());
-	font.setPointSize(font.pointSize() * 2);
-	painter.setFont(font);
+	QFont tmp(font());
+	tmp.setPointSize(tmp.pointSize() * 2);
+	painter.setFont(tmp);
 	painter.drawText(rect(), Qt::AlignCenter, tr("Calculating..."));
 	painter.restore();
 }
