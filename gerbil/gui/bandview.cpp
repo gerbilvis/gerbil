@@ -136,6 +136,39 @@ void BandView::paintEvent(QPaintEvent *ev)
 	}
 }
 
+struct updateCacheBody {
+	QImage &dest;
+	bool seedMode;
+	const cv::Mat1s &labels;
+	const cv::Mat1s &seedMap;
+	const QVector<QColor> &labelColorsA;
+	const std::pair<QColor, QColor> &seedColorsA;
+
+	updateCacheBody(QImage &dest, bool seedMode, const cv::Mat1s &labels, const cv::Mat1s &seedMap,
+		const QVector<QColor> &labelColorsA, const std::pair<QColor, QColor> &seedColorsA)
+		: dest(dest), seedMode(seedMode), labels(labels), seedMap(seedMap),
+		labelColorsA(labelColorsA), seedColorsA(seedColorsA) {}
+
+	void operator()(const tbb::blocked_range2d<size_t> &r) const {
+		for (int y = r.rows().begin(); y != r.rows().end(); ++y) {
+			const short *srcrow = (seedMode ? seedMap[y] : labels[y]);
+			QRgb *destrow = (QRgb*)dest.scanLine(y);
+			for (int x = r.cols().begin(); x != r.cols().end(); ++x) {
+				short val = srcrow[x];
+				destrow[x] = qRgba(0, 0, 0, 0);
+				if (seedMode) {
+					if (val == 255)
+						destrow[x] = seedColorsA.first.rgba();
+					else if (val == 0)
+						destrow[x] = seedColorsA.second.rgba();
+				} else if (val > 0) {
+					destrow[x] = labelColorsA[val].rgba();
+				}
+			}
+		}
+	}
+};
+
 void BandView::updateCache()
 {
 	cachedPixmap = pixmap->copy(); // TODO: check for possible qt memory leak
@@ -146,41 +179,8 @@ void BandView::updateCache()
 	QPainter painter(&cachedPixmap);
 //	painter.setCompositionMode(QPainter::CompositionMode_Darken);
 
-	struct Body {
-		QImage &dest;
-		bool seedMode;
-		const cv::Mat1s &labels;
-		const cv::Mat1s &seedMap;
-		const QVector<QColor> &labelColorsA;
-		const std::pair<QColor, QColor> &seedColorsA;
-
-		Body(QImage &dest, bool seedMode, const cv::Mat1s &labels, const cv::Mat1s &seedMap,
-			const QVector<QColor> &labelColorsA, const std::pair<QColor, QColor> &seedColorsA)
-			: dest(dest), seedMode(seedMode), labels(labels), seedMap(seedMap),
-			labelColorsA(labelColorsA), seedColorsA(seedColorsA) {}
-
-		void operator()(const tbb::blocked_range2d<size_t> &r) const {
-			for (int y = r.rows().begin(); y != r.rows().end(); ++y) {
-				const short *srcrow = (seedMode ? seedMap[y] : labels[y]);
-				QRgb *destrow = (QRgb*)dest.scanLine(y);
-				for (int x = r.cols().begin(); x != r.cols().end(); ++x) {
-					short val = srcrow[x];
-					destrow[x] = qRgba(0, 0, 0, 0);
-					if (seedMode) {
-						if (val == 255)
-							destrow[x] = seedColorsA.first.rgba();
-						else if (val == 0)
-							destrow[x] = seedColorsA.second.rgba();
-					} else if (val > 0) {
-						destrow[x] = labelColorsA[val].rgba();
-					}
-				}
-			}
-		}
-	};
-
 	QImage dest(pixmap->width(), pixmap->height(), QImage::Format_ARGB32);
-	Body body(dest, seedMode, labels, seedMap, labelColorsA, seedColorsA);
+	updateCacheBody body(dest, seedMode, labels, seedMap, labelColorsA, seedColorsA);
 	tbb::parallel_for(tbb::blocked_range2d<size_t>(
 		0, pixmap->height(), 0, pixmap->width()), body);
 

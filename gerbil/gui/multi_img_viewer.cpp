@@ -464,133 +464,133 @@ void multi_img_viewer::BinsTbb::Accumulate::operator()(const tbb::blocked_range2
 	}
 }
 
+struct fillMaskSingleBody {
+	multi_img::Mask &mask;
+	const multi_img::Band &band;
+	int dim; 
+	int sel;
+	multi_img::Value minval;
+	multi_img::Value binsize;
+	const std::vector<multi_img::Value> &illuminant;
+
+	fillMaskSingleBody(multi_img::Mask &mask, const multi_img::Band &band, int dim, int sel,
+		multi_img::Value minval, multi_img::Value binsize, 
+		const std::vector<multi_img::Value> &illuminant)
+		: mask(mask), band(band), dim(dim), sel(sel), minval(minval), 
+		binsize(binsize), illuminant(illuminant) {}
+
+	void operator()(const tbb::blocked_range2d<size_t> &r) const {
+		for (int y = r.rows().begin(); y != r.rows().end(); ++y) {
+			unsigned char *mrow = mask[y];
+			const multi_img::Value *brow = band[y];
+			for (int x = r.cols().begin(); x != r.cols().end(); ++x) {
+				int pos = floor(multi_img_viewer::curpos(brow[x], dim, minval, binsize, illuminant));
+					mrow[x] = (pos == sel) ? 1 : 0;
+			}
+		}
+	}
+};
+
 /* create mask of single-band user selection */
 void multi_img_viewer::fillMaskSingle(int dim, int sel)
 {
-	struct Body {
-		multi_img::Mask &mask;
-		const multi_img::Band &band;
-		int dim; 
-		int sel;
-		multi_img::Value minval;
-		multi_img::Value binsize;
-		const std::vector<multi_img::Value> &illuminant;
-
-		Body(multi_img::Mask &mask, const multi_img::Band &band, int dim, int sel,
-			multi_img::Value minval, multi_img::Value binsize, 
-			const std::vector<multi_img::Value> &illuminant)
-			: mask(mask), band(band), dim(dim), sel(sel), minval(minval), 
-			binsize(binsize), illuminant(illuminant) {}
-
-		void operator()(const tbb::blocked_range2d<size_t> &r) const {
-			for (int y = r.rows().begin(); y != r.rows().end(); ++y) {
-				unsigned char *mrow = mask[y];
-				const multi_img::Value *brow = band[y];
-				for (int x = r.cols().begin(); x != r.cols().end(); ++x) {
-					int pos = floor(curpos(brow[x], dim, minval, binsize, illuminant));
-						mrow[x] = (pos == sel) ? 1 : 0;
-				}
-			}
-		}
-	};
-
 	SharedDataHold imagelock(image->lock);
 	SharedDataHold ctxlock(viewport->ctx->lock);
-	Body body(maskholder, (**image)[dim], dim, sel, 
+	fillMaskSingleBody body(maskholder, (**image)[dim], dim, sel, 
 		(*viewport->ctx)->minval, (*viewport->ctx)->binsize, illuminant);
 	tbb::parallel_for(tbb::blocked_range2d<size_t>(
 		0, maskholder.rows, 0, maskholder.cols), body);
 }
 
+struct fillMaskLimitersBody {
+	multi_img::Mask &mask;
+	const multi_img &image;
+	multi_img::Value minval;
+	multi_img::Value binsize;
+	const std::vector<multi_img::Value> &illuminant;
+	const std::vector<std::pair<int, int> > &l;
+
+	fillMaskLimitersBody(multi_img::Mask &mask, const multi_img &image,
+		multi_img::Value minval, multi_img::Value binsize, 
+		const std::vector<multi_img::Value> &illuminant,
+		const std::vector<std::pair<int, int> > &l)
+		: mask(mask), image(image), minval(minval), 
+		binsize(binsize), illuminant(illuminant), l(l) {}
+
+	void operator()(const tbb::blocked_range2d<size_t> &r) const {
+		for (int y = r.rows().begin(); y != r.rows().end(); ++y) {
+			unsigned char *row = mask[y];
+			for (int x = r.cols().begin(); x != r.cols().end(); ++x) {
+				row[x] = 1;
+				const multi_img::Pixel &p = image(y, x);
+				for (unsigned int d = 0; d < image.size(); ++d) {
+					int pos = floor(multi_img_viewer::curpos(p[d], d, minval, binsize, illuminant));
+					if (pos < l[d].first || pos > l[d].second) {
+						row[x] = 0;
+						break;
+					}
+				}
+			}
+		}
+	}
+};
+
 void multi_img_viewer::fillMaskLimiters(const std::vector<std::pair<int, int> >& l)
 {
-	struct Body {
-		multi_img::Mask &mask;
-		const multi_img &image;
-		multi_img::Value minval;
-		multi_img::Value binsize;
-		const std::vector<multi_img::Value> &illuminant;
-		const std::vector<std::pair<int, int> > &l;
+	SharedDataHold imagelock(image->lock);
+	SharedDataHold ctxlock(viewport->ctx->lock);
+	fillMaskLimitersBody body(maskholder, **image, (*viewport->ctx)->minval, 
+		(*viewport->ctx)->binsize, illuminant, l);
+	tbb::parallel_for(tbb::blocked_range2d<size_t>(
+		0,(*image)->height, 0, (*image)->width), body);
+}
 
-		Body(multi_img::Mask &mask, const multi_img &image,
-			multi_img::Value minval, multi_img::Value binsize, 
-			const std::vector<multi_img::Value> &illuminant,
-			const std::vector<std::pair<int, int> > &l)
-			: mask(mask), image(image), minval(minval), 
-			binsize(binsize), illuminant(illuminant), l(l) {}
+struct updateMaskLimitersBody {
+	multi_img::Mask &mask;
+	const multi_img &image;
+	int dim;
+	multi_img::Value minval;
+	multi_img::Value binsize;
+	const std::vector<multi_img::Value> &illuminant;
+	const std::vector<std::pair<int, int> > &l;
 
-		void operator()(const tbb::blocked_range2d<size_t> &r) const {
-			for (int y = r.rows().begin(); y != r.rows().end(); ++y) {
-				unsigned char *row = mask[y];
-				for (int x = r.cols().begin(); x != r.cols().end(); ++x) {
-					row[x] = 1;
-					const multi_img::Pixel &p = image(y, x);
+	updateMaskLimitersBody(multi_img::Mask &mask, const multi_img &image, int dim,
+		multi_img::Value minval, multi_img::Value binsize, 
+		const std::vector<multi_img::Value> &illuminant,
+		const std::vector<std::pair<int, int> > &l)
+		: mask(mask), image(image), dim(dim), minval(minval), 
+		binsize(binsize), illuminant(illuminant), l(l) {}
+
+	void operator()(const tbb::blocked_range2d<size_t> &r) const {
+		for (int y = r.rows().begin(); y != r.rows().end(); ++y) {
+			unsigned char *mrow = mask[y];
+			const multi_img::Value *brow = image[dim][y];
+			for (int x = r.cols().begin(); x != r.cols().end(); ++x) {
+				int pos = floor(multi_img_viewer::curpos(brow[x], dim, minval, binsize, illuminant));
+				if (pos < l[dim].first || pos > l[dim].second) {
+					mrow[x] = 0;
+				} else if (mrow[x] == 0) { // we need to do exhaustive test
+					mrow[x] = 1;
+					const multi_img::Pixel& p = image(y, x);
 					for (unsigned int d = 0; d < image.size(); ++d) {
-						int pos = floor(curpos(p[d], d, minval, binsize, illuminant));
+						int pos = floor(multi_img_viewer::curpos(p[d], d, minval, binsize, illuminant));
 						if (pos < l[d].first || pos > l[d].second) {
-							row[x] = 0;
+							mrow[x] = 0;
 							break;
 						}
 					}
 				}
 			}
 		}
-	};
-
-	SharedDataHold imagelock(image->lock);
-	SharedDataHold ctxlock(viewport->ctx->lock);
-	Body body(maskholder, **image, (*viewport->ctx)->minval, 
-		(*viewport->ctx)->binsize, illuminant, l);
-	tbb::parallel_for(tbb::blocked_range2d<size_t>(
-		0,(*image)->height, 0, (*image)->width), body);
-}
+	}
+};
 
 void multi_img_viewer::updateMaskLimiters(
 		const std::vector<std::pair<int, int> >& l, int dim)
 {
-	struct Body {
-		multi_img::Mask &mask;
-		const multi_img &image;
-		int dim;
-		multi_img::Value minval;
-		multi_img::Value binsize;
-		const std::vector<multi_img::Value> &illuminant;
-		const std::vector<std::pair<int, int> > &l;
-
-		Body(multi_img::Mask &mask, const multi_img &image, int dim,
-			multi_img::Value minval, multi_img::Value binsize, 
-			const std::vector<multi_img::Value> &illuminant,
-			const std::vector<std::pair<int, int> > &l)
-			: mask(mask), image(image), dim(dim), minval(minval), 
-			binsize(binsize), illuminant(illuminant), l(l) {}
-
-		void operator()(const tbb::blocked_range2d<size_t> &r) const {
-			for (int y = r.rows().begin(); y != r.rows().end(); ++y) {
-				unsigned char *mrow = mask[y];
-				const multi_img::Value *brow = image[dim][y];
-				for (int x = r.cols().begin(); x != r.cols().end(); ++x) {
-					int pos = floor(curpos(brow[x], dim, minval, binsize, illuminant));
-					if (pos < l[dim].first || pos > l[dim].second) {
-						mrow[x] = 0;
-					} else if (mrow[x] == 0) { // we need to do exhaustive test
-						mrow[x] = 1;
-						const multi_img::Pixel& p = image(y, x);
-						for (unsigned int d = 0; d < image.size(); ++d) {
-							int pos = floor(curpos(p[d], d, minval, binsize, illuminant));
-							if (pos < l[d].first || pos > l[d].second) {
-								mrow[x] = 0;
-								break;
-							}
-						}
-					}
-				}
-			}
-		}
-	};
-
 	SharedDataHold imagelock(image->lock);
 	SharedDataHold ctxlock(viewport->ctx->lock);
-	Body body(maskholder, **image, dim, (*viewport->ctx)->minval, 
+	updateMaskLimitersBody body(maskholder, **image, dim, (*viewport->ctx)->minval, 
 		(*viewport->ctx)->binsize, illuminant, l);
 	tbb::parallel_for(tbb::blocked_range2d<size_t>(
 		0,(*image)->height, 0, (*image)->width), body);

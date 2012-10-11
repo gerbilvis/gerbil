@@ -41,6 +41,18 @@ public:
 
 	cv::Mat1s labels;
 
+	/* translate image value to value in our coordinate system */
+	static inline multi_img::Value curpos(
+		multi_img::Value val, int dim, 
+		multi_img::Value minval, multi_img::Value binsize,
+		const std::vector<multi_img::Value> &illuminant) 
+	{
+		multi_img::Value curpos = (val - minval) / binsize;
+		if (!illuminant.empty())
+			curpos /= illuminant[dim];
+		return curpos;
+	}
+
 public slots:
 	void updateMask(int dim);
 	void subPixels(const std::map<std::pair<int, int>, short> &points);
@@ -127,18 +139,6 @@ protected:
 		bool inplace;
 		bool apply;
 	};
-
-	/* translate image value to value in our coordinate system */
-	static inline multi_img::Value curpos(
-		multi_img::Value val, int dim, 
-		multi_img::Value minval, multi_img::Value binsize,
-		const std::vector<multi_img::Value> &illuminant) 
-	{
-		multi_img::Value curpos = (val - minval) / binsize;
-		if (!illuminant.empty())
-			curpos /= illuminant[dim];
-		return curpos;
-	}
 
     void changeEvent(QEvent *e);
 
