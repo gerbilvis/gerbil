@@ -551,11 +551,15 @@ void Viewport::drawRegular()
 
 void Viewport::continueDrawing()
 {
+	SharedDataHold ctxlock(ctx->lock);
+	SharedDataHold setslock(sets->lock);
+	if ((*sets)->empty() || (*ctx)->wait || drawingState == FOLDING)
+		return;
+	setslock.unlock();
+	ctxlock.unlock();
+
 	cacheValid = false;
 	QPainter painter(this);
-
-	if (drawingState == FOLDING)
-		return;
 
 	if (drawingState == HIGH_QUALITY || drawingState == SCREENSHOT)
 		painter.setRenderHint(QPainter::Antialiasing);

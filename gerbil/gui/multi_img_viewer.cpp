@@ -50,6 +50,14 @@ multi_img_viewer::multi_img_viewer(QWidget *parent)
 			this, SLOT(toggleFold()));
 }
 
+void multi_img_viewer::setType(representation type)
+{
+	this->type = type;
+	if (type != IMG)
+		rgbButton->setVisible(false);
+	setTitle(type, 0.0, 0.0);
+}
+
 void multi_img_viewer::toggleFold()
 {
 	if (!payload->isHidden()) {
@@ -57,6 +65,11 @@ void multi_img_viewer::toggleFold()
 		payload->setHidden(true);
 		topBar->fold();
 		setSizePolicy(QSizePolicy::Preferred, QSizePolicy::Preferred);
+		setTitle(type, 0.0, 0.0);
+		emit toggleViewer(false, getType());
+		viewport->sets.reset(new SharedData<std::vector<BinSet> >(new std::vector<BinSet>()));
+		viewport->shuffleIdx.clear();
+		viewport->vb.destroy();
 	} else {
 		emit folding();
 		payload->setShown(true);
@@ -64,6 +77,7 @@ void multi_img_viewer::toggleFold()
 		QSizePolicy pol(QSizePolicy::Preferred, QSizePolicy::Expanding);
 		pol.setVerticalStretch(1);
 		setSizePolicy(pol);
+		emit toggleViewer(true, getType());
 	}
 }
 
@@ -157,18 +171,16 @@ void multi_img_viewer::addImage(sets_ptr temp, const std::vector<cv::Rect> &regi
 	BackgroundTaskQueue::instance().push(taskBins);
 }
 
-void multi_img_viewer::setImage(multi_img_ptr img, representation type, cv::Rect roi)
+void multi_img_viewer::setImage(multi_img_ptr img, cv::Rect roi)
 {
 	SharedDataHold ctxlock(viewport->ctx->lock);
 	ViewportCtx args = **viewport->ctx;
 	ctxlock.unlock();
 
-	if (type != IMG)
-		rgbButton->setVisible(false);
-
 	image = img;
 
 	args.type = type;
+	args.ignoreLabels = ignoreLabels;
 
 	int bins = binSlider->value();
 	if (bins > 0) {
@@ -202,9 +214,6 @@ void multi_img_viewer::setImage(multi_img_ptr img, representation type, cv::Rect
 void multi_img_viewer::setIlluminant(
 		const std::vector<multi_img::Value> &coeffs, bool for_real)
 {
-	if (!image.get())
-		return;
-
 	SharedDataHold ctxlock(viewport->ctx->lock);
 
 	if ((*viewport->ctx)->type != IMG)
@@ -244,9 +253,6 @@ void multi_img_viewer::changeBinCount(int bins)
 
 void multi_img_viewer::updateBinning(int bins)
 {
-	if (!image.get())
-		return;
-
 	SharedDataHold ctxlock(viewport->ctx->lock);
 	ViewportCtx args = **viewport->ctx;
 	ctxlock.unlock();
@@ -262,6 +268,9 @@ void multi_img_viewer::updateBinning(int bins)
 
 	args.reset.fetch_and_store(1);
 	args.wait.fetch_and_store(1);
+
+	if (!image.get())
+		return;
 
 	BackgroundTaskPtr taskBins(new BinsTbb(
 		image, labels, labelColors, illuminant, args, viewport->ctx, viewport->sets));
@@ -283,14 +292,14 @@ void multi_img_viewer::finishBinCountChange(bool success)
 
 void multi_img_viewer::updateLabels()
 {
-	if (!image.get())
-		return;
-
 	SharedDataHold ctxlock(viewport->ctx->lock);
 	ViewportCtx args = **viewport->ctx;
 	ctxlock.unlock();
 
 	args.wait.fetch_and_store(1);
+
+	if (!image.get())
+		return;
 
 	BackgroundTaskPtr taskBins(new BinsTbb(
 		image, labels, labelColors, illuminant, args, viewport->ctx, viewport->sets));
@@ -300,7 +309,7 @@ void multi_img_viewer::updateLabels()
 
 void multi_img_viewer::render(bool necessary)
 {
-	if (necessary) {
+	if (necessary && image.get()) {
 		if (maskReset) {
 			SharedDataHold imagelock(image->lock);
 			maskholder = multi_img::Mask((*image)->height, (*image)->width, (uchar)0);
@@ -700,15 +709,16 @@ void multi_img_viewer::toggleUnlabeled(bool toggle)
 
 void multi_img_viewer::toggleLabels(bool toggle)
 {
-	if (!image.get())
-		return;
-
 	SharedDataHold ctxlock(viewport->ctx->lock);
 	ViewportCtx args = **viewport->ctx;
 	ctxlock.unlock();
 
+	ignoreLabels = toggle;
 	args.ignoreLabels = toggle;
 	args.wait.fetch_and_store(1);
+
+	if (!image.get())
+		return;
 
 	BackgroundTaskPtr taskBins(new BinsTbb(
 		image, labels, labelColors, illuminant, args, viewport->ctx, viewport->sets));

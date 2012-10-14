@@ -54,6 +54,8 @@ public slots:
 	void gradCalculationComplete(bool success);
 	void imgPcaCalculationComplete(bool success);
 	void gradPcaCalculationComplete(bool success);
+	void disconnectViewer(int viewer);
+	void toggleViewer(bool enable, representation viewer);
 	void finishViewerRefresh(int viewer);
 	void finishROIChange(bool success);
 	void finishNormRangeImgChange(bool success);

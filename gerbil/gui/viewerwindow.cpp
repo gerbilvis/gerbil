@@ -35,8 +35,8 @@ ViewerWindow::ViewerWindow(multi_img *image, QWidget *parent)
 	  full_image(new SharedData<multi_img>(image)),
 	  image(new SharedData<multi_img>(new multi_img(0, 0, 0))),
 	  gradient(new SharedData<multi_img>(new multi_img(0, 0, 0))),
-	  imagepca(new SharedData<multi_img>(new multi_img(0, 0, 0))),
-	  gradientpca(new SharedData<multi_img>(new multi_img(0, 0, 0))),
+	  //imagepca(new SharedData<multi_img>(new multi_img(0, 0, 0))),
+	  //gradientpca(new SharedData<multi_img>(new multi_img(0, 0, 0))),
 	  full_labels(image->height, image->width, (short)0),
 	  normIMG(NORM_OBSERVED), normGRAD(NORM_OBSERVED),
 	  normIMGRange(new SharedData<std::pair<multi_img::Value, multi_img::Value> >(
@@ -51,9 +51,13 @@ ViewerWindow::ViewerWindow(multi_img *image, QWidget *parent)
 	// create all objects
 	setupUi(this);
 	viewers[IMG] = viewIMG;
+	viewIMG->setType(IMG);
 	viewers[GRAD] = viewGRAD;
+	viewGRAD->setType(GRAD);
 	viewers[IMGPCA] = viewIMGPCA;
+	viewIMGPCA->setType(IMGPCA);
 	viewers[GRADPCA] = viewGRADPCA;
+	viewGRADPCA->setType(GRADPCA);
 
 	// do all the bling-bling
 	initUI();
@@ -94,27 +98,27 @@ void ViewerWindow::finishROIChange(bool success)
 
 void ViewerWindow::applyROI(bool reuse)
 {
-	for (size_t i = 0; i < viewers.size(); ++i) {
-		multi_img_viewer *v = viewers[i];
-		const Viewport *vp = v->getViewport();
-		disconnect(bandView, SIGNAL(pixelOverlay(int, int)),
-			v, SLOT(overlay(int, int)));
-		disconnect(bandView, SIGNAL(killHover()),
-			vp, SLOT(killHover()));
-	}
+	for (size_t i = 0; i < viewers.size(); ++i)
+		disconnectViewer(i);
 	disconnect(&bandView->labelTimer, SIGNAL(timeout()), 
 		bandView, SLOT(commitLabelChanges()));
 
 	if (!reuse) {
 		SharedDataHold image_lock(image->lock);
 		SharedDataHold gradient_lock(gradient->lock);
-		SharedDataHold imagepca_lock(imagepca->lock);
-		SharedDataHold gradientpca_lock(gradientpca->lock);
 		cv::Rect empty(0, 0, 0, 0);
 		(*image)->roi = empty;
 		(*gradient)->roi = empty;
-		(*imagepca)->roi = empty;
-		(*gradientpca)->roi = empty;
+
+		if (imagepca.get()) {
+			SharedDataHold imagepca_lock(imagepca->lock);
+			(*imagepca)->roi = empty;
+		}
+
+		if (gradientpca.get()) {
+			SharedDataHold gradientpca_lock(gradientpca->lock);
+			(*gradientpca)->roi = empty;
+		}
 	}
 
 	SharedDataHold image_lock(image->lock);
@@ -152,10 +156,14 @@ void ViewerWindow::applyROI(bool reuse)
 	sets_ptr tmp_sets_gradient(new SharedData<std::vector<BinSet> >(NULL));
 	sets_ptr tmp_sets_gradientpca(new SharedData<std::vector<BinSet> >(NULL));
 	if (reuse && profitable) {
-		viewIMG->subImage(tmp_sets_image, sub, roi);
-		viewIMGPCA->subImage(tmp_sets_imagepca, sub, roi);
-		viewGRAD->subImage(tmp_sets_gradient, sub, roi);
-		viewGRADPCA->subImage(tmp_sets_gradientpca, sub, roi);
+		if (!viewIMG->isPayloadHidden())
+			viewIMG->subImage(tmp_sets_image, sub, roi);
+		if (!viewGRAD->isPayloadHidden())
+			viewGRAD->subImage(tmp_sets_gradient, sub, roi);
+		if (imagepca.get())
+			viewIMGPCA->subImage(tmp_sets_imagepca, sub, roi);
+		if (gradientpca.get())
+			viewGRADPCA->subImage(tmp_sets_gradientpca, sub, roi);
 	}
 
 	updateRGB(true);
@@ -203,9 +211,12 @@ void ViewerWindow::applyROI(bool reuse)
 		}
 	}
 
-	if (reuse && profitable) {
-		viewIMG->addImage(tmp_sets_image, add, roi);	} else {
-		viewIMG->setImage(image, IMG, roi);
+	if (!viewIMG->isPayloadHidden()) {
+		if (reuse && profitable) {
+			viewIMG->addImage(tmp_sets_image, add, roi);	
+		} else {
+			viewIMG->setImage(image, roi);
+		}
 	}
 
 	BackgroundTaskPtr taskImgFinish(new BackgroundTask(roi));
@@ -240,10 +251,12 @@ void ViewerWindow::applyROI(bool reuse)
 		}
 	}
 
-	if (reuse && profitable) {
-		viewGRAD->addImage(tmp_sets_gradient, add, roi);
-	} else {
-		viewGRAD->setImage(gradient, GRAD, roi);
+	if (!viewGRAD->isPayloadHidden()) {
+		if (reuse && profitable) {
+			viewGRAD->addImage(tmp_sets_gradient, add, roi);
+		} else {
+			viewGRAD->setImage(gradient, roi);
+		}
 	}
 
 	BackgroundTaskPtr taskGradFinish(new BackgroundTask(roi));
@@ -251,39 +264,39 @@ void ViewerWindow::applyROI(bool reuse)
 		this, SLOT(gradCalculationComplete(bool)), Qt::QueuedConnection);
 	BackgroundTaskQueue::instance().push(taskGradFinish);
 
-	{
+	if (imagepca.get()) {
 		BackgroundTaskPtr taskPca(new MultiImg::PcaTbb(
 			image, imagepca, 0, roi));
 		BackgroundTaskQueue::instance().push(taskPca);
+
+		if (reuse && profitable) {
+			viewIMGPCA->addImage(tmp_sets_imagepca, add, roi);
+		} else {
+			viewIMGPCA->setImage(imagepca, roi);
+		}
+
+		BackgroundTaskPtr taskImgPcaFinish(new BackgroundTask(roi));
+		QObject::connect(taskImgPcaFinish.get(), SIGNAL(finished(bool)), 
+			this, SLOT(imgPcaCalculationComplete(bool)), Qt::QueuedConnection);
+		BackgroundTaskQueue::instance().push(taskImgPcaFinish);
 	}
 
-	if (reuse && profitable) {
-		viewIMGPCA->addImage(tmp_sets_imagepca, add, roi);
-	} else {
-		viewIMGPCA->setImage(imagepca, IMGPCA, roi);
-	}
-
-	BackgroundTaskPtr taskImgPcaFinish(new BackgroundTask(roi));
-	QObject::connect(taskImgPcaFinish.get(), SIGNAL(finished(bool)), 
-		this, SLOT(imgPcaCalculationComplete(bool)), Qt::QueuedConnection);
-	BackgroundTaskQueue::instance().push(taskImgPcaFinish);
-
-	{
+	if (gradientpca.get()) {
 		BackgroundTaskPtr taskPca(new MultiImg::PcaTbb(
 			gradient, gradientpca, 0, roi));
 		BackgroundTaskQueue::instance().push(taskPca);
-	}
 
-	if (reuse && profitable) {
-		viewGRADPCA->addImage(tmp_sets_gradientpca, add, roi);
-	} else {
-		viewGRADPCA->setImage(gradientpca, GRADPCA, roi);
-	}
+		if (reuse && profitable) {
+			viewGRADPCA->addImage(tmp_sets_gradientpca, add, roi);
+		} else {
+			viewGRADPCA->setImage(gradientpca, roi);
+		}
 
-	BackgroundTaskPtr taskGradPcaFinish(new BackgroundTask(roi));
-	QObject::connect(taskGradPcaFinish.get(), SIGNAL(finished(bool)), 
-		this, SLOT(gradPcaCalculationComplete(bool)), Qt::QueuedConnection);
-	BackgroundTaskQueue::instance().push(taskGradPcaFinish);
+		BackgroundTaskPtr taskGradPcaFinish(new BackgroundTask(roi));
+		QObject::connect(taskGradPcaFinish.get(), SIGNAL(finished(bool)), 
+			this, SLOT(gradPcaCalculationComplete(bool)), Qt::QueuedConnection);
+		BackgroundTaskQueue::instance().push(taskGradPcaFinish);
+	}
 
 	BackgroundTaskPtr roiFinish(new BackgroundTask(roi));
 	QObject::connect(roiFinish.get(), SIGNAL(finished(bool)), 
@@ -315,6 +328,18 @@ void ViewerWindow::gradPcaCalculationComplete(bool success)
 		finishViewerRefresh(GRADPCA);
 }
 
+void ViewerWindow::disconnectViewer(int viewer)
+{
+	disconnect(bandView, SIGNAL(pixelOverlay(int, int)),
+		viewers[viewer], SLOT(overlay(int, int)));
+	disconnect(bandView, SIGNAL(killHover()),
+		viewers[viewer]->getViewport(), SLOT(killHover()));
+	disconnect(bandView, SIGNAL(subPixels(const std::map<std::pair<int, int>, short> &)),
+		viewers[viewer], SLOT(subPixels(const std::map<std::pair<int, int>, short> &)));
+	disconnect(bandView, SIGNAL(addPixels(const std::map<std::pair<int, int>, short> &)),
+		viewers[viewer], SLOT(addPixels(const std::map<std::pair<int, int>, short> &)));
+}
+
 void ViewerWindow::finishViewerRefresh(int viewer)
 {
 	viewers[viewer]->setEnabled(true);
@@ -322,6 +347,10 @@ void ViewerWindow::finishViewerRefresh(int viewer)
 		viewers[viewer], SLOT(overlay(int, int)));
 	connect(bandView, SIGNAL(killHover()),
 		viewers[viewer]->getViewport(), SLOT(killHover()));
+	connect(bandView, SIGNAL(subPixels(const std::map<std::pair<int, int>, short> &)),
+		viewers[viewer], SLOT(subPixels(const std::map<std::pair<int, int>, short> &)));
+	connect(bandView, SIGNAL(addPixels(const std::map<std::pair<int, int>, short> &)),
+		viewers[viewer], SLOT(addPixels(const std::map<std::pair<int, int>, short> &)));
 	if (viewer == GRAD) {
 		normTargetChanged(true);
 	}
@@ -440,12 +469,16 @@ void ViewerWindow::initUI()
 		connect(nonmarkButton, SIGNAL(toggled(bool)),
 				v, SLOT(toggleUnlabeled(bool)));
 
-		connect(bandView, SIGNAL(pixelOverlay(int, int)),
-				v, SLOT(overlay(int, int)));
-		connect(bandView, SIGNAL(subPixels(const std::map<std::pair<int, int>, short> &)),
-				v, SLOT(subPixels(const std::map<std::pair<int, int>, short> &)));
-		connect(bandView, SIGNAL(addPixels(const std::map<std::pair<int, int>, short> &)),
-				v, SLOT(addPixels(const std::map<std::pair<int, int>, short> &)));
+		if (!v->isPayloadHidden()) {
+			connect(bandView, SIGNAL(pixelOverlay(int, int)),
+					v, SLOT(overlay(int, int)));
+			connect(bandView, SIGNAL(killHover()),
+					vp, SLOT(killHover()));
+			connect(bandView, SIGNAL(subPixels(const std::map<std::pair<int, int>, short> &)),
+					v, SLOT(subPixels(const std::map<std::pair<int, int>, short> &)));
+			connect(bandView, SIGNAL(addPixels(const std::map<std::pair<int, int>, short> &)),
+					v, SLOT(addPixels(const std::map<std::pair<int, int>, short> &)));
+		}
 
 		connect(vp, SIGNAL(activated()),
 				vpmap, SLOT(map()));
@@ -469,8 +502,10 @@ void ViewerWindow::initUI()
 
 		connect(v, SIGNAL(setGUIEnabled(bool, TaskType)),
 				this, SLOT(setGUIEnabled(bool, TaskType)));
+		connect(v, SIGNAL(toggleViewer(bool , representation)),
+				this, SLOT(toggleViewer(bool , representation)));
 		connect(v, SIGNAL(finishTask(bool)),
-				this, SLOT(finishTask(bool)));
+				this, SLOT(finishTask(bool)));	
 
 		connect(v, SIGNAL(newOverlay()),
 				this, SLOT(newOverlay()));
@@ -481,9 +516,6 @@ void ViewerWindow::initUI()
 				this, SLOT(addToLabel()));
 		connect(vp, SIGNAL(remSelection()),
 				this, SLOT(remFromLabel()));
-
-		connect(bandView, SIGNAL(killHover()),
-				vp, SLOT(killHover()));
 	}
 
 	/// init bandsSlider
@@ -505,6 +537,83 @@ void ViewerWindow::initUI()
 	updateRGB(true);
 }
 
+void ViewerWindow::toggleViewer(bool enable, representation viewer)
+{
+	if (!enable) {
+		disconnectViewer(viewer);
+
+		if (viewer == IMG) {
+			// no-op
+		} else if (viewer == GRAD) {
+			// no-op
+		} else if (viewer == IMGPCA) {
+			viewers[IMGPCA]->resetImage();
+			imagepca.reset();
+			if (viewers[IMGPCA] == activeViewer) {
+				viewers[IMG]->activateViewport();
+				updateBand();
+			}
+		} else if (viewer == GRADPCA) {
+			viewers[GRADPCA]->resetImage();
+			gradientpca.reset();
+			if (viewers[GRADPCA] == activeViewer) {
+				viewers[IMG]->activateViewport();
+				updateBand();
+			}
+		}
+	} else {
+		setGUIEnabled(false, TT_TOGGLE_VIEWER);
+		viewers[viewer]->setEnabled(false);
+
+		if (viewer == IMG) {
+			viewers[viewer]->setImage(image, roi);
+
+			BackgroundTaskPtr taskImgFinish(new BackgroundTask(roi));
+			QObject::connect(taskImgFinish.get(), SIGNAL(finished(bool)), 
+				this, SLOT(imgCalculationComplete(bool)), Qt::QueuedConnection);
+			BackgroundTaskQueue::instance().push(taskImgFinish);
+		} else if (viewer == GRAD) {
+			viewers[viewer]->setImage(gradient, roi);
+
+			BackgroundTaskPtr taskGradFinish(new BackgroundTask(roi));
+			QObject::connect(taskGradFinish.get(), SIGNAL(finished(bool)), 
+				this, SLOT(gradCalculationComplete(bool)), Qt::QueuedConnection);
+			BackgroundTaskQueue::instance().push(taskGradFinish);
+		} else if (viewer == IMGPCA) {
+			imagepca.reset(new SharedData<multi_img>(new multi_img(0, 0, 0)));
+
+			BackgroundTaskPtr taskPca(new MultiImg::PcaTbb(
+				image, imagepca, 0, roi));
+			BackgroundTaskQueue::instance().push(taskPca);
+
+			viewers[viewer]->setImage(imagepca, roi);
+
+			BackgroundTaskPtr taskImgPcaFinish(new BackgroundTask(roi));
+			QObject::connect(taskImgPcaFinish.get(), SIGNAL(finished(bool)), 
+				this, SLOT(imgPcaCalculationComplete(bool)), Qt::QueuedConnection);
+			BackgroundTaskQueue::instance().push(taskImgPcaFinish);
+		} else if (viewer == GRADPCA) {
+			gradientpca.reset(new SharedData<multi_img>(new multi_img(0, 0, 0)));
+
+			BackgroundTaskPtr taskPca(new MultiImg::PcaTbb(
+				gradient, gradientpca, 0, roi));
+			BackgroundTaskQueue::instance().push(taskPca);
+
+			viewers[viewer]->setImage(gradientpca, roi);
+
+			BackgroundTaskPtr taskGradPcaFinish(new BackgroundTask(roi));
+			QObject::connect(taskGradPcaFinish.get(), SIGNAL(finished(bool)), 
+				this, SLOT(gradPcaCalculationComplete(bool)), Qt::QueuedConnection);
+			BackgroundTaskQueue::instance().push(taskGradPcaFinish);
+		} 
+
+		BackgroundTaskPtr taskEpilog(new BackgroundTask(roi));
+		QObject::connect(taskEpilog.get(), SIGNAL(finished(bool)), 
+			this, SLOT(finishTask(bool)), Qt::QueuedConnection);
+		BackgroundTaskQueue::instance().push(taskEpilog);
+	}
+}
+
 void ViewerWindow::setGUIEnabled(bool enable, TaskType tt)
 {
 	bandsSlider->setEnabled(enable || tt == TT_BAND_COUNT);
@@ -513,25 +622,25 @@ void ViewerWindow::setGUIEnabled(bool enable, TaskType tt)
 	remButton->setEnabled(enable);
 
 	viewIMG->enableBinSlider(enable);
-	viewIMG->setEnabled(enable || tt == TT_BIN_COUNT);
+	viewIMG->setEnabled(enable || tt == TT_BIN_COUNT || tt == TT_TOGGLE_VIEWER);
 	viewGRAD->enableBinSlider(enable);
-	viewGRAD->setEnabled(enable || tt == TT_BIN_COUNT);
+	viewGRAD->setEnabled(enable || tt == TT_BIN_COUNT || tt == TT_TOGGLE_VIEWER);
 	viewIMGPCA->enableBinSlider(enable);
-	viewIMGPCA->setEnabled(enable || tt == TT_BIN_COUNT);
+	viewIMGPCA->setEnabled(enable || tt == TT_BIN_COUNT || tt == TT_TOGGLE_VIEWER);
 	viewGRADPCA->enableBinSlider(enable);
-	viewGRADPCA->setEnabled(enable || tt == TT_BIN_COUNT);
+	viewGRADPCA->setEnabled(enable || tt == TT_BIN_COUNT || tt == TT_TOGGLE_VIEWER);
 
 	applyButton->setEnabled(enable);
 	clearButton->setEnabled(enable);
 	bandView->setEnabled(enable);
 	graphsegWidget->setEnabled(enable);
 
-	normDock->setEnabled(enable || tt == TT_NORM_RANGE || tt == TT_CLAMP_RANGE_IMG ||  tt == TT_CLAMP_RANGE_GRAD);
+	normDock->setEnabled(enable || tt == TT_NORM_RANGE || tt == TT_CLAMP_RANGE_IMG || tt == TT_CLAMP_RANGE_GRAD);
 	normIButton->setEnabled(enable || tt == TT_NORM_RANGE || tt == TT_CLAMP_RANGE_IMG);
-	normGButton->setEnabled(enable || tt == TT_NORM_RANGE ||  tt == TT_CLAMP_RANGE_GRAD);
+	normGButton->setEnabled(enable || tt == TT_NORM_RANGE || tt == TT_CLAMP_RANGE_GRAD);
 	normModeBox->setEnabled(enable);
 	normApplyButton->setEnabled(enable || tt == TT_NORM_RANGE);
-	normClampButton->setEnabled(enable || tt == TT_CLAMP_RANGE_IMG ||  tt == TT_CLAMP_RANGE_GRAD);
+	normClampButton->setEnabled(enable || tt == TT_CLAMP_RANGE_IMG || tt == TT_CLAMP_RANGE_GRAD);
 
 	labelDock->setEnabled(enable);
 
@@ -1578,7 +1687,11 @@ void ViewerWindow::unsupervisedSegCancelled() {}
 
 void ViewerWindow::setActive(int id)
 {
-	activeViewer = viewers[id];
+	if (viewers[id]->getImage().get()) {
+		activeViewer = viewers[id];
+	} else {
+		activeViewer = viewers[IMG];
+	}
 }
 
 void ViewerWindow::labelflush()

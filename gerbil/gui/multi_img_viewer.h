@@ -33,11 +33,15 @@ public:
 	multi_img_viewer(QWidget *parent = 0);
 
 	multi_img_ptr getImage() { return image; }
+	void resetImage() { image.reset(); }
 	Viewport* getViewport() { return viewport; }
+	void activateViewport() { viewport->activate(); }
 	const multi_img::Mask& getMask() { return maskholder; }
 	int getSelection() { return viewport->selection; }
-	representation getType() { SharedDataHold l(viewport->ctx->lock); return (*viewport->ctx)->type; }
+	representation getType() { return type; }
+	void setType(representation type);
 	void enableBinSlider(bool enable) { binSlider->setEnabled(enable); }
+	bool isPayloadHidden() { return payload->isHidden(); }
 
 	cv::Mat1s labels;
 
@@ -59,7 +63,7 @@ public slots:
 	void addPixels(const std::map<std::pair<int, int>, short> &points);
 	void subImage(sets_ptr temp, const std::vector<cv::Rect> &regions, cv::Rect roi);
 	void addImage(sets_ptr temp, const std::vector<cv::Rect> &regions, cv::Rect roi);
-	void setImage(multi_img_ptr image, representation type, cv::Rect roi);
+	void setImage(multi_img_ptr image, cv::Rect roi);
 	void setIlluminant(const std::vector<multi_img::Value> &, bool for_real);
 	void changeBinCount(int bins);
 	void updateBinning(int bins);
@@ -81,6 +85,7 @@ signals:
 	void newOverlay();
 	void folding();
 	void setGUIEnabled(bool enable, TaskType tt);
+	void toggleViewer(bool enable, representation type);
 	void finishTask(bool success);
 
 protected:
@@ -149,6 +154,7 @@ protected:
 	void setTitle(representation type, multi_img::Value min, multi_img::Value max);
 
 	multi_img_ptr image;
+	representation type;
 	std::vector<multi_img::Value> illuminant;
 	bool ignoreLabels;
 	multi_img::Mask maskholder;
