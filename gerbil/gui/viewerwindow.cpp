@@ -1697,7 +1697,8 @@ void ViewerWindow::setActive(int id)
 void ViewerWindow::labelflush()
 {
 	emit clearLabel();
-	refreshLabelsInViewers();
+	if (!bandView->isSeedModeEnabled())
+		refreshLabelsInViewers();
 }
 
 void ViewerWindow::labelmask(bool negative)
