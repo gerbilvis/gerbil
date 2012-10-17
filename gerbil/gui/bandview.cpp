@@ -290,29 +290,41 @@ void BandView::cursorAction(QMouseEvent *ev, bool click)
 	emit killHover();
 	emit pixelOverlay(x, y);
 
-	// paint
-	if (ev->buttons() & Qt::LeftButton) {
-		if (!seedMode) {
-			uncommitedLabels[std::make_pair(x, y)] = curLabel;
-			updateCache(x, y, curLabel);
-			labelTimer.start();
-		} else {
-			seedMap(y, x) = 0;
-			updateCache(x, y);
-		}
-	// erase
-	} else if (ev->buttons() & Qt::RightButton) {
-		if (!seedMode) {
-			if (labels(y, x) == curLabel) {
-				uncommitedLabels[std::make_pair(x, y)] = 0;
-				updateCache(x, y, 0);
-				labelTimer.start();
-				if (!grandupdate)
-					updatePoint(cursor);
+	if (!(ev->buttons() & Qt::NoButton)) {
+		QLineF line(lastcursor, cursor);
+		qreal step = 1 / line.length();
+		for (qreal t = 0.0; t < 1.0; t += step) {
+			QPointF point = line.pointAt(t);
+			int x = point.x();
+			int y = point.y();
+
+			if (!pixmap->rect().contains(x, y))
+				break;
+
+			if (ev->buttons() & Qt::LeftButton) {
+				if (!seedMode) {
+					uncommitedLabels[std::make_pair(x, y)] = curLabel;
+					updateCache(x, y, curLabel);
+					labelTimer.start();
+				} else {
+					seedMap(y, x) = 0;
+					updateCache(x, y);
+				}
+			// erase
+			} else if (ev->buttons() & Qt::RightButton) {
+				if (!seedMode) {
+					if (labels(y, x) == curLabel) {
+						uncommitedLabels[std::make_pair(x, y)] = 0;
+						updateCache(x, y, 0);
+						labelTimer.start();
+						if (!grandupdate)
+							updatePoint(cursor);
+					}
+				} else {
+					seedMap(y, x) = 255;
+					updateCache(x, y);
+				}
 			}
-		} else {
-			seedMap(y, x) = 255;
-			updateCache(x, y);
 		}
 	}
 
