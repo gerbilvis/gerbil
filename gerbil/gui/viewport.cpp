@@ -299,7 +299,7 @@ void Viewport::drawBins(QPainter &painter)
 	implicitClearView = (clearView || !active || drawingState == SCREENSHOT ||
 						 (hover < 0 && !limiterMode));
 	/* make sure that viewport shows "unlabeled" in the ignore label case */
-	int start = ((showUnlabeled || ignoreLabels == 1) ? 0 : 1);
+	int start = ((showUnlabeled || (*ctx)->ignoreLabels == 1) ? 0 : 1);
 	int end = (showLabeled ? (*sets)->size() : 1);
 
 	unsigned int total = shuffleIdx.size();

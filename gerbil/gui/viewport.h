@@ -170,7 +170,7 @@ public:
 
 	float useralpha;
 
-	bool showLabeled, showUnlabeled, ignoreLabels;
+	bool showLabeled, showUnlabeled;
 	bool overlayMode;
 	QPolygonF overlayPoints;
 

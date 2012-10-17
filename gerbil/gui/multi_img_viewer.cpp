@@ -21,6 +21,7 @@ using namespace std;
 
 multi_img_viewer::multi_img_viewer(QWidget *parent)
 	: QWidget(parent),
+	  ignoreLabels(false),
 	  limiterMenu(this)
 {
 	setupUi(this);
