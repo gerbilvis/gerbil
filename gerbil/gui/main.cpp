@@ -7,13 +7,48 @@
 #include <string>
 
 #include <opencv2/gpu/gpu.hpp>
+#include <opencv2/core/core.hpp>
+#include <opencv2/imgproc/imgproc.hpp>
 
 #ifdef __GNUC__
 #include <tr1/functional>
 #endif
 
+/** All OpenCV functions that are called from parallelized parts of gerbil
+    have to be first executed in single-threaded environment. This is actually
+    required only for functions that contain 'static const' variables, but to 
+    avoid investigation of OpenCV sources and to defend against any future
+    changes in OpenCV, it is advised not to omit any used function. Note that
+    'static const' variables within functions are initialized in a lazy manner
+    and such initialization is not thread-safe because setting the value and
+    init flag of the variable is not an atomic operation. */
+void init_opencv()
+{
+	double d1, d2;
+	multi_img::Band b1(1, 1);
+	multi_img::Band b2(1, 1);
+	multi_img::Band b3(1, 2);
+
+	b1(0, 0) = 1.0;
+	b2(0, 0) = 1.0;
+	b3(0, 0) = 1.0;
+	b3(0, 1) = 1.0;
+
+	cv::minMaxLoc(b1, &d1, &d2);
+	cv::resize(b3, b2, cv::Size(1, 1));
+	cv::log(b1, b2);
+	cv::max(b1, 0., b2);
+	cv::subtract(b1, b1, b2);
+	cv::multiply(b1, b1, b2);
+	cv::divide(b1, b1, b2);
+	cv::PCA pca(b1, cv::noArray(), CV_PCA_DATA_AS_COL, 0);
+	pca.project(b1, b2);
+}
+
 int main(int argc, char **argv)
 {
+	init_opencv();
+
 	if (cv::gpu::getCudaEnabledDeviceCount() > 0) {
 		cv::gpu::DeviceInfo info;
 
