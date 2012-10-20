@@ -9,10 +9,11 @@
 #include <multi_img.h>
 #include <opencv2/highgui/highgui.hpp>
 
-#ifdef WITH_BOOST
+#ifdef WITH_BOOST_FILESYSTEM
 	#include "boost/filesystem.hpp"
 #else
-	#include "libgen.h"
+	#include <libgen.h>
+	#include <sys/stat.h>
 #endif
 
 #include <fstream>
@@ -129,10 +130,37 @@ bool multi_img::read_image_lan(const string& filename)
 
 void multi_img::write_out(const string& base, bool normalize, bool in16bit) const
 {
+	// create directory
+#ifdef WITH_BOOST_FILESYSTEM
+	boost::filesystem::path basepath(base);
+	bool success =
+			boost::filesystem::is_directory(basepath) ||
+			boost::filesystem::create_directory(basepath);
+	if (!success) {
+		std::cerr << "Writing failed! "
+					 "Could not create directory " << base << std::endl;
+		return;
+	}
+	std::string basename(basepath.filename()), dir(basename);
+#elif __unix__
+	int status = mkdir(base.c_str());
+	if (status != 0) {
+		std::cerr << "Writing failed!"
+					 "Could not create directory " << base << std::endl;
+		return;
+	}
+	char *f = strdup(base.c_str()), *ff = filename(f);
+	std::string basename(ff), dir(basename);
+	free(f);
+#else
+	// don't use subdir
+	std::string basename(base.substr(base.find_last_of("/") + 1)), dir("./");
+#endif
+
 	// header of text file
     ofstream txtfile((base + ".txt").c_str());
     txtfile << size() << "\n";
-    txtfile << "./" << "\n";
+	txtfile << dir << "\n";
 
 	// preparation of scale and shift
 	Value scale = (!normalize ? 1.f
@@ -143,11 +171,8 @@ void multi_img::write_out(const string& base, bool normalize, bool in16bit) cons
 	// write out band files and corresponding text file entries at once
 	char name[1024];
 	for (size_t i = 0; i < size(); ++i) {
-		sprintf(name, "%s%02d.png", base.c_str(), (int)i);
-
-		// write only the basename in the text file
-		txtfile << string(name).substr(string(name).find_last_of("/") + 1);
-		txtfile << " " << meta[i].rangeStart;
+		sprintf(name, "%s%02d.png", basename.c_str(), (int)i);
+		txtfile << name << " " << meta[i].rangeStart;
 		if (meta[i].rangeStart != meta[i].rangeEnd) // print range, if available
 			txtfile << " "  << meta[i].rangeEnd;
 		txtfile << "\n";
@@ -156,9 +181,9 @@ void multi_img::write_out(const string& base, bool normalize, bool in16bit) cons
 			cv::Mat output;
 			bands[i].convertTo(output, (in16bit ? CV_16U : CV_8U),
 							   scale, shift);
-			cv::imwrite(name, output);
+			cv::imwrite(base + "/" + name, output);
 		} else {
-			cv::imwrite(name, bands[i]);
+			cv::imwrite(base + "/" + name, bands[i]);
 		}
 	}
 
