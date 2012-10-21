@@ -18,6 +18,7 @@ public:
 
 	cv::Mat1s labels;
 	cv::Mat1s seedMap; // mat1s to be consistent with labels matrix
+	multi_img::Mask curMask; // in single label mode contains curlabel members
 
 public slots:
 	void refresh();
@@ -31,12 +32,14 @@ public slots:
 	void setLabelColors(const QVector<QColor> &labelColors, bool changed);
 	void applyLabelAlpha(int alpha);
 	void toggleShowLabels(bool disabled);
+	void toggleSingleLabel(bool enabled);
 	void toggleSeedMode(bool enabled);
 
 signals:
 	void pixelOverlay(int x, int y);
 	void killHover();
 	void newLabel(); // user requested another label
+	void newSingleLabel(short label); // single label mode, diff. label chosen
 
 private:
 	void cursorAction(QMouseEvent *ev, bool click = false);
@@ -54,7 +57,7 @@ private:
 	const multi_img::Mask *overlay;
 
 	/// color view according to labels
-	bool showLabels;
+	bool showLabels, singleLabel;
 
 	/// interpret input as segmentation seeds
 	bool seedMode;

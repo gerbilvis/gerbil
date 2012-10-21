@@ -26,7 +26,7 @@ Viewport::Viewport(QWidget *parent)
 	  illuminant(NULL), selection(0), hover(-1), limiterMode(false),
 	  active(false), wasActive(false), useralpha(1.f),
 	  showLabeled(true), showUnlabeled(true), ignoreLabels(false),
-	  overlayMode(false),
+	  overlayMode(false), highlightLabel(-1),
 	  zoom(1.), shift(0), lasty(-1), holdSelection(false), activeLimiter(0),
 	  cacheValid(false), clearView(false), implicitClearView(false),
 	  drawMeans(true), drawRGB(false), drawHQ(true), drawingState(FOLDING),
@@ -231,13 +231,14 @@ void Viewport::drawBins(QPainter &painter)
 	/* make sure that viewport shows "unlabeled" in the ignore label case */
 	int start = ((showUnlabeled || ignoreLabels == 1) ? 0 : 1);
 	int end = (showLabeled ? sets.size() : 1);
+	int single = (ignoreLabels ? -1 : highlightLabel);
 
 	unsigned int total = shuffleIdx.size();
 	if (drawingState == RESIZE)
 		total /= 10;
 	for (unsigned int i = 0; i < total; ++i) {
 		std::pair<int, QByteArray> &idx = shuffleIdx[i];
-		if (idx.first < start || idx.first >= end) {
+		if ((idx.first < start || idx.first >= end) && !(idx.first == single)) {
 			currind += dimensionality;
 			continue;
 		}
@@ -269,9 +270,13 @@ void Viewport::drawBins(QPainter &painter)
 				}
 			} else if ((unsigned char)K[selection] == hover)
 				highlighted = true;
+		} else {
+			// highlight via singleLabel
+			if (idx.first == single)
+				highlighted = true;
 		}
 		if (highlighted) {
-			if (basecolor == Qt::white) {
+			if (basecolor == Qt::white || idx.first == single) {
 				color = Qt::yellow;
 			} else {
 				color.setGreen(min(color.green() + 195, 255));
@@ -705,6 +710,12 @@ void Viewport::killHover()
 	if (!implicitClearView)
 		// make sure the drawing happens before next overlay cache update
 		repaint();
+}
+
+void Viewport::highlight(short index)
+{
+	highlightLabel = index;
+	repaint();
 }
 
 void Viewport::startNoHQ(bool resize)

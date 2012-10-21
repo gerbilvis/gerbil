@@ -17,7 +17,8 @@
 BandView::BandView(QWidget *parent)
 	: ScaledView(parent),
 	  cacheValid(false), cursor(-1, -1), lastcursor(-1, -1), curLabel(1),
-	  overlay(0), showLabels(true), seedMode(false), labelAlpha(63),
+	  overlay(0), showLabels(true), singleLabel(false),
+	  seedMode(false), labelAlpha(63),
 	  seedColorsA(std::make_pair(
             QColor(255, 0, 0, labelAlpha), QColor(255, 255, 0, labelAlpha)))
 {}
@@ -73,7 +74,7 @@ void BandView::paintEvent(QPaintEvent *ev)
 	painter.drawPixmap(damaged, cachedPixmap, damaged);
 
 	// draw current cursor
-	if (curLabel < labelColors.count()) {
+	if (!singleLabel && (curLabel < labelColors.count())) {
 		QPen pen(seedMode ? Qt::yellow : labelColors[curLabel]);
 		pen.setWidth(0);
 		painter.setPen(pen);
@@ -122,7 +123,7 @@ void BandView::updateCache()
 {
 	cachedPixmap = pixmap->copy(); // TODO: check for possible qt memory leak
 	cacheValid = true;
-	if (!seedMode && !showLabels)
+	if (!seedMode && !showLabels) // there is no overlay, leave early
 		return;
 
 	QPainter painter(&cachedPixmap);
@@ -180,7 +181,7 @@ void BandView::updateCache(int x, int y)
 	// restore pixel
 	painter.drawPixmap(x, y, *pixmap, x, y, 1, 1);
 
-	if (!seedMode && !showLabels)
+	if (!seedMode && !showLabels) // there is no overlay, leave early
 		return;
 	
 	// if needed, color pixel
@@ -243,8 +244,25 @@ void BandView::cursorAction(QMouseEvent *ev, bool click)
 	if (!pixmap->rect().contains(x, y))
 		return;
 
+	if (singleLabel && showLabels) {
+		if ((labels(y, x) != curLabel)) {
+			curLabel = labels(y, x);
+			curMask = multi_img::Mask(labels.rows, labels.cols, (uchar)0);
+			curMask.setTo(1, (labels == curLabel));
+			drawOverlay(curMask);
+			emit newSingleLabel(curLabel); // vp redraw
+		} else {
+			emit killHover();
+		}
+		emit pixelOverlay(x, y);
+		return;
+	}
+
+	/// end of function for singleLabel case. no manipulations,
+	/// destroying overlay etc.
+
 	// overlay in spectral views
-	emit killHover();
+	emit killHover(); // vp redraw
 	emit pixelOverlay(x, y);
 
 	// paint
@@ -334,6 +352,16 @@ void BandView::toggleShowLabels(bool disabled)
 	if (showLabels == disabled) {	// i.e. not the state we want
 		showLabels = !showLabels;
 		refresh();
+	}
+}
+
+void BandView::toggleSingleLabel(bool enabled)
+{
+	if (singleLabel != enabled) {	// i.e. not the state we want
+		singleLabel = !singleLabel;
+		refresh();
+		// also (de)activate in viewports
+		emit newSingleLabel(singleLabel ? curLabel : -1);
 	}
 }
 
