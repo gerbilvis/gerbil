@@ -55,6 +55,7 @@ int FelzenszwalbShell::execute() {
 
 	vole::Labeling output;
 	output.yellowcursor = false;
+	output.shuffle = true;
 	output.read(result.first, false); // TODO: we get consecutive index now!
 
 	std::string output_name = config.output_file;
