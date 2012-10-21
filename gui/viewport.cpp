@@ -254,12 +254,8 @@ void Viewport::drawBins(QPainter &painter)
 		   the view with too much low-weight information */
 		/* logarithm is used to prevent single data points to get lost.
 		   this should be configurable. */
-		if (i == 0)
-			alpha = useralpha *
+		alpha = useralpha *
 					(0.01 + 0.99*(log(b.weight+1) / log(s.totalweight)));
-		else
-			alpha = useralpha *
-					(log(b.weight+1) / log(s.totalweight));
 		color.setAlphaF(min(alpha, 1.));
 
 		bool highlighted = false;
