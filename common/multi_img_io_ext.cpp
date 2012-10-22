@@ -141,7 +141,12 @@ void multi_img::write_out(const string& base, bool normalize, bool in16bit) cons
 					 "Could not create directory " << base << std::endl;
 		return;
 	}
-	std::string basename(basepath.filename().native()), dir(basename);
+#include "boost/version.hpp"
+#if BOOST_VERSION < 104600 // V2 API is default
+	std::string basename(basepath.filename()), dir(basename);
+#else
+	std::string basename(basepath.filename().string()), dir(basename);
+#endif
 #elif __unix__
 	int status = mkdir(base.c_str());
 	if (status != 0) {
