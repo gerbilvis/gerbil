@@ -17,7 +17,7 @@
 BandView::BandView(QWidget *parent)
 	: ScaledView(parent),
 	  cacheValid(false), cursor(-1, -1), lastcursor(-1, -1), curLabel(1),
-	  overlay(0), showLabels(true), singleLabel(false),
+	  overlay(0), showLabels(true), singleLabel(false), holdLabel(false),
 	  seedMode(false), labelAlpha(63),
 	  seedColorsA(std::make_pair(
             QColor(255, 0, 0, labelAlpha), QColor(255, 255, 0, labelAlpha)))
@@ -245,13 +245,18 @@ void BandView::cursorAction(QMouseEvent *ev, bool click)
 		return;
 
 	if (singleLabel && showLabels) {
-		if ((labels(y, x) != curLabel)) {
+		if (ev->buttons() & Qt::LeftButton) {
+			holdLabel = !holdLabel;
+		}
+		if (!holdLabel && (labels(y, x) != curLabel)) {
 			curLabel = labels(y, x);
 			curMask = multi_img::Mask(labels.rows, labels.cols, (uchar)0);
 			curMask.setTo(1, (labels == curLabel));
 			drawOverlay(curMask);
 			emit newSingleLabel(curLabel); // vp redraw
 		} else {
+			if (overlay != &curMask)
+				drawOverlay(curMask);
 			emit killHover();
 		}
 		emit pixelOverlay(x, y);

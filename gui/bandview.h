@@ -57,7 +57,7 @@ private:
 	const multi_img::Mask *overlay;
 
 	/// color view according to labels
-	bool showLabels, singleLabel;
+	bool showLabels, singleLabel, holdLabel;
 
 	/// interpret input as segmentation seeds
 	bool seedMode;

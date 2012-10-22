@@ -270,13 +270,9 @@ void Viewport::drawBins(QPainter &painter)
 				}
 			} else if ((unsigned char)K[selection] == hover)
 				highlighted = true;
-		} else {
-			// highlight via singleLabel
-			if (idx.first == single)
-				highlighted = true;
 		}
 		if (highlighted) {
-			if (basecolor == Qt::white || idx.first == single) {
+			if (basecolor == Qt::white) {
 				color = Qt::yellow;
 			} else {
 				color.setGreen(min(color.green() + 195, 255));
@@ -284,6 +280,10 @@ void Viewport::drawBins(QPainter &painter)
 				color.setBlue(color.blue()/2);
 			}
 			color.setAlphaF(1.);
+		}
+		// recolor singleLabel
+		if (!highlighted && implicitClearView && idx.first == single) {
+			color.setRgbF(1., 1., 0., color.alphaF());
 		}
 		if (highlighted)
 			glDepthMask(GL_TRUE); // write to depth mask -> stay in foreground
