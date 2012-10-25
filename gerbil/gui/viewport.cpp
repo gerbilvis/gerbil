@@ -362,7 +362,7 @@ void Viewport::drawBins(QPainter &painter, QTimer &renderTimer,
 		/* logarithm is used to prevent single data points to get lost.
 		   this should be configurable. */
 		alpha = useralpha *
-					(0.01 + 0.99*(log(b.weight+1) / log((float)s.totalweight)));
+					(0.01 + 0.99*(log(b.weight+1) / log(s.totalweight)));
 		color.setAlphaF(min(alpha, 1.));
 
 		if (highlighted && onlyHighlight) {

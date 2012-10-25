@@ -1404,7 +1404,7 @@ vector<unsigned int> ProbShift::meanShiftPostProcess(const vector<unsigned int> 
 	cv::Mat1s mslabels;
 	Labeling labeling;
 	labeling.yellowcursor = false;
-	vector<double> bandwidths(modes.size(), 0);
+	vector<double> bandwidths(modes.size());
     double bwfactor = config.msBwFactor;
 
 	if (config.msClusts <= 0) {

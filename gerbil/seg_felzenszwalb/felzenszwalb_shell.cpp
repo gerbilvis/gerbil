@@ -55,6 +55,7 @@ int FelzenszwalbShell::execute() {
 
 	vole::Labeling output;
 	output.yellowcursor = false;
+	output.shuffle = true;
 	output.read(result.first, false); // TODO: we get consecutive index now!
 
 	std::string output_name = config.output_file;
@@ -64,12 +65,17 @@ int FelzenszwalbShell::execute() {
 
 
 void FelzenszwalbShell::printShortHelp() const {
-	std::cout << "TODO" << std::endl;
+	std::cout << "Superpixel Segmentation by Felzenszwalb, Huttenlocher"
+				 " on multispectral images" << std::endl;
 }
 
 
 void FelzenszwalbShell::printHelp() const {
-	std::cout << "TODO" << std::endl;
+	std::cout << "Superpixel Segmentation by Felzenszwalb, Huttenlocher"
+				 " on multispectral images" << std::endl;
+	std::cout << std::endl;
+	std::cout << "Please refer to Felzenszwalb, Huttenlocher: Efficient Graph-Based Image\n"
+				 "Segmentation. International Journal of Computer Vision." << std::endl;
 	std::cout << std::endl;
 }
 

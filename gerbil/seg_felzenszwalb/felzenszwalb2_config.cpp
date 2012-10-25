@@ -24,9 +24,9 @@ FelzenszwalbConfig::FelzenszwalbConfig(const std::string& p)
 void FelzenszwalbConfig::initBoostOptions() {
 	options.add_options()
 		(key("tc,c"), value(&c)->default_value(500),
-						   "TODO: value c")
+						   "Threshold value c within sim. measure range")
 		(key("min_size"), value(&min_size)->default_value(50),
-						   "TODO: value min_size")
+						   "Minimum size of a superpixel")
 		;
 
 	options.add(similarity.options);
