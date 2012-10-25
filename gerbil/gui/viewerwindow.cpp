@@ -432,7 +432,11 @@ void ViewerWindow::initUI()
 	connect(ignoreButton, SIGNAL(toggled(bool)),
 			nonmarkButton, SLOT(setDisabled(bool)));
 	connect(ignoreButton, SIGNAL(toggled(bool)),
+			singleButton, SLOT(setDisabled(bool)));
+	connect(ignoreButton, SIGNAL(toggled(bool)),
 			bandView, SLOT(toggleShowLabels(bool)));
+	connect(singleButton, SIGNAL(toggled(bool)),
+			bandView, SLOT(toggleSingleLabel(bool)));
 
 	connect(addButton, SIGNAL(clicked()),
 			this, SLOT(addToLabel()));
@@ -520,6 +524,9 @@ void ViewerWindow::initUI()
 				this, SLOT(addToLabel()));
 		connect(vp, SIGNAL(remSelection()),
 				this, SLOT(remFromLabel()));
+
+		connect(bandView, SIGNAL(newSingleLabel(short)),
+				vp, SLOT(highlight(short)));
 	}
 
 	/// init bandsSlider

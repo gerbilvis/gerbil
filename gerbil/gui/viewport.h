@@ -183,6 +183,7 @@ public:
 
 public slots:
 	void killHover();
+	void highlight(short index);
 	void toggleRGB(bool enabled)
 	{ drawRGB = enabled; updateTextures(); }
 	void activate();
@@ -344,6 +345,9 @@ private:
 
 	std::vector<QString> yaxis;
 	int yaxisWidth;
+
+	// single label to be highlighted
+	int highlightLabel;
 };
 
 #endif // VIEWPORT_H

@@ -29,7 +29,7 @@ Viewport::Viewport(QWidget *parent)
 	  selection(0), hover(-1), limiterMode(false),
 	  active(false), wasActive(false), useralpha(1.f),
 	  showLabeled(true), showUnlabeled(true),
-	  overlayMode(false), illuminant_correction(false),
+	  overlayMode(false), highlightLabel(-1), illuminant_correction(false),
 	  zoom(1.), shift(0), lasty(-1), holdSelection(false), activeLimiter(0),
 	  clearView(false), implicitClearView(false),
 	  drawMeans(true), drawRGB(false), drawHQ(true), drawingState(FOLDING),
@@ -314,13 +314,14 @@ void Viewport::drawBins(QPainter &painter, QTimer &renderTimer,
 	/* make sure that viewport shows "unlabeled" in the ignore label case */
 	int start = ((showUnlabeled || (*ctx)->ignoreLabels == 1) ? 0 : 1);
 	int end = (showLabeled ? (*sets)->size() : 1);
+	int single = ((*ctx)->ignoreLabels ? -1 : highlightLabel);
 
 	unsigned int total = shuffleIdx.size();
 	unsigned int first = renderedLines;
 	unsigned int last = (renderedLines + renderStep) < total ? (renderedLines + renderStep) : total;
 	for (unsigned int i = first; i < last; ++i) {
 		std::pair<int, BinSet::HashKey> &idx = shuffleIdx[i];
-		if (idx.first < start || idx.first >= end) {
+		if ((idx.first < start || idx.first >= end) && !(idx.first == single)) {
 			currind += (*ctx)->dimensionality;
 			if (last < total)
 				++last; // increase loop count
@@ -360,12 +361,8 @@ void Viewport::drawBins(QPainter &painter, QTimer &renderTimer,
 		   the view with too much low-weight information */
 		/* logarithm is used to prevent single data points to get lost.
 		   this should be configurable. */
-		if (i == 0)
-			alpha = useralpha *
+		alpha = useralpha *
 					(0.01 + 0.99*(log(b.weight+1) / log((float)s.totalweight)));
-		else
-			alpha = useralpha *
-					(log(b.weight+1) / log((float)s.totalweight));
 		color.setAlphaF(min(alpha, 1.));
 
 		if (highlighted && onlyHighlight) {
@@ -377,6 +374,10 @@ void Viewport::drawBins(QPainter &painter, QTimer &renderTimer,
 				color.setBlue(color.blue()/2);
 			}
 			color.setAlphaF(1.);
+		}
+		// recolor singleLabel
+		if (!highlighted && implicitClearView && idx.first == single) {
+			color.setRgbF(1., 1., 0., color.alphaF());
 		}
 		if (highlighted && onlyHighlight)
 			glDepthMask(GL_TRUE); // write to depth mask -> stay in foreground
@@ -999,6 +1000,13 @@ void Viewport::killHover()
 	if (!implicitClearView)
 		// make sure the drawing happens before next overlay cache update
 		repaint();
+}
+
+void Viewport::highlight(short index)
+{
+	highlightLabel = index;
+	updateTextures();
+	repaint();
 }
 
 void Viewport::startNoHQ(bool resize)

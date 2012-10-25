@@ -109,6 +109,22 @@
            </widget>
           </item>
           <item>
+           <widget class="QPushButton" name="singleButton">
+              <property name="toolTip">
+                <string>
+                  Show vectors of one label
+                  (hover over pixel in band view to select label)
+                </string>
+              </property>
+              <property name="text">
+                <string>Single Label</string>
+              </property>
+              <property name="checkable">
+                <bool>true</bool>
+              </property>
+            </widget>
+          </item>
+          <item>
            <widget class="QPushButton" name="ignoreButton">
             <property name="toolTip">
              <string>draw all vectors label-free</string>
