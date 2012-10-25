@@ -42,7 +42,8 @@ public:
 	/** Initialize without data.
 		@arg labelcount Set labelcount to create label colors without data.
 	**/
-	Labeling(int labelcount = 0) : yellowcursor(true), labelcount(labelcount) {}
+	Labeling(int labelcount = 0)
+		: yellowcursor(true), shuffle(false), labelcount(labelcount) {}
 
 	/** Initialize with matrix containing arbitrary labels.
 		See read().
@@ -51,10 +52,9 @@ public:
 	**/
 	Labeling(const cv::Mat &labeling, bool binary);
 	Labeling(const std::string &filename, bool binary);
-	virtual ~Labeling() {}
 
 	/// Construct from label matrix. See setLabels.
-	Labeling(const cv::Mat &labeling) : yellowcursor(true) {
+	Labeling(const cv::Mat &labeling) : yellowcursor(true), shuffle(false) {
 		setLabels(labeling);
 	}
 
@@ -63,6 +63,8 @@ public:
 		setLabels(labeling);
 		return *this;
 	}
+
+	virtual ~Labeling() {}
 
 	/// Get label matrix, index 0 means "empty" label, indices are subsequent.
 	const cv::Mat1s operator()() const { return labels; }
@@ -108,6 +110,11 @@ public:
 	/// Reserve yellow for interactive cursor color
 	/** When set, yellow is not used as label color. Set by default. */
 	bool yellowcursor;
+
+	/// Shuffle label colors
+	/** When set, newly created label colors are shuffled, useful for output
+		from segmentation where neighboring segments have close indices */
+	bool shuffle;
 
 protected:
 

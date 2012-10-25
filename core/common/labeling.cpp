@@ -10,22 +10,23 @@
 
 #include "labeling.h"
 #include "qtopencv.h"
-
-#include <opencv2/highgui/highgui.hpp>
-#include <iostream>
+#include <opencv2/highgui/highgui.hpp>#include <iostream>
 #include <string>
 #include <vector>
+#include <algorithm>
 
 using namespace std;
 
 namespace vole {
 
-	Labeling::Labeling(const cv::Mat &labeling, bool binary) : yellowcursor(true)
+	Labeling::Labeling(const cv::Mat &labeling, bool binary)
+		: yellowcursor(true), shuffle(false)
 {
 	read(labeling, binary);
 }
 
-Labeling::Labeling(const string &filename, bool binary) : yellowcursor(true)
+Labeling::Labeling(const string &filename, bool binary)
+	: yellowcursor(true), shuffle(false)
 {
 	cv::Mat src = cv::imread(filename, -1); // flag -1: preserve format
 	if (src.empty()) {
@@ -188,6 +189,10 @@ cv::Mat3b Labeling::bgr() const
 void Labeling::buildColors() const
 {
 	labelColors = colors(labelcount, yellowcursor);
+	if (shuffle) {
+		// shuffle everything but first color (black)
+		std::random_shuffle(labelColors.begin() + 1, labelColors.end());
+	}
 }
 
 vector<cv::Vec3b> Labeling::colors(int count, bool yellowcursor)
