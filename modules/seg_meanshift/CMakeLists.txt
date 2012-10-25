@@ -11,10 +11,12 @@ vole_compile_library(
 )
 
 vole_add_command("meanshift" "meanshift_shell.h" "vole::MeanShiftShell")
+vole_add_command("meanshiftsp" "meanshift_sp.h" "vole::MeanShiftSP")
 
 vole_compile_library(
 	"io" "mfams"
 	"meanshift"         "meanshift_config"
+	"meanshift_sp"
 )
 
 vole_add_module()

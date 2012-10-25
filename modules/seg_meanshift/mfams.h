@@ -79,10 +79,11 @@ class FAMS
 public:
 
 	struct ComputePilotPoint {
-		ComputePilotPoint(FAMS& master)
-			: fams(master), dbg_acc(0.), dbg_noknn(0) {}
+		ComputePilotPoint(FAMS& master, vector<double> *weights = NULL)
+			: fams(master), weights(weights), dbg_acc(0.), dbg_noknn(0) {}
 		ComputePilotPoint(ComputePilotPoint& other, tbb::split)
-			: fams(other.fams), dbg_acc(0.), dbg_noknn(0) {}
+			: fams(other.fams), weights(other.weights),
+			  dbg_acc(0.), dbg_noknn(0) {}
 		void operator()(const tbb::blocked_range<int> &r);
 		void join(ComputePilotPoint &other)
 		{
@@ -91,6 +92,7 @@ public:
 		}
 
 		FAMS& fams;
+		vector<double> *weights;
 		double dbg_acc; // double, as it can go over limit of 32 bit integer
 		unsigned int dbg_noknn;
 	};
@@ -126,7 +128,13 @@ public:
 	bool PrepareFAMS(vector<double> *bandwidths = NULL);
 	bool FinishFAMS();
 	void PruneModes();
-
+	void SaveModeImg(const std::string& filebase,
+					 const std::vector<multi_img::BandDesc>& ref);
+	void SavePrunedModeImg(const std::string& filebase,
+					 const std::vector<multi_img::BandDesc>& ref);
+	void DbgSavePoints(const std::string& filebase,
+							 const std::vector<fams_point> points,
+							 const std::vector<multi_img::BandDesc>& ref);
 	void SaveModes(const std::string& filebase);
 
 	void SaveMymodes(const std::string& filebase);
@@ -141,11 +149,11 @@ public:
 	cv::Mat1s segmentImage();
 
 	// distance in L1 between two data elements
-	inline unsigned int DistL1(fams_point& in_pt1, fams_point& in_pt2) const {
+	inline unsigned int DistL1(fams_point& in_pt1, fams_point& in_pt2) const
+	{
 		int i = 0;
 		unsigned int ret = 0;
-		__m128i vret = _mm_setzero_si128();
-		__m128i vzero = _mm_setzero_si128();
+		__m128i vret = _mm_setzero_si128(), vzero = _mm_setzero_si128();
 		for (; i < d_ - 8; i += 8) {
 			__m128i vec1 = _mm_loadu_si128((__m128i*)&in_pt1.data_[i]);
 			__m128i vec2 = _mm_loadu_si128((__m128i*)&in_pt2.data_[i]);
@@ -179,14 +187,16 @@ public:
 	 */
 	inline bool DistL1Data(unsigned short* in_d1, fams_point& in_pt2,
 						   double in_dist,
-						   double& in_res) const {
+						   double& in_res) const
+	{
 		in_res = 0;
 		for (int in_i = 0; in_i < d_ && (in_res < in_dist); in_i++)
 			in_res += abs(in_d1[in_i] - in_pt2.data_[in_i]);
-		return(in_res < in_dist);
+		return (in_res < in_dist);
 	}
 
-	inline bool NotEq(unsigned short* in_d1, unsigned short* in_d2) const {
+	inline bool NotEq(unsigned short* in_d1, unsigned short* in_d2) const
+	{
 		for (int in_i = 0; in_i < d_; in_i++)
 			if (in_d1[in_i] != in_d2[in_i])
 				return true;
@@ -205,10 +215,10 @@ public:
 		fflush(stderr);
 	}
 
-	int           n_, d_, w_, h_; // number of points, number of dimensions
+	int n_, d_, w_, h_; // number of points, number of dimensions
 
 protected:
-	bool ComputePilot();
+	bool ComputePilot(vector<double> *weights = NULL);
 	unsigned int DoMSAdaptiveIteration(
 			const std::vector<unsigned int> *res,
 			unsigned short *old, unsigned short *ret) const;
@@ -245,7 +255,7 @@ protected:
 
 	// observer for progress tracking
 	vole::ProgressObserver *progressObserver;
-	float progress;
+	float progress, progress_old;
 	tbb::mutex progressMutex;
 
 	tbb::task_scheduler_init tbbinit;

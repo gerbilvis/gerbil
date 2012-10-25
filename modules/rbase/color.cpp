@@ -24,6 +24,14 @@ unsigned int Color::rgbToId(unsigned char r, unsigned char g, unsigned char b) {
 	return result;
 }
 
+void Color::idToRGB(int id, unsigned char &r, unsigned char &g, unsigned char &b) {
+	r = id & 255;
+	id >>= 8;
+	g = id & 255;
+	id >>= 8;
+	b = id & 255;
+}
+
 void Color::initRandomly() {
 	r = (rand() % 256);
 	g = (rand() % 256);

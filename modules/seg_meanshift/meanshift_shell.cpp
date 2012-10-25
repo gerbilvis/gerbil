@@ -10,6 +10,7 @@
 #include "meanshift.h"
 
 #include <multi_img.h>
+#include <stopwatch.h>
 #include <opencv2/highgui/highgui.hpp>
 #include <iostream>
 #include <string.h>
@@ -31,14 +32,27 @@ MeanShiftShell::~MeanShiftShell() {}
 
 
 int MeanShiftShell::execute() {
-	multi_img input = ImgInput(config.input).execute();
-	if (input.empty())
+	std::pair<multi_img, multi_img> input;
+	if (config.sp_original) {
+		input = ImgInput(config.input).both();
+	} else {
+		input.first = ImgInput(config.input).execute();
+	}
+	if (input.first.empty())
 		return -1;
+
+	// rebuild before stopwatch for fair comparison
+	input.first.rebuildPixels(false);
+	if (config.sp_original) {
+		input.second.rebuildPixels(false);
+	}
+
+	Stopwatch watch("Total time");
 
 	MeanShift ms(config);
 	if (config.findKL) {
 	// find K, L
-		std::pair<int, int> ret = ms.findKL(input);
+		std::pair<int, int> ret = ms.findKL(input.first);
 		config.K = ret.first; config.L = ret.second;
 		std::cout << "Found K = " << config.K
 		          << "\tL = " << config.L << std::endl;
@@ -50,7 +64,12 @@ int MeanShiftShell::execute() {
 		config.pruneMinN = 1;
 #endif
 
-	cv::Mat1s labels_mask = ms.execute(input);
+	cv::Mat1s labels_mask;
+	if (config.sp_original) {
+		labels_mask = ms.execute(input.first, NULL, NULL, input.second);
+	} else {
+		labels_mask = ms.execute(input.first, NULL, NULL, input.first);
+	}
 	if (labels_mask.empty())
 		return 0;
 
@@ -59,9 +78,11 @@ int MeanShiftShell::execute() {
 	std::cerr << "min: " << mi << " \tmax: " << ma << std::endl;
 	Labeling labels = labels_mask;
 	labels.yellowcursor = false;
+	labels.shuffle = true;
 
 	// write out beautifully colored label image
-	std::string output_name = config.output_directory + "/" + "segmentation_rgb.png";
+	std::string output_name = config.output_directory + "/"
+							  + config.output_prefix + "segmentation_rgb.png";
 	cv::imwrite(output_name, labels.bgr());
 
 	return 0;

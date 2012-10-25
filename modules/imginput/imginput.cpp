@@ -6,7 +6,8 @@ using std::vector;
 
 namespace vole {
 
-multi_img ImgInput::execute() {
+multi_img ImgInput::execute()
+{
 	multi_img img(config.file);
 
 	// return empty image on failure
@@ -25,7 +26,7 @@ multi_img ImgInput::execute() {
 	}
 
 	// reduce number of bands
-	if (config.bands > 0 && config.bands < (int) img.size()) {
+	if (config.bands > 0 && config.bands < (int)img.size()) {
 		img = img.spec_rescale(config.bands);
 	}
 #endif
@@ -33,7 +34,37 @@ multi_img ImgInput::execute() {
 	return img;
 }
 
-void ImgInput::applyROI(multi_img &img) {
+#ifdef WITH_GERBIL_COMMON
+std::pair<multi_img, multi_img> ImgInput::both()
+{
+	multi_img img(config.file);
+
+	// return empty image on failure
+	if (img.empty())
+		return std::make_pair(img, img);
+
+	// apply ROI
+	if (!config.roi.empty())
+		applyROI(img);
+
+	// compute gradient
+	multi_img proc = img.clone();
+	if (config.gradient) {
+		proc.apply_logarithm();
+		proc = proc.spec_gradient();
+	}
+
+	// reduce number of bands
+	if (config.bands > 0 && config.bands < (int)proc.size()) {
+		proc = proc.spec_rescale(config.bands);
+	}
+
+	return std::make_pair(proc, img);
+}
+#endif
+
+void ImgInput::applyROI(multi_img &img)
+{
 	vector<int> vals;
 	const std::string &str = config.roi;
 	std::string::size_type prev_pos = 0, pos = 0;

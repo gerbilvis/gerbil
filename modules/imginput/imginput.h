@@ -12,6 +12,10 @@ public:
 
 	multi_img execute();
 
+	// provide both processed and original image (on same ROI)
+	// first: processed, second: original
+	std::pair<multi_img, multi_img> both();
+
 private:
 	const ImgInputConfig &config;
 

@@ -35,10 +35,18 @@ public:
 #ifdef WITH_SEG_FELZENSZWALB2
 	// superpixel configuration for SUPERPIXEL sampling
 	gerbil::FelzenszwalbConfig superpixel;
+
+	// compute superpixels on original image instead of processed image
+	bool sp_original;
+	// use weightdp2 manipulation in meanshiftsp
+	bool sp_weightdp2;
 #endif
 
 	/// working directory
 	std::string output_directory;
+
+	/// file prefix
+	std::string output_prefix;
 
 	/// write out the total coverage (FALSE) or only label (index) image (TRUE)
 	bool batch;
@@ -48,7 +56,7 @@ public:
 	int K, L; ///<- LSH parameters
 	
 	/// pilot density
-	int k; // number of neighbors used for construction
+	float k; // k * sqrt(N) is number of neighbors used for construction
 	
 	/// starting points, i.e. sampling
 	ms_sampling starting;

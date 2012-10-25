@@ -33,7 +33,7 @@ using namespace std;
 
 FAMS::FAMS(const vole::MeanShiftConfig &cfg, vole::ProgressObserver *po)
 	: hasPoints_(0), nsel_(0), npm_(0), config(cfg),
-	  progressObserver(po), progress(0.f), lsh_(NULL)
+	  progressObserver(po), progress(0.f), progress_old(0.f), lsh_(NULL)
 {}
 
 FAMS::~FAMS() {
@@ -98,6 +98,7 @@ void FAMS::ImportMsPoints(std::vector<fams_point> &points) {
 
 void FAMS::ComputePilotPoint::operator ()(const tbb::blocked_range<int> &r)
 {
+	const int thresh = (int)(fams.config.k * std::sqrt((float)fams.n_));
 	const int win_j = 10, max_win = 7000;
 	const int mwpwj = max_win / win_j;
 	unsigned int nn;
@@ -133,12 +134,12 @@ void FAMS::ComputePilotPoint::operator ()(const tbb::blocked_range<int> &r)
 		// determine distance to k-nearest neighbour
 		for (nn = 0; nn < mwpwj; nn++) {
 			numn += numns[nn];
-			if (numn > fams.config.k) {
+			if (numn > thresh) {
 				break;
 			}
 		}
 
-		if (numn <= fams.config.k) {
+		if (numn <= thresh) {
 			dbg_noknn++;
 		}
 
@@ -146,11 +147,13 @@ void FAMS::ComputePilotPoint::operator ()(const tbb::blocked_range<int> &r)
 		fams.points_[j].weightdp2_ = pow(
 					FAMS_FLOAT_SHIFT / fams.points_[j].window_,
 					(fams.d_ + 2) * FAMS_ALPHA);
+		if (weights) {
+			fams.points_[j].weightdp2_ *= (*weights)[j];
+		}
 
 		dbg_acc += fams.points_[j].window_;
 
 		if ((++done % (fams.n_ / 20)) == 0) {
-			bgLog("+");
 			bool cont = fams.progressUpdate((float)done/(float)fams.n_ * 20.f,
 				false);
 			if (!cont) {
@@ -165,13 +168,13 @@ void FAMS::ComputePilotPoint::operator ()(const tbb::blocked_range<int> &r)
 }
 
 // compute the pilot h_i's for the data points
-bool FAMS::ComputePilot() {
-	bgLog("compute bandwidths...");
+bool FAMS::ComputePilot(vector<double> *weights) {
+	bgLog("compute bandwidths...\n");
 
 	if (config.use_LSH)
 		assert(lsh_);
 
-	ComputePilotPoint comp(*this);
+	ComputePilotPoint comp(*this, weights);
 	tbb::parallel_reduce(tbb::blocked_range<int>(0, n_),
 						 comp);
 
@@ -184,6 +187,7 @@ bool FAMS::ComputePilot() {
 
 // compute real bandwiths for selected points
 void FAMS::ComputeRealBandwidths(unsigned int h) {
+	const int thresh = (int)(config.k * std::sqrt((float)n_));
 	const int    win_j = 10, max_win = 7000;
 	int          i, j;
 	unsigned int nn;
@@ -201,7 +205,7 @@ void FAMS::ComputeRealBandwidths(unsigned int h) {
 			}
 			for (nn = 0; nn < max_win / win_j; nn++) {
 				numn += numns[nn];
-				if (numn > config.k) {
+				if (numn > thresh) {
 					break;
 				}
 			}
@@ -216,6 +220,7 @@ void FAMS::ComputeRealBandwidths(unsigned int h) {
 
 // compute the pilot h_i's for the data points
 void FAMS::ComputeScores(float* scores, LSHReader &lsh, int L) {
+	const int thresh = (int)(config.k * std::sqrt((float)n_));
 	const int    win_j = 10, max_win = 7000;
 	int          j;
 	unsigned int nn;
@@ -244,7 +249,7 @@ void FAMS::ComputeScores(float* scores, LSHReader &lsh, int L) {
 				int numn = 0;
 				for (nn = 0; nn < max_win / win_j; nn++) {
 					numn += numns[nn];
-					if (numn > config.k)
+					if (numn > thresh)
 						break;
 				}
 
@@ -298,7 +303,7 @@ unsigned int FAMS::DoMSAdaptiveIteration(
 	return crtH;
 }
 
-void FAMS::MeanShiftPoint::operator ()(const tbb::blocked_range<int> &r)
+void FAMS::MeanShiftPoint::operator()(const tbb::blocked_range<int> &r)
 const
 {
 	LSHReader *lsh = NULL;
@@ -367,7 +372,6 @@ const
 		}
 
 		if ((++done % (fams.nsel_ / 80)) == 0) {
-			bgLog(".");
 			bool cont = fams.progressUpdate((float)done/
 											(float)fams.nsel_ * 80.f, false);
 			if (!cont) {
@@ -392,7 +396,7 @@ const
 // perform FAMS starting from a subset of the data points.
 // return true on successful finish (not cancelled by ProgressObserver)
 bool FAMS::FinishFAMS() {
-	bgLog(" Start MS iterations");
+	bgLog(" Start MS iterations\n");
 
 	if (config.use_LSH)
 		assert(lsh_);
@@ -802,7 +806,6 @@ std::pair<int,int> FAMS::FindKL() {
 				break; /// stop at first match
 			}
 		}
-		bgLog(".");
 		bool cont = progressUpdate(50.f * (Kmax-Kcrt)/(Kmax-Kmin));
 		if (!cont) {
 			bgLog("FindKL aborted\n");
@@ -878,11 +881,12 @@ bool FAMS::PrepareFAMS(vector<double> *bandwidths) {
 	//Compute pilot if necessary
 	bgLog(" Run pilot ");
 	bool cont = true;
-	bool adaptive = !(config.bandwidth > 0. || bandwidths != NULL);
+	bool adaptive = !(config.bandwidth > 0. ||
+					  bandwidths != NULL || config.sp_weightdp2);
 
 	if (adaptive) {  // adaptive bandwidths
 		bgLog("adaptive...");
-		cont = ComputePilot();
+		cont = ComputePilot(bandwidths);
 	} else if (bandwidths != NULL) {  // preset bandwidths
 		bgLog("fixed bandwidth (local value)...");
 		assert(bandwidths->size() == n_);
@@ -920,7 +924,7 @@ bool FAMS::PrepareFAMS(vector<double> *bandwidths) {
 
 bool FAMS::progressUpdate(float percent, bool absolute)
 {
-	if (progressObserver == NULL)
+	if (progressObserver == NULL && config.verbosity < 1)
 		return true;
 
 	tbb::mutex::scoped_lock(progressMutex);
@@ -928,6 +932,14 @@ bool FAMS::progressUpdate(float percent, bool absolute)
 		progress = percent;
 	else
 		progress += percent;
+	if (progress > progress_old + 0.1f) {
+		std::cerr << "\r" << progress << " %          \r";
+		std::cerr.flush();
+		progress_old = progress;
+	}
+
+	if (progressObserver == NULL)
+		return true;
 	bool cont = progressObserver->update(progress);
 	if (!cont)
 		progress = -1.f;

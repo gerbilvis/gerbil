@@ -18,7 +18,9 @@ public:
 	MeanShift(const MeanShiftConfig& config) : config(config) {}
 
 	std::pair<int, int> findKL(const multi_img& input, ProgressObserver *progress = NULL);
-	cv::Mat1s execute(const multi_img& input, ProgressObserver *progress = NULL, vector<double> *bandwidths = NULL);
+	cv::Mat1s execute(const multi_img& input, ProgressObserver *progress = NULL,
+					  vector<double> *bandwidths = NULL,
+					  const multi_img& spinput = multi_img());
 
 #ifdef WITH_SEG_FELZENSZWALB2
 	static std::vector<fams_point> prepare_sp_points(const FAMS &fams,

@@ -26,6 +26,7 @@ public:
 	double getChannelMedian(); // return the middle intensity of the three channels
 
 	static unsigned int rgbToId(unsigned char r, unsigned char g, unsigned char b);
+	static void idToRGB(int id, unsigned char &r, unsigned char &g, unsigned char &b);
 	void initFromId(unsigned int id);
 
 	// Assumes that srand has been called!

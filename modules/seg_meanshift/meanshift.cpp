@@ -31,7 +31,9 @@ std::pair<int, int> MeanShift::findKL(const multi_img& input, ProgressObserver *
 	return cfams.FindKL();
 }
 
-cv::Mat1s MeanShift::execute(const multi_img& input, ProgressObserver *progress, vector<double> *bandwidths) {
+cv::Mat1s MeanShift::execute(const multi_img& input, ProgressObserver *progress,
+							 vector<double> *bandwidths,
+							 const multi_img& spinput) {
 	std::cout << "Mean Shift Segmentation" << std::endl;
 
 	if (config.seed != 0) {
@@ -58,17 +60,19 @@ cv::Mat1s MeanShift::execute(const multi_img& input, ProgressObserver *progress,
 				(config.superpixel.similarity);
 		assert(distfun);
 		std::pair<cv::Mat1i, gerbil::felzenszwalb::segmap> result =
-			 gerbil::felzenszwalb::segment_image(input, distfun,
+			 gerbil::felzenszwalb::segment_image(spinput, distfun,
 							  config.superpixel.c, config.superpixel.min_size);
 		sp_translate = result.first;
 		std::swap(sp_map, result.second);
 
-		// remove afterwards
+		// note: remove output afterwards
 		std::cout << "SP: " << sp_map.size() << " segments" << std::endl;
 		vole::Labeling output;
 		output.yellowcursor = false;
+		output.shuffle = true;
 		output.read(result.first, false);
-		std::string output_name = config.output_directory + "/superpixels.png";
+		std::string output_name = config.output_directory + "/"
+								  + config.output_prefix + "superpixels.png";
 		cv::imwrite(output_name, output.bgr());
 	}
 #endif
@@ -100,6 +104,10 @@ cv::Mat1s MeanShift::execute(const multi_img& input, ProgressObserver *progress,
 	// perform mean shift
 	success = cfams.FinishFAMS();
 #ifdef WITH_SEG_FELZENSZWALB2
+/*	if (config.starting == SUPERPIXEL) {
+		cfams.DbgSavePoints(config.output_directory + "/sp-points-img",
+							sp_points, input.meta);
+	}*/
 	cleanup_sp_points(sp_points);
 #endif
 	if (!success)
@@ -110,14 +118,18 @@ cv::Mat1s MeanShift::execute(const multi_img& input, ProgressObserver *progress,
 
 	if (!config.batch) {
 		// save the data
-		cfams.SaveModes(config.output_directory + "/");
+		cfams.SaveModeImg(config.output_directory + "/"
+						  + config.output_prefix + "modes", input.meta);
+		//cfams.SaveModes(config.output_directory + "/");
 		// save pruned modes
-		cfams.SavePrunedModes(config.output_directory + "/");
-		cfams.SaveMymodes(config.output_directory + "/");
+		cfams.SavePrunedModeImg(config.output_directory + "/"
+						  + config.output_prefix + "prunedmodes", input.meta);
+		//cfams.SavePrunedModes(config.output_directory + "/");
+		//cfams.SaveMymodes(config.output_directory + "/");
 	}
 
+	// return image which holds segment indices of each pixel
 	if (config.starting == ALL) {
-		// save image which holds segment indices of each pixel
 		return cfams.segmentImage();
 #ifdef WITH_SEG_FELZENSZWALB2
 	} else if (config.starting == SUPERPIXEL) {
@@ -138,25 +150,37 @@ std::vector<fams_point> MeanShift::prepare_sp_points(const FAMS &fams,
 	const fams_point *points = fams.getPoints();
 	std::vector<fams_point> ret;
 
+	/* while superpixel vectors are averaged, the initial bandwidth is the
+	   maximum bandwidth that any individual superpixel member would obtain.
+	*/
+
+	std::vector<int> accum(D);
 	gerbil::felzenszwalb::segmap::const_iterator mit = map.begin();
 	for (; mit != map.end(); ++mit) {
+		// initialize new point with zero
 		fams_point p;
 		p.data_ = new unsigned short[D];
-		std::fill_n(p.data_, D, 0);
 		p.window_ = 0;
 		p.weightdp2_ = 0.;
+
 		int N = mit->size();
+
+		// sum up all superpixel members
+		std::fill_n(accum.begin(), D, 0);
 		for (int i = 0; i < N; ++i) {
 			int coord = (*mit)[i];
 			for (int d = 0; d < D; ++d)
-				p.data_[d] += points[coord].data_[d];
-			p.window_ += points[coord].window_;
+				accum[d] += points[coord].data_[d];
+			p.window_ = std::max(p.window_, points[coord].window_);
 			p.weightdp2_ += points[coord].weightdp2_;
 		}
+
+		// divide by N to obtain average
 		for (int d = 0; d < D; ++d)
-			p.data_[d] /= N;
-		p.window_ /= N;
-		p.weightdp2_ /= (double)N;
+			p.data_[d] = accum[d] / N;
+		p.weightdp2_ /= (double)N; // TODO: what is the weight, actually?
+
+		// add to point set
 		ret.push_back(p);
 	}
 	return ret;

@@ -1,4 +1,4 @@
-/*	
+/*
 	Copyright(c) 2010 Johannes Jordan <johannes.jordan@cs.fau.de>.
 
 	This file may be licensed under the terms of of the GNU General Public
@@ -20,15 +20,17 @@ ENUM_MAGIC(ms_sampling)
 
 MeanShiftConfig::MeanShiftConfig(const std::string& prefix)
 #ifdef WITH_SEG_FELZENSZWALB2
-	: Config(prefix), input("input"), superpixel("superpixel") {
+	: Config(prefix), input("input"), superpixel("superpixel"),
+	sp_original(false), sp_weightdp2(false)
 #else
-	: Config(prefix), input("input") {
+	: Config(prefix), input("input")
 #endif
+{
 	use_LSH = false;
 	K = 20;
 	L = 10;
 	seed = 0;
-	k = 450;
+	k = 1.f;
 	starting = ALL;
 	jump = 2;
 	percent = 50;
@@ -56,6 +58,7 @@ std::string MeanShiftConfig::getString() const {
 	} else {
 		s << input.getString()
 		  << "output=" << output_directory << "\t# Working directory" << std::endl
+		  << "prefix=" << output_prefix << "\t# Output file prefix" << std::endl
 		  << "doFindKL=" << (findKL ? "true" : "false") << std::endl
 		  << "Kmin=" << Kmin << std::endl
 		  << "Kjump=" << Kjump << std::endl
@@ -64,6 +67,8 @@ std::string MeanShiftConfig::getString() const {
 	}
 #ifdef WITH_SEG_FELZENSZWALB2
 	s << superpixel.getString();
+	s << "sp_original=" << (sp_original ? "true" : "false") << std::endl;
+	s << "sp_weightdp2=" << (sp_weightdp2 ? "true" : "false") << std::endl;
 #endif
 	s << "useLSH=" << (use_LSH ? "true" : "false") << std::endl
 	  << "K=" << K << std::endl
@@ -98,6 +103,12 @@ void MeanShiftConfig::initBoostOptions() {
 #else
 			 "or a random selection of points (PERCENT)")
 #endif
+#ifdef WITH_SEG_FELZENSZWALB2
+			("sp_original", bool_switch(&sp_original)->default_value(sp_original),
+			 "do not use processed image for superpixel computation")
+			("sp_weightdp2", bool_switch(&sp_weightdp2)->default_value(sp_weightdp2),
+			 "use weightdp2 manipulation in meanshiftsp")
+#endif
 			("initjump", value(&jump)->default_value(jump),
 			 "use points with indices 1+(jump*[1..infty])")
 			("initpercent", value(&percent)->default_value(percent),
@@ -118,7 +129,8 @@ void MeanShiftConfig::initBoostOptions() {
 	options.add_options()
 			(key("output,O"), value(&output_directory)->default_value(output_directory),
 			 "Working directory")
-
+			(key("prefix"), value(&output_prefix)->default_value(output_prefix),
+			 "Prefix to all output filenames")
 			("batchmode", bool_switch(&batch)->default_value(batch),
 			 "write out the total coverage (FALSE) or only label (index) image (TRUE)")
 			("doFindKL", bool_switch(&findKL)->default_value(findKL),

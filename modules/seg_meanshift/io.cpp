@@ -53,7 +53,8 @@ bool FAMS::LoadPoints(char* filename) {
 	
 		float hsv[3];
 		for (i=0; i<n_; ++i) {
-			float r = pttemp[3*i]/255., g = pttemp[3*i+1]/255., b = pttemp[3*i+2]/255.;
+			float r = pttemp[3*i]/255., g = pttemp[3*i+1]/255.,
+				  b = pttemp[3*i+2]/255.;
 			rgb2hsv(r, g, b, &hsv[0],&hsv[1],&hsv[2]);
 			if (hsv[1] < 0.08 && hsv[2] > 0.88)
 				pttemp[3*i] = pttemp[3*i+1] = pttemp[3*i+2] = 255.;
@@ -196,6 +197,52 @@ void FAMS::CreatePpm(char *fn) { // TODO: get rid of! export as multiimg instead
 	pgmf.close();
 }
 
+void FAMS::SaveModeImg(const std::string& filebase,
+					 const std::vector<multi_img::BandDesc>& ref) {
+	if (nsel_ < 1)
+		return;
+
+	bool full = (nsel_ == h_ * w_);
+
+	int h = (full? h_ : nsel_), w = (full? w_ : 1);
+	multi_img dest(h, w, d_);
+	dest.minval = minVal_;
+	dest.maxval = maxVal_;
+	int idx = 0;
+	for (int y = 0; y < h; ++y) {
+		for (int x = 0; x < w; ++x) {
+			multi_img::Pixel px(d_);
+			for (int d = 0; d < d_; ++d)
+				px[d] = (multi_img::Value)modes_[idx++] * (maxVal_ - minVal_)
+						/ 65535.0 + minVal_;
+			dest.setPixel(y, x, px);
+		}
+	}
+
+	dest.meta = ref;
+	dest.write_out(filebase);
+}
+
+void FAMS::DbgSavePoints(const std::string& filebase,
+						 const std::vector<fams_point> points,
+						 const std::vector<multi_img::BandDesc>& ref) {
+	if (points.size() < 1)
+		return;
+
+	multi_img dest((int)points.size(), 1, d_);
+	dest.minval = minVal_;
+	dest.maxval = maxVal_;
+	for (int x = 0; x < points.size(); ++x) {
+		multi_img::Pixel px(d_);
+		for (int d = 0; d < d_; ++d)
+			px[d] = (multi_img::Value)points[x].data_[d] * (maxVal_ - minVal_)
+					/ 65535.0 + minVal_;
+		dest.setPixel(x, 0, px);
+	}
+
+	dest.meta = ref;
+	dest.write_out(filebase);
+}
 
 void FAMS::SaveModes(const std::string& filebase) {
 	if (nsel_ < 1)
@@ -213,6 +260,32 @@ void FAMS::SaveModes(const std::string& filebase) {
 	}
 	fclose(fd);
 	bgLog("done\n");
+}
+
+void FAMS::SavePrunedModeImg(const std::string& filebase,
+					 const std::vector<multi_img::BandDesc>& ref) {
+	if (npm_ < 1)
+		return;
+
+	bool full = false;
+
+	int h = (full? h_ : npm_), w = (full? w_ : 1);
+	multi_img dest(h, w, d_);
+	dest.minval = minVal_;
+	dest.maxval = maxVal_;
+	int idx = 0;
+	for (int y = 0; y < h; ++y) {
+		for (int x = 0; x < w; ++x) {
+			multi_img::Pixel px(d_);
+			for (int d = 0; d < d_; ++d)
+				px[d] = (multi_img::Value)prunedmodes_[idx++] * (maxVal_ - minVal_)
+						/ 65535.0 + minVal_;
+			dest.setPixel(y, x, px);
+		}
+	}
+
+	dest.meta = ref;
+	dest.write_out(filebase);
 }
 
 void FAMS::SavePrunedModes(const std::string& filebase) {
