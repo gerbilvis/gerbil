@@ -180,6 +180,10 @@ void ViewerWindow::applyROI(bool reuse)
 		numbands = 3;
 	if (numbands > (*full_image)->size())
 		numbands = (*full_image)->size();
+	for (size_t i = 0; i < viewers.size(); ++i) {
+		if (viewers[i]->getSelection() >= numbands)
+			viewers[i]->setSelection(0);
+	}
 	full_image_lock.unlock();
 
 	multi_img_ptr scoped_image(new SharedData<multi_img>(NULL));

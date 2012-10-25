@@ -31,23 +31,37 @@ Viewport::Viewport(QWidget *parent)
 	  showLabeled(true), showUnlabeled(true),
 	  overlayMode(false), illuminant_correction(false),
 	  zoom(1.), shift(0), lasty(-1), holdSelection(false), activeLimiter(0),
-	  cacheValid(false), clearView(false), implicitClearView(false),
+	  clearView(false), implicitClearView(false),
 	  drawMeans(true), drawRGB(false), drawHQ(true), drawingState(FOLDING),
-	  yaxisWidth(0), vb(QGLBuffer::VertexBuffer)
+	  yaxisWidth(0), vb(QGLBuffer::VertexBuffer),
+	  fboSpectrum(NULL), fboHighlight(NULL), fboMultisamplingBlit(NULL)
 {
 	(*ctx)->wait = 1;
 	(*ctx)->reset = 1;
 	(*ctx)->ignoreLabels = false;
+
 	resizeTimer.setSingleShot(true);
-	connect(&resizeTimer, SIGNAL(timeout()), this, SLOT(endNoHQ()));
+	connect(&resizeTimer, SIGNAL(timeout()), this, SLOT(resizeEpilog()));
 	resizeTimer.start(0);
-	renderTimer.setSingleShot(true);
-	connect(&renderTimer, SIGNAL(timeout()), this, SLOT(continueDrawing()));
-	renderedLines = 0;
+
+	scrollTimer.setSingleShot(true);
+	connect(&scrollTimer, SIGNAL(timeout()), this, SLOT(updateTextures()));
+
+	spectrumRenderedLines = 0;
+	spectrumRenderTimer.setSingleShot(true);
+	connect(&spectrumRenderTimer, SIGNAL(timeout()), this, SLOT(continueDrawingSpectrum()));
+
+	highlightRenderedLines = 0;
+	highlightRenderTimer.setSingleShot(true);
+	connect(&highlightRenderTimer, SIGNAL(timeout()), this, SLOT(continueDrawingHighlight()));
 }
 
 Viewport::~Viewport()
 {
+	makeCurrent();
+	delete fboSpectrum;
+	delete fboHighlight;
+	delete fboMultisamplingBlit;
 }
 
 void Viewport::reset()
@@ -267,9 +281,8 @@ void Viewport::updateModelview()
 	modelviewI = modelview.inverted();
 }
 
-#define RENDER_STEP 10000
-
-void Viewport::drawBins(QPainter &painter)
+void Viewport::drawBins(QPainter &painter, QTimer &renderTimer, 
+	unsigned int &renderedLines, unsigned int renderStep, bool onlyHighlight)
 {
 	SharedDataHold ctxlock(ctx->lock);
 	SharedDataHold setslock(sets->lock);
@@ -304,7 +317,7 @@ void Viewport::drawBins(QPainter &painter)
 
 	unsigned int total = shuffleIdx.size();
 	unsigned int first = renderedLines;
-	unsigned int last = (renderedLines + RENDER_STEP) < total ? (renderedLines + RENDER_STEP) : total;
+	unsigned int last = (renderedLines + renderStep) < total ? (renderedLines + renderStep) : total;
 	for (unsigned int i = first; i < last; ++i) {
 		std::pair<int, BinSet::HashKey> &idx = shuffleIdx[i];
 		if (idx.first < start || idx.first >= end) {
@@ -313,9 +326,30 @@ void Viewport::drawBins(QPainter &painter)
 				++last; // increase loop count
 			continue;
 		}
+		
+		BinSet::HashKey &K = idx.second;
+
+		bool highlighted = false;
+		if (!implicitClearView && onlyHighlight) {
+			if (limiterMode) {
+				highlighted = true;
+				for (int i = 0; i < (*ctx)->dimensionality; ++i) {
+					unsigned char k = K[i];
+					if (k < limiters[i].first || k > limiters[i].second)
+						highlighted = false;
+				}
+			} else if ((unsigned char)K[selection] == hover)
+				highlighted = true;
+		}
+
+		if (!highlighted && onlyHighlight) {
+			currind += (*ctx)->dimensionality;
+			if (last < total)
+				++last; // increase loop count
+			continue;
+		}
 
 		BinSet &s = (**sets)[idx.first];
-		BinSet::HashKey &K = idx.second;
 		Bin &b = s.bins.equal_range(K).first->second;
 
 		QColor &basecolor = s.label;
@@ -334,19 +368,7 @@ void Viewport::drawBins(QPainter &painter)
 					(log(b.weight+1) / log((float)s.totalweight));
 		color.setAlphaF(min(alpha, 1.));
 
-		bool highlighted = false;
-		if (!implicitClearView) {
-			if (limiterMode) {
-				highlighted = true;
-				for (int i = 0; i < (*ctx)->dimensionality; ++i) {
-					unsigned char k = K[i];
-					if (k < limiters[i].first || k > limiters[i].second)
-						highlighted = false;
-				}
-			} else if ((unsigned char)K[selection] == hover)
-				highlighted = true;
-		}
-		if (highlighted) {
+		if (highlighted && onlyHighlight) {
 			if (basecolor == Qt::white) {
 				color = Qt::yellow;
 			} else {
@@ -356,7 +378,7 @@ void Viewport::drawBins(QPainter &painter)
 			}
 			color.setAlphaF(1.);
 		}
-		if (highlighted)
+		if (highlighted && onlyHighlight)
 			glDepthMask(GL_TRUE); // write to depth mask -> stay in foreground
 		else
 			glDepthMask(GL_FALSE); // no writing -> may be overdrawn
@@ -368,12 +390,12 @@ void Viewport::drawBins(QPainter &painter)
 		currind += (*ctx)->dimensionality;
 	}
 	vb.release();
-		glDisable(GL_DEPTH_TEST);
-		painter.endNativePainting();
+	glDisable(GL_DEPTH_TEST);
+	painter.endNativePainting();
 
 	renderedLines += (last - first);
-	if (renderedLines < total && isEnabled()) {
-		if (renderedLines <= RENDER_STEP) {
+	if (renderedLines < total) {
+		if (renderedLines <= renderStep) {
 			renderTimer.start(150);
 		} else {
 			renderTimer.start(0);
@@ -514,73 +536,9 @@ void Viewport::drawLegend(QPainter &painter)
 	}
 }
 
-void Viewport::drawRegular()
+void Viewport::drawOverlay(QPainter &painter)
 {
-	QPainter painter(this);
-	if (drawingState == SCREENSHOT)
-		painter.fillRect(rect(), Qt::black);
-	else
-		painter.fillRect(rect(), QColor(15, 7, 15));
-
-	if (drawingState == FOLDING)
-		return;
-
-	if (drawingState == HIGH_QUALITY || drawingState == SCREENSHOT) {
-		painter.setRenderHint(QPainter::Antialiasing);
-	} else {
-		// even if we had HQ last time, this time it will be dirty!
-		if (drawingState == HIGH_QUALITY_QUICK)
-			drawingState = QUICK;
-	}
-
-	drawLegend(painter);
-
-	// needed in drawAxesBg
 	painter.save();
-	painter.setWorldTransform(modelview);
-	drawAxesBg(painter);
-	drawBins(painter);
-	drawAxesFg(painter);
-	// if you save and not restore, qt will lament about it
-	painter.restore();
-
-	if (!isEnabled()) {
-		drawWaitMessage(painter);
-	}
-}
-
-void Viewport::continueDrawing()
-{
-	SharedDataHold ctxlock(ctx->lock);
-	SharedDataHold setslock(sets->lock);
-	if ((*sets)->empty() || (*ctx)->wait || drawingState == FOLDING)
-		return;
-	setslock.unlock();
-	ctxlock.unlock();
-
-	cacheValid = false;
-	QPainter painter(this);
-
-	if (drawingState == HIGH_QUALITY || drawingState == SCREENSHOT)
-		painter.setRenderHint(QPainter::Antialiasing);
-
-	painter.save();
-	painter.setWorldTransform(modelview);
-	drawBins(painter);
-	drawAxesFg(painter);
-	painter.restore();
-
-	if (!isEnabled()) {
-		drawWaitMessage(painter);
-	}
-}
-
-void Viewport::drawOverlay()
-{
-	QPainter painter(this);
-	painter.drawImage(0, 0, cacheImg);
-	painter.setRenderHint(QPainter::Antialiasing);
-
 	QPolygonF poly = modelview.map(overlayPoints);
 	QPen pen(Qt::black);
 	pen.setWidth(5);
@@ -590,6 +548,7 @@ void Viewport::drawOverlay()
 	pen2.setWidth(2);
 	painter.setPen(pen2);
 	painter.drawPolyline(poly);
+	painter.restore();
 }
 
 void Viewport::drawWaitMessage(QPainter &painter)
@@ -613,34 +572,175 @@ void Viewport::activate()
 	}
 }
 
-void Viewport::paintEvent(QPaintEvent *)
+void Viewport::continueDrawingSpectrum()
 {
-	renderTimer.stop();
-	renderedLines = 0;
+	if (!fboSpectrum)
+		return;
 
 	SharedDataHold ctxlock(ctx->lock);
 	SharedDataHold setslock(sets->lock);
 
-	// return early if no data present. other variables may not be initialized
-	if ((*sets)->empty() || (*ctx)->wait) {
-		QPainter painter(this);
+	if ((*sets)->empty() || (*ctx)->wait || drawingState == FOLDING)
+		return;
+
+	setslock.unlock();
+	ctxlock.unlock();
+
+	QPainter painter(fboSpectrum);
+
+	if (drawingState == HIGH_QUALITY || drawingState == SCREENSHOT)
+		painter.setRenderHint(QPainter::Antialiasing);
+
+	painter.save();
+	painter.setWorldTransform(modelview);
+	drawBins(painter, spectrumRenderTimer,  spectrumRenderedLines, spectrumRenderStep, false);
+	painter.restore();
+
+	update();
+}
+
+void Viewport::continueDrawingHighlight()
+{
+	if (!fboHighlight)
+		return;
+
+	SharedDataHold ctxlock(ctx->lock);
+	SharedDataHold setslock(sets->lock);
+
+	if ((*sets)->empty() || (*ctx)->wait || drawingState == FOLDING)
+		return;
+
+	setslock.unlock();
+	ctxlock.unlock();
+
+	QPainter painter(fboHighlight);
+
+	if (drawingState == HIGH_QUALITY || drawingState == SCREENSHOT)
+		painter.setRenderHint(QPainter::Antialiasing);
+
+	painter.save();
+	painter.setWorldTransform(modelview);
+	drawBins(painter, highlightRenderTimer,  highlightRenderedLines, highlightRenderStep, true);
+	painter.restore();
+
+	update();
+}
+
+void Viewport::updateTextures(RenderMode spectrum, RenderMode highlight)
+{
+	if (!fboSpectrum || !fboHighlight)
+		return;
+
+	if (spectrum) {
+		spectrumRenderTimer.stop();
+		spectrumRenderedLines = 0;
+	}
+
+	if (highlight) {
+		highlightRenderTimer.stop();
+		highlightRenderedLines = 0;
+	}
+
+	SharedDataHold ctxlock(ctx->lock);
+	SharedDataHold setslock(sets->lock);
+
+	QPainter spectrumPainter(fboSpectrum);
+	QPainter highlightPainter(fboHighlight);
+
+	if (spectrum) {
+		spectrumPainter.setCompositionMode(QPainter::CompositionMode_Source);
+		spectrumPainter.fillRect(rect(), Qt::transparent);
+		spectrumPainter.setCompositionMode(QPainter::CompositionMode_SourceOver);
+	}
+
+	if (highlight) {
+		highlightPainter.setCompositionMode(QPainter::CompositionMode_Source);
+		highlightPainter.fillRect(rect(), Qt::transparent);
+		highlightPainter.setCompositionMode(QPainter::CompositionMode_SourceOver);
+	}
+
+	if ((*sets)->empty() || (*ctx)->wait || drawingState == FOLDING)
+		return;
+
+	if (drawingState == HIGH_QUALITY || drawingState == SCREENSHOT) {
+		if (spectrum)
+			spectrumPainter.setRenderHint(QPainter::Antialiasing);
+		if (highlight)
+			highlightPainter.setRenderHint(QPainter::Antialiasing);
+	} else {
+		// even if we had HQ last time, this time it will be dirty!
+		if (drawingState == HIGH_QUALITY_QUICK)
+			drawingState = QUICK;
+	}
+
+	if (spectrum) {
+		spectrumPainter.save();
+		spectrumPainter.setWorldTransform(modelview);
+		drawBins(spectrumPainter, spectrumRenderTimer,  spectrumRenderedLines, 
+			(spectrum == RM_FULL) ? renderAtOnceStep : spectrumRenderStep, false);
+		spectrumPainter.restore();
+	}
+
+	if (highlight) {
+		highlightPainter.save();
+		highlightPainter.setWorldTransform(modelview);
+		drawBins(highlightPainter, highlightRenderTimer, highlightRenderedLines, 
+			(highlight == RM_FULL) ? renderAtOnceStep : highlightRenderStep, true);
+		highlightPainter.restore();
+	}
+
+	update();
+}
+
+void Viewport::paintEvent(QPaintEvent *)
+{
+	SharedDataHold ctxlock(ctx->lock);
+	SharedDataHold setslock(sets->lock);
+
+	makeCurrent();
+	QPainter painter(this);
+	painter.setRenderHint(QPainter::Antialiasing);
+
+	if (drawingState == SCREENSHOT) {
+		painter.fillRect(rect(), Qt::black);
+	} else {
+		painter.fillRect(rect(), QColor(15, 7, 15));
+	}
+
+	if (!(*sets)->empty() && !(*ctx)->wait) {
+		drawLegend(painter);
+		painter.save();
+		painter.setWorldTransform(modelview);
+		drawAxesBg(painter);
+		painter.restore();
+	}
+	
+	if (fboSpectrum) {
+		QGLFramebufferObject::blitFramebuffer(fboMultisamplingBlit, rect(), fboSpectrum, rect());
+		drawTexture(rect(), fboMultisamplingBlit->texture());
+	}
+
+	implicitClearView = (clearView || !active || drawingState == SCREENSHOT || (hover < 0 && !limiterMode));
+	
+	if (fboHighlight && !overlayMode && !implicitClearView) {
+		QGLFramebufferObject::blitFramebuffer(fboMultisamplingBlit, rect(), fboHighlight, rect());
+		drawTexture(rect(), fboMultisamplingBlit->texture());
+	}
+
+	if (!(*sets)->empty() && !(*ctx)->wait) {
+		painter.save();
+		painter.setWorldTransform(modelview);
+		drawAxesFg(painter);
+		painter.restore();
+	}
+
+	if (overlayMode) {
+		drawOverlay(painter);
+	}
+
+	if ((*sets)->empty() || (*ctx)->wait || !isEnabled()) {
 		drawWaitMessage(painter);
-		return;
 	}
-
-	if (!overlayMode) {
-		drawRegular();
-		cacheValid = false;
-		return;
-	}
-
-	// we draw an overlay. check cache first
-	if (!cacheValid) {
-		cacheImg = this->grabFrameBuffer();
-		cacheValid = true;
-	}
-
-	drawOverlay();
 }
 
 void Viewport::rebuild()
@@ -648,11 +748,25 @@ void Viewport::rebuild()
 	SharedDataHold ctxlock(ctx->lock);
 	SharedDataHold setslock(sets->lock);
 	prepareLines();
-	update();
+	updateTextures();
 }
 
-void Viewport::resizeEvent(QResizeEvent *)
+void Viewport::resizeEvent(QResizeEvent *ev)
 {
+	makeCurrent();
+
+	QGLFramebufferObjectFormat format;
+	format.setAttachment(QGLFramebufferObject::CombinedDepthStencil);
+	format.setSamples(4);
+
+	delete fboSpectrum;
+	delete fboHighlight;
+	delete fboMultisamplingBlit;
+
+	fboSpectrum = new QGLFramebufferObject(ev->size().width(), ev->size().height(), format);
+	fboHighlight = new QGLFramebufferObject(ev->size().width(), ev->size().height(), format);
+	fboMultisamplingBlit = new QGLFramebufferObject(ev->size().width(), ev->size().height());
+
 	if (drawingState != FOLDING) {
 		// quick drawing during resize
 		startNoHQ(true);
@@ -660,6 +774,12 @@ void Viewport::resizeEvent(QResizeEvent *)
 	}
 
 	updateModelview();
+}
+
+void Viewport::resizeEpilog()
+{
+	if (endNoHQ())
+		updateTextures();
 }
 
 void Viewport::updateXY(int sel, int bin)
@@ -700,7 +820,9 @@ void Viewport::updateXY(int sel, int bin)
 
 	/// finally update
 	if (emitOverlay) {
-		update();	/* TODO: check for dual update! */
+		spectrumRenderTimer.stop();
+		highlightRenderTimer.stop();
+		updateTextures(RM_SKIP, limiterMode ? RM_STEP : RM_FULL);
 		emit newOverlay(selection);
 	}
 }
@@ -738,7 +860,9 @@ void Viewport::mouseMoveEvent(QMouseEvent *event)
 		/* TODO: make sure that we use full visible space */
 
 		updateModelview();
-		update();
+		spectrumRenderTimer.stop();
+		highlightRenderTimer.stop();
+		scrollTimer.start(10);
 	} else {
 		QPoint pos = modelviewI.map(event->pos());
 		updateXY(pos.x(), pos.y());
@@ -769,7 +893,9 @@ void Viewport::mouseReleaseEvent(QMouseEvent * event)
 		lasty = -1;
 	}
 
-	endNoHQ();
+	if (endNoHQ()) {
+		updateTextures((event->button() == Qt::RightButton) ? RM_STEP : RM_SKIP, RM_STEP);
+	}
 }
 
 void Viewport::wheelEvent(QWheelEvent *event)
@@ -786,13 +912,13 @@ void Viewport::wheelEvent(QWheelEvent *event)
 	/* TODO: make sure that we use full space */
 
 	updateModelview();
-	update();
+	updateTextures();
 	event->accept();
 }
 
 void Viewport::keyPressEvent(QKeyEvent *event)
 {
-	bool dirty = false;
+	bool highlightAltered = false;
 	bool hoverdirt = false;
 
 	switch (event->key()) {
@@ -813,7 +939,7 @@ void Viewport::keyPressEvent(QKeyEvent *event)
 			if (!limiterMode && hover < (*ctx)->nbins-2) {
 				hover++;
 				hoverdirt = true;
-				dirty = true;
+				highlightAltered = true;
 			}
 		}
 		break;
@@ -821,7 +947,7 @@ void Viewport::keyPressEvent(QKeyEvent *event)
 		if (!limiterMode && hover > 0) {
 			hover--;
 			hoverdirt = true;
-			dirty = true;
+			highlightAltered = true;
 		}
 		break;
 	case Qt::Key_Left:
@@ -830,7 +956,7 @@ void Viewport::keyPressEvent(QKeyEvent *event)
 			if (selection > 0) {
 				selection--;
 				emit bandSelected((*ctx)->type, selection);
-				dirty = true;
+				highlightAltered = true;
 			}
 		}
 		break;
@@ -840,22 +966,28 @@ void Viewport::keyPressEvent(QKeyEvent *event)
 			if (selection < (*ctx)->dimensionality-1) {
 				selection++;
 				emit bandSelected((*ctx)->type, selection);
-				dirty = true;
+				highlightAltered = true;
 			}
 		}
 		break;
 
 	case Qt::Key_Space:
 		drawHQ = !drawHQ;
-		update();
+		if (drawHQ) {
+			if (endNoHQ())
+				updateTextures();
+		} else {
+			startNoHQ();
+		}
+		updateTextures();
 		break;
 	case Qt::Key_M:
 		drawMeans = !drawMeans;
 		rebuild();
 	}
 
-	if (dirty) {
-		update();
+	if (highlightAltered) {
+		updateTextures(RM_SKIP, RM_FULL);
 		emit newOverlay(hoverdirt ? selection : -1);
 	}
 }
@@ -877,7 +1009,7 @@ void Viewport::startNoHQ(bool resize)
 		drawingState = (drawingState == HIGH_QUALITY ? HIGH_QUALITY_QUICK : QUICK);
 }
 
-void Viewport::endNoHQ()
+bool Viewport::endNoHQ()
 {
 	bool dirty = true;
 	if (drawingState == HIGH_QUALITY || drawingState == HIGH_QUALITY_QUICK)
@@ -886,8 +1018,7 @@ void Viewport::endNoHQ()
 		dirty = false;
 
 	drawingState = (drawHQ ? HIGH_QUALITY : QUICK);
-	if (dirty)
-		update();
+	return dirty;
 }
 
 bool Viewport::updateLimiter(int dim, int bin)
@@ -913,6 +1044,7 @@ bool Viewport::updateLimiter(int dim, int bin)
 void Viewport::screenshot()
 {
 	drawingState = SCREENSHOT;
+	updateTextures(RM_FULL, RM_FULL);
 	repaint();
 	cacheImg = grabFrameBuffer();
 
@@ -922,5 +1054,6 @@ void Viewport::screenshot()
 	io.writeFile(QString(), output);
 
 	// reset drawingState and draw again nicely
-	endNoHQ();
+	if (endNoHQ())
+		updateTextures();
 }

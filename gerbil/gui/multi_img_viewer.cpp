@@ -188,8 +188,6 @@ void multi_img_viewer::setImage(multi_img_ptr img, cv::Rect roi)
 		args.nbins = bins;
 		binLabel->setText(QString("%1 bins").arg(bins));
 	}
-	if (viewport->selection >= bins)
-		viewport->selection = 0;
 
 	maskReset = true;
 	titleReset = true;
@@ -228,7 +226,7 @@ void multi_img_viewer::setIlluminant(
 		illuminant = coeffs;
 	} else {
 		viewport->illuminant = coeffs;
-		viewport->update();
+		viewport->updateTextures();
 	}
 }
 
@@ -641,7 +639,7 @@ void multi_img_viewer::setAlpha(int alpha)
 {
 	viewport->useralpha = (float)alpha/100.f;
 	alphaLabel->setText(QString::fromUtf8("α: %1").arg(viewport->useralpha, 0, 'f', 2));
-	viewport->update();
+	viewport->updateTextures(Viewport::RM_STEP, Viewport::RM_SKIP);
 }
 
 void multi_img_viewer::createLimiterMenu()
@@ -699,13 +697,13 @@ void multi_img_viewer::updateLabelColors(const QVector<QColor> &colors, bool cha
 void multi_img_viewer::toggleLabeled(bool toggle)
 {
 	viewport->showLabeled = toggle;
-	viewport->update();
+	viewport->updateTextures();
 }
 
 void multi_img_viewer::toggleUnlabeled(bool toggle)
 {
 	viewport->showUnlabeled = toggle;
-	viewport->update();
+	viewport->updateTextures();
 }
 
 void multi_img_viewer::toggleLabels(bool toggle)
@@ -730,6 +728,7 @@ void multi_img_viewer::toggleLabels(bool toggle)
 void multi_img_viewer::toggleLimiters(bool toggle)
 {
 	viewport->limiterMode = toggle;
+	viewport->updateTextures(Viewport::RM_SKIP, Viewport::RM_STEP);
 	viewport->repaint();
 	viewport->activate();
 	updateMask(-1);

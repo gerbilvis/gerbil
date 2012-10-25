@@ -39,6 +39,7 @@ inline size_t tbb_hasher(const boost::multi_array<T, 1> &a) {
 #include <shared_data.h>
 #include <QGLWidget>
 #include <QGLBuffer>
+#include <QGLFramebufferObject>
 #include <vector>
 #include <QLabel>
 #include <QTimer>
@@ -174,15 +175,22 @@ public:
 	bool overlayMode;
 	QPolygonF overlayPoints;
 
+	enum RenderMode {
+		RM_SKIP = 0,
+		RM_STEP = 1,
+		RM_FULL = 2
+	};
+
 public slots:
 	void killHover();
 	void toggleRGB(bool enabled)
-	{ drawRGB = enabled; update(); }
+	{ drawRGB = enabled; updateTextures(); }
 	void activate();
 
 	// entry and exit point of user interaction with quick drawing
 	void startNoHQ(bool resize = false);
-	void endNoHQ();
+	bool endNoHQ();
+	void resizeEpilog();
 
 	// acknowledge folding
 	void folding() { drawingState = FOLDING; resizeTimer.start(50); }
@@ -191,8 +199,11 @@ public slots:
 
 	void rebuild();
 
+	void updateTextures(RenderMode spectrum = RM_STEP, RenderMode highlight = RM_STEP);
+
 protected slots:
-	void continueDrawing();
+	void continueDrawingSpectrum();
+	void continueDrawingHighlight();
 
 signals:
 	void bandSelected(representation type, int dim);
@@ -222,12 +233,12 @@ protected:
 	void updateXY(int sel, int bin);
 
 	// helper functions called by paintEvent
-	void drawBins(QPainter&);
+	void drawBins(QPainter &painter, QTimer &renderTimer, 
+		unsigned int &renderedLines, unsigned int renderStep, bool onlyHighlight);
 	void drawAxesBg(QPainter&);
 	void drawAxesFg(QPainter&);
 	void drawLegend(QPainter&);
-	void drawRegular();
-	void drawOverlay();
+	void drawOverlay(QPainter &);
 	void drawWaitMessage(QPainter&);
 
 	// helper for limiter handling
@@ -278,6 +289,10 @@ protected:
 	};
 
 private:
+	QGLFramebufferObject *fboSpectrum;
+	QGLFramebufferObject *fboHighlight;
+	QGLFramebufferObject *fboMultisamplingBlit;
+
 	// modelview matrix and its inverse
 	QTransform modelview, modelviewI;
 	// zoom and shift in y-direction
@@ -315,9 +330,17 @@ private:
 	} drawingState;
 	// this timer will re-enable regular drawing after resize/folding
 	QTimer resizeTimer;
+	QTimer scrollTimer;
 
-	QTimer renderTimer;
-	unsigned int renderedLines;
+	static const unsigned int renderAtOnceStep = 1024 * 1024 * 1024;
+
+	static const unsigned int spectrumRenderStep = 10000;
+	QTimer spectrumRenderTimer;
+	unsigned int spectrumRenderedLines;
+
+	static const unsigned int highlightRenderStep = 10000;
+	QTimer  highlightRenderTimer;
+	unsigned int  highlightRenderedLines;
 
 	std::vector<QString> yaxis;
 	int yaxisWidth;

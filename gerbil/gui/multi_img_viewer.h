@@ -38,6 +38,7 @@ public:
 	void activateViewport() { viewport->activate(); }
 	const multi_img::Mask& getMask() { return maskholder; }
 	int getSelection() { return viewport->selection; }
+	void setSelection(int band) { viewport->selection = band; }
 	representation getType() { return type; }
 	void setType(representation type);
 	void enableBinSlider(bool enable) { binSlider->setEnabled(enable); }
