@@ -10,6 +10,9 @@
 #include <opencv2/core/core.hpp>
 #include <opencv2/imgproc/imgproc.hpp>
 
+ #include <QGLFormat>
+ #include <QGLFramebufferObject>
+
 #ifdef __GNUC__
 #include <tr1/functional>
 #endif
@@ -45,10 +48,8 @@ void init_opencv()
 	pca.project(b1, b2);
 }
 
-int main(int argc, char **argv)
+void init_cuda()
 {
-	init_opencv();
-
 	if (cv::gpu::getCudaEnabledDeviceCount() > 0) {
 		cv::gpu::DeviceInfo info;
 
@@ -98,9 +99,78 @@ int main(int argc, char **argv)
 		std::cout << "Native double support: " << cv::gpu::TargetArchs::builtWith(cv::gpu::NATIVE_DOUBLE) << std::endl;
 		std::cout << std::endl;
 	}
+}
+
+#ifdef __GNUC__
+#define cpuid(func, ax, bx, cx, dx)\
+	__asm__ __volatile__ ("cpuid":\
+	"=a" (ax), "=b" (bx), "=c" (cx), "=d" (dx) : "a" (func));
+#endif
+
+bool test_compatibility()
+{
+	bool supportMMX = false;
+	bool supportSSE = false;
+	bool supportSSE2 = false;
+
+	int info[4];
+	info[0] = 0x7fffffff;
+	info[1] = 0x7fffffff;
+	info[2] = 0x7fffffff;
+	info[3] = 0x7fffffff;
+
+	#ifdef _MSC_VER
+	__cpuid(info, 0);
+	#endif
+
+	#ifdef __GNUC__
+	cpuid(0, info[0], info[1], info[2], info[3])
+	#endif
+	
+	int nIds = info[0];
+
+	if (nIds >= 1){
+		#ifdef _MSC_VER
+		__cpuid(info, 1);
+		#endif
+
+		#ifdef __GNUC__
+		cpuid(1, info[0], info[1], info[2], info[3])
+		#endif
+
+		supportMMX = (info[3] & ((int)1 << 23)) != 0;
+		supportSSE = (info[3] & ((int)1 << 25)) != 0;
+		supportSSE2 = (info[3] & ((int)1 << 26)) != 0;
+	}
+
+	bool supportOGL = QGLFormat::hasOpenGL();
+	bool supportFBO = QGLFramebufferObject::hasOpenGLFramebufferObjects();
+	bool supportBlit = QGLFramebufferObject::hasOpenGLFramebufferBlit();
+
+	if (!supportMMX) std::cout << "MMX support not found." << std::endl;
+	if (!supportSSE) std::cout << "SSE support not found." << std::endl;
+	if (!supportSSE2) std::cout << "SSE2 support not found." << std::endl;
+	if (!supportOGL) std::cout << "OpenGL support not found." << std::endl;
+	if (!supportFBO) std::cout << "GL_EXT_framebuffer_object support not found." << std::endl;
+	if (!supportBlit) std::cout << "GL_EXT_framebuffer_blit support not found." << std::endl;
+
+	bool success = supportMMX && supportSSE && supportSSE2 && supportOGL && supportFBO && supportBlit;
+
+	if (!success) std::cout << "Machine does not meet minimal requirements to launch Gerbil." << std::endl;
+
+	return success;
+}
+
+int main(int argc, char **argv)
+{
+	init_opencv();
+	init_cuda();
 
 	// start gui
 	QApplication app(argc, argv);
+
+	if (!test_compatibility())
+		return -1;
 
 	// start worker thread
 	std::thread background(std::tr1::ref(BackgroundTaskQueue::instance()));
