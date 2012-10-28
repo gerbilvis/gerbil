@@ -29,6 +29,7 @@
 	class Illuminant;
 #endif
 
+#ifdef WITH_GERBIL_COMMON
 namespace MultiImg {
 	namespace CommonTbb {
 		class RebuildPixels;
@@ -48,21 +49,31 @@ namespace MultiImg {
 	class IlluminantTbb;
 	class IlluminantCuda;
 }
+#endif
 
-/// Class that holds a multispectral image.
-/**
-	This class holds image data ranging from a single grayscale image to a
-	hyperspectral image. Each frequency band (or image channel) is held in a single
-	OpenCV Matrix. A caching mechanism is employed that also allows access to data
-	on a per-pixel level (interleaved storage).
+#define MULTI_IMG_FRIENDS
 
-	@note There is extended functionality implemented in gerbil/common/multi_img_ext.cpp.
-	These are functions of sole interest for true multispectral images,
-	while all functionality implemented inside Vole may also be useful for ordinary RGB images.
+#ifdef WITH_GERBIL_COMMON
+#undef MULTI_IMG_FRIENDS
+#define MULTI_IMG_FRIENDS \
+	friend class MultiImg::CommonTbb::RebuildPixels;\
+	friend class MultiImg::CommonTbb::ApplyCache;\
+	friend class MultiImg::CommonTbb::DetermineRange;\
+	friend class MultiImg::BgrTbb;\
+	friend class MultiImg::Band2QImageTbb;\
+	friend class MultiImg::RescaleTbb;\
+	friend class MultiImg::GradientTbb;\
+	friend class MultiImg::GradientCuda;\
+	friend class MultiImg::PcaTbb;\
+	friend class MultiImg::DataRangeTbb;\
+	friend class MultiImg::DataRangeCuda;\
+	friend class MultiImg::ClampTbb;\
+	friend class MultiImg::ClampCuda;\
+	friend class MultiImg::IlluminantTbb;\
+	friend class MultiImg::IlluminantCuda;
+#endif
 
-  */
-class multi_img {
-
+class multi_img_base {
 public:
 
 /** @name Storage types
@@ -82,12 +93,6 @@ public:
 	typedef cv::Mat_<Value> Band;
 	typedef cv::MatIterator_<Value> BandIt;
 	typedef cv::MatConstIterator_<Value> BandConstIt;
-	/// a spectral pixel.
-	/** @note Pixel will always be a std::vector. You can count on this. **/
-	typedef std::vector<Value> Pixel;
-	typedef cv::Mat_<uchar> Mask;
-	typedef cv::MatIterator_<uchar> MaskIt;
-	typedef cv::MatConstIterator_<uchar> MaskConstIt;
 
 	/// struct that holds optional filter information for each band
 	struct BandDesc {
@@ -115,15 +120,119 @@ public:
 
 //@}
 
+	/// default constructor
+	multi_img_base() : minval(0.), maxval(0.), width(0), height(0) {}
+
+	/// barebone constructor
+	multi_img_base(size_t size) : minval(0.), maxval(0.), width(0), height(0), meta(size) {}
+
+	/// copy constructor
+	multi_img_base(const multi_img_base &a) : minval(a.minval), maxval(a.maxval), 
+		width(a.width), height(a.height), meta(a.meta) {}
+
+	/// returns number of bands
+	virtual size_t size() const = 0;
+
+	/// returns true if image is uninitialized
+	virtual bool empty() const = 0;	
+
+	/// returns one band
+	virtual void getBand(unsigned int band, Band &data) const = 0;
+
+	/// returns the roi part of the given band
+	virtual void scopeBand(const Band &source, const cv::Rect &roi, Band &target) const = 0;
+
+	/// minimum and maximum values (by data format, not actually observed data!)
+	Value minval, maxval;
+
+	/** spatial dimensionality
+		ensuring consistency over all bands
+		@note signed int because cv::Mat.{rows, cols} are also signed int
+	 **/
+	int width;
+	/** spatial dimensionality
+		ensuring consistency over all bands
+		@note signed int because cv::Mat.{rows, cols} are also signed int
+	 **/
+	int height;
+
+	/// band meta-data
+	std::vector<BandDesc> meta;
+
+protected:
+
+	MULTI_IMG_FRIENDS
+};
+
+#ifdef WITH_GERBIL_COMMON
+class multi_img_offloaded : public multi_img_base {
+public:
+	/// creates the multi_img with limited functionality and with bands offloaded to persistent storage
+	multi_img_offloaded(const std::vector<std::string> &files, const std::vector<BandDesc> &descs);
+
+	/// virtual destructor, does nothing
+	virtual ~multi_img_offloaded() {}
+
+	/// returns number of bands
+	virtual size_t size() const;
+
+	/// returns true if image is uninitialized
+	virtual bool empty() const;	
+
+	/// returns one band
+	virtual void getBand(unsigned int band, Band &data) const;
+
+	/// returns the roi part of the given band
+	virtual void scopeBand(const Band &source, const cv::Rect &roi, Band &target) const;
+
+protected:
+	std::vector<std::pair<std::string, int> > bands;
+
+	MULTI_IMG_FRIENDS
+};
+#endif
+
+/// Class that holds a multispectral image.
+/**
+	This class holds image data ranging from a single grayscale image to a
+	hyperspectral image. Each frequency band (or image channel) is held in a single
+	OpenCV Matrix. A caching mechanism is employed that also allows access to data
+	on a per-pixel level (interleaved storage).
+
+	@note There is extended functionality implemented in gerbil/common/multi_img_ext.cpp.
+	These are functions of sole interest for true multispectral images,
+	while all functionality implemented inside Vole may also be useful for ordinary RGB images.
+
+  */
+class multi_img : public multi_img_base {
+
+public:
+
+/** @name Storage types
+ *  These are types for convenience that are based on a single type
+	choice for multispectral data (Value). You should only use the Value
+	type for computation that is directly processing the image data. It is
+	not a global decision on precision, only on image data precision.
+ */
+//@{
+
+	/// a spectral pixel.
+	/** @note Pixel will always be a std::vector. You can count on this. **/
+	typedef std::vector<Value> Pixel;
+	typedef cv::Mat_<uchar> Mask;
+	typedef cv::MatIterator_<uchar> MaskIt;
+	typedef cv::MatConstIterator_<uchar> MaskConstIt;
+
+//@}
+
 /** @name Constructors & Copy/Assignment **/
 //@{
 
 	/// default constructor
-	multi_img() : minval(0.), maxval(0.), width(0), height(0) {}
+	multi_img() : multi_img_base() {}
 
 	/// barebone constructor
-	multi_img(size_t size) : minval(0.), maxval(0.), width(0), height(0),
-							 meta(size), roi(0, 0, 0, 0), bands(size) {}
+	multi_img(size_t size) : multi_img_base(size), roi(0, 0, 0, 0), bands(size) {}
 
 	/// empty image constructor (to create synthetic images)
 	multi_img(int height, int width, size_t size);
@@ -132,7 +241,7 @@ public:
 	multi_img(const multi_img &);
 
 	/// copy a spatial region of interest
-	multi_img(const multi_img &a, const cv::Rect &roi);
+	multi_img(const multi_img_base &a, const cv::Rect &roi);
 
 	/// copy a subrange of the spectrum (including both ends)
 	multi_img(const multi_img &a, unsigned int start, unsigned int end);
@@ -170,10 +279,16 @@ public:
 //@{
 
 	/// returns number of bands
-	inline size_t size() const { return bands.size(); }
+	virtual size_t size() const;
 
 	/// returns true if image is uninitialized
-	inline bool empty() const { return bands.empty(); }
+	virtual bool empty() const;
+
+	/// returns one band
+	virtual void getBand(unsigned int band, Band &data) const;
+
+	/// returns the roi part of the given band
+	virtual void scopeBand(const Band &source, const cv::Rect &roi, Band &target) const;
 
 	/// returns one band
 	inline const Band& operator[](unsigned int band) const
@@ -465,24 +580,6 @@ public:
 #endif
 //@}
 
-/* finally the members */
-	/// minimum and maximum values (by data format, not actually observed data!)
-	Value minval, maxval;
-
-	/** spatial dimensionality
-		ensuring consistency over all bands
-		@note signed int because cv::Mat.{rows, cols} are also signed int
-	 **/
-	int width;
-	/** spatial dimensionality
-		ensuring consistency over all bands
-		@note signed int because cv::Mat.{rows, cols} are also signed int
-	 **/
-	int height;
-
-	/// band meta-data
-	std::vector<BandDesc> meta;
-
 	/// ROI associated with image data
 	cv::Rect roi;
 	
@@ -500,21 +597,7 @@ protected:
 	mutable Mask dirty;
 	mutable bool anydirt;
 
-	friend class MultiImg::CommonTbb::RebuildPixels;
-	friend class MultiImg::CommonTbb::ApplyCache;
-	friend class MultiImg::CommonTbb::DetermineRange;
-	friend class MultiImg::BgrTbb;
-	friend class MultiImg::Band2QImageTbb;
-	friend class MultiImg::RescaleTbb;
-	friend class MultiImg::GradientTbb;
-	friend class MultiImg::GradientCuda;
-	friend class MultiImg::PcaTbb;
-	friend class MultiImg::DataRangeTbb;
-	friend class MultiImg::DataRangeCuda;
-	friend class MultiImg::ClampTbb;
-	friend class MultiImg::ClampCuda;
-	friend class MultiImg::IlluminantTbb;
-	friend class MultiImg::IlluminantCuda;
+	MULTI_IMG_FRIENDS
 };
 
 #endif // opencv

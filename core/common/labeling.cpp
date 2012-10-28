@@ -10,7 +10,8 @@
 
 #include "labeling.h"
 #include "qtopencv.h"
-#include <opencv2/highgui/highgui.hpp>#include <iostream>
+#include <opencv2/highgui/highgui.hpp>
+#include <iostream>
 #include <string>
 #include <vector>
 #include <algorithm>

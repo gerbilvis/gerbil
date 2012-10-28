@@ -15,17 +15,17 @@
 
 using namespace std;
 
-const float multi_img::ValueMin = -FLT_MAX;
-const float multi_img::ValueMax = FLT_MAX;
+const float multi_img_base::ValueMin = -FLT_MAX;
+const float multi_img_base::ValueMax = FLT_MAX;
 
 multi_img::multi_img(const string& filename)
- : minval(0.), maxval(0.), width(0), height(0)
+ : multi_img_base()
 {
 	read_image(filename);
 	roi = cv::Rect(0, 0, width, height);
 }
 
-multi_img::multi_img(const cv::Mat& image) : minval(0.), maxval(0.)
+multi_img::multi_img(const cv::Mat& image) : multi_img_base()
 {
 	assert(!image.empty());
 	/* we need to clone because opencv totally ignores const */
@@ -36,7 +36,7 @@ multi_img::multi_img(const cv::Mat& image) : minval(0.), maxval(0.)
 }
 
 multi_img::multi_img(const cv::Mat& image, Value srcmin, Value srcmax)
- : minval(0.), maxval(0.)
+ : multi_img_base()
 {
 	assert(!image.empty());
 	read_mat(image.clone(), srcmin, srcmax);
@@ -77,8 +77,7 @@ multi_img::multi_img(int height, int width, size_t size)
 }
 
 multi_img::multi_img(const multi_img &a)
- : minval(a.minval), maxval(a.maxval), width(a.width), height(a.height),
-   meta(a.meta), roi(a.roi), bands(a.size())
+ : multi_img_base(a), roi(a.roi), bands(a.size())
 {
 	std::cerr << "multi_img: copy" << std::endl;
 	for (size_t i = 0; i < bands.size(); ++i)
@@ -86,22 +85,29 @@ multi_img::multi_img(const multi_img &a)
 	resetPixels();
 }
 
-multi_img::multi_img(const multi_img &a, const cv::Rect &roi)
- : minval(a.minval), maxval(a.maxval), width(roi.width), height(roi.height),
-   meta(a.meta), roi(roi), bands(a.size())
+multi_img::multi_img(const multi_img_base &a, const cv::Rect &roi)
+ : multi_img_base(a), roi(roi), bands(a.size())
 {
-	//std::cerr << "multi_img: reference w/ roi" << std::endl;
-	for (size_t i = 0; i < bands.size(); ++i)
-		bands[i] = Band(a.bands[i], roi);
+	width = roi.width;
+	height = roi.height;
+	for (size_t i = 0; i < bands.size(); ++i) {
+		Band band;
+		a.getBand(i, band);
+		a.scopeBand(band, roi, bands[i]);
+	}
 	/* FIXME: - inconsistent to other copy constr.
 	          - will lead to corrupt cache data!
                 use vector of pointers for cache and copy them, too? */
 	resetPixels();
 }
 
-multi_img::multi_img(const multi_img &a, unsigned int start, unsigned int end)
- : minval(a.minval), maxval(a.maxval), width(a.width), height(a.height), roi(a.roi)
+multi_img::multi_img(const multi_img &a, unsigned int start, unsigned int end) : roi(a.roi)
 {
+	minval = a.minval;
+	maxval = a.maxval; 
+	width = a.width;
+	height = a.height;
+
 	assert(start < a.size() && end < a.size());
 	std::cerr << "multi_img: reference w/ spectral crop" << std::endl;
 	meta.insert(meta.begin(), a.meta.begin() + start, a.meta.begin() + (end+1));
@@ -553,6 +559,27 @@ void multi_img::blur(cv::Size ksize, double sigmaX, double sigmaY,
 	}
 	// cache became invalid
 	resetPixels();
+}
+
+size_t multi_img::size() const
+{
+	return bands.size();
+}
+
+bool multi_img::empty() const
+{
+	return bands.empty();
+}
+
+void multi_img::getBand(unsigned int band, Band &data) const
+{
+	data = bands[band];
+}
+
+void multi_img::scopeBand(const Band &source, const cv::Rect &roi, Band &target) const
+{
+	Band scoped(source, roi);
+	target = scoped;
 }
 
 #endif // opencv
