@@ -227,8 +227,6 @@ int main(int argc, char **argv)
 	if (argc >= 3)
 		labelfile = argv[2];
 
-
-
 	bool limited_mode = false;
 	std::pair<std::vector<std::string>, std::vector<multi_img::BandDesc> > filelist;
 	filelist = multi_img::parse_filelist(filename);
