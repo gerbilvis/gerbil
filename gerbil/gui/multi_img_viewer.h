@@ -69,6 +69,8 @@ public slots:
 	void changeBinCount(int bins);
 	void updateBinning(int bins);
 	void finishBinCountChange(bool success);
+	void subLabelMask(sets_ptr temp, const cv::Mat1b &mask);
+	void addLabelMask(sets_ptr temp, const cv::Mat1b &mask);
 	void updateLabels();
 	void toggleFold();
 	void toggleLabeled(bool toggle);
@@ -98,11 +100,12 @@ protected:
 			const ViewportCtx &args, vpctx_ptr context, 
 			sets_ptr current, sets_ptr temp = sets_ptr(new SharedData<std::vector<BinSet> >(NULL)), 
 			const std::vector<cv::Rect> &sub = std::vector<cv::Rect>(),
-			const std::vector<cv::Rect> &add = std::vector<cv::Rect>(), 
+			const std::vector<cv::Rect> &add = std::vector<cv::Rect>(),
+			const cv::Mat1b &mask = cv::Mat1b(),
 			bool inplace = false, bool apply = true, cv::Rect targetRoi = cv::Rect(0, 0, 0, 0)) 
 			: BackgroundTask(targetRoi), multi(multi), labels(labels), colors(colors),
 			illuminant(illuminant), args(args), context(context), 
-			current(current), temp(temp), sub(sub), add(add), inplace(inplace), apply(apply) {}
+			current(current), temp(temp), sub(sub), add(add), mask(mask), inplace(inplace), apply(apply) {}
 		virtual ~BinsTbb() {}
 		virtual bool run();
 		virtual void cancel() { stopper.cancel_group_execution(); }
@@ -111,17 +114,18 @@ protected:
 
 		class Accumulate {
 		public:
-			Accumulate(bool substract, multi_img &multi, cv::Mat1s &labels, 
+			Accumulate(bool substract, multi_img &multi, cv::Mat1s &labels, cv::Mat1b &mask,
 				int nbins, multi_img::Value binsize, multi_img::Value minval, bool ignoreLabels,
 				std::vector<multi_img::Value> &illuminant, 
 				std::vector<BinSet> &sets) 
-				: substract(substract), multi(multi), labels(labels), nbins(nbins), binsize(binsize),
+				: substract(substract), multi(multi), labels(labels), mask(mask), nbins(nbins), binsize(binsize),
 				minval(minval), illuminant(illuminant), ignoreLabels(ignoreLabels), sets(sets) {}
 			void operator()(const tbb::blocked_range2d<int> &r) const;
 		private:
 			bool substract;
 			multi_img &multi;
 			cv::Mat1s &labels;
+			cv::Mat1b &mask;
 			int nbins;
 			multi_img::Value binsize;
 			multi_img::Value minval;
@@ -132,6 +136,7 @@ protected:
 		
 		multi_img_ptr multi;
 		cv::Mat1s labels;
+		cv::Mat1b mask;
 		QVector<QColor> colors;
 		std::vector<multi_img::Value> illuminant;
 		ViewportCtx args;

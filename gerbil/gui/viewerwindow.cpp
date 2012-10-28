@@ -1779,15 +1779,63 @@ void ViewerWindow::setActive(int id)
 
 void ViewerWindow::labelflush()
 {
+	std::vector<sets_ptr> tmp_sets;
+	cv::Mat1b mask(labels.rows, labels.cols);
+	mask = (labels == bandView->getCurLabel());
+	bool profitable = ((2 * cv::countNonZero(mask)) < mask.total());
+	if (profitable && !bandView->isSeedModeEnabled()) {
+		setGUIEnabled(false);
+		for (size_t i = 0; i < viewers.size(); ++i) {
+			tmp_sets.push_back(sets_ptr(new SharedData<std::vector<BinSet> >(NULL)));
+			viewers[i]->subLabelMask(tmp_sets[i], mask);
+		}
+	}
+
 	emit clearLabel();
-	if (!bandView->isSeedModeEnabled())
-		refreshLabelsInViewers();
+
+	if (!bandView->isSeedModeEnabled()) {
+		if (profitable) {
+			for (size_t i = 0; i < viewers.size(); ++i) {
+				viewers[i]->addLabelMask(tmp_sets[i], mask);
+			}
+
+			BackgroundTaskPtr taskEpilog(new BackgroundTask());
+			QObject::connect(taskEpilog.get(), SIGNAL(finished(bool)), 
+				this, SLOT(finishTask(bool)), Qt::QueuedConnection);
+			BackgroundTaskQueue::instance().push(taskEpilog);
+		} else {
+			refreshLabelsInViewers();
+		}
+	}
 }
 
 void ViewerWindow::labelmask(bool negative)
 {
+	std::vector<sets_ptr> tmp_sets;
+	cv::Mat1b mask = activeViewer->getMask();
+	bool profitable = ((2 * cv::countNonZero(mask)) < mask.total());
+	if (profitable) {
+		setGUIEnabled(false);
+		for (size_t i = 0; i < viewers.size(); ++i) {
+			tmp_sets.push_back(sets_ptr(new SharedData<std::vector<BinSet> >(NULL)));
+			viewers[i]->subLabelMask(tmp_sets[i], mask);
+		}
+	}
+
 	emit alterLabel(activeViewer->getMask(), negative);
-	refreshLabelsInViewers();
+
+	if (profitable) {
+		for (size_t i = 0; i < viewers.size(); ++i) {
+			viewers[i]->addLabelMask(tmp_sets[i], mask);
+		}
+
+		BackgroundTaskPtr taskEpilog(new BackgroundTask());
+		QObject::connect(taskEpilog.get(), SIGNAL(finished(bool)), 
+			this, SLOT(finishTask(bool)), Qt::QueuedConnection);
+		BackgroundTaskQueue::instance().push(taskEpilog);
+	} else {
+		refreshLabelsInViewers();
+	}
 }
 
 void ViewerWindow::newOverlay()

@@ -96,7 +96,7 @@ void multi_img_viewer::subPixels(const std::map<std::pair<int, int>, short> &poi
 
 	BackgroundTaskPtr taskSub(new BinsTbb(
 		image, labels, labelColors, illuminant, args, viewport->ctx, viewport->sets,
-		sets_ptr(new SharedData<std::vector<BinSet> >(NULL)), sub, std::vector<cv::Rect>(), true, false));
+		sets_ptr(new SharedData<std::vector<BinSet> >(NULL)), sub, std::vector<cv::Rect>(), cv::Mat1b(), true, false));
 	BackgroundTaskQueue::instance().push(taskSub);
 	taskSub->wait();
 }
@@ -115,7 +115,7 @@ void multi_img_viewer::addPixels(const std::map<std::pair<int, int>, short> &poi
 
 	BackgroundTaskPtr taskAdd(new BinsTbb(
 		image, labels, labelColors, illuminant, args, viewport->ctx, viewport->sets,
-		sets_ptr(new SharedData<std::vector<BinSet> >(NULL)), std::vector<cv::Rect>(), add, true, false));
+		sets_ptr(new SharedData<std::vector<BinSet> >(NULL)), std::vector<cv::Rect>(), add, cv::Mat1b(), true, false));
 	BackgroundTaskQueue::instance().push(taskAdd);
 	render(taskAdd->wait());
 }
@@ -128,7 +128,7 @@ void multi_img_viewer::subImage(sets_ptr temp, const std::vector<cv::Rect> &regi
 
 	BackgroundTaskPtr taskBins(new BinsTbb(
 		image, labels, labelColors, illuminant, args, viewport->ctx, viewport->sets,
-		temp, regions, std::vector<cv::Rect>(), false, false, roi));
+		temp, regions, std::vector<cv::Rect>(), cv::Mat1b(), false, false, roi));
 	BackgroundTaskQueue::instance().push(taskBins);
 }
 
@@ -167,7 +167,7 @@ void multi_img_viewer::addImage(sets_ptr temp, const std::vector<cv::Rect> &regi
 
 	BackgroundTaskPtr taskBins(new BinsTbb(
 		image, labels, labelColors, illuminant, args, viewport->ctx, viewport->sets,
-		temp, std::vector<cv::Rect>(), regions, false, true, roi));
+		temp, std::vector<cv::Rect>(), regions, cv::Mat1b(), false, true, roi));
 	QObject::connect(taskBins.get(), SIGNAL(finished(bool)), this, SLOT(render(bool)));
 	BackgroundTaskQueue::instance().push(taskBins);
 }
@@ -205,7 +205,7 @@ void multi_img_viewer::setImage(multi_img_ptr img, cv::Rect roi)
 	BackgroundTaskPtr taskBins(new BinsTbb(
 		image, labels, labelColors, illuminant, args, viewport->ctx, viewport->sets,
 		sets_ptr(new SharedData<std::vector<BinSet> >(NULL)), std::vector<cv::Rect>(), 
-		std::vector<cv::Rect>(), false, true, roi));
+		std::vector<cv::Rect>(), cv::Mat1b(), false, true, roi));
 	QObject::connect(taskBins.get(), SIGNAL(finished(bool)), this, SLOT(render(bool)));
 	BackgroundTaskQueue::instance().push(taskBins);
 }
@@ -289,6 +289,45 @@ void multi_img_viewer::finishBinCountChange(bool success)
 	}
 }
 
+void multi_img_viewer::subLabelMask(sets_ptr temp, const cv::Mat1b &mask)
+{
+	SharedDataHold ctxlock(viewport->ctx->lock);
+	ViewportCtx args = **viewport->ctx;
+	ctxlock.unlock();
+
+	args.wait.fetch_and_store(1);
+
+	if (!image.get())
+		return;
+
+	std::vector<cv::Rect> sub;
+	sub.push_back(cv::Rect(0, 0, mask.cols, mask.rows));
+	BackgroundTaskPtr taskBins(new BinsTbb(
+		image, labels.clone(), labelColors, illuminant, args, viewport->ctx, viewport->sets,
+		temp, sub, std::vector<cv::Rect>(), mask, false, false));
+	BackgroundTaskQueue::instance().push(taskBins);
+}
+
+void multi_img_viewer::addLabelMask(sets_ptr temp, const cv::Mat1b &mask)
+{
+	SharedDataHold ctxlock(viewport->ctx->lock);
+	ViewportCtx args = **viewport->ctx;
+	ctxlock.unlock();
+
+	args.wait.fetch_and_store(1);
+
+	if (!image.get())
+		return;
+
+	std::vector<cv::Rect> add;
+	add.push_back(cv::Rect(0, 0, mask.cols, mask.rows));
+	BackgroundTaskPtr taskBins(new BinsTbb(
+		image, labels.clone(), labelColors, illuminant, args, viewport->ctx, viewport->sets,
+		temp, std::vector<cv::Rect>(), add, mask, false, true));
+	QObject::connect(taskBins.get(), SIGNAL(finished(bool)), this, SLOT(render(bool)), Qt::QueuedConnection);
+	BackgroundTaskQueue::instance().push(taskBins);
+}
+
 void multi_img_viewer::updateLabels()
 {
 	SharedDataHold ctxlock(viewport->ctx->lock);
@@ -328,8 +367,8 @@ bool multi_img_viewer::BinsTbb::run()
 	bool reuse = ((!add.empty() || !sub.empty()) && !inplace);
 	bool keepOldContext = false;
 	if (reuse) {
-		keepOldContext = ((fabs(args.minval) * REUSE_THRESHOLD) > (fabs(args.minval - (*multi)->minval))) &&
-			((fabs(args.maxval) * REUSE_THRESHOLD) > (fabs(args.maxval - (*multi)->maxval)));
+		keepOldContext = ((fabs(args.minval) * REUSE_THRESHOLD) >= (fabs(args.minval - (*multi)->minval))) &&
+			((fabs(args.maxval) * REUSE_THRESHOLD) >= (fabs(args.maxval - (*multi)->maxval)));
 		if (!keepOldContext) {
 			reuse = false;
 			add.clear();
@@ -344,6 +383,10 @@ bool multi_img_viewer::BinsTbb::run()
 		result = temp->swap(NULL);
 		if (!result) {
 			result = new std::vector<BinSet>(**current);
+		} else {
+			for (int i = result->size(); i < colors.size(); ++i) {
+				result->push_back(BinSet(colors[i], (*multi)->size()));
+			}
 		}
 	} else if (inplace) {
 		current_lock.lock();
@@ -403,14 +446,14 @@ bool multi_img_viewer::BinsTbb::run()
 	std::vector<cv::Rect>::iterator it;
 	for (it = sub.begin(); it != sub.end(); ++it) {
 		Accumulate substract(
-			true, **multi, labels, args.nbins, args.binsize, args.minval, args.ignoreLabels, illuminant, *result);
+			true, **multi, labels, mask, args.nbins, args.binsize, args.minval, args.ignoreLabels, illuminant, *result);
 		tbb::parallel_for(
 			tbb::blocked_range2d<int>(it->y, it->y + it->height, it->x, it->x + it->width), 
 				substract, tbb::auto_partitioner(), stopper);
 	}
 	for (it = add.begin(); it != add.end(); ++it) {
 		Accumulate add(
-			false, **multi, labels, args.nbins, args.binsize, args.minval, args.ignoreLabels, illuminant, *result);
+			false, **multi, labels, mask, args.nbins, args.binsize, args.minval, args.ignoreLabels, illuminant, *result);
 		tbb::parallel_for(
 			tbb::blocked_range2d<int>(it->y, it->y + it->height, it->x, it->x + it->width), 
 				add, tbb::auto_partitioner(), stopper);
@@ -440,6 +483,9 @@ void multi_img_viewer::BinsTbb::Accumulate::operator()(const tbb::blocked_range2
 	for (int y = r.rows().begin(); y != r.rows().end(); ++y) {
 		short *lr = labels[y];
 		for (int x = r.cols().begin(); x != r.cols().end(); ++x) {
+			if (!mask.empty() && !mask(y, x))
+				continue;
+
 			int label = (ignoreLabels ? 0 : lr[x]);
 			label = (label >= sets.size()) ? 0 : label;
 			const multi_img::Pixel& pixel = multi(y, x);

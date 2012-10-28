@@ -29,6 +29,8 @@ public:
 
 	bool isSeedModeEnabled() { return seedMode; }
 
+	short getCurLabel() { return curLabel; }
+
 	QTimer labelTimer;
 	cv::Mat1s labels;
 	cv::Mat1s seedMap; // mat1s to be consistent with labels matrix
