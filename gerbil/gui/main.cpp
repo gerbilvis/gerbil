@@ -180,19 +180,21 @@ void estimate_startup_memory(int width, int height, int bands,
 	float scoped_img = ((width > 512) ? 512 : width) * ((height > 512) ? 512 : height) 
 		* bands * sizeof(multi_img::Value) * 2 / 1048576.;
 	// hash table and shuffling vector for extremely noisy data
-	float hashing_max = width * height * bands * sizeof(multi_img::Value) * 2 / 1048576.;
+	float hashing_max = ((width > 512) ? 512 : width) * ((height > 512) ? 512 : height)
+		* bands * sizeof(multi_img::Value) * 2 / 1048576.;
 	// vertex buffer for extremely noisy data 
-	float vbo_max = width * height * bands * 2 * sizeof(float) / 1048576.;
+	float vbo_max = ((width > 512) ? 512 : width) * ((height > 512) ? 512 : height)
+		* bands * 2 * sizeof(float) / 1048576.;
 
 	// data without too much noise, hashing yields significant savings with default bin count
 	lo_reg = full_img + (2 * scoped_img) + rgb_img + lab_mat + (2 * hashing_max * 0.15);
 	lo_opt = (2 * scoped_img) + rgb_img + lab_mat + (2 * hashing_max * 0.15);
-	lo_gpu = (2 * vbo_max) * 0.15;
+	lo_gpu = rgb_img + (2 * vbo_max) * 0.15;
 
 	// noisy data, hashing is not very effective
 	hi_reg = full_img + (2 * scoped_img) + rgb_img + lab_mat + (2 * hashing_max * 0.8);
 	hi_opt = (2 * scoped_img) + rgb_img + lab_mat + (2 * hashing_max * 0.8);
-	hi_gpu = (2 * vbo_max) * 0.8;
+	hi_gpu = rgb_img + (2 * vbo_max) * 0.8;
 }
 
 int main(int argc, char **argv)
@@ -237,6 +239,13 @@ int main(int argc, char **argv)
 			float lo_reg, hi_reg, lo_opt, hi_opt, lo_gpu, hi_gpu;
 			estimate_startup_memory(src.cols, src.rows, src.channels() * filelist.first.size(),
 				lo_reg, hi_reg, lo_opt, hi_opt, lo_gpu, hi_gpu);
+
+			GLint maxTextureSize;
+			glGetIntegerv(GL_MAX_TEXTURE_SIZE, &maxTextureSize);
+			if (src.cols * src.rows > maxTextureSize) {
+				std::cout << "WARNING: Graphics device does not support texture size "
+					<< "required to render RGB version of input image in full resolution. " << std::endl;
+			}
 
 			std::stringstream text;
 			text << "For startup, Gerbil will have to allocate between " 
