@@ -117,7 +117,9 @@ bool BgrTbb::run()
 		if (idx < 0 || idx > 94)
 			continue;
 
-		Xyz computeXyz(**multi, xyz, i, idx);
+		multi_img::Band band;
+		(*multi)->getBand(i, band);
+		Xyz computeXyz(**multi, xyz, band, idx);
 		tbb::parallel_for(tbb::blocked_range2d<int>(0, xyz.rows, 0, xyz.cols), 
 			computeXyz, tbb::auto_partitioner(), stopper);
 
@@ -149,21 +151,20 @@ void BgrTbb::Xyz::operator()(const tbb::blocked_range2d<int> &r) const
 {
 	float intensity;
 	float factor = 1.f / multi.maxval;
-	multi_img::Band &bnd = multi.bands[band];
 	__m128 cie_reg = _mm_setr_ps(CIEObserver::x[cie], 0.f, CIEObserver::y[cie], CIEObserver::z[cie]);
 
 	for (int i = r.rows().begin(); i != r.rows().end(); ++i) {
 		for (int j = r.cols().begin(); j != r.cols().end(); ++j) {
 			/*
 			cv::Vec3f &v = xyz(i, j);
-			float intensity = multi.bands[band](i, j) * 1.f / multi.maxval;
+			float intensity = band(i, j) * 1.f / multi.maxval;
 			v[0] += CIEObserver::x[cie] * intensity;
 			v[1] += CIEObserver::y[cie] * intensity;
 			v[2] += CIEObserver::z[cie] * intensity;
 			*/
 			
 			cv::Vec3f &v = xyz(i, j);
-			intensity = bnd(i, j) * factor;
+			intensity = band(i, j) * factor;
 			__m128 v_reg = _mm_loadh_pi(_mm_load_ss(&v[0]), (__m64*)&v[1]);
 			__m128 res_reg = _mm_add_ps(v_reg, _mm_mul_ps(cie_reg, _mm_load1_ps(&intensity)));
 			_mm_storeh_pi((__m64*)&v[1], res_reg);
@@ -190,7 +191,7 @@ void BgrTbb::Bgr::operator()(const tbb::blocked_range2d<int> &r) const
 			__m128 res_reg = _mm_div_ps(vs_reg, _mm_load1_ps(&greensum));
 			_mm_storeh_pi((__m64*)&vs[1], res_reg);
 			_mm_store_ss(&vs[0], res_reg);
-			multi.xyz2bgr(vs, vd);
+			multi_img::xyz2bgr(vs, vd);
 		}
 	}
 }

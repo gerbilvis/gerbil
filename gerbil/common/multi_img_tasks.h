@@ -68,13 +68,13 @@ namespace CommonTbb {
 
 class ScopeImage : public BackgroundTask {
 public:
-	ScopeImage(multi_img_ptr full, multi_img_ptr scoped, cv::Rect roi) 
+	ScopeImage(multi_img_base_ptr full, multi_img_ptr scoped, cv::Rect roi) 
 		: BackgroundTask(roi), full(full), scoped(scoped) {}
 	virtual ~ScopeImage() {};
 	virtual bool run();
 	virtual void cancel() {}
 protected:
-	multi_img_ptr full;
+	multi_img_base_ptr full;
 	multi_img_ptr scoped;
 };
 
@@ -93,7 +93,7 @@ protected:
 
 class BgrTbb : public BackgroundTask {
 public:
-	BgrTbb(multi_img_ptr multi, mat_vec3f_ptr bgr,
+	BgrTbb(multi_img_base_ptr multi, mat_vec3f_ptr bgr,
 		cv::Rect targetRoi = cv::Rect(0, 0, 0, 0)) 
 		: BackgroundTask(targetRoi), multi(multi), bgr(bgr) {}
 	virtual ~BgrTbb() {}
@@ -104,29 +104,29 @@ protected:
 
 	class Xyz {
 	public:
-		Xyz(multi_img &multi, cv::Mat_<cv::Vec3f> &xyz, size_t band, int cie) 
+		Xyz(multi_img_base &multi, cv::Mat_<cv::Vec3f> &xyz, multi_img::Band &band, int cie) 
 			: multi(multi), xyz(xyz), band(band), cie(cie) {}
 		void operator()(const tbb::blocked_range2d<int> &r) const;
 	private:
-		multi_img &multi;
+		multi_img_base &multi;
 		cv::Mat_<cv::Vec3f> &xyz;
-		size_t band;
+		multi_img::Band &band;
 		int cie;
 	};
 
 	class Bgr {
 	public:
-		Bgr(multi_img &multi, cv::Mat_<cv::Vec3f> &xyz, cv::Mat_<cv::Vec3f> &bgr, float greensum) 
+		Bgr(multi_img_base &multi, cv::Mat_<cv::Vec3f> &xyz, cv::Mat_<cv::Vec3f> &bgr, float greensum) 
 			: multi(multi), xyz(xyz), bgr(bgr), greensum(greensum) {}
 		void operator()(const tbb::blocked_range2d<int> &r) const;
 	private:
-		multi_img &multi;
+		multi_img_base &multi;
 		cv::Mat_<cv::Vec3f> &xyz;
 		cv::Mat_<cv::Vec3f> &bgr;
 		float greensum;
 	};
 
-	multi_img_ptr multi;
+	multi_img_base_ptr multi;
 	mat_vec3f_ptr bgr;
 };
 

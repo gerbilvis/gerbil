@@ -88,6 +88,7 @@ private:
 	SharedData<T> &operator=(const SharedData<T> &other); // avoid copying of the wrapper
 };
 
+typedef boost::shared_ptr<SharedData<multi_img_base> > multi_img_base_ptr;
 typedef boost::shared_ptr<SharedData<multi_img> > multi_img_ptr;
 typedef boost::shared_ptr<SharedData<cv::Mat_<cv::Vec3f> > > mat_vec3f_ptr;
 typedef boost::shared_ptr<SharedData<std::pair<multi_img::Value, multi_img::Value> > > data_range_ptr;

@@ -40,7 +40,7 @@
 class ViewerWindow : public QMainWindow, private Ui::ViewerWindow {
     Q_OBJECT
 public:
-	ViewerWindow(multi_img *image, QWidget *parent = 0);
+	ViewerWindow(multi_img_base *image, QString labelfile, bool limitedMode = false, QWidget *parent = 0);
 
 	const QPixmap* getBand(representation type, int dim);
 	const inline Illuminant & getIlluminant(int temp);
@@ -137,7 +137,7 @@ protected:
 
 	class RgbTbb : public MultiImg::BgrTbb {
 	public:
-		RgbTbb(multi_img_ptr multi, mat_vec3f_ptr bgr, qimage_ptr rgb,
+		RgbTbb(multi_img_base_ptr multi, mat_vec3f_ptr bgr, qimage_ptr rgb,
 			cv::Rect targetRoi = cv::Rect(0, 0, 0, 0)) 
 			: MultiImg::BgrTbb(multi, bgr, targetRoi), rgb(rgb) {}
 		virtual ~RgbTbb() {}
@@ -206,6 +206,21 @@ protected:
 		boost::shared_ptr<multi_img::Mask> result;
 	};
 
+	class FullImageSwitcher : public BackgroundTask {
+	public:
+		enum SwitchTarget { REGULAR, LIMITED };
+		FullImageSwitcher(multi_img_base_ptr limited, multi_img_ptr regular, SwitchTarget target) 
+			: limited(limited), regular(regular), target(target) {}
+		virtual ~FullImageSwitcher() {}
+		virtual bool run();
+	protected:
+		multi_img_base_ptr limited;
+		multi_img_ptr regular;
+		SwitchTarget target;
+	};
+
+	void switchFullImage(FullImageSwitcher::SwitchTarget target);
+
     void changeEvent(QEvent *e);
 
 	/* helper functions */
@@ -218,7 +233,9 @@ protected:
 	void runGraphseg(multi_img_ptr input, const vole::GraphSegConfig &config);
 
 	// multispectral image and gradient
-	multi_img_ptr full_image, image, gradient, imagepca, gradientpca;
+	multi_img_base_ptr full_image_limited;
+	multi_img_ptr full_image_regular;
+	multi_img_ptr image, gradient, imagepca, gradientpca;
 	// current region of interest
 	cv::Rect roi;
 	// bands from all representations (image, gradient, PCA..)
@@ -265,6 +282,10 @@ private:
 	TaskType runningTask;
 
 	boost::shared_ptr<multi_img::Mask> graphsegResult;
+
+	bool limitedMode;
+
+	QString startupLabelFile;
 };
 
 #endif // VIEWERWINDOW_H

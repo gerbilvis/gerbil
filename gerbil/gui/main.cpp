@@ -9,9 +9,11 @@
 #include <opencv2/gpu/gpu.hpp>
 #include <opencv2/core/core.hpp>
 #include <opencv2/imgproc/imgproc.hpp>
+#include <opencv2/highgui/highgui.hpp>
 
- #include <QGLFormat>
- #include <QGLFramebufferObject>
+#include <QGLFormat>
+#include <QGLFramebufferObject>
+#include <QMessageBox>
 
 #ifdef __GNUC__
 #include <tr1/functional>
@@ -161,6 +163,38 @@ bool test_compatibility()
 	return success;
 }
 
+/** Determines just a rough estimated range of memory requirements to accomodate
+    input data for Gerbil startup. Data structures whose size do not depend on 
+	input are not accounted for (framebuffers, greyscale thumbnails, etc.). 
+	Overhead of data structures and heap allocator is also not accounted for. */
+void estimate_startup_memory(int width, int height, int bands, 
+	float &lo_reg, float &hi_reg, float &lo_opt, float &hi_opt, float &lo_gpu, float &hi_gpu)
+{
+	// full multi_img, assuming no pixel cache
+	float full_img = width * height * bands * sizeof(multi_img::Value) / 1048576.;
+	// full RGB image, assuming ARGB format
+	float rgb_img = width * height * 4 / 1048576.;
+	// labeling matrix
+	float lab_mat = width * height * sizeof(short) / 1048576.;
+	// scoped multi_img, assuming ROI and pixel cache
+	float scoped_img = ((width > 512) ? 512 : width) * ((height > 512) ? 512 : height) 
+		* bands * sizeof(multi_img::Value) * 2 / 1048576.;
+	// hash table and shuffling vector for extremely noisy data
+	float hashing_max = width * height * bands * sizeof(multi_img::Value) * 2 / 1048576.;
+	// vertex buffer for extremely noisy data 
+	float vbo_max = width * height * bands * 2 * sizeof(float) / 1048576.;
+
+	// data without too much noise, hashing yields significant savings with default bin count
+	lo_reg = full_img + (2 * scoped_img) + rgb_img + lab_mat + (2 * hashing_max * 0.15);
+	lo_opt = (2 * scoped_img) + rgb_img + lab_mat + (2 * hashing_max * 0.15);
+	lo_gpu = (2 * vbo_max) * 0.15;
+
+	// noisy data, hashing is not very effective
+	hi_reg = full_img + (2 * scoped_img) + rgb_img + lab_mat + (2 * hashing_max * 0.8);
+	hi_opt = (2 * scoped_img) + rgb_img + lab_mat + (2 * hashing_max * 0.8);
+	hi_gpu = (2 * vbo_max) * 0.8;
+}
+
 int main(int argc, char **argv)
 {
 	init_opencv();
@@ -170,7 +204,7 @@ int main(int argc, char **argv)
 	QApplication app(argc, argv);
 
 	if (!test_compatibility())
-		return -1;
+		return 3;
 
 	// start worker thread
 	std::thread background(std::tr1::ref(BackgroundTaskQueue::instance()));
@@ -193,19 +227,64 @@ int main(int argc, char **argv)
 	if (argc >= 3)
 		labelfile = argv[2];
 
-	// load image   
-	multi_img* image = new multi_img(filename);
+
+
+	bool limited_mode = false;
+	std::pair<std::vector<std::string>, std::vector<multi_img::BandDesc> > filelist;
+	filelist = multi_img::parse_filelist(filename);
+
+	if (!filelist.first.empty()) {
+		cv::Mat src = cv::imread(filelist.first[1], -1);
+		if (!src.empty()) {
+			float lo_reg, hi_reg, lo_opt, hi_opt, lo_gpu, hi_gpu;
+			estimate_startup_memory(src.cols, src.rows, src.channels() * filelist.first.size(),
+				lo_reg, hi_reg, lo_opt, hi_opt, lo_gpu, hi_gpu);
+
+			std::stringstream text;
+			text << "For startup, Gerbil will have to allocate between " 
+				<< lo_reg << "MB and " << hi_reg 
+				<< "MB of memory to accommodate data derived from input image. " 
+				<< "At performance cost and some disabled features, "
+				<< "memory consumption can be optimized to range between "
+				<< lo_opt << "MB and " << hi_opt << "MB. "
+				<< "Additionaly, between "
+				<< lo_gpu << "MB and " << hi_gpu << "MB of GPU memory will be required. "
+				<< "Note that estimated requirements do not include Gerbil itself "
+				<< "and overhead of its storage mechanisms. Depending on the characteristics "
+				<< "of your machine (CPU/GPU RAM size, page file size, HDD/SSD performance), "
+				<< "decide whether to optimize performance or memory consumption. You can also "
+				<< "close Gerbil to avoid possible memory exhaustion and computer lock-up. ";
+
+			QMessageBox msgBox;
+			msgBox.setText(text.str().c_str());
+			msgBox.setIcon(QMessageBox::Question);
+			QPushButton *speed = msgBox.addButton("Speed optimization", QMessageBox::AcceptRole);
+			QPushButton *memory = msgBox.addButton("Memory optimization", QMessageBox::AcceptRole);
+			QPushButton *close = msgBox.addButton("Close", QMessageBox::RejectRole);
+			msgBox.setDefaultButton(speed);
+			msgBox.exec();
+			if (msgBox.clickedButton() == memory)
+				limited_mode = true;
+			if (msgBox.clickedButton() == close)
+				return 4;
+		}
+	}
+
+	// load image
+	multi_img_base* image;
+	if (limited_mode) {
+		image = new multi_img_offloaded(filelist.first, filelist.second);
+	} else {
+		image = new multi_img(filename);
+	}
+
 	if (image->empty())
 		return 2;
 	
 	// regular viewer
-	ViewerWindow window(image);
+	ViewerWindow window(image, labelfile, limited_mode);
 	image = NULL;
 	window.show();
-	
-	// load labels
-	if (!labelfile.isEmpty())
-		window.loadLabeling(labelfile);
 
 	int retval = app.exec();
 
