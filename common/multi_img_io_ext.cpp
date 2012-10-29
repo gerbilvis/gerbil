@@ -143,23 +143,23 @@ void multi_img::write_out(const string& base, bool normalize, bool in16bit) cons
 	}
 #include "boost/version.hpp"
 #if BOOST_VERSION < 104600 // V2 API is default
-	std::string basename(basepath.filename()), dir(basename);
+	std::string basen(basepath.filename()), dir(basen);
 #else
-	std::string basename(basepath.filename().string()), dir(basename);
+	std::string basen(basepath.filename().string()), dir(basen);
 #endif
 #elif __unix__
-	int status = mkdir(base.c_str());
+	int status = mkdir(base.c_str(), 0777);
 	if (status != 0) {
 		std::cerr << "Writing failed!"
 					 "Could not create directory " << base << std::endl;
 		return;
 	}
-	char *f = strdup(base.c_str()), *ff = filename(f);
-	std::string basename(ff), dir(basename);
+	char *f = strdup(base.c_str()), *ff = basename(f);
+	std::string basen(ff), dir(basen);
 	free(f);
 #else
 	// don't use subdir
-	std::string basename(base.substr(base.find_last_of("/") + 1)), dir("./");
+	std::string basen(base.substr(base.find_last_of("/") + 1)), dir("./");
 #endif
 
 	// header of text file
@@ -176,7 +176,7 @@ void multi_img::write_out(const string& base, bool normalize, bool in16bit) cons
 	// write out band files and corresponding text file entries at once
 	char name[1024];
 	for (size_t i = 0; i < size(); ++i) {
-		sprintf(name, "%s%02d.png", basename.c_str(), (int)i);
+		sprintf(name, "%s%02d.png", basen.c_str(), (int)i);
 		txtfile << name << " " << meta[i].rangeStart;
 		if (meta[i].rangeStart != meta[i].rangeEnd) // print range, if available
 			txtfile << " "  << meta[i].rangeEnd;
