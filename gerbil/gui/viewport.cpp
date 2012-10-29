@@ -821,7 +821,6 @@ void Viewport::updateXY(int sel, int bin)
 
 	/// finally update
 	if (emitOverlay) {
-		highlightRenderTimer.stop();
 		updateTextures(RM_SKIP, limiterMode ? RM_STEP : RM_FULL);
 		emit newOverlay(selection);
 	}
