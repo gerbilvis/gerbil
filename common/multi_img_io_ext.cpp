@@ -12,6 +12,7 @@
 #ifdef WITH_BOOST_FILESYSTEM
 	#include "boost/filesystem.hpp"
 #else
+	#include <cerrno>
 	#include <libgen.h>
 	#include <sys/stat.h>
 #endif
@@ -149,8 +150,8 @@ void multi_img::write_out(const string& base, bool normalize, bool in16bit) cons
 #endif
 #elif __unix__
 	int status = mkdir(base.c_str(), 0777);
-	if (status != 0) {
-		std::cerr << "Writing failed!"
+	if (status != 0 && errno != EEXIST) {
+		std::cerr << "Writing failed! "
 					 "Could not create directory " << base << std::endl;
 		return;
 	}
