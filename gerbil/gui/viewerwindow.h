@@ -40,13 +40,16 @@
 class ViewerWindow : public QMainWindow, private Ui::ViewerWindow {
     Q_OBJECT
 public:
-	ViewerWindow(multi_img_base *image, QString labelfile, bool limitedMode = false, QWidget *parent = 0);
+	ViewerWindow(BackgroundTaskQueue &queue, multi_img_base *image,
+				 QString labelfile = QString(), bool limitedMode = false,
+				 QWidget *parent = 0);
 
 	const QPixmap* getBand(representation type, int dim);
 	const inline Illuminant & getIlluminant(int temp);
 	const inline std::vector<multi_img::Value> & getIlluminantC(int temp);
 
 	static QIcon colorIcon(const QColor& color);
+	BackgroundTaskQueue &queue;
 
 public slots:
 	void setGUIEnabled(bool enable, TaskType tt = TT_NONE);
@@ -126,7 +129,7 @@ protected:
 
 	class RgbSerial : public MultiImg::BgrSerial {
 	public:
-		RgbSerial(multi_img_ptr multi, mat_vec3f_ptr bgr, qimage_ptr rgb,
+		RgbSerial(multi_img_ptr multi, mat3f_ptr bgr, qimage_ptr rgb,
 			cv::Rect targetRoi = cv::Rect(0, 0, 0, 0)) 
 			: MultiImg::BgrSerial(multi, bgr, targetRoi), rgb(rgb) {}
 		virtual ~RgbSerial() {}
@@ -137,7 +140,7 @@ protected:
 
 	class RgbTbb : public MultiImg::BgrTbb {
 	public:
-		RgbTbb(multi_img_base_ptr multi, mat_vec3f_ptr bgr, qimage_ptr rgb,
+		RgbTbb(multi_img_base_ptr multi, mat3f_ptr bgr, qimage_ptr rgb,
 			cv::Rect targetRoi = cv::Rect(0, 0, 0, 0)) 
 			: MultiImg::BgrTbb(multi, bgr, targetRoi), rgb(rgb) {}
 		virtual ~RgbTbb() {}

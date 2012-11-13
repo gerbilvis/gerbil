@@ -1,4 +1,4 @@
-/*	
+/*
 	Copyright(c) 2012 Petr Koupy <petr.koupy@gmail.com>
 
 	This file may be licensed under the terms of of the GNU General Public
@@ -80,7 +80,7 @@ protected:
 
 class BgrSerial : public BackgroundTask {
 public:
-	BgrSerial(multi_img_ptr multi, mat_vec3f_ptr bgr,
+	BgrSerial(multi_img_ptr multi, mat3f_ptr bgr,
 		cv::Rect targetRoi = cv::Rect(0, 0, 0, 0)) 
 		: BackgroundTask(targetRoi), multi(multi), bgr(bgr) {}
 	virtual ~BgrSerial() {};
@@ -88,12 +88,12 @@ public:
 	virtual void cancel() {}
 protected:
 	multi_img_ptr multi;
-	mat_vec3f_ptr bgr;
+	mat3f_ptr bgr;
 };
 
 class BgrTbb : public BackgroundTask {
 public:
-	BgrTbb(multi_img_base_ptr multi, mat_vec3f_ptr bgr,
+	BgrTbb(multi_img_base_ptr multi, mat3f_ptr bgr,
 		cv::Rect targetRoi = cv::Rect(0, 0, 0, 0)) 
 		: BackgroundTask(targetRoi), multi(multi), bgr(bgr) {}
 	virtual ~BgrTbb() {}
@@ -127,7 +127,7 @@ protected:
 	};
 
 	multi_img_base_ptr multi;
-	mat_vec3f_ptr bgr;
+	mat3f_ptr bgr;
 };
 
 #ifdef WITH_QT

@@ -248,19 +248,3 @@ std::vector<multi_img::Value> multi_img::getIllumCoeff(const Illuminant & il) co
 		ret[i] = (Value)il.at(meta[i].center);
 	return ret;
 }
-
-size_t multi_img_offloaded::size() const
-{
-	return bands.size();
-}
-
-bool multi_img_offloaded::empty() const
-{
-	return bands.empty();
-}
-
-void multi_img_offloaded::scopeBand(const Band &source, const cv::Rect &roi, Band &target) const
-{
-	Band scoped(source, roi);
-	target = scoped.clone();
-}

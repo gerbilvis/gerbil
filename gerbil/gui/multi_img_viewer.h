@@ -16,6 +16,7 @@
 
 #include <shared_data.h>
 #include <background_task.h>
+#include <background_task_queue.h>
 
 #include <tbb/task.h>
 #include <tbb/blocked_range.h>
@@ -44,6 +45,7 @@ public:
 	void enableBinSlider(bool enable) { binSlider->setEnabled(enable); }
 	bool isPayloadHidden() { return payload->isHidden(); }
 
+	BackgroundTaskQueue *queue;
 	cv::Mat1s labels;
 
 	/* translate image value to value in our coordinate system */

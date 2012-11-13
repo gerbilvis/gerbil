@@ -30,8 +30,10 @@
 #define USE_CUDA_CLAMP          0
 #define USE_CUDA_ILLUMINANT     0
 
-ViewerWindow::ViewerWindow(multi_img_base *image, QString labelfile, bool limitedMode, QWidget *parent)
-	: QMainWindow(parent), startupLabelFile(labelfile), limitedMode(limitedMode),
+ViewerWindow::ViewerWindow(BackgroundTaskQueue &queue, multi_img_base *image,
+						   QString labelfile, bool limitedMode, QWidget *parent)
+	: QMainWindow(parent), queue(queue),
+	  startupLabelFile(labelfile), limitedMode(limitedMode),
 	  full_image_limited(new SharedData<multi_img_base>(image)),
 	  full_image_regular(new SharedData<multi_img>(NULL)),
 	  image(new SharedData<multi_img>(new multi_img(0, 0, 0))),
@@ -59,6 +61,8 @@ ViewerWindow::ViewerWindow(multi_img_base *image, QString labelfile, bool limite
 	viewIMGPCA->setType(IMGPCA);
 	viewers[GRADPCA] = viewGRADPCA;
 	viewGRADPCA->setType(GRADPCA);
+	for (size_t i = 0; i < viewers.size(); ++i)
+		viewers[i]->queue = &queue;
 
 	// do all the bling-bling
 	initUI();
@@ -79,14 +83,14 @@ ViewerWindow::ViewerWindow(multi_img_base *image, QString labelfile, bool limite
 	BackgroundTaskPtr taskEpilog(new BackgroundTask(roi));
 	QObject::connect(taskEpilog.get(), SIGNAL(finished(bool)), 
 		this, SLOT(finishTask(bool)), Qt::QueuedConnection);
-	BackgroundTaskQueue::instance().push(taskEpilog);
+	queue.push(taskEpilog);
 
 	// load labels
 	if (!labelfile.isEmpty()) {
 		BackgroundTaskPtr taskLabels(new BackgroundTask(roi));
 		QObject::connect(taskLabels.get(), SIGNAL(finished(bool)), 
 			this, SLOT(loadLabeling()), Qt::QueuedConnection);
-		BackgroundTaskQueue::instance().push(taskLabels);
+		queue.push(taskLabels);
 	}
 }
 
@@ -117,7 +121,7 @@ void ViewerWindow::switchFullImage(FullImageSwitcher::SwitchTarget target)
 {
 	BackgroundTaskPtr taskSwitch(
 		new FullImageSwitcher(full_image_limited, full_image_regular, target));
-	BackgroundTaskQueue::instance().push(taskSwitch);
+	queue.push(taskSwitch);
 	taskSwitch->wait();
 }
 
@@ -229,19 +233,19 @@ void ViewerWindow::applyROI(bool reuse)
 
 	BackgroundTaskPtr taskSwitch(
 		new FullImageSwitcher(full_image_limited, full_image_regular, FullImageSwitcher::LIMITED));
-	BackgroundTaskQueue::instance().push(taskSwitch);
+	queue.push(taskSwitch);
 
 	multi_img_ptr scoped_image(new SharedData<multi_img>(NULL));
 	BackgroundTaskPtr taskScope(new MultiImg::ScopeImage(
 		full_image_limited, scoped_image, roi));
-	BackgroundTaskQueue::instance().push(taskScope);
+	queue.push(taskScope);
 
 	// each vector's size is atmost #bands (e.g., gradient has one less)
 	bands.assign(viewers.size(), std::vector<QPixmap*>(numbands, NULL));
 
 	BackgroundTaskPtr taskRescale(new MultiImg::RescaleTbb(
 		scoped_image, image, numbands, roi));
-	BackgroundTaskQueue::instance().push(taskRescale);
+	queue.push(taskRescale);
 
 	{
 		SharedDataHold hlock(normIMGRange->lock);
@@ -252,11 +256,11 @@ void ViewerWindow::applyROI(bool reuse)
 		if (cv::gpu::getCudaEnabledDeviceCount() > 0 && USE_CUDA_DATARANGE) {
 			BackgroundTaskPtr taskImgNormRange(new NormRangeCuda(
 				image, normIMGRange, normIMG, 0, min, max, true, roi));
-			BackgroundTaskQueue::instance().push(taskImgNormRange);
+			queue.push(taskImgNormRange);
 		} else {
 			BackgroundTaskPtr taskImgNormRange(new NormRangeTbb(
 				image, normIMGRange, normIMG, 0, min, max, true, roi));
-			BackgroundTaskQueue::instance().push(taskImgNormRange);
+			queue.push(taskImgNormRange);
 		}
 	}
 
@@ -271,16 +275,16 @@ void ViewerWindow::applyROI(bool reuse)
 	BackgroundTaskPtr taskImgFinish(new BackgroundTask(roi));
 	QObject::connect(taskImgFinish.get(), SIGNAL(finished(bool)), 
 		this, SLOT(imgCalculationComplete(bool)), Qt::QueuedConnection);
-	BackgroundTaskQueue::instance().push(taskImgFinish);
+	queue.push(taskImgFinish);
 
 	if (cv::gpu::getCudaEnabledDeviceCount() > 0 && USE_CUDA_GRADIENT) {
 		BackgroundTaskPtr taskGradient(new MultiImg::GradientCuda(
 			image, gradient, roi));
-		BackgroundTaskQueue::instance().push(taskGradient);
+		queue.push(taskGradient);
 	} else {
 		BackgroundTaskPtr taskGradient(new MultiImg::GradientTbb(
 			image, gradient, roi));
-		BackgroundTaskQueue::instance().push(taskGradient);
+		queue.push(taskGradient);
 	}
 
 	{
@@ -292,11 +296,11 @@ void ViewerWindow::applyROI(bool reuse)
 		if (cv::gpu::getCudaEnabledDeviceCount() > 0 && USE_CUDA_DATARANGE) {
 			BackgroundTaskPtr taskGradNormRange(new NormRangeCuda(
 				gradient, normGRADRange, normGRAD, 1, min, max, true, roi));
-			BackgroundTaskQueue::instance().push(taskGradNormRange);
+			queue.push(taskGradNormRange);
 		} else {
 			BackgroundTaskPtr taskGradNormRange(new NormRangeTbb(
 				gradient, normGRADRange, normGRAD, 1, min, max, true, roi));
-			BackgroundTaskQueue::instance().push(taskGradNormRange);
+			queue.push(taskGradNormRange);
 		}
 	}
 
@@ -311,12 +315,12 @@ void ViewerWindow::applyROI(bool reuse)
 	BackgroundTaskPtr taskGradFinish(new BackgroundTask(roi));
 	QObject::connect(taskGradFinish.get(), SIGNAL(finished(bool)), 
 		this, SLOT(gradCalculationComplete(bool)), Qt::QueuedConnection);
-	BackgroundTaskQueue::instance().push(taskGradFinish);
+	queue.push(taskGradFinish);
 
 	if (imagepca.get()) {
 		BackgroundTaskPtr taskPca(new MultiImg::PcaTbb(
 			image, imagepca, 0, roi));
-		BackgroundTaskQueue::instance().push(taskPca);
+		queue.push(taskPca);
 
 		if (reuse && profitable) {
 			viewIMGPCA->addImage(tmp_sets_imagepca, add, roi);
@@ -327,13 +331,13 @@ void ViewerWindow::applyROI(bool reuse)
 		BackgroundTaskPtr taskImgPcaFinish(new BackgroundTask(roi));
 		QObject::connect(taskImgPcaFinish.get(), SIGNAL(finished(bool)), 
 			this, SLOT(imgPcaCalculationComplete(bool)), Qt::QueuedConnection);
-		BackgroundTaskQueue::instance().push(taskImgPcaFinish);
+		queue.push(taskImgPcaFinish);
 	}
 
 	if (gradientpca.get()) {
 		BackgroundTaskPtr taskPca(new MultiImg::PcaTbb(
 			gradient, gradientpca, 0, roi));
-		BackgroundTaskQueue::instance().push(taskPca);
+		queue.push(taskPca);
 
 		if (reuse && profitable) {
 			viewGRADPCA->addImage(tmp_sets_gradientpca, add, roi);
@@ -344,13 +348,13 @@ void ViewerWindow::applyROI(bool reuse)
 		BackgroundTaskPtr taskGradPcaFinish(new BackgroundTask(roi));
 		QObject::connect(taskGradPcaFinish.get(), SIGNAL(finished(bool)), 
 			this, SLOT(gradPcaCalculationComplete(bool)), Qt::QueuedConnection);
-		BackgroundTaskQueue::instance().push(taskGradPcaFinish);
+		queue.push(taskGradPcaFinish);
 	}
 
 	BackgroundTaskPtr roiFinish(new BackgroundTask(roi));
 	QObject::connect(roiFinish.get(), SIGNAL(finished(bool)), 
 		this, SLOT(finishROIChange(bool)), Qt::QueuedConnection);
-	BackgroundTaskQueue::instance().push(roiFinish);
+	queue.push(roiFinish);
 }
 
 void ViewerWindow::imgCalculationComplete(bool success)
@@ -588,7 +592,7 @@ void ViewerWindow::initUI()
 	connect(scr, SIGNAL(activated()), this, SLOT(screenshot()));
 
 	BackgroundTaskPtr taskRgb(new ViewerWindow::RgbTbb(
-		full_image_limited, mat_vec3f_ptr(new SharedData<cv::Mat_<cv::Vec3f> >(new cv::Mat_<cv::Vec3f>)), full_rgb_temp));
+		full_image_limited, mat3f_ptr(new SharedData<cv::Mat3f>(new cv::Mat3f)), full_rgb_temp));
 	taskRgb->run();
 	updateRGB(true);
 }
@@ -627,46 +631,46 @@ void ViewerWindow::toggleViewer(bool enable, representation viewer)
 			BackgroundTaskPtr taskImgFinish(new BackgroundTask(roi));
 			QObject::connect(taskImgFinish.get(), SIGNAL(finished(bool)), 
 				this, SLOT(imgCalculationComplete(bool)), Qt::QueuedConnection);
-			BackgroundTaskQueue::instance().push(taskImgFinish);
+			queue.push(taskImgFinish);
 		} else if (viewer == GRAD) {
 			viewers[viewer]->setImage(gradient, roi);
 
 			BackgroundTaskPtr taskGradFinish(new BackgroundTask(roi));
 			QObject::connect(taskGradFinish.get(), SIGNAL(finished(bool)), 
 				this, SLOT(gradCalculationComplete(bool)), Qt::QueuedConnection);
-			BackgroundTaskQueue::instance().push(taskGradFinish);
+			queue.push(taskGradFinish);
 		} else if (viewer == IMGPCA) {
 			imagepca.reset(new SharedData<multi_img>(new multi_img(0, 0, 0)));
 
 			BackgroundTaskPtr taskPca(new MultiImg::PcaTbb(
 				image, imagepca, 0, roi));
-			BackgroundTaskQueue::instance().push(taskPca);
+			queue.push(taskPca);
 
 			viewers[viewer]->setImage(imagepca, roi);
 
 			BackgroundTaskPtr taskImgPcaFinish(new BackgroundTask(roi));
 			QObject::connect(taskImgPcaFinish.get(), SIGNAL(finished(bool)), 
 				this, SLOT(imgPcaCalculationComplete(bool)), Qt::QueuedConnection);
-			BackgroundTaskQueue::instance().push(taskImgPcaFinish);
+			queue.push(taskImgPcaFinish);
 		} else if (viewer == GRADPCA) {
 			gradientpca.reset(new SharedData<multi_img>(new multi_img(0, 0, 0)));
 
 			BackgroundTaskPtr taskPca(new MultiImg::PcaTbb(
 				gradient, gradientpca, 0, roi));
-			BackgroundTaskQueue::instance().push(taskPca);
+			queue.push(taskPca);
 
 			viewers[viewer]->setImage(gradientpca, roi);
 
 			BackgroundTaskPtr taskGradPcaFinish(new BackgroundTask(roi));
 			QObject::connect(taskGradPcaFinish.get(), SIGNAL(finished(bool)), 
 				this, SLOT(gradPcaCalculationComplete(bool)), Qt::QueuedConnection);
-			BackgroundTaskQueue::instance().push(taskGradPcaFinish);
+			queue.push(taskGradPcaFinish);
 		} 
 
 		BackgroundTaskPtr taskEpilog(new BackgroundTask(roi));
 		QObject::connect(taskEpilog.get(), SIGNAL(finished(bool)), 
 			this, SLOT(finishTask(bool)), Qt::QueuedConnection);
-		BackgroundTaskQueue::instance().push(taskEpilog);
+		queue.push(taskEpilog);
 	}
 }
 
@@ -715,7 +719,7 @@ void ViewerWindow::bandsSliderMoved(int b)
 {
 	bandsLabel->setText(QString("%1 bands").arg(b));
 	if (!bandsSlider->isSliderDown()) {
-		BackgroundTaskQueue::instance().cancelTasks(roi);
+		queue.cancelTasks(roi);
 		
 		setGUIEnabled(false, TT_BAND_COUNT);
 
@@ -724,13 +728,13 @@ void ViewerWindow::bandsSliderMoved(int b)
 		BackgroundTaskPtr taskEpilog(new BackgroundTask(roi));
 		QObject::connect(taskEpilog.get(), SIGNAL(finished(bool)), 
 			this, SLOT(finishTask(bool)), Qt::QueuedConnection);
-		BackgroundTaskQueue::instance().push(taskEpilog);
+		queue.push(taskEpilog);
 	}
 }
 
 void ViewerWindow::toggleLabels(bool toggle)
 {
-	BackgroundTaskQueue::instance().cancelTasks();
+	queue.cancelTasks();
 	setGUIEnabled(false, TT_TOGGLE_LABELS);
 
 	for (size_t i = 0; i < viewers.size(); ++i)
@@ -739,7 +743,7 @@ void ViewerWindow::toggleLabels(bool toggle)
 	BackgroundTaskPtr taskEpilog(new BackgroundTask());
 	QObject::connect(taskEpilog.get(), SIGNAL(finished(bool)), 
 		this, SLOT(finishTask(bool)), Qt::QueuedConnection);
-	BackgroundTaskQueue::instance().push(taskEpilog);
+	queue.push(taskEpilog);
 }
 
 #ifdef WITH_SEG_MEANSHIFT
@@ -804,7 +808,7 @@ bool ViewerWindow::setLabelColors(const std::vector<cv::Vec3b> &colors)
 		BackgroundTaskPtr taskEpilog(new BackgroundTask());
 		QObject::connect(taskEpilog.get(), SIGNAL(finished(bool)), 
 			this, SLOT(finishTask(bool)), Qt::QueuedConnection);
-		BackgroundTaskQueue::instance().push(taskEpilog);
+		queue.push(taskEpilog);
 	}
 
 	return changed;
@@ -840,7 +844,7 @@ void ViewerWindow::refreshLabelsInViewers()
 	BackgroundTaskPtr taskEpilog(new BackgroundTask());
 	QObject::connect(taskEpilog.get(), SIGNAL(finished(bool)), 
 		this, SLOT(finishTask(bool)), Qt::QueuedConnection);
-	BackgroundTaskQueue::instance().push(taskEpilog);
+	queue.push(taskEpilog);
 }
 
 void ViewerWindow::createLabel()
@@ -909,7 +913,7 @@ void ViewerWindow::applyIlluminant() {
 	i1Box->setDisabled(true);
 	i1Check->setVisible(true);
 
-	BackgroundTaskQueue::instance().cancelTasks(roi);
+	queue.cancelTasks(roi);
 	setGUIEnabled(false, TT_APPLY_ILLUM);
 
 	/* remove old illuminant */
@@ -918,16 +922,16 @@ void ViewerWindow::applyIlluminant() {
 
 		BackgroundTaskPtr taskSwitch(
 			new FullImageSwitcher(full_image_limited, full_image_regular, FullImageSwitcher::REGULAR));
-		BackgroundTaskQueue::instance().push(taskSwitch);
+		queue.push(taskSwitch);
 
 		if (cv::gpu::getCudaEnabledDeviceCount() > 0 && USE_CUDA_ILLUMINANT) {
 			BackgroundTaskPtr taskIllum(new MultiImg::IlluminantCuda(
 				full_image_regular, il, true, roi, false));
-			BackgroundTaskQueue::instance().push(taskIllum);
+			queue.push(taskIllum);
 		} else {
 			BackgroundTaskPtr taskIllum(new MultiImg::IlluminantTbb(
 				full_image_regular, il, true, roi, false));
-			BackgroundTaskQueue::instance().push(taskIllum);
+			queue.push(taskIllum);
 		}
 	}
 
@@ -937,16 +941,16 @@ void ViewerWindow::applyIlluminant() {
 
 		BackgroundTaskPtr taskSwitch(
 			new FullImageSwitcher(full_image_limited, full_image_regular, FullImageSwitcher::REGULAR));
-		BackgroundTaskQueue::instance().push(taskSwitch);
+		queue.push(taskSwitch);
 
 		if (cv::gpu::getCudaEnabledDeviceCount() > 0 && USE_CUDA_ILLUMINANT) {
 			BackgroundTaskPtr taskIllum(new MultiImg::IlluminantCuda(
 				full_image_regular, il, false, roi, false));
-			BackgroundTaskQueue::instance().push(taskIllum);
+			queue.push(taskIllum);
 		} else {
 			BackgroundTaskPtr taskIllum(new MultiImg::IlluminantTbb(
 				full_image_regular, il, false, roi, false));
-			BackgroundTaskQueue::instance().push(taskIllum);
+			queue.push(taskIllum);
 		}
 	}
 
@@ -958,17 +962,17 @@ void ViewerWindow::applyIlluminant() {
 
 	BackgroundTaskPtr taskSwitch(
 		new FullImageSwitcher(full_image_limited, full_image_regular, FullImageSwitcher::LIMITED));
-	BackgroundTaskQueue::instance().push(taskSwitch);
+	queue.push(taskSwitch);
 
 	BackgroundTaskPtr taskRgb(new ViewerWindow::RgbTbb(
-		full_image_limited, mat_vec3f_ptr(new SharedData<cv::Mat_<cv::Vec3f> >(new cv::Mat_<cv::Vec3f>)), full_rgb_temp, roi));
+		full_image_limited, mat3f_ptr(new SharedData<cv::Mat3f>(new cv::Mat3f)), full_rgb_temp, roi));
 	QObject::connect(taskRgb.get(), SIGNAL(finished(bool)), this, SLOT(updateRGB(bool)), Qt::QueuedConnection);
-	BackgroundTaskQueue::instance().push(taskRgb);
+	queue.push(taskRgb);
 
 	BackgroundTaskPtr taskEpilog(new BackgroundTask(roi));
 	QObject::connect(taskEpilog.get(), SIGNAL(finished(bool)), 
 		this, SLOT(finishTask(bool)), Qt::QueuedConnection);
-	BackgroundTaskQueue::instance().push(taskEpilog);
+	queue.push(taskEpilog);
 
 	/* reflect change in our own gui (will propagate to viewIMG) */
 	i1Box->setCurrentIndex(i2Box->currentIndex());
@@ -978,7 +982,7 @@ bool ViewerWindow::RgbSerial::run()
 {
 	if (!MultiImg::BgrSerial::run())
 		return false;
-	cv::Mat_<cv::Vec3f> &bgrmat = *(*bgr);
+	cv::Mat3f &bgrmat = *(*bgr);
 	QImage *newRgb = new QImage(bgrmat.cols, bgrmat.rows, QImage::Format_ARGB32);
 	for (int y = 0; y < bgrmat.rows; ++y) {
 		cv::Vec3f *row = bgrmat[y];
@@ -1000,7 +1004,7 @@ bool ViewerWindow::RgbTbb::run()
 	if (stopper.is_group_execution_cancelled())
 		return false;
 
-	cv::Mat_<cv::Vec3f> &bgrmat = *(*bgr);
+	cv::Mat3f &bgrmat = *(*bgr);
 	QImage *newRgb = new QImage(bgrmat.cols, bgrmat.rows, QImage::Format_ARGB32);
 
 	Rgb computeRgb(bgrmat, *newRgb);
@@ -1210,14 +1214,14 @@ void ViewerWindow::normModeSelected(int mode, bool targetchange, bool usecurrent
 				(target == 0 ? image : gradient), 
 				(target == 0 ? normIMGRange : normGRADRange), 
 				nm, target, min, max, false));
-			BackgroundTaskQueue::instance().push(taskNormRange);
+			queue.push(taskNormRange);
 			taskNormRange->wait();
 		} else {
 			BackgroundTaskPtr taskNormRange(new NormRangeTbb(
 				(target == 0 ? image : gradient), 
 				(target == 0 ? normIMGRange : normGRADRange), 
 				nm, target, min, max, false));
-			BackgroundTaskQueue::instance().push(taskNormRange);
+			queue.push(taskNormRange);
 			taskNormRange->wait();
 		}
 	}
@@ -1257,7 +1261,7 @@ void ViewerWindow::applyNormUserRange()
 	normMode &nm = (target == 0 ? normIMG : normGRAD);
 	nm = static_cast<normMode>(normModeBox->currentIndex());
 
-	BackgroundTaskQueue::instance().cancelTasks();
+	queue.cancelTasks();
 	setGUIEnabled(false, TT_NORM_RANGE);
 
 	// if available, overwrite with more precise values than in the spin boxes.
@@ -1266,13 +1270,13 @@ void ViewerWindow::applyNormUserRange()
 			(target == 0 ? image : gradient), 
 			(target == 0 ? normIMGRange : normGRADRange), 
 			(target == 0 ? normIMG : normGRAD), target, normMinBox->value(), normMaxBox->value(), true));
-		BackgroundTaskQueue::instance().push(taskNormRange);
+		queue.push(taskNormRange);
 	} else {
 		BackgroundTaskPtr taskNormRange(new NormRangeTbb(
 			(target == 0 ? image : gradient), 
 			(target == 0 ? normIMGRange : normGRADRange), 
 			(target == 0 ? normIMG : normGRAD), target, normMinBox->value(), normMaxBox->value(), true));
-		BackgroundTaskQueue::instance().push(taskNormRange);
+		queue.push(taskNormRange);
 	}
 
 	// re-initialize gui (duplication from applyROI())
@@ -1282,20 +1286,20 @@ void ViewerWindow::applyNormUserRange()
 		BackgroundTaskPtr taskFinishNorm(new BackgroundTask());
 		QObject::connect(taskFinishNorm.get(), SIGNAL(finished(bool)), 
 			this, SLOT(finishNormRangeImgChange(bool)), Qt::QueuedConnection);
-		BackgroundTaskQueue::instance().push(taskFinishNorm);
+		queue.push(taskFinishNorm);
 	} else {
 		viewGRAD->updateBinning(-1);
 
 		BackgroundTaskPtr taskFinishNorm(new BackgroundTask());
 		QObject::connect(taskFinishNorm.get(), SIGNAL(finished(bool)), 
 			this, SLOT(finishNormRangeGradChange(bool)), Qt::QueuedConnection);
-		BackgroundTaskQueue::instance().push(taskFinishNorm);
+		queue.push(taskFinishNorm);
 	}
 
 	BackgroundTaskPtr taskEpilog(new BackgroundTask());
 	QObject::connect(taskEpilog.get(), SIGNAL(finished(bool)), 
 		this, SLOT(finishTask(bool)), Qt::QueuedConnection);
-	BackgroundTaskQueue::instance().push(taskEpilog);
+	queue.push(taskEpilog);
 }
 
 void ViewerWindow::finishNormRangeImgChange(bool success)
@@ -1329,7 +1333,7 @@ void ViewerWindow::clampNormUserRange()
 	/* if image is changed, change full image. for gradient, we cannot preserve
 		the gradient over ROI or illuminant changes, so it remains a local change */
 	if (target == 0) {
-		BackgroundTaskQueue::instance().cancelTasks(roi);
+		queue.cancelTasks(roi);
 		setGUIEnabled(false, TT_CLAMP_RANGE_IMG);
 
 		// if available, overwrite with more precise values than in the spin boxes.
@@ -1338,29 +1342,29 @@ void ViewerWindow::clampNormUserRange()
 				(target == 0 ? image : gradient), 
 				(target == 0 ? normIMGRange : normGRADRange), 
 				(target == 0 ? normIMG : normGRAD), target, normMinBox->value(), normMaxBox->value(), true, roi));
-			BackgroundTaskQueue::instance().push(taskNormRange);
+			queue.push(taskNormRange);
 		} else {
 			BackgroundTaskPtr taskNormRange(new NormRangeTbb(
 				(target == 0 ? image : gradient), 
 				(target == 0 ? normIMGRange : normGRADRange), 
 				(target == 0 ? normIMG : normGRAD), target, normMinBox->value(), normMaxBox->value(), true, roi));
-			BackgroundTaskQueue::instance().push(taskNormRange);
+			queue.push(taskNormRange);
 		}
 
 		{
 			BackgroundTaskPtr taskSwitch(
 				new FullImageSwitcher(full_image_limited, full_image_regular, FullImageSwitcher::REGULAR));
-			BackgroundTaskQueue::instance().push(taskSwitch);
+			queue.push(taskSwitch);
 		}
 
 		if (cv::gpu::getCudaEnabledDeviceCount() > 0 && USE_CUDA_CLAMP) {
 			BackgroundTaskPtr taskClamp(new MultiImg::ClampCuda(
 				full_image_regular, image, roi, false));
-			BackgroundTaskQueue::instance().push(taskClamp);
+			queue.push(taskClamp);
 		} else {
 			BackgroundTaskPtr taskClamp(new MultiImg::ClampTbb(
 				full_image_regular, image, roi, false));
-			BackgroundTaskQueue::instance().push(taskClamp);
+			queue.push(taskClamp);
 		}
 
 		applyROI(false);
@@ -1369,20 +1373,20 @@ void ViewerWindow::clampNormUserRange()
 		{
 			BackgroundTaskPtr taskSwitch(
 				new FullImageSwitcher(full_image_limited, full_image_regular, FullImageSwitcher::LIMITED));
-			BackgroundTaskQueue::instance().push(taskSwitch);
+			queue.push(taskSwitch);
 		}
 
 		BackgroundTaskPtr taskRgb(new ViewerWindow::RgbTbb(
-			full_image_limited, mat_vec3f_ptr(new SharedData<cv::Mat_<cv::Vec3f> >(new cv::Mat_<cv::Vec3f>)), full_rgb_temp, roi));
+			full_image_limited, mat3f_ptr(new SharedData<cv::Mat3f>(new cv::Mat3f)), full_rgb_temp, roi));
 		QObject::connect(taskRgb.get(), SIGNAL(finished(bool)), this, SLOT(updateRGB(bool)), Qt::QueuedConnection);
-		BackgroundTaskQueue::instance().push(taskRgb);
+		queue.push(taskRgb);
 
 		BackgroundTaskPtr taskEpilog(new BackgroundTask(roi));
 		QObject::connect(taskEpilog.get(), SIGNAL(finished(bool)), 
 			this, SLOT(finishTask(bool)), Qt::QueuedConnection);
-		BackgroundTaskQueue::instance().push(taskEpilog);
+		queue.push(taskEpilog);
 	} else {
-		BackgroundTaskQueue::instance().cancelTasks();
+		queue.cancelTasks();
 		setGUIEnabled(false, TT_CLAMP_RANGE_GRAD);
 
 		// if available, overwrite with more precise values than in the spin boxes.
@@ -1391,21 +1395,21 @@ void ViewerWindow::clampNormUserRange()
 				(target == 0 ? image : gradient), 
 				(target == 0 ? normIMGRange : normGRADRange), 
 				(target == 0 ? normIMG : normGRAD), target, normMinBox->value(), normMaxBox->value(), true));
-			BackgroundTaskQueue::instance().push(taskNormRange);
+			queue.push(taskNormRange);
 		} else {
 			BackgroundTaskPtr taskNormRange(new NormRangeTbb(
 				(target == 0 ? image : gradient), 
 				(target == 0 ? normIMGRange : normGRADRange), 
 				(target == 0 ? normIMG : normGRAD), target, normMinBox->value(), normMaxBox->value(), true));
-			BackgroundTaskQueue::instance().push(taskNormRange);
+			queue.push(taskNormRange);
 		}
 
 		if (cv::gpu::getCudaEnabledDeviceCount() > 0 && USE_CUDA_CLAMP) {
 			BackgroundTaskPtr taskClamp(new MultiImg::ClampCuda(gradient, gradient));
-			BackgroundTaskQueue::instance().push(taskClamp);
+			queue.push(taskClamp);
 		} else {
 			BackgroundTaskPtr taskClamp(new MultiImg::ClampTbb(gradient, gradient));
-			BackgroundTaskQueue::instance().push(taskClamp);
+			queue.push(taskClamp);
 		}
 
 		viewGRAD->updateBinning(-1);
@@ -1413,12 +1417,12 @@ void ViewerWindow::clampNormUserRange()
 		BackgroundTaskPtr taskFinishClamp(new BackgroundTask());
 		QObject::connect(taskFinishClamp.get(), SIGNAL(finished(bool)), 
 			this, SLOT(finishNormRangeGradChange(bool)), Qt::QueuedConnection);
-		BackgroundTaskQueue::instance().push(taskFinishClamp);
+		queue.push(taskFinishClamp);
 
 		BackgroundTaskPtr taskEpilog(new BackgroundTask());
 		QObject::connect(taskEpilog.get(), SIGNAL(finished(bool)), 
 			this, SLOT(finishTask(bool)), Qt::QueuedConnection);
-		BackgroundTaskQueue::instance().push(taskEpilog);
+		queue.push(taskEpilog);
 	}
 }
 
@@ -1462,7 +1466,7 @@ void ViewerWindow::runGraphseg(multi_img_ptr input,
 		config, input, bandView->seedMap, graphsegResult));
 	QObject::connect(taskGraphseg.get(), SIGNAL(finished(bool)), 
 		this, SLOT(finishGraphSeg(bool)), Qt::QueuedConnection);
-	BackgroundTaskQueue::instance().push(taskGraphseg);
+	queue.push(taskGraphseg);
 }
 
 bool ViewerWindow::GraphsegBackground::run()
@@ -1802,7 +1806,7 @@ void ViewerWindow::labelflush()
 			BackgroundTaskPtr taskEpilog(new BackgroundTask());
 			QObject::connect(taskEpilog.get(), SIGNAL(finished(bool)), 
 				this, SLOT(finishTask(bool)), Qt::QueuedConnection);
-			BackgroundTaskQueue::instance().push(taskEpilog);
+			queue.push(taskEpilog);
 		} else {
 			refreshLabelsInViewers();
 		}
@@ -1832,7 +1836,7 @@ void ViewerWindow::labelmask(bool negative)
 		BackgroundTaskPtr taskEpilog(new BackgroundTask());
 		QObject::connect(taskEpilog.get(), SIGNAL(finished(bool)), 
 			this, SLOT(finishTask(bool)), Qt::QueuedConnection);
-		BackgroundTaskQueue::instance().push(taskEpilog);
+		queue.push(taskEpilog);
 	} else {
 		refreshLabelsInViewers();
 	}
@@ -2022,7 +2026,7 @@ void ViewerWindow::ROIDecision(QAbstractButton *sender)
 	if (apply) {
 		bool reuse = true;
 		if (runningTask != TT_NONE) {
-			BackgroundTaskQueue::instance().cancelTasks(roi);
+			queue.cancelTasks(roi);
 			reuse = false;
 		}
 
@@ -2036,7 +2040,7 @@ void ViewerWindow::ROIDecision(QAbstractButton *sender)
 		BackgroundTaskPtr taskEpilog(new BackgroundTask(roi));
 		QObject::connect(taskEpilog.get(), SIGNAL(finished(bool)), 
 			this, SLOT(finishTask(bool)), Qt::QueuedConnection);
-		BackgroundTaskQueue::instance().push(taskEpilog);
+		queue.push(taskEpilog);
 	}
 }
 

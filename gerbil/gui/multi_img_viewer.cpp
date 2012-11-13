@@ -20,7 +20,7 @@
 using namespace std;
 
 multi_img_viewer::multi_img_viewer(QWidget *parent)
-	: QWidget(parent),
+	: QWidget(parent), queue(NULL),
 	  ignoreLabels(false),
 	  limiterMenu(this)
 {
@@ -97,7 +97,7 @@ void multi_img_viewer::subPixels(const std::map<std::pair<int, int>, short> &poi
 	BackgroundTaskPtr taskSub(new BinsTbb(
 		image, labels, labelColors, illuminant, args, viewport->ctx, viewport->sets,
 		sets_ptr(new SharedData<std::vector<BinSet> >(NULL)), sub, std::vector<cv::Rect>(), cv::Mat1b(), true, false));
-	BackgroundTaskQueue::instance().push(taskSub);
+	queue->push(taskSub);
 	taskSub->wait();
 }
 
@@ -116,7 +116,7 @@ void multi_img_viewer::addPixels(const std::map<std::pair<int, int>, short> &poi
 	BackgroundTaskPtr taskAdd(new BinsTbb(
 		image, labels, labelColors, illuminant, args, viewport->ctx, viewport->sets,
 		sets_ptr(new SharedData<std::vector<BinSet> >(NULL)), std::vector<cv::Rect>(), add, cv::Mat1b(), true, false));
-	BackgroundTaskQueue::instance().push(taskAdd);
+	queue->push(taskAdd);
 	render(taskAdd->wait());
 }
 
@@ -129,7 +129,7 @@ void multi_img_viewer::subImage(sets_ptr temp, const std::vector<cv::Rect> &regi
 	BackgroundTaskPtr taskBins(new BinsTbb(
 		image, labels, labelColors, illuminant, args, viewport->ctx, viewport->sets,
 		temp, regions, std::vector<cv::Rect>(), cv::Mat1b(), false, false, roi));
-	BackgroundTaskQueue::instance().push(taskBins);
+	queue->push(taskBins);
 }
 
 void multi_img_viewer::setTitle(representation type, multi_img::Value min, multi_img::Value max)
@@ -169,7 +169,7 @@ void multi_img_viewer::addImage(sets_ptr temp, const std::vector<cv::Rect> &regi
 		image, labels, labelColors, illuminant, args, viewport->ctx, viewport->sets,
 		temp, std::vector<cv::Rect>(), regions, cv::Mat1b(), false, true, roi));
 	QObject::connect(taskBins.get(), SIGNAL(finished(bool)), this, SLOT(render(bool)));
-	BackgroundTaskQueue::instance().push(taskBins);
+	queue->push(taskBins);
 }
 
 void multi_img_viewer::setImage(multi_img_ptr img, cv::Rect roi)
@@ -207,7 +207,7 @@ void multi_img_viewer::setImage(multi_img_ptr img, cv::Rect roi)
 		sets_ptr(new SharedData<std::vector<BinSet> >(NULL)), std::vector<cv::Rect>(), 
 		std::vector<cv::Rect>(), cv::Mat1b(), false, true, roi));
 	QObject::connect(taskBins.get(), SIGNAL(finished(bool)), this, SLOT(render(bool)));
-	BackgroundTaskQueue::instance().push(taskBins);
+	queue->push(taskBins);
 }
 
 void multi_img_viewer::setIlluminant(
@@ -232,7 +232,7 @@ void multi_img_viewer::setIlluminant(
 
 void multi_img_viewer::changeBinCount(int bins)
 {
-	BackgroundTaskQueue::instance().cancelTasks();
+	queue->cancelTasks();
 
 	setGUIEnabled(false, TT_BIN_COUNT);
 	binSlider->setEnabled(true);
@@ -247,7 +247,7 @@ void multi_img_viewer::changeBinCount(int bins)
 	BackgroundTaskPtr taskEpilog(new BackgroundTask());
 	QObject::connect(taskEpilog.get(), SIGNAL(finished(bool)), 
 		this, SLOT(finishBinCountChange(bool)), Qt::QueuedConnection);
-	BackgroundTaskQueue::instance().push(taskEpilog);
+	queue->push(taskEpilog);
 }
 
 void multi_img_viewer::updateBinning(int bins)
@@ -274,7 +274,7 @@ void multi_img_viewer::updateBinning(int bins)
 	BackgroundTaskPtr taskBins(new BinsTbb(
 		image, labels, labelColors, illuminant, args, viewport->ctx, viewport->sets));
 	QObject::connect(taskBins.get(), SIGNAL(finished(bool)), this, SLOT(render(bool)), Qt::QueuedConnection);
-	BackgroundTaskQueue::instance().push(taskBins);
+	queue->push(taskBins);
 }
 
 void multi_img_viewer::finishBinCountChange(bool success)
@@ -305,7 +305,7 @@ void multi_img_viewer::subLabelMask(sets_ptr temp, const cv::Mat1b &mask)
 	BackgroundTaskPtr taskBins(new BinsTbb(
 		image, labels.clone(), labelColors, illuminant, args, viewport->ctx, viewport->sets,
 		temp, sub, std::vector<cv::Rect>(), mask, false, false));
-	BackgroundTaskQueue::instance().push(taskBins);
+	queue->push(taskBins);
 }
 
 void multi_img_viewer::addLabelMask(sets_ptr temp, const cv::Mat1b &mask)
@@ -325,7 +325,7 @@ void multi_img_viewer::addLabelMask(sets_ptr temp, const cv::Mat1b &mask)
 		image, labels.clone(), labelColors, illuminant, args, viewport->ctx, viewport->sets,
 		temp, std::vector<cv::Rect>(), add, mask, false, true));
 	QObject::connect(taskBins.get(), SIGNAL(finished(bool)), this, SLOT(render(bool)), Qt::QueuedConnection);
-	BackgroundTaskQueue::instance().push(taskBins);
+	queue->push(taskBins);
 }
 
 void multi_img_viewer::updateLabels()
@@ -342,7 +342,7 @@ void multi_img_viewer::updateLabels()
 	BackgroundTaskPtr taskBins(new BinsTbb(
 		image, labels, labelColors, illuminant, args, viewport->ctx, viewport->sets));
 	QObject::connect(taskBins.get(), SIGNAL(finished(bool)), this, SLOT(render(bool)), Qt::QueuedConnection);
-	BackgroundTaskQueue::instance().push(taskBins);
+	queue->push(taskBins);
 }
 
 void multi_img_viewer::render(bool necessary)
@@ -736,7 +736,7 @@ void multi_img_viewer::updateLabelColors(const QVector<QColor> &colors, bool cha
 		BackgroundTaskPtr taskBins(new BinsTbb(
 			image, labels, labelColors, illuminant, args, viewport->ctx, viewport->sets));
 		QObject::connect(taskBins.get(), SIGNAL(finished(bool)), this, SLOT(render(bool)), Qt::QueuedConnection);
-		BackgroundTaskQueue::instance().push(taskBins);
+		queue->push(taskBins);
 	}
 }
 
@@ -768,7 +768,7 @@ void multi_img_viewer::toggleLabels(bool toggle)
 	BackgroundTaskPtr taskBins(new BinsTbb(
 		image, labels, labelColors, illuminant, args, viewport->ctx, viewport->sets));
 	QObject::connect(taskBins.get(), SIGNAL(finished(bool)), this, SLOT(render(bool)), Qt::QueuedConnection);
-	BackgroundTaskQueue::instance().push(taskBins);
+	queue->push(taskBins);
 }
 
 void multi_img_viewer::toggleLimiters(bool toggle)

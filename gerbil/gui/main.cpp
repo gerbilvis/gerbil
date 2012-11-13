@@ -1,5 +1,7 @@
 #include "viewerwindow.h"
+#include <multi_img_offloaded.h>
 #include <background_task_queue.h>
+
 #include <tbb/compat/thread>
 #include <QApplication>
 #include <QFileDialog>
@@ -14,10 +16,6 @@
 #include <QGLFormat>
 #include <QGLFramebufferObject>
 #include <QMessageBox>
-
-#ifdef __GNUC__
-#include <tr1/functional>
-#endif
 
 /** All OpenCV functions that are called from parallelized parts of gerbil
     have to be first executed in single-threaded environment. This is actually
@@ -197,6 +195,79 @@ void estimate_startup_memory(int width, int height, int bands,
 	hi_gpu = rgb_img + (2 * vbo_max) * 0.8;
 }
 
+bool determine_limited(const std::pair<std::vector<std::string>, std::vector<multi_img::BandDesc> > &filelist)
+{
+	if (!filelist.first.empty()) {
+		cv::Mat src = cv::imread(filelist.first[1], -1);
+		if (!src.empty()) {
+			float lo_reg, hi_reg, lo_opt, hi_opt, lo_gpu, hi_gpu;
+			estimate_startup_memory(src.cols, src.rows, src.channels() * filelist.first.size(),
+				lo_reg, hi_reg, lo_opt, hi_opt, lo_gpu, hi_gpu);
+
+			/* TODO: move. it does not work here because GL context is missing.
+			GLint maxTextureSize;
+			glGetIntegerv(GL_MAX_TEXTURE_SIZE, &maxTextureSize);
+			std::cout << maxTextureSize << std::endl;
+			if (src.cols * src.rows > maxTextureSize) {
+				std::cout << "WARNING: Graphics device does not support texture size "
+					<< "required to render RGB version of input image in full resolution. " << std::endl;
+			}
+			 */
+
+			std::stringstream text;
+			text << "Please consider memory requirements:"
+					"<ul>"
+					"<li>Speed optim.: <b>" << (int)lo_reg << "</b> to <b>"
+											<< (int)hi_reg << "</b> MB"
+					"<li>Space optim.: <b>" << (int)lo_opt << "</b> to <b>"
+											<< (int)hi_opt << "</b> MB"
+					"<li>GPU memory:   <b>" << (int)lo_gpu << "</b> to <b>"
+											<< (int)hi_gpu << "</b> MB"
+					"</ul>"
+					"Please choose between speed and space optimization or close "
+					"the program in case of insufficient system ressources.";
+
+	/*			text << "For startup, Gerbil will have to allocate between "
+				<< lo_reg << "MB and " << hi_reg
+				<< "MB of memory to accommodate data derived from input image. "
+				<< "At performance cost and some disabled features, "
+				<< "memory consumption can be optimized to range between "
+				<< lo_opt << "MB and " << hi_opt << "MB. "
+				<< "Additionaly, between "
+				<< lo_gpu << "MB and " << hi_gpu << "MB of GPU memory will be required. "
+				<< "Note that estimated requirements do not include Gerbil itself "
+				<< "and overhead of its storage mechanisms. Depending on the characteristics "
+				<< "of your machine (CPU/GPU RAM size, page file size, HDD/SSD performance), "
+				<< "decide whether to optimize performance or memory consumption. You can also "
+				<< "close Gerbil to avoid possible memory exhaustion and computer lock-up. ";
+	*/
+			QMessageBox msgBox;
+			msgBox.setText(text.str().c_str());
+			msgBox.setIcon(QMessageBox::Question);
+			QPushButton *speed = msgBox.addButton("Speed optimization", QMessageBox::AcceptRole);
+			QPushButton *memory = msgBox.addButton("Memory optimization", QMessageBox::AcceptRole);
+			QPushButton *close = msgBox.addButton("Close", QMessageBox::RejectRole);
+			msgBox.setDefaultButton(speed);
+			msgBox.exec();
+			if (msgBox.clickedButton() == memory)
+				return true;
+			if (msgBox.clickedButton() == close)
+				exit(4);
+		}
+	}
+
+	return false;
+}
+
+/* container to allow passing a reference to std::thread() */
+template<typename T>
+struct holder {
+	holder(T& payload) : payload(payload) {}
+	void operator()() { payload(); }
+
+	T& payload;
+};
+
 int main(int argc, char **argv)
 {
 	init_opencv();
@@ -209,7 +280,9 @@ int main(int argc, char **argv)
 		return 3;
 
 	// start worker thread
-	std::thread background(std::tr1::ref(BackgroundTaskQueue::instance()));
+	BackgroundTaskQueue queue;
+	holder<BackgroundTaskQueue> h(queue);
+	std::thread background(h);
 
 	// get input file name
 	std::string filename;
@@ -229,53 +302,9 @@ int main(int argc, char **argv)
 	if (argc >= 3)
 		labelfile = argv[2];
 
-	bool limited_mode = false;
-	std::pair<std::vector<std::string>, std::vector<multi_img::BandDesc> > filelist;
-	filelist = multi_img::parse_filelist(filename);
-
-	if (!filelist.first.empty()) {
-		cv::Mat src = cv::imread(filelist.first[1], -1);
-		if (!src.empty()) {
-			float lo_reg, hi_reg, lo_opt, hi_opt, lo_gpu, hi_gpu;
-			estimate_startup_memory(src.cols, src.rows, src.channels() * filelist.first.size(),
-				lo_reg, hi_reg, lo_opt, hi_opt, lo_gpu, hi_gpu);
-
-			GLint maxTextureSize;
-			glGetIntegerv(GL_MAX_TEXTURE_SIZE, &maxTextureSize);
-			if (src.cols * src.rows > maxTextureSize) {
-				std::cout << "WARNING: Graphics device does not support texture size "
-					<< "required to render RGB version of input image in full resolution. " << std::endl;
-			}
-
-			std::stringstream text;
-			text << "For startup, Gerbil will have to allocate between " 
-				<< lo_reg << "MB and " << hi_reg 
-				<< "MB of memory to accommodate data derived from input image. " 
-				<< "At performance cost and some disabled features, "
-				<< "memory consumption can be optimized to range between "
-				<< lo_opt << "MB and " << hi_opt << "MB. "
-				<< "Additionaly, between "
-				<< lo_gpu << "MB and " << hi_gpu << "MB of GPU memory will be required. "
-				<< "Note that estimated requirements do not include Gerbil itself "
-				<< "and overhead of its storage mechanisms. Depending on the characteristics "
-				<< "of your machine (CPU/GPU RAM size, page file size, HDD/SSD performance), "
-				<< "decide whether to optimize performance or memory consumption. You can also "
-				<< "close Gerbil to avoid possible memory exhaustion and computer lock-up. ";
-
-			QMessageBox msgBox;
-			msgBox.setText(text.str().c_str());
-			msgBox.setIcon(QMessageBox::Question);
-			QPushButton *speed = msgBox.addButton("Speed optimization", QMessageBox::AcceptRole);
-			QPushButton *memory = msgBox.addButton("Memory optimization", QMessageBox::AcceptRole);
-			QPushButton *close = msgBox.addButton("Close", QMessageBox::RejectRole);
-			msgBox.setDefaultButton(speed);
-			msgBox.exec();
-			if (msgBox.clickedButton() == memory)
-				limited_mode = true;
-			if (msgBox.clickedButton() == close)
-				return 4;
-		}
-	}
+	std::pair<std::vector<std::string>, std::vector<multi_img::BandDesc> >
+			filelist = multi_img::parse_filelist(filename);
+	bool limited_mode = determine_limited(filelist);
 
 	// load image
 	multi_img_base* image;
@@ -289,14 +318,14 @@ int main(int argc, char **argv)
 		return 2;
 	
 	// regular viewer
-	ViewerWindow window(image, labelfile, limited_mode);
+	ViewerWindow window(queue, image, labelfile, limited_mode);
 	image = NULL;
 	window.show();
 
 	int retval = app.exec();
 
 	// terminate worker thread
-	BackgroundTaskQueue::instance().halt();
+	queue.halt();
 
 	// wait until worker thread terminates
 	background.join();

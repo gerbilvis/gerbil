@@ -90,7 +90,7 @@ private:
 
 typedef boost::shared_ptr<SharedData<multi_img_base> > multi_img_base_ptr;
 typedef boost::shared_ptr<SharedData<multi_img> > multi_img_ptr;
-typedef boost::shared_ptr<SharedData<cv::Mat_<cv::Vec3f> > > mat_vec3f_ptr;
+typedef boost::shared_ptr<SharedData<cv::Mat3f> > mat3f_ptr;
 typedef boost::shared_ptr<SharedData<std::pair<multi_img::Value, multi_img::Value> > > data_range_ptr;
 
 #ifdef WITH_QT

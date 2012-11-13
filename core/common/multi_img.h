@@ -49,12 +49,6 @@ namespace MultiImg {
 	class IlluminantTbb;
 	class IlluminantCuda;
 }
-#endif
-
-#define MULTI_IMG_FRIENDS
-
-#ifdef WITH_GERBIL_COMMON
-#undef MULTI_IMG_FRIENDS
 #define MULTI_IMG_FRIENDS \
 	friend class MultiImg::CommonTbb::RebuildPixels;\
 	friend class MultiImg::CommonTbb::ApplyCache;\
@@ -71,6 +65,8 @@ namespace MultiImg {
 	friend class MultiImg::ClampCuda;\
 	friend class MultiImg::IlluminantTbb;\
 	friend class MultiImg::IlluminantCuda;
+#else
+#define MULTI_IMG_FRIENDS
 #endif
 
 class multi_img_base {
@@ -163,34 +159,6 @@ protected:
 
 	MULTI_IMG_FRIENDS
 };
-
-#ifdef WITH_GERBIL_COMMON
-class multi_img_offloaded : public multi_img_base {
-public:
-	/// creates the multi_img with limited functionality and with bands offloaded to persistent storage
-	multi_img_offloaded(const std::vector<std::string> &files, const std::vector<BandDesc> &descs);
-
-	/// virtual destructor, does nothing
-	virtual ~multi_img_offloaded() {}
-
-	/// returns number of bands
-	virtual size_t size() const;
-
-	/// returns true if image is uninitialized
-	virtual bool empty() const;	
-
-	/// returns one band
-	virtual void getBand(unsigned int band, Band &data) const;
-
-	/// returns the roi part of the given band
-	virtual void scopeBand(const Band &source, const cv::Rect &roi, Band &target) const;
-
-protected:
-	std::vector<std::pair<std::string, int> > bands;
-
-	MULTI_IMG_FRIENDS
-};
-#endif
 
 /// Class that holds a multispectral image.
 /**

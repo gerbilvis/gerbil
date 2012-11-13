@@ -17,7 +17,10 @@
 #include "background_task.h"
 
 class BackgroundTaskQueue {
+
 public:
+	BackgroundTaskQueue() : halted(false), cancelled(false) {}
+
 	/** Flush all queued tasks and terminate worker thread. */
 	void halt();
 	/** Put task into queue for later calculation. */
@@ -27,19 +30,14 @@ public:
 
 	/** Background worker thread's main(). */
 	void operator()(); 
-	/** Access to the singleton instance. */
-	static BackgroundTaskQueue &instance();
 
 protected:
 	/** Fetch task from queue or passivelly wait on empty queue. */
 	bool pop();
 
 private:
-	BackgroundTaskQueue() : halted(false), cancelled(false) {}
-	BackgroundTaskQueue(const BackgroundTaskQueue &other); // singleton - do not implement
-	BackgroundTaskQueue &operator=(const BackgroundTaskQueue &other); // singleton - do not implement
-
-	static BackgroundTaskQueue self; ///< eager singleton instance
+	BackgroundTaskQueue(const BackgroundTaskQueue &other); // do not implement
+	BackgroundTaskQueue &operator=(const BackgroundTaskQueue &other); // do not implement
 
 	typedef boost::mutex Guard;
 	typedef boost::unique_lock<Guard> Lock;
