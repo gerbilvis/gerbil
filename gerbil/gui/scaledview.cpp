@@ -1,4 +1,4 @@
-/*	
+/*
 	Copyright(c) 2010 Johannes Jordan <johannes.jordan@cs.fau.de>.
 
 	This file may be licensed under the terms of of the GNU General Public
@@ -70,12 +70,16 @@ void ScaledView::paintEvent(QPaintEvent *ev)
 void ScaledView::drawWaitMessage(QPainter &painter)
 {
 	painter.save();
+	// darken
 	painter.fillRect(rect(), QColor(0, 0, 0, 127));
-	painter.setPen(Qt::green);
+
+	// text in larger size with nice color
+	painter.setPen(QColor(255, 230, 0));
 	QFont tmp(font());
-	tmp.setPointSize(tmp.pointSize() * 2);
+	tmp.setPointSize(tmp.pointSize() * 1.75);
 	painter.setFont(tmp);
-	painter.drawText(rect(), Qt::AlignCenter, tr("Calculating..."));
+	painter.drawText(rect(), Qt::AlignCenter,
+					 QString::fromUtf8("Calculating…"));
 	painter.restore();
 }
 

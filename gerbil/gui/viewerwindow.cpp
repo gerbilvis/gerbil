@@ -425,10 +425,6 @@ void ViewerWindow::initUI()
 	/* more manual work to get GUI in proper shape */
 	graphsegWidget->hide();
 
-	tabifyDockWidget(rgbDock, roiDock);
-
-	mainStack->setCurrentIndex(0);
-
 	// start with IMG, hide IMGPCA, GRADPCA at the beginning
 	activeViewer = viewIMG;
 	viewIMG->setActive();
@@ -436,6 +432,7 @@ void ViewerWindow::initUI()
 	viewGRADPCA->toggleFold();
 
 	// dock arrangement
+	tabifyDockWidget(rgbDock, roiDock);
 	tabifyDockWidget(labelDock, illumDock);
 	tabifyDockWidget(labelDock, normDock);
 #ifdef WITH_SEG_MEANSHIFT
@@ -1435,9 +1432,11 @@ void ViewerWindow::initGraphsegUI()
 
 	graphsegSimilarityBox->addItem("Manhattan distance (L1)", vole::MANHATTAN);
 	graphsegSimilarityBox->addItem("Euclidean distance (L2)", vole::EUCLIDEAN);
-	graphsegSimilarityBox->addItem(QString::fromUtf8("Chebyshev distance (L∞)"), vole::CHEBYSHEV);
+	graphsegSimilarityBox->addItem(QString::fromUtf8("Chebyshev distance (L∞)"),
+								   vole::CHEBYSHEV);
 	graphsegSimilarityBox->addItem("Spectral Angle", vole::MOD_SPEC_ANGLE);
-	graphsegSimilarityBox->addItem("Spectral Information Divergence", vole::SPEC_INF_DIV);
+	graphsegSimilarityBox->addItem("Spectral Information Divergence",
+								   vole::SPEC_INF_DIV);
 	graphsegSimilarityBox->addItem("SID+SAM I", vole::SIDSAM1);
 	graphsegSimilarityBox->addItem("SID+SAM II", vole::SIDSAM2);
 	graphsegSimilarityBox->addItem("Normalized L2", vole::NORM_L2);
@@ -1446,7 +1445,7 @@ void ViewerWindow::initGraphsegUI()
 	graphsegAlgoBox->addItem("Kruskal", vole::KRUSKAL);
 	graphsegAlgoBox->addItem("Prim", vole::PRIM);
 	graphsegAlgoBox->addItem("Power Watershed q=2", vole::WATERSHED2);
-	graphsegAlgoBox->setCurrentIndex(2);
+	graphsegAlgoBox->setCurrentIndex(1);
 
 	connect(graphsegButton, SIGNAL(toggled(bool)),
 			graphsegWidget, SLOT(setVisible(bool)));
@@ -2007,23 +2006,26 @@ void ViewerWindow::screenshot()
 void ViewerWindow::ROIDecision(QAbstractButton *sender)
 {
 	QDialogButtonBox::ButtonRole role = roiButtons->buttonRole(sender);
-	bool apply = (role == QDialogButtonBox::ApplyRole);
-
-	switchFullImage(FullImageSwitcher::LIMITED);
-	SharedDataHold full_image_lock(full_image_limited->lock);
-	int height = (*full_image_limited)->height;
-	int width = (*full_image_limited)->width;
-	full_image_lock.unlock();
+	roiButtons->setDisabled(true);
 
 	if (role == QDialogButtonBox::ResetRole) {
-		if (roi.width > 1)
-			roiView->roi = QRect(roi.x, roi.y, roi.width, roi.height);
-		else
-			roiView->roi = QRect(0, 0, width, height);
-		roiView->update();
-	}
 
-	if (apply) {
+		if (roi.width > 1) {
+			roiView->roi = QRect(roi.x, roi.y, roi.width, roi.height);
+		} else {
+			// fetch image dimensions
+			switchFullImage(FullImageSwitcher::LIMITED);
+			SharedDataHold full_image_lock(full_image_limited->lock);
+			int height = (*full_image_limited)->height;
+			int width = (*full_image_limited)->width;
+			full_image_lock.unlock();
+
+			// set ROI to full image
+			roiView->roi = QRect(0, 0, width, height);
+		}
+		roiView->update();
+	} else if (role == QDialogButtonBox::ApplyRole) {
+
 		bool reuse = true;
 		if (runningTask != TT_NONE) {
 			queue.cancelTasks(roi);
@@ -2046,7 +2048,9 @@ void ViewerWindow::ROIDecision(QAbstractButton *sender)
 
 void ViewerWindow::ROISelection(const QRect &roi)
 {
-	QString title("<b>Select Region of Interest:</b> %1.%2 - %3.%4 (%5x%6)");
+	roiButtons->setEnabled(true);
+
+	QString title("<b>ROI:</b> %1, %2 - %3, %4 (%5x%6)");
 	title = title.arg(roi.x()).arg(roi.y()).arg(roi.right()).arg(roi.bottom())
 			.arg(roi.width()).arg(roi.height());
 	roiTitle->setText(title);

@@ -16,6 +16,7 @@
 #include <QGLFormat>
 #include <QGLFramebufferObject>
 #include <QMessageBox>
+#include <QFileInfo>
 
 /** All OpenCV functions that are called from parallelized parts of gerbil
     have to be first executed in single-threaded environment. This is actually
@@ -204,6 +205,10 @@ bool determine_limited(const std::pair<std::vector<std::string>, std::vector<mul
 			estimate_startup_memory(src.cols, src.rows, src.channels() * filelist.first.size(),
 				lo_reg, hi_reg, lo_opt, hi_opt, lo_gpu, hi_gpu);
 
+			// default speed optim. in case of smaller images
+			if (hi_reg < 512)
+				return false;
+
 			/* TODO: move. it does not work here because GL context is missing.
 			GLint maxTextureSize;
 			glGetIntegerv(GL_MAX_TEXTURE_SIZE, &maxTextureSize);
@@ -319,7 +324,11 @@ int main(int argc, char **argv)
 	
 	// regular viewer
 	ViewerWindow window(queue, image, labelfile, limited_mode);
+	// image now belongs to ViewerWindow
 	image = NULL;
+
+	QFileInfo fi(filename.c_str());
+	window.setWindowTitle(QString("Gerbil - %1").arg(fi.completeBaseName()));
 	window.show();
 
 	int retval = app.exec();

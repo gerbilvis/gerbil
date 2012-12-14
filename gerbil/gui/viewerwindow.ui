@@ -2,14 +2,6 @@
 <ui version="4.0">
  <class>ViewerWindow</class>
  <widget class="QMainWindow" name="ViewerWindow">
-  <property name="geometry">
-   <rect>
-    <x>0</x>
-    <y>0</y>
-    <width>1063</width>
-    <height>939</height>
-   </rect>
-  </property>
   <property name="windowTitle">
    <string>Multispectral Image Viewer</string>
   </property>
@@ -26,244 +18,114 @@
      <number>0</number>
     </property>
     <item>
-     <widget class="QStackedWidget" name="mainStack">
-      <property name="currentIndex">
-       <number>0</number>
-      </property>
-      <widget class="QWidget" name="mainPage">
-       <layout class="QVBoxLayout" name="verticalLayout_3">
+     <layout class="QVBoxLayout" name="verticalLayout_3">
+      <item>
+       <layout class="QHBoxLayout" name="toolbarLayout">
         <item>
-         <layout class="QHBoxLayout" name="toolbarLayout">
-          <item>
-           <widget class="QSlider" name="bandsSlider">
-            <property name="sizePolicy">
-             <sizepolicy hsizetype="Preferred" vsizetype="Fixed">
-              <horstretch>0</horstretch>
-              <verstretch>0</verstretch>
-             </sizepolicy>
-            </property>
-            <property name="minimumSize">
-             <size>
-              <width>40</width>
-              <height>0</height>
-             </size>
-            </property>
-            <property name="minimum">
-             <number>3</number>
-            </property>
-            <property name="pageStep">
-             <number>1</number>
-            </property>
-            <property name="tracking">
-             <bool>false</bool>
-            </property>
-            <property name="orientation">
-             <enum>Qt::Horizontal</enum>
-            </property>
-           </widget>
-          </item>
-          <item>
-           <widget class="QLabel" name="bandsLabel">
-            <property name="text">
-             <string>Bands</string>
-            </property>
-           </widget>
-          </item>
-          <item>
-           <widget class="Line" name="line">
-            <property name="orientation">
-             <enum>Qt::Vertical</enum>
-            </property>
-           </widget>
-          </item>
-          <item>
-           <widget class="QPushButton" name="nonmarkButton">
-            <property name="toolTip">
-             <string>draw vectors of unlabeled pixels</string>
-            </property>
-            <property name="text">
-             <string>Show Unlabeled</string>
-            </property>
-            <property name="checkable">
-             <bool>true</bool>
-            </property>
-            <property name="checked">
-             <bool>true</bool>
-            </property>
-           </widget>
-          </item>
-          <item>
-           <widget class="QPushButton" name="markButton">
-            <property name="toolTip">
-             <string>draw vectors of labeled pixels</string>
-            </property>
-            <property name="text">
-             <string>Show Labeled</string>
-            </property>
-            <property name="checkable">
-             <bool>true</bool>
-            </property>
-            <property name="checked">
-             <bool>true</bool>
-            </property>
-           </widget>
-          </item>
-          <item>
-           <widget class="QPushButton" name="singleButton">
-            <property name="toolTip">
-             <string>Show vectors of one label
-(hover over pixel in band view to select label)</string>
-            </property>
-            <property name="text">
-             <string>Single Label</string>
-            </property>
-            <property name="checkable">
-             <bool>true</bool>
-            </property>
-           </widget>
-          </item>
-          <item>
-           <widget class="QPushButton" name="ignoreButton">
-            <property name="toolTip">
-             <string>draw all vectors label-free</string>
-            </property>
-            <property name="text">
-             <string>Ignore Labels</string>
-            </property>
-            <property name="checkable">
-             <bool>true</bool>
-            </property>
-           </widget>
-          </item>
-          <item>
-           <spacer name="horizontalSpacer">
-            <property name="orientation">
-             <enum>Qt::Horizontal</enum>
-            </property>
-            <property name="sizeHint" stdset="0">
-             <size>
-              <width>1</width>
-              <height>1</height>
-             </size>
-            </property>
-           </spacer>
-          </item>
-          <item>
-           <widget class="QPushButton" name="addButton">
-            <property name="toolTip">
-             <string>add to current label</string>
-            </property>
-            <property name="text">
-             <string/>
-            </property>
-            <property name="icon">
-             <iconset resource="gerbil.qrc">
-              <normaloff>:/toolbar/add</normaloff>:/toolbar/add</iconset>
-            </property>
-            <property name="iconSize">
-             <size>
-              <width>16</width>
-              <height>16</height>
-             </size>
-            </property>
-           </widget>
-          </item>
-          <item>
-           <widget class="QPushButton" name="remButton">
-            <property name="toolTip">
-             <string>remove from current label</string>
-            </property>
-            <property name="text">
-             <string/>
-            </property>
-            <property name="icon">
-             <iconset resource="gerbil.qrc">
-              <normaloff>:/toolbar/remove</normaloff>:/toolbar/remove</iconset>
-            </property>
-            <property name="iconSize">
-             <size>
-              <width>16</width>
-              <height>16</height>
-             </size>
-            </property>
-           </widget>
-          </item>
-          <item>
-           <widget class="Line" name="line_3">
-            <property name="orientation">
-             <enum>Qt::Vertical</enum>
-            </property>
-           </widget>
-          </item>
-          <item>
-           <widget class="QPushButton" name="docksButton">
-            <property name="toolTip">
-             <string>select available dock windows</string>
-            </property>
-            <property name="text">
-             <string/>
-            </property>
-            <property name="icon">
-             <iconset resource="gerbil.qrc">
-              <normaloff>:/toolbar/windows</normaloff>:/toolbar/windows</iconset>
-            </property>
-            <property name="iconSize">
-             <size>
-              <width>16</width>
-              <height>16</height>
-             </size>
-            </property>
-           </widget>
-          </item>
-         </layout>
-        </item>
-        <item>
-         <widget class="multi_img_viewer" name="viewIMG" native="true">
+         <widget class="QSlider" name="bandsSlider">
           <property name="sizePolicy">
-           <sizepolicy hsizetype="Preferred" vsizetype="Expanding">
+           <sizepolicy hsizetype="Preferred" vsizetype="Fixed">
             <horstretch>0</horstretch>
-            <verstretch>1</verstretch>
+            <verstretch>0</verstretch>
            </sizepolicy>
+          </property>
+          <property name="minimumSize">
+           <size>
+            <width>40</width>
+            <height>0</height>
+           </size>
+          </property>
+          <property name="minimum">
+           <number>3</number>
+          </property>
+          <property name="pageStep">
+           <number>1</number>
+          </property>
+          <property name="tracking">
+           <bool>false</bool>
+          </property>
+          <property name="orientation">
+           <enum>Qt::Horizontal</enum>
           </property>
          </widget>
         </item>
         <item>
-         <widget class="multi_img_viewer" name="viewIMGPCA" native="true">
-          <property name="sizePolicy">
-           <sizepolicy hsizetype="Preferred" vsizetype="Expanding">
-            <horstretch>0</horstretch>
-            <verstretch>1</verstretch>
-           </sizepolicy>
+         <widget class="QLabel" name="bandsLabel">
+          <property name="text">
+           <string>Bands</string>
           </property>
          </widget>
         </item>
         <item>
-         <widget class="multi_img_viewer" name="viewGRAD" native="true">
-          <property name="sizePolicy">
-           <sizepolicy hsizetype="Preferred" vsizetype="Expanding">
-            <horstretch>0</horstretch>
-            <verstretch>1</verstretch>
-           </sizepolicy>
-          </property>
-         </widget>
-        </item>
-        <item>
-         <widget class="multi_img_viewer" name="viewGRADPCA" native="true">
-          <property name="sizePolicy">
-           <sizepolicy hsizetype="Preferred" vsizetype="Expanding">
-            <horstretch>0</horstretch>
-            <verstretch>1</verstretch>
-           </sizepolicy>
-          </property>
-         </widget>
-        </item>
-        <item>
-         <spacer name="verticalSpacer_5">
+         <widget class="Line" name="line">
           <property name="orientation">
            <enum>Qt::Vertical</enum>
           </property>
-          <property name="sizeType">
-           <enum>QSizePolicy::Expanding</enum>
+         </widget>
+        </item>
+        <item>
+         <widget class="QPushButton" name="nonmarkButton">
+          <property name="toolTip">
+           <string>draw vectors of unlabeled pixels</string>
+          </property>
+          <property name="text">
+           <string>Show Unlabeled</string>
+          </property>
+          <property name="checkable">
+           <bool>true</bool>
+          </property>
+          <property name="checked">
+           <bool>true</bool>
+          </property>
+         </widget>
+        </item>
+        <item>
+         <widget class="QPushButton" name="markButton">
+          <property name="toolTip">
+           <string>draw vectors of labeled pixels</string>
+          </property>
+          <property name="text">
+           <string>Show Labeled</string>
+          </property>
+          <property name="checkable">
+           <bool>true</bool>
+          </property>
+          <property name="checked">
+           <bool>true</bool>
+          </property>
+         </widget>
+        </item>
+        <item>
+         <widget class="QPushButton" name="singleButton">
+          <property name="toolTip">
+           <string>Show vectors of one label
+(hover over pixel in band view to select label)</string>
+          </property>
+          <property name="text">
+           <string>Single Label</string>
+          </property>
+          <property name="checkable">
+           <bool>true</bool>
+          </property>
+         </widget>
+        </item>
+        <item>
+         <widget class="QPushButton" name="ignoreButton">
+          <property name="toolTip">
+           <string>draw all vectors label-free</string>
+          </property>
+          <property name="text">
+           <string>Ignore Labels</string>
+          </property>
+          <property name="checkable">
+           <bool>true</bool>
+          </property>
+         </widget>
+        </item>
+        <item>
+         <spacer name="horizontalSpacer">
+          <property name="orientation">
+           <enum>Qt::Horizontal</enum>
           </property>
           <property name="sizeHint" stdset="0">
            <size>
@@ -273,9 +135,132 @@
           </property>
          </spacer>
         </item>
+        <item>
+         <widget class="QPushButton" name="addButton">
+          <property name="toolTip">
+           <string>add to current label</string>
+          </property>
+          <property name="text">
+           <string/>
+          </property>
+          <property name="icon">
+           <iconset resource="gerbil.qrc">
+            <normaloff>:/toolbar/add</normaloff>:/toolbar/add</iconset>
+          </property>
+          <property name="iconSize">
+           <size>
+            <width>16</width>
+            <height>16</height>
+           </size>
+          </property>
+         </widget>
+        </item>
+        <item>
+         <widget class="QPushButton" name="remButton">
+          <property name="toolTip">
+           <string>remove from current label</string>
+          </property>
+          <property name="text">
+           <string/>
+          </property>
+          <property name="icon">
+           <iconset resource="gerbil.qrc">
+            <normaloff>:/toolbar/remove</normaloff>:/toolbar/remove</iconset>
+          </property>
+          <property name="iconSize">
+           <size>
+            <width>16</width>
+            <height>16</height>
+           </size>
+          </property>
+         </widget>
+        </item>
+        <item>
+         <widget class="Line" name="line_3">
+          <property name="orientation">
+           <enum>Qt::Vertical</enum>
+          </property>
+         </widget>
+        </item>
+        <item>
+         <widget class="QPushButton" name="docksButton">
+          <property name="toolTip">
+           <string>select available dock windows</string>
+          </property>
+          <property name="text">
+           <string/>
+          </property>
+          <property name="icon">
+           <iconset resource="gerbil.qrc">
+            <normaloff>:/toolbar/windows</normaloff>:/toolbar/windows</iconset>
+          </property>
+          <property name="iconSize">
+           <size>
+            <width>16</width>
+            <height>16</height>
+           </size>
+          </property>
+         </widget>
+        </item>
        </layout>
-      </widget>
-     </widget>
+      </item>
+      <item>
+       <widget class="multi_img_viewer" name="viewIMG" native="true">
+        <property name="sizePolicy">
+         <sizepolicy hsizetype="Preferred" vsizetype="Expanding">
+          <horstretch>0</horstretch>
+          <verstretch>1</verstretch>
+         </sizepolicy>
+        </property>
+       </widget>
+      </item>
+      <item>
+       <widget class="multi_img_viewer" name="viewIMGPCA" native="true">
+        <property name="sizePolicy">
+         <sizepolicy hsizetype="Preferred" vsizetype="Expanding">
+          <horstretch>0</horstretch>
+          <verstretch>1</verstretch>
+         </sizepolicy>
+        </property>
+       </widget>
+      </item>
+      <item>
+       <widget class="multi_img_viewer" name="viewGRAD" native="true">
+        <property name="sizePolicy">
+         <sizepolicy hsizetype="Preferred" vsizetype="Expanding">
+          <horstretch>0</horstretch>
+          <verstretch>1</verstretch>
+         </sizepolicy>
+        </property>
+       </widget>
+      </item>
+      <item>
+       <widget class="multi_img_viewer" name="viewGRADPCA" native="true">
+        <property name="sizePolicy">
+         <sizepolicy hsizetype="Preferred" vsizetype="Expanding">
+          <horstretch>0</horstretch>
+          <verstretch>1</verstretch>
+         </sizepolicy>
+        </property>
+       </widget>
+      </item>
+      <item>
+       <spacer name="verticalSpacer_5">
+        <property name="orientation">
+         <enum>Qt::Vertical</enum>
+        </property>
+        <property name="sizeType">
+         <enum>QSizePolicy::Expanding</enum>
+        </property>
+        <property name="sizeHint" stdset="0">
+         <size>
+          <width>1</width>
+          <height>1</height>
+         </size>
+        </property>
+       </spacer>
+      </item>
+     </layout>
     </item>
    </layout>
   </widget>
@@ -1897,20 +1882,10 @@ p, li { white-space: pre-wrap; }
         </sizepolicy>
        </property>
        <property name="text">
-        <string>&lt;b&gt;Select Region of Interest:&lt;/b&gt;</string>
+        <string>&lt;b&gt;Select ROI:&lt;/b&gt;</string>
        </property>
        <property name="textFormat">
         <enum>Qt::RichText</enum>
-       </property>
-      </widget>
-     </item>
-     <item>
-      <widget class="QDialogButtonBox" name="roiButtons">
-       <property name="standardButtons">
-        <set>QDialogButtonBox::Apply|QDialogButtonBox::Reset</set>
-       </property>
-       <property name="centerButtons">
-        <bool>true</bool>
        </property>
       </widget>
      </item>
@@ -1921,6 +1896,19 @@ p, li { white-space: pre-wrap; }
          <horstretch>0</horstretch>
          <verstretch>0</verstretch>
         </sizepolicy>
+       </property>
+      </widget>
+     </item>
+     <item>
+      <widget class="QDialogButtonBox" name="roiButtons">
+       <property name="enabled">
+        <bool>false</bool>
+       </property>
+       <property name="standardButtons">
+        <set>QDialogButtonBox::Apply|QDialogButtonBox::Reset</set>
+       </property>
+       <property name="centerButtons">
+        <bool>true</bool>
        </property>
       </widget>
      </item>
