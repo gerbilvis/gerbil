@@ -2,7 +2,12 @@
 #define MEANSHIFT_CONFIG_H
 
 #include "vole_config.h"
+#ifdef WITH_SEG_FELZENSZWALB2
 #include <felzenszwalb2_config.h>
+#endif
+#ifdef WITH_EDGE_DETECT
+#include <edge_detection_config.h>
+#endif
 #include <imginput.h>
 
 namespace vole {
@@ -40,6 +45,10 @@ public:
 	bool sp_original;
 	// use weightdp2 manipulation in meanshiftsp
 	bool sp_weightdp2;
+#endif
+
+#ifdef WITH_EDGE_DETECT
+	EdgeDetectionConfig som;
 #endif
 
 	/// working directory

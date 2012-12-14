@@ -19,11 +19,13 @@ namespace vole {
 ENUM_MAGIC(ms_sampling)
 
 MeanShiftConfig::MeanShiftConfig(const std::string& prefix)
-#ifdef WITH_SEG_FELZENSZWALB2
-	: Config(prefix), input("input"), superpixel("superpixel"),
-	sp_original(false), sp_weightdp2(false)
-#else
 	: Config(prefix), input("input")
+#ifdef WITH_SEG_FELZENSZWALB2
+	, superpixel("superpixel"),
+	sp_original(false), sp_weightdp2(false)
+#endif
+#ifdef WITH_EDGE_DETECT
+	, som("som")
 #endif
 {
 	use_LSH = false;
@@ -69,6 +71,9 @@ std::string MeanShiftConfig::getString() const {
 	s << superpixel.getString();
 	s << "sp_original=" << (sp_original ? "true" : "false") << std::endl;
 	s << "sp_weightdp2=" << (sp_weightdp2 ? "true" : "false") << std::endl;
+#endif
+#ifdef WITH_EDGE_DETECT
+	s << som.getString();
 #endif
 	s << "useLSH=" << (use_LSH ? "true" : "false") << std::endl
 	  << "K=" << K << std::endl
@@ -119,6 +124,9 @@ void MeanShiftConfig::initBoostOptions() {
 	;
 #ifdef WITH_SEG_FELZENSZWALB2
 	options.add(superpixel.options);
+#endif
+#ifdef WITH_EDGE_DETECT
+	options.add(som.options);
 #endif
 
 	if (prefix_enabled)	// skip input/output options
