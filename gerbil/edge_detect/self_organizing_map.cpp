@@ -84,6 +84,42 @@ cv::Point SOM::identifyWinnerNeuron(const multi_img::Pixel &inputVec) const
 	return winner;
 }
 
+static bool sortpair(std::pair<double, cv::Point> i,
+					 std::pair<double, cv::Point> j) {
+	return (i.first < j.first);
+}
+
+std::vector<std::pair<double, cv::Point> >
+SOM::closestN(const multi_img::Pixel &inputVec, unsigned int N) const
+{
+	// initialize with maximum values
+	std::vector<std::pair<double, cv::Point> > heap;
+	for (int i = 0; i < N; ++i) {
+		heap.push_back(std::make_pair(std::numeric_limits<double>::max(),
+									  cv::Point(-1, -1)));
+	}
+
+	// find closest Neurons to inputVec in the SOM
+	// iterate over all neurons in grid
+	for (int y = 0; y < height; y++) {
+		for (int x = 0; x < width; x++) {
+			double dist = distfun->getSimilarity(neurons[y][x], inputVec);
+			// compare current distance with minimal found distance
+			if (dist < heap[0].first) {
+				// remove max. value in heap
+				std::pop_heap(heap.begin(), heap.end(), sortpair);
+				heap.pop_back();
+				// add new value
+				heap.push_back(std::make_pair(dist, cv::Point(x, y)));
+				push_heap(heap.begin(), heap.end(), sortpair);
+			}
+		}
+	}
+
+	assert(heap[0].second.x >= 0);
+	return heap;
+}
+
 multi_img SOM::export_2d()
 {
 	multi_img ret(height, width, dim);

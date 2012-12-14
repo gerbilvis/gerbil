@@ -54,6 +54,8 @@ void EdgeDetectionConfig::initBoostOptions() {
 		 "Output directory")
 		(key("output_som"), bool_switch(&output_som)->default_value(false),
 			 "Output trained SOM as a multispectral image")
+		(key("output_rgb"), bool_switch(&output_rgb)->default_value(false),
+			 "Output a false color image INSTEAD of edge images")
 		;
 }
 #endif // WITH_BOOST

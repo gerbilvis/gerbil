@@ -51,6 +51,8 @@ public:
 	* @return	Position of the neuron in x,y coordinates
 	*/
 	virtual cv::Point identifyWinnerNeuron(const multi_img::Pixel &input) const;
+	virtual std::vector<std::pair<double, cv::Point> >
+	closestN(const multi_img::Pixel &inputVec, unsigned int N) const;
 
 	virtual void updateNeighborhood(const cv::Point &pos,
 	                                const multi_img::Pixel &input,
