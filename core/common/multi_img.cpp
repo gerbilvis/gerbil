@@ -6,9 +6,8 @@
 	find it here: http://www.gnu.org/licenses/gpl.html
 */
 
-#ifdef WITH_OPENCV2 // theoretically, vole could be built w/o opencv..
-
 #include "multi_img.h"
+#ifdef WITH_OPENCV2 // theoretically, vole could be built w/o opencv..
 #include <iostream>
 #include <string>
 #include <vector>
@@ -497,15 +496,15 @@ void multi_img::data_stretch_single(Value newmin, Value newmax)
 		Band &b = bands[d];
 		double mi, ma;
 		cv::minMaxLoc(b, &mi, &ma);
-/*		double scale = (maxval - minval)/(ma - mi), shift = -mi;
+		double scale = (maxval - minval)/(ma - mi);
 
-		if (newminval == 0. && minval == 0.) {
+		if (mi == 0. && minval == 0.) {
 			b *= scale;
 		} else {
-			b = (b - minval) * scale;
-			if (newminval != 0.)
-				b += newminval;
-		}*/
+			b = (b - mi) * scale;
+			if (minval != 0.)
+				b += minval;
+		}
 	}
 	// cache became invalid
 	resetPixels();
