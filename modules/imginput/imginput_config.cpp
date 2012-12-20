@@ -23,6 +23,8 @@ ImgInputConfig::ImgInputConfig(const std::string& prefix)
 #ifdef WITH_GERBIL_COMMON
 	gradient = false;
 	bands = 0;
+	bandlow=0;
+	bandhigh=0;
 #endif
 
 	initBoostOptions();
@@ -42,6 +44,8 @@ std::string ImgInputConfig::getString() const {
 #ifdef WITH_GERBIL_COMMON
 	  << "gradient=" << (gradient ? "true" : "false") << std::endl
 	  << "bands=" << bands << std::endl
+	  << "bandlow=" << bandlow << std::endl
+	  << "bandhigh=" << bandhigh << std::endl
 #endif
 		 ;
 
@@ -60,6 +64,10 @@ void ImgInputConfig::initBoostOptions() {
 		 "compute spectral gradient")
 		(key("bands"), value(&bands)->default_value(bands),
 		 "reduce number of bands by linear interpolation (0 means disabled)")
+		(key("bandlow"), value(&bandlow)->default_value(bandlow),
+		 "apply lower bound of band ROI")
+   		(key("bandhigh"), value(&bandhigh)->default_value(bandhigh),
+		 "apply upper bound of band ROI")
 #endif
 	;
 

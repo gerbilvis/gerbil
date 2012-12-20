@@ -18,6 +18,12 @@ multi_img ImgInput::execute()
 	if (!config.roi.empty())
 		applyROI(img);
 
+	// crop spectrum
+	if ((config.bandlow > 0) ||
+		(config.bandhigh > 0 && config.bandhigh < (int)img.size())) {
+		img = multi_img(img, config.bandlow, config.bandhigh);
+	}
+
 #ifdef WITH_GERBIL_COMMON
 	// compute gradient
 	if (config.gradient) {
@@ -46,6 +52,12 @@ std::pair<multi_img, multi_img> ImgInput::both()
 	// apply ROI
 	if (!config.roi.empty())
 		applyROI(img);
+
+	// crop spectrum
+	if ((config.bandlow > 0) ||
+		(config.bandhigh > 0 && config.bandhigh < (int)img.size())) {
+		img = multi_img(img, config.bandlow, config.bandhigh);
+	}
 
 	// compute gradient
 	multi_img proc = img.clone();

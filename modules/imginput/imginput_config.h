@@ -27,6 +27,12 @@ public:
 	int bands;
 #endif
 
+	// Band low for cropping
+	int bandlow;
+
+	// Band high for cropping
+	int bandhigh;
+
 	virtual std::string getString() const;
 
 	virtual ~ImgInputConfig();
