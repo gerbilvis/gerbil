@@ -117,10 +117,14 @@ public:
 //@}
 
 	/// default constructor
-	multi_img_base() : minval(0.), maxval(0.), width(0), height(0) {}
+	multi_img_base()
+		: minval(MULTI_IMG_MIN_DEFAULT), maxval(MULTI_IMG_MAX_DEFAULT),
+		  width(0), height(0) {}
 
 	/// barebone constructor
-	multi_img_base(size_t size) : minval(0.), maxval(0.), width(0), height(0), meta(size) {}
+	multi_img_base(size_t size)
+		: minval(MULTI_IMG_MIN_DEFAULT), maxval(MULTI_IMG_MAX_DEFAULT),
+		  width(0), height(0), meta(size) {}
 
 	/// copy constructor
 	multi_img_base(const multi_img_base &a) : minval(a.minval), maxval(a.maxval), 
@@ -154,6 +158,7 @@ public:
 
 	/// band meta-data
 	std::vector<BandDesc> meta;
+
 
 protected:
 
@@ -200,7 +205,8 @@ public:
 	multi_img() : multi_img_base() {}
 
 	/// barebone constructor
-	multi_img(size_t size) : multi_img_base(size), roi(0, 0, 0, 0), bands(size) {}
+	multi_img(size_t size)
+		: multi_img_base(size), roi(0, 0, 0, 0), bands(size) {}
 
 	/// empty image constructor (to create synthetic images)
 	multi_img(int height, int width, size_t size);
