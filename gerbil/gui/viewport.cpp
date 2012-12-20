@@ -502,7 +502,7 @@ void Viewport::drawLegend(QPainter &painter)
 		rect.setHeight(30.f);
 
 		// only draw every xth label if we run out of space
-		int stepping = std::max<int>(1, 120 / rect.width());
+		int stepping = std::max<int>(1, 150 / rect.width());
 
 		if (drawingState != SCREENSHOT) {
 			// select to draw selection and not its surroundings
