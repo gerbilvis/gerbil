@@ -5,11 +5,11 @@
 	License, version 3, as published by the Free Software Foundation. You can
 	find it here: http://www.gnu.org/licenses/gpl.html
 */
-
 #ifdef WITH_OPENCV2 // theoretically, vole could be built w/o opencv..
 
 #include "labeling.h"
 #include "qtopencv.h"
+#include <opencv2/imgproc/imgproc.hpp>
 #include <opencv2/highgui/highgui.hpp>
 #include <iostream>
 #include <string>
@@ -21,13 +21,13 @@ using namespace std;
 namespace vole {
 
 	Labeling::Labeling(const cv::Mat &labeling, bool binary)
-		: yellowcursor(true), shuffle(false)
+		: yellowcursor(true), shuffle(false), shuffleV(false)
 {
 	read(labeling, binary);
 }
 
 Labeling::Labeling(const string &filename, bool binary)
-	: yellowcursor(true), shuffle(false)
+	: yellowcursor(true), shuffle(false), shuffleV(false)
 {
 	cv::Mat src = cv::imread(filename, -1); // flag -1: preserve format
 	if (src.empty()) {
@@ -189,14 +189,14 @@ cv::Mat3b Labeling::bgr() const
 
 void Labeling::buildColors() const
 {
-	labelColors = colors(labelcount, yellowcursor);
+	labelColors = colors(labelcount, yellowcursor, shuffleV);
 	if (shuffle) {
 		// shuffle everything but first color (black)
 		std::random_shuffle(labelColors.begin() + 1, labelColors.end());
 	}
 }
 
-vector<cv::Vec3b> Labeling::colors(int count, bool yellowcursor)
+vector<cv::Vec3b> Labeling::colors(int count, bool yellowcursor, bool shuffleV)
 {
 	vector<cv::Vec3b> ret;
 	if (count <= (yellowcursor ? 6 : 7)) {
@@ -228,8 +228,12 @@ vector<cv::Vec3b> Labeling::colors(int count, bool yellowcursor)
 			distance = 360.f / (float)(count - 1);
 			hue = 0.f;
 		}
+		float val = 1.f;
+		cv::RNG rng(cv::theRNG());
 		for (int i = 1; i < count; i++) {
-			hsvmap[0][i] = cv::Vec3f(hue, 1.f, 1.f);
+			if (shuffleV)
+				val = rng.uniform(0.5f, 1.0f);
+			hsvmap[0][i] = cv::Vec3f(hue, 1.f, val);
 			hue += distance;
 		}
 		cv::cvtColor(hsvmap, hsvmap, CV_HSV2BGR);

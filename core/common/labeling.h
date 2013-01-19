@@ -43,7 +43,8 @@ public:
 		@arg labelcount Set labelcount to create label colors without data.
 	**/
 	Labeling(int labelcount = 0)
-		: yellowcursor(true), shuffle(false), labelcount(labelcount) {}
+		: yellowcursor(true), shuffle(false), shuffleV(false),
+		  labelcount(labelcount) {}
 
 	/** Initialize with matrix containing arbitrary labels.
 		See read().
@@ -54,7 +55,9 @@ public:
 	Labeling(const std::string &filename, bool binary);
 
 	/// Construct from label matrix. See setLabels.
-	Labeling(const cv::Mat &labeling) : yellowcursor(true), shuffle(false) {
+	Labeling(const cv::Mat &labeling)
+		: yellowcursor(true), shuffle(false), shuffleV(false)
+	{
 		setLabels(labeling);
 	}
 
@@ -96,8 +99,11 @@ public:
 	/** Obtain shiny label colors.
 		@arg count The number of colors needed
 		@arg yellowcursor When set, yellow is not used as label color.
+		@arg shuffleV When set, value (brightness) is shuffled; this is
+					  visually more bleasing, but bad for processing in qgerbil
 	**/
-	static std::vector<cv::Vec3b> colors(int count, bool yellowcursor);
+	static std::vector<cv::Vec3b> colors(int count, bool yellowcursor,
+										 bool shuffleV = false);
 
 	/** Obtain label colors of this labeling.
 		If this labeling is based on a colored labeling image, these are custom.
@@ -115,6 +121,11 @@ public:
 	/** When set, newly created label colors are shuffled, useful for output
 		from segmentation where neighboring segments have close indices */
 	bool shuffle;
+
+	/// Shuffle Value component
+	/** When set, value (brightness) is shuffled; this is
+		visually more bleasing, but bad for processing in qgerbil */
+	bool shuffleV;
 
 protected:
 
