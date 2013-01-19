@@ -388,7 +388,7 @@ cv::PCA multi_img::pca(unsigned int components) const
 	}
 
 	// perform PCA
-	cv::PCA ret(input, cv::noArray(), CV_PCA_DATA_AS_COL, components);
+	cv::PCA ret(input, cv::noArray(), CV_PCA_DATA_AS_COL, (int)components);
 	return ret;
 }
 

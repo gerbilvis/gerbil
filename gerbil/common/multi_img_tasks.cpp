@@ -511,7 +511,7 @@ bool PcaTbb::run()
 	tbb::parallel_for(tbb::blocked_range<size_t>(0, (*source)->size()), 
 		computePixels, tbb::auto_partitioner(), stopper);
 
-	cv::PCA pca(pixels, cv::noArray(), CV_PCA_DATA_AS_COL, components);
+	cv::PCA pca(pixels, cv::noArray(), CV_PCA_DATA_AS_COL, (int)components);
 
 	multi_img *target = new multi_img(
 		(*source)->height, (*source)->width, pca.eigenvectors.rows);
