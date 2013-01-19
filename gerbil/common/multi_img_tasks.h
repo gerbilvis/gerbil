@@ -9,6 +9,7 @@
 #ifndef MULTI_IMG_TASKS_H
 #define MULTI_IMG_TASKS_H
 
+#ifdef WITH_BOOST_THREAD
 #include "background_task.h"
 #include "shared_data.h"
 #include "illuminant.h"
@@ -70,7 +71,7 @@ class ScopeImage : public BackgroundTask {
 public:
 	ScopeImage(multi_img_base_ptr full, multi_img_ptr scoped, cv::Rect roi) 
 		: BackgroundTask(roi), full(full), scoped(scoped) {}
-	virtual ~ScopeImage() {};
+	virtual ~ScopeImage() {}
 	virtual bool run();
 	virtual void cancel() {}
 protected:
@@ -83,7 +84,7 @@ public:
 	BgrSerial(multi_img_ptr multi, mat3f_ptr bgr,
 		cv::Rect targetRoi = cv::Rect(0, 0, 0, 0)) 
 		: BackgroundTask(targetRoi), multi(multi), bgr(bgr) {}
-	virtual ~BgrSerial() {};
+	virtual ~BgrSerial() {}
 	virtual bool run();
 	virtual void cancel() {}
 protected:
@@ -403,4 +404,5 @@ protected:
 
 }
 
+#endif
 #endif

@@ -6,6 +6,8 @@
 	find it here: http://www.gnu.org/licenses/gpl.html
 */
 
+#ifdef WITH_BOOST_THREAD
+
 #include "background_task_queue.h"
 #include <iostream>
 
@@ -79,3 +81,5 @@ void BackgroundTaskQueue::operator()()
 	}
 	std::cout << "BackgroundTaskQueue terminated." << std::endl;
 }
+
+#endif

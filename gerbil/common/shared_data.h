@@ -9,6 +9,7 @@
 #ifndef SHARED_DATA_H
 #define SHARED_DATA_H
 
+#ifdef WITH_BOOST_THREAD
 #include <multi_img.h>
 #include <utility>
 #include <boost/shared_ptr.hpp>
@@ -97,4 +98,5 @@ typedef boost::shared_ptr<SharedData<std::pair<multi_img::Value, multi_img::Valu
 typedef boost::shared_ptr<SharedData<QImage> > qimage_ptr;
 #endif
 
+#endif
 #endif

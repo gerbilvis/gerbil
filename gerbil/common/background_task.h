@@ -9,6 +9,7 @@
 #ifndef BACKGROUND_TASK_H
 #define BACKGROUND_TASK_H
 
+#ifdef WITH_BOOST_THREAD
 #include <string>
 #include <boost/shared_ptr.hpp>
 #include <boost/thread/mutex.hpp>
@@ -100,4 +101,5 @@ enum TaskType {
 	TT_TOGGLE_VIEWER
 };
 
+#endif
 #endif

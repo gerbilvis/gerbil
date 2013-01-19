@@ -6,6 +6,7 @@
 	find it here: http://www.gnu.org/licenses/gpl.html
 */
 
+#ifdef WITH_BOOST_THREAD
 #include "multi_img_tasks.h"
 
 #include <stopwatch.h>
@@ -800,3 +801,5 @@ bool IlluminantCuda::run()
 }
 
 }
+
+#endif

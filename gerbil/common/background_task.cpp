@@ -6,6 +6,7 @@
 	find it here: http://www.gnu.org/licenses/gpl.html
 */
 
+#ifdef WITH_BOOST_THREAD
 #include "background_task.h"
 
 void BackgroundTask::update(int percent)
@@ -41,3 +42,5 @@ cv::Rect BackgroundTask::roi()
 {
 	return targetRoi;
 }
+
+#endif

@@ -9,6 +9,7 @@
 #ifndef BACKGROUND_TASK_QUEUE_H
 #define BACKGROUND_TASK_QUEUE_H
 
+#ifdef WITH_BOOST_THREAD
 #include <deque>
 #include <boost/thread/mutex.hpp>
 #include <boost/thread/locks.hpp>
@@ -56,4 +57,5 @@ private:
 	std::deque<BackgroundTaskPtr> taskQueue;
 };
 
+#endif
 #endif
