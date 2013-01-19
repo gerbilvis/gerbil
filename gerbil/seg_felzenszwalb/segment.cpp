@@ -23,6 +23,8 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307 USA
 namespace gerbil {
   namespace felzenszwalb {
 
+void equalizeHist(cv::Mat_<float> &target, int bins);
+
 std::pair<cv::Mat1i, segmap> segment_image(const multi_img &im,
 							 vole::SimilarityMeasure<multi_img::Value> *distfun,
 							 float c, int min_size)
@@ -32,7 +34,10 @@ std::pair<cv::Mat1i, segmap> segment_image(const multi_img &im,
 
 	// build graph
 	edge *edges = new edge[width*height*4];
+	cv::Mat_<float> weights(width*height*4, 1);
+	
 	int num = 0;
+	cv::Mat_<float>::iterator wit = weights.begin();
 	for (int y = 0; y < height; y++) {
 		for (int x = 0; x < width; x++) {
 			cv::Point coord1(x, y);
@@ -43,8 +48,8 @@ std::pair<cv::Mat1i, segmap> segment_image(const multi_img &im,
 				edges[num].b = y * width + (x+1);
 				cv::Point coord2(x+1, y);
 				const multi_img::Pixel &p2 = im(coord2);
-				edges[num].w = (float)distfun->getSimilarity(p1, p2, coord1, coord2);
-				num++;
+				*wit = (float)distfun->getSimilarity(p1, p2, coord1, coord2);
+				num++; wit++;
 			}
 
 			if (y < height-1) {
@@ -52,8 +57,8 @@ std::pair<cv::Mat1i, segmap> segment_image(const multi_img &im,
 				edges[num].b = (y+1) * width + x;
 				cv::Point coord2(x, y+1);
 				const multi_img::Pixel &p2 = im(coord2);
-				edges[num].w = (float)distfun->getSimilarity(p1, p2, coord1, coord2);
-				num++;
+				*wit = (float)distfun->getSimilarity(p1, p2, coord1, coord2);
+				num++; wit++;
 			}
 
 			if ((x < width-1) && (y < height-1)) {
@@ -61,8 +66,8 @@ std::pair<cv::Mat1i, segmap> segment_image(const multi_img &im,
 				edges[num].b = (y+1) * width + (x+1);
 				cv::Point coord2(x+1, y+1);
 				const multi_img::Pixel &p2 = im(coord2);
-				edges[num].w = (float)distfun->getSimilarity(p1, p2, coord1, coord2);
-				num++;
+				*wit = (float)distfun->getSimilarity(p1, p2, coord1, coord2);
+				num++; wit++;
 			}
 
 			if ((x < width-1) && (y > 0)) {
@@ -70,17 +75,24 @@ std::pair<cv::Mat1i, segmap> segment_image(const multi_img &im,
 				edges[num].b = (y-1) * width + (x+1);
 				cv::Point coord2(x+1, y-1);
 				const multi_img::Pixel &p2 = im(coord2);
-				edges[num].w = (float)distfun->getSimilarity(p1, p2, coord1, coord2);
-				num++;
+				*wit = (float)distfun->getSimilarity(p1, p2, coord1, coord2);
+				num++; wit++;
 			}
 		}
 	}
+	
+	equalizeHist(weights, 20000);
+	
+	int i;
+	for (i = 0, wit = weights.begin(); wit != weights.end(); ++i, ++wit)
+		edges[i].w = *wit;
+	
 
 	// segment
 	universe *u = segment_graph(width*height, num, edges, c);
 
 	// post process small components
-	for (int i = 0; i < num; i++) {
+	for (i = 0; i < num; i++) {
 	int a = u->find(edges[i].a);
 	int b = u->find(edges[i].b);
 	if ((a != b) && ((u->size(a) < min_size) || (u->size(b) < min_size)))
@@ -108,6 +120,47 @@ std::pair<cv::Mat1i, segmap> segment_image(const multi_img &im,
 
 	delete u;
 	return std::make_pair(indices, segments);
+}
+
+void equalizeHist(cv::Mat_<float> &target, int bins)
+{
+	float binsf = bins - 1.f;
+
+	/* find range, assume positive values */
+	double mi, ma;
+	cv::minMaxLoc(target, &mi, &ma);
+	mi = 0;
+
+	/* calculate histogram */
+	cv::Mat_<float> hist;
+	int histSize[] = { bins };
+	float range1[] = { (float)mi, (float)ma };
+	const float *ranges[] = { range1 };
+	int channels[] = { 0 };
+
+	cv::calcHist(&target, 1, channels, cv::Mat(), hist, 1, histSize, ranges,
+	             true, false);
+	
+	// normalize
+	hist *= binsf / (float)(2 * target.rows * target.cols);
+	
+	// compute CDF
+	cv::Mat_<float> cdf;
+	cv::integral(hist, cdf, CV_32F);
+	
+	// apply histogram equalization
+	for (int y = 0; y < target.rows; ++y) {
+		float *row = target[y];
+		for (int x = 0; x < target.cols; ++x) {
+			int coord = std::ceil(row[x] * (binsf / ma) + 0.5f);
+			if (coord < 0 || coord > bins) {
+				std::cerr << "(" << x << ", " << y << "): " << coord << std::endl;
+				row[x] = 0.f;
+			} else {
+				row[x] = (float)cdf(coord, 1);
+			}
+		}
+	}
 }
 
 } } // namespace
