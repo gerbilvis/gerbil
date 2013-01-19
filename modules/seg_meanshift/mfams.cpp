@@ -96,7 +96,7 @@ void FAMS::ImportMsPoints(std::vector<fams_point> &points) {
 		psel_[i] = &points[i];
 }
 
-void FAMS::ComputePilotPoint::operator ()(const tbb::blocked_range<int> &r)
+void FAMS::ComputePilotPoint::operator()(const tbb::blocked_range<int> &r)
 {
 	const int thresh = (int)(fams.config.k * std::sqrt((float)fams.n_));
 	const int win_j = 10, max_win = 7000;
@@ -401,8 +401,15 @@ bool FAMS::FinishFAMS() {
 	if (config.use_LSH)
 		assert(lsh_);
 
-	tbb::parallel_for(tbb::blocked_range<int>(0, nsel_),
-					  MeanShiftPoint(*this));
+	// hack: no parallel LSH
+	if (config.use_LSH) {
+		bgLog("*** HACK: no tbb for LSH-enabled mean shift\n");
+		MeanShiftPoint worker(*this);
+		worker(tbb::blocked_range<int>(0, nsel_));
+	} else {
+		tbb::parallel_for(tbb::blocked_range<int>(0, nsel_),
+						  MeanShiftPoint(*this));
+	}
 
 	delete lsh_; // cleanup
 	lsh_ = NULL;
@@ -881,8 +888,8 @@ bool FAMS::PrepareFAMS(vector<double> *bandwidths) {
 	//Compute pilot if necessary
 	bgLog(" Run pilot ");
 	bool cont = true;
-	bool adaptive = !(config.bandwidth > 0. ||
-					  bandwidths != NULL || config.sp_weightdp2);
+	bool adaptive = (config.bandwidth <= 0. ||
+					 bandwidths == NULL || config.sp_weightdp2);
 
 	if (adaptive) {  // adaptive bandwidths
 		bgLog("adaptive...");

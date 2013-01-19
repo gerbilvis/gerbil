@@ -6,6 +6,8 @@
 	find it here: http://www.gnu.org/licenses/gpl.html
 */
 
+#define WITH_SEG_FELZENSZWALB2
+
 #include "meanshift_sp.h"
 #include "meanshift.h"
 
@@ -111,8 +113,18 @@ int MeanShiftSP::execute() {
 		msinput.setPixel(ii, 0, p);
 
 		// add to weights
-		weights[ii] = (double)N;
+		weights[ii] = (double)N; // TODO: sqrt?
 	}
+	for (int i = 0; i < weights.size(); ++i)
+		std::cout << weights[i] << "\t";
+	std::cout << std::endl;
+	cv::Mat1d wmat(weights);
+	double wmean = cv::mean(wmat)[0];
+	wmat /= wmean;
+	std::cout << std::endl;
+	for (int i = 0; i < weights.size(); ++i)
+		std::cout << weights[i] << "\t";
+	std::cout << std::endl;
 
 	// execute mean shift
 	config.pruneMinN = 1;

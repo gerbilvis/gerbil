@@ -178,7 +178,7 @@ std::vector<fams_point> MeanShift::prepare_sp_points(const FAMS &fams,
 		// divide by N to obtain average
 		for (int d = 0; d < D; ++d)
 			p.data_[d] = accum[d] / N;
-		p.weightdp2_ /= (double)N; // TODO: what is the weight, actually?
+		p.weightdp2_ /= (double)N;
 
 		// add to point set
 		ret.push_back(p);
