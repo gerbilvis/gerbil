@@ -6,14 +6,11 @@
 	find it here: http://www.gnu.org/licenses/gpl.html
 */
 
-#define WITH_SEG_FELZENSZWALB2
-
 #include "meanshift_sp.h"
 #include "meanshift.h"
 
 #ifdef WITH_SEG_FELZENSZWALB2
 #include <felzenszwalb.h>
-#include <sm_factory.h>
 #include <labeling.h>
 #endif
 
@@ -64,14 +61,10 @@ int MeanShiftSP::execute() {
 	gerbil::felzenszwalb::segmap sp_map;
 
 	// run superpixel pre-segmentation
-	vole::SimilarityMeasure<multi_img::Value> *distfun;
-	distfun = vole::SMFactory<multi_img::Value>::spawn
-			(config.superpixel.similarity);
-	assert(distfun);
 	std::pair<cv::Mat1i, gerbil::felzenszwalb::segmap> result =
 		 gerbil::felzenszwalb::segment_image(
 				 (config.sp_original ? input.second : input.first),
-				 distfun, config.superpixel.c, config.superpixel.min_size);
+				 config.superpixel);
 	sp_translate = result.first;
 	std::swap(sp_map, result.second);
 
@@ -115,16 +108,11 @@ int MeanShiftSP::execute() {
 		// add to weights
 		weights[ii] = (double)N; // TODO: sqrt?
 	}
-	for (int i = 0; i < weights.size(); ++i)
-		std::cout << weights[i] << "\t";
-	std::cout << std::endl;
+
+	// arrange weights around their mean
 	cv::Mat1d wmat(weights);
 	double wmean = cv::mean(wmat)[0];
 	wmat /= wmean;
-	std::cout << std::endl;
-	for (int i = 0; i < weights.size(); ++i)
-		std::cout << weights[i] << "\t";
-	std::cout << std::endl;
 
 	// execute mean shift
 	config.pruneMinN = 1;
@@ -141,7 +129,7 @@ int MeanShiftSP::execute() {
 	}
 
 	cv::Mat1s labels_ms = ms.execute(msinput, NULL,
-									 (config.sp_weightdp2 ? &weights : NULL));
+									 (config.sp_weight > 0 ? &weights : NULL));
 	if (labels_ms.empty())
 		return 0;
 

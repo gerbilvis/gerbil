@@ -22,7 +22,7 @@ MeanShiftConfig::MeanShiftConfig(const std::string& prefix)
 	: Config(prefix), input("input")
 #ifdef WITH_SEG_FELZENSZWALB2
 	, superpixel("superpixel"),
-	sp_original(false), sp_weightdp2(false)
+	sp_original(false), sp_weight(0)
 #endif
 #ifdef WITH_EDGE_DETECT
 	, som("som")
@@ -70,7 +70,7 @@ std::string MeanShiftConfig::getString() const {
 #ifdef WITH_SEG_FELZENSZWALB2
 	s << superpixel.getString();
 	s << "sp_original=" << (sp_original ? "true" : "false") << std::endl;
-	s << "sp_weightdp2=" << (sp_weightdp2 ? "true" : "false") << std::endl;
+	s << "sp_weight=" << sp_weight << std::endl;
 #endif
 #ifdef WITH_EDGE_DETECT
 	s << som.getString();
@@ -111,8 +111,9 @@ void MeanShiftConfig::initBoostOptions() {
 #ifdef WITH_SEG_FELZENSZWALB2
 			("sp_original", bool_switch(&sp_original)->default_value(sp_original),
 			 "do not use processed image for superpixel computation")
-			("sp_weightdp2", bool_switch(&sp_weightdp2)->default_value(sp_weightdp2),
-			 "use weightdp2 manipulation in meanshiftsp")
+			("sp_weight", value(&sp_weight)->default_value(sp_weight),
+			 "how to weight superpixel sizes: 0 do not weight, 1 fixed bandwidths,"
+			 " 2 alter weight")
 #endif
 			("initjump", value(&jump)->default_value(jump),
 			 "use points with indices 1+(jump*[1..infty])")

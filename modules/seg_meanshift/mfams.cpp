@@ -371,7 +371,7 @@ const
 			tMode[jj].h = &fams.hmodes_[jj];
 		}
 
-		if ((++done % (fams.nsel_ / 80)) == 0) {
+		if (fams.nsel_ < 80 || (++done % (fams.nsel_ / 80)) == 0) {
 			bool cont = fams.progressUpdate((float)done/
 											(float)fams.nsel_ * 80.f, false);
 			if (!cont) {
@@ -889,7 +889,7 @@ bool FAMS::PrepareFAMS(vector<double> *bandwidths) {
 	bgLog(" Run pilot ");
 	bool cont = true;
 	bool adaptive = (config.bandwidth <= 0. ||
-					 bandwidths == NULL || config.sp_weightdp2);
+					 bandwidths == NULL || config.sp_weight == 2);
 
 	if (adaptive) {  // adaptive bandwidths
 		bgLog("adaptive...");

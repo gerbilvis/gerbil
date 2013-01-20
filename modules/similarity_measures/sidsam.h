@@ -41,9 +41,9 @@ template<typename T>
 inline double SIDSAM<T>::getSimilarity(const cv::Mat_<T> &v1, const cv::Mat_<T> &v2)
 {
 	if (v == 0) {
-		return sid.getSimilarity(v1, v2) * std::sin(sam.getSimilarity(v1, v2));
+		return std::sqrt(sid.getSimilarity(v1, v2) * std::sin(sam.getSimilarity(v1, v2)));
 	} else {
-		return sid.getSimilarity(v1, v2) * std::tan(sam.getSimilarity(v1, v2));
+		return std::sqrt(sid.getSimilarity(v1, v2) * std::tan(sam.getSimilarity(v1, v2)));
 	}
 }
 

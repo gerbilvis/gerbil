@@ -12,7 +12,6 @@
 
 #ifdef WITH_SEG_FELZENSZWALB2
 #include <felzenszwalb.h>
-#include <sm_factory.h>
 #include <labeling.h>
 #endif
 
@@ -55,13 +54,8 @@ cv::Mat1s MeanShift::execute(const multi_img& input, ProgressObserver *progress,
 	gerbil::felzenszwalb::segmap sp_map;
 	std::vector<fams_point> sp_points; // initialize in right scope!
 	if (config.starting == SUPERPIXEL) {
-		vole::SimilarityMeasure<multi_img::Value> *distfun;
-		distfun = vole::SMFactory<multi_img::Value>::spawn
-				(config.superpixel.similarity);
-		assert(distfun);
 		std::pair<cv::Mat1i, gerbil::felzenszwalb::segmap> result =
-			 gerbil::felzenszwalb::segment_image(spinput, distfun,
-							  config.superpixel.c, config.superpixel.min_size);
+			 gerbil::felzenszwalb::segment_image(spinput, config.superpixel);
 		sp_translate = result.first;
 		std::swap(sp_map, result.second);
 

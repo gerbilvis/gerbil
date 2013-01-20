@@ -43,8 +43,8 @@ public:
 
 	// compute superpixels on original image instead of processed image
 	bool sp_original;
-	// use weightdp2 manipulation in meanshiftsp
-	bool sp_weightdp2;
+	// how to weight superpixel sizes: 0 do not weight, 1 fixed bandwidths, 2 alter weightdp2
+	int sp_weight;
 #endif
 
 #ifdef WITH_EDGE_DETECT
