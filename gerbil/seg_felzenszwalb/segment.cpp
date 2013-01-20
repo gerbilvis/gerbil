@@ -17,6 +17,7 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307 USA
 */
 
 #include "felzenszwalb.h"
+#include <sm_factory.h>
 #include <cstdlib>
 #include <boost/unordered_map.hpp>
 
@@ -26,9 +27,12 @@ namespace gerbil {
 void equalizeHist(cv::Mat_<float> &target, int bins);
 
 std::pair<cv::Mat1i, segmap> segment_image(const multi_img &im,
-							 vole::SimilarityMeasure<multi_img::Value> *distfun,
-							 float c, int min_size)
+							 const FelzenszwalbConfig &config)
 {
+	vole::SimilarityMeasure<multi_img::Value> *distfun;
+	distfun = vole::SMFactory<multi_img::Value>::spawn(config.similarity);
+	assert(distfun);
+
 	int width = im.width;
 	int height = im.height;
 
@@ -81,7 +85,8 @@ std::pair<cv::Mat1i, segmap> segment_image(const multi_img &im,
 		}
 	}
 	
-	equalizeHist(weights, 20000);
+	if (config.eqhist)
+		equalizeHist(weights, 20000);
 	
 	int i;
 	for (i = 0, wit = weights.begin(); wit != weights.end(); ++i, ++wit)
@@ -89,13 +94,14 @@ std::pair<cv::Mat1i, segmap> segment_image(const multi_img &im,
 	
 
 	// segment
-	universe *u = segment_graph(width*height, num, edges, c);
+	universe *u = segment_graph(width*height, num, edges, config.c);
 
 	// post process small components
 	for (i = 0; i < num; i++) {
 	int a = u->find(edges[i].a);
 	int b = u->find(edges[i].b);
-	if ((a != b) && ((u->size(a) < min_size) || (u->size(b) < min_size)))
+	if ((a != b) &&
+	    ((u->size(a) < config.min_size) || (u->size(b) < config.min_size)))
 		u->join(a, b);
 	}
 	delete[] edges;

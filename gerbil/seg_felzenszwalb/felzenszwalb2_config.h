@@ -21,6 +21,7 @@ public:
 
 	float c;
 	int min_size;
+	bool eqhist;
 
 	/// similarity measure for edge weighting
 	vole::SMConfig similarity;

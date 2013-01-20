@@ -25,8 +25,10 @@ void FelzenszwalbConfig::initBoostOptions() {
 	options.add_options()
 		(key("tc,c"), value(&c)->default_value(500),
 						   "Threshold value c within sim. measure range")
-		(key("min_size"), value(&min_size)->default_value(50),
+		(key("min-size"), value(&min_size)->default_value(50),
 						   "Minimum size of a superpixel")
+		(key("eqhist"), bool_switch(&eqhist)->default_value(false),
+							"Perform histogram equalization on edge weights")
 		;
 
 	options.add(similarity.options);
@@ -54,7 +56,8 @@ std::string FelzenszwalbConfig::getString() const {
 			;
 	}
 	s << "c=" << c << std::endl
-	  << "min_size=" << min_size << std::endl
+	  << "min-size=" << min_size
+	  << "eqhist=" << (eqhist ? "true" : "false") << std::endl
 		;
 	s << similarity.getString();
 	return s.str();
