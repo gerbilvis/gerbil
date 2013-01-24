@@ -29,6 +29,9 @@ public:
 	static cv::Mat1s segmentImage(const FAMS &fams, const cv::Mat1i &lookup);
 #endif
 
+	// terrible hack superpixel sizes
+	std::vector<int> spsizes;
+
 private:
 	const MeanShiftConfig &config;
 

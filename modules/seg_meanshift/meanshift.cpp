@@ -46,6 +46,9 @@ cv::Mat1s MeanShift::execute(const multi_img& input, ProgressObserver *progress,
 
 	FAMS cfams(config, progress);
 
+	// HACK it's a shame
+	cfams.spsizes = spsizes;
+
 	cfams.ImportPoints(input);
 
 #ifdef WITH_SEG_FELZENSZWALB2
@@ -176,6 +179,9 @@ std::vector<fams_point> MeanShift::prepare_sp_points(const FAMS &fams,
 
 		// add to point set
 		ret.push_back(p);
+
+		// HACK  tell mfams superpixel size
+		fams.spsizes.push_back(N);
 	}
 	return ret;
 }

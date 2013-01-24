@@ -432,7 +432,7 @@ void FAMS::PruneModes() {
 		return;
 	hprune *= d_;
 
-	int            *mcount, *mcount2, *mycount;
+	int            *mcount, *mcount2, *mycount, *mcountsp;
 	float          *cmodes, *ctmodes, *cmodes2;
 	unsigned short *pmodes;
 	double         cminDist, cdist;
@@ -441,6 +441,7 @@ void FAMS::PruneModes() {
 	unsigned char  *invalidm;
 	invalidm = new unsigned char[nsel_];
 	mcount   = new int[nsel_];
+	mcountsp   = new int[nsel_];
 	mycount  = new int[nsel_];
 	cmodes   = new float[d_ * nsel_];
 	// to save the image data after pruning of modes.
@@ -457,6 +458,7 @@ void FAMS::PruneModes() {
 
 
 	memset(mcount, 0, nsel_ * sizeof(int));
+	memset(mcountsp, 0, nsel_ * sizeof(int));
 	memset(invalidm, 0, nsel_ * sizeof(unsigned char));
 
 	memset(mycount, 0, nsel_ * sizeof(int));
@@ -476,6 +478,7 @@ void FAMS::PruneModes() {
 		cmodes[cd] = modes_[cd];
 	}
 	mcount[0] = 1;
+	mcountsp[0] = (spsizes.empty() ? 1 : spsizes[0]);
 	maxm      = 1;
 
 	int myPt = FAMS_PRUNE_MAXP / 10;
@@ -522,6 +525,7 @@ void FAMS::PruneModes() {
 			}
 			// increase counter
 			mcount[iminDist] += 1;
+			mcountsp[iminDist] += (spsizes.empty() ? 1 : spsizes[cm]);
 
 			// "normalize" entry in mymodes
 			for (cd1 = 0; cd1 < d_; cd1++) {
@@ -537,6 +541,7 @@ void FAMS::PruneModes() {
 
 
 			mcount[maxm] = 1;
+			mcountsp[maxm] = (spsizes.empty() ? 1 : spsizes[cm]);
 
 			maxm += 1;
 		}
@@ -561,7 +566,7 @@ void FAMS::PruneModes() {
 	// put the modes in the order of importance (count)
 	vector<pair<int, int> > xtemp(maxm);
 	for (i = 0; i < maxm; ++i) {
-		xtemp[i] = make_pair(mcount[i], i);
+		xtemp[i] = make_pair(mcountsp[i], i);
 	}
 	sort(xtemp.begin(), xtemp.end());
 
@@ -579,6 +584,10 @@ void FAMS::PruneModes() {
 		bgLog("exceeded FAMS_PRUNE_MAXM, only keeping %d modes\n",
 			  FAMS_PRUNE_MAXM);
 	}
+
+	// HACK
+	if (!spsizes.empty())
+		npmin = 1;
 
 	nrel = std::min(nrel, FAMS_PRUNE_MAXM);
 

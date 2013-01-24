@@ -85,6 +85,7 @@ int MeanShiftSP::execute() {
 	msinput.maxval = input.first.maxval;
 	msinput.meta = input.first.meta;
 	vector<double> weights(sp_map.size());
+	std::vector<int> spsizes; // HACK
 	gerbil::felzenszwalb::segmap::const_iterator mit = sp_map.begin();
 	for (int ii = 0; mit != sp_map.end(); ++ii, ++mit) {
 		// initialize new pixel with zero
@@ -107,6 +108,9 @@ int MeanShiftSP::execute() {
 
 		// add to weights
 		weights[ii] = (double)N; // TODO: sqrt?
+
+		// HACK superpixel sizes
+		spsizes.push_back(N);
 	}
 
 	// arrange weights around their mean
@@ -115,9 +119,12 @@ int MeanShiftSP::execute() {
 	wmat /= wmean;
 
 	// execute mean shift
-	config.pruneMinN = 1;
+	// HACK config.pruneMinN = 1;
 	//config.batch = true;
 	MeanShift ms(config);
+
+	// HACK tell superpixel sizes
+	ms.spsizes.swap(spsizes);
 
 	if (config.findKL) {
 		// find K, L

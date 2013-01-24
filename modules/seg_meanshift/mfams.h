@@ -240,6 +240,12 @@ protected:
 	int           nsel_;
 	std::vector<unsigned short> modes_;
 	std::vector<unsigned int>  hmodes_;
+
+	// HACK for superpixel size
+public:
+	mutable std::vector<int> spsizes;
+protected:
+
 	int           npm_;
 	unsigned short*prunedmodes_;
 	int           *nprunedmodes_;

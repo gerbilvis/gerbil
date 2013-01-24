@@ -60,8 +60,9 @@ int MeanShiftShell::execute() {
 	}
 
 #ifdef WITH_SEG_FELZENSZWALB2
-	if (config.starting == SUPERPIXEL)
-		config.pruneMinN = 1;
+	// HACK
+	//if (config.starting == SUPERPIXEL)
+	//	config.pruneMinN = 1;
 #endif
 
 	cv::Mat1s labels_mask;
