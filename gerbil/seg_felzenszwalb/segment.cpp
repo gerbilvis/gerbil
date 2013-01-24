@@ -38,10 +38,9 @@ std::pair<cv::Mat1i, segmap> segment_image(const multi_img &im,
 
 	// build graph
 	edge *edges = new edge[width*height*4];
-	cv::Mat_<float> weights(width*height*4, 1);
+	std::vector<float> weights;
 	
 	int num = 0;
-	cv::Mat_<float>::iterator wit = weights.begin();
 	for (int y = 0; y < height; y++) {
 		for (int x = 0; x < width; x++) {
 			cv::Point coord1(x, y);
@@ -52,8 +51,8 @@ std::pair<cv::Mat1i, segmap> segment_image(const multi_img &im,
 				edges[num].b = y * width + (x+1);
 				cv::Point coord2(x+1, y);
 				const multi_img::Pixel &p2 = im(coord2);
-				*wit = (float)distfun->getSimilarity(p1, p2, coord1, coord2);
-				num++; wit++;
+				weights.push_back((float)distfun->getSimilarity(p1, p2, coord1, coord2));
+				num++;
 			}
 
 			if (y < height-1) {
@@ -61,8 +60,8 @@ std::pair<cv::Mat1i, segmap> segment_image(const multi_img &im,
 				edges[num].b = (y+1) * width + x;
 				cv::Point coord2(x, y+1);
 				const multi_img::Pixel &p2 = im(coord2);
-				*wit = (float)distfun->getSimilarity(p1, p2, coord1, coord2);
-				num++; wit++;
+				weights.push_back((float)distfun->getSimilarity(p1, p2, coord1, coord2));
+				num++;
 			}
 
 			if ((x < width-1) && (y < height-1)) {
@@ -70,8 +69,8 @@ std::pair<cv::Mat1i, segmap> segment_image(const multi_img &im,
 				edges[num].b = (y+1) * width + (x+1);
 				cv::Point coord2(x+1, y+1);
 				const multi_img::Pixel &p2 = im(coord2);
-				*wit = (float)distfun->getSimilarity(p1, p2, coord1, coord2);
-				num++; wit++;
+				weights.push_back((float)distfun->getSimilarity(p1, p2, coord1, coord2));
+				num++;
 			}
 
 			if ((x < width-1) && (y > 0)) {
@@ -79,18 +78,20 @@ std::pair<cv::Mat1i, segmap> segment_image(const multi_img &im,
 				edges[num].b = (y-1) * width + (x+1);
 				cv::Point coord2(x+1, y-1);
 				const multi_img::Pixel &p2 = im(coord2);
-				*wit = (float)distfun->getSimilarity(p1, p2, coord1, coord2);
-				num++; wit++;
+				weights.push_back((float)distfun->getSimilarity(p1, p2, coord1, coord2));
+				num++;
 			}
 		}
 	}
 	
-	if (config.eqhist)
-		equalizeHist(weights, 20000);
+	if (config.eqhist) {
+		cv::Mat_<float> tmp(weights);
+		equalizeHist(tmp, 20000);
+	}
 	
 	int i;
-	for (i = 0, wit = weights.begin(); wit != weights.end(); ++i, ++wit)
-		edges[i].w = *wit;
+	for (i = 0; i < weights.size(); ++i)
+		edges[i].w = weights[i];
 	
 
 	// segment
