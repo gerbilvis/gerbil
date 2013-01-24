@@ -54,113 +54,112 @@ int MeanShiftSP::execute() {
 		input.second.rebuildPixels(false);
 	}
 
-	Stopwatch watch("Total time");
+	std::string output_name;
+	Labeling labels;
+	{
+		Stopwatch watch("Total time");
+		// superpixel setup
+		cv::Mat1i sp_translate;
+		gerbil::felzenszwalb::segmap sp_map;
 
-	// superpixel setup
-	cv::Mat1i sp_translate;
-	gerbil::felzenszwalb::segmap sp_map;
+		// run superpixel pre-segmentation
+		std::pair<cv::Mat1i, gerbil::felzenszwalb::segmap> result =
+			 gerbil::felzenszwalb::segment_image(
+					 (config.sp_original ? input.second : input.first),
+					 config.superpixel);
+		sp_translate = result.first;
+		std::swap(sp_map, result.second);
 
-	// run superpixel pre-segmentation
-	std::pair<cv::Mat1i, gerbil::felzenszwalb::segmap> result =
-		 gerbil::felzenszwalb::segment_image(
-				 (config.sp_original ? input.second : input.first),
-				 config.superpixel);
-	sp_translate = result.first;
-	std::swap(sp_map, result.second);
+		// note: remove output afterwards
+		std::cout << "SP: " << sp_map.size() << " segments" << std::endl;
+		vole::Labeling output;
+		output.yellowcursor = false;
+		output.shuffle = true;
+		output.read(result.first, false);
+		output_name = config.output_directory + "/"
+					  + config.output_prefix + "superpixels.png";
+		cv::imwrite(output_name, output.bgr());
 
-	// note: remove output afterwards
-	std::cout << "SP: " << sp_map.size() << " segments" << std::endl;
-	vole::Labeling output;
-	output.yellowcursor = false;
-	output.shuffle = true;
-	output.read(result.first, false);
-	std::string output_name = config.output_directory + "/"
-							  + config.output_prefix + "superpixels.png";
-	cv::imwrite(output_name, output.bgr());
+		// create meanshift input
+		int D = input.first.size();
+		multi_img msinput(sp_map.size(), 1, D);
+		msinput.minval = input.first.minval;
+		msinput.maxval = input.first.maxval;
+		msinput.meta = input.first.meta;
+		vector<double> weights(sp_map.size());
+		std::vector<int> spsizes; // HACK
+		gerbil::felzenszwalb::segmap::const_iterator mit = sp_map.begin();
+		for (int ii = 0; mit != sp_map.end(); ++ii, ++mit) {
+			// initialize new pixel with zero
+			multi_img::Pixel p(D, 0.f);
 
-	// create meanshift input
-	int D = input.first.size();
-	multi_img msinput(sp_map.size(), 1, D);
-	msinput.minval = input.first.minval;
-	msinput.maxval = input.first.maxval;
-	msinput.meta = input.first.meta;
-	vector<double> weights(sp_map.size());
-	std::vector<int> spsizes; // HACK
-	gerbil::felzenszwalb::segmap::const_iterator mit = sp_map.begin();
-	for (int ii = 0; mit != sp_map.end(); ++ii, ++mit) {
-		// initialize new pixel with zero
-		multi_img::Pixel p(D, 0.f);
+			multi_img::Value N = (multi_img::Value)mit->size();
 
-		multi_img::Value N = (multi_img::Value)mit->size();
-
-		// sum up all superpixel members
-		for (int i = 0; i < N; ++i) {
-			const multi_img::Pixel &s = input.first.atIndex((*mit)[i]);
+			// sum up all superpixel members
+			for (int i = 0; i < N; ++i) {
+				const multi_img::Pixel &s = input.first.atIndex((*mit)[i]);
+				for (int d = 0; d < D; ++d)
+					p[d] += s[d];
+			}
+			// divide by N to obtain average
 			for (int d = 0; d < D; ++d)
-				p[d] += s[d];
+				p[d] /= N;
+
+			// add to ms input
+			msinput.setPixel(ii, 0, p);
+
+			// add to weights
+			weights[ii] = (double)N; // TODO: sqrt?
+
+			// HACK superpixel sizes
+			spsizes.push_back(N);
 		}
-		// divide by N to obtain average
-		for (int d = 0; d < D; ++d)
-			p[d] /= N;
 
-		// add to ms input
-		msinput.setPixel(ii, 0, p);
+		// arrange weights around their mean
+		cv::Mat1d wmat(weights);
+		double wmean = cv::mean(wmat)[0];
+		wmat /= wmean;
 
-		// add to weights
-		weights[ii] = (double)N; // TODO: sqrt?
+		// execute mean shift
+		// HACK config.pruneMinN = 1;
+		//config.batch = true;
+		MeanShift ms(config);
 
-		// HACK superpixel sizes
-		spsizes.push_back(N);
+		// HACK tell superpixel sizes
+		ms.spsizes.swap(spsizes);
+
+		if (config.findKL) {
+			// find K, L
+			std::pair<int, int> ret = ms.findKL(msinput);
+			config.K = ret.first; config.L = ret.second;
+			std::cout << "Found K = " << config.K
+				      << "\tL = " << config.L << std::endl;
+			return 0;
+		}
+
+		cv::Mat1s labels_ms = ms.execute(msinput, NULL,
+										 (config.sp_weight > 0 ? &weights : NULL));
+		if (labels_ms.empty())
+			return 0;
+
+		// translate results back to original image domain
+		cv::Mat1s labels_mask(input.first.height, input.first.width);
+		cv::Mat1s::iterator itr = labels_mask.begin();
+		cv::Mat1i::const_iterator itl = sp_translate.begin();
+		for (; itr != labels_mask.end(); ++itl, ++itr) {
+			*itr = labels_ms(*itl, 0);
+		}
+
+		// DBG: write out input to FAMS
+		//output_name = config.output_directory + "/"
+		//			  + config.output_prefix + "-spimg";
+		//	msinput.write_out(output_name);
+
+		// write out beautifully colored label image
+		labels = labels_mask;
+		labels.yellowcursor = false;
+		labels.shuffle = true;
 	}
-
-	// arrange weights around their mean
-	cv::Mat1d wmat(weights);
-	double wmean = cv::mean(wmat)[0];
-	wmat /= wmean;
-
-	// execute mean shift
-	// HACK config.pruneMinN = 1;
-	//config.batch = true;
-	MeanShift ms(config);
-
-	// HACK tell superpixel sizes
-	ms.spsizes.swap(spsizes);
-
-	if (config.findKL) {
-		// find K, L
-		std::pair<int, int> ret = ms.findKL(msinput);
-		config.K = ret.first; config.L = ret.second;
-		std::cout << "Found K = " << config.K
-		          << "\tL = " << config.L << std::endl;
-		return 0;
-	}
-
-	cv::Mat1s labels_ms = ms.execute(msinput, NULL,
-									 (config.sp_weight > 0 ? &weights : NULL));
-	if (labels_ms.empty())
-		return 0;
-
-	double mi, ma;
-	cv::minMaxLoc(labels_ms, &mi, &ma);
-	std::cerr << "min: " << mi << " \tmax: " << ma << std::endl;
-
-	// translate results back to original image domain
-	cv::Mat1s labels_mask(input.first.height, input.first.width);
-	cv::Mat1s::iterator itr = labels_mask.begin();
-	cv::Mat1i::const_iterator itl = sp_translate.begin();
-	for (; itr != labels_mask.end(); ++itl, ++itr) {
-		*itr = labels_ms(*itl, 0);
-	}
-
-	// DBG: write out input to FAMS
-	output_name = config.output_directory + "/"
-				  + config.output_prefix + "-spimg";
-	msinput.write_out(output_name);
-
-	// write out beautifully colored label image
-	Labeling labels = labels_mask;
-	labels.yellowcursor = false;
-	labels.shuffle = true;
 	output_name = config.output_directory + "/"
 				  + config.output_prefix + "segmentation_rgb.png";
 	cv::imwrite(output_name, labels.bgr());

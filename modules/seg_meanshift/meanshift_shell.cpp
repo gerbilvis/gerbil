@@ -47,39 +47,39 @@ int MeanShiftShell::execute() {
 		input.second.rebuildPixels(false);
 	}
 
-	Stopwatch watch("Total time");
+	Labeling labels;
+	{
+		Stopwatch watch("Total time");
 
-	MeanShift ms(config);
-	if (config.findKL) {
-	// find K, L
-		std::pair<int, int> ret = ms.findKL(input.first);
-		config.K = ret.first; config.L = ret.second;
-		std::cout << "Found K = " << config.K
-		          << "\tL = " << config.L << std::endl;
-		return 0;
+		MeanShift ms(config);
+		if (config.findKL) {
+		// find K, L
+			std::pair<int, int> ret = ms.findKL(input.first);
+			config.K = ret.first; config.L = ret.second;
+			std::cout << "Found K = " << config.K
+				      << "\tL = " << config.L << std::endl;
+			return 0;
+		}
+
+	#ifdef WITH_SEG_FELZENSZWALB2
+		// HACK
+		//if (config.starting == SUPERPIXEL)
+		//	config.pruneMinN = 1;
+	#endif
+
+		cv::Mat1s labels_mask;
+		if (config.sp_original) {
+			labels_mask = ms.execute(input.first, NULL, NULL, input.second);
+		} else {
+			labels_mask = ms.execute(input.first, NULL, NULL, input.first);
+		}
+		if (labels_mask.empty())
+			return 0;
+
+		labels = labels_mask;
+		labels.yellowcursor = false;
+		labels.shuffle = true;
 	}
-
-#ifdef WITH_SEG_FELZENSZWALB2
-	// HACK
-	//if (config.starting == SUPERPIXEL)
-	//	config.pruneMinN = 1;
-#endif
-
-	cv::Mat1s labels_mask;
-	if (config.sp_original) {
-		labels_mask = ms.execute(input.first, NULL, NULL, input.second);
-	} else {
-		labels_mask = ms.execute(input.first, NULL, NULL, input.first);
-	}
-	if (labels_mask.empty())
-		return 0;
-
-	double mi, ma;
-	cv::minMaxLoc(labels_mask, &mi, &ma);
-	std::cerr << "min: " << mi << " \tmax: " << ma << std::endl;
-	Labeling labels = labels_mask;
-	labels.yellowcursor = false;
-	labels.shuffle = true;
 
 	// write out beautifully colored label image
 	std::string output_name = config.output_directory + "/"
