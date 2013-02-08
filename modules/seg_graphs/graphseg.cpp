@@ -12,7 +12,7 @@
 
 #include <sm_factory.h>
 #ifdef WITH_EDGE_DETECT
-#include <edge_detection.h>
+#include <som_trainer.h>
 #include <som_distance.h>
 #endif
 
@@ -70,9 +70,8 @@ cv::Mat1b GraphSeg::execute(const multi_img& input,
 	if (!config.som_similarity) {
 		distfun = SMFactory<multi_img::Value>::spawn(config.similarity);
 	} else {
-		EdgeDetection edge(config.som);
 		input.rebuildPixels();
-		som = edge.train(input);
+		som = SOMTrainer::train(config.som, input);
 		distfun = new SOMDistance<multi_img::Value>(som, input.height, input.width);
 	}
 #else
