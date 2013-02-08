@@ -1,6 +1,6 @@
 vole_module_name("manipulation")
-vole_module_description("read the pictures and calculate the ROI automatically")
-vole_module_variable("Vole_Manipulation")
+vole_module_description("Various manipulations on multispectral images")
+vole_module_variable("Gerbil_Manipulation")
 
 vole_add_required_dependencies("OPENCV" "BOOST")
 vole_add_optional_dependencies("BOOST_PROGRAM_OPTIONS" "BOOST_FILESYSTEM")

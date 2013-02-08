@@ -14,7 +14,6 @@ class EdgeDetection : public vole::Command {
 		EdgeDetection(const vole::EdgeDetectionConfig &config);
 		int execute();
 
-		SOM *train(const multi_img& img);
 		void printShortHelp() const;
 		void printHelp() const;
 

@@ -22,6 +22,40 @@ SOMTrainer::SOMTrainer(SOM &map, const multi_img &image,
 	m_bmuMap = cv::Mat::zeros(som.getHeight(), som.getWidth(), CV_64F);
 }
 
+SOM* SOMTrainer::train(const vole::EdgeDetectionConfig &config, const multi_img& img)
+{
+	if (config.som_file.empty()) {
+		vole::Stopwatch running_time("Total running time");
+		SOM *som = new SOM(config, img.size());
+		std::cout << "# Generated SOM " << config.width << "x" << config.height << " with dimension " << img.size() << std::endl;
+
+		SOMTrainer trainer(*som, img, config);
+
+		std::cout << "# SOM Trainer starts to feed the network using "<< config.maxIter << " iterations..." << std::endl;
+
+		vole::Stopwatch watch("Training");
+		trainer.feedNetwork();
+
+		return som;
+	} else {
+		multi_img somimg;
+		somimg.minval = img.minval;
+		somimg.maxval = img.maxval;
+		somimg.read_image(config.som_file);
+		if (somimg.empty()) {
+			std::cerr << "Could not read image containing the SOM!" << std::endl;
+			return NULL;
+		}
+		if (somimg.width != config.width || somimg.height != config.height
+			|| somimg.size() != img.size()) {
+			std::cerr << "SOM image has wrong dimensions!" << std::endl;
+			return NULL;
+		}
+		somimg.rebuildPixels(false);
+		return new SOM(config, somimg);
+	}
+}
+
 void SOMTrainer::feedNetwork()
 {
 

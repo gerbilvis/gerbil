@@ -1,8 +1,6 @@
 #ifndef SOM_TRAINER_H
 #define SOM_TRAINER_H
 
-#define FULL_VERBOSITY false
-
 #include "edge_detection_config.h"
 #include "neuron.h"
 #include "self_organizing_map.h"
@@ -26,6 +24,8 @@ public:
 
 	//! Destructor
 	~SOMTrainer() {}
+
+	static SOM *train(const vole::EdgeDetectionConfig &conf, const multi_img& img);
 
 	/**
 	* Controls the training process using random vectors of the multispectral image

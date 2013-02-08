@@ -40,40 +40,6 @@ EdgeDetection::EdgeDetection(const vole::EdgeDetectionConfig &cfg)
  		  config(cfg)
 {}
 
-SOM* EdgeDetection::train(const multi_img &img)
-{
-	if (config.som_file.empty()) {
-		vole::Stopwatch running_time("Total running time");
-		SOM *som = new SOM(config, img.size());
-		std::cout << "# Generated SOM " << config.width << "x" << config.height << " with dimension " << img.size() << std::endl;
-
-		SOMTrainer trainer(*som, img, config);
-
-		std::cout << "# SOM Trainer starts to feed the network using "<< config.maxIter << " iterations..." << std::endl;
-
-		vole::Stopwatch watch("Training");
-		trainer.feedNetwork();
-
-		return som;
-	} else {
-		multi_img somimg;
-		somimg.minval = img.minval;
-		somimg.maxval = img.maxval;
-		somimg.read_image(config.som_file);
-		if (somimg.empty()) {
-			std::cerr << "Could not read image containing the SOM!" << std::endl;
-			return NULL;
-		}
-		if (somimg.width != config.width || somimg.height != config.height
-			|| somimg.size() != img.size()) {
-			std::cerr << "SOM image has wrong dimensions!" << std::endl;
-			return NULL;
-		}
-		somimg.rebuildPixels(false);
-		return new SOM(config, somimg);
-	}
-}
-
 int EdgeDetection::execute()
 {
 	assert(!config.prefix_enabled); // input, output file variables set
@@ -85,11 +51,6 @@ int EdgeDetection::execute()
 	if (img.empty())
 		return -1;
 
-	/* hack: apply spec.grad. */
-	//image needs to be loaded w/ maxval 255
-	//img.apply_logarithm();
-	//img = img.spec_gradient();
-
 	img.rebuildPixels(false);
 
 	if (config.hack3d) {
@@ -97,7 +58,7 @@ int EdgeDetection::execute()
 		config.height = config.width * config.width;
 	}
 
-	SOM *som = train(img);
+	SOM *som = SOMTrainer::train(config, img);
 	if (som == NULL)
 		return -1;
 
@@ -105,48 +66,6 @@ int EdgeDetection::execute()
 		multi_img somimg = som->export_2d();
 		somimg.write_out(config.output_dir + "/som");
 		config.storeConfig((config.output_dir + "/config.txt").c_str());
-	}
-
-	if (config.output_rgb && config.hack3d) {
-		vole::Stopwatch watch("False Color Image Generation");
-
-		// TODO: to generate more values, use a mix of N winner neurons
-
-		cv::Mat3b sombgr(img.height, img.width);
-		cv::Mat3b::iterator it = sombgr.begin();
-		if (false) {
-			for (unsigned int i = 0; it != sombgr.end(); ++i, ++it) {
-				cv::Point n = som->identifyWinnerNeuron(img.atIndex(i));
-				(*it)[0] = n.x;
-				(*it)[1] = n.y / som->getWidth();
-				(*it)[2] = n.y % som->getWidth();
-			}
-			sombgr *= 255 / config.width;
-		} else {
-			int N = 10;
-			// normalize from sum, then stretch out max. coord to 255
-			double factor = 255. / (double)(config.width * N);
-			for (unsigned int i = 0; it != sombgr.end(); ++i, ++it) {
-				std::vector<std::pair<double, cv::Point> > coords =
-						som->closestN(img.atIndex(i), N);
-				cv::Point3d avg;
-				for (int i = 0; i < coords.size(); ++i) {
-					cv::Point3d c(coords[i].second.x,
-								  coords[i].second.y / som->getWidth(),
-								  coords[i].second.y % som->getWidth());
-					if (i == 0)
-						avg = c;
-					else
-						avg += c;
-				}
-				(*it)[0] = uchar(avg.x * factor);
-				(*it)[1] = uchar(avg.y * factor);
-				(*it)[2] = uchar(avg.z * factor);
-			}
-		}
-		cv::imwrite(config.output_dir + "/rgb.png", sombgr);
-		delete som;
-		return 0;
 	}
 
 	std::cout << "# Generating 2D image using the SOM and the multispectral image..." << std::endl;

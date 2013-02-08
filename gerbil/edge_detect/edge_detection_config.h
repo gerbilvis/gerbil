@@ -33,9 +33,6 @@ public:
 	// export SOM?
 	bool output_som;
 
-	// export false color RGB image instead of edges?
-	bool output_rgb;
-
 	// Training features 
 	int maxIter;								// number of iterations
 	double learnStart;							// start value for learning rate
