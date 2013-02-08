@@ -38,6 +38,9 @@ public:
 	
 	/// number of BMUs to query in SOM case
 	int som_depth;
+	
+	/// linear mixing instead of power-of-two weighting scheme
+	bool som_linear;
 
 #ifdef WITH_EDGE_DETECT
 	vole::EdgeDetectionConfig som;

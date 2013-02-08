@@ -29,11 +29,14 @@ RGBConfig::RGBConfig(const std::string& p)
 void RGBConfig::initBoostOptions() {
 	options.add_options()
 		(key("algo"), value(&algo)->default_value(COLOR_XYZ),
-		                   "Algorithm to employ: XYZ true color,"
+		                   "Algorithm to employ: XYZ true color,\n"
 		                   "PCA or SOM false-color")
-		(key("somDepth"), value(&som_depth)->default_value(10),
+		(key("somDepth"), value(&som_depth)->default_value(5),
 		                   "In SOM case: "
 		                   "number of best matching neurons to incorporate")
+		(key("somLinear"), bool_switch(&som_linear)->default_value(false),
+		                   "In SOM case: "
+		                   "Use linear BMU mixing instead of weighting scheme")
 		;
 
 #ifdef WITH_EDGE_DETECT
@@ -46,7 +49,7 @@ void RGBConfig::initBoostOptions() {
 	options.add(input.options);
 
 	options.add_options()
-		(key("output,O"), value(&output_file)->default_value("output_mask.png"),
+		(key("output,O"), value(&output_file)->default_value("output_rgb.png"),
 		 "Output file name")
 		;
 }
@@ -64,6 +67,7 @@ std::string RGBConfig::getString() const {
 	}
 	s	<< "algo=" << algo << "\t# Algorithm" << std::endl
 		<< "somDepth=" << som_depth << "\t# SOM depth" << std::endl
+		<< "somLinear=" << (som_linear ? "true" : "false") << std::endl
 		;
 #ifdef WITH_EDGE_DETECT
 	s << som.getString();

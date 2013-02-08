@@ -15,8 +15,10 @@
 #include <stopwatch.h>
 #include <multi_img.h>
 #include <opencv2/highgui/highgui.hpp>
+#include <tbb/parallel_for.h>
 #include <iostream>
 #include <vector>
+#include <algorithm>
 
 namespace gerbil {
 
@@ -82,6 +84,43 @@ cv::Mat3f RGB::executePCA(const multi_img& src)
 	return bgr;
 }
 
+static bool sortpair(std::pair<double, cv::Point> i,
+					 std::pair<double, cv::Point> j) {
+	return (i.first < j.first);
+}
+
+struct SOMTBB {
+
+	SOMTBB (const multi_img& src, const SOM *som, const std::vector<double>& w,
+			cv::Mat3f &dst)
+	: src(src), som(som), w(w), dst(dst) {}
+
+	void operator()(const tbb::blocked_range<int>& r) const
+	{
+		for (int i = r.begin(); i != r.end(); ++i) {
+			std::vector<std::pair<double, cv::Point> > coords =
+					som->closestN(src.atIndex(i), w.size());
+			std::sort(coords.begin(), coords.end(), sortpair);
+			cv::Point3d avg(0., 0., 0.);
+			for (int j = 0; j < coords.size(); ++j) {
+				cv::Point3d c(coords[j].second.x,
+							  coords[j].second.y / som->getWidth(),
+							  coords[j].second.y % som->getWidth());
+				avg += w[j] * c;
+			}
+			cv::Vec3f &pixel = dst(i / dst.cols, i % dst.cols);
+			pixel[0] = (float)(avg.x);
+			pixel[1] = (float)(avg.y);
+			pixel[2] = (float)(avg.z);
+		}
+	}
+	
+	const multi_img& src;
+	const SOM *som;
+	const std::vector<double> &w;
+	cv::Mat3f &dst;
+};
+
 #ifdef WITH_EDGE_DETECT
 cv::Mat3f RGB::executeSOM(const multi_img& img)
 {
@@ -112,26 +151,34 @@ cv::Mat3f RGB::executeSOM(const multi_img& img)
 		bgr /= config.som.width;
 	} else {
 		int N = config.som_depth;
-		// normalize from sum, then stretch out max. coord to 1
-		double factor = 1. / (double)(config.som.width * N);
-		for (unsigned int i = 0; it != bgr.end(); ++i, ++it) {
-			std::vector<std::pair<double, cv::Point> > coords =
-					som->closestN(img.atIndex(i), N);
-			cv::Point3d avg;
-			for (int i = 0; i < coords.size(); ++i) {
-				cv::Point3d c(coords[i].second.x,
-							  coords[i].second.y / som->getWidth(),
-							  coords[i].second.y % som->getWidth());
-				if (i == 0)
-					avg = c;
-				else
-					avg += c; // TODO: weighting
-			}
-			(*it)[0] = (float)(avg.x * factor);
-			(*it)[1] = (float)(avg.y * factor);
-			(*it)[2] = (float)(avg.z * factor);
+
+		// calculate weights including normalization (RGB space width)
+		std::vector<double> weights;
+		if (config.som_linear) {
+			for (int i = 0; i < N; ++i)
+				weights.push_back(1./(double)(N * config.som.width));
+		} else {
+			/* each weight is half of the preceeding weight in the ranking
+			   examples; N=2: 0.667, 0.333; N=4: 0.533, 0.267, 0.133, 0.067 */
+			double normalization = (double)((1 << (N)) - 1)
+				                   * (double)config.som.width;
+			for (int i = 0; i < N; ++i)
+				weights.push_back((double)(1 << (N - i - 1)) / normalization);
 		}
+
+		// set RGB pixels
+		tbb::parallel_for(tbb::blocked_range<int>(0, img.height*img.width),
+						  SOMTBB(img, som, weights, bgr));
 	}
+	if (config.verbosity > 2) {
+		multi_img somimg = som->export_2d();
+		
+		// SOM code assumes and sets [0..1], need to correct
+		somimg.minval = img.minval;
+		somimg.maxval = img.maxval;
+		somimg.write_out(config.output_file + "-som");
+	}
+	
 	delete som;
 	return bgr;
 }
