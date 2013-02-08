@@ -72,8 +72,10 @@ int RGB::execute()
 cv::Mat3f RGB::executePCA(const multi_img& src)
 {
 	multi_img pca3 = src.project(src.pca(3));
-//	pca3.data_rescale(0., 1.);
-	pca3.data_stretch_single(0., 1.); // TODO: make this configurable
+	if (config.pca_stretch)
+		pca3.data_stretch_single(0., 1.);
+	else
+		pca3.data_rescale(0., 1.);
 
 //	bgr = pca3.Mat();
 	// green: component 1, red: component 2, blue: component 3

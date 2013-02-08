@@ -31,6 +31,9 @@ void RGBConfig::initBoostOptions() {
 		(key("algo"), value(&algo)->default_value(COLOR_XYZ),
 		                   "Algorithm to employ: XYZ true color,\n"
 		                   "PCA or SOM false-color")
+		(key("pca_stretch"), bool_switch(&pca_stretch)->default_value(false),
+		                   "In PCA case: "
+		                   "Maximize contrast in each channel individually")
 		(key("somDepth"), value(&som_depth)->default_value(5),
 		                   "In SOM case: "
 		                   "number of best matching neurons to incorporate")
@@ -66,6 +69,7 @@ std::string RGBConfig::getString() const {
 			;
 	}
 	s	<< "algo=" << algo << "\t# Algorithm" << std::endl
+		<< "pca_stretch=" << (pca_stretch ? "true" : "false") << std::endl
 		<< "somDepth=" << som_depth << "\t# SOM depth" << std::endl
 		<< "somLinear=" << (som_linear ? "true" : "false") << std::endl
 		;

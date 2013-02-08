@@ -36,6 +36,9 @@ public:
 	/// algorithm to be employed
 	rgbalg algo;
 	
+	/// maximize PCA contrast
+	bool pca_stretch;
+	
 	/// number of BMUs to query in SOM case
 	int som_depth;
 	
