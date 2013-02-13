@@ -60,7 +60,7 @@ int RGB::execute()
 	if (bgr.empty())
 		return 1;
 
-	if (config.verbosity > 1) {
+	if (config.verbosity & 2) {
 		cv::imshow("Result", bgr);
 		cv::waitKey();
 	}
@@ -172,7 +172,7 @@ cv::Mat3f RGB::executeSOM(const multi_img& img)
 		tbb::parallel_for(tbb::blocked_range<int>(0, img.height*img.width),
 						  SOMTBB(img, som, weights, bgr));
 	}
-	if (config.verbosity > 2) {
+	if (config.verbosity & 4) {
 		multi_img somimg = som->export_2d();
 		
 		// SOM code assumes and sets [0..1], need to correct
