@@ -333,13 +333,13 @@ private:
 	QTimer resizeTimer;
 	QTimer scrollTimer;
 
-	static const unsigned int renderAtOnceStep = 1024 * 1024 * 1024;
+	static const unsigned int renderAtOnceStep;
 
-	static const unsigned int spectrumRenderStep = 10000;
+	static const unsigned int spectrumRenderStep;
 	QTimer spectrumRenderTimer;
 	unsigned int spectrumRenderedLines;
 
-	static const unsigned int highlightRenderStep = 10000;
+	static const unsigned int highlightRenderStep;
 	QTimer  highlightRenderTimer;
 	unsigned int  highlightRenderedLines;
 

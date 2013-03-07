@@ -22,6 +22,13 @@
 
 using namespace std;
 
+// altmann 2013-03-07:
+// while c++ allows initialization of static const members,
+// they need to be definined _in the module_to have external linkage.
+const unsigned int Viewport::renderAtOnceStep 	 = 1024 * 1024 * 1024;
+const unsigned int Viewport::spectrumRenderStep  = 10000;
+const unsigned int Viewport::highlightRenderStep = 10000;
+
 Viewport::Viewport(QWidget *parent)
 	: QGLWidget(QGLFormat(QGL::SampleBuffers), parent),
 	  ctx(new SharedData<ViewportCtx>(new ViewportCtx())),
