@@ -164,8 +164,8 @@ void multi_img::write_out(const string& base, bool normalize, bool in16bit) cons
 #endif
 
 	// header of text file
-    ofstream txtfile((base + ".txt").c_str());
-    txtfile << size() << "\n";
+	ofstream txtfile((base + ".txt").c_str());
+	txtfile << size() << "\n";
 	txtfile << dir << "\n";
 
 	// preparation of scale and shift

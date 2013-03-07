@@ -3,7 +3,6 @@ vole_module_description("RGB true-color or false-color from multispectral images
 vole_module_variable("Gerbil_RGB")
 
 vole_add_required_dependencies("OPENCV" "TBB")
-vole_add_optional_dependencies("BOOST" "BOOST_PROGRAM_OPTIONS" "BOOST_FILESYSTEM")
 vole_add_required_modules("gerbil_common" "imginput")
 vole_add_optional_modules("edge_detect")
 

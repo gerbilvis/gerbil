@@ -95,7 +95,7 @@ public:
 		BandDesc() : center(0.f), rangeStart(0.f), rangeEnd(0.f), empty(true){}
 		BandDesc(float c) : center(c), rangeStart(c), rangeEnd(c), empty(false){}
 		BandDesc(float s, float e) : center((e + s)*0.5f),
-									 rangeStart(s), rangeEnd(e), empty(false) {}
+		                             rangeStart(s), rangeEnd(e), empty(false) {}
 		inline std::string str() const {
 			if (empty)
 				return std::string();
