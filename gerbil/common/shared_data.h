@@ -9,6 +9,7 @@
 #ifndef SHARED_DATA_H
 #define SHARED_DATA_H
 
+
 #ifdef WITH_BOOST_THREAD
 #include <multi_img.h>
 #include <utility>
@@ -29,7 +30,7 @@
 	event loop and second for OpenGL rendering), usage of recursive_mutex seems
 	to be reasonable tradeoff between low footprint on existing code and
 	concurrency guarantees. */
-typedef boost::recursive_mutex SharedDataGuard;
+typedef boost::recursive_mutex SharedDataMutex;
 /** Lock that should be used by foreground threads (GUI, OpenGL) to prevent
     background worker thread to swap embedded raw pointer. Note that the lock 
 	does not prevent other parties to modify the data in-place, that is if you 
@@ -38,7 +39,7 @@ typedef boost::recursive_mutex SharedDataGuard;
 	on a particular scenario. Often, the possible in-place modification of
 	data by foreground threads can be avoided by temporarily disabling user
 	input in the corresponding part of the GUI. */
-typedef boost::unique_lock<SharedDataGuard> SharedDataHold;
+typedef boost::unique_lock<SharedDataMutex> SharedDataLock;
 /** Lock that should be used by background worker thread to swap embedded raw
     pointer once the calculation of new version of data is finished. Note that
 	this should enforce usage of a simple variant of read-copy-update pattern.
@@ -47,7 +48,7 @@ typedef boost::unique_lock<SharedDataGuard> SharedDataHold;
 	from the queue. Also note that it is perfectly fine if background worker
 	modify locked data in-place instead of using RCU pattern - this might be 
 	reasonable if it involves assignment of only a couple of primitive values. */
-typedef boost::unique_lock<SharedDataGuard> SharedDataSwap;
+typedef boost::unique_lock<SharedDataMutex> SharedDataSwapLock;
 
 /** Templated wrapper class for any data shared between foreground presentation
     threads (GUI, OpenGL) and background worker thread. All data members of 
@@ -64,7 +65,7 @@ typedef boost::unique_lock<SharedDataGuard> SharedDataSwap;
 template<class T>
 class SharedData {
 public:
-	SharedDataGuard lock;
+	SharedDataMutex lock;
 
 	/** Construct empty wrapper. */
 	SharedData() : data(NULL) {}

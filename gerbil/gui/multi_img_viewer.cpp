@@ -90,7 +90,7 @@ void multi_img_viewer::subPixels(const std::map<std::pair<int, int>, short> &poi
 		sub.push_back(cv::Rect(it->first.first, it->first.second, 1, 1));
 	}
 
-	SharedDataHold ctxlock(viewport->ctx->lock);
+	SharedDataLock ctxlock(viewport->ctx->lock);
 	ViewportCtx args = **viewport->ctx;
 	ctxlock.unlock();
 
@@ -109,7 +109,7 @@ void multi_img_viewer::addPixels(const std::map<std::pair<int, int>, short> &poi
 		add.push_back(cv::Rect(it->first.first, it->first.second, 1, 1));
 	}
 
-	SharedDataHold ctxlock(viewport->ctx->lock);
+	SharedDataLock ctxlock(viewport->ctx->lock);
 	ViewportCtx args = **viewport->ctx;
 	ctxlock.unlock();
 
@@ -122,7 +122,7 @@ void multi_img_viewer::addPixels(const std::map<std::pair<int, int>, short> &poi
 
 void multi_img_viewer::subImage(sets_ptr temp, const std::vector<cv::Rect> &regions, cv::Rect roi)
 {
-	SharedDataHold ctxlock(viewport->ctx->lock);
+	SharedDataLock ctxlock(viewport->ctx->lock);
 	ViewportCtx args = **viewport->ctx;
 	ctxlock.unlock();
 
@@ -149,7 +149,7 @@ void multi_img_viewer::setTitle(representation type, multi_img::Value min, multi
 
 void multi_img_viewer::addImage(sets_ptr temp, const std::vector<cv::Rect> &regions, cv::Rect roi)
 {
-	SharedDataHold ctxlock(viewport->ctx->lock);
+	SharedDataLock ctxlock(viewport->ctx->lock);
 	ViewportCtx args = **viewport->ctx;
 	ctxlock.unlock();
 
@@ -174,7 +174,7 @@ void multi_img_viewer::addImage(sets_ptr temp, const std::vector<cv::Rect> &regi
 
 void multi_img_viewer::setImage(multi_img_ptr img, cv::Rect roi)
 {
-	SharedDataHold ctxlock(viewport->ctx->lock);
+	SharedDataLock ctxlock(viewport->ctx->lock);
 	ViewportCtx args = **viewport->ctx;
 	ctxlock.unlock();
 
@@ -213,7 +213,7 @@ void multi_img_viewer::setImage(multi_img_ptr img, cv::Rect roi)
 void multi_img_viewer::setIlluminant(
 		const std::vector<multi_img::Value> &coeffs, bool for_real)
 {
-	SharedDataHold ctxlock(viewport->ctx->lock);
+	SharedDataLock ctxlock(viewport->ctx->lock);
 
 	if ((*viewport->ctx)->type != IMG)
 		return;
@@ -252,7 +252,7 @@ void multi_img_viewer::changeBinCount(int bins)
 
 void multi_img_viewer::updateBinning(int bins)
 {
-	SharedDataHold ctxlock(viewport->ctx->lock);
+	SharedDataLock ctxlock(viewport->ctx->lock);
 	ViewportCtx args = **viewport->ctx;
 	ctxlock.unlock();
 
@@ -291,7 +291,7 @@ void multi_img_viewer::finishBinCountChange(bool success)
 
 void multi_img_viewer::subLabelMask(sets_ptr temp, const cv::Mat1b &mask)
 {
-	SharedDataHold ctxlock(viewport->ctx->lock);
+	SharedDataLock ctxlock(viewport->ctx->lock);
 	ViewportCtx args = **viewport->ctx;
 	ctxlock.unlock();
 
@@ -310,7 +310,7 @@ void multi_img_viewer::subLabelMask(sets_ptr temp, const cv::Mat1b &mask)
 
 void multi_img_viewer::addLabelMask(sets_ptr temp, const cv::Mat1b &mask)
 {
-	SharedDataHold ctxlock(viewport->ctx->lock);
+	SharedDataLock ctxlock(viewport->ctx->lock);
 	ViewportCtx args = **viewport->ctx;
 	ctxlock.unlock();
 
@@ -330,7 +330,7 @@ void multi_img_viewer::addLabelMask(sets_ptr temp, const cv::Mat1b &mask)
 
 void multi_img_viewer::updateLabels()
 {
-	SharedDataHold ctxlock(viewport->ctx->lock);
+	SharedDataLock ctxlock(viewport->ctx->lock);
 	ViewportCtx args = **viewport->ctx;
 	ctxlock.unlock();
 
@@ -349,12 +349,12 @@ void multi_img_viewer::render(bool necessary)
 {
 	if (necessary && image.get()) {
 		if (maskReset) {
-			SharedDataHold imagelock(image->lock);
+			SharedDataLock imagelock(image->lock);
 			maskholder = multi_img::Mask((*image)->height, (*image)->width, (uchar)0);
 			maskReset = false;
 		}
 		if (titleReset) {
-			SharedDataHold ctxlock(viewport->ctx->lock);
+			SharedDataLock ctxlock(viewport->ctx->lock);
 			setTitle((*viewport->ctx)->type, (*viewport->ctx)->minval, (*viewport->ctx)->maxval);
 			titleReset = false;
 		}
@@ -377,9 +377,9 @@ bool multi_img_viewer::BinsTbb::run()
 	}
 
 	std::vector<BinSet> *result;
-	SharedDataSwap current_lock(current->lock, boost::defer_lock_t());
+	SharedDataSwapLock current_lock(current->lock, boost::defer_lock_t());
 	if (reuse) {
-		SharedDataSwap temp_wlock(temp->lock);
+		SharedDataSwapLock temp_wlock(temp->lock);
 		result = temp->swap(NULL);
 		if (!result) {
 			result = new std::vector<BinSet>(**current);
@@ -464,13 +464,13 @@ bool multi_img_viewer::BinsTbb::run()
 		return false;
 	} else {
 		if (reuse && !apply) {
-			SharedDataSwap temp_wlock(temp->lock);
+			SharedDataSwapLock temp_wlock(temp->lock);
 			temp->swap(result);
 		} else if (inplace) {
 			current_lock.unlock();
 		} else {
-			SharedDataSwap context_wlock(context->lock);
-			SharedDataSwap current_wlock(current->lock);
+			SharedDataSwapLock context_wlock(context->lock);
+			SharedDataSwapLock current_wlock(current->lock);
 			**context = args;
 			delete current->swap(result);
 		}
@@ -548,8 +548,8 @@ struct fillMaskSingleBody {
 /* create mask of single-band user selection */
 void multi_img_viewer::fillMaskSingle(int dim, int sel)
 {
-	SharedDataHold imagelock(image->lock);
-	SharedDataHold ctxlock(viewport->ctx->lock);
+	SharedDataLock imagelock(image->lock);
+	SharedDataLock ctxlock(viewport->ctx->lock);
 	fillMaskSingleBody body(maskholder, (**image)[dim], dim, sel, 
 		(*viewport->ctx)->minval, (*viewport->ctx)->binsize, illuminant);
 	tbb::parallel_for(tbb::blocked_range2d<size_t>(
@@ -591,8 +591,8 @@ struct fillMaskLimitersBody {
 
 void multi_img_viewer::fillMaskLimiters(const std::vector<std::pair<int, int> >& l)
 {
-	SharedDataHold imagelock(image->lock);
-	SharedDataHold ctxlock(viewport->ctx->lock);
+	SharedDataLock imagelock(image->lock);
+	SharedDataLock ctxlock(viewport->ctx->lock);
 	fillMaskLimitersBody body(maskholder, **image, (*viewport->ctx)->minval, 
 		(*viewport->ctx)->binsize, illuminant, l);
 	tbb::parallel_for(tbb::blocked_range2d<size_t>(
@@ -642,8 +642,8 @@ struct updateMaskLimitersBody {
 void multi_img_viewer::updateMaskLimiters(
 		const std::vector<std::pair<int, int> >& l, int dim)
 {
-	SharedDataHold imagelock(image->lock);
-	SharedDataHold ctxlock(viewport->ctx->lock);
+	SharedDataLock imagelock(image->lock);
+	SharedDataLock ctxlock(viewport->ctx->lock);
 	updateMaskLimitersBody body(maskholder, **image, dim, (*viewport->ctx)->minval, 
 		(*viewport->ctx)->binsize, illuminant, l);
 	tbb::parallel_for(tbb::blocked_range2d<size_t>(
@@ -665,8 +665,8 @@ void multi_img_viewer::updateMask(int dim)
 
 void multi_img_viewer::overlay(int x, int y)
 {
-	SharedDataHold imagelock(image->lock);
-	SharedDataHold ctxlock(viewport->ctx->lock);
+	SharedDataLock imagelock(image->lock);
+	SharedDataLock ctxlock(viewport->ctx->lock);
 	const multi_img::Pixel &pixel = (**image)(y, x);
 	QPolygonF &points = viewport->overlayPoints;
 	points.resize((*image)->size());
@@ -721,7 +721,7 @@ void multi_img_viewer::showLimiterMenu()
 
 void multi_img_viewer::updateLabelColors(const QVector<QColor> &colors, bool changed)
 {
-	SharedDataHold ctxlock(viewport->ctx->lock);
+	SharedDataLock ctxlock(viewport->ctx->lock);
 	ViewportCtx args = **viewport->ctx;
 	ctxlock.unlock();
 
@@ -754,7 +754,7 @@ void multi_img_viewer::toggleUnlabeled(bool toggle)
 
 void multi_img_viewer::toggleLabels(bool toggle)
 {
-	SharedDataHold ctxlock(viewport->ctx->lock);
+	SharedDataLock ctxlock(viewport->ctx->lock);
 	ViewportCtx args = **viewport->ctx;
 	ctxlock.unlock();
 
