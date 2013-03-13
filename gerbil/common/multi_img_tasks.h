@@ -29,6 +29,12 @@
 
 namespace MultiImg {
 
+enum normMode {
+	NORM_OBSERVED = 0,
+	NORM_THEORETICAL = 1,
+	NORM_FIXED = 2
+};
+
 namespace Auxiliary {
 	int RectComplement(int width, int height, cv::Rect r, std::vector<cv::Rect> &result);
 }

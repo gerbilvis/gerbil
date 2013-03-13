@@ -17,6 +17,10 @@ vole_compile_library(
 	foldingbar
 	iogui
 	gui-deprecated/fullimageswitcher
+	gui-deprecated/rgbtbb
+	gui-deprecated/rgbserial
+	gui-deprecated/normrangetbb
+	gui-deprecated/normrangecuda
 )
 
 vole_moc_library(

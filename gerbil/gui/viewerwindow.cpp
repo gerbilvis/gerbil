@@ -10,6 +10,13 @@
 #include "viewerwindow.h"
 #include "iogui.h"
 #include "commandrunner.h"
+#include "multi_img_tasks.h"
+#include "gui-deprecated/rgbtbb.h"
+#include "gui-deprecated/rgbserial.h"
+#include "gui-deprecated/normrangecuda.h"
+#include "gui-deprecated/normrangetbb.h"
+#include "gui-deprecated/graphsegbackground.h"
+
 
 #include <background_task_queue.h>
 
@@ -41,7 +48,7 @@ ViewerWindow::ViewerWindow(BackgroundTaskQueue &queue, multi_img_base *image,
 	  //imagepca(new SharedData<multi_img>(new multi_img(0, 0, 0))),
 	  //gradientpca(new SharedData<multi_img>(new multi_img(0, 0, 0))),
 	  full_labels(image->height, image->width, (short)0),
-	  normIMG(NORM_OBSERVED), normGRAD(NORM_OBSERVED),
+	  normIMG(MultiImg::NORM_OBSERVED), normGRAD(MultiImg::NORM_OBSERVED),
 	  normIMGRange(new SharedData<std::pair<multi_img::Value, multi_img::Value> >(
 	  		new std::pair<multi_img::Value, multi_img::Value>(0, 0))),
 	  normGRADRange(new SharedData<std::pair<multi_img::Value, multi_img::Value> >(
@@ -566,7 +573,7 @@ void ViewerWindow::initUI()
 	QShortcut *scr = new QShortcut(Qt::CTRL + Qt::Key_S, this);
 	connect(scr, SIGNAL(activated()), this, SLOT(screenshot()));
 
-	BackgroundTaskPtr taskRgb(new ViewerWindow::RgbTbb(
+	BackgroundTaskPtr taskRgb(new RgbTbb(
 		full_image_limited, mat3f_ptr(new SharedData<cv::Mat3f>(new cv::Mat3f)), full_rgb_temp));
 	taskRgb->run();
 	updateRGB(true);
@@ -939,7 +946,7 @@ void ViewerWindow::applyIlluminant() {
 		new FullImageSwitcher(full_image_limited, full_image_regular, FullImageSwitcher::LIMITED));
 	queue.push(taskSwitch);
 
-	BackgroundTaskPtr taskRgb(new ViewerWindow::RgbTbb(
+	BackgroundTaskPtr taskRgb(new RgbTbb(
 		full_image_limited, mat3f_ptr(new SharedData<cv::Mat3f>(new cv::Mat3f)), full_rgb_temp, roi));
 	QObject::connect(taskRgb.get(), SIGNAL(finished(bool)), this, SLOT(updateRGB(bool)), Qt::QueuedConnection);
 	queue.push(taskRgb);
@@ -951,61 +958,6 @@ void ViewerWindow::applyIlluminant() {
 
 	/* reflect change in our own gui (will propagate to viewIMG) */
 	i1Box->setCurrentIndex(i2Box->currentIndex());
-}
-
-bool ViewerWindow::RgbSerial::run()
-{
-	if (!MultiImg::BgrSerial::run())
-		return false;
-	cv::Mat3f &bgrmat = *(*bgr);
-	QImage *newRgb = new QImage(bgrmat.cols, bgrmat.rows, QImage::Format_ARGB32);
-	for (int y = 0; y < bgrmat.rows; ++y) {
-		cv::Vec3f *row = bgrmat[y];
-		QRgb *destrow = (QRgb*)newRgb->scanLine(y);
-		for (int x = 0; x < bgrmat.cols; ++x) {
-			cv::Vec3f &c = row[x];
-			destrow[x] = qRgb(c[2]*255., c[1]*255., c[0]*255.);
-		}
-	}
-	SharedDataSwapLock lock(rgb->lock);
-	delete rgb->swap(newRgb);
-	return true;
-}
-
-bool ViewerWindow::RgbTbb::run()
-{
-	if (!MultiImg::BgrTbb::run())
-		return false;
-	if (stopper.is_group_execution_cancelled())
-		return false;
-
-	cv::Mat3f &bgrmat = *(*bgr);
-	QImage *newRgb = new QImage(bgrmat.cols, bgrmat.rows, QImage::Format_ARGB32);
-
-	Rgb computeRgb(bgrmat, *newRgb);
-	tbb::parallel_for(tbb::blocked_range2d<int>(0, bgrmat.rows, 0, bgrmat.cols), 
-		computeRgb, tbb::auto_partitioner(), stopper);
-
-	if (stopper.is_group_execution_cancelled()) {
-		delete newRgb;
-		return false;
-	} else {
-		SharedDataSwapLock lock(rgb->lock);
-		delete rgb->swap(newRgb);
-		return true;
-	}
-}
-
-void ViewerWindow::RgbTbb::Rgb::operator()(const tbb::blocked_range2d<int> &r) const
-{
-	for (int y = r.rows().begin(); y != r.rows().end(); ++y) {
-		cv::Vec3f *row = bgr[y];
-		QRgb *destrow = (QRgb*)rgb.scanLine(y);
-		for (int x = r.cols().begin(); x != r.cols().end(); ++x) {
-			cv::Vec3f &c = row[x];
-			destrow[x] = qRgb(c[2]*255., c[1]*255., c[0]*255.);
-		}
-	}
 }
 
 void ViewerWindow::updateRGB(bool success)
@@ -1070,91 +1022,11 @@ void ViewerWindow::initNormalizationUI()
 			this, SLOT(clampNormUserRange()));
 }
 
-bool ViewerWindow::NormRangeTbb::run()
-{
-	switch (mode) {
-	case NORM_OBSERVED:
-		if (!MultiImg::DataRangeTbb::run())
-			return false;
-		break;
-	case NORM_THEORETICAL:
-		if (!stopper.is_group_execution_cancelled()) {
-			SharedDataSwapLock lock(range->lock);
-			// hack!
-			if (target == 0) {
-				(*range)->first = (multi_img::Value)MULTI_IMG_MIN_DEFAULT;
-				(*range)->second = (multi_img::Value)MULTI_IMG_MAX_DEFAULT;
-			} else {
-				(*range)->first = (multi_img::Value)-log(MULTI_IMG_MAX_DEFAULT);
-				(*range)->second = (multi_img::Value)log(MULTI_IMG_MAX_DEFAULT);
-			}
-		}
-		break;
-	default:
-		if (!stopper.is_group_execution_cancelled()) {
-			SharedDataSwapLock lock(range->lock);
-			// keep previous setting
-			(*range)->first = minval;
-			(*range)->second = maxval;
-		}
-		break; 
-	}
-
-	if (!stopper.is_group_execution_cancelled() && update) {
-		SharedDataSwapLock lock(multi->lock);
-		(*multi)->minval = (*range)->first;
-		(*multi)->maxval = (*range)->second;
-		return true;
-	} else {
-		return false;
-	}
-}
-
-bool ViewerWindow::NormRangeCuda::run()
-{
-	switch (mode) {
-	case NORM_OBSERVED:
-		if (!MultiImg::DataRangeCuda::run())
-			return false;
-		break;
-	case NORM_THEORETICAL:
-		if (!stopper.is_group_execution_cancelled()) {
-			SharedDataSwapLock lock(range->lock);
-			// hack!
-			if (target == 0) {
-				(*range)->first = (multi_img::Value)MULTI_IMG_MIN_DEFAULT;
-				(*range)->second = (multi_img::Value)MULTI_IMG_MAX_DEFAULT;
-			} else {
-				(*range)->first = (multi_img::Value)-log(MULTI_IMG_MAX_DEFAULT);
-				(*range)->second = (multi_img::Value)log(MULTI_IMG_MAX_DEFAULT);
-			}
-		}
-		break;
-	default:
-		if (!stopper.is_group_execution_cancelled()) {
-			SharedDataSwapLock lock(range->lock);
-			// keep previous setting
-			(*range)->first = minval;
-			(*range)->second = maxval;
-		}
-		break; 
-	}
-
-	if (!stopper.is_group_execution_cancelled() && update) {
-		SharedDataSwapLock lock(multi->lock);
-		(*multi)->minval = (*range)->first;
-		(*multi)->maxval = (*range)->second;
-		return true;
-	} else {
-		return false;
-	}
-}
-
 void ViewerWindow::normTargetChanged(bool usecurrent)
 {
 	/* reset gui to current settings */
 	int target = (normIButton->isChecked() ? 0 : 1);
-	normMode m = (target == 0 ? normIMG : normGRAD);
+	MultiImg::normMode m = (target == 0 ? normIMG : normGRAD);
 
 	// update normModeBox
 	normModeBox->setCurrentIndex(m);
@@ -1165,8 +1037,8 @@ void ViewerWindow::normTargetChanged(bool usecurrent)
 
 void ViewerWindow::normModeSelected(int mode, bool targetchange, bool usecurrent)
 {
-	normMode nm = static_cast<normMode>(mode);
-	if (nm == NORM_FIXED && !targetchange) // user edits from currenty viewed values
+	MultiImg::normMode nm = static_cast<MultiImg::normMode>(mode);
+	if (nm == MultiImg::NORM_FIXED && !targetchange) // user edits from currenty viewed values
 		return;
 
 	int target = (normIButton->isChecked() ? 0 : 1);
@@ -1233,8 +1105,8 @@ void ViewerWindow::applyNormUserRange()
 	int target = (normIButton->isChecked() ? 0 : 1);
 
 	// set internal norm mode
-	normMode &nm = (target == 0 ? normIMG : normGRAD);
-	nm = static_cast<normMode>(normModeBox->currentIndex());
+	MultiImg::normMode &nm = (target == 0 ? normIMG : normGRAD);
+	nm = static_cast<MultiImg::normMode>(normModeBox->currentIndex());
 
 	queue.cancelTasks();
 	setGUIEnabled(false, TT_NORM_RANGE);
@@ -1302,8 +1174,8 @@ void ViewerWindow::clampNormUserRange()
 	int target = (normIButton->isChecked() ? 0 : 1);
 
 	// set internal norm mode
-	normMode &nm = (target == 0 ? normIMG : normGRAD);
-	nm = static_cast<normMode>(normModeBox->currentIndex());
+	MultiImg::normMode &nm = (target == 0 ? normIMG : normGRAD);
+	nm = static_cast<MultiImg::normMode>(normModeBox->currentIndex());
 
 	/* if image is changed, change full image. for gradient, we cannot preserve
 		the gradient over ROI or illuminant changes, so it remains a local change */
@@ -1351,7 +1223,7 @@ void ViewerWindow::clampNormUserRange()
 			queue.push(taskSwitch);
 		}
 
-		BackgroundTaskPtr taskRgb(new ViewerWindow::RgbTbb(
+		BackgroundTaskPtr taskRgb(new RgbTbb(
 			full_image_limited, mat3f_ptr(new SharedData<cv::Mat3f>(new cv::Mat3f)), full_rgb_temp, roi));
 		QObject::connect(taskRgb.get(), SIGNAL(finished(bool)), this, SLOT(updateRGB(bool)), Qt::QueuedConnection);
 		queue.push(taskRgb);
@@ -1444,13 +1316,6 @@ void ViewerWindow::runGraphseg(multi_img_ptr input,
 	QObject::connect(taskGraphseg.get(), SIGNAL(finished(bool)), 
 		this, SLOT(finishGraphSeg(bool)), Qt::QueuedConnection);
 	queue.push(taskGraphseg);
-}
-
-bool ViewerWindow::GraphsegBackground::run()
-{
-	vole::GraphSeg seg(config);
-	*(result.get()) = seg.execute(**input, seedMap);
-	return true;
 }
 
 void ViewerWindow::finishGraphSeg(bool success)

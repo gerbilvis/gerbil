@@ -122,96 +122,8 @@ signals:
 	void seedingDone(bool yeah = false);
 
 protected:
-	enum normMode {
-		NORM_OBSERVED = 0,
-		NORM_THEORETICAL = 1,
-		NORM_FIXED = 2
-	};
 
-	class RgbSerial : public MultiImg::BgrSerial {
-	public:
-		RgbSerial(multi_img_ptr multi, mat3f_ptr bgr, qimage_ptr rgb,
-			cv::Rect targetRoi = cv::Rect(0, 0, 0, 0)) 
-			: MultiImg::BgrSerial(multi, bgr, targetRoi), rgb(rgb) {}
-		virtual ~RgbSerial() {}
-		virtual bool run();
-	protected:
-		qimage_ptr rgb;
-	};
-
-	class RgbTbb : public MultiImg::BgrTbb {
-	public:
-		RgbTbb(multi_img_base_ptr multi, mat3f_ptr bgr, qimage_ptr rgb,
-			cv::Rect targetRoi = cv::Rect(0, 0, 0, 0)) 
-			: MultiImg::BgrTbb(multi, bgr, targetRoi), rgb(rgb) {}
-		virtual ~RgbTbb() {}
-		virtual bool run();
-	protected:
-		class Rgb {
-		public:
-			Rgb(cv::Mat_<cv::Vec3f> &bgr, QImage &rgb) 
-				: bgr(bgr), rgb(rgb) {}
-			void operator()(const tbb::blocked_range2d<int> &r) const;
-		private:
-			cv::Mat_<cv::Vec3f> &bgr;
-			QImage &rgb;
-		};
-
-		qimage_ptr rgb;
-	};
-
-	class NormRangeTbb : public MultiImg::DataRangeTbb {
-	public:
-		NormRangeTbb(multi_img_ptr multi, 
-			data_range_ptr range, normMode mode, int target, 
-			multi_img::Value minval, multi_img::Value maxval, bool update,
-			cv::Rect targetRoi = cv::Rect(0, 0, 0, 0)) 
-			: MultiImg::DataRangeTbb(multi, range, targetRoi), 
-			mode(mode), target(target), minval(minval), maxval(maxval), update(update) {}
-		virtual ~NormRangeTbb() {}
-		virtual bool run();
-	protected:
-		normMode mode;
-		int target;
-		multi_img::Value minval;
-		multi_img::Value maxval;
-		bool update;
-	};
-
-	class NormRangeCuda : public MultiImg::DataRangeCuda {
-	public:
-		NormRangeCuda(multi_img_ptr multi, 
-			data_range_ptr range, normMode mode, int target, 
-			multi_img::Value minval, multi_img::Value maxval, bool update,
-			cv::Rect targetRoi = cv::Rect(0, 0, 0, 0)) 
-			: MultiImg::DataRangeCuda(multi, range, targetRoi), 
-			mode(mode), target(target), minval(minval), maxval(maxval), update(update) {}
-		virtual ~NormRangeCuda() {}
-		virtual bool run();
-	protected:
-		normMode mode;
-		int target;
-		multi_img::Value minval;
-		multi_img::Value maxval;
-		bool update;
-	};
-
-	class GraphsegBackground : public BackgroundTask {
-	public:
-		GraphsegBackground(const vole::GraphSegConfig &config, multi_img_ptr input, 
-			const cv::Mat1s &seedMap, boost::shared_ptr<multi_img::Mask> result) 
-			: config(config), input(input), seedMap(seedMap), result(result) {}
-		virtual ~GraphsegBackground() {}
-		virtual bool run();
-	protected:
-		vole::GraphSegConfig config;
-		multi_img_ptr input;
-		cv::Mat1s seedMap;
-		boost::shared_ptr<multi_img::Mask> result;
-	};
-
-
-	void switchFullImage(FullImageSwitcher::SwitchTarget target);
+    void switchFullImage(FullImageSwitcher::SwitchTarget target);
 
     void changeEvent(QEvent *e);
 
@@ -245,7 +157,7 @@ protected:
 	std::vector<multi_img_viewer*> viewers;
 	multi_img_viewer *activeViewer;
 
-	normMode normIMG, normGRAD;
+	MultiImg::normMode normIMG, normGRAD;
 	data_range_ptr normIMGRange, normGRADRange;
 
 protected slots:
