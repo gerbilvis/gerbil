@@ -157,7 +157,7 @@ protected:
 	std::vector<multi_img_viewer*> viewers;
 	multi_img_viewer *activeViewer;
 
-	MultiImg::normMode normIMG, normGRAD;
+	MultiImg::NormMode normIMG, normGRAD;
 	data_range_ptr normIMGRange, normGRADRange;
 
 protected slots:

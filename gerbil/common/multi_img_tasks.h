@@ -29,7 +29,7 @@
 
 namespace MultiImg {
 
-enum normMode {
+enum NormMode {
 	NORM_OBSERVED = 0,
 	NORM_THEORETICAL = 1,
 	NORM_FIXED = 2

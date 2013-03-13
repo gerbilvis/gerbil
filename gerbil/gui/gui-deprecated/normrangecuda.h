@@ -4,7 +4,7 @@
 class NormRangeCuda : public MultiImg::DataRangeCuda {
 public:
 	NormRangeCuda(multi_img_ptr multi,
-		data_range_ptr range, MultiImg::normMode mode, int target,
+		data_range_ptr range, MultiImg::NormMode mode, int target,
 		multi_img::Value minval, multi_img::Value maxval, bool update,
 		cv::Rect targetRoi = cv::Rect(0, 0, 0, 0))
 		: MultiImg::DataRangeCuda(multi, range, targetRoi),
@@ -12,7 +12,7 @@ public:
 	virtual ~NormRangeCuda() {}
 	virtual bool run();
 protected:
-	MultiImg::normMode mode;
+	MultiImg::NormMode mode;
 	int target;
 	multi_img::Value minval;
 	multi_img::Value maxval;

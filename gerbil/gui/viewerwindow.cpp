@@ -1026,7 +1026,7 @@ void ViewerWindow::normTargetChanged(bool usecurrent)
 {
 	/* reset gui to current settings */
 	int target = (normIButton->isChecked() ? 0 : 1);
-	MultiImg::normMode m = (target == 0 ? normIMG : normGRAD);
+	MultiImg::NormMode m = (target == 0 ? normIMG : normGRAD);
 
 	// update normModeBox
 	normModeBox->setCurrentIndex(m);
@@ -1037,7 +1037,7 @@ void ViewerWindow::normTargetChanged(bool usecurrent)
 
 void ViewerWindow::normModeSelected(int mode, bool targetchange, bool usecurrent)
 {
-	MultiImg::normMode nm = static_cast<MultiImg::normMode>(mode);
+	MultiImg::NormMode nm = static_cast<MultiImg::NormMode>(mode);
 	if (nm == MultiImg::NORM_FIXED && !targetchange) // user edits from currenty viewed values
 		return;
 
@@ -1105,8 +1105,8 @@ void ViewerWindow::applyNormUserRange()
 	int target = (normIButton->isChecked() ? 0 : 1);
 
 	// set internal norm mode
-	MultiImg::normMode &nm = (target == 0 ? normIMG : normGRAD);
-	nm = static_cast<MultiImg::normMode>(normModeBox->currentIndex());
+	MultiImg::NormMode &nm = (target == 0 ? normIMG : normGRAD);
+	nm = static_cast<MultiImg::NormMode>(normModeBox->currentIndex());
 
 	queue.cancelTasks();
 	setGUIEnabled(false, TT_NORM_RANGE);
@@ -1174,8 +1174,8 @@ void ViewerWindow::clampNormUserRange()
 	int target = (normIButton->isChecked() ? 0 : 1);
 
 	// set internal norm mode
-	MultiImg::normMode &nm = (target == 0 ? normIMG : normGRAD);
-	nm = static_cast<MultiImg::normMode>(normModeBox->currentIndex());
+	MultiImg::NormMode &nm = (target == 0 ? normIMG : normGRAD);
+	nm = static_cast<MultiImg::NormMode>(normModeBox->currentIndex());
 
 	/* if image is changed, change full image. for gradient, we cannot preserve
 		the gradient over ROI or illuminant changes, so it remains a local change */
