@@ -16,6 +16,7 @@ vole_compile_library(
 	commandrunner
 	foldingbar
 	iogui
+	gui-deprecated/fullimageswitcher
 )
 
 vole_moc_library(

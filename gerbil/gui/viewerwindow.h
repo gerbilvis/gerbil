@@ -29,6 +29,7 @@
 #include <probshift_shell.h>
 #endif
 #include <graphseg.h>
+#include "gui-deprecated/fullimageswitcher.h"
 
 #include <vector>
 #include <QPixmap>
@@ -209,18 +210,6 @@ protected:
 		boost::shared_ptr<multi_img::Mask> result;
 	};
 
-	class FullImageSwitcher : public BackgroundTask {
-	public:
-		enum SwitchTarget { REGULAR, LIMITED };
-		FullImageSwitcher(multi_img_base_ptr limited, multi_img_ptr regular, SwitchTarget target) 
-			: limited(limited), regular(regular), target(target) {}
-		virtual ~FullImageSwitcher() {}
-		virtual bool run();
-	protected:
-		multi_img_base_ptr limited;
-		multi_img_ptr regular;
-		SwitchTarget target;
-	};
 
 	void switchFullImage(FullImageSwitcher::SwitchTarget target);
 
