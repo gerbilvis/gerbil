@@ -177,7 +177,9 @@ vole_check_package(BOOST_CHRONO
 	Boost_CHRONO_FOUND
 	"${Boost_INCLUDE_DIR}/include/;${Boost_INCLUDE_DIR}"
 	"${Boost_CHRONO_LIBRARY}"
-)# Boost python
+)
+
+# Boost python
 find_package(Boost ${VOLE_MINIMUM_BOOST_VERSION} COMPONENTS python)
 vole_check_package(BOOST_PYTHON
 	"Boost python"

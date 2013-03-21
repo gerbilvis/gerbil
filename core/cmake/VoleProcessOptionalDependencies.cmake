@@ -90,24 +90,23 @@ foreach(module ${VOLE_MODULE_LIST})
 		vole_debug_message("  * ${module_name}:")
 
 		foreach(flag ${${module_flags}})
-			get_target_property(compile_flags ${module_name}-lib COMPILE_FLAGS)
-
-			if(compile_flags)
-				set_target_properties(${module_name}-lib PROPERTIES COMPILE_FLAGS "${compile_flags} -D${flag}")
-			else()
-				set_target_properties(${module_name}-lib PROPERTIES COMPILE_FLAGS "-D${flag}")
-			endif()
+			set_property(TARGET ${module_name}-lib APPEND PROPERTY COMPILE_DEFINITIONS ${flag})
 		endforeach()
 
 		if(${optional_modules})
-			add_library("${module_name}${VOLE_OPTIONAL_LIBRARY_SUFFIX}" EXCLUDE_FROM_ALL ${OPTIONAL_CPP_FILE})
+			set(module_name_opt "${module_name}${VOLE_OPTIONAL_LIBRARY_SUFFIX}")
+			add_library(${module_name_opt} EXCLUDE_FROM_ALL ${OPTIONAL_CPP_FILE})
+			# enforce consistency for IDEs that parse compile definitions
+			foreach(flag ${${module_flags}})
+				set_property(TARGET ${module_name_opt} APPEND PROPERTY COMPILE_DEFINITIONS ${flag})
+			endforeach()
 
 			foreach(optional_module ${${optional_modules}})
 				vole_check_module(${optional_module} ok available variable)
 
 				if(ok)
 					if(VOLE_AUTO_OPTIONAL_MODULES OR ${variable})
-						target_link_libraries("${module_name}${VOLE_OPTIONAL_LIBRARY_SUFFIX}" "${optional_module}${VOLE_LIBRARY_SUFFIX}")
+						target_link_libraries(${module_name_opt} "${optional_module}${VOLE_LIBRARY_SUFFIX}")
 						vole_debug_message("    Module \"${module_name}\" will be build with support for \"${optional_module}\".")
 					else()
 						vole_debug_message("    Module \"${module_name}\" will be build without support for \"${optional_module}\".")
@@ -121,13 +120,7 @@ foreach(module ${VOLE_MODULE_LIST})
 
 		foreach(executable ${${module_executables}})
 			foreach(flag ${${module_flags}})
-				get_target_property(compile_flags ${executable} COMPILE_FLAGS)
-
-				if(compile_flags)
-					set_target_properties(${executable} PROPERTIES COMPILE_FLAGS "${compile_flags} -D${flag}")
-				else()
-					set_target_properties(${executable} PROPERTIES COMPILE_FLAGS "-D${flag}")
-				endif()
+				set_property(TARGET ${executable} APPEND PROPERTY COMPILE_DEFINITIONS ${flag})
 			endforeach()
 		endforeach()
 
