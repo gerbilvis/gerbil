@@ -16,11 +16,11 @@ vole_compile_library(
 	commandrunner
 	foldingbar
 	iogui
-	gui-deprecated/fullimageswitcher
-	gui-deprecated/rgbtbb
-	gui-deprecated/rgbserial
-	gui-deprecated/normrangetbb
-	gui-deprecated/normrangecuda
+	tasks/fullimageswitcher
+	tasks/rgbtbb
+	tasks/rgbserial
+	tasks/normrangetbb
+	tasks/normrangecuda
 )
 
 vole_moc_library(

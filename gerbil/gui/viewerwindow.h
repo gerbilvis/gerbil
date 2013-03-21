@@ -29,7 +29,7 @@
 #include <probshift_shell.h>
 #endif
 #include <graphseg.h>
-#include "gui-deprecated/fullimageswitcher.h"
+#include "tasks/fullimageswitcher.h"
 
 #include <vector>
 #include <QPixmap>

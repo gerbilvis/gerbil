@@ -11,11 +11,11 @@
 #include "iogui.h"
 #include "commandrunner.h"
 #include "multi_img_tasks.h"
-#include "gui-deprecated/rgbtbb.h"
-#include "gui-deprecated/rgbserial.h"
-#include "gui-deprecated/normrangecuda.h"
-#include "gui-deprecated/normrangetbb.h"
-#include "gui-deprecated/graphsegbackground.h"
+#include "tasks/rgbtbb.h"
+#include "tasks/rgbserial.h"
+#include "tasks/normrangecuda.h"
+#include "tasks/normrangetbb.h"
+#include "tasks/graphsegbackground.h"
 
 
 #include <background_task_queue.h>
