@@ -40,8 +40,8 @@ private:
 	BackgroundTaskQueue(const BackgroundTaskQueue &other); // do not implement
 	BackgroundTaskQueue &operator=(const BackgroundTaskQueue &other); // do not implement
 
-	typedef boost::mutex Guard;
-	typedef boost::unique_lock<Guard> Lock;
+	typedef boost::mutex Mutex;
+	typedef boost::unique_lock<Mutex> Lock;
 
 	/** Used for background thread termination. */
 	bool halted; 
@@ -50,7 +50,7 @@ private:
 	/** Wakes sleeping worker thread. */
 	boost::condition_variable future; 
 	/** Serializes thread access to the queue. */
-	Guard guard; 
+	Mutex mutex;
 	/** Currently calculated task. */
 	BackgroundTaskPtr currentTask; 
 	/** Task queue which is consumed one-by-one by worker thread. */

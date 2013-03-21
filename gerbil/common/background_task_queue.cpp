@@ -13,7 +13,7 @@
 
 void BackgroundTaskQueue::halt() 
 {
-	Lock lock(guard);
+	Lock lock(mutex);
 	halted = true;
 	taskQueue.clear(); // Flush the queue, so there is nothing else to pop.
 	if (currentTask) {
@@ -26,7 +26,7 @@ void BackgroundTaskQueue::halt()
 
 bool BackgroundTaskQueue::pop() 
 {
-	Lock lock(guard);
+	Lock lock(mutex);
 	while (taskQueue.empty()) {
 		if (halted) {
 			return false; // Thread will terminate.
@@ -42,7 +42,7 @@ bool BackgroundTaskQueue::pop()
 
 void BackgroundTaskQueue::push(BackgroundTaskPtr &task) 
 {
-	Lock lock(guard);
+	Lock lock(mutex);
 	taskQueue.push_back(task);
 	lock.unlock(); // Unlock to prevent deadlock when signalling the condition.
 	future.notify_all();
@@ -50,7 +50,7 @@ void BackgroundTaskQueue::push(BackgroundTaskPtr &task)
 
 void BackgroundTaskQueue::cancelTasks(const cv::Rect &roi) 
 {
-	Lock lock(guard);
+	Lock lock(mutex);
 	std::deque<BackgroundTaskPtr>::iterator it = taskQueue.begin();
 	while (it != taskQueue.end()) {
 		if ((*it)->roi() == roi) {
@@ -74,7 +74,7 @@ void BackgroundTaskQueue::operator()()
 		}
 		bool success = currentTask->run();
 		{
-			Lock lock(guard);
+			Lock lock(mutex);
 			currentTask->done(!cancelled && success);
 			currentTask.reset();
 		}
