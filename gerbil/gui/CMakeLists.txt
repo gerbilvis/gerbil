@@ -21,6 +21,7 @@ vole_compile_library(
 	tasks/rgbserial
 	tasks/normrangetbb
 	tasks/normrangecuda
+	model/multiimgmodel.cpp
 )
 
 vole_moc_library(
