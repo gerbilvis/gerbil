@@ -29,7 +29,6 @@
 #include <probshift_shell.h>
 #endif
 #include <graphseg.h>
-#include "tasks/fullimageswitcher.h"
 
 #include <vector>
 #include <QPixmap>
@@ -122,10 +121,7 @@ signals:
 	void seedingDone(bool yeah = false);
 
 protected:
-
-    void switchFullImage(FullImageSwitcher::SwitchTarget target);
-
-    void changeEvent(QEvent *e);
+	void changeEvent(QEvent *e);
 
 	/* helper functions */
 	void applyROI(bool reuse);
@@ -138,7 +134,7 @@ protected:
 
 	// multispectral image and gradient
 	multi_img_base_ptr full_image_limited;
-	multi_img_ptr full_image_regular;
+	//multi_img_ptr full_image_regular;
 	multi_img_ptr image, gradient, imagepca, gradientpca;
 	// current region of interest
 	cv::Rect roi;

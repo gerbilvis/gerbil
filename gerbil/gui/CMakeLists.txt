@@ -16,7 +16,6 @@ vole_compile_library(
 	commandrunner
 	foldingbar
 	iogui
-	tasks/fullimageswitcher
 	tasks/rgbtbb
 	tasks/rgbserial
 	tasks/normrangetbb

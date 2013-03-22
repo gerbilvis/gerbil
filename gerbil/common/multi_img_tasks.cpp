@@ -616,15 +616,22 @@ bool DataRangeCuda::run()
 
 bool ClampTbb::run() 
 {
-	multi_img *target = new multi_img((*multi)->height, (*multi)->width, (*multi)->size());
-	target->roi = (*multi)->roi;
-	target->meta = (*multi)->meta;
+	multi_img *source;
+	if(use_multi_img_base)
+		source = dynamic_cast<multi_img*>(&(**multi_base));
+	else
+		source = &(**multi_full);
+	assert(0 != source);
+
+	multi_img *target = new multi_img(source->height, source->width, source->size());
+	target->roi = source->roi;
+	target->meta = source->meta;
 	target->minval = (*minmax)->minval;
 	target->maxval = (*minmax)->maxval;
 
 	vole::Stopwatch s;
 
-	Clamp computeClamp(**multi, *target);
+	Clamp computeClamp(*source, *target);
 	tbb::parallel_for(tbb::blocked_range<size_t>(0, target->size()), 
 		computeClamp, tbb::auto_partitioner(), stopper);
 
@@ -644,8 +651,13 @@ bool ClampTbb::run()
 		delete target;
 		return false;
 	} else {
-		SharedDataSwapLock lock(multi->lock);
-		delete multi->swap(target);
+		if(use_multi_img_base) {
+			SharedDataSwapLock lock(multi_base->lock);
+			delete multi_base->swap(target);
+		} else {
+			SharedDataSwapLock lock(multi_full->lock);
+			delete multi_full->swap(target);
+		}
 		return true;
 	}
 }
@@ -662,17 +674,32 @@ void ClampTbb::Clamp::operator()(const tbb::blocked_range<size_t> &r) const
 
 bool ClampCuda::run() 
 {
-	multi_img *target = new multi_img((*multi)->height, (*multi)->width, (*multi)->size());
-	target->roi = (*multi)->roi;
-	target->meta = (*multi)->meta;
+	// BUG
+	// There is no reasonable way to actually get the pointer to the multi_img
+	// from SharedData.
+	// multi_img_ptr x;
+	// typeof(*x) == SharedData<multi_img> != multi_img*
+	// typeof(**x) == multi_img
+	// typeof(&(**x)) == multi_img*    [doh!]
+
+	multi_img *source;
+	if(use_multi_img_base)
+		source = dynamic_cast<multi_img*>(&(**multi_base));
+	else
+		source = &(**multi_full);
+
+	assert(0 != source);
+	multi_img *target = new multi_img(source->height, source->width, source->size());
+	target->roi = source->roi;
+	target->meta = source->meta;
 	target->minval = (*minmax)->minval;
 	target->maxval = (*minmax)->maxval;
 
 	vole::Stopwatch s;
 
-	cv::gpu::GpuMat band((*multi)->height, (*multi)->width, multi_img::ValueType);
+	cv::gpu::GpuMat band(source->height, source->width, multi_img::ValueType);
 	for (size_t d = 0; d != target->size(); ++d) {
-		band.upload((*multi)->bands[d]);
+		band.upload(source->bands[d]);
 		cv::gpu::max(band, target->minval, band);
 		cv::gpu::min(band, target->maxval, band);
 		band.download(target->bands[d]);
@@ -694,23 +721,30 @@ bool ClampCuda::run()
 		delete target;
 		return false;
 	} else {
-		SharedDataSwapLock lock(multi->lock);
-		delete multi->swap(target);
+		if(use_multi_img_base) {
+			SharedDataSwapLock lock(multi_base->lock);
+			delete multi_base->swap(target);
+		} else {
+			SharedDataSwapLock lock(multi_full->lock);
+			delete multi_full->swap(target);
+		}
 		return true;
 	}
 }
 
 bool IlluminantTbb::run() 
 {
-	multi_img *target = new multi_img((*multi)->height, (*multi)->width, (*multi)->size());
-	target->roi = (*multi)->roi;
-	target->meta = (*multi)->meta;
-	target->minval = (*multi)->minval;
-	target->maxval = (*multi)->maxval;
+	multi_img *source = dynamic_cast<multi_img*>(&(**multi));
+	assert(0 != source);
+	multi_img *target = new multi_img(source->height, source->width, source->size());
+	target->roi = source->roi;
+	target->meta = source->meta;
+	target->minval = source->minval;
+	target->maxval = source->maxval;
 
 	vole::Stopwatch s;
 
-	Illumination computeIllumination(**multi, *target, il, remove);
+	Illumination computeIllumination(*source, *target, il, remove);
 	tbb::parallel_for(tbb::blocked_range<size_t>(0, target->size()), 
 		computeIllumination, tbb::auto_partitioner(), stopper);
 
@@ -755,25 +789,27 @@ void IlluminantTbb::Illumination::operator()(const tbb::blocked_range<size_t> &r
 
 bool IlluminantCuda::run() 
 {
-	multi_img *target = new multi_img((*multi)->height, (*multi)->width, (*multi)->size());
-	target->roi = (*multi)->roi;
-	target->meta = (*multi)->meta;
-	target->minval = (*multi)->minval;
-	target->maxval = (*multi)->maxval;
+	multi_img *source = dynamic_cast<multi_img*>(&(**multi));
+	assert(0 != source);
+	multi_img *target = new multi_img(source->height, source->width, source->size());
+	target->roi = source->roi;
+	target->meta = source->meta;
+	target->minval = source->minval;
+	target->maxval = source->maxval;
 
 	vole::Stopwatch s;
 
-	cv::gpu::GpuMat band((*multi)->height, (*multi)->width, multi_img::ValueType);
+	cv::gpu::GpuMat band(source->height, source->width, multi_img::ValueType);
 	if (remove) {
 		for (size_t d = 0; d != target->size(); ++d) {
-			band.upload((*multi)->bands[d]);
-			cv::gpu::divide(band, (multi_img::Value)il.at((*multi)->meta[d].center), band);
+			band.upload(source->bands[d]);
+			cv::gpu::divide(band, (multi_img::Value)il.at(source->meta[d].center), band);
 			band.download(target->bands[d]);
 		}
 	} else {
 		for (size_t d = 0; d != target->size(); ++d) {
-			band.upload((*multi)->bands[d]);
-			cv::gpu::multiply(band, (multi_img::Value)il.at((*multi)->meta[d].center), band);
+			band.upload(source->bands[d]);
+			cv::gpu::multiply(band, (multi_img::Value)il.at(source->meta[d].center), band);
 			band.download(target->bands[d]);
 		}
 	}

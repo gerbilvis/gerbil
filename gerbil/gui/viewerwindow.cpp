@@ -42,7 +42,6 @@ ViewerWindow::ViewerWindow(BackgroundTaskQueue &queue, multi_img_base *image,
 	: QMainWindow(parent), queue(queue),
 	  startupLabelFile(labelfile), limitedMode(limitedMode),
 	  full_image_limited(new SharedData<multi_img_base>(image)),
-	  full_image_regular(new SharedData<multi_img>(NULL)),
 	  image(new SharedData<multi_img>(new multi_img(0, 0, 0))),
 	  gradient(new SharedData<multi_img>(new multi_img(0, 0, 0))),
 	  //imagepca(new SharedData<multi_img>(new multi_img(0, 0, 0))),
@@ -99,15 +98,6 @@ ViewerWindow::ViewerWindow(BackgroundTaskQueue &queue, multi_img_base *image,
 			this, SLOT(loadLabeling()), Qt::QueuedConnection);
 		queue.push(taskLabels);
 	}
-}
-
-
-void ViewerWindow::switchFullImage(FullImageSwitcher::SwitchTarget target)
-{
-	BackgroundTaskPtr taskSwitch(
-		new FullImageSwitcher(full_image_limited, full_image_regular, target));
-	queue.push(taskSwitch);
-	taskSwitch->wait();
 }
 
 void ViewerWindow::finishTask(bool success)
@@ -203,7 +193,7 @@ void ViewerWindow::applyROI(bool reuse)
 	for (size_t i = 0; i < viewers.size(); ++i)
 		viewers[i]->labels = labels;
 
-	switchFullImage(FullImageSwitcher::LIMITED);
+	//switchFullImage(FullImageSwitcher::LIMITED);
 	SharedDataLock full_image_lock(full_image_limited->lock);
 	size_t numbands = bandsSlider->value();
 	if (numbands <= 2)
@@ -216,9 +206,9 @@ void ViewerWindow::applyROI(bool reuse)
 	}
 	full_image_lock.unlock();
 
-	BackgroundTaskPtr taskSwitch(
-		new FullImageSwitcher(full_image_limited, full_image_regular, FullImageSwitcher::LIMITED));
-	queue.push(taskSwitch);
+//	BackgroundTaskPtr taskSwitch(
+//		new FullImageSwitcher(full_image_limited, full_image_regular, FullImageSwitcher::LIMITED));
+//	queue.push(taskSwitch);
 
 	multi_img_ptr scoped_image(new SharedData<multi_img>(NULL));
 	BackgroundTaskPtr taskScope(new MultiImg::ScopeImage(
@@ -902,17 +892,17 @@ void ViewerWindow::applyIlluminant() {
 	if (i1 != 0) {
 		const Illuminant &il = getIlluminant(i1);
 
-		BackgroundTaskPtr taskSwitch(
-			new FullImageSwitcher(full_image_limited, full_image_regular, FullImageSwitcher::REGULAR));
-		queue.push(taskSwitch);
+//		BackgroundTaskPtr taskSwitch(
+//			new FullImageSwitcher(full_image_limited, full_image_regular, FullImageSwitcher::REGULAR));
+//		queue.push(taskSwitch);
 
 		if (cv::gpu::getCudaEnabledDeviceCount() > 0 && USE_CUDA_ILLUMINANT) {
 			BackgroundTaskPtr taskIllum(new MultiImg::IlluminantCuda(
-				full_image_regular, il, true, roi, false));
+				full_image_limited, il, true, roi, false));
 			queue.push(taskIllum);
 		} else {
 			BackgroundTaskPtr taskIllum(new MultiImg::IlluminantTbb(
-				full_image_regular, il, true, roi, false));
+				full_image_limited, il, true, roi, false));
 			queue.push(taskIllum);
 		}
 	}
@@ -921,17 +911,17 @@ void ViewerWindow::applyIlluminant() {
 	if (i2 != 0) {
 		const Illuminant &il = getIlluminant(i2);
 
-		BackgroundTaskPtr taskSwitch(
-			new FullImageSwitcher(full_image_limited, full_image_regular, FullImageSwitcher::REGULAR));
-		queue.push(taskSwitch);
+//		BackgroundTaskPtr taskSwitch(
+//			new FullImageSwitcher(full_image_limited, full_image_regular, FullImageSwitcher::REGULAR));
+//		queue.push(taskSwitch);
 
 		if (cv::gpu::getCudaEnabledDeviceCount() > 0 && USE_CUDA_ILLUMINANT) {
 			BackgroundTaskPtr taskIllum(new MultiImg::IlluminantCuda(
-				full_image_regular, il, false, roi, false));
+				full_image_limited, il, false, roi, false));
 			queue.push(taskIllum);
 		} else {
 			BackgroundTaskPtr taskIllum(new MultiImg::IlluminantTbb(
-				full_image_regular, il, false, roi, false));
+				full_image_limited, il, false, roi, false));
 			queue.push(taskIllum);
 		}
 	}
@@ -942,9 +932,9 @@ void ViewerWindow::applyIlluminant() {
 	applyROI(false);
 	rgbDock->setEnabled(false);
 
-	BackgroundTaskPtr taskSwitch(
-		new FullImageSwitcher(full_image_limited, full_image_regular, FullImageSwitcher::LIMITED));
-	queue.push(taskSwitch);
+//	BackgroundTaskPtr taskSwitch(
+//		new FullImageSwitcher(full_image_limited, full_image_regular, FullImageSwitcher::LIMITED));
+//	queue.push(taskSwitch);
 
 	BackgroundTaskPtr taskRgb(new RgbTbb(
 		full_image_limited, mat3f_ptr(new SharedData<cv::Mat3f>(new cv::Mat3f)), full_rgb_temp, roi));
@@ -1198,30 +1188,30 @@ void ViewerWindow::clampNormUserRange()
 			queue.push(taskNormRange);
 		}
 
-		{
-			BackgroundTaskPtr taskSwitch(
-				new FullImageSwitcher(full_image_limited, full_image_regular, FullImageSwitcher::REGULAR));
-			queue.push(taskSwitch);
-		}
+//		{
+//			BackgroundTaskPtr taskSwitch(
+//				new FullImageSwitcher(full_image_limited, full_image_regular, FullImageSwitcher::REGULAR));
+//			queue.push(taskSwitch);
+//		}
 
 		if (cv::gpu::getCudaEnabledDeviceCount() > 0 && USE_CUDA_CLAMP) {
 			BackgroundTaskPtr taskClamp(new MultiImg::ClampCuda(
-				full_image_regular, image, roi, false));
+				full_image_limited, image, roi, false));
 			queue.push(taskClamp);
 		} else {
 			BackgroundTaskPtr taskClamp(new MultiImg::ClampTbb(
-				full_image_regular, image, roi, false));
+				full_image_limited, image, roi, false));
 			queue.push(taskClamp);
 		}
 
 		applyROI(false);
 		rgbDock->setEnabled(false);
 
-		{
-			BackgroundTaskPtr taskSwitch(
-				new FullImageSwitcher(full_image_limited, full_image_regular, FullImageSwitcher::LIMITED));
-			queue.push(taskSwitch);
-		}
+//		{
+//			BackgroundTaskPtr taskSwitch(
+//				new FullImageSwitcher(full_image_limited, full_image_regular, FullImageSwitcher::LIMITED));
+//			queue.push(taskSwitch);
+//		}
 
 		BackgroundTaskPtr taskRgb(new RgbTbb(
 			full_image_limited, mat3f_ptr(new SharedData<cv::Mat3f>(new cv::Mat3f)), full_rgb_temp, roi));
@@ -1550,9 +1540,12 @@ void ViewerWindow::startUnsupervisedSeg(bool findKL)
 	usSettingsWidget->setDisabled(true);
 
 	// prepare input image
-	switchFullImage(FullImageSwitcher::REGULAR);
-	SharedDataLock full_image_lock(full_image_regular->lock);
-	boost::shared_ptr<multi_img> input(new multi_img(**full_image_regular, roi)); // image data is not copied
+	// switchFullImage(FullImageSwitcher::REGULAR);
+	// SharedDataLock full_image_lock(full_image_regular->lock);
+	// boost::shared_ptr<multi_img> input(new multi_img(**full_image_regular, roi)); // image data is not copied
+	SharedDataLock full_image_lock(full_image_limited->lock);
+	assert(0 != dynamic_cast<multi_img*>(&(**full_image_limited)));
+	boost::shared_ptr<multi_img> input(new multi_img(**full_image_limited, roi)); // image data is not copied
 	full_image_lock.unlock();
 	int numbands = usBandsSpinBox->value();
 	bool gradient = usGradientCheckBox->isChecked();
@@ -1718,11 +1711,19 @@ void ViewerWindow::buildIlluminant(int temp)
 	assert(temp > 0);
 	Illuminant il(temp);
 	std::vector<multi_img::Value> cf;
-	switchFullImage(FullImageSwitcher::REGULAR);
-	SharedDataLock full_image_lock(full_image_regular->lock);
-	il.calcWeight((*full_image_regular)->meta[0].center,
-				  (*full_image_regular)->meta[(*full_image_regular)->size()-1].center);
-	cf = (*full_image_regular)->getIllumCoeff(il);
+
+
+
+//	switchFullImage(FullImageSwitcher::REGULAR);
+//	SharedDataLock full_image_lock(full_image_regular->lock);
+
+	SharedDataLock full_image_lock(full_image_limited->lock);
+	multi_img* full_image = dynamic_cast<multi_img*>(&(**full_image_limited));
+	assert(0 != full_image);
+
+	il.calcWeight(full_image->meta[0].center,
+				  full_image->meta[full_image->size()-1].center);
+	cf = full_image->getIllumCoeff(il);
 	illuminants[temp] = make_pair(il, cf);
 }
 
@@ -1782,7 +1783,7 @@ void ViewerWindow::loadLabeling(QString filename)
 		actual_filename = filename;
 	}
 
-	switchFullImage(FullImageSwitcher::LIMITED);
+	//switchFullImage(FullImageSwitcher::LIMITED);
 	SharedDataLock full_image_lock(full_image_limited->lock);
 	int height = (*full_image_limited)->height;
 	int width = (*full_image_limited)->width;
@@ -1804,7 +1805,7 @@ void ViewerWindow::loadLabeling(QString filename)
 
 void ViewerWindow::loadSeeds()
 {
-	switchFullImage(FullImageSwitcher::LIMITED);
+//	switchFullImage(FullImageSwitcher::LIMITED);
 	SharedDataLock full_image_lock(full_image_limited->lock);
 	int height = (*full_image_limited)->height;
 	int width = (*full_image_limited)->width;
@@ -1857,7 +1858,7 @@ void ViewerWindow::ROIDecision(QAbstractButton *sender)
 			roiView->roi = QRect(roi.x, roi.y, roi.width, roi.height);
 		} else {
 			// fetch image dimensions
-			switchFullImage(FullImageSwitcher::LIMITED);
+//			switchFullImage(FullImageSwitcher::LIMITED);
 			SharedDataLock full_image_lock(full_image_limited->lock);
 			int height = (*full_image_limited)->height;
 			int width = (*full_image_limited)->width;
