@@ -95,7 +95,7 @@ void CommonTbb::DetermineRange::join(DetermineRange &toJoin)
 bool ScopeImage::run() 
 {
 	multi_img *target =  new multi_img(**full, targetRoi);
-	SharedDataSwapLock lock(scoped->lock);
+	SharedDataSwapLock lock(scoped->mutex);
 	delete scoped->swap(target);
 	return true;
 }
@@ -104,7 +104,7 @@ bool BgrSerial::run()
 {
 	cv::Mat_<cv::Vec3f> *newBgr = new cv::Mat_<cv::Vec3f>();
 	*newBgr = (*multi)->bgr(); 
-	SharedDataSwapLock lock(bgr->lock);
+	SharedDataSwapLock lock(bgr->mutex);
 	delete bgr->swap(newBgr);
 	return true;
 }
@@ -142,7 +142,7 @@ bool BgrTbb::run()
 		delete newBgr;
 		return false;
 	} else {
-		SharedDataSwapLock lock(bgr->lock);
+		SharedDataSwapLock lock(bgr->mutex);
 		delete bgr->swap(newBgr);
 		return true;
 	}
@@ -214,7 +214,7 @@ bool Band2QImageTbb::run()
 		delete target;
 		return false;
 	} else {
-		SharedDataSwapLock lock(image->lock);
+		SharedDataSwapLock lock(image->mutex);
 		delete image->swap(target);
 		return true;
 	}
@@ -289,7 +289,7 @@ bool RescaleTbb::run()
 		delete target;
 		return false;
 	} else {
-		SharedDataSwapLock lock(current->lock);
+		SharedDataSwapLock lock(current->mutex);
 		delete current->swap(target);
 		return true;
 	}
@@ -390,7 +390,7 @@ bool GradientTbb::run()
 		delete target;
 		return false;
 	} else {
-		SharedDataSwapLock lock(current->lock);
+		SharedDataSwapLock lock(current->mutex);
 		delete current->swap(target);
 		return true;
 	}
@@ -497,7 +497,7 @@ bool GradientCuda::run()
 		delete target;
 		return false;
 	} else {
-		SharedDataSwapLock lock(current->lock);
+		SharedDataSwapLock lock(current->mutex);
 		delete current->swap(target);
 		return true;
 	}
@@ -542,7 +542,7 @@ bool PcaTbb::run()
 		delete target;
 		return false;
 	} else {
-		SharedDataSwapLock lock(current->lock);
+		SharedDataSwapLock lock(current->mutex);
 		delete current->swap(target);
 		return true;
 	}
@@ -578,7 +578,7 @@ bool DataRangeTbb::run()
 	STOPWATCH_PRINT(s, "DataRange TBB")
 
 	if (!stopper.is_group_execution_cancelled()) {
-		SharedDataSwapLock lock(range->lock);
+		SharedDataSwapLock lock(range->mutex);
 		(*range)->first = determineRange.GetMin();
 		(*range)->second = determineRange.GetMax();
 		return true;
@@ -605,7 +605,7 @@ bool DataRangeCuda::run()
 	STOPWATCH_PRINT(s, "DataRange CUDA")
 
 	if (!stopper.is_group_execution_cancelled()) {
-		SharedDataSwapLock lock(range->lock);
+		SharedDataSwapLock lock(range->mutex);
 		(*range)->first = min;
 		(*range)->second = max;
 		return true;
@@ -652,10 +652,10 @@ bool ClampTbb::run()
 		return false;
 	} else {
 		if(use_multi_img_base) {
-			SharedDataSwapLock lock(multi_base->lock);
+			SharedDataSwapLock lock(multi_base->mutex);
 			delete multi_base->swap(target);
 		} else {
-			SharedDataSwapLock lock(multi_full->lock);
+			SharedDataSwapLock lock(multi_full->mutex);
 			delete multi_full->swap(target);
 		}
 		return true;
@@ -722,10 +722,10 @@ bool ClampCuda::run()
 		return false;
 	} else {
 		if(use_multi_img_base) {
-			SharedDataSwapLock lock(multi_base->lock);
+			SharedDataSwapLock lock(multi_base->mutex);
 			delete multi_base->swap(target);
 		} else {
-			SharedDataSwapLock lock(multi_full->lock);
+			SharedDataSwapLock lock(multi_full->mutex);
 			delete multi_full->swap(target);
 		}
 		return true;
@@ -764,7 +764,7 @@ bool IlluminantTbb::run()
 		delete target;
 		return false;
 	} else {
-		SharedDataSwapLock lock(multi->lock);
+		SharedDataSwapLock lock(multi->mutex);
 		delete multi->swap(target);
 		return true;
 	}
@@ -830,7 +830,7 @@ bool IlluminantCuda::run()
 		delete target;
 		return false;
 	} else {
-		SharedDataSwapLock lock(multi->lock);
+		SharedDataSwapLock lock(multi->mutex);
 		delete multi->swap(target);
 		return true;
 	}

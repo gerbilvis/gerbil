@@ -15,7 +15,7 @@ bool RgbSerial::run()
 			destrow[x] = qRgb(c[2]*255., c[1]*255., c[0]*255.);
 		}
 	}
-	SharedDataSwapLock lock(rgb->lock);
+	SharedDataSwapLock lock(rgb->mutex);
 	delete rgb->swap(newRgb);
 	return true;
 }

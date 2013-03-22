@@ -123,24 +123,24 @@ void ViewerWindow::applyROI(bool reuse)
 		bandView, SLOT(commitLabelChanges()));
 
 	if (!reuse) {
-		SharedDataLock image_lock(image->lock);
-		SharedDataLock gradient_lock(gradient->lock);
+		SharedDataLock image_lock(image->mutex);
+		SharedDataLock gradient_lock(gradient->mutex);
 		cv::Rect empty(0, 0, 0, 0);
 		(*image)->roi = empty;
 		(*gradient)->roi = empty;
 
 		if (imagepca.get()) {
-			SharedDataLock imagepca_lock(imagepca->lock);
+			SharedDataLock imagepca_lock(imagepca->mutex);
 			(*imagepca)->roi = empty;
 		}
 
 		if (gradientpca.get()) {
-			SharedDataLock gradientpca_lock(gradientpca->lock);
+			SharedDataLock gradientpca_lock(gradientpca->mutex);
 			(*gradientpca)->roi = empty;
 		}
 	}
 
-	SharedDataLock image_lock(image->lock);
+	SharedDataLock image_lock(image->mutex);
 	cv::Rect oldRoi = (*image)->roi;
 	cv::Rect newRoi = roi;
 	image_lock.unlock();
@@ -194,7 +194,7 @@ void ViewerWindow::applyROI(bool reuse)
 		viewers[i]->labels = labels;
 
 	//switchFullImage(FullImageSwitcher::LIMITED);
-	SharedDataLock full_image_lock(full_image_limited->lock);
+	SharedDataLock full_image_lock(full_image_limited->mutex);
 	size_t numbands = bandsSlider->value();
 	if (numbands <= 2)
 		numbands = 3;
@@ -223,7 +223,7 @@ void ViewerWindow::applyROI(bool reuse)
 	queue.push(taskRescale);
 
 	{
-		SharedDataLock hlock(normIMGRange->lock);
+		SharedDataLock hlock(normIMGRange->mutex);
 		double min = (*normIMGRange)->first;
 		double max = (*normIMGRange)->second;
 		hlock.unlock();
@@ -263,7 +263,7 @@ void ViewerWindow::applyROI(bool reuse)
 	}
 
 	{
-		SharedDataLock hlock(normGRADRange->lock);
+		SharedDataLock hlock(normGRADRange->mutex);
 		double min = (*normGRADRange)->first;
 		double max = (*normGRADRange)->second;
 		hlock.unlock();
@@ -788,7 +788,7 @@ bool ViewerWindow::setLabelColors(const std::vector<cv::Vec3b> &colors)
 
 void ViewerWindow::setLabels(const vole::Labeling &labeling)
 {
-	SharedDataLock image_lock(image->lock);
+	SharedDataLock image_lock(image->mutex);
 	assert(labeling().rows == (*image)->height && labeling().cols == (*image)->width);
 	image_lock.unlock();
 
@@ -836,7 +836,7 @@ const QPixmap* ViewerWindow::getBand(representation type, int dim)
 		multi_img_ptr multi = viewers[type]->getImage();
 		qimage_ptr qimg(new SharedData<QImage>(new QImage()));
 
-		SharedDataLock hlock(multi->lock);
+		SharedDataLock hlock(multi->mutex);
 
 		BackgroundTaskPtr taskConvert(new MultiImg::Band2QImageTbb(multi, qimg, dim));
 		taskConvert->run();
@@ -860,7 +860,7 @@ void ViewerWindow::selectBand(representation type, int dim)
 	bandView->setEnabled(true);
 	bandView->setPixmap(*getBand(type, dim));
 	multi_img_ptr m = viewers[type]->getImage();
-	SharedDataLock hlock(m->lock);
+	SharedDataLock hlock(m->mutex);
 	std::string banddesc = (*m)->meta[dim].str();
 	hlock.unlock();
 	QString title;
@@ -955,7 +955,7 @@ void ViewerWindow::updateRGB(bool success)
 	if (!success)
 		return;
 
-	SharedDataLock hlock(full_rgb_temp->lock);
+	SharedDataLock hlock(full_rgb_temp->mutex);
 	if (!(*full_rgb_temp)->isNull()) {
 		full_rgb = QPixmap::fromImage(**full_rgb_temp);
 	}
@@ -1037,11 +1037,11 @@ void ViewerWindow::normModeSelected(int mode, bool targetchange, bool usecurrent
 		multi_img::Value min;
 		multi_img::Value max;
 		if (target == 0) {
-			SharedDataLock hlock(normIMGRange->lock);
+			SharedDataLock hlock(normIMGRange->mutex);
 			min = (*normIMGRange)->first;
 			max = (*normIMGRange)->second;
 		} else {
-			SharedDataLock hlock(normGRADRange->lock);
+			SharedDataLock hlock(normGRADRange->mutex);
 			min = (*normGRADRange)->first;
 			max = (*normGRADRange)->second;
 		}
@@ -1066,11 +1066,11 @@ void ViewerWindow::normModeSelected(int mode, bool targetchange, bool usecurrent
 	double min;
 	double max;
 	if (target == 0) {
-		SharedDataLock hlock(normIMGRange->lock);
+		SharedDataLock hlock(normIMGRange->mutex);
 		min = (*normIMGRange)->first;
 		max = (*normIMGRange)->second;
 	} else {
-		SharedDataLock hlock(normGRADRange->lock);
+		SharedDataLock hlock(normGRADRange->mutex);
 		min = (*normGRADRange)->first;
 		max = (*normGRADRange)->second;
 	}
@@ -1142,7 +1142,7 @@ void ViewerWindow::applyNormUserRange()
 void ViewerWindow::finishNormRangeImgChange(bool success)
 {
 	if (success) {
-		SharedDataLock hlock(image->lock);
+		SharedDataLock hlock(image->mutex);
 		bands[GRAD].assign((*image)->size(), NULL);
 		hlock.unlock();
 		updateBand();
@@ -1152,7 +1152,7 @@ void ViewerWindow::finishNormRangeImgChange(bool success)
 void ViewerWindow::finishNormRangeGradChange(bool success)
 {
 	if (success) {
-		SharedDataLock hlock(gradient->lock);
+		SharedDataLock hlock(gradient->mutex);
 		bands[GRAD].assign((*gradient)->size(), NULL);
 		hlock.unlock();
 		updateBand();
@@ -1342,7 +1342,7 @@ void ViewerWindow::startGraphseg()
 	} else {	// currently shown band, construct from selection in viewport
 		int band = activeViewer->getSelection();
 		multi_img_ptr img = activeViewer->getImage();
-		SharedDataLock img_lock(img->lock);
+		SharedDataLock img_lock(img->mutex);
 		multi_img_ptr i(new SharedData<multi_img>(
 			new multi_img((**img)[band], (*img)->minval, (*img)->maxval)));
 		img_lock.unlock();
@@ -1371,7 +1371,7 @@ void ViewerWindow::initUnsupervisedSegUI()
 	usBandwidthBox->addItem("fixed");
 	usBandwidthMethodChanged("adaptive");
 
-	SharedDataLock full_image_lock(full_image_limited->lock);
+	SharedDataLock full_image_lock(full_image_limited->mutex);
 	usBandsSpinBox->setValue((*full_image_limited)->size());
 	usBandsSpinBox->setMaximum((*full_image_limited)->size());
 	full_image_lock.unlock();
@@ -1543,7 +1543,7 @@ void ViewerWindow::startUnsupervisedSeg(bool findKL)
 	// switchFullImage(FullImageSwitcher::REGULAR);
 	// SharedDataLock full_image_lock(full_image_regular->lock);
 	// boost::shared_ptr<multi_img> input(new multi_img(**full_image_regular, roi)); // image data is not copied
-	SharedDataLock full_image_lock(full_image_limited->lock);
+	SharedDataLock full_image_lock(full_image_limited->mutex);
 	assert(0 != dynamic_cast<multi_img*>(&(**full_image_limited)));
 	boost::shared_ptr<multi_img> input(new multi_img(**full_image_limited, roi)); // image data is not copied
 	full_image_lock.unlock();
@@ -1684,7 +1684,7 @@ void ViewerWindow::newOverlay()
 
 void ViewerWindow::reshapeDock(bool floating)
 {
-	SharedDataLock image_lock(image->lock);
+	SharedDataLock image_lock(image->mutex);
 	if (!floating || (*image)->height == 0)
 		return;
 
@@ -1717,7 +1717,7 @@ void ViewerWindow::buildIlluminant(int temp)
 //	switchFullImage(FullImageSwitcher::REGULAR);
 //	SharedDataLock full_image_lock(full_image_regular->lock);
 
-	SharedDataLock full_image_lock(full_image_limited->lock);
+	SharedDataLock full_image_lock(full_image_limited->mutex);
 	multi_img* full_image = dynamic_cast<multi_img*>(&(**full_image_limited));
 	assert(0 != full_image);
 
@@ -1784,7 +1784,7 @@ void ViewerWindow::loadLabeling(QString filename)
 	}
 
 	//switchFullImage(FullImageSwitcher::LIMITED);
-	SharedDataLock full_image_lock(full_image_limited->lock);
+	SharedDataLock full_image_lock(full_image_limited->mutex);
 	int height = (*full_image_limited)->height;
 	int width = (*full_image_limited)->width;
 	full_image_lock.unlock();
@@ -1806,7 +1806,7 @@ void ViewerWindow::loadLabeling(QString filename)
 void ViewerWindow::loadSeeds()
 {
 //	switchFullImage(FullImageSwitcher::LIMITED);
-	SharedDataLock full_image_lock(full_image_limited->lock);
+	SharedDataLock full_image_lock(full_image_limited->mutex);
 	int height = (*full_image_limited)->height;
 	int width = (*full_image_limited)->width;
 	full_image_lock.unlock();
@@ -1859,7 +1859,7 @@ void ViewerWindow::ROIDecision(QAbstractButton *sender)
 		} else {
 			// fetch image dimensions
 //			switchFullImage(FullImageSwitcher::LIMITED);
-			SharedDataLock full_image_lock(full_image_limited->lock);
+			SharedDataLock full_image_lock(full_image_limited->mutex);
 			int height = (*full_image_limited)->height;
 			int width = (*full_image_limited)->width;
 			full_image_lock.unlock();

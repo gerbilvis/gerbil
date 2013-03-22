@@ -10,7 +10,7 @@ bool NormRangeTbb::run()
 		break;
 	case MultiImg::NORM_THEORETICAL:
 		if (!stopper.is_group_execution_cancelled()) {
-			SharedDataSwapLock lock(range->lock);
+			SharedDataSwapLock lock(range->mutex);
 			// hack!
 			if (target == 0) {
 				(*range)->first = (multi_img::Value)MULTI_IMG_MIN_DEFAULT;
@@ -23,7 +23,7 @@ bool NormRangeTbb::run()
 		break;
 	default:
 		if (!stopper.is_group_execution_cancelled()) {
-			SharedDataSwapLock lock(range->lock);
+			SharedDataSwapLock lock(range->mutex);
 			// keep previous setting
 			(*range)->first = minval;
 			(*range)->second = maxval;
@@ -32,7 +32,7 @@ bool NormRangeTbb::run()
 	}
 
 	if (!stopper.is_group_execution_cancelled() && update) {
-		SharedDataSwapLock lock(multi->lock);
+		SharedDataSwapLock lock(multi->mutex);
 		(*multi)->minval = (*range)->first;
 		(*multi)->maxval = (*range)->second;
 		return true;

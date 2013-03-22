@@ -93,7 +93,7 @@ void Viewport::updateYAxis()
 	std::vector<float> ycoord(amount);
 	float maximum = 0.f;
 	for (int i = 0; i < amount; ++i) {
-		SharedDataLock ctxlock(ctx->lock);
+		SharedDataLock ctxlock(ctx->mutex);
 		float ifrac = (float)i*0.25*(float)((*ctx)->nbins - 1);
 		ycoord[i] = (*ctx)->maxval - ifrac * (*ctx)->binsize;
 		maximum = std::max(maximum, std::abs(ycoord[i]));
@@ -130,7 +130,7 @@ void Viewport::updateYAxis()
 void Viewport::setLimiters(int label)
 {
 	if (label < 1) {	// not label
-		SharedDataLock ctxlock(ctx->lock);
+		SharedDataLock ctxlock(ctx->mutex);
 		limiters.assign((*ctx)->dimensionality, make_pair(0, (*ctx)->nbins-1));
 		if (label == -1) {	// use hover data
 			int b = selection;
@@ -138,7 +138,7 @@ void Viewport::setLimiters(int label)
 			limiters[b] = std::make_pair(h, h);
 		}
 	} else {                       // label holds data
-		SharedDataLock setslock(sets->lock);
+		SharedDataLock setslock(sets->mutex);
 		if ((int)(*sets)->size() > label && (**sets)[label].totalweight > 0) {
 			// use range from this label
 			const std::vector<std::pair<int, int> > &b = (**sets)[label].boundary;
@@ -181,8 +181,8 @@ void Viewport::PreprocessBins::join(PreprocessBins &toJoin)
 
 void Viewport::prepareLines()
 {
-	SharedDataLock ctxlock(ctx->lock);
-	SharedDataLock setslock(sets->lock);
+	SharedDataLock ctxlock(ctx->mutex);
+	SharedDataLock setslock(sets->mutex);
 	(*ctx)->wait.fetch_and_store(0);
 	if ((*ctx)->reset.fetch_and_store(0))
 		reset();
@@ -262,7 +262,7 @@ void Viewport::GenerateVertices::operator()(const tbb::blocked_range<size_t> &r)
 
 void Viewport::updateModelview()
 {
-	SharedDataLock ctxlock(ctx->lock);
+	SharedDataLock ctxlock(ctx->mutex);
 
 	/* apply zoom and translation in window coordinates */
 	qreal wwidth = width();
@@ -291,8 +291,8 @@ void Viewport::updateModelview()
 void Viewport::drawBins(QPainter &painter, QTimer &renderTimer, 
 	unsigned int &renderedLines, unsigned int renderStep, bool onlyHighlight)
 {
-	SharedDataLock ctxlock(ctx->lock);
-	SharedDataLock setslock(sets->lock);
+	SharedDataLock ctxlock(ctx->mutex);
+	SharedDataLock setslock(sets->mutex);
 
 	// vole::Stopwatch watch("drawBins");
 	painter.beginNativePainting();
@@ -413,7 +413,7 @@ void Viewport::drawBins(QPainter &painter, QTimer &renderTimer,
 
 void Viewport::drawAxesFg(QPainter &painter)
 {
-	SharedDataLock ctxlock(ctx->lock);
+	SharedDataLock ctxlock(ctx->mutex);
 
 	if (drawingState == SCREENSHOT)
 		return;
@@ -459,7 +459,7 @@ void Viewport::drawAxesFg(QPainter &painter)
 }
 void Viewport::drawAxesBg(QPainter &painter)
 {
-	SharedDataLock ctxlock(ctx->lock);
+	SharedDataLock ctxlock(ctx->mutex);
 
 	// draw axes in background
 	painter.setPen(QColor(64, 64, 64));
@@ -496,7 +496,7 @@ void Viewport::drawAxesBg(QPainter &painter)
 
 void Viewport::drawLegend(QPainter &painter)
 {
-	SharedDataLock ctxlock(ctx->lock);
+	SharedDataLock ctxlock(ctx->mutex);
 
 	assert((*ctx)->labels.size() == (unsigned int)(*ctx)->dimensionality);
 
@@ -589,8 +589,8 @@ void Viewport::continueDrawingSpectrum()
 	if (!fboSpectrum)
 		return;
 
-	SharedDataLock ctxlock(ctx->lock);
-	SharedDataLock setslock(sets->lock);
+	SharedDataLock ctxlock(ctx->mutex);
+	SharedDataLock setslock(sets->mutex);
 
 	if ((*sets)->empty() || (*ctx)->wait || drawingState == FOLDING)
 		return;
@@ -616,8 +616,8 @@ void Viewport::continueDrawingHighlight()
 	if (!fboHighlight)
 		return;
 
-	SharedDataLock ctxlock(ctx->lock);
-	SharedDataLock setslock(sets->lock);
+	SharedDataLock ctxlock(ctx->mutex);
+	SharedDataLock setslock(sets->mutex);
 
 	if ((*sets)->empty() || (*ctx)->wait || drawingState == FOLDING)
 		return;
@@ -653,8 +653,8 @@ void Viewport::updateTextures(RenderMode spectrum, RenderMode highlight)
 		highlightRenderedLines = 0;
 	}
 
-	SharedDataLock ctxlock(ctx->lock);
-	SharedDataLock setslock(sets->lock);
+	SharedDataLock ctxlock(ctx->mutex);
+	SharedDataLock setslock(sets->mutex);
 
 	QPainter spectrumPainter(fboSpectrum);
 	QPainter highlightPainter(fboHighlight);
@@ -706,8 +706,8 @@ void Viewport::updateTextures(RenderMode spectrum, RenderMode highlight)
 
 void Viewport::paintEvent(QPaintEvent *)
 {
-	SharedDataLock ctxlock(ctx->lock);
-	SharedDataLock setslock(sets->lock);
+	SharedDataLock ctxlock(ctx->mutex);
+	SharedDataLock setslock(sets->mutex);
 
 	makeCurrent();
 	QPainter painter(this);
@@ -757,8 +757,8 @@ void Viewport::paintEvent(QPaintEvent *)
 
 void Viewport::rebuild()
 {
-	SharedDataLock ctxlock(ctx->lock);
-	SharedDataLock setslock(sets->lock);
+	SharedDataLock ctxlock(ctx->mutex);
+	SharedDataLock setslock(sets->mutex);
 	prepareLines();
 	updateTextures();
 }
@@ -796,7 +796,7 @@ void Viewport::resizeEpilog()
 
 void Viewport::updateXY(int sel, int bin)
 {
-	SharedDataLock ctxlock(ctx->lock);
+	SharedDataLock ctxlock(ctx->mutex);
 
 	bool emitOverlay = !wasActive;
 
@@ -945,7 +945,7 @@ void Viewport::keyPressEvent(QKeyEvent *event)
 
 	case Qt::Key_Up:
 		{
-			SharedDataLock ctxlock(ctx->lock);
+			SharedDataLock ctxlock(ctx->mutex);
 			if (!limiterMode && hover < (*ctx)->nbins-2) {
 				hover++;
 				hoverdirt = true;
@@ -962,7 +962,7 @@ void Viewport::keyPressEvent(QKeyEvent *event)
 		break;
 	case Qt::Key_Left:
 		{
-			SharedDataLock ctxlock(ctx->lock);
+			SharedDataLock ctxlock(ctx->mutex);
 			if (selection > 0) {
 				selection--;
 				emit bandSelected((*ctx)->type, selection);
@@ -972,7 +972,7 @@ void Viewport::keyPressEvent(QKeyEvent *event)
 		break;
 	case Qt::Key_Right:
 		{
-			SharedDataLock ctxlock(ctx->lock);
+			SharedDataLock ctxlock(ctx->mutex);
 			if (selection < (*ctx)->dimensionality-1) {
 				selection++;
 				emit bandSelected((*ctx)->type, selection);

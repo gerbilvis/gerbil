@@ -65,7 +65,7 @@ typedef boost::unique_lock<SharedDataMutex> SharedDataSwapLock;
 template<class T>
 class SharedData {
 public:
-	SharedDataMutex lock;
+	SharedDataMutex mutex;
 
 	/** Construct empty wrapper. */
 	SharedData() : data(NULL) {}

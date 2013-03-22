@@ -40,7 +40,7 @@ bool RgbTbb::run()
 		delete newRgb;
 		return false;
 	} else {
-		SharedDataSwapLock lock(rgb->lock);
+		SharedDataSwapLock lock(rgb->mutex);
 		delete rgb->swap(newRgb);
 		return true;
 	}
