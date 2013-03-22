@@ -1241,11 +1241,13 @@ void ViewerWindow::clampNormUserRange()
 			queue.push(taskNormRange);
 		}
 
+		multi_img_base_ptr gradient_base = boost::dynamic_pointer_cast<shared_multi_img_base>(gradient);
+		assert(NULL != gradient_base);
 		if (cv::gpu::getCudaEnabledDeviceCount() > 0 && USE_CUDA_CLAMP) {
-			BackgroundTaskPtr taskClamp(new MultiImg::ClampCuda(gradient, gradient));
+			BackgroundTaskPtr taskClamp(new MultiImg::ClampCuda(gradient_base, gradient));
 			queue.push(taskClamp);
 		} else {
-			BackgroundTaskPtr taskClamp(new MultiImg::ClampTbb(gradient, gradient));
+			BackgroundTaskPtr taskClamp(new MultiImg::ClampTbb(gradient_base, gradient));
 			queue.push(taskClamp);
 		}
 

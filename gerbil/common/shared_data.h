@@ -9,7 +9,6 @@
 #ifndef SHARED_DATA_H
 #define SHARED_DATA_H
 
-
 #ifdef WITH_BOOST_THREAD
 #include <multi_img.h>
 #include <utility>
@@ -81,19 +80,52 @@ public:
 	
 	T &operator*() { return *data; }
 	T *operator->() { return data; }
-
 protected:
 	T *data;
-
 private:
 	SharedData(const SharedData<T> &other); // avoid copying of the wrapper
 	SharedData<T> &operator=(const SharedData<T> &other); // avoid copying of the wrapper
 };
 
-typedef boost::shared_ptr<SharedData<multi_img_base> > multi_img_base_ptr;
-typedef boost::shared_ptr<SharedData<multi_img> > multi_img_ptr;
+// BUG FIXME CAVEAT
+// The SharedData<multi_img> specialization as a subclass of
+// SharedData<multi_img_base> allows for casting a multi_img_ptr to a
+// multi_img_base_ptr, but
+//
+//  multi_img *image;
+//  multi_img_base_ptr shared_image(new SharedData<multi_img>(image));
+//  if(NULL == boost::dynamic_pointer_cast<SharedData<multi_img> >(shared_image)) {
+//     // will execute!
+//  }
+//
+// That is SharedData<T>* is _not_ covariant with the pointer T* for which it is
+// a wrapper. And therefore this construction is fundamentally broken!
+// Note: Whereas shared_ptr<T> is covariant with T*!
+
+template<>
+class SharedData<multi_img> : public SharedData<multi_img_base> {
+public:
+	SharedData(multi_img *data) : SharedData<multi_img_base>(data) {}
+	multi_img *swap(multi_img* newData) { return static_cast<multi_img*>(SharedData<multi_img_base>::swap(newData)); }
+	multi_img &operator*() { return static_cast<multi_img&>(*data); }
+	multi_img *operator->() { return static_cast<multi_img*>(data); }
+};
+
+typedef SharedData<multi_img_base> shared_multi_img_base;
+typedef SharedData<multi_img> shared_multi_img;
+
+typedef boost::shared_ptr<shared_multi_img_base> multi_img_base_ptr;
+typedef boost::shared_ptr<shared_multi_img> multi_img_ptr;
 typedef boost::shared_ptr<SharedData<cv::Mat3f> > mat3f_ptr;
 typedef boost::shared_ptr<SharedData<std::pair<multi_img::Value, multi_img::Value> > > data_range_ptr;
+
+// BUG
+// There is no reasonable way to actually get the pointer to the multi_img
+// from SharedData.
+// multi_img_ptr x;
+// typeof(*x) == SharedData<multi_img> != multi_img*
+// typeof(**x) == multi_img
+// typeof(&(**x)) == multi_img*    [doh!]
 
 #ifdef WITH_QT
 typedef boost::shared_ptr<SharedData<QImage> > qimage_ptr;
@@ -101,3 +133,4 @@ typedef boost::shared_ptr<SharedData<QImage> > qimage_ptr;
 
 #endif
 #endif
+

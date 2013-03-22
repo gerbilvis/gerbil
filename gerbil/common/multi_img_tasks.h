@@ -323,13 +323,8 @@ class ClampTbb : public BackgroundTask {
 public:
 	ClampTbb(multi_img_base_ptr multi, multi_img_ptr minmax,
 			 cv::Rect targetRoi = cv::Rect(0, 0, 0, 0), bool includecache = true)
-		: BackgroundTask(targetRoi), multi_base(multi), use_multi_img_base(true),
-		minmax(minmax), includecache(includecache)
-	{}
-	ClampTbb(multi_img_ptr multi, multi_img_ptr minmax,
-		cv::Rect targetRoi = cv::Rect(0, 0, 0, 0), bool includecache = true)
-		: BackgroundTask(targetRoi), multi_full(multi), use_multi_img_base(false),
-		  minmax(minmax), includecache(includecache)
+		: BackgroundTask(targetRoi), multi_base(multi),	minmax(minmax),
+		  includecache(includecache)
 	{}
 	virtual ~ClampTbb() {}
 	virtual bool run();
@@ -346,10 +341,7 @@ protected:
 		multi_img &target;
 	};
 
-	// BUG see ClampCuda
 	multi_img_base_ptr multi_base;
-	multi_img_ptr multi_full;
-	const bool use_multi_img_base;
 
 	multi_img_ptr minmax;
 	bool includecache;
@@ -359,29 +351,14 @@ class ClampCuda : public BackgroundTask {
 public:
 	ClampCuda(multi_img_base_ptr multi, multi_img_ptr minmax,
 		cv::Rect targetRoi = cv::Rect(0, 0, 0, 0), bool includecache = true) 
-		: BackgroundTask(targetRoi), multi_base(multi), use_multi_img_base(true), minmax(minmax), includecache(includecache)
-	{ //multi_full is null
-	}
-
-	ClampCuda(multi_img_ptr multi_full, multi_img_ptr minmax,
-		cv::Rect targetRoi = cv::Rect(0, 0, 0, 0), bool includecache = true)
-		: BackgroundTask(targetRoi), multi_full(multi_full),use_multi_img_base(false), minmax(minmax), includecache(includecache)
-	{//multi_base is null
-	}
+		: BackgroundTask(targetRoi), multi_base(multi), minmax(minmax), includecache(includecache)
+	{}
 	virtual ~ClampCuda() {}
 	virtual bool run();
 	virtual void cancel() { stopper.cancel_group_execution(); }
 protected:
 	tbb::task_group_context stopper;
-
-	// BUG
-	// What we really want here is covariant type coercion: A multi_img_ptr sould be
-	// accepted as a multi_img_base_ptr, which is currently not the case.
-	// Therefore we have to resort to the ugly hack to have pointers for both
-	// types and switch between them as necessary.
 	multi_img_base_ptr	multi_base;
-	multi_img_ptr		multi_full;
-	const bool use_multi_img_base;
 
 	multi_img_ptr minmax;
 	bool includecache;

@@ -617,10 +617,7 @@ bool DataRangeCuda::run()
 bool ClampTbb::run() 
 {
 	multi_img *source;
-	if(use_multi_img_base)
-		source = dynamic_cast<multi_img*>(&(**multi_base));
-	else
-		source = &(**multi_full);
+	source = dynamic_cast<multi_img*>(&(**multi_base));
 	assert(0 != source);
 
 	multi_img *target = new multi_img(source->height, source->width, source->size());
@@ -651,13 +648,8 @@ bool ClampTbb::run()
 		delete target;
 		return false;
 	} else {
-		if(use_multi_img_base) {
-			SharedDataSwapLock lock(multi_base->mutex);
-			delete multi_base->swap(target);
-		} else {
-			SharedDataSwapLock lock(multi_full->mutex);
-			delete multi_full->swap(target);
-		}
+		SharedDataSwapLock lock(multi_base->mutex);
+		delete multi_base->swap(target);
 		return true;
 	}
 }
@@ -674,19 +666,8 @@ void ClampTbb::Clamp::operator()(const tbb::blocked_range<size_t> &r) const
 
 bool ClampCuda::run() 
 {
-	// BUG
-	// There is no reasonable way to actually get the pointer to the multi_img
-	// from SharedData.
-	// multi_img_ptr x;
-	// typeof(*x) == SharedData<multi_img> != multi_img*
-	// typeof(**x) == multi_img
-	// typeof(&(**x)) == multi_img*    [doh!]
-
 	multi_img *source;
-	if(use_multi_img_base)
-		source = dynamic_cast<multi_img*>(&(**multi_base));
-	else
-		source = &(**multi_full);
+	source = dynamic_cast<multi_img*>(&(**multi_base));
 
 	assert(0 != source);
 	multi_img *target = new multi_img(source->height, source->width, source->size());
@@ -721,13 +702,8 @@ bool ClampCuda::run()
 		delete target;
 		return false;
 	} else {
-		if(use_multi_img_base) {
-			SharedDataSwapLock lock(multi_base->mutex);
-			delete multi_base->swap(target);
-		} else {
-			SharedDataSwapLock lock(multi_full->mutex);
-			delete multi_full->swap(target);
-		}
+		SharedDataSwapLock lock(multi_base->mutex);
+		delete multi_base->swap(target);
 		return true;
 	}
 }
