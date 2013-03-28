@@ -20,6 +20,8 @@ vole_compile_library(
 	tasks/rgbserial
 	tasks/normrangetbb
 	tasks/normrangecuda
+	multi_img_viewer_detail/viewer_tasks
+	multi_img_viewer_detail/viewer_bins_tbb
 )
 
 vole_moc_library(

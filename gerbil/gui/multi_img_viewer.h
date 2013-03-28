@@ -48,18 +48,6 @@ public:
 	BackgroundTaskQueue *queue;
 	cv::Mat1s labels;
 
-	/* translate image value to value in our coordinate system */
-	static inline multi_img::Value curpos(
-		multi_img::Value val, int dim, 
-		multi_img::Value minval, multi_img::Value binsize,
-		const std::vector<multi_img::Value> &illuminant) 
-	{
-		multi_img::Value curpos = (val - minval) / binsize;
-		if (!illuminant.empty())
-			curpos /= illuminant[dim];
-		return curpos;
-	}
-
 public slots:
 	void updateMask(int dim);
 	void subPixels(const std::map<std::pair<int, int>, short> &points);
@@ -94,65 +82,6 @@ signals:
 	void finishTask(bool success);
 
 protected:
-	class BinsTbb : public BackgroundTask {
-	public:
-		BinsTbb(multi_img_ptr multi, const cv::Mat1s &labels, 
-			const QVector<QColor> &colors,
-			const std::vector<multi_img::Value> &illuminant, 
-			const ViewportCtx &args, vpctx_ptr context, 
-			sets_ptr current, sets_ptr temp = sets_ptr(new SharedData<std::vector<BinSet> >(NULL)), 
-			const std::vector<cv::Rect> &sub = std::vector<cv::Rect>(),
-			const std::vector<cv::Rect> &add = std::vector<cv::Rect>(),
-			const cv::Mat1b &mask = cv::Mat1b(),
-			bool inplace = false, bool apply = true, cv::Rect targetRoi = cv::Rect(0, 0, 0, 0)) 
-			: BackgroundTask(targetRoi), multi(multi), labels(labels), colors(colors),
-			illuminant(illuminant), args(args), context(context), 
-			current(current), temp(temp), sub(sub), add(add), mask(mask), inplace(inplace), apply(apply) {}
-		virtual ~BinsTbb() {}
-		virtual bool run();
-		virtual void cancel() { stopper.cancel_group_execution(); }
-	protected:
-		tbb::task_group_context stopper;
-
-		class Accumulate {
-		public:
-			Accumulate(bool substract, multi_img &multi, cv::Mat1s &labels, cv::Mat1b &mask,
-				int nbins, multi_img::Value binsize, multi_img::Value minval, bool ignoreLabels,
-				std::vector<multi_img::Value> &illuminant, 
-				std::vector<BinSet> &sets) 
-				: substract(substract), multi(multi), labels(labels), mask(mask), nbins(nbins), binsize(binsize),
-				minval(minval), illuminant(illuminant), ignoreLabels(ignoreLabels), sets(sets) {}
-			void operator()(const tbb::blocked_range2d<int> &r) const;
-		private:
-			bool substract;
-			multi_img &multi;
-			cv::Mat1s &labels;
-			cv::Mat1b &mask;
-			int nbins;
-			multi_img::Value binsize;
-			multi_img::Value minval;
-			bool ignoreLabels;
-			std::vector<multi_img::Value> &illuminant;
-			std::vector<BinSet> &sets;
-		};
-		
-		multi_img_ptr multi;
-		cv::Mat1s labels;
-		cv::Mat1b mask;
-		QVector<QColor> colors;
-		std::vector<multi_img::Value> illuminant;
-		ViewportCtx args;
-
-		vpctx_ptr context;
-		sets_ptr current;
-		sets_ptr temp;
-		
-		std::vector<cv::Rect> sub;
-		std::vector<cv::Rect> add;
-		bool inplace;
-		bool apply;
-	};
-
     void changeEvent(QEvent *e);
 
 	// helpers for createMask
