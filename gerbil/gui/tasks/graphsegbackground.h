@@ -3,7 +3,7 @@
 
 class GraphsegBackground : public BackgroundTask {
 public:
-	GraphsegBackground(const vole::GraphSegConfig &config, multi_img_ptr input,
+	GraphsegBackground(const vole::GraphSegConfig &config, SharedMultiImgPtr input,
 		const cv::Mat1s &seedMap, boost::shared_ptr<multi_img::Mask> result)
 		: config(config), input(input), seedMap(seedMap), result(result) {}
 	virtual ~GraphsegBackground() {}
@@ -15,7 +15,7 @@ public:
 
 protected:
 	vole::GraphSegConfig config;
-	multi_img_ptr input;
+	SharedMultiImgPtr input;
 	cv::Mat1s seedMap;
 	boost::shared_ptr<multi_img::Mask> result;
 };

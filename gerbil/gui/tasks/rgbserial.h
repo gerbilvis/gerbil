@@ -3,7 +3,7 @@
 
 class RgbSerial : public MultiImg::BgrSerial {
 public:
-	RgbSerial(multi_img_ptr multi, mat3f_ptr bgr, qimage_ptr rgb,
+	RgbSerial(SharedMultiImgPtr multi, mat3f_ptr bgr, qimage_ptr rgb,
 		cv::Rect targetRoi = cv::Rect(0, 0, 0, 0))
 		: MultiImg::BgrSerial(multi, bgr, targetRoi), rgb(rgb) {}
 	virtual ~RgbSerial() {}

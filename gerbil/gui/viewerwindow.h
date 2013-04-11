@@ -130,12 +130,12 @@ protected:
 	bool setLabelColors(const std::vector<cv::Vec3b> &colors);
 	void setLabels(const vole::Labeling &labeling);
 
-	void runGraphseg(multi_img_ptr input, const vole::GraphSegConfig &config);
+	void runGraphseg(SharedMultiImgPtr input, const vole::GraphSegConfig &config);
 
 	// multispectral image and gradient
-	multi_img_base_ptr full_image_limited;
-	//multi_img_ptr full_image_regular;
-	multi_img_ptr image, gradient, imagepca, gradientpca;
+    // FIXME rename
+    SharedMultiImgPtr image_lim;
+	SharedMultiImgPtr image, gradient, imagepca, gradientpca;
 	// current region of interest
 	cv::Rect roi;
 	// bands from all representations (image, gradient, PCA..)

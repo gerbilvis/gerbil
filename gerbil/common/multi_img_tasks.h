@@ -75,32 +75,32 @@ namespace CommonTbb {
 
 class ScopeImage : public BackgroundTask {
 public:
-	ScopeImage(multi_img_base_ptr full, multi_img_ptr scoped, cv::Rect roi) 
+	ScopeImage(SharedMultiImgPtr full, SharedMultiImgPtr scoped, cv::Rect roi)
 		: BackgroundTask(roi), full(full), scoped(scoped) {}
 	virtual ~ScopeImage() {}
 	virtual bool run();
 	virtual void cancel() {}
 protected:
-	multi_img_base_ptr full;
-	multi_img_ptr scoped;
+	SharedMultiImgPtr full;
+	SharedMultiImgPtr scoped;
 };
 
 class BgrSerial : public BackgroundTask {
 public:
-	BgrSerial(multi_img_ptr multi, mat3f_ptr bgr,
+	BgrSerial(SharedMultiImgPtr multi, mat3f_ptr bgr,
 		cv::Rect targetRoi = cv::Rect(0, 0, 0, 0)) 
 		: BackgroundTask(targetRoi), multi(multi), bgr(bgr) {}
 	virtual ~BgrSerial() {}
 	virtual bool run();
 	virtual void cancel() {}
 protected:
-	multi_img_ptr multi;
+	SharedMultiImgPtr multi;
 	mat3f_ptr bgr;
 };
 
 class BgrTbb : public BackgroundTask {
 public:
-	BgrTbb(multi_img_base_ptr multi, mat3f_ptr bgr,
+	BgrTbb(SharedMultiImgPtr multi, mat3f_ptr bgr,
 		cv::Rect targetRoi = cv::Rect(0, 0, 0, 0)) 
 		: BackgroundTask(targetRoi), multi(multi), bgr(bgr) {}
 	virtual ~BgrTbb() {}
@@ -133,14 +133,14 @@ protected:
 		float greensum;
 	};
 
-	multi_img_base_ptr multi;
+	SharedMultiImgPtr multi;
 	mat3f_ptr bgr;
 };
 
 #ifdef WITH_QT
 class Band2QImageTbb : public BackgroundTask {
 public:
-	Band2QImageTbb(multi_img_ptr multi, qimage_ptr image, size_t band,
+	Band2QImageTbb(SharedMultiImgPtr multi, qimage_ptr image, size_t band,
 		cv::Rect targetRoi = cv::Rect(0, 0, 0, 0))
 		: BackgroundTask(targetRoi), multi(multi), image(image), band(band) {}
 	virtual ~Band2QImageTbb() {}
@@ -162,7 +162,7 @@ protected:
 		multi_img::Value maxval;
 	};
 
-	multi_img_ptr multi;
+	SharedMultiImgPtr multi;
 	qimage_ptr image;
 	size_t band;
 };
@@ -170,7 +170,7 @@ protected:
 
 class RescaleTbb : public BackgroundTask {
 public:
-	RescaleTbb(multi_img_ptr source, multi_img_ptr current, size_t newsize,
+	RescaleTbb(SharedMultiImgPtr source, SharedMultiImgPtr current, size_t newsize,
 		cv::Rect targetRoi = cv::Rect(0, 0, 0, 0), bool includecache = true) 
 		: BackgroundTask(targetRoi), source(source), current(current), 
 		newsize(newsize), includecache(includecache) {}
@@ -191,15 +191,15 @@ protected:
 		size_t newsize;
 	};
 
-	multi_img_ptr source;
-	multi_img_ptr current;
+	SharedMultiImgPtr source;
+	SharedMultiImgPtr current;
 	size_t newsize;
 	bool includecache;
 };
 
 class GradientTbb : public BackgroundTask {
 public:
-	GradientTbb(multi_img_ptr source, multi_img_ptr current, 
+	GradientTbb(SharedMultiImgPtr source, SharedMultiImgPtr current,
 		cv::Rect targetRoi = cv::Rect(0, 0, 0, 0), bool includecache = true) 
 		: BackgroundTask(targetRoi), source(source), 
 		current(current), includecache(includecache) {}
@@ -229,14 +229,14 @@ protected:
 		multi_img &target;
 	};
 
-	multi_img_ptr source;
-	multi_img_ptr current;
+	SharedMultiImgPtr source;
+	SharedMultiImgPtr current;
 	bool includecache;
 };
 
 class GradientCuda : public BackgroundTask {
 public:
-	GradientCuda(multi_img_ptr source, multi_img_ptr current, 
+	GradientCuda(SharedMultiImgPtr source, SharedMultiImgPtr current,
 		cv::Rect targetRoi = cv::Rect(0, 0, 0, 0), bool includecache = true) 
 		: BackgroundTask(targetRoi), source(source), 
 		current(current), includecache(includecache) {}
@@ -245,14 +245,14 @@ public:
 	virtual void cancel() { stopper.cancel_group_execution(); }
 protected:
 	tbb::task_group_context stopper;
-	multi_img_ptr source;
-	multi_img_ptr current;
+	SharedMultiImgPtr source;
+	SharedMultiImgPtr current;
 	bool includecache;
 };
 
 class PcaTbb : public BackgroundTask {
 public:
-	PcaTbb(multi_img_ptr source, multi_img_ptr current, unsigned int components = 0, 
+	PcaTbb(SharedMultiImgPtr source, SharedMultiImgPtr current, unsigned int components = 0,
 		cv::Rect targetRoi = cv::Rect(0, 0, 0, 0), bool includecache = true) 
 		: BackgroundTask(targetRoi), source(source), current(current), 
 		components(components), includecache(includecache) {}
@@ -283,15 +283,15 @@ protected:
 		cv::PCA &pca;
 	};
 
-	multi_img_ptr source;
-	multi_img_ptr current;
+	SharedMultiImgPtr source;
+	SharedMultiImgPtr current;
 	unsigned int components;
 	bool includecache;
 };
 
 class DataRangeTbb : public BackgroundTask {
 public:
-	DataRangeTbb(multi_img_ptr multi, data_range_ptr range, 
+	DataRangeTbb(SharedMultiImgPtr multi, data_range_ptr range,
 		cv::Rect targetRoi = cv::Rect(0, 0, 0, 0)) 
 		: BackgroundTask(targetRoi), multi(multi), range(range) {}
 	virtual ~DataRangeTbb() {}
@@ -300,13 +300,13 @@ public:
 protected:
 	tbb::task_group_context stopper;
 
-	multi_img_ptr multi;
+	SharedMultiImgPtr multi;
 	data_range_ptr range;
 };
 
 class DataRangeCuda : public BackgroundTask {
 public:
-	DataRangeCuda(multi_img_ptr multi, data_range_ptr range, 
+	DataRangeCuda(SharedMultiImgPtr multi, data_range_ptr range,
 		cv::Rect targetRoi = cv::Rect(0, 0, 0, 0)) 
 		: BackgroundTask(targetRoi), multi(multi), range(range) {}
 	virtual ~DataRangeCuda() {}
@@ -315,15 +315,15 @@ public:
 protected:
 	tbb::task_group_context stopper;
 
-	multi_img_ptr multi;
+	SharedMultiImgPtr multi;
 	data_range_ptr range;
 };
 
 class ClampTbb : public BackgroundTask {
 public:
-	ClampTbb(multi_img_base_ptr multi, multi_img_ptr minmax,
+	ClampTbb(SharedMultiImgPtr image, SharedMultiImgPtr minmax,
 			 cv::Rect targetRoi = cv::Rect(0, 0, 0, 0), bool includecache = true)
-		: BackgroundTask(targetRoi), multi_base(multi),	minmax(minmax),
+		: BackgroundTask(targetRoi), image(image),	minmax(minmax),
 		  includecache(includecache)
 	{}
 	virtual ~ClampTbb() {}
@@ -341,32 +341,31 @@ protected:
 		multi_img &target;
 	};
 
-	multi_img_base_ptr multi_base;
+	SharedMultiImgPtr image;
 
-	multi_img_ptr minmax;
+	SharedMultiImgPtr minmax;
 	bool includecache;
 };
 
 class ClampCuda : public BackgroundTask {
 public:
-	ClampCuda(multi_img_base_ptr multi, multi_img_ptr minmax,
+	ClampCuda(SharedMultiImgPtr image, SharedMultiImgPtr minmax,
 		cv::Rect targetRoi = cv::Rect(0, 0, 0, 0), bool includecache = true) 
-		: BackgroundTask(targetRoi), multi_base(multi), minmax(minmax), includecache(includecache)
+		: BackgroundTask(targetRoi), image(image), minmax(minmax), includecache(includecache)
 	{}
 	virtual ~ClampCuda() {}
 	virtual bool run();
 	virtual void cancel() { stopper.cancel_group_execution(); }
 protected:
 	tbb::task_group_context stopper;
-	multi_img_base_ptr	multi_base;
-
-	multi_img_ptr minmax;
+	SharedMultiImgPtr image;
+	SharedMultiImgPtr minmax;
 	bool includecache;
 };
 
 class IlluminantTbb : public BackgroundTask {
 public:
-	IlluminantTbb(multi_img_base_ptr multi, const Illuminant& il, bool remove,
+	IlluminantTbb(SharedMultiImgPtr multi, const Illuminant& il, bool remove,
 		cv::Rect targetRoi = cv::Rect(0, 0, 0, 0), bool includecache = true) 
 		: BackgroundTask(targetRoi), multi(multi), 
 		il(il), remove(remove), includecache(includecache) {}
@@ -388,7 +387,7 @@ protected:
 		bool remove;
 	};
 
-	multi_img_base_ptr multi;
+	SharedMultiImgPtr multi;
 	Illuminant il; 
 	bool remove;
 	bool includecache;
@@ -396,7 +395,7 @@ protected:
 
 class IlluminantCuda : public BackgroundTask {
 public:
-	IlluminantCuda(multi_img_base_ptr multi, const Illuminant& il, bool remove,
+	IlluminantCuda(SharedMultiImgPtr multi, const Illuminant& il, bool remove,
 		cv::Rect targetRoi = cv::Rect(0, 0, 0, 0), bool includecache = true) 
 		: BackgroundTask(targetRoi), multi(multi), 
 		il(il), remove(remove), includecache(includecache) {}
@@ -406,7 +405,7 @@ public:
 protected:
 	tbb::task_group_context stopper;
 
-	multi_img_base_ptr multi;
+	SharedMultiImgPtr multi;
 	Illuminant il; 
 	bool remove;
 	bool includecache;

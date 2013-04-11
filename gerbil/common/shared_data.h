@@ -30,6 +30,16 @@
 	to be reasonable tradeoff between low footprint on existing code and
 	concurrency guarantees. */
 typedef boost::recursive_mutex SharedDataMutex;
+
+
+// FIXME 2013-04-11 georg altmann:
+// I do not see the point of the two different lock types. We are doing
+// exclusive locking on the mutex always. There is no gradual
+// read-/write-locking taking place anywhere AFAIK.
+// Also it is not necessary to use unique_lock, lock_guard should do, since
+// the typedefs are always used in that way and I can think of a use case
+// where the delayed locking of unique_lock would be useful.
+
 /** Lock that should be used by foreground threads (GUI, OpenGL) to prevent
     background worker thread to swap embedded raw pointer. Note that the lock 
 	does not prevent other parties to modify the data in-place, that is if you 
@@ -69,17 +79,23 @@ public:
 	/** Construct empty wrapper. */
 	SharedData() : data(NULL) {}
 	/** Construct data wrapper. Wrapper becomes owner of data, so the
-	    raw pointer to data should not be used anywhere else. */
+		raw pointer to data should not be used anywhere else. */
 	SharedData(T *data) : data(data) {}
 	/** Destruct wrapper alongside with the internal data. */
 	virtual ~SharedData() { delete data; }
-	/** Yield ownership of current data and become owner of new data. 
-	    Raw pointer to old data is returned to caller which is responsible
+	/** Yield ownership of current data and become owner of new data.
+		Raw pointer to old data is returned to caller which is responsible
 		for deallocation. */
 	T *swap(T *newData) { T *oldData = data; data = newData; return oldData; }
 	
 	T &operator*() { return *data; }
 	T *operator->() { return data; }
+
+	// implement the boost::Lockable concept
+	void lock() { mutex.lock(); }
+	bool try_lock() { return mutex.try_lock(); }
+	void unlock() { mutex.unlock(); }
+
 protected:
 	T *data;
 private:
@@ -87,35 +103,75 @@ private:
 	SharedData<T> &operator=(const SharedData<T> &other); // avoid copying of the wrapper
 };
 
-// BUG FIXME CAVEAT
-// The SharedData<multi_img> specialization as a subclass of
-// SharedData<multi_img_base> allows for casting a multi_img_ptr to a
-// multi_img_base_ptr, but
+// Specialization of SharedData for multi_img_base / multi_img
 //
-//  multi_img *image;
-//  multi_img_base_ptr shared_image(new SharedData<multi_img>(image));
-//  if(NULL == boost::dynamic_pointer_cast<SharedData<multi_img> >(shared_image)) {
-//     // will execute!
-//  }
+// Most Tasks in gerbil need to operate on a multi_img object. For this reason
+// SharedData<multi_img_base> casts to multi_img in most access functions. If
+// client code can restrict itself to multi_img_base functionality, it should
+// use getBase() and overloaded swap(multi_img_base*).
 //
-// That is SharedData<T>* is _not_ covariant with the pointer T* for which it is
-// a wrapper. And therefore this construction is fundamentally broken!
-// Note: Whereas shared_ptr<T> is covariant with T*!
+// Notice: The SharedData concept is not suited for covariant type casting
+// as implemented in boost::shared_ptr. As a consequence it was
+// decided to have implicit casting to multi_img in
+// SharedData<multi_img_base>. Client code has to be aware of the consequences
+// of the implicit casts.
 
+// possible optimization: use an extra multi_img* member to store the result
+// of the cast.
 template<>
-class SharedData<multi_img> : public SharedData<multi_img_base> {
+class SharedData<multi_img_base> {
 public:
-	SharedData(multi_img *data) : SharedData<multi_img_base>(data) {}
-	multi_img *swap(multi_img* newData) { return static_cast<multi_img*>(SharedData<multi_img_base>::swap(newData)); }
-	multi_img &operator*() { return static_cast<multi_img&>(*data); }
-	multi_img *operator->() { return static_cast<multi_img*>(data); }
+	SharedDataMutex mutex;
+
+	SharedData(multi_img_base *data) : data(data) {}
+	// returns NULL if the encapsulated pointer points to multi_img_base object
+	multi_img *swap(multi_img* newData) {
+		multi_img_base *tmp = data;
+		data = newData;
+		multi_img *ret = dynamic_cast<multi_img*>(tmp);
+		return ret;
+	}
+	// overloaded swap for base class: returns encapsulated pointer
+	multi_img_base *swap(multi_img_base* newData) {
+		multi_img_base *tmp = data;
+		data = newData;
+		return tmp;
+	}
+	// throws bad_cast, if the encapsulated pointer points to multi_img_base
+	// object
+	multi_img &operator*() { return dynamic_cast<multi_img&>(*data); }
+	// does not throw, may return NULL
+	multi_img *operator->() {
+		multi_img *ret = dynamic_cast<multi_img*>(data);
+		return ret;
+	}
+	// Return base class image. Tasks that can restrict themselves to using
+	// multi_img_base functionality should use this function.
+	multi_img_base &getBase() {
+		assert(data);
+		return *data;
+	}
+
+	// implement the boost::Lockable concept
+	void lock() { mutex.lock(); }
+	bool try_lock() { return mutex.try_lock(); }
+	void unlock() { mutex.unlock(); }
+
+protected:
+	multi_img_base *data;
+private:
+	// non-copyable
+	SharedData(const SharedData<multi_img_base> &other);
+	SharedData<multi_img_base> &operator=(const SharedData<multi_img_base> &other); 
 };
 
-typedef SharedData<multi_img_base> shared_multi_img_base;
-typedef SharedData<multi_img> shared_multi_img;
+typedef SharedData<multi_img_base> SharedMultiImgBase;
+// Guard type that locks the SharedData mutex
+typedef boost::lock_guard<SharedData<multi_img_base> >  SharedMultiImgBaseGuard;
 
-typedef boost::shared_ptr<shared_multi_img_base> multi_img_base_ptr;
-typedef boost::shared_ptr<shared_multi_img> multi_img_ptr;
+// pointer to SharedData<multi_img_base> which really behaves like SharedData<multi_img>, see above
+typedef boost::shared_ptr<SharedMultiImgBase> SharedMultiImgPtr;
+
 typedef boost::shared_ptr<SharedData<cv::Mat3f> > mat3f_ptr;
 typedef boost::shared_ptr<SharedData<std::pair<multi_img::Value, multi_img::Value> > > data_range_ptr;
 

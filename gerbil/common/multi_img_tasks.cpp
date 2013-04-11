@@ -616,8 +616,7 @@ bool DataRangeCuda::run()
 
 bool ClampTbb::run() 
 {
-	multi_img *source;
-	source = dynamic_cast<multi_img*>(&(**multi_base));
+	multi_img *source = &**image;
 	assert(0 != source);
 
 	multi_img *target = new multi_img(source->height, source->width, source->size());
@@ -648,8 +647,8 @@ bool ClampTbb::run()
 		delete target;
 		return false;
 	} else {
-		SharedDataSwapLock lock(multi_base->mutex);
-		delete multi_base->swap(target);
+		SharedDataSwapLock lock(image->mutex);
+		delete image->swap(target);
 		return true;
 	}
 }
@@ -666,8 +665,7 @@ void ClampTbb::Clamp::operator()(const tbb::blocked_range<size_t> &r) const
 
 bool ClampCuda::run() 
 {
-	multi_img *source;
-	source = dynamic_cast<multi_img*>(&(**multi_base));
+	multi_img *source = &**image;
 
 	assert(0 != source);
 	multi_img *target = new multi_img(source->height, source->width, source->size());
@@ -702,15 +700,15 @@ bool ClampCuda::run()
 		delete target;
 		return false;
 	} else {
-		SharedDataSwapLock lock(multi_base->mutex);
-		delete multi_base->swap(target);
+		SharedDataSwapLock lock(image->mutex);
+		delete image->swap(target);
 		return true;
 	}
 }
 
 bool IlluminantTbb::run() 
 {
-	multi_img *source = dynamic_cast<multi_img*>(&(**multi));
+	multi_img *source = &**multi;
 	assert(0 != source);
 	multi_img *target = new multi_img(source->height, source->width, source->size());
 	target->roi = source->roi;
@@ -765,7 +763,7 @@ void IlluminantTbb::Illumination::operator()(const tbb::blocked_range<size_t> &r
 
 bool IlluminantCuda::run() 
 {
-	multi_img *source = dynamic_cast<multi_img*>(&(**multi));
+	multi_img *source = &**multi;
 	assert(0 != source);
 	multi_img *target = new multi_img(source->height, source->width, source->size());
 	target->roi = source->roi;

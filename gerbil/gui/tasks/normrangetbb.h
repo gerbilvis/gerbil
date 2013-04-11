@@ -3,7 +3,7 @@
 
 class NormRangeTbb : public MultiImg::DataRangeTbb {
 public:
-	NormRangeTbb(multi_img_ptr multi,
+	NormRangeTbb(SharedMultiImgPtr multi,
 		data_range_ptr range, MultiImg::NormMode mode, int target,
 		multi_img::Value minval, multi_img::Value maxval, bool update,
 		cv::Rect targetRoi = cv::Rect(0, 0, 0, 0))

@@ -33,7 +33,7 @@ class multi_img_viewer : public QWidget, private Ui::multi_img_viewer {
 public:
 	multi_img_viewer(QWidget *parent = 0);
 
-	multi_img_ptr getImage() { return image; }
+	SharedMultiImgPtr getImage() { return image; }
 	void resetImage() { image.reset(); }
 	Viewport* getViewport() { return viewport; }
 	void activateViewport() { viewport->activate(); }
@@ -54,7 +54,7 @@ public slots:
 	void addPixels(const std::map<std::pair<int, int>, short> &points);
 	void subImage(sets_ptr temp, const std::vector<cv::Rect> &regions, cv::Rect roi);
 	void addImage(sets_ptr temp, const std::vector<cv::Rect> &regions, cv::Rect roi);
-	void setImage(multi_img_ptr image, cv::Rect roi);
+	void setImage(SharedMultiImgPtr image, cv::Rect roi);
 	void setIlluminant(const std::vector<multi_img::Value> &, bool for_real);
 	void changeBinCount(int bins);
 	void updateBinning(int bins);
@@ -90,7 +90,7 @@ protected:
 	void updateMaskLimiters(const std::vector<std::pair<int, int> >&, int dim);
 	void setTitle(representation type, multi_img::Value min, multi_img::Value max);
 
-	multi_img_ptr image;
+	SharedMultiImgPtr image;
 	representation type;
 	std::vector<multi_img::Value> illuminant;
 	bool ignoreLabels;

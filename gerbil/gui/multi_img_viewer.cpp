@@ -173,7 +173,7 @@ void multi_img_viewer::addImage(sets_ptr temp, const std::vector<cv::Rect> &regi
 	queue->push(taskBins);
 }
 
-void multi_img_viewer::setImage(multi_img_ptr img, cv::Rect roi)
+void multi_img_viewer::setImage(SharedMultiImgPtr img, cv::Rect roi)
 {
 	SharedDataLock ctxlock(viewport->ctx->mutex);
 	ViewportCtx args = **viewport->ctx;

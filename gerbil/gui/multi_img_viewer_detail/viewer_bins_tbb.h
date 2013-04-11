@@ -4,7 +4,7 @@
 class ViewerBinsTbb : public BackgroundTask {
 public:
 	ViewerBinsTbb(
-		multi_img_ptr multi, const cv::Mat1s &labels,
+		SharedMultiImgPtr multi, const cv::Mat1s &labels,
 		const QVector<QColor> &colors,
 		const std::vector<multi_img::Value> &illuminant,
 		const ViewportCtx &args, vpctx_ptr context,
@@ -23,7 +23,7 @@ protected:
 	tbb::task_group_context stopper;
 
 
-	multi_img_ptr multi;
+	SharedMultiImgPtr multi;
 	cv::Mat1s labels;
 	cv::Mat1b mask;
 	QVector<QColor> colors;

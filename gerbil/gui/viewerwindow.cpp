@@ -41,9 +41,9 @@ ViewerWindow::ViewerWindow(BackgroundTaskQueue &queue, multi_img_base *image,
 						   QString labelfile, bool limitedMode, QWidget *parent)
 	: QMainWindow(parent), queue(queue),
 	  startupLabelFile(labelfile), limitedMode(limitedMode),
-	  full_image_limited(new SharedData<multi_img_base>(image)),
-	  image(new SharedData<multi_img>(new multi_img(0, 0, 0))),
-	  gradient(new SharedData<multi_img>(new multi_img(0, 0, 0))),
+	  image_lim(new SharedMultiImgBase(image)),
+	  image(new SharedMultiImgBase(new multi_img(0, 0, 0))),
+	  gradient(new SharedMultiImgBase(new multi_img(0, 0, 0))),
 	  //imagepca(new SharedData<multi_img>(new multi_img(0, 0, 0))),
 	  //gradientpca(new SharedData<multi_img>(new multi_img(0, 0, 0))),
 	  full_labels(image->height, image->width, (short)0),
@@ -76,8 +76,8 @@ ViewerWindow::ViewerWindow(BackgroundTaskQueue &queue, multi_img_base *image,
 
 	// default to full image if small enough
 	roiView->roi = QRect(0, 0, 
-		(*full_image_limited)->width < 513 ? (*full_image_limited)->width : 512, 
-		(*full_image_limited)->height < 513 ? (*full_image_limited)->height : 512);
+		(*image_lim)->width < 513 ? (*image_lim)->width : 512,
+		(*image_lim)->height < 513 ? (*image_lim)->height : 512);
 
 	roi = cv::Rect(roiView->roi.x(), roiView->roi.y(), 
 		roiView->roi.width(), roiView->roi.height());
@@ -193,26 +193,23 @@ void ViewerWindow::applyROI(bool reuse)
 	for (size_t i = 0; i < viewers.size(); ++i)
 		viewers[i]->labels = labels;
 
-	//switchFullImage(FullImageSwitcher::LIMITED);
-	SharedDataLock full_image_lock(full_image_limited->mutex);
-	size_t numbands = bandsSlider->value();
-	if (numbands <= 2)
-		numbands = 3;
-	if (numbands > (*full_image_limited)->size())
-		numbands = (*full_image_limited)->size();
-	for (size_t i = 0; i < viewers.size(); ++i) {
-		if (viewers[i]->getSelection() >= numbands)
-			viewers[i]->setSelection(0);
+	size_t numbands;
+	{
+		SharedMultiImgBaseGuard guard(*image_lim);
+		numbands = bandsSlider->value();
+		if (numbands <= 2)
+			numbands = 3;
+		if (numbands > (*image_lim)->size())
+			numbands = (*image_lim)->size();
+		for (size_t i = 0; i < viewers.size(); ++i) {
+			if (viewers[i]->getSelection() >= numbands)
+				viewers[i]->setSelection(0);
+		}
 	}
-	full_image_lock.unlock();
 
-//	BackgroundTaskPtr taskSwitch(
-//		new FullImageSwitcher(full_image_limited, full_image_regular, FullImageSwitcher::LIMITED));
-//	queue.push(taskSwitch);
-
-	multi_img_ptr scoped_image(new SharedData<multi_img>(NULL));
+	SharedMultiImgPtr scoped_image(new SharedMultiImgBase(NULL));
 	BackgroundTaskPtr taskScope(new MultiImg::ScopeImage(
-		full_image_limited, scoped_image, roi));
+		image_lim, scoped_image, roi));
 	queue.push(taskScope);
 
 	// each vector's size is atmost #bands (e.g., gradient has one less)
@@ -551,9 +548,9 @@ void ViewerWindow::initUI()
 	}
 
 	/// init bandsSlider
-	bandsLabel->setText(QString("%1 bands").arg((*full_image_limited)->size()));
-	bandsSlider->setMaximum((*full_image_limited)->size());
-	bandsSlider->setValue((*full_image_limited)->size());
+	bandsLabel->setText(QString("%1 bands").arg((*image_lim)->size()));
+	bandsSlider->setMaximum((*image_lim)->size());
+	bandsSlider->setValue((*image_lim)->size());
 	connect(bandsSlider, SIGNAL(valueChanged(int)),
 			this, SLOT(bandsSliderMoved(int)));
 	connect(bandsSlider, SIGNAL(sliderMoved(int)),
@@ -564,7 +561,7 @@ void ViewerWindow::initUI()
 	connect(scr, SIGNAL(activated()), this, SLOT(screenshot()));
 
 	BackgroundTaskPtr taskRgb(new RgbTbb(
-		full_image_limited, mat3f_ptr(new SharedData<cv::Mat3f>(new cv::Mat3f)), full_rgb_temp));
+		image_lim, mat3f_ptr(new SharedData<cv::Mat3f>(new cv::Mat3f)), full_rgb_temp));
 	taskRgb->run();
 	updateRGB(true);
 }
@@ -612,7 +609,7 @@ void ViewerWindow::toggleViewer(bool enable, representation viewer)
 				this, SLOT(gradCalculationComplete(bool)), Qt::QueuedConnection);
 			queue.push(taskGradFinish);
 		} else if (viewer == IMGPCA) {
-			imagepca.reset(new SharedData<multi_img>(new multi_img(0, 0, 0)));
+			imagepca.reset(new SharedMultiImgBase(new multi_img(0, 0, 0)));
 
 			BackgroundTaskPtr taskPca(new MultiImg::PcaTbb(
 				image, imagepca, 0, roi));
@@ -625,7 +622,7 @@ void ViewerWindow::toggleViewer(bool enable, representation viewer)
 				this, SLOT(imgPcaCalculationComplete(bool)), Qt::QueuedConnection);
 			queue.push(taskImgPcaFinish);
 		} else if (viewer == GRADPCA) {
-			gradientpca.reset(new SharedData<multi_img>(new multi_img(0, 0, 0)));
+			gradientpca.reset(new SharedMultiImgBase(new multi_img(0, 0, 0)));
 
 			BackgroundTaskPtr taskPca(new MultiImg::PcaTbb(
 				gradient, gradientpca, 0, roi));
@@ -833,7 +830,7 @@ const QPixmap* ViewerWindow::getBand(representation type, int dim)
 	std::vector<QPixmap*> &v = bands[type];
 
 	if (!v[dim]) {
-		multi_img_ptr multi = viewers[type]->getImage();
+		SharedMultiImgPtr multi = viewers[type]->getImage();
 		qimage_ptr qimg(new SharedData<QImage>(new QImage()));
 
 		SharedDataLock hlock(multi->mutex);
@@ -859,7 +856,7 @@ void ViewerWindow::selectBand(representation type, int dim)
 {
 	bandView->setEnabled(true);
 	bandView->setPixmap(*getBand(type, dim));
-	multi_img_ptr m = viewers[type]->getImage();
+	SharedMultiImgPtr m = viewers[type]->getImage();
 	SharedDataLock hlock(m->mutex);
 	std::string banddesc = (*m)->meta[dim].str();
 	hlock.unlock();
@@ -892,17 +889,13 @@ void ViewerWindow::applyIlluminant() {
 	if (i1 != 0) {
 		const Illuminant &il = getIlluminant(i1);
 
-//		BackgroundTaskPtr taskSwitch(
-//			new FullImageSwitcher(full_image_limited, full_image_regular, FullImageSwitcher::REGULAR));
-//		queue.push(taskSwitch);
-
 		if (cv::gpu::getCudaEnabledDeviceCount() > 0 && USE_CUDA_ILLUMINANT) {
 			BackgroundTaskPtr taskIllum(new MultiImg::IlluminantCuda(
-				full_image_limited, il, true, roi, false));
+				image_lim, il, true, roi, false));
 			queue.push(taskIllum);
 		} else {
 			BackgroundTaskPtr taskIllum(new MultiImg::IlluminantTbb(
-				full_image_limited, il, true, roi, false));
+				image_lim, il, true, roi, false));
 			queue.push(taskIllum);
 		}
 	}
@@ -911,17 +904,13 @@ void ViewerWindow::applyIlluminant() {
 	if (i2 != 0) {
 		const Illuminant &il = getIlluminant(i2);
 
-//		BackgroundTaskPtr taskSwitch(
-//			new FullImageSwitcher(full_image_limited, full_image_regular, FullImageSwitcher::REGULAR));
-//		queue.push(taskSwitch);
-
 		if (cv::gpu::getCudaEnabledDeviceCount() > 0 && USE_CUDA_ILLUMINANT) {
 			BackgroundTaskPtr taskIllum(new MultiImg::IlluminantCuda(
-				full_image_limited, il, false, roi, false));
+				image_lim, il, false, roi, false));
 			queue.push(taskIllum);
 		} else {
 			BackgroundTaskPtr taskIllum(new MultiImg::IlluminantTbb(
-				full_image_limited, il, false, roi, false));
+				image_lim, il, false, roi, false));
 			queue.push(taskIllum);
 		}
 	}
@@ -932,12 +921,8 @@ void ViewerWindow::applyIlluminant() {
 	applyROI(false);
 	rgbDock->setEnabled(false);
 
-//	BackgroundTaskPtr taskSwitch(
-//		new FullImageSwitcher(full_image_limited, full_image_regular, FullImageSwitcher::LIMITED));
-//	queue.push(taskSwitch);
-
 	BackgroundTaskPtr taskRgb(new RgbTbb(
-		full_image_limited, mat3f_ptr(new SharedData<cv::Mat3f>(new cv::Mat3f)), full_rgb_temp, roi));
+		image_lim, mat3f_ptr(new SharedData<cv::Mat3f>(new cv::Mat3f)), full_rgb_temp, roi));
 	QObject::connect(taskRgb.get(), SIGNAL(finished(bool)), this, SLOT(updateRGB(bool)), Qt::QueuedConnection);
 	queue.push(taskRgb);
 
@@ -1188,33 +1173,21 @@ void ViewerWindow::clampNormUserRange()
 			queue.push(taskNormRange);
 		}
 
-//		{
-//			BackgroundTaskPtr taskSwitch(
-//				new FullImageSwitcher(full_image_limited, full_image_regular, FullImageSwitcher::REGULAR));
-//			queue.push(taskSwitch);
-//		}
-
 		if (cv::gpu::getCudaEnabledDeviceCount() > 0 && USE_CUDA_CLAMP) {
 			BackgroundTaskPtr taskClamp(new MultiImg::ClampCuda(
-				full_image_limited, image, roi, false));
+				image_lim, image, roi, false));
 			queue.push(taskClamp);
 		} else {
 			BackgroundTaskPtr taskClamp(new MultiImg::ClampTbb(
-				full_image_limited, image, roi, false));
+				image_lim, image, roi, false));
 			queue.push(taskClamp);
 		}
 
 		applyROI(false);
 		rgbDock->setEnabled(false);
 
-//		{
-//			BackgroundTaskPtr taskSwitch(
-//				new FullImageSwitcher(full_image_limited, full_image_regular, FullImageSwitcher::LIMITED));
-//			queue.push(taskSwitch);
-//		}
-
 		BackgroundTaskPtr taskRgb(new RgbTbb(
-			full_image_limited, mat3f_ptr(new SharedData<cv::Mat3f>(new cv::Mat3f)), full_rgb_temp, roi));
+			image_lim, mat3f_ptr(new SharedData<cv::Mat3f>(new cv::Mat3f)), full_rgb_temp, roi));
 		QObject::connect(taskRgb.get(), SIGNAL(finished(bool)), this, SLOT(updateRGB(bool)), Qt::QueuedConnection);
 		queue.push(taskRgb);
 
@@ -1241,13 +1214,11 @@ void ViewerWindow::clampNormUserRange()
 			queue.push(taskNormRange);
 		}
 
-		multi_img_base_ptr gradient_base = boost::dynamic_pointer_cast<shared_multi_img_base>(gradient);
-		assert(NULL != gradient_base);
 		if (cv::gpu::getCudaEnabledDeviceCount() > 0 && USE_CUDA_CLAMP) {
-			BackgroundTaskPtr taskClamp(new MultiImg::ClampCuda(gradient_base, gradient));
+			BackgroundTaskPtr taskClamp(new MultiImg::ClampCuda(gradient, gradient));
 			queue.push(taskClamp);
 		} else {
-			BackgroundTaskPtr taskClamp(new MultiImg::ClampTbb(gradient_base, gradient));
+			BackgroundTaskPtr taskClamp(new MultiImg::ClampTbb(gradient, gradient));
 			queue.push(taskClamp);
 		}
 
@@ -1299,7 +1270,7 @@ void ViewerWindow::initGraphsegUI()
 			graphsegButton, SLOT(setChecked(bool)));
 }
 
-void ViewerWindow::runGraphseg(multi_img_ptr input,
+void ViewerWindow::runGraphseg(SharedMultiImgPtr input,
 							   const vole::GraphSegConfig &config)
 {
 	setGUIEnabled(false);
@@ -1343,9 +1314,9 @@ void ViewerWindow::startGraphseg()
 		runGraphseg(gradient, conf);
 	} else {	// currently shown band, construct from selection in viewport
 		int band = activeViewer->getSelection();
-		multi_img_ptr img = activeViewer->getImage();
+		SharedMultiImgPtr img = activeViewer->getImage();
 		SharedDataLock img_lock(img->mutex);
-		multi_img_ptr i(new SharedData<multi_img>(
+		SharedMultiImgPtr i(new SharedMultiImgBase(
 			new multi_img((**img)[band], (*img)->minval, (*img)->maxval)));
 		img_lock.unlock();
 		runGraphseg(i, conf);
@@ -1373,10 +1344,11 @@ void ViewerWindow::initUnsupervisedSegUI()
 	usBandwidthBox->addItem("fixed");
 	usBandwidthMethodChanged("adaptive");
 
-	SharedDataLock full_image_lock(full_image_limited->mutex);
-	usBandsSpinBox->setValue((*full_image_limited)->size());
-	usBandsSpinBox->setMaximum((*full_image_limited)->size());
-	full_image_lock.unlock();
+	{
+		SharedMultiImgBaseGuard guard(*image_lim);
+		usBandsSpinBox->setValue((*image_lim)->size());
+		usBandsSpinBox->setMaximum((*image_lim)->size());
+	}
 
 	// we do not expose the density estimation functionality
 	usInitWidget->hide();
@@ -1542,13 +1514,18 @@ void ViewerWindow::startUnsupervisedSeg(bool findKL)
 	usSettingsWidget->setDisabled(true);
 
 	// prepare input image
-	// switchFullImage(FullImageSwitcher::REGULAR);
-	// SharedDataLock full_image_lock(full_image_regular->lock);
-	// boost::shared_ptr<multi_img> input(new multi_img(**full_image_regular, roi)); // image data is not copied
-	SharedDataLock full_image_lock(full_image_limited->mutex);
-	assert(0 != dynamic_cast<multi_img*>(&(**full_image_limited)));
-	boost::shared_ptr<multi_img> input(new multi_img(**full_image_limited, roi)); // image data is not copied
-	full_image_lock.unlock();
+	boost::shared_ptr<multi_img> input;
+	{
+		SharedMultiImgBaseGuard guard(*image_lim);
+		assert(0 != &**image_lim);
+		// FIXME 2013-04-11 georg altmann:
+		// not sure what this code is really doing, but this looks like a problem:
+		// is input sharing image data with image_lim?
+		// If so, another thread could overwrite data while image segmentation is working on it,
+		// since there is no locking (unless multi_img does implicit copy on write?).
+		input = boost::shared_ptr<multi_img>(
+					new multi_img(**image_lim, roi)); // image data is not copied
+	}
 	int numbands = usBandsSpinBox->value();
 	bool gradient = usGradientCheckBox->isChecked();
 
@@ -1714,18 +1691,10 @@ void ViewerWindow::buildIlluminant(int temp)
 	Illuminant il(temp);
 	std::vector<multi_img::Value> cf;
 
-
-
-//	switchFullImage(FullImageSwitcher::REGULAR);
-//	SharedDataLock full_image_lock(full_image_regular->lock);
-
-	SharedDataLock full_image_lock(full_image_limited->mutex);
-	multi_img* full_image = dynamic_cast<multi_img*>(&(**full_image_limited));
-	assert(0 != full_image);
-
-	il.calcWeight(full_image->meta[0].center,
-				  full_image->meta[full_image->size()-1].center);
-	cf = full_image->getIllumCoeff(il);
+	SharedMultiImgBaseGuard guard(*image_lim);
+	il.calcWeight((*image_lim)->meta[0].center,
+				  (*image_lim)->meta[(*image_lim)->size()-1].center);
+	cf = (*image_lim)->getIllumCoeff(il);
 	illuminants[temp] = make_pair(il, cf);
 }
 
@@ -1785,11 +1754,13 @@ void ViewerWindow::loadLabeling(QString filename)
 		actual_filename = filename;
 	}
 
-	//switchFullImage(FullImageSwitcher::LIMITED);
-	SharedDataLock full_image_lock(full_image_limited->mutex);
-	int height = (*full_image_limited)->height;
-	int width = (*full_image_limited)->width;
-	full_image_lock.unlock();
+	int height;
+	int width;
+	{
+		SharedMultiImgBaseGuard guard(*image_lim);
+		height = (*image_lim)->height;
+		width = (*image_lim)->width;
+	}
 
 	IOGui io("Labeling Image File", "labeling image", this);
 	cv::Mat input = io.readFile(actual_filename, -1, height, width);
@@ -1807,11 +1778,13 @@ void ViewerWindow::loadLabeling(QString filename)
 
 void ViewerWindow::loadSeeds()
 {
-//	switchFullImage(FullImageSwitcher::LIMITED);
-	SharedDataLock full_image_lock(full_image_limited->mutex);
-	int height = (*full_image_limited)->height;
-	int width = (*full_image_limited)->width;
-	full_image_lock.unlock();
+	int height;
+	int width;
+	{
+		SharedMultiImgBaseGuard guard(*image_lim);
+		height = (*image_lim)->height;
+		width = (*image_lim)->width;
+	}
 
 	IOGui io("Seed Image File", "seed image", this);
 	cv::Mat1s seeding = io.readFile(QString(), 0, height, width);
@@ -1860,11 +1833,13 @@ void ViewerWindow::ROIDecision(QAbstractButton *sender)
 			roiView->roi = QRect(roi.x, roi.y, roi.width, roi.height);
 		} else {
 			// fetch image dimensions
-//			switchFullImage(FullImageSwitcher::LIMITED);
-			SharedDataLock full_image_lock(full_image_limited->mutex);
-			int height = (*full_image_limited)->height;
-			int width = (*full_image_limited)->width;
-			full_image_lock.unlock();
+			int height;
+			int width;
+			{
+				SharedMultiImgBaseGuard guard(*image_lim);
+				height = (*image_lim)->height;
+				width = (*image_lim)->width;
+			}
 
 			// set ROI to full image
 			roiView->roi = QRect(0, 0, width, height);
