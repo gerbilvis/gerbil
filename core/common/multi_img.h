@@ -130,6 +130,8 @@ public:
 	multi_img_base(const multi_img_base &a) : minval(a.minval), maxval(a.maxval), 
 		width(a.width), height(a.height), meta(a.meta) {}
 
+	virtual ~multi_img_base() {}
+
 	/// returns number of bands
 	virtual size_t size() const = 0;
 
