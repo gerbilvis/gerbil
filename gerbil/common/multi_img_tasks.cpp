@@ -94,7 +94,8 @@ void CommonTbb::DetermineRange::join(DetermineRange &toJoin)
 
 bool ScopeImage::run() 
 {
-	multi_img *target =  new multi_img(**full, targetRoi);
+	// using SharedData<multi_img_base>::getBase() to get multi_img_base object
+	multi_img *target =  new multi_img(full->getBase(), targetRoi);
 	SharedDataSwapLock lock(scoped->mutex);
 	delete scoped->swap(target);
 	return true;
@@ -111,16 +112,17 @@ bool BgrSerial::run()
 
 bool BgrTbb::run() 
 {
-	cv::Mat_<cv::Vec3f> xyz((*multi)->height, (*multi)->width, 0.);
+	multi_img_base& source = multi->getBase();
+	cv::Mat_<cv::Vec3f> xyz(source.height, source.width, 0.);
 	float greensum = 0.f;
-	for (size_t i = 0; i < (*multi)->size(); ++i) {
-		int idx = ((int)((*multi)->meta[i].center + 0.5f) - 360) / 5;
+	for (size_t i = 0; i < source.size(); ++i) {
+		int idx = ((int)(source.meta[i].center + 0.5f) - 360) / 5;
 		if (idx < 0 || idx > 94)
 			continue;
 
 		multi_img::Band band;
-		(*multi)->getBand(i, band);
-		Xyz computeXyz(**multi, xyz, band, idx);
+		source.getBand(i, band);
+		Xyz computeXyz(source, xyz, band, idx);
 		tbb::parallel_for(tbb::blocked_range2d<int>(0, xyz.rows, 0, xyz.cols), 
 			computeXyz, tbb::auto_partitioner(), stopper);
 
@@ -133,8 +135,8 @@ bool BgrTbb::run()
 	if (greensum == 0.f)
 		greensum = 1.f;
 
-	cv::Mat_<cv::Vec3f> *newBgr = new cv::Mat_<cv::Vec3f>((*multi)->height, (*multi)->width);
-	Bgr computeBgr(**multi, xyz, *newBgr, greensum);
+	cv::Mat_<cv::Vec3f> *newBgr = new cv::Mat_<cv::Vec3f>(source.height, source.width);
+	Bgr computeBgr(source, xyz, *newBgr, greensum);
 	tbb::parallel_for(tbb::blocked_range2d<int>(0, newBgr->rows, 0, newBgr->cols), 
 		computeBgr, tbb::auto_partitioner(), stopper);
 
