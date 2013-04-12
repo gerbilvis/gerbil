@@ -111,7 +111,7 @@ SOM::closestN(const multi_img::Pixel &inputVec, unsigned int N) const
 				heap.pop_back();
 				// add new value
 				heap.push_back(std::make_pair(dist, cv::Point(x, y)));
-				push_heap(heap.begin(), heap.end(), sortpair);
+				std::push_heap(heap.begin(), heap.end(), sortpair);
 			}
 		}
 	}
