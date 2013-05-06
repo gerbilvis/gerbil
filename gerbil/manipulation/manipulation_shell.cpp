@@ -28,15 +28,15 @@ ManipulationShell::~ManipulationShell() {}
 
 int ManipulationShell::execute() {
 	// image cropping and spectra cropping
-	multi_img input = ImgInput(config.m_InputConfig1).execute();
-	if (input.empty())
+	multi_img::ptr input = ImgInput(config.m_InputConfig1).execute();
+	if (input->empty())
 		return -1;
 
 	if (config.task.compare("median")==0) {
-		multi_img output(1, 1, input.size());
-		for (int i = 0; i < input.size(); ++i) {
+		multi_img output(1, 1, input->size());
+		for (int i = 0; i < input->size(); ++i) {
 			// median of current band in image 2
-			std::vector<multi_img::Value> v(input[i].begin(), input[i].end());
+			std::vector<multi_img::Value> v((*input)[i].begin(), (*input)[i].end());
 			std::sort(v.begin(), v.end());
 			multi_img::Value median = v[v.size()*0.5];
 			std::cout << i << ": " << median << std::endl;
@@ -44,7 +44,7 @@ int ManipulationShell::execute() {
 			multi_img::Band b(output[i]);
 			b.setTo(median);
 			output.setBand(i, b);
-			output.meta = input.meta;
+			output.meta = input->meta;
 		}
 		std::string output_name = config.m_strOutputFilename;
 		output.write_out(output_name);
@@ -54,15 +54,15 @@ int ManipulationShell::execute() {
 		config.task.compare("compare")==0))
 		return 0;
 
-	multi_img input2 = ImgInput(config.m_InputConfig2).execute();
+	multi_img::ptr input2 = ImgInput(config.m_InputConfig2).execute();
 
-	if (input2.empty())
+	if (input2->empty())
 		return -1;
 
 	if (config.task.compare("compare") == 0) {
-		input.rebuildPixels(false);
-		input2.rebuildPixels(false);
-		multi_img::Pixel reference = input2(0, 0);
+		input->rebuildPixels(false);
+		input2->rebuildPixels(false);
+		multi_img::Pixel reference = (*input2)(0, 0);
 
 		SMConfig distcfg[2];
 		distcfg[0].measure = EUCLIDEAN;
@@ -73,30 +73,30 @@ int ManipulationShell::execute() {
 		assert(distfun[0] && distfun[1]);
 
 		double distsum[2] = { 0., 0.};
-		for (int y = 0; y < input.height; ++y) {
-			for (int x = 0; x < input.width; ++x) {
+		for (int y = 0; y < input->height; ++y) {
+			for (int x = 0; x < input->width; ++x) {
 				for (int d = 0; d < 2; ++ d) {
-					double dist = distfun[d]->getSimilarity(input(y, x), reference);
+					double dist = distfun[d]->getSimilarity((*input)(y, x), reference);
 					distsum[d] += std::abs(dist);
 				}
 			}
 		}
-		distsum[0] /= input.height * input.width * 255.;
-		distsum[1] /= input.height * input.width;
+		distsum[0] /= input->height * input->width * 255.;
+		distsum[1] /= input->height * input->width;
 		std::cout << "Mean Euclidean distance: " << distsum[0] << std::endl;
 		std::cout << "Mean Spectral Angle error: " << distsum[1] << std::endl;
 	}
 
 	if (config.task.compare("divide") == 0) {
-		assert(input2.width == 1 && input2.height == 1);
-		for (int i = 0; i < input.size(); ++i) {
-			multi_img::Band b(input[i]);
-			b /= input2[i](0, 0);
-			input.setBand(i, b);
+		assert(input2->width == 1 && input2->height == 1);
+		for (int i = 0; i < input->size(); ++i) {
+			multi_img::Band b((*input)[i]);
+			b /= (*input2)[i](0, 0);
+			input->setBand(i, b);
 		}
-		input.maxval = 1.;
+		input->maxval = 1.;
 		std::string output_name = config.m_strOutputFilename;
-		input.write_out(output_name);
+		input->write_out(output_name);
 	}
 
 	return 0;

@@ -1,6 +1,7 @@
 #include "viewerwindow.h"
 #include <multi_img_offloaded.h>
 #include <background_task_queue.h>
+#include <imginput.h>
 
 #include <tbb/compat/thread>
 #include <QApplication>
@@ -313,10 +314,14 @@ int main(int argc, char **argv)
 
 	// load image
 	multi_img_base* image;
+	multi_img::ptr imgSharedPtr;
 	if (limited_mode) {
 		image = new multi_img_offloaded(filelist.first, filelist.second);
 	} else {
-		image = new multi_img(filename);
+		vole::ImgInputConfig inputConfig;
+		inputConfig.file = filename;
+		imgSharedPtr = vole::ImgInput(inputConfig).execute();
+		image = imgSharedPtr.get();
 	}
 
 	if (image->empty())

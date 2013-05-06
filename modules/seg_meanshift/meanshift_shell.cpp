@@ -32,19 +32,19 @@ MeanShiftShell::~MeanShiftShell() {}
 
 
 int MeanShiftShell::execute() {
-	std::pair<multi_img, multi_img> input;
+	std::pair<multi_img::ptr, multi_img::ptr> input;
 	if (config.sp_original) {
 		input = ImgInput(config.input).both();
 	} else {
 		input.first = ImgInput(config.input).execute();
 	}
-	if (input.first.empty())
+	if (input.first->empty())
 		return -1;
 
 	// rebuild before stopwatch for fair comparison
-	input.first.rebuildPixels(false);
+	input.first->rebuildPixels(false);
 	if (config.sp_original) {
-		input.second.rebuildPixels(false);
+		input.second->rebuildPixels(false);
 	}
 
 	Labeling labels;
@@ -54,7 +54,7 @@ int MeanShiftShell::execute() {
 		MeanShift ms(config);
 		if (config.findKL) {
 		// find K, L
-			std::pair<int, int> ret = ms.findKL(input.first);
+			std::pair<int, int> ret = ms.findKL(*input.first);
 			config.K = ret.first; config.L = ret.second;
 			std::cout << "Found K = " << config.K
 				      << "\tL = " << config.L << std::endl;
@@ -69,9 +69,9 @@ int MeanShiftShell::execute() {
 
 		cv::Mat1s labels_mask;
 		if (config.sp_original) {
-			labels_mask = ms.execute(input.first, NULL, NULL, input.second);
+			labels_mask = ms.execute(*input.first, NULL, NULL, *input.second);
 		} else {
-			labels_mask = ms.execute(input.first, NULL, NULL, input.first);
+			labels_mask = ms.execute(*input.first, NULL, NULL, *input.first);
 		}
 		if (labels_mask.empty())
 			return 0;

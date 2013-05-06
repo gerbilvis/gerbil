@@ -40,12 +40,12 @@ MeanShiftSOM::~MeanShiftSOM() {}
 int MeanShiftSOM::execute() {
 #ifdef WITH_EDGE_DETECT
 
-	multi_img input = ImgInput(config.input).execute();
-	if (input.empty())
+	multi_img::ptr input = ImgInput(config.input).execute();
+	if (input->empty())
 		return -1;
 
 	// rebuild before stopwatch for fair comparison
-	input.rebuildPixels(false);
+	input->rebuildPixels(false);
 
 	Stopwatch watch("Total time");
 
@@ -55,13 +55,13 @@ int MeanShiftSOM::execute() {
 		config.som.height = config.som.width * config.som.width;
 	}
 
-	SOM som(config.som, input.size());
+	SOM som(config.som, input->size());
 	std::cout << "# Generated SOM " << config.som.width
 			  << "x" << config.som.height << " with dimension "
-			  << input.size() << std::endl;
+			  << input->size() << std::endl;
 
 	{
-		SOMTrainer trainer(som, input, config.som);
+		SOMTrainer trainer(som, *input, config.som);
 
 		std::cout << "# SOM Trainer starts to feed the network using "
 				  << config.som.maxIter << " iterations..." << std::endl;
@@ -95,10 +95,10 @@ int MeanShiftSOM::execute() {
 	std::cerr << "min: " << mi << " \tmax: " << ma << std::endl;
 
 	// translate results back to original image domain
-	cv::Mat1s labels_mask(input.height, input.width);
+	cv::Mat1s labels_mask(input->height, input->width);
 	cv::Mat1s::iterator it = labels_mask.begin();
 	for (unsigned int i = 0; it != labels_mask.end(); ++i, ++it) {
-		cv::Point n = som.identifyWinnerNeuron(input.atIndex(i));
+		cv::Point n = som.identifyWinnerNeuron(input->atIndex(i));
 		*it = labels_ms(n);
 	}
 

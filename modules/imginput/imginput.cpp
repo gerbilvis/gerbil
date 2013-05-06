@@ -1,97 +1,129 @@
 #include "imginput.h"
+#include "gdalreader.h"
 #include <string>
 #include <vector>
+
+// TODO: copy operationen einsparen, indem statt multi_img multi_img::ptr returnt werden
 
 using std::vector;
 
 namespace vole {
 
-multi_img ImgInput::execute()
+multi_img::ptr ImgInput::execute()
 {
-	multi_img img(config.file);
+	multi_img::ptr img_ptr(new multi_img);//(config.file)); // TODO
 
-	// return empty image on failure
-	if (img.empty())
-		return img;
-
-	// apply ROI
-	if (!config.roi.empty())
-		applyROI(img);
-
-	// crop spectrum
-	if ((config.bandlow > 0) ||
-		(config.bandhigh > 0 && config.bandhigh < (int)img.size())) {
-		img = multi_img(img, config.bandlow, config.bandhigh);
-	}
-
-#ifdef WITH_GERBIL_COMMON
-	// compute gradient
-	if (config.gradient) {
-		img.apply_logarithm();
-		img = img.spec_gradient();
-	}
-
-	// reduce number of bands
-	if (config.bands > 0 && config.bands < (int)img.size()) {
-		img = img.spec_rescale(config.bands);
+#ifdef WITH_GDAL
+	// if multi_img-constructor didn't work, try GDALReader
+	if (img_ptr->empty())
+	{
+		img_ptr = GdalReader(config).readFile();
 	}
 #endif
 
-	return img;
-}
-
-#ifdef WITH_GERBIL_COMMON
-std::pair<multi_img, multi_img> ImgInput::both()
-{
-	multi_img img(config.file);
-
 	// return empty image on failure
-	if (img.empty())
-		return std::make_pair(img, img);
+	if (img_ptr->empty())
+		return img_ptr;
 
 	// apply ROI
 	if (!config.roi.empty())
-		applyROI(img);
+	{
+		std::vector<int> roiVals;
+		if (!ImgInput::parseROIString(config.roi, roiVals))
+		{
+			// Parsing of ROI String failed
+			std::cerr << "Ignoring invalid ROI specification" << std::endl;
+		}
+		else
+		{
+			// only apply ROI if it isn't already
+			if (roiVals[2] != img_ptr->width || roiVals[3] != img_ptr->height)
+				applyROI(img_ptr);
+		}
+	}
 
 	// crop spectrum
 	if ((config.bandlow > 0) ||
-		(config.bandhigh > 0 && config.bandhigh < (int)img.size())) {
-		img = multi_img(img, config.bandlow, config.bandhigh);
+		(config.bandhigh > 0 && config.bandhigh < (int)img_ptr->size())) {
+		img_ptr = multi_img::ptr(new multi_img(*img_ptr, config.bandlow, config.bandhigh));
 	}
 
+	#ifdef WITH_GERBIL_COMMON
 	// compute gradient
-	multi_img proc = img.clone();
 	if (config.gradient) {
-		proc.apply_logarithm();
-		proc = proc.spec_gradient();
+		img_ptr->apply_logarithm();
+		*img_ptr = img_ptr->spec_gradient();
 	}
 
 	// reduce number of bands
-	if (config.bands > 0 && config.bands < (int)proc.size()) {
-		proc = proc.spec_rescale(config.bands);
+	if (config.bands > 0 && config.bands < (int)img_ptr->size()) {
+		*img_ptr = img_ptr->spec_rescale(config.bands);
+	}
+	#endif
+
+	return img_ptr;
+}
+
+#ifdef WITH_GERBIL_COMMON
+std::pair<multi_img::ptr, multi_img::ptr> ImgInput::both()
+{
+	// TODO: make this a function that just fails with a nasty message. -> sollte jetzt eig funktionieren...
+	multi_img::ptr img_ptr = execute();
+
+	// return empty image on failure
+	if (img_ptr->empty())
+		// returns 2 (different) empty image objects, do not use (img, img)
+		// (changes to one are not expected to change the other one...)
+		return std::make_pair(img_ptr, multi_img::ptr(new multi_img()));
+
+	// apply ROI
+	if (!config.roi.empty())
+		applyROI(img_ptr);
+
+	// crop spectrum
+	if ((config.bandlow > 0) ||
+		(config.bandhigh > 0 && config.bandhigh < (int)img_ptr->size())) {
+		img_ptr = multi_img::ptr(new multi_img(*img_ptr, config.bandlow, config.bandhigh));
 	}
 
-	return std::make_pair(proc, img);
+	// compute gradient
+	multi_img::ptr proc_ptr = multi_img::ptr(new multi_img(*img_ptr));
+	if (config.gradient) {
+		proc_ptr->apply_logarithm();
+		*proc_ptr = proc_ptr->spec_gradient();
+	}
+
+	// reduce number of bands
+	if (config.bands > 0 && config.bands < (int)proc_ptr->size()) {
+		*proc_ptr = proc_ptr->spec_rescale(config.bands);
+	}
+
+	return std::make_pair(proc_ptr, img_ptr);
 }
 #endif
 
-void ImgInput::applyROI(multi_img &img)
+bool ImgInput::parseROIString(const std::string &str, std::vector<int> &vals)
 {
-	vector<int> vals;
-	const std::string &str = config.roi;
+	int ctr = 0;
 	std::string::size_type prev_pos = 0, pos = 0;
 	while ((pos = str.find(':', pos)) != std::string::npos) {
 		vals.push_back(atoi(str.substr(prev_pos, pos - prev_pos).c_str()));
 		prev_pos = ++pos;
+		++ctr;
 	}
 	vals.push_back(atoi(str.substr(prev_pos, pos - prev_pos).c_str()));
+	return ctr == 4;
+}
 
-	if (vals.size() != 4) {
+void ImgInput::applyROI(multi_img::ptr &img_ptr)
+{
+	vector<int> vals;
+	if (!parseROIString(config.roi, vals)) {
 		std::cerr << "Ignoring invalid ROI specification" << std::endl;
 		return;
 	}
 
-	img = multi_img(img, cv::Rect(vals[0], vals[1], vals[2], vals[3]));
+	img_ptr = multi_img::ptr(new multi_img(*img_ptr, cv::Rect(vals[0], vals[1], vals[2], vals[3])));
 }
 
 } //namespace

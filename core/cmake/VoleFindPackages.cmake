@@ -237,3 +237,12 @@ vole_check_package(EIGEN3
 	""
 )
 
+# GDAL
+find_package(GDAL)
+vole_check_package(GDAL
+	"GDAL"
+	"Please install GDAL"
+	GDAL_FOUND
+        "${GDAL_INCLUDE_DIR}"
+        "${GDAL_LIBRARIES}"
+)

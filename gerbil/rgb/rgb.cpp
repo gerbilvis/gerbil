@@ -32,22 +32,22 @@ RGB::RGB()
 
 int RGB::execute()
 {
-	multi_img src = vole::ImgInput(config.input).execute();
-	if (src.empty())
+	multi_img::ptr src = vole::ImgInput(config.input).execute();
+	if (src->empty())
 		return 1;
 	
 	cv::Mat3f bgr;
 	
 	switch (config.algo) {
 	case COLOR_XYZ:
-		bgr = src.bgr();
+		bgr = src->bgr();
 		break;
 	case COLOR_PCA:
-		bgr = executePCA(src);
+		bgr = executePCA(*src);
 		break;
 	case COLOR_SOM:
 #ifdef WITH_EDGE_DETECT
-		bgr = executeSOM(src);
+		bgr = executeSOM(*src);
 		break;
 #else
 		std::cerr << "FATAL: SOM functionality missing!" << std::endl;

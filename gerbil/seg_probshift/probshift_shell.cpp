@@ -33,18 +33,18 @@ ProbShiftShell::~ProbShiftShell() {}
 
 
 int ProbShiftShell::execute() {
-	multi_img input = ImgInput(config.inputconfig).execute();
+	multi_img::ptr input = ImgInput(config.inputconfig).execute();
 
-	if (input.empty())
+	if (input->empty())
 		return -1;
 
 	// make sure the value range is used
-	input.data_stretch();
-	input.rebuildPixels();
+	input->data_stretch();
+	input->rebuildPixels();
 
 	ProbShift ps(config);
 
-	cv::Mat1s labels_mask = ps.execute(input, "blackjack");
+	cv::Mat1s labels_mask = ps.execute(*input, "blackjack");
 	Labeling labels = labels_mask;
 	labels.yellowcursor = false;
 

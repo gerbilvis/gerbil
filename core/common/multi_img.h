@@ -21,6 +21,9 @@
 #include <sstream>
 #include <iostream>
 #include <opencv2/imgproc/imgproc.hpp>
+#ifdef WITH_BOOST
+	#include <boost/shared_ptr.hpp>
+#endif
 #ifdef WITH_QT
 	class QImage;
 #endif
@@ -190,6 +193,11 @@ public:
 	not a global decision on precision, only on image data precision.
  */
 //@{
+
+#ifdef WITH_BOOST
+	/// for convenience: a multi_img shared ptr
+	typedef boost::shared_ptr<multi_img> ptr;
+#endif
 
 	/// a spectral pixel.
 	/** @note Pixel will always be a std::vector. You can count on this. **/

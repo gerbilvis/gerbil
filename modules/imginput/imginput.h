@@ -10,16 +10,19 @@ class ImgInput {
 public:
 	ImgInput(const ImgInputConfig& config) : config(config) {}
 
-	multi_img execute();
+	// Wrapper around readFile()
+	multi_img::ptr execute();
+
+	static bool parseROIString(const std::string &str, std::vector<int> &vals);
 
 	// provide both processed and original image (on same ROI)
 	// first: processed, second: original
-	std::pair<multi_img, multi_img> both();
+	std::pair<multi_img::ptr, multi_img::ptr> both();
 
 private:
 	const ImgInputConfig &config;
 
-	void applyROI(multi_img &img);
+	void applyROI(multi_img::ptr &img_ptr);
 };
 
 } // namespace
