@@ -11,7 +11,7 @@ namespace vole {
 
 multi_img::ptr ImgInput::execute()
 {
-	multi_img::ptr img_ptr(new multi_img);//(config.file)); // TODO
+	multi_img::ptr img_ptr(new multi_img(config.file));
 
 #ifdef WITH_GDAL
 	// if multi_img-constructor didn't work, try GDALReader
