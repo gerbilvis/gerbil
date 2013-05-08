@@ -118,7 +118,7 @@ public slots:
 	void screenshot();
 
 	void updateRGB(bool success);
-	void refreshLabelsInViewers();
+//	void refreshLabelsInViewers();
 public slots: // introduced by ViewerContainer
 	// FIXME was void updateBand() -> still breaks compile -> all updateBand() calls
 	// need to move from MainWindow to ViewerContainer

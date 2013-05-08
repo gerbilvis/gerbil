@@ -876,27 +876,28 @@ void MainWindow::setLabels(const vole::Labeling &labeling)
 	cv::Mat1s labels = labeling();
 	// following assignments are probably redundant (OpenCV shallow copy)
 	bandView->labels = labels;
-	for (size_t i = 0; i < viewers.size(); ++i)
-		viewers[i]->labels = labels;
+//	for (size_t i = 0; i < viewers.size(); ++i)
+//		viewers[i]->labels = labels;
+	viewerContainer->setLabels(labels);
 
 	bool updated = setLabelColors(labeling.colors());
 	if (!updated) {
 		bandView->refresh();
-		refreshLabelsInViewers();
+		viewerContainer->refreshLabelsInViewers();
 	}
 }
 
-void MainWindow::refreshLabelsInViewers()
-{
-	setGUIEnabled(false);
-	for (size_t i = 0; i < viewers.size(); ++i)
-		viewers[i]->updateLabels();
+//void MainWindow::refreshLabelsInViewers()
+//{
+//	setGUIEnabled(false);
+//	for (size_t i = 0; i < viewers.size(); ++i)
+//		viewers[i]->updateLabels();
 
-	BackgroundTaskPtr taskEpilog(new BackgroundTask());
-	QObject::connect(taskEpilog.get(), SIGNAL(finished(bool)), 
-		this, SLOT(finishTask(bool)), Qt::QueuedConnection);
-	queue.push(taskEpilog);
-}
+//	BackgroundTaskPtr taskEpilog(new BackgroundTask());
+//	QObject::connect(taskEpilog.get(), SIGNAL(finished(bool)),
+//		this, SLOT(finishTask(bool)), Qt::QueuedConnection);
+//	queue.push(taskEpilog);
+//}
 
 void MainWindow::createLabel()
 {
@@ -924,7 +925,7 @@ const QPixmap* MainWindow::getBand(representation type, int dim)
 
 		v[dim] = new QPixmap(QPixmap::fromImage(**qimg));
 	}
-	return v[dim];subImage
+	return v[dim];
 }
 
 void MainWindow::updateBand(representation repr, int selection)
@@ -937,16 +938,16 @@ void MainWindow::imageResetNeeded(representation repr)
 {
 	switch(repr){
 	case IMG:
-		image->reset();
+		image.reset();
 		break;
 	case GRAD:
-		gradient->reset();
+		gradient.reset();
 		break;
 	case IMGPCA:
-		imagepca->reset();
+		imagepca.reset();
 		break;
 	case GRADPCA:
-		gradientpca->reset();
+		gradientpca.reset();
 		break;
 	default:
 		assert(false);

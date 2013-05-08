@@ -30,6 +30,7 @@ public:
 
 
 	void setLabels(cv::Mat1s labels);
+	void refreshLabelsInViewers();
 	void addImage(representation repr, sets_ptr temp, const std::vector<cv::Rect> &regions, cv::Rect roi);
 	void subImage(representation repr, sets_ptr temp, const std::vector<cv::Rect> &regions, cv::Rect roi);
 	void setImage(representation repr, SharedMultiImgPtr image, cv::Rect roi);

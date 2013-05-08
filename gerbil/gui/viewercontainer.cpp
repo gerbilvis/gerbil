@@ -37,6 +37,24 @@ void ViewerContainer::setLabels(cv::Mat1s labels)
 	}
 }
 
+void ViewerContainer::refreshLabelsInViewers()
+{
+	//setGUIEnabled(false);
+	emit requestGUIEnabled(false, TT_NONE);
+//	for (size_t i = 0; i < viewers.size(); ++i)
+//		viewers[i]->updateLabels();
+	ViewerList vl = vm.values();
+	foreach(multi_img_viewer *viewer, vl) {
+		viewer->updateLabels();
+	}
+
+	BackgroundTaskPtr taskEpilog(new BackgroundTask());
+	QObject::connect(taskEpilog.get(), SIGNAL(finished(bool)),
+		this, SLOT(finishTask(bool)), Qt::QueuedConnection);
+	taskQueue->push(taskEpilog);
+}
+
+
 void ViewerContainer::addImage(representation repr, sets_ptr temp,
 							   const std::vector<cv::Rect> &regions,
 							   cv::Rect roi)
