@@ -138,10 +138,21 @@ const QPixmap *ViewerContainer::getBand(representation repr, int dim)
 	return v[dim];
 }
 
+int ViewerContainer::getSelection(representation repr)
+{
+	multi_img_viewer *viewer = vm.value(repr);
+	return viewer->getSelection();
+}
+
 SharedMultiImgPtr ViewerContainer::getViewerImage(representation repr)
 {
 	multi_img_viewer *viewer = vm.value(repr);
 	return viewer->getImage();
+}
+
+representation ViewerContainer::getActiveRepresentation() const
+{
+	// TODO impl
 }
 
 void ViewerContainer::setGUIEnabled(bool enable, TaskType tt)

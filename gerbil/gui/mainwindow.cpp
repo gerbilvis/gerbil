@@ -1423,8 +1423,9 @@ void MainWindow::startGraphseg()
 	} else if (src == 1) {
 		runGraphseg(gradient, conf);
 	} else {	// currently shown band, construct from selection in viewport
-		int band = activeViewer->getSelection();
-		SharedMultiImgPtr img = activeViewer->getImage();
+		representation repr = viewerContainer->getActiveRepresentation();
+		int band = viewerContainer->getSelection(repr);
+		SharedMultiImgPtr img = viewerContainer->getViewerImage(repr);
 		SharedDataLock img_lock(img->mutex);
 		SharedMultiImgPtr i(new SharedMultiImgBase(
 			new multi_img((**img)[band], (*img)->minval, (*img)->maxval)));

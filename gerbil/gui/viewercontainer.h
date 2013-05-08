@@ -53,8 +53,9 @@ public:
 	void updateViewerBandSelections(int numbands);
 	size_t size() const;
 	const QPixmap* getBand(representation repr, int dim);
+	int getSelection(representation repr);
 	SharedMultiImgPtr getViewerImage(representation repr);
-
+	representation getActiveRepresentation() const;
 public slots:
 	void setGUIEnabled(bool enable, TaskType tt);
 	void toggleViewer(bool enable, representation repr);
