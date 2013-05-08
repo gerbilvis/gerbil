@@ -125,6 +125,9 @@ public slots: // introduced by ViewerContainer
 	// need to move from MainWindow to ViewerContainer
 	void updateBand(representation repr, int selection);
 	void imageResetNeeded(representation repr);
+
+	// DEBUG
+	void debugRequestGUIEnabled(bool enable, TaskType tt);
 signals:
 	void clearLabel();
 	void alterLabel(const multi_img::Mask &mask, bool negative);

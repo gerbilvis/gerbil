@@ -753,10 +753,8 @@ void Viewport::paintEvent(QPaintEvent *)
 		drawOverlay(painter);
 	}
 
-    // FIXME remove, debugging
-	std::cerr << boost::format("Viewport::paintEvent() %1%  (*sets)->empty()=%2% || (*ctx)->wait=%3% || disabled=%4%\n")
-				 % (*ctx)->type %(*sets)->empty() %(*ctx)->wait % (!isEnabled());
-
+	GGDBGM(boost::format("%1%  (*sets)->empty()=%2% || (*ctx)->wait=%3% || disabled=%4%   this=%5%\n")
+				 % (*ctx)->type %(*sets)->empty() %(*ctx)->wait %(!isEnabled()) %this);
 
 	if ((*sets)->empty() || (*ctx)->wait || !isEnabled()) {
 		drawWaitMessage(painter);

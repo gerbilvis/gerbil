@@ -23,6 +23,7 @@ vole_compile_library(
 	tasks/normrangecuda
 	multi_img_viewer_detail/viewer_tasks
 	multi_img_viewer_detail/viewer_bins_tbb
+    gerbil_gui_debug
 )
 
 vole_moc_library(

@@ -113,6 +113,7 @@ MainWindow::MainWindow(BackgroundTaskQueue &queue, multi_img_base *image,
 
 void MainWindow::finishTask(bool success)
 {
+	GGDBG_CALL();
 	if (success) {
 		setGUIEnabled(true);
 	}
@@ -611,6 +612,9 @@ void MainWindow::initUI()
 	connect(viewerContainer, SIGNAL(requestGUIEnabled(bool,TaskType)),
 			this, SLOT(setGUIEnabled(bool,TaskType)));
 
+	connect(viewerContainer, SIGNAL(requestGUIEnabled(bool,TaskType)),
+			this, SLOT(debugRequestGUIEnabled(bool,TaskType)));
+
 		// -> handled by ViewerContainer
 //		connect(v, SIGNAL( toggleViewer(bool , representation)),
 //				this, SLOT(toggleViewer(bool , representation)));
@@ -954,6 +958,7 @@ void MainWindow::createLabel()
 
 void MainWindow::updateBand(representation repr, int selection)
 {
+	GGDBG_CALL();
 	selectBand(repr, selection);
 	bandView->update();
 }
@@ -977,6 +982,13 @@ void MainWindow::imageResetNeeded(representation repr)
 		assert(false);
 		break;
 	}
+}
+
+void MainWindow::debugRequestGUIEnabled(bool enable, TaskType tt)
+{
+	GGDBG_CALL();
+	GGDBGM(format("enable=%1%, tt=%2%\n") %enable %tt)
+
 }
 
 void MainWindow::selectBand(representation type, int dim)

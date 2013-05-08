@@ -122,7 +122,6 @@ signals:
 	void bandUpdateNeeded(representation repr, int selection);
 	void imageResetNeeded(representation repr);
 
-	// TODO still unhandled by MainWindow
 	void requestGUIEnabled(bool enable, TaskType tt);
 
 protected:

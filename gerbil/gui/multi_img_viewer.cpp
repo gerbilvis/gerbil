@@ -19,9 +19,7 @@
 #include "multi_img_viewer_detail/viewer_bins_tbb.h"
 #include "multi_img_viewer_detail/curpos.h"
 
-
-// for debug msgs
-#include <boost/format.hpp>
+#include "gerbil_gui_debug.h"
 
 using namespace std;
 
@@ -66,7 +64,7 @@ void multi_img_viewer::setType(representation type)
 
 void multi_img_viewer::toggleFold()
 {
-	DEBUG_FUN;
+	GGDBG_CALL();
 	if (!payload->isHidden()) {
 		emit folding();
 		payload->setHidden(true);
@@ -180,17 +178,14 @@ void multi_img_viewer::addImage(sets_ptr temp, const std::vector<cv::Rect> &regi
 
 void multi_img_viewer::setImage(SharedMultiImgPtr img, cv::Rect roi)
 {
-	DEBUG_FUN;
+	GGDBG_CALL();
 	SharedDataLock ctxlock(viewport->ctx->mutex);
 	ViewportCtx args = **viewport->ctx;
 	ctxlock.unlock();
 
-
-
 	image = img;
 
-	// FIXME remove
-	std::cerr << "image pointer = " << image.get() << std::endl;
+	GGDBGM(format("image.get()=%1%\n") %image.get());
 
 	args.type = type;
 	args.ignoreLabels = ignoreLabels;
@@ -422,11 +417,8 @@ void multi_img_viewer::updateMask(int dim)
 
 void multi_img_viewer::overlay(int x, int y)
 {
-	std::cerr << boost::format("multi_img_viewer::overlay(int x, int y): image.get()=%1%\n")	% image.get() ;
-	// TODO remove, debug only
-	if(!image)
-		return;
 	assert(image);
+	GGDBGM(format("multi_img_viewer::overlay(int x, int y): image.get()=%1%\n")	% image.get());
 	SharedDataLock imagelock(image->mutex);
 	SharedDataLock ctxlock(viewport->ctx->mutex);
 	const multi_img::Pixel &pixel = (**image)(y, x);
