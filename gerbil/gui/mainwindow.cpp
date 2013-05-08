@@ -460,10 +460,8 @@ void MainWindow::initUI()
 
 	connect(markerSelector, SIGNAL(currentIndexChanged(int)),
 			bandView, SLOT(changeLabel(int)));
-//	connect(clearButton, SIGNAL(clicked()),
-//			this, SLOT(labelflush()));
 	connect(clearButton, SIGNAL(clicked()),
-			viewerContainer, SLOT(labelflush()));
+			this, SLOT(labelflush()));
 
 	connect(bandView, SIGNAL(newLabel()),
 			this, SLOT(createLabel()));
@@ -518,7 +516,7 @@ void MainWindow::initUI()
 	connect(&bandView->labelTimer, SIGNAL(timeout()), 
 			bandView, SLOT(commitLabelChanges()));
 	connect(bandView, SIGNAL(refreshLabels()),
-			this, SLOT(refreshLabelsInViewers()));
+			viewerContainer, SLOT(refreshLabelsInViewers()));
 
 	connect(this, SIGNAL(newLabelColors(const QVector<QColor>&, bool)),
 			bandView, SLOT(setLabelColors(const QVector<QColor>&, bool)));
@@ -538,7 +536,7 @@ void MainWindow::initUI()
 	connect(bandView, SIGNAL(addPixels(const std::map<std::pair<int, int>, short> &)),
 			viewerContainer, SIGNAL(viewersAddPixels(const std::map<std::pair<int, int>, short> &)));
 	connect(bandView, SIGNAL(newSingleLabel(short)),
-			viewerContainer, SIGNAL(viewersHighlight(short)));
+			viewerContainer, SLOT(viewersHighlight(short)));
 
 	connect(markButton, SIGNAL(toggled(bool)),
 			viewerContainer, SIGNAL(viewersToggleLabeled(bool)));
@@ -597,7 +595,7 @@ void MainWindow::initUI()
 
 //		connect(vp, SIGNAL(bandSelected(representation, int)),
 //				this, SLOT(selectBand(representation, int)));
-	connect(viewerContainer, SIGNAL(viewPortBandSelected(representation,int)),
+	connect(viewerContainer, SIGNAL(viewportBandSelected(representation,int)),
 			this, SLOT(selectBand(representation,int)));
 
 		// TODO ViewerContainer, WIP
@@ -1780,6 +1778,11 @@ void MainWindow::unsupervisedSegCancelled() {}
 //		viewerContainer->refreshLabelsInViewers();
 //	}
 //}
+
+void MainWindow::labelflush()
+{
+	viewerContainer->labelflush(bandView->isSeedModeEnabled(), bandView->getCurLabel());
+}
 
 //void MainWindow::newOverlay()
 //{

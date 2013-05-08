@@ -33,7 +33,6 @@ public:
 
 
 	void setLabels(cv::Mat1s labels);
-	void refreshLabelsInViewers();
 	void addImage(representation repr, sets_ptr temp, const std::vector<cv::Rect> &regions, cv::Rect roi);
 	void subImage(representation repr, sets_ptr temp, const std::vector<cv::Rect> &regions, cv::Rect roi);
 	void setImage(representation repr, SharedMultiImgPtr image, cv::Rect roi);
@@ -69,8 +68,8 @@ public slots:
 	void toggleViewer(bool enable, representation repr);
 	void newROI(cv::Rect roi);
 
-	//unused (?)
-//	void setActiveViewer(representation repr);
+	void newOverlay();
+	void setActiveViewer(int repri);
 
 	void imgCalculationComplete(bool success);
 	void gradCalculationComplete(bool success);
@@ -86,6 +85,10 @@ public slots:
 	void finishNormRangeGradChange(bool success);
 
 	void labelflush(bool seedModeEnabled, short curLabel);
+	void refreshLabelsInViewers();
+
+    // TODO
+	void viewersHighlight(short);
 signals:
 	// pass through signals to viewers/viewports
 	void viewportsKillHover();
@@ -99,14 +102,15 @@ signals:
 signals:
 	// TODO these need to be either wired to mainwindow or removed/broken up
 	// to be processed in ViewerContainer.
-	void viewPortBandSelected(representation, int);
+	void viewportBandSelected(representation, int);
 	void viewerSetGUIEnabled(bool, TaskType);
 	//void viewerToggleViewer(bool , representation);
 	void viewerFinishTask(bool);
-	void viewerNewOverlay();
-	void viewPortNewOverlay(int);
-	void viewPortAddSelection();
-	void viewPortRemSelection();
+	void viewportNewOverlay(int);
+	void viewportAddSelection();
+	void viewportRemSelection();
+	void viewportAddToLabel();
+	void viewportRemFromLabel();
 
 	void normTargetChanged(bool useCurrent);
 	void drawOverlay(const multi_img::Mask &mask);

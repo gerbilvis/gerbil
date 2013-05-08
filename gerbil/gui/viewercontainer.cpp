@@ -54,6 +54,10 @@ void ViewerContainer::refreshLabelsInViewers()
 	taskQueue->push(taskEpilog);
 }
 
+void ViewerContainer::viewersHighlight(short)
+{
+	// TODO impl
+}
 
 void ViewerContainer::addImage(representation repr, sets_ptr temp,
 							   const std::vector<cv::Rect> &regions,
@@ -185,14 +189,15 @@ void ViewerContainer::newROI(cv::Rect roi)
 	this->roi = roi;
 }
 
-//void ViewerContainer::setActiveViewer(representation repr)
-//{
-//	if (vm.value(repr)->getImage().get()) {
-//		activeViewer = vm.value(repr);
-//	} else {
-//		activeViewer = vm.value(IMG);
-//	}
-//}
+void ViewerContainer::setActiveViewer(int repr)
+{
+	representation r = static_cast<representation>(repr);
+	if (vm.value(r)->getImage().get()) {
+		activeViewer = vm.value(r);
+	} else {
+		activeViewer = vm.value(IMG);
+	}
+}
 
 void ViewerContainer::imgCalculationComplete(bool success)
 {
@@ -454,7 +459,7 @@ void ViewerContainer::initUi()
 				vpsmap, SLOT(map()));
 	}
 	connect(vpsmap, SIGNAL(mapped(int)),
-			this, SLOT(setviewportActive(int)));
+			this, SLOT(setActiveViewer(int)));
 
 	for (size_t i = 0; i < vl.size(); ++i) {
 		multi_img_viewer *viewer1 = vl[i];
@@ -476,8 +481,8 @@ void ViewerContainer::initUi()
 		connect(this, SIGNAL(viewersToggleLabeled(bool)),
 				viewer1, SLOT(toggleLabeled(bool)));
 		// connect pass through signals from nonmarkButton
-		connect(this, SIGNAL(viewersUnToggleLabeled(bool)),
-				viewer1, SLOT(toggleUnLabeled(bool)));
+		connect(this, SIGNAL(viewersToggleUnlabeled(bool)),
+				viewer1, SLOT(toggleUnlabeled(bool)));
 
 		connect(viewport1, SIGNAL(bandSelected(representation, int)),
 				this, SIGNAL(viewportBandSelected(representation,int)));
@@ -488,9 +493,9 @@ void ViewerContainer::initUi()
 				this, SIGNAL(viewerFinishTask(bool)));
 
 		connect(viewer1, SIGNAL(newOverlay()),
-				this, SIGNAL(viewerNewOverlay()));
+				this, SLOT(newOverlay()));
 		connect(viewport1, SIGNAL(newOverlay(int)),
-				this, SIGNAL(viewportNewOverlay()));
+				this, SIGNAL(viewportNewOverlay(int)));
 
 		connect(viewport1, SIGNAL(addSelection()),
 				this, SIGNAL(viewportAddToLabel()));
@@ -498,8 +503,8 @@ void ViewerContainer::initUi()
 				this, SIGNAL(viewportRemFromLabel()));
 
 		// non-pass-through
-		connect(viewer1, SIGNAL(toggleViewer(bool , representation)),
-				this, SLOT(toggleViewer(bool , representation)));
+		connect(viewer1, SIGNAL(toggleViewer(bool, representation)),
+				this, SLOT(toggleViewer(bool, representation)));
 
 		for (size_t j = 0; j < vl.size(); ++j) {
 			multi_img_viewer *viewer2 = vl[j];
@@ -526,7 +531,7 @@ multi_img_viewer *ViewerContainer::createViewer(representation repr)
     vLayout->addWidget(viewer);
 }
 
-void ViewerContainer::viewerNewOverlay()
+void ViewerContainer::newOverlay()
 {
 	emit drawOverlay(activeViewer->getMask());
 }

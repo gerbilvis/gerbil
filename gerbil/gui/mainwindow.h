@@ -179,7 +179,7 @@ protected:
 	data_range_ptr normIMGRange, normGRADRange;
 
 protected slots:
-//	void labelflush(bool seedModeEnabled);
+	void labelflush();
 
 private:
 	void initUI();
