@@ -2,6 +2,14 @@
 <ui version="4.0">
  <class>MainWindow</class>
  <widget class="QMainWindow" name="MainWindow">
+  <property name="geometry">
+   <rect>
+    <x>0</x>
+    <y>0</y>
+    <width>1170</width>
+    <height>1113</height>
+   </rect>
+  </property>
   <property name="windowTitle">
    <string>Multispectral Image Viewer</string>
   </property>
@@ -18,7 +26,7 @@
      <number>0</number>
     </property>
     <item>
-     <layout class="QVBoxLayout" name="verticalLayout_3">
+     <layout class="QVBoxLayout" name="centralLayout">
       <item>
        <layout class="QHBoxLayout" name="toolbarLayout">
         <item>
@@ -205,41 +213,14 @@
        </layout>
       </item>
       <item>
-       <widget class="multi_img_viewer" name="viewIMG" native="true">
-        <property name="sizePolicy">
-         <sizepolicy hsizetype="Preferred" vsizetype="Expanding">
-          <horstretch>0</horstretch>
-          <verstretch>1</verstretch>
-         </sizepolicy>
+       <widget class="ViewerContainer" name="viewerContainer" native="true">
+        <property name="enabled">
+         <bool>false</bool>
         </property>
-       </widget>
-      </item>
-      <item>
-       <widget class="multi_img_viewer" name="viewIMGPCA" native="true">
         <property name="sizePolicy">
          <sizepolicy hsizetype="Preferred" vsizetype="Expanding">
           <horstretch>0</horstretch>
-          <verstretch>1</verstretch>
-         </sizepolicy>
-        </property>
-       </widget>
-      </item>
-      <item>
-       <widget class="multi_img_viewer" name="viewGRAD" native="true">
-        <property name="sizePolicy">
-         <sizepolicy hsizetype="Preferred" vsizetype="Expanding">
-          <horstretch>0</horstretch>
-          <verstretch>1</verstretch>
-         </sizepolicy>
-        </property>
-       </widget>
-      </item>
-      <item>
-       <widget class="multi_img_viewer" name="viewGRADPCA" native="true">
-        <property name="sizePolicy">
-         <sizepolicy hsizetype="Preferred" vsizetype="Expanding">
-          <horstretch>0</horstretch>
-          <verstretch>1</verstretch>
+          <verstretch>0</verstretch>
          </sizepolicy>
         </property>
        </widget>
@@ -1918,11 +1899,6 @@ p, li { white-space: pre-wrap; }
  </widget>
  <customwidgets>
   <customwidget>
-   <class>multi_img_viewer</class>
-   <extends>QWidget</extends>
-   <header>multi_img_viewer.h</header>
-  </customwidget>
-  <customwidget>
    <class>BandView</class>
    <extends>QWidget</extends>
    <header>bandview.h</header>
@@ -1936,6 +1912,12 @@ p, li { white-space: pre-wrap; }
    <class>ROIView</class>
    <extends>QWidget</extends>
    <header>roiview.h</header>
+  </customwidget>
+  <customwidget>
+   <class>ViewerContainer</class>
+   <extends>QWidget</extends>
+   <header>viewercontainer.h</header>
+   <container>1</container>
   </customwidget>
  </customwidgets>
  <resources>

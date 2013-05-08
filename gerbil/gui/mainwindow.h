@@ -13,6 +13,8 @@
 #include "ui_mainwindow.h"
 #include <shared_data.h>
 #include <background_task.h>
+#include <background_task_queue.h>
+#include "multi_img_viewer.h"  //FIXME REMOVE
 #include <multi_img.h>
 #include <multi_img_tasks.h>
 #include <labeling.h>
@@ -50,6 +52,11 @@ public:
 
 	static QIcon colorIcon(const QColor& color);
 	BackgroundTaskQueue &queue;
+
+	/* BEGIN methods for viewercontainer integration */
+	bool haveImagePCA();
+	bool haveGradientPCA();
+	/* END methods for viewercontainer integration */
 
 public slots:
 	void setGUIEnabled(bool enable, TaskType tt = TT_NONE);
@@ -120,6 +127,10 @@ signals:
 	void drawOverlay(const multi_img::Mask &mask);
 	void seedingDone(bool yeah = false);
 
+	/* BEGIN signals for viewercontainer integration */
+
+	/* END signals for viewercontainer integration */
+
 protected:
 	void changeEvent(QEvent *e);
 
@@ -150,8 +161,8 @@ protected:
 	qimage_ptr full_rgb_temp; // QPixmap cannot be directly shared between threads
 
 	// viewers
-	std::vector<multi_img_viewer*> viewers;
-	multi_img_viewer *activeViewer;
+	//std::vector<multi_img_viewer*> viewers;
+	//multi_img_viewer *activeViewer;
 
 	MultiImg::NormMode normIMG, normGRAD;
 	data_range_ptr normIMGRange, normGRADRange;

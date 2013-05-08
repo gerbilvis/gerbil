@@ -54,21 +54,20 @@ MainWindow::MainWindow(BackgroundTaskQueue &queue, multi_img_base *image,
 	  		new std::pair<multi_img::Value, multi_img::Value>(0, 0))),
 	  full_rgb_temp(new SharedData<QImage>(new QImage())),
 	  usRunner(NULL), contextMenu(NULL),
-	  viewers(REPSIZE), activeViewer(0),
 	  graphsegResult(new multi_img::Mask())
 {
 	// create all objects
 	setupUi(this);
-	viewers[IMG] = viewIMG;
-	viewIMG->setType(IMG);
-	viewers[GRAD] = viewGRAD;
-	viewGRAD->setType(GRAD);
-	viewers[IMGPCA] = viewIMGPCA;
-	viewIMGPCA->setType(IMGPCA);
-	viewers[GRADPCA] = viewGRADPCA;
-	viewGRADPCA->setType(GRADPCA);
-	for (size_t i = 0; i < viewers.size(); ++i)
-		viewers[i]->queue = &queue;
+//	viewers[IMG] = viewIMG;
+//	viewIMG->setType(IMG);
+//	viewers[GRAD] = viewGRAD;
+//	viewGRAD->setType(GRAD);
+//	viewers[IMGPCA] = viewIMGPCA;
+//	viewIMGPCA->setType(IMGPCA);
+//	viewers[GRADPCA] = viewGRADPCA;
+//	viewGRADPCA->setType(GRADPCA);
+//	for (size_t i = 0; i < viewers.size(); ++i)
+//		viewers[i]->queue = &queue;
 
 	// do all the bling-bling
 	initUI();
@@ -478,74 +477,90 @@ void MainWindow::initUI()
 	connect(alphaSlider, SIGNAL(valueChanged(int)),
 			bandView, SLOT(applyLabelAlpha(int)));
 
-	// for self-activation of viewports
-	QSignalMapper *vpmap = new QSignalMapper(this);
-	for (size_t i = 0; i < viewers.size(); ++i)
-		vpmap->setMapping(viewers[i]->getViewport(), (int)i);
-	connect(vpmap, SIGNAL(mapped(int)),
-			this, SLOT(setActive(int)));
 
-	for (size_t i = 0; i < viewers.size(); ++i)
-	{
-		multi_img_viewer *v = viewers[i];
-		const Viewport *vp = v->getViewport();
+	connect(bandView, SIGNAL(killHover()),
+			viewerContainer, SLOT(viewportsKillHover()));
+	connect(bandView, SIGNAL(pixelOverlay(int, int)),
+			viewerContainer, SLOT(viewersOverlay(int, int)));
+	connect(bandView, SIGNAL(subPixels(const std::map<std::pair<int, int>, short> &)),
+			viewerContainer, SLOT(viewersSubPixels(const std::map<std::pair<int, int>, short> &)));
+	connect(bandView, SIGNAL(addPixels(const std::map<std::pair<int, int>, short> &)),
+			viewerContainer, SLOT(viewersAddPixels(const std::map<std::pair<int, int>, short> &)));
+	connect(bandView, SIGNAL(newSingleLabel(short)),
+			viewerContainer, SLOT(viewersHighlight(short)));
+	connect(markButton, SIGNAL(toggled(bool)),
+			viewerContainer, SLOT(viewersToggleLabeled(bool)));
+	connect(nonmarkButton, SIGNAL(toggled(bool)),
+			viewerContainer, SLOT(viewersToggleUnlabeled(bool)));
 
-		connect(markButton, SIGNAL(toggled(bool)),
-				v, SLOT(toggleLabeled(bool)));
-		connect(nonmarkButton, SIGNAL(toggled(bool)),
-				v, SLOT(toggleUnlabeled(bool)));
+//	// for self-activation of viewports
+//	QSignalMapper *vpmap = new QSignalMapper(this);
+//	for (size_t i = 0; i < viewers.size(); ++i)
+//		vpmap->setMapping(viewers[i]->getViewport(), (int)i);
+//	connect(vpmap, SIGNAL(mapped(int)),
+//			this, SLOT(setActive(int)));
 
-		if (!v->isPayloadHidden()) {
-			connect(bandView, SIGNAL(pixelOverlay(int, int)),
-					v, SLOT(overlay(int, int)));
-			connect(bandView, SIGNAL(killHover()),
-					vp, SLOT(killHover()));
-			connect(bandView, SIGNAL(subPixels(const std::map<std::pair<int, int>, short> &)),
-					v, SLOT(subPixels(const std::map<std::pair<int, int>, short> &)));
-			connect(bandView, SIGNAL(addPixels(const std::map<std::pair<int, int>, short> &)),
-					v, SLOT(addPixels(const std::map<std::pair<int, int>, short> &)));
-		}
+//	for (size_t i = 0; i < viewers.size(); ++i)
+//	{
+//		multi_img_viewer *v = viewers[i];
+//		const Viewport *vp = v->getViewport();
 
-		connect(vp, SIGNAL(activated()),
-				vpmap, SLOT(map()));
+//		connect(markButton, SIGNAL(toggled(bool)),
+//				v, SLOT(toggleLabeled(bool)));
+//		connect(nonmarkButton, SIGNAL(toggled(bool)),
+//				v, SLOT(toggleUnlabeled(bool)));
 
-		for (size_t j = 0; j < viewers.size(); ++j) {
-			multi_img_viewer *v2 = viewers[j];
-			const Viewport *vp2 = v2->getViewport();
-			// connect folding signal to all viewports
-			connect(v, SIGNAL(folding()),
-					vp2, SLOT(folding()));
+//		if (!v->isPayloadHidden()) {
+//			connect(bandView, SIGNAL(pixelOverlay(int, int)),
+//					v, SLOT(overlay(int, int)));
+//			connect(bandView, SIGNAL(killHover()),
+//					vp, SLOT(killHover()));
+//			connect(bandView, SIGNAL(subPixels(const std::map<std::pair<int, int>, short> &)),
+//					v, SLOT(subPixels(const std::map<std::pair<int, int>, short> &)));
+//			connect(bandView, SIGNAL(addPixels(const std::map<std::pair<int, int>, short> &)),
+//					v, SLOT(addPixels(const std::map<std::pair<int, int>, short> &)));
+//		}
 
-			if (i == j)
-				continue;
-			// connect activation signal to all *other* viewers
-			connect(vp, SIGNAL(activated()),
-			        v2, SLOT(setInactive()));
-		}
+//		connect(vp, SIGNAL(activated()),
+//				vpmap, SLOT(map()));
 
-		connect(vp, SIGNAL(bandSelected(representation, int)),
-				this, SLOT(selectBand(representation, int)));
+//		for (size_t j = 0; j < viewers.size(); ++j) {
+//			multi_img_viewer *v2 = viewers[j];
+//			const Viewport *vp2 = v2->getViewport();
+//			// connect folding signal to all viewports
+//			connect(v, SIGNAL(folding()),
+//					vp2, SLOT(folding()));
 
-		connect(v, SIGNAL(setGUIEnabled(bool, TaskType)),
-				this, SLOT(setGUIEnabled(bool, TaskType)));
-		connect(v, SIGNAL(toggleViewer(bool , representation)),
-				this, SLOT(toggleViewer(bool , representation)));
-		connect(v, SIGNAL(finishTask(bool)),
-				this, SLOT(finishTask(bool)));	
+//			if (i == j)
+//				continue;
+//			// connect activation signal to all *other* viewers
+//			connect(vp, SIGNAL(activated()),
+//			        v2, SLOT(setInactive()));
+//		}
 
-		connect(v, SIGNAL(newOverlay()),
-				this, SLOT(newOverlay()));
-		connect(vp, SIGNAL(newOverlay(int)),
-				this, SLOT(newOverlay()));
+//		connect(vp, SIGNAL(bandSelected(representation, int)),
+//				this, SLOT(selectBand(representation, int)));
 
-		connect(vp, SIGNAL(addSelection()),
-				this, SLOT(addToLabel()));
-		connect(vp, SIGNAL(remSelection()),
-				this, SLOT(remFromLabel()));
+//		connect(v, SIGNAL(setGUIEnabled(bool, TaskType)),
+//				this, SLOT(setGUIEnabled(bool, TaskType)));
+//		connect(v, SIGNAL(toggleViewer(bool , representation)),
+//				this, SLOT(toggleViewer(bool , representation)));
+//		connect(v, SIGNAL(finishTask(bool)),
+//				this, SLOT(finishTask(bool)));
 
-		connect(bandView, SIGNAL(newSingleLabel(short)),
-				vp, SLOT(highlight(short)));
-	}
+//		connect(v, SIGNAL(newOverlay()),
+//				this, SLOT(newOverlay()));
+//		connect(vp, SIGNAL(newOverlay(int)),
+//				this, SLOT(newOverlay()));
+
+//		connect(vp, SIGNAL(addSelection()),
+//				this, SLOT(addToLabel()));
+//		connect(vp, SIGNAL(remSelection()),
+//				this, SLOT(remFromLabel()));
+
+//		connect(bandView, SIGNAL(newSingleLabel(short)),
+//				vp, SLOT(highlight(short)));
+//	}
 
 	/// init bandsSlider
 	bandsLabel->setText(QString("%1 bands").arg((*image_lim)->size()));
@@ -842,7 +857,7 @@ const QPixmap* MainWindow::getBand(representation type, int dim)
 
 		v[dim] = new QPixmap(QPixmap::fromImage(**qimg));
 	}
-	return v[dim];
+	return v[dim];subImage
 }
 
 void MainWindow::updateBand()
@@ -975,7 +990,7 @@ void MainWindow::initIlluminantUI()
 			this, SLOT(setI1Visible(bool)));
 	i1Check->setVisible(false);
 }
-
+subImage
 void MainWindow::initNormalizationUI()
 {
 	normModeBox->addItem("Observed");
@@ -1683,6 +1698,16 @@ QIcon MainWindow::colorIcon(const QColor &color)
 	QPixmap pm(32, 32);
 	pm.fill(color);
 	return QIcon(pm);
+}
+
+bool MainWindow::haveImagePCA()
+{
+	return imagepca.get();
+}
+
+bool MainWindow::haveGradientPCA()
+{
+	return gradientpca.get();
 }
 
 void MainWindow::buildIlluminant(int temp)
