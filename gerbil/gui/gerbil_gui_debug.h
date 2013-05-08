@@ -11,7 +11,7 @@ void ggdb_print_method(const char *clsname, const char *funname);
 std::string ggdb_method_string(const char *clsname, const char *funname);
 
 // FIXME this should be configurable by CMAKE
-//#define GGDBG
+#define GGDBG
 
 // Gerbil Gui DeBuG
 #ifdef GGDBG
@@ -33,6 +33,15 @@ std::string ggdb_method_string(const char *clsname, const char *funname);
 		using namespace std; \
 		using namespace boost; \
 		GGDBG_PRINT_METHOD(); \
+		std::cerr << " " << expr; \
+		std::cerr.flush(); \
+	}
+
+// Gerbil Gui DeBuG Print
+#define GGDBGP(expr) \
+	{ \
+		using namespace std; \
+		using namespace boost; \
 		std::cerr << " " << expr; \
 		std::cerr.flush(); \
 	}

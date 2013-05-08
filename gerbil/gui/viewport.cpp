@@ -32,6 +32,27 @@ const unsigned int Viewport::renderAtOnceStep 	 = 1024 * 1024 * 1024;
 const unsigned int Viewport::spectrumRenderStep  = 10000;
 const unsigned int Viewport::highlightRenderStep = 10000;
 
+void assertBinSetsKeyDim(sets_ptr sets, vpctx_ptr ctx) {
+	using namespace std;
+	assert(sets);
+	vector<BinSet> v = **sets;
+	assert(v.size() > 0);
+
+	assert(ctx);
+
+	foreach(BinSet set, v) {
+		foreach(BinSet::HashMap::value_type pr, set.bins) {
+			const BinSet::HashKey &key = pr.first;
+			if((*ctx)->dimensionality != key.size()) {
+				GGDBGP(boost::format("failure: repr=%1% ,  (key.size()==%2%  != dim==%3%)")
+				   %(*ctx)->type %key.size() %(*ctx)->dimensionality
+				   << endl);
+				assert((*ctx)->dimensionality == key.size());
+			}
+		}
+	}
+}
+
 Viewport::Viewport(QWidget *parent)
 	: QGLWidget(QGLFormat(QGL::SampleBuffers), parent),
 	  ctx(new SharedData<ViewportCtx>(new ViewportCtx())),
@@ -190,6 +211,10 @@ void Viewport::prepareLines()
 	if ((*ctx)->reset.fetch_and_store(0))
 		reset();
 
+	assertBinSetsKeyDim(sets, ctx);
+
+	assert(sets);
+	assert((*sets)->size()>0);
 	shuffleIdx.clear();
 	for (unsigned int i = 0; i < (*sets)->size(); ++i) {
 		BinSet &s = (**sets)[i];
@@ -199,6 +224,26 @@ void Viewport::prepareLines()
 			preprocess, tbb::auto_partitioner());
 		s.boundary = preprocess.GetRanges();
 	}
+	assert(shuffleIdx.begin() <shuffleIdx.end());
+	tbb::concurrent_vector<std::pair<int, BinSet::HashKey> >::const_iterator sit;
+
+	// DEBUG, obsolete, see assertBinSetsKeyDim()
+//	for(sit=shuffleIdx.begin(); sit<shuffleIdx.end(); sit++) {
+//		std::pair<int, BinSet::HashKey>  pr = *sit;
+//		const BinSet::HashKey hk = pr.second;
+//		// if this fails, the hash keys are not initialized correctly
+//		if(hk.size() != (*ctx)->dimensionality) {
+//			GGDBGM(boost::format("failure: repr=%1% idx=%2%,  (hk.size()==%3%  != dim==%4%)")
+//			   %(*ctx)->type %pr.first %hk.size() %(*ctx)->dimensionality << endl;)
+//		}
+//	}
+
+	// CRASHES BUG HERE FIXME TODO -> assertBinSetsKeyDim()
+	// This happens often, but appears to be non-deterministic (?).
+	//  Appears to apply only to GRAD.
+	// NOT: applies also to GRADPCA.
+	// Viewport::prepareLines() failure: repr=GRAD idx=0,  (hk.size()==31  != dim==30)
+	// Probably multi_array (==BinSet::HashKey) not correctly initialized
 	std::random_shuffle(shuffleIdx.begin(), shuffleIdx.end());
 
 	// vole::Stopwatch watch("prepareLines");
@@ -1090,4 +1135,28 @@ void Viewport::screenshot()
 	// reset drawingState and draw again nicely
 	if (endNoHQ())
 		updateTextures();
+}
+
+
+ostream &operator <<(ostream &os, const representation &r)
+{
+	assert(0 <= r);
+	assert(r <= 3);
+	switch(r) {
+	case IMG:
+		os << "IMG";
+		break;
+	case GRAD:
+		os << "GRAD";
+		break;
+	case IMGPCA:
+		os << "IMGPCA";
+		break;
+	case GRADPCA:
+		os << "GRADPCA";
+		break;
+	default:
+		assert(false);
+		break;
+	}
 }

@@ -65,6 +65,7 @@ void multi_img_viewer::setType(representation type)
 void multi_img_viewer::toggleFold()
 {
 	if (!payload->isHidden()) {
+		GGDBGM(format("viewer %1% folding")%getType() << endl);
 		emit folding();
 		payload->setHidden(true);
 		topBar->fold();
@@ -77,7 +78,7 @@ void multi_img_viewer::toggleFold()
 		viewport->shuffleIdx.clear();
 		viewport->vb.destroy();
 	} else {
-		//GGDBGM("unfolding");
+		GGDBGM(format("viewer %1% unfolding")%getType() << endl);
 		emit folding();
 		payload->setShown(true);
 		topBar->unfold();
@@ -421,11 +422,15 @@ void multi_img_viewer::updateMask(int dim)
 void multi_img_viewer::overlay(int x, int y)
 {
 	//GGDBGM(format("multi_img_viewer::overlay(int x, int y): image.get()=%1% type=%2%\n")
-	//	   % image.get() %(int)getType());
-	assert(image);
+	//	   % image.get() %getType());
+	if(payload->isHidden()) {
+		GGDBGM(format("WARNING: slot activated for repr %1% while payload hidden!") % getType() << endl);
+		return;
+	}
 
 	SharedDataLock imagelock(image->mutex);
 	SharedDataLock ctxlock(viewport->ctx->mutex);
+	assert(image);
 	const multi_img::Pixel &pixel = (**image)(y, x);
 	QPolygonF &points = viewport->overlayPoints;
 	points.resize((*image)->size());

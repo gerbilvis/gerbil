@@ -85,6 +85,8 @@ struct BinSet {
 	BinSet(const QColor &c, int size)
 		: label(c), boundary(size, std::make_pair((int)255, (int)0)) { totalweight = 0; }
 	QColor label;
+	/* FIXME Why boost::multi_array? */
+	// one char per band
 	typedef boost::multi_array<unsigned char, 1> HashKey;
 	typedef tbb::concurrent_hash_map<HashKey, Bin> HashMap;
 	HashMap bins;
@@ -101,6 +103,8 @@ enum representation {
 	GRADPCA = 3,
 	REPSIZE = 4
 };
+
+std::ostream &operator<<(std::ostream& os, const representation& r);
 
 struct ViewportCtx {
 	ViewportCtx &operator=(const ViewportCtx &other) {
@@ -264,6 +268,7 @@ protected:
 		size_t dimensionality;
 		multi_img::Value maxval;
 		std::vector<multi_img::BandDesc> &meta;
+		// pair of label index and hash-key within label's bin set
 		tbb::concurrent_vector<std::pair<int, BinSet::HashKey> > &shuffleIdx;
 		std::vector<std::pair<int, int> > ranges;
 	};

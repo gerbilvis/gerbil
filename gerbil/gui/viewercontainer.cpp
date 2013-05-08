@@ -13,6 +13,7 @@
 //
 // * check activeViewer is handled correctly
 
+#define GGDBG_REPR(repr) GGDBGM(format("%1%")%repr << endl)
 
 ViewerContainer::ViewerContainer(QWidget *parent)
     : QWidget(parent)
@@ -59,6 +60,7 @@ void ViewerContainer::addImage(representation repr, sets_ptr temp,
 	multi_img_viewer *viewer = vm.value(repr);
 	assert(viewer);
 	if(!viewer->isPayloadHidden()) {
+		GGDBG_REPR(repr);
 		viewer->addImage(temp, regions, roi);
 	}
 }
@@ -68,6 +70,7 @@ void ViewerContainer::subImage(representation repr, sets_ptr temp, const std::ve
 	multi_img_viewer *viewer = vm.value(repr);
 	assert(viewer);
 	if(!viewer->isPayloadHidden()) {
+		GGDBG_REPR(repr);
 		viewer->subImage(temp, regions, roi);
 	}
 }
@@ -79,6 +82,7 @@ void ViewerContainer::setImage(representation repr, SharedMultiImgPtr image, cv:
 	//GGDBGM(format("repr=%1%, image.get()=%2%)\n")
 	//	   % repr % image.get());
 	if(!viewer->isPayloadHidden()) {
+		GGDBG_REPR(repr);
 		viewer->setImage(image, roi);
 	}
 }
@@ -101,6 +105,7 @@ void ViewerContainer::updateLabelColors(QVector<QColor> labelColors, bool change
 
 void ViewerContainer::updateBinning(representation repr, int bins)
 {
+	GGDBG_REPR(repr);
 	multi_img_viewer *viewer = vm.value(repr);
 	viewer->updateBinning(bins);
 }
@@ -181,7 +186,7 @@ void ViewerContainer::setGUIEnabled(bool enable, TaskType tt)
 
 void ViewerContainer::toggleViewer(bool enable, representation repr)
 {
-	//GGDBGM(format("toggle=%1% representation=%2%\n") %enable % repr);
+	GGDBGM(format("toggle=%1% representation=%2%\n") %enable % repr);
 	if(enable)
 		toggleViewerEnable(repr);
 	else
@@ -196,7 +201,7 @@ void ViewerContainer::newROI(cv::Rect roi)
 void ViewerContainer::setActiveViewer(int repr)
 {
 	representation r = static_cast<representation>(repr);
-	//GGDBGM(format("repr=%1%\n") % r);
+	GGDBG_REPR(repr);
 	if (vm.value(r)->getImage().get()) {
 		activeViewer = vm.value(r);
 	} else {
