@@ -1397,7 +1397,8 @@ void MainWindow::finishGraphSeg(bool success)
 	if (success) {
 		/* add segmentation to current labeling */
 		emit alterLabel(*(graphsegResult.get()), false);
-		refreshLabelsInViewers();
+		//refreshLabelsInViewers();
+		viewerContainer->refreshLabelsInViewers();
 
 		emit seedingDone();
 	}
@@ -1734,7 +1735,8 @@ void MainWindow::labelflush()
 				this, SLOT(finishTask(bool)), Qt::QueuedConnection);
 			queue.push(taskEpilog);
 		} else {
-			refreshLabelsInViewers();
+			//refreshLabelsInViewers();
+			viewerContainer->refreshLabelsInViewers();
 		}
 	}
 }
@@ -1764,7 +1766,8 @@ void MainWindow::labelmask(bool negative)
 			this, SLOT(finishTask(bool)), Qt::QueuedConnection);
 		queue.push(taskEpilog);
 	} else {
-		refreshLabelsInViewers();
+		//refreshLabelsInViewers();
+		viewerContainer->refreshLabelsInViewers();
 	}
 }
 
