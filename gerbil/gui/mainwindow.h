@@ -69,8 +69,8 @@ public slots:
 	void toggleViewer(bool enable, representation viewer);
 //	void finishViewerRefresh(int viewer);
 	void finishROIChange(bool success);
-	void finishNormRangeImgChange(bool success);
-	void finishNormRangeGradChange(bool success);
+//	void finishNormRangeImgChange(bool success);
+//	void finishNormRangeGradChange(bool success);
 	void finishGraphSeg(bool success);
 	void finishTask(bool success);
 

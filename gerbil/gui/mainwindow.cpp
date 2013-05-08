@@ -1213,7 +1213,7 @@ void MainWindow::applyNormUserRange()
 
 		BackgroundTaskPtr taskFinishNorm(new BackgroundTask());
 		QObject::connect(taskFinishNorm.get(), SIGNAL(finished(bool)), 
-			this, SLOT(finishNormRangeImgChange(bool)), Qt::QueuedConnection);
+			viewerContainer, SLOT(finishNormRangeImgChange(bool)), Qt::QueuedConnection);
 		queue.push(taskFinishNorm);
 	} else {
 //		viewGRAD->updateBinning(-1);
@@ -1221,7 +1221,7 @@ void MainWindow::applyNormUserRange()
 
 		BackgroundTaskPtr taskFinishNorm(new BackgroundTask());
 		QObject::connect(taskFinishNorm.get(), SIGNAL(finished(bool)), 
-			this, SLOT(finishNormRangeGradChange(bool)), Qt::QueuedConnection);
+			viewerContainer, SLOT(finishNormRangeGradChange(bool)), Qt::QueuedConnection);
 		queue.push(taskFinishNorm);
 	}
 
@@ -1231,25 +1231,27 @@ void MainWindow::applyNormUserRange()
 	queue.push(taskEpilog);
 }
 
-void MainWindow::finishNormRangeImgChange(bool success)
-{
-	if (success) {
-		SharedDataLock hlock(image->mutex);
-		bands[GRAD].assign((*image)->size(), NULL);
-		hlock.unlock();
-		updateBand();
-	}
-}
+// -> ViewerContainer
+//void MainWindow::finishNormRangeImgChange(bool success)
+//{
+//	if (success) {
+//		SharedDataLock hlock(image->mutex);
+//		bands[GRAD].assign((*image)->size(), NULL);
+//		hlock.unlock();
+//		updateBand();
+//	}
+//}
 
-void MainWindow::finishNormRangeGradChange(bool success)
-{
-	if (success) {
-		SharedDataLock hlock(gradient->mutex);
-		bands[GRAD].assign((*gradient)->size(), NULL);
-		hlock.unlock();
-		updateBand();
-	}
-}
+// -> ViewerContainer
+//void MainWindow::finishNormRangeGradChange(bool success)
+//{
+//	if (success) {
+//		SharedDataLock hlock(gradient->mutex);
+//		bands[GRAD].assign((*gradient)->size(), NULL);
+//		hlock.unlock();
+//		updateBand();
+//	}
+//}
 
 void MainWindow::clampNormUserRange()
 {

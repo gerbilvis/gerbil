@@ -54,6 +54,7 @@ public:
 	size_t size() const;
 	const QPixmap* getBand(representation repr, int dim);
 	SharedMultiImgPtr getViewerImage(representation repr);
+
 public slots:
 	void setGUIEnabled(bool enable, TaskType tt);
 	void toggleViewer(bool enable, representation repr);
@@ -69,8 +70,8 @@ public slots:
 	void disconnectViewer(representation repr);
 
 	void finishTask(bool success);
-
-
+	void finishNormRangeImgChange(bool success);
+	void finishNormRangeGradChange(bool success);
 
 signals:
 	// pass through signals

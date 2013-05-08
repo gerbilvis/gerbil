@@ -238,6 +238,33 @@ void ViewerContainer::finishTask(bool success)
 		emit requestGUIEnabled(true, TT_NONE);
 }
 
+void ViewerContainer::finishNormRangeImgChange(bool success)
+{
+	if (success) {
+		SharedDataLock hlock((*image)->mutex);
+		(*bands)[GRAD].assign((**image)->size(), NULL);
+		hlock.unlock();
+		emit bandUpdateNeeded(
+					IMG,
+					vm.value(IMG)->getSelection()
+					);
+	}
+}
+
+
+void ViewerContainer::finishNormRangeGradChange(bool success)
+{
+	if (success) {
+		SharedDataLock hlock((*gradient)->mutex);
+		(*bands)[GRAD].assign((**gradient)->size(), NULL);
+		hlock.unlock();
+		emit bandUpdateNeeded(
+					GRAD,
+					vm.value(GRAD)->getSelection()
+					);
+	}
+}
+
 void ViewerContainer::toggleViewerEnable(representation repr)
 {
 	disconnectViewer(repr);
