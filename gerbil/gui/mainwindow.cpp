@@ -601,38 +601,46 @@ void MainWindow::initUI()
 	connect(viewerContainer, SIGNAL(viewportBandSelected(representation,int)),
 			this, SLOT(selectBand(representation,int)));
 
-		// TODO ViewerContainer, WIP
+		// -> handled by ViewerContainer (requestGUIEnabled)
 //		connect(v, SIGNAL(setGUIEnabled(bool, TaskType)),
 //				this, SLOT(setGUIEnabled(bool, TaskType)));
 
 	connect(viewerContainer, SIGNAL(viewerSetGUIEnabled(bool,TaskType)),
 			this, SLOT(setGUIEnabled(bool,TaskType)));
 
-		// TODO ViewerContainer, WIP
-//		connect(v, SIGNAL(toggleViewer(bool , representation)),
+		// -> handled by ViewerContainer
+//		connect(v, SIGNAL( toggleViewer(bool , representation)),
 //				this, SLOT(toggleViewer(bool , representation)));
 
-		// TODO ViewerContainer, WIP
+		// -> handled by ViewerContainer
 //		connect(v, SIGNAL(finishTask(bool)),
 //				this, SLOT(finishTask(bool)));
 
-		// TODO ViewerContainer
+
+		// -> handled by ViewerContainer
 //		connect(v, SIGNAL(newOverlay()),
 //				this, SLOT(newOverlay()));
-		// TODO ViewerContainer
+
+	// -> handled by ViewerContainer
 //		connect(vp, SIGNAL(newOverlay(int)),
 //				this, SLOT(newOverlay()));
 
-		// TODO ViewerContainer
+		// TODO ViewerContainer, WIP
 //		connect(vp, SIGNAL(addSelection()),
 //				this, SLOT(addToLabel()));
+	connect(viewerContainer, SIGNAL(viewportAddSelection()),
+			this, SLOT(addToLabel()));
 
-		// TODO ViewerContainer
+		// TODO ViewerContainer, WIP
 //		connect(vp, SIGNAL(remSelection()),
 //				this, SLOT(remFromLabel()));
+	connect(viewerContainer, SIGNAL(viewportRemSelection()),
+			this, SLOT(remFromLabel()));
+
 		// TODO ViewerContainer
 //		connect(bandView, SIGNAL(newSingleLabel(short)),
 //				vp, SLOT(highlight(short)));
+
 //	}
 
 	/// init bandsSlider

@@ -489,19 +489,19 @@ void ViewerContainer::initUi()
 				this, SIGNAL(viewportBandSelected(representation,int)));
 
 		connect(viewer1, SIGNAL(setGUIEnabled(bool, TaskType)),
-				this, SIGNAL(viewerSetGUIEnabled(bool, TaskType)));
+				this, SIGNAL(requestGUIEnabled(bool,TaskType)));
 		connect(viewer1, SIGNAL(finishTask(bool)),
-				this, SIGNAL(viewerFinishTask(bool)));
+				this, SLOT(finishTask(bool)));
 
 		connect(viewer1, SIGNAL(newOverlay()),
 				this, SLOT(newOverlay()));
 		connect(viewport1, SIGNAL(newOverlay(int)),
-				this, SIGNAL(viewportNewOverlay(int)));
+				this, SLOT(newOverlay()));
 
 		connect(viewport1, SIGNAL(addSelection()),
-				this, SIGNAL(viewportAddToLabel()));
+				this, SIGNAL(viewportAddSelection()));
 		connect(viewport1, SIGNAL(remSelection()),
-				this, SIGNAL(viewportRemFromLabel()));
+				this, SIGNAL(viewportRemSelection()));
 
 		// non-pass-through
 		connect(viewer1, SIGNAL(toggleViewer(bool, representation)),

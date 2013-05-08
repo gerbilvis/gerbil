@@ -103,14 +103,14 @@ signals:
 	// TODO these need to be either wired to mainwindow or removed/broken up
 	// to be processed in ViewerContainer.
 	void viewportBandSelected(representation, int);
-	void viewerSetGUIEnabled(bool, TaskType);
+	// replaced by requestGUIEnabled
+	//void viewerSetGUIEnabled(bool, TaskType);
+
 	//void viewerToggleViewer(bool , representation);
-	void viewerFinishTask(bool);
-	void viewportNewOverlay(int);
+	//void viewerFinishTask(bool);
+//	void viewportNewOverlay(int);
 	void viewportAddSelection();
 	void viewportRemSelection();
-	void viewportAddToLabel();
-	void viewportRemFromLabel();
 
 	void normTargetChanged(bool useCurrent);
 	void drawOverlay(const multi_img::Mask &mask);
