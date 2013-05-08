@@ -75,6 +75,7 @@ MainWindow::MainWindow(BackgroundTaskQueue &queue, multi_img_base *image,
 	viewerContainer->gradient = &gradient;
 	viewerContainer->imagepca = &imagepca;
 	viewerContainer->gradientpca = &gradientpca;
+	viewerContainer->setTaskQueue(&queue);
 	viewerContainer->bands = &bands;
 	viewerContainer->labels = &labels;
 
@@ -450,6 +451,8 @@ void MainWindow::initUI()
 #else
 	usDock->deleteLater();
 #endif
+
+	viewerContainer->initUi();
 
 	/* slots & signals */
 	connect(docksButton, SIGNAL(clicked()),

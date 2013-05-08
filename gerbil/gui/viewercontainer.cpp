@@ -16,7 +16,7 @@ ViewerContainer::ViewerContainer(QWidget *parent)
     //ui(new Ui::ViewerContainer)
 {
     //ui->setupUi(this);
-    initUi();
+	//initUi();
 }
 
 ViewerContainer::~ViewerContainer()
@@ -80,6 +80,7 @@ void ViewerContainer::subImage(representation repr, sets_ptr temp, const std::ve
 void ViewerContainer::setImage(representation repr, SharedMultiImgPtr image, cv::Rect roi)
 {
 	multi_img_viewer *viewer = vm.value(repr);
+	assert(viewer);
 	if(!viewer->isPayloadHidden()) {
 		viewer->setImage(image, roi);
 	}
@@ -526,6 +527,7 @@ multi_img_viewer *ViewerContainer::createViewer(representation repr)
 {
     multi_img_viewer *viewer = new multi_img_viewer(this);
     viewer->setType(repr);
+	assert(taskQueue);
     viewer->queue = taskQueue;
     vm.insert(repr, viewer);
     vLayout->addWidget(viewer);

@@ -25,7 +25,7 @@ public:
     explicit ViewerContainer(QWidget *parent = 0);
     ~ViewerContainer();
 
-    void setTaskQueue(BackgroundTaskQueue *taskQueue); // TODO impl
+	void setTaskQueue(BackgroundTaskQueue *taskQueue);
     void initUi();
 
     //void clearBinSets(const std::vector<cv::Rect> &sub, const cv::Rect &roi);
