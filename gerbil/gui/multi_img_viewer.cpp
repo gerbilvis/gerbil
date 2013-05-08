@@ -8,7 +8,7 @@
 */
 
 #include "multi_img_viewer.h"
-#include "viewerwindow.h"
+#include "mainwindow.h"
 #include <stopwatch.h>
 #include <opencv2/core/core.hpp>
 #include <iostream>
@@ -444,7 +444,7 @@ void multi_img_viewer::createLimiterMenu()
 	tmp->setData(-1);
 	limiterMenu.addSeparator();
 	for (int i = 1; i < labelColors.size(); ++i) {
-		tmp = limiterMenu.addAction(ViewerWindow::colorIcon(labelColors[i]),
+		tmp = limiterMenu.addAction(MainWindow::colorIcon(labelColors[i]),
 													  "Limit by label");
 		tmp->setData(i);
 	}

@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <ui version="4.0">
- <class>ViewerWindow</class>
- <widget class="QMainWindow" name="ViewerWindow">
+ <class>MainWindow</class>
+ <widget class="QMainWindow" name="MainWindow">
   <property name="windowTitle">
    <string>Multispectral Image Viewer</string>
   </property>

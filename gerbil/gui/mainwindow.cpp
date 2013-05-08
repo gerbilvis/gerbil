@@ -7,7 +7,7 @@
 	find it here: http://www.gnu.org/licenses/gpl.html
 */
 
-#include "viewerwindow.h"
+#include "mainwindow.h"
 #include "iogui.h"
 #include "commandrunner.h"
 #include "multi_img_tasks.h"
@@ -37,7 +37,7 @@
 #define USE_CUDA_CLAMP          0
 #define USE_CUDA_ILLUMINANT     0
 
-ViewerWindow::ViewerWindow(BackgroundTaskQueue &queue, multi_img_base *image,
+MainWindow::MainWindow(BackgroundTaskQueue &queue, multi_img_base *image,
 						   QString labelfile, bool limitedMode, QWidget *parent)
 	: QMainWindow(parent), queue(queue),
 	  startupLabelFile(labelfile), limitedMode(limitedMode),
@@ -100,14 +100,14 @@ ViewerWindow::ViewerWindow(BackgroundTaskQueue &queue, multi_img_base *image,
 	}
 }
 
-void ViewerWindow::finishTask(bool success)
+void MainWindow::finishTask(bool success)
 {
 	if (success) {
 		setGUIEnabled(true);
 	}
 }
 
-void ViewerWindow::finishROIChange(bool success)
+void MainWindow::finishROIChange(bool success)
 {
 	if (success) {
 		connect(&bandView->labelTimer, SIGNAL(timeout()), 
@@ -115,7 +115,7 @@ void ViewerWindow::finishROIChange(bool success)
 	}
 }
 
-void ViewerWindow::applyROI(bool reuse)
+void MainWindow::applyROI(bool reuse)
 {
 	for (size_t i = 0; i < viewers.size(); ++i)
 		disconnectViewer(i);
@@ -329,31 +329,31 @@ void ViewerWindow::applyROI(bool reuse)
 	queue.push(roiFinish);
 }
 
-void ViewerWindow::imgCalculationComplete(bool success)
+void MainWindow::imgCalculationComplete(bool success)
 {
 	if (success) 
 		finishViewerRefresh(IMG);
 }
 
-void ViewerWindow::gradCalculationComplete(bool success)
+void MainWindow::gradCalculationComplete(bool success)
 {
 	if (success) 
 		finishViewerRefresh(GRAD);
 }
 
-void ViewerWindow::imgPcaCalculationComplete(bool success)
+void MainWindow::imgPcaCalculationComplete(bool success)
 {
 	if (success) 
 		finishViewerRefresh(IMGPCA);
 }
 
-void ViewerWindow::gradPcaCalculationComplete(bool success)
+void MainWindow::gradPcaCalculationComplete(bool success)
 {
 	if (success)
 		finishViewerRefresh(GRADPCA);
 }
 
-void ViewerWindow::disconnectViewer(int viewer)
+void MainWindow::disconnectViewer(int viewer)
 {
 	disconnect(bandView, SIGNAL(pixelOverlay(int, int)),
 		viewers[viewer], SLOT(overlay(int, int)));
@@ -365,7 +365,7 @@ void ViewerWindow::disconnectViewer(int viewer)
 		viewers[viewer], SLOT(addPixels(const std::map<std::pair<int, int>, short> &)));
 }
 
-void ViewerWindow::finishViewerRefresh(int viewer)
+void MainWindow::finishViewerRefresh(int viewer)
 {
 	viewers[viewer]->setEnabled(true);
 	connect(bandView, SIGNAL(pixelOverlay(int, int)),
@@ -380,11 +380,11 @@ void ViewerWindow::finishViewerRefresh(int viewer)
 		normTargetChanged(true);
 	}
 	if (activeViewer->getType() == viewer) {
-		ViewerWindow::updateBand();
+		MainWindow::updateBand();
 	}
 }
 
-void ViewerWindow::initUI()
+void MainWindow::initUI()
 {
 	/* GUI elements */
 	initGraphsegUI();
@@ -566,7 +566,7 @@ void ViewerWindow::initUI()
 	updateRGB(true);
 }
 
-void ViewerWindow::toggleViewer(bool enable, representation viewer)
+void MainWindow::toggleViewer(bool enable, representation viewer)
 {
 	if (!enable) {
 		disconnectViewer(viewer);
@@ -643,7 +643,7 @@ void ViewerWindow::toggleViewer(bool enable, representation viewer)
 	}
 }
 
-void ViewerWindow::setGUIEnabled(bool enable, TaskType tt)
+void MainWindow::setGUIEnabled(bool enable, TaskType tt)
 {
 	bandsSlider->setEnabled(enable || tt == TT_BAND_COUNT);
 	ignoreButton->setEnabled(enable || tt == TT_TOGGLE_LABELS);
@@ -684,7 +684,7 @@ void ViewerWindow::setGUIEnabled(bool enable, TaskType tt)
 	runningTask = tt;
 }
 
-void ViewerWindow::bandsSliderMoved(int b)
+void MainWindow::bandsSliderMoved(int b)
 {
 	bandsLabel->setText(QString("%1 bands").arg(b));
 	if (!bandsSlider->isSliderDown()) {
@@ -701,7 +701,7 @@ void ViewerWindow::bandsSliderMoved(int b)
 	}
 }
 
-void ViewerWindow::toggleLabels(bool toggle)
+void MainWindow::toggleLabels(bool toggle)
 {
 	queue.cancelTasks();
 	setGUIEnabled(false, TT_TOGGLE_LABELS);
@@ -716,7 +716,7 @@ void ViewerWindow::toggleLabels(bool toggle)
 }
 
 #ifdef WITH_SEG_MEANSHIFT
-void ViewerWindow::usMethodChanged(int idx)
+void MainWindow::usMethodChanged(int idx)
 {
 	// idx: 0 Meanshift, 1 Medianshift, 2 Probabilistic Shift
 	usSkipPropWidget->setEnabled(idx == 1);
@@ -724,7 +724,7 @@ void ViewerWindow::usMethodChanged(int idx)
 	usMSPPWidget->setEnabled(idx == 2);
 }
 
-void ViewerWindow::usInitMethodChanged(int idx)
+void MainWindow::usInitMethodChanged(int idx)
 {
 	switch (usInitMethodBox->itemData(idx).toInt()) {
 	case vole::JUMP:
@@ -742,7 +742,7 @@ void ViewerWindow::usInitMethodChanged(int idx)
 }
 #endif
 
-bool ViewerWindow::setLabelColors(const std::vector<cv::Vec3b> &colors)
+bool MainWindow::setLabelColors(const std::vector<cv::Vec3b> &colors)
 {
 	QVector<QColor> col = vole::Vec2QColor(colors);
 	col[0] = Qt::white; // override black for 0 label
@@ -783,7 +783,7 @@ bool ViewerWindow::setLabelColors(const std::vector<cv::Vec3b> &colors)
 	return changed;
 }
 
-void ViewerWindow::setLabels(const vole::Labeling &labeling)
+void MainWindow::setLabels(const vole::Labeling &labeling)
 {
 	SharedDataLock image_lock(image->mutex);
 	assert(labeling().rows == (*image)->height && labeling().cols == (*image)->width);
@@ -804,7 +804,7 @@ void ViewerWindow::setLabels(const vole::Labeling &labeling)
 	}
 }
 
-void ViewerWindow::refreshLabelsInViewers()
+void MainWindow::refreshLabelsInViewers()
 {
 	setGUIEnabled(false);
 	for (size_t i = 0; i < viewers.size(); ++i)
@@ -816,7 +816,7 @@ void ViewerWindow::refreshLabelsInViewers()
 	queue.push(taskEpilog);
 }
 
-void ViewerWindow::createLabel()
+void MainWindow::createLabel()
 {
 	int index = labelColors.count();
 	// increment colors by 1
@@ -825,7 +825,7 @@ void ViewerWindow::createLabel()
 	markerSelector->setCurrentIndex(index - 1);
 }
 
-const QPixmap* ViewerWindow::getBand(representation type, int dim)
+const QPixmap* MainWindow::getBand(representation type, int dim)
 {
 	std::vector<QPixmap*> &v = bands[type];
 
@@ -845,14 +845,14 @@ const QPixmap* ViewerWindow::getBand(representation type, int dim)
 	return v[dim];
 }
 
-void ViewerWindow::updateBand()
+void MainWindow::updateBand()
 {
 	selectBand(activeViewer->getType(),
 			   activeViewer->getSelection());
 	bandView->update();
 }
 
-void ViewerWindow::selectBand(representation type, int dim)
+void MainWindow::selectBand(representation type, int dim)
 {
 	bandView->setEnabled(true);
 	bandView->setPixmap(*getBand(type, dim));
@@ -873,7 +873,7 @@ void ViewerWindow::selectBand(representation type, int dim)
 	bandDock->setWindowTitle(title);
 }
 
-void ViewerWindow::applyIlluminant() {
+void MainWindow::applyIlluminant() {
 	int i1 = i1Box->itemData(i1Box->currentIndex()).value<int>();
 	int i2 = i2Box->itemData(i2Box->currentIndex()).value<int>();
 	if (i1 == i2)
@@ -935,7 +935,7 @@ void ViewerWindow::applyIlluminant() {
 	i1Box->setCurrentIndex(i2Box->currentIndex());
 }
 
-void ViewerWindow::updateRGB(bool success)
+void MainWindow::updateRGB(bool success)
 {
 	if (!success)
 		return;
@@ -955,7 +955,7 @@ void ViewerWindow::updateRGB(bool success)
 	}
 }
 
-void ViewerWindow::initIlluminantUI()
+void MainWindow::initIlluminantUI()
 {
 	for (int i = 0; i < 2; ++i) {
 		QComboBox *b = (i ? i2Box : i1Box);
@@ -976,7 +976,7 @@ void ViewerWindow::initIlluminantUI()
 	i1Check->setVisible(false);
 }
 
-void ViewerWindow::initNormalizationUI()
+void MainWindow::initNormalizationUI()
 {
 	normModeBox->addItem("Observed");
 	normModeBox->addItem("Theoretical");
@@ -997,7 +997,7 @@ void ViewerWindow::initNormalizationUI()
 			this, SLOT(clampNormUserRange()));
 }
 
-void ViewerWindow::normTargetChanged(bool usecurrent)
+void MainWindow::normTargetChanged(bool usecurrent)
 {
 	/* reset gui to current settings */
 	int target = (normIButton->isChecked() ? 0 : 1);
@@ -1010,7 +1010,7 @@ void ViewerWindow::normTargetChanged(bool usecurrent)
 	normModeSelected(m, true, usecurrent);
 }
 
-void ViewerWindow::normModeSelected(int mode, bool targetchange, bool usecurrent)
+void MainWindow::normModeSelected(int mode, bool targetchange, bool usecurrent)
 {
 	MultiImg::NormMode nm = static_cast<MultiImg::NormMode>(mode);
 	if (nm == MultiImg::NORM_FIXED && !targetchange) // user edits from currenty viewed values
@@ -1069,13 +1069,13 @@ void ViewerWindow::normModeSelected(int mode, bool targetchange, bool usecurrent
 	normMaxBox->blockSignals(false);
 }
 
-void ViewerWindow::normModeFixed()
+void MainWindow::normModeFixed()
 {
 	if (normModeBox->currentIndex() != 2)
 		normModeBox->setCurrentIndex(2);
 }
 
-void ViewerWindow::applyNormUserRange()
+void MainWindow::applyNormUserRange()
 {
 	int target = (normIButton->isChecked() ? 0 : 1);
 
@@ -1124,7 +1124,7 @@ void ViewerWindow::applyNormUserRange()
 	queue.push(taskEpilog);
 }
 
-void ViewerWindow::finishNormRangeImgChange(bool success)
+void MainWindow::finishNormRangeImgChange(bool success)
 {
 	if (success) {
 		SharedDataLock hlock(image->mutex);
@@ -1134,7 +1134,7 @@ void ViewerWindow::finishNormRangeImgChange(bool success)
 	}
 }
 
-void ViewerWindow::finishNormRangeGradChange(bool success)
+void MainWindow::finishNormRangeGradChange(bool success)
 {
 	if (success) {
 		SharedDataLock hlock(gradient->mutex);
@@ -1144,7 +1144,7 @@ void ViewerWindow::finishNormRangeGradChange(bool success)
 	}
 }
 
-void ViewerWindow::clampNormUserRange()
+void MainWindow::clampNormUserRange()
 {
 	int target = (normIButton->isChecked() ? 0 : 1);
 
@@ -1236,7 +1236,7 @@ void ViewerWindow::clampNormUserRange()
 	}
 }
 
-void ViewerWindow::initGraphsegUI()
+void MainWindow::initGraphsegUI()
 {
 	graphsegSourceBox->addItem("Image", 0);
 	graphsegSourceBox->addItem("Gradient", 1); // TODO PCA
@@ -1270,7 +1270,7 @@ void ViewerWindow::initGraphsegUI()
 			graphsegButton, SLOT(setChecked(bool)));
 }
 
-void ViewerWindow::runGraphseg(SharedMultiImgPtr input,
+void MainWindow::runGraphseg(SharedMultiImgPtr input,
 							   const vole::GraphSegConfig &config)
 {
 	setGUIEnabled(false);
@@ -1281,7 +1281,7 @@ void ViewerWindow::runGraphseg(SharedMultiImgPtr input,
 	queue.push(taskGraphseg);
 }
 
-void ViewerWindow::finishGraphSeg(bool success)
+void MainWindow::finishGraphSeg(bool success)
 {
 	if (success) {
 		/* add segmentation to current labeling */
@@ -1292,7 +1292,7 @@ void ViewerWindow::finishGraphSeg(bool success)
 	}
 }
 
-void ViewerWindow::startGraphseg()
+void MainWindow::startGraphseg()
 {
 	vole::GraphSegConfig conf("graphseg");
 	conf.algo = (vole::graphsegalg)
@@ -1324,7 +1324,7 @@ void ViewerWindow::startGraphseg()
 }
 
 #ifdef WITH_SEG_MEANSHIFT
-void ViewerWindow::initUnsupervisedSegUI()
+void MainWindow::initUnsupervisedSegUI()
 {
 	usMethodBox->addItem("Meanshift", 0);
 #ifdef WITH_SEG_MEDIANSHIFT
@@ -1410,7 +1410,7 @@ void ViewerWindow::initUnsupervisedSegUI()
 #endif
 }
 
-void ViewerWindow::usBandwidthMethodChanged(const QString &current) {
+void MainWindow::usBandwidthMethodChanged(const QString &current) {
 	if (current == "fixed") {
 		usAdaptiveBWWidget->hide();
 		usFixedBWWidget->show();
@@ -1422,18 +1422,18 @@ void ViewerWindow::usBandwidthMethodChanged(const QString &current) {
 	}
 }
 
-void ViewerWindow::unsupervisedSegCancelled() {
+void MainWindow::unsupervisedSegCancelled() {
 	usCancelButton->setDisabled(true);
 	usCancelButton->setText("Please wait...");
 	/// runner->terminate() will be called by the Cancel button
 }
 
-void ViewerWindow::startFindKL()
+void MainWindow::startFindKL()
 {
 	startUnsupervisedSeg(true);
 }
 
-void ViewerWindow::startUnsupervisedSeg(bool findKL)
+void MainWindow::startUnsupervisedSeg(bool findKL)
 {
 	// allow only one runner at a time (UI enforces that)
 	assert(usRunner == NULL);
@@ -1546,7 +1546,7 @@ void ViewerWindow::startUnsupervisedSeg(bool findKL)
 	usRunner->start();
 }
 
-void ViewerWindow::segmentationFinished() {
+void MainWindow::segmentationFinished() {
 	if (usRunner->abort) {
 		// restore Cancel button
 		usCancelButton->setEnabled(true);
@@ -1562,7 +1562,7 @@ void ViewerWindow::segmentationFinished() {
 	usRunner = NULL;
 }
 
-void ViewerWindow::segmentationApply(std::map<std::string, boost::any> output) {
+void MainWindow::segmentationApply(std::map<std::string, boost::any> output) {
 	if (output.count("labels")) {
 		boost::shared_ptr<cv::Mat1s> labelMask = boost::any_cast< boost::shared_ptr<cv::Mat1s> >(output["labels"]);
 		setLabels(*labelMask);
@@ -1576,17 +1576,17 @@ void ViewerWindow::segmentationApply(std::map<std::string, boost::any> output) {
 	}
 }
 #else // method stubs as using define in header does not work (moc problem?)
-void ViewerWindow::startUnsupervisedSeg(bool findKL) {}
-void ViewerWindow::startFindKL() {}
-void ViewerWindow::segmentationFinished() {}
-void ViewerWindow::segmentationApply(std::map<std::string, boost::any>) {}
-void ViewerWindow::usMethodChanged(int idx) {}
-void ViewerWindow::usInitMethodChanged(int idx) {}
-void ViewerWindow::usBandwidthMethodChanged(const QString &current) {}
-void ViewerWindow::unsupervisedSegCancelled() {}
+void MainWindow::startUnsupervisedSeg(bool findKL) {}
+void MainWindow::startFindKL() {}
+void MainWindow::segmentationFinished() {}
+void MainWindow::segmentationApply(std::map<std::string, boost::any>) {}
+void MainWindow::usMethodChanged(int idx) {}
+void MainWindow::usInitMethodChanged(int idx) {}
+void MainWindow::usBandwidthMethodChanged(const QString &current) {}
+void MainWindow::unsupervisedSegCancelled() {}
 #endif // WITH_SEG_MEANSHIFT
 
-void ViewerWindow::setActive(int id)
+void MainWindow::setActive(int id)
 {
 	if (viewers[id]->getImage().get()) {
 		activeViewer = viewers[id];
@@ -1595,7 +1595,7 @@ void ViewerWindow::setActive(int id)
 	}
 }
 
-void ViewerWindow::labelflush()
+void MainWindow::labelflush()
 {
 	std::vector<sets_ptr> tmp_sets;
 	cv::Mat1b mask(labels.rows, labels.cols);
@@ -1627,7 +1627,7 @@ void ViewerWindow::labelflush()
 	}
 }
 
-void ViewerWindow::labelmask(bool negative)
+void MainWindow::labelmask(bool negative)
 {
 	std::vector<sets_ptr> tmp_sets;
 	cv::Mat1b mask = activeViewer->getMask();
@@ -1656,12 +1656,12 @@ void ViewerWindow::labelmask(bool negative)
 	}
 }
 
-void ViewerWindow::newOverlay()
+void MainWindow::newOverlay()
 {
 	emit drawOverlay(activeViewer->getMask());
 }
 
-void ViewerWindow::reshapeDock(bool floating)
+void MainWindow::reshapeDock(bool floating)
 {
 	SharedDataLock image_lock(image->mutex);
 	if (!floating || (*image)->height == 0)
@@ -1678,14 +1678,14 @@ void ViewerWindow::reshapeDock(bool floating)
 		bandDock->resize(bandDock->height()*src_aspect, bandDock->height());
 }
 
-QIcon ViewerWindow::colorIcon(const QColor &color)
+QIcon MainWindow::colorIcon(const QColor &color)
 {
 	QPixmap pm(32, 32);
 	pm.fill(color);
 	return QIcon(pm);
 }
 
-void ViewerWindow::buildIlluminant(int temp)
+void MainWindow::buildIlluminant(int temp)
 {
 	assert(temp > 0);
 	Illuminant il(temp);
@@ -1698,7 +1698,7 @@ void ViewerWindow::buildIlluminant(int temp)
 	illuminants[temp] = make_pair(il, cf);
 }
 
-const Illuminant & ViewerWindow::getIlluminant(int temp)
+const Illuminant & MainWindow::getIlluminant(int temp)
 {
 	assert(temp > 0);
 	Illum_map::iterator i = illuminants.find(temp);
@@ -1709,7 +1709,7 @@ const Illuminant & ViewerWindow::getIlluminant(int temp)
 	return illuminants[temp].first;
 }
 
-const std::vector<multi_img::Value> & ViewerWindow::getIlluminantC(int temp)
+const std::vector<multi_img::Value> & MainWindow::getIlluminantC(int temp)
 {
 	assert(temp > 0);
 	Illum_map::iterator i = illuminants.find(temp);
@@ -1720,7 +1720,7 @@ const std::vector<multi_img::Value> & ViewerWindow::getIlluminantC(int temp)
 	return illuminants[temp].second;
 }
 
-void ViewerWindow::setI1(int index) {
+void MainWindow::setI1(int index) {
 	int i1 = i1Box->itemData(index).value<int>();
 	if (i1 > 0) {
 		i1Check->setEnabled(true);
@@ -1733,7 +1733,7 @@ void ViewerWindow::setI1(int index) {
 	}
 }
 
-void ViewerWindow::setI1Visible(bool visible)
+void MainWindow::setI1Visible(bool visible)
 {
 	if (visible) {
 		int i1 = i1Box->itemData(i1Box->currentIndex()).value<int>();
@@ -1744,7 +1744,7 @@ void ViewerWindow::setI1Visible(bool visible)
 	}
 }
 
-void ViewerWindow::loadLabeling(QString filename)
+void MainWindow::loadLabeling(QString filename)
 {
 	QString actual_filename;
 	if (!startupLabelFile.isEmpty()) {
@@ -1776,7 +1776,7 @@ void ViewerWindow::loadLabeling(QString filename)
 	setLabels(labeling);
 }
 
-void ViewerWindow::loadSeeds()
+void MainWindow::loadSeeds()
 {
 	int height;
 	int width;
@@ -1801,7 +1801,7 @@ void ViewerWindow::loadSeeds()
 	}
 }
 
-void ViewerWindow::saveLabeling()
+void MainWindow::saveLabeling()
 {
 	vole::Labeling labeling(bandView->labels);
 	cv::Mat3b output = labeling.bgr();
@@ -1810,7 +1810,7 @@ void ViewerWindow::saveLabeling()
 	io.writeFile(QString(), output);
 }
 
-void ViewerWindow::screenshot()
+void MainWindow::screenshot()
 {
 	// grabWindow reads from the display server, so GL parts are not missing
 	QPixmap shot = QPixmap::grabWindow(this->winId());
@@ -1822,7 +1822,7 @@ void ViewerWindow::screenshot()
 	io.writeFile(QString(), output);
 }
 
-void ViewerWindow::ROIDecision(QAbstractButton *sender)
+void MainWindow::ROIDecision(QAbstractButton *sender)
 {
 	QDialogButtonBox::ButtonRole role = roiButtons->buttonRole(sender);
 	roiButtons->setDisabled(true);
@@ -1867,7 +1867,7 @@ void ViewerWindow::ROIDecision(QAbstractButton *sender)
 	}
 }
 
-void ViewerWindow::ROISelection(const QRect &roi)
+void MainWindow::ROISelection(const QRect &roi)
 {
 	roiButtons->setEnabled(true);
 
@@ -1877,14 +1877,14 @@ void ViewerWindow::ROISelection(const QRect &roi)
 	roiTitle->setText(title);
 }
 
-void ViewerWindow::openContextMenu()
+void MainWindow::openContextMenu()
 {
 	delete contextMenu;
 	contextMenu = createPopupMenu();
 	contextMenu->exec(QCursor::pos());
 }
 
-void ViewerWindow::changeEvent(QEvent *e)
+void MainWindow::changeEvent(QEvent *e)
 {
 	QMainWindow::changeEvent(e);
 	switch (e->type()) {

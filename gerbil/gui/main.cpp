@@ -1,4 +1,4 @@
-#include "viewerwindow.h"
+#include "mainwindow.h"
 #include <multi_img_offloaded.h>
 #include <background_task_queue.h>
 #include <imginput.h>
@@ -327,9 +327,9 @@ int main(int argc, char **argv)
 	if (image->empty())
 		return 2;
 	
-	// regular viewer
-	ViewerWindow window(queue, image, labelfile, limited_mode);
-	// image now belongs to ViewerWindow
+	// create main window
+	MainWindow window(queue, image, labelfile, limited_mode);
+	// image now belongs to MainWindow
 	image = NULL;
 
 	QFileInfo fi(filename.c_str());

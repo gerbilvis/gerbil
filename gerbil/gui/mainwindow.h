@@ -7,10 +7,10 @@
 	find it here: http://www.gnu.org/licenses/gpl.html
 */
 
-#ifndef VIEWERWINDOW_H
-#define VIEWERWINDOW_H
+#ifndef MAINWINDOW_H
+#define MAINWINDOW_H
 
-#include "ui_viewerwindow.h"
+#include "ui_mainwindow.h"
 #include <shared_data.h>
 #include <background_task.h>
 #include <multi_img.h>
@@ -37,10 +37,10 @@
 #include <QMenu>
 #include <opencv2/core/core.hpp>
 
-class ViewerWindow : public QMainWindow, private Ui::ViewerWindow {
+class MainWindow : public QMainWindow, private Ui::MainWindow {
     Q_OBJECT
 public:
-	ViewerWindow(BackgroundTaskQueue &queue, multi_img_base *image,
+	MainWindow(BackgroundTaskQueue &queue, multi_img_base *image,
 				 QString labelfile = QString(), bool limitedMode = false,
 				 QWidget *parent = 0);
 
@@ -188,4 +188,4 @@ private:
 	QString startupLabelFile;
 };
 
-#endif // VIEWERWINDOW_H
+#endif // MAINWINDOW_H
