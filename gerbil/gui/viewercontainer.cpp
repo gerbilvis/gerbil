@@ -63,6 +63,14 @@ void ViewerContainer::setImage(representation repr, SharedMultiImgPtr image, cv:
 	}
 }
 
+void ViewerContainer::toggleLabels(bool toggle)
+{
+	ViewerList vl = vm.values();
+	foreach(multi_img_viewer *viewer, vl) {
+		viewer->toggleLabels(toggle);
+	}
+}
+
 void ViewerContainer::updateViewerBandSelections(int numbands)
 {
 	ViewerList vl = vm.values();

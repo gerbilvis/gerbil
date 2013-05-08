@@ -33,6 +33,8 @@ public:
 	void subImage(representation repr, sets_ptr temp, const std::vector<cv::Rect> &regions, cv::Rect roi);
 	void setImage(representation repr, SharedMultiImgPtr image, cv::Rect roi);
 
+	void toggleLabels(bool toggle);
+
 	// MODEL
 	// For now these are copied from MainWindow. To be removed when refactored
 	// into model classes.

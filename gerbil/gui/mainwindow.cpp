@@ -785,8 +785,9 @@ void MainWindow::toggleLabels(bool toggle)
 	queue.cancelTasks();
 	setGUIEnabled(false, TT_TOGGLE_LABELS);
 
-	for (size_t i = 0; i < viewers.size(); ++i)
-		viewers[i]->toggleLabels(toggle);
+//	for (size_t i = 0; i < viewers.size(); ++i)
+//		viewers[i]->toggleLabels(toggle);
+	viewerContainer->toggleLabels(toggle);
 
 	BackgroundTaskPtr taskEpilog(new BackgroundTask());
 	QObject::connect(taskEpilog.get(), SIGNAL(finished(bool)), 
