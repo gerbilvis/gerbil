@@ -155,6 +155,14 @@ representation ViewerContainer::getActiveRepresentation() const
 	// TODO impl
 }
 
+void ViewerContainer::setIlluminant(representation repr,
+									const std::vector<multi_img_base::Value> &illuminant,
+									bool for_real)
+{
+	multi_img_viewer *viewer = vm.value(repr);
+	viewer->setIlluminant(illuminant, for_real);
+}
+
 void ViewerContainer::setGUIEnabled(bool enable, TaskType tt)
 {
 	ViewerList vl = vm.values();

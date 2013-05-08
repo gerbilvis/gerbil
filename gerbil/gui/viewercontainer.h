@@ -56,6 +56,7 @@ public:
 	int getSelection(representation repr);
 	SharedMultiImgPtr getViewerImage(representation repr);
 	representation getActiveRepresentation() const;
+	void setIlluminant(representation repr, const std::vector<multi_img::Value> &illuminant, bool for_real);
 public slots:
 	void setGUIEnabled(bool enable, TaskType tt);
 	void toggleViewer(bool enable, representation repr);

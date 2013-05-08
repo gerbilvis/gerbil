@@ -1021,7 +1021,8 @@ void MainWindow::applyIlluminant() {
 	}
 
 	std::vector<multi_img::Value> empty;
-	viewIMG->setIlluminant((i2 ? getIlluminantC(i2) : empty), true);
+//	viewIMG->setIlluminant((i2 ? getIlluminantC(i2) : empty), true);
+	viewerContainer->setIlluminant(IMG, (i2 ? getIlluminantC(i2) : empty), true);
 
 	applyROI(false);
 	rgbDock->setEnabled(false);
@@ -1845,12 +1846,15 @@ void MainWindow::setI1(int index) {
 	int i1 = i1Box->itemData(index).value<int>();
 	if (i1 > 0) {
 		i1Check->setEnabled(true);
-		if (i1Check->isChecked())
-			viewIMG->setIlluminant(getIlluminantC(i1), false);
+		if (i1Check->isChecked()) {
+//			viewIMG->setIlluminant(getIlluminantC(i1), false);
+			viewerContainer->setIlluminant(IMG, getIlluminantC(i1), false);
+		}
 	} else {
 		i1Check->setEnabled(false);
 		std::vector<multi_img::Value> empty;
-		viewIMG->setIlluminant(empty, false);
+//		viewIMG->setIlluminant(empty, false);
+		viewerContainer->setIlluminant(IMG, empty, false);
 	}
 }
 
@@ -1858,10 +1862,12 @@ void MainWindow::setI1Visible(bool visible)
 {
 	if (visible) {
 		int i1 = i1Box->itemData(i1Box->currentIndex()).value<int>();
-		viewIMG->setIlluminant(getIlluminantC(i1), false);
+		//viewIMG->setIlluminant(getIlluminantC(i1), false);
+		viewerContainer->setIlluminant(IMG,getIlluminantC(i1), false);
 	} else {
 		std::vector<multi_img::Value> empty;
-		viewIMG->setIlluminant(empty, false);
+//		viewIMG->setIlluminant(empty, false);
+		viewerContainer->setIlluminant(IMG, empty, false);
 	}
 }
 
