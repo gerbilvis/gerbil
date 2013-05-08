@@ -69,6 +69,14 @@ MainWindow::MainWindow(BackgroundTaskQueue &queue, multi_img_base *image,
 //	for (size_t i = 0; i < viewers.size(); ++i)
 //		viewers[i]->queue = &queue;
 
+	// MODEL To be removed when refactored
+	// into model classes.
+	viewerContainer->image = &image;
+	viewerContainer->gradient = &gradient;
+	viewerContainer->imagepca = &imagepca;
+	viewerContainer->gradientpca = &gradientpca;
+
+
 	// do all the bling-bling
 	initUI();
 	setLabelColors(vole::Labeling::colors(2, true));
@@ -478,6 +486,9 @@ void MainWindow::initUI()
 			bandView, SLOT(applyLabelAlpha(int)));
 
 
+	connect(this, SIGNAL(roiChanged(cv::Rect)),
+			viewerContainer, SLOT(newROI(cv::Rect)));
+
 	connect(bandView, SIGNAL(killHover()),
 			viewerContainer, SIGNAL(viewportsKillHover()));
 	connect(bandView, SIGNAL(pixelOverlay(int, int)),
@@ -522,7 +533,7 @@ void MainWindow::initUI()
 //					v, SLOT(addPixels(const std::map<std::pair<int, int>, short> &)));
 //		}
 
-//		connect(vp, SIGNAL(activated()),
+//		connect(taskQueue->vp, SIGNAL(activated()),
 //				vpmap, SLOT(map()));
 
 //		for (size_t j = 0; j < viewers.size(); ++j) {
@@ -544,18 +555,18 @@ void MainWindow::initUI()
 	connect(viewerContainer, SIGNAL(viewPortBandSelected(representation,int)),
 			this, SLOT(selectBand(representation,int));
 
-		// TODO ViewerContainer
+		// TODO ViewerContainer, WIP
 //		connect(v, SIGNAL(setGUIEnabled(bool, TaskType)),
 //				this, SLOT(setGUIEnabled(bool, TaskType)));
 
 	connect(viewerContainer, SIGNAL(viewerSetGUIEnabled(bool,TaskType)),
 			this, SLOT(setGUIEnabled(bool,TaskType)));
 
-		// TODO ViewerContainer
+		// TODO ViewerContainer, WIP
 //		connect(v, SIGNAL(toggleViewer(bool , representation)),
 //				this, SLOT(toggleViewer(bool , representation)));
 
-		// TODO ViewerContainer
+		// TODO ViewerContainer, WIP
 //		connect(v, SIGNAL(finishTask(bool)),
 //				this, SLOT(finishTask(bool)));
 
@@ -878,11 +889,31 @@ const QPixmap* MainWindow::getBand(representation type, int dim)
 	return v[dim];subImage
 }
 
-void MainWindow::updateBand()
+void MainWindow::updateBand(representation repr, int selection)
 {
-	selectBand(activeViewer->getType(),
-			   activeViewer->getSelection());
+	selectBand(repr, selection);
 	bandView->update();
+}
+
+void MainWindow::imageResetNeeded(representation repr)
+{
+	switch(repr){
+	case IMG:
+		image->reset();
+		break;
+	case GRAD:
+		gradient->reset();
+		break;
+	case IMGPCA:
+		imagepca->reset();
+		break;
+	case GRADPCA:
+		gradientpca->reset();
+		break;
+	default:
+		assert(false);
+		break;
+	}
 }
 
 void MainWindow::selectBand(representation type, int dim)
@@ -1938,3 +1969,4 @@ void MainWindow::changeEvent(QEvent *e)
 		break;
 	}
 }
+

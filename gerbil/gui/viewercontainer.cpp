@@ -19,6 +19,11 @@ ViewerContainer::~ViewerContainer()
     //delete ui;
 }
 
+void ViewerContainer::setTaskQueue(BackgroundTaskQueue *taskQueue)
+{
+    this->taskQueue = taskQueue;
+}
+
 void ViewerContainer::addImage(representation repr, sets_ptr temp,
                                const std::vector<cv::Rect> &regions,
                                cv::Rect roi)
@@ -37,6 +42,171 @@ void ViewerContainer::setGUIEnabled(bool enable, TaskType tt)
         viewer->setEnabled(enable || tt == TT_BIN_COUNT || tt == TT_TOGGLE_VIEWER);
     }
 }
+
+void ViewerContainer::toggleViewer(bool enable, representation repr)
+{
+	// TODO impl
+}
+
+void ViewerContainer::newROI(cv::Rect roi)
+{
+	this->roi = roi;
+}
+
+void ViewerContainer::imgCalculationComplete(bool success)
+{
+	if (success)
+		finishViewerRefresh(IMG);
+}
+
+void ViewerContainer::gradCalculationComplete(bool success)
+{
+	if (success)
+		finishViewerRefresh(GRAD);
+}
+
+void ViewerContainer::imgPcaCalculationComplete(bool success)
+{
+	if (success)
+		finishViewerRefresh(IMGPCA);
+}
+
+void ViewerContainer::gradPcaCalculationComplete(bool success)
+{
+	if (success)
+		finishViewerRefresh(GRADPCA);
+}
+
+void ViewerContainer::finishViewerRefresh(int viewer)
+{
+	// TODO impl
+}
+
+void ViewerContainer::finishTask(bool success)
+{
+	if(success)
+		emit requestGUIEnabled(true, TT_NONE);
+}
+
+void ViewerContainer::toggleViewerEnable(representation repr)
+{
+	// FIXME handle state in viewer
+	// disconnectViewer(viewer);
+
+	switch(repr) {
+	case IMG:
+		break;
+	case GRAD:
+		break;
+	case IMGPCA:
+	{
+		ViewerList pcaviewers = vm.values(IMGPCA);
+		assert(pcaviewers.size() == 1);
+		multi_img_viewer *viewer = pcaviewers.front();
+		viewer->resetImage();
+		emit imageResetNeeded(IMGPCA);
+		if(activeViewer == viewer) {
+			viewer->activateViewport();
+			emit bandUpdateNeeded(viewer->getType(),
+								  viewer->getSelection());
+		}
+	}
+		break;
+	case GRADPCA:
+	{
+		ViewerList gradviewers = vm.values(GRADPCA);
+		assert(gradviewers.size() == 1);
+		multi_img_viewer *viewer = gradviewers.front();
+		viewer->resetImage();
+		emit imageResetNeeded(GRADPCA);
+		if(activeViewer == viewer) {
+			viewer->activateViewport();
+			emit bandUpdateNeeded(viewer->getType(),
+								  viewer->getSelection());
+		}
+	}
+		break;
+	default:
+		assert(false);
+		break;
+	}
+}
+
+void ViewerContainer::toggleViewerDisable(representation repr)
+{
+	ViewerList viewers = vm.values(repr);
+	assert(viewers.size() == 1);
+	multi_img_viewer *viewer = viewers.front();
+
+	emit requestGUIEnabled(false, TT_TOGGLE_VIEWER);
+
+	switch(repr) {
+	case IMG:
+	{
+		viewer->setImage(*image, roi);
+		BackgroundTaskPtr task(new BackgroundTask(roi));
+		QObject::connect(task.get(), SIGNAL(finished(bool)),
+			this, SLOT(imgCalculationComplete(bool)), Qt::QueuedConnection);
+		taskQueue->push(task);
+	}
+		break;
+	case GRAD:
+	{
+		viewer->setImage(*gradient, roi);
+		BackgroundTaskPtr task(new BackgroundTask(roi));
+		QObject::connect(task.get(), SIGNAL(finished(bool)),
+			this, SLOT(gradCalculationComplete(bool)), Qt::QueuedConnection);
+		taskQueue->push(task);
+	}
+		break;
+	case IMGPCA:
+	{
+		// FIXME very bad style to access member of MainWindow
+		imagepca->reset(new SharedMultiImgBase(new multi_img(0, 0, 0)));
+
+		BackgroundTaskPtr taskPca(new MultiImg::PcaTbb(
+			*image, *imagepca, 0, roi));
+		taskQueue->push(taskPca);
+
+		viewer->setImage(*imagepca, roi);
+
+		BackgroundTaskPtr task(new BackgroundTask(roi));
+		QObject::connect(task.get(), SIGNAL(finished(bool)),
+			this, SLOT(imgPcaCalculationComplete(bool)), Qt::QueuedConnection);
+		taskQueue->push(task);
+
+	}
+		break;
+	case GRADPCA:
+	{
+		// FIXME very bad style to access member of MainWindow
+		gradientpca->reset(new SharedMultiImgBase(new multi_img(0, 0, 0)));
+
+		BackgroundTaskPtr taskPca(new MultiImg::PcaTbb(
+			*gradient, *gradientpca, 0, roi));
+		taskQueue->push(taskPca);
+
+		viewer->setImage(*imagepca, roi);
+
+		BackgroundTaskPtr task(new BackgroundTask(roi));
+		QObject::connect(task.get(), SIGNAL(finished(bool)),
+			this, SLOT(gradPcaCalculationComplete(bool)), Qt::QueuedConnection);
+		taskQueue->push(task);
+
+	}
+		break;
+	default:
+		assert(false);
+		break;
+	} // switch
+
+
+	BackgroundTaskPtr taskEpilog(new BackgroundTask(roi));
+	QObject::connect(taskEpilog.get(), SIGNAL(finished(bool)),
+		this, SLOT(finishTask(bool)), Qt::QueuedConnection);
+	taskQueue->push(taskEpilog);
+}
+
 
 //void ViewerContainer::clearBinSets(const std::vector<cv::Rect>& sub, const cv::Rect& roi )
 //{
@@ -63,11 +233,14 @@ void ViewerContainer::initUi()
 {
     vLayout = new QVBoxLayout(this);
 
-    multi_img_viewer *viewer;
-    viewer = createViewer(IMG);
-    viewer = createViewer(GRAD);
-    viewer = createViewer(IMGPCA);
-    viewer = createViewer(GRADPCA);
+    // CAVEAT: Only one viewer per representation type is supported now.
+	// While there is basic support for multpile viewers per representation,
+	// in many places one viewer per representation is still assumed.
+    //
+    createViewer(IMG);
+    createViewer(GRAD);
+    createViewer(IMGPCA);
+    createViewer(GRADPCA);
 
 	// for self-activation of viewports
 	QSignalMapper *vpsmap = new QSignalMapper(this);
@@ -148,3 +321,4 @@ multi_img_viewer *ViewerContainer::createViewer(representation repr)
     vm.insert(repr, viewer);
     vLayout->addWidget(viewer);
 }
+

@@ -31,8 +31,22 @@ public:
 	// since we have only one viewer for each representation.
     void addImage(representation repr, sets_ptr temp, const std::vector<cv::Rect> &regions, cv::Rect roi);
 
+	// MODEL
+	// For now these are copied from MainWindow. To be removed when refactored
+	// into model classes.
+	SharedMultiImgPtr *image, *gradient, *imagepca, *gradientpca;
+
 public slots:
 	void setGUIEnabled(bool enable, TaskType tt);
+	void toggleViewer(bool enable, representation repr);
+	void newROI(cv::Rect roi);
+
+	void imgCalculationComplete(bool success);
+	void gradCalculationComplete(bool success);
+	void imgPcaCalculationComplete(bool success);
+	void gradPcaCalculationComplete(bool success);
+	void finishViewerRefresh(int viewer);
+	void finishTask(bool success);
 signals:
 	// pass through signals
 	void viewportsKillHover();
@@ -56,12 +70,23 @@ signals:
 	void viewPortAddSelection();
 	void viewPortRemSelection();
 
-protected:
-    ViewerList vl;
-    ViewerMultiMap vm;
-    BackgroundTaskQueue *taskQueue;
+signals:
+	// new signals to break-up coupling between MainWindow and ViewerContainer
 
-    QLayout *vLayout;
+	void bandUpdateNeeded(representation repr, int selection);
+	void imageResetNeeded(representation repr);
+
+	// TODO still unhandled by MainWindow
+	void requestGUIEnabled(bool enable, TaskType tt);
+
+protected:
+	ViewerList vl;
+	ViewerMultiMap vm;
+	BackgroundTaskQueue *taskQueue;
+	multi_img_viewer *activeViewer;
+	cv::Rect roi;
+
+	QLayout *vLayout;
 
 private:
     /*! \brief Add a multi_img_viewer to the widget.
@@ -70,6 +95,9 @@ private:
      * Needs to be called before signal/slot wiring in initUi() is done.
      */
     multi_img_viewer *createViewer(representation repr);
+
+    void toggleViewerEnable(representation repr);
+    void toggleViewerDisable(representation repr);
 //private:
 //    Ui::ViewersWidget *ui;
 };

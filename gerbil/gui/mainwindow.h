@@ -119,16 +119,22 @@ public slots:
 
 	void updateRGB(bool success);
 	void refreshLabelsInViewers();
-
+public slots: // introduced by ViewerContainer
+	// FIXME was void updateBand() -> still breaks compile -> all updateBand() calls
+	// need to move from MainWindow to ViewerContainer
+	void updateBand(representation repr, int selection);
+	void imageResetNeeded(representation repr);
 signals:
 	void clearLabel();
 	void alterLabel(const multi_img::Mask &mask, bool negative);
 	void newLabelColors(const QVector<QColor> &colors, bool changed);
 	void drawOverlay(const multi_img::Mask &mask);
 	void seedingDone(bool yeah = false);
-
+signals:
 	/* BEGIN signals for viewercontainer integration */
 
+	// TODO this needs to be emitted in all the right places.
+	void roiChanged(cv::Rect roi);
 	/* END signals for viewercontainer integration */
 
 protected:
@@ -143,10 +149,14 @@ protected:
 
 	void runGraphseg(SharedMultiImgPtr input, const vole::GraphSegConfig &config);
 
+	// FIXME SharedMultiImgPtr s are to be moved into model classes
+
 	// multispectral image and gradient
     // FIXME rename
     SharedMultiImgPtr image_lim;
-	SharedMultiImgPtr image, gradient, imagepca, gradientpca;
+
+    SharedMultiImgPtr image, gradient, imagepca, gradientpca;
+
 	// current region of interest
 	cv::Rect roi;
 	// bands from all representations (image, gradient, PCA..)
@@ -178,7 +188,7 @@ private:
 	void initUnsupervisedSegUI();
 #endif
 	void initNormalizationUI();
-	void updateBand();
+	//void updateBand();
 	void buildIlluminant(int temp);
 
 	// cache for illumination coefficients
