@@ -270,7 +270,7 @@ void MainWindow::applyROI(bool reuse)
 
 	BackgroundTaskPtr taskImgFinish(new BackgroundTask(roi));
 	QObject::connect(taskImgFinish.get(), SIGNAL(finished(bool)), 
-		this, SLOT(imgCalculationComplete(bool)), Qt::QueuedConnection);
+		viewerContainer, SLOT(imgCalculationComplete(bool)), Qt::QueuedConnection);
 	queue.push(taskImgFinish);
 
 	if (cv::gpu::getCudaEnabledDeviceCount() > 0 && USE_CUDA_GRADIENT) {
@@ -315,7 +315,7 @@ void MainWindow::applyROI(bool reuse)
 
 	BackgroundTaskPtr taskGradFinish(new BackgroundTask(roi));
 	QObject::connect(taskGradFinish.get(), SIGNAL(finished(bool)), 
-		this, SLOT(gradCalculationComplete(bool)), Qt::QueuedConnection);
+		viewerContainer, SLOT(gradCalculationComplete(bool)), Qt::QueuedConnection);
 	queue.push(taskGradFinish);
 
 	if (imagepca.get()) {
@@ -336,7 +336,7 @@ void MainWindow::applyROI(bool reuse)
 
 		BackgroundTaskPtr taskImgPcaFinish(new BackgroundTask(roi));
 		QObject::connect(taskImgPcaFinish.get(), SIGNAL(finished(bool)), 
-			this, SLOT(imgPcaCalculationComplete(bool)), Qt::QueuedConnection);
+			viewerContainer, SLOT(imgPcaCalculationComplete(bool)), Qt::QueuedConnection);
 		queue.push(taskImgPcaFinish);
 	}
 
@@ -358,7 +358,7 @@ void MainWindow::applyROI(bool reuse)
 
 		BackgroundTaskPtr taskGradPcaFinish(new BackgroundTask(roi));
 		QObject::connect(taskGradPcaFinish.get(), SIGNAL(finished(bool)), 
-			this, SLOT(gradPcaCalculationComplete(bool)), Qt::QueuedConnection);
+			viewerContainer, SLOT(gradPcaCalculationComplete(bool)), Qt::QueuedConnection);
 		queue.push(taskGradPcaFinish);
 	}
 
@@ -605,7 +605,8 @@ void MainWindow::initUI()
 //		connect(v, SIGNAL(setGUIEnabled(bool, TaskType)),
 //				this, SLOT(setGUIEnabled(bool, TaskType)));
 
-	connect(viewerContainer, SIGNAL(viewerSetGUIEnabled(bool,TaskType)),
+
+	connect(viewerContainer, SIGNAL(requestGUIEnabled(bool,TaskType)),
 			this, SLOT(setGUIEnabled(bool,TaskType)));
 
 		// -> handled by ViewerContainer

@@ -179,6 +179,8 @@ void ViewerContainer::setGUIEnabled(bool enable, TaskType tt)
 
 void ViewerContainer::toggleViewer(bool enable, representation repr)
 {
+ 	// FIXME remove
+	std::cerr << "toggle " << enable << std::endl;
 	if(enable)
 		toggleViewerEnable(repr);
 	else
