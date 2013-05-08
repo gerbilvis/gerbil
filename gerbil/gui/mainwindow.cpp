@@ -850,8 +850,10 @@ bool MainWindow::setLabelColors(const std::vector<cv::Vec3b> &colors)
 	if (changed) 
 		setGUIEnabled(false);
 
-	for (size_t i = 0; i < viewers.size(); ++i)
-		viewers[i]->updateLabelColors(labelColors, changed);
+//	for (size_t i = 0; i < viewers.size(); ++i)
+//		viewers[i]->updateLabelColors(labelColors, changed);
+	viewerContainer->updateLabelColors(
+				labelColors, changed);
 
 	if (changed) {
 		BackgroundTaskPtr taskEpilog(new BackgroundTask());

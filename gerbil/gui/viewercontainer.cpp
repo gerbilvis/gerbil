@@ -71,6 +71,14 @@ void ViewerContainer::toggleLabels(bool toggle)
 	}
 }
 
+void ViewerContainer::updateLabelColors(QVector<QColor> labelColors, bool changed)
+{
+	ViewerList vl = vm.values();
+	foreach(multi_img_viewer *viewer, vl) {
+		viewer->updateLabelColors(labelColors, changed);
+	}
+}
+
 void ViewerContainer::updateViewerBandSelections(int numbands)
 {
 	ViewerList vl = vm.values();

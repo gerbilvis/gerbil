@@ -2,6 +2,7 @@
 #define VIEWERCONTAINER_H
 
 #include <QWidget>
+#include <QVector>
 
 #include "multi_img_viewer.h"
 #include <background_task_queue.h>
@@ -34,6 +35,7 @@ public:
 	void setImage(representation repr, SharedMultiImgPtr image, cv::Rect roi);
 
 	void toggleLabels(bool toggle);
+	void updateLabelColors(QVector<QColor> labelColors, bool changed);
 
 	// MODEL
 	// For now these are copied from MainWindow. To be removed when refactored
