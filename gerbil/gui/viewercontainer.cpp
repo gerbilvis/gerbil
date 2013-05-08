@@ -30,6 +30,14 @@ void ViewerContainer::addImage(representation repr, sets_ptr temp,
     }
 }
 
+void ViewerContainer::setGUIEnabled(bool enable, TaskType tt)
+{
+    foreach(multi_img_viewer *viewer, vl) {
+        viewer->enableBinSlider(enable);
+        viewer->setEnabled(enable || tt == TT_BIN_COUNT || tt == TT_TOGGLE_VIEWER);
+    }
+}
+
 //void ViewerContainer::clearBinSets(const std::vector<cv::Rect>& sub, const cv::Rect& roi )
 //{
 //	ViewerList viewers;

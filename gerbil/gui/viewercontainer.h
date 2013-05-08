@@ -32,7 +32,7 @@ public:
     void addImage(representation repr, sets_ptr temp, const std::vector<cv::Rect> &regions, cv::Rect roi);
 
 public slots:
-
+	void setGUIEnabled(bool enable, TaskType tt);
 signals:
 	// pass through signals
 	void viewportsKillHover();

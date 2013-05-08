@@ -541,24 +541,39 @@ void MainWindow::initUI()
 
 //		connect(vp, SIGNAL(bandSelected(representation, int)),
 //				this, SLOT(selectBand(representation, int)));
+	connect(viewerContainer, SIGNAL(viewPortBandSelected(representation,int)),
+			this, SLOT(selectBand(representation,int));
 
+		// TODO ViewerContainer
 //		connect(v, SIGNAL(setGUIEnabled(bool, TaskType)),
 //				this, SLOT(setGUIEnabled(bool, TaskType)));
+
+	connect(viewerContainer, SIGNAL(viewerSetGUIEnabled(bool,TaskType)),
+			this, SLOT(setGUIEnabled(bool,TaskType)));
+
+		// TODO ViewerContainer
 //		connect(v, SIGNAL(toggleViewer(bool , representation)),
 //				this, SLOT(toggleViewer(bool , representation)));
+
+		// TODO ViewerContainer
 //		connect(v, SIGNAL(finishTask(bool)),
 //				this, SLOT(finishTask(bool)));
 
+		// TODO ViewerContainer
 //		connect(v, SIGNAL(newOverlay()),
 //				this, SLOT(newOverlay()));
+		// TODO ViewerContainer
 //		connect(vp, SIGNAL(newOverlay(int)),
 //				this, SLOT(newOverlay()));
 
+		// TODO ViewerContainer
 //		connect(vp, SIGNAL(addSelection()),
 //				this, SLOT(addToLabel()));
+
+		// TODO ViewerContainer
 //		connect(vp, SIGNAL(remSelection()),
 //				this, SLOT(remFromLabel()));
-
+		// TODO ViewerContainer
 //		connect(bandView, SIGNAL(newSingleLabel(short)),
 //				vp, SLOT(highlight(short)));
 //	}
@@ -666,14 +681,16 @@ void MainWindow::setGUIEnabled(bool enable, TaskType tt)
 	addButton->setEnabled(enable);
 	remButton->setEnabled(enable);
 
-	viewIMG->enableBinSlider(enable);
-	viewIMG->setEnabled(enable || tt == TT_BIN_COUNT || tt == TT_TOGGLE_VIEWER);
-	viewGRAD->enableBinSlider(enable);
-	viewGRAD->setEnabled(enable || tt == TT_BIN_COUNT || tt == TT_TOGGLE_VIEWER);
-	viewIMGPCA->enableBinSlider(enable);
-	viewIMGPCA->setEnabled(enable || tt == TT_BIN_COUNT || tt == TT_TOGGLE_VIEWER);
-	viewGRADPCA->enableBinSlider(enable);
-	viewGRADPCA->setEnabled(enable || tt == TT_BIN_COUNT || tt == TT_TOGGLE_VIEWER);
+	viewerContainer->setGUIEnabled(enable, tt);
+	// -> now in ViewerContainer
+//	viewIMG->enableBinSlider(enable);
+//	viewIMG->setEnabled(enable || tt == TT_BIN_COUNT || tt == TT_TOGGLE_VIEWER);
+//	viewGRAD->enableBinSlider(enable);
+//	viewGRAD->setEnabled(enable || tt == TT_BIN_COUNT || tt == TT_TOGGLE_VIEWER);
+//	viewIMGPCA->enableBinSlider(enable);
+//	viewIMGPCA->setEnabled(enable || tt == TT_BIN_COUNT || tt == TT_TOGGLE_VIEWER);
+//	viewGRADPCA->enableBinSlider(enable);
+//	viewGRADPCA->setEnabled(enable || tt == TT_BIN_COUNT || tt == TT_TOGGLE_VIEWER);
 
 	applyButton->setEnabled(enable);
 	clearButton->setEnabled(enable);
