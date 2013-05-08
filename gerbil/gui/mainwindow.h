@@ -14,7 +14,6 @@
 #include <shared_data.h>
 #include <background_task.h>
 #include <background_task_queue.h>
-#include "multi_img_viewer.h"  //FIXME REMOVE
 #include <multi_img.h>
 #include <multi_img_tasks.h>
 #include <labeling.h>
@@ -46,8 +45,6 @@ public:
 				 QString labelfile = QString(), bool limitedMode = false,
 				 QWidget *parent = 0);
 
-	// -> viewerContainer
-//	const QPixmap* getBand(representation type, int dim);
 	const inline Illuminant & getIlluminant(int temp);
 	const inline std::vector<multi_img::Value> & getIlluminantC(int temp);
 
@@ -61,16 +58,7 @@ public:
 
 public slots:
 	void setGUIEnabled(bool enable, TaskType tt = TT_NONE);
-//	void imgCalculationComplete(bool success);
-//	void gradCalculationComplete(bool success);
-//	void imgPcaCalculationComplete(bool success);
-//	void gradPcaCalculationComplete(bool success);
-//	void disconnectViewer(int viewer);
-	//void toggleViewer(bool enable, representation viewer);
-//	void finishViewerRefresh(int viewer);
 	void finishROIChange(bool success);
-//	void finishNormRangeImgChange(bool success);
-//	void finishNormRangeGradChange(bool success);
 	void finishGraphSeg(bool success);
 	void finishTask(bool success);
 
@@ -78,8 +66,6 @@ public slots:
 	void selectBand(representation type, int dim);
 	void addToLabel()   { viewerContainer->labelmask(false); }
 	void remFromLabel() { viewerContainer->labelmask(true); }
-	//void setActive(int id); // id mapping see initUI()
-	//void newOverlay();
 
 	void startGraphseg();
 
@@ -119,10 +105,7 @@ public slots:
 	void screenshot();
 
 	void updateRGB(bool success);
-//	void refreshLabelsInViewers();
 public slots: // introduced by ViewerContainer
-	// FIXME was void updateBand() -> still breaks compile -> all updateBand() calls
-	// need to move from MainWindow to ViewerContainer
 	void updateBand(representation repr, int selection);
 	void imageResetNeeded(representation repr);
 
@@ -132,14 +115,9 @@ signals:
 	void clearLabel();
 	void alterLabel(const multi_img::Mask &mask, bool negative);
 	void newLabelColors(const QVector<QColor> &colors, bool changed);
-	//void drawOverlay(const multi_img::Mask &mask);
 	void seedingDone(bool yeah = false);
-signals:
-	/* BEGIN signals for viewercontainer integration */
-
-	// TODO this needs to be emitted in all the right places.
+	// signal new ROI to viewerContainer (TODO needs to go into MODEL)
 	void roiChanged(cv::Rect roi);
-	/* END signals for viewercontainer integration */
 
 protected:
 	void changeEvent(QEvent *e);
@@ -174,10 +152,6 @@ protected:
 	QPixmap full_rgb, rgb;
 	qimage_ptr full_rgb_temp; // QPixmap cannot be directly shared between threads
 
-	// viewers
-	//std::vector<multi_img_viewer*> viewers;
-	//multi_img_viewer *activeViewer;
-
 	MultiImg::NormMode normIMG, normGRAD;
 	data_range_ptr normIMGRange, normGRADRange;
 
@@ -192,7 +166,6 @@ private:
 	void initUnsupervisedSegUI();
 #endif
 	void initNormalizationUI();
-	//void updateBand();
 	void buildIlluminant(int temp);
 
 	// cache for illumination coefficients
