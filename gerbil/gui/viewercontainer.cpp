@@ -206,31 +206,31 @@ void ViewerContainer::setActiveViewer(int repr)
 
 void ViewerContainer::imgCalculationComplete(bool success)
 {
-	if (success)
+	if (success && !vm.value(IMG)->isPayloadHidden())
 		finishViewerRefresh(IMG);
 }
 
 void ViewerContainer::gradCalculationComplete(bool success)
 {
-	if (success)
+	if (success && !vm.value(GRAD)->isPayloadHidden())
 		finishViewerRefresh(GRAD);
 }
 
 void ViewerContainer::imgPcaCalculationComplete(bool success)
 {
-	if (success)
+	if (success && !vm.value(IMGPCA)->isPayloadHidden())
 		finishViewerRefresh(IMGPCA);
 }
 
 void ViewerContainer::gradPcaCalculationComplete(bool success)
 {
-	if (success)
+	if (success && !vm.value(GRADPCA)->isPayloadHidden())
 		finishViewerRefresh(GRADPCA);
 }
 
 void ViewerContainer::finishViewerRefresh(representation repr)
 {
-	//GGDBGM(format("representation %1%\n") % repr);
+	GGDBGM(format("representation %1%\n") % repr);
 	multi_img_viewer *viewer = vm.value(repr);
 	viewer->setEnabled(true);
 	connect(this, SIGNAL(viewersOverlay(int,int)),
