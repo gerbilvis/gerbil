@@ -39,6 +39,9 @@ signals:
 	void viewersOverlay(int, int);
 	void viewersSubPixels(const std::map<std::pair<int, int>, short> &);
 	void viewersAddPixels(const std::map<std::pair<int, int>, short> &);
+	void viewersToggleLabeled(bool);
+	void viewersToggleUnlabeled(bool);
+
 	void setViewportActive(int);
 
 signals:

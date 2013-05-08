@@ -488,6 +488,7 @@ void MainWindow::initUI()
 			viewerContainer, SIGNAL(viewersAddPixels(const std::map<std::pair<int, int>, short> &)));
 	connect(bandView, SIGNAL(newSingleLabel(short)),
 			viewerContainer, SIGNAL(viewersHighlight(short)));
+
 	connect(markButton, SIGNAL(toggled(bool)),
 			viewerContainer, SIGNAL(viewersToggleLabeled(bool)));
 	connect(nonmarkButton, SIGNAL(toggled(bool)),
