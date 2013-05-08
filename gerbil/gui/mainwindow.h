@@ -60,13 +60,13 @@ public:
 
 public slots:
 	void setGUIEnabled(bool enable, TaskType tt = TT_NONE);
-	void imgCalculationComplete(bool success);
-	void gradCalculationComplete(bool success);
-	void imgPcaCalculationComplete(bool success);
-	void gradPcaCalculationComplete(bool success);
-	void disconnectViewer(int viewer);
+//	void imgCalculationComplete(bool success);
+//	void gradCalculationComplete(bool success);
+//	void imgPcaCalculationComplete(bool success);
+//	void gradPcaCalculationComplete(bool success);
+//	void disconnectViewer(int viewer);
 	void toggleViewer(bool enable, representation viewer);
-	void finishViewerRefresh(int viewer);
+//	void finishViewerRefresh(int viewer);
 	void finishROIChange(bool success);
 	void finishNormRangeImgChange(bool success);
 	void finishNormRangeGradChange(bool success);

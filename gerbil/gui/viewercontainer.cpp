@@ -6,6 +6,11 @@
 
 #include <QSignalMapper>
 
+// TODO
+//
+// * check activeViewer is handled correctly
+
+
 ViewerContainer::ViewerContainer(QWidget *parent)
     : QWidget(parent)
     //ui(new Ui::ViewerContainer)
@@ -78,9 +83,38 @@ void ViewerContainer::gradPcaCalculationComplete(bool success)
 		finishViewerRefresh(GRADPCA);
 }
 
-void ViewerContainer::finishViewerRefresh(int viewer)
+void ViewerContainer::finishViewerRefresh(representation repr)
 {
-	// TODO impl
+	multi_img_viewer *viewer = vm.value(repr);
+	viewer->setEnabled(true);
+	connect(this, SIGNAL(viewersOverlay(int,int)),
+		viewer, SLOT(overlay(int, int)));
+	connect(this, SIGNAL(viewportsKillHover()),
+		viewer->getViewport(), SLOT(killHover()));
+	connect(this, SIGNAL(viewersSubPixels(std::map<std::pair<int,int>,short>)),
+		viewer, SLOT(subPixels(const std::map<std::pair<int, int>, short> &)));
+	connect(this, SIGNAL(viewersAddPixels(std::map<std::pair<int,int>,short>)),
+		viewer, SLOT(addPixels(const std::map<std::pair<int, int>, short> &)));
+	if (repr == GRAD) {
+		emit normTargetChanged(true);
+	}
+	if (activeViewer->getType() == repr) {
+		emit bandUpdateNeeded(activeViewer->getType(),
+							  activeViewer->getSelection());
+	}
+}
+
+void ViewerContainer::disconnectViewer(representation repr)
+{
+	multi_img_viewer *viewer = vm.value(repr);
+	disconnect(this, SIGNAL(viewersOverlay(int,int)),
+		viewer, SLOT(overlay(int, int)));
+	disconnect(this, SIGNAL(viewportsKillHover()),
+		viewer->getViewport(), SLOT(killHover()));
+	disconnect(this, SIGNAL(viewersSubPixels(std::map<std::pair<int,int>,short>)),
+		viewer, SLOT(subPixels(const std::map<std::pair<int, int>, short> &)));
+	disconnect(this, SIGNAL(viewersAddPixels(std::map<std::pair<int,int>,short>)),
+		viewer, SLOT(addPixels(const std::map<std::pair<int, int>, short> &)));
 }
 
 void ViewerContainer::finishTask(bool success)
@@ -89,10 +123,14 @@ void ViewerContainer::finishTask(bool success)
 		emit requestGUIEnabled(true, TT_NONE);
 }
 
+void ViewerContainer::applyROI(bool reuse)
+{
+	// TODO impl
+}
+
 void ViewerContainer::toggleViewerEnable(representation repr)
 {
-	// FIXME handle state in viewer
-	// disconnectViewer(viewer);
+	disconnectViewer(repr);
 
 	switch(repr) {
 	case IMG:

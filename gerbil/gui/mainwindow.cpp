@@ -505,6 +505,11 @@ void MainWindow::initUI()
 	connect(nonmarkButton, SIGNAL(toggled(bool)),
 			viewerContainer, SIGNAL(viewersToggleUnlabeled(bool)));
 
+	connect(viewerContainer, SIGNAL(normTargetChanged(bool)),
+			this, SLOT(normTargetChanged(bool)));
+	connect(viewerContainer, SIGNAL(bandUpdateNeeded(representation,int)),
+			this, SLOT(updateBand(representation,int)));
+
 //	// for self-activation of viewports
 //	QSignalMapper *vpmap = new QSignalMapper(this);
 //	for (size_t i = 0; i < viewers.size(); ++i)
@@ -1040,7 +1045,7 @@ void MainWindow::initIlluminantUI()
 			this, SLOT(setI1Visible(bool)));
 	i1Check->setVisible(false);
 }
-subImage
+
 void MainWindow::initNormalizationUI()
 {
 	normModeBox->addItem("Observed");

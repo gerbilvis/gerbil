@@ -42,8 +42,15 @@ public slots:
 	void gradCalculationComplete(bool success);
 	void imgPcaCalculationComplete(bool success);
 	void gradPcaCalculationComplete(bool success);
-	void finishViewerRefresh(int viewer);
+
+	// TODO rename (reconnectViewer ?)
+	void finishViewerRefresh(representation repr);
+	void disconnectViewer(representation repr);
+
 	void finishTask(bool success);
+
+	void applyROI(bool reuse);
+
 signals:
 	// pass through signals
 	void viewportsKillHover();
@@ -54,7 +61,6 @@ signals:
 	void viewersToggleUnlabeled(bool);
 
 	void setViewportActive(int);
-
 signals:
 	// TODO these need to be either wired to mainwindow or removed/broken up
 	// to be processed in ViewerContainer.
@@ -66,6 +72,8 @@ signals:
 	void viewPortNewOverlay(int);
 	void viewPortAddSelection();
 	void viewPortRemSelection();
+
+	void normTargetChanged(bool useCurrent);
 
 signals:
 	// new signals to break-up coupling between MainWindow and ViewerContainer
