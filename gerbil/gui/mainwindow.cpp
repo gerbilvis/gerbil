@@ -71,7 +71,7 @@ MainWindow::MainWindow(BackgroundTaskQueue &queue, multi_img_base *image,
 
 	// MODEL To be removed when refactored
 	// into model classes.
-	viewerContainer->image = &image;
+	viewerContainer->image = &(this->image);
 	viewerContainer->gradient = &gradient;
 	viewerContainer->imagepca = &imagepca;
 	viewerContainer->gradientpca = &gradientpca;
@@ -336,60 +336,60 @@ void MainWindow::applyROI(bool reuse)
 	queue.push(roiFinish);
 }
 
-void MainWindow::imgCalculationComplete(bool success)
-{
-	if (success) 
-		finishViewerRefresh(IMG);
-}
+//void MainWindow::imgCalculationComplete(bool success)
+//{
+//	if (success)
+//		finishViewerRefresh(IMG);
+//}
 
-void MainWindow::gradCalculationComplete(bool success)
-{
-	if (success) 
-		finishViewerRefresh(GRAD);
-}
+//void MainWindow::gradCalculationComplete(bool success)
+//{
+//	if (success)
+//		finishViewerRefresh(GRAD);
+//}
 
-void MainWindow::imgPcaCalculationComplete(bool success)
-{
-	if (success) 
-		finishViewerRefresh(IMGPCA);
-}
+//void MainWindow::imgPcaCalculationComplete(bool success)
+//{
+//	if (success)
+//		finishViewerRefresh(IMGPCA);
+//}
 
-void MainWindow::gradPcaCalculationComplete(bool success)
-{
-	if (success)
-		finishViewerRefresh(GRADPCA);
-}
+//void MainWindow::gradPcaCalculationComplete(bool success)
+//{
+//	if (success)
+//		finishViewerRefresh(GRADPCA);
+//}
 
-void MainWindow::disconnectViewer(int viewer)
-{
-	disconnect(bandView, SIGNAL(pixelOverlay(int, int)),
-		viewers[viewer], SLOT(overlay(int, int)));
-	disconnect(bandView, SIGNAL(killHover()),
-		viewers[viewer]->getViewport(), SLOT(killHover()));
-	disconnect(bandView, SIGNAL(subPixels(const std::map<std::pair<int, int>, short> &)),
-		viewers[viewer], SLOT(subPixels(const std::map<std::pair<int, int>, short> &)));
-	disconnect(bandView, SIGNAL(addPixels(const std::map<std::pair<int, int>, short> &)),
-		viewers[viewer], SLOT(addPixels(const std::map<std::pair<int, int>, short> &)));
-}
+//void MainWindow::disconnectViewer(int viewer)
+//{
+//	disconnect(bandView, SIGNAL(pixelOverlay(int, int)),
+//		viewers[viewer], SLOT(overlay(int, int)));
+//	disconnect(bandView, SIGNAL(killHover()),
+//		viewers[viewer]->getViewport(), SLOT(killHover()));
+//	disconnect(bandView, SIGNAL(subPixels(const std::map<std::pair<int, int>, short> &)),
+//		viewers[viewer], SLOT(subPixels(const std::map<std::pair<int, int>, short> &)));
+//	disconnect(bandView, SIGNAL(addPixels(const std::map<std::pair<int, int>, short> &)),
+//		viewers[viewer], SLOT(addPixels(const std::map<std::pair<int, int>, short> &)));
+//}
 
-void MainWindow::finishViewerRefresh(int viewer)
-{
-	viewers[viewer]->setEnabled(true);
-	connect(bandView, SIGNAL(pixelOverlay(int, int)),
-		viewers[viewer], SLOT(overlay(int, int)));
-	connect(bandView, SIGNAL(killHover()),
-		viewers[viewer]->getViewport(), SLOT(killHover()));
-	connect(bandView, SIGNAL(subPixels(const std::map<std::pair<int, int>, short> &)),
-		viewers[viewer], SLOT(subPixels(const std::map<std::pair<int, int>, short> &)));
-	connect(bandView, SIGNAL(addPixels(const std::map<std::pair<int, int>, short> &)),
-		viewers[viewer], SLOT(addPixels(const std::map<std::pair<int, int>, short> &)));
-	if (viewer == GRAD) {
-		normTargetChanged(true);
-	}
-	if (activeViewer->getType() == viewer) {
-		MainWindow::updateBand();
-	}
-}
+//void MainWindow::finishViewerRefresh(int viewer)
+//{
+//	viewers[viewer]->setEnabled(true);
+//	connect(bandView, SIGNAL(pixelOverlay(int, int)),
+//		viewers[viewer], SLOT(overlay(int, int)));
+//	connect(bandView, SIGNAL(killHover()),
+//		viewers[viewer]->getViewport(), SLOT(killHover()));
+//	connect(bandView, SIGNAL(subPixels(const std::map<std::pair<int, int>, short> &)),
+//		viewers[viewer], SLOT(subPixels(const std::map<std::pair<int, int>, short> &)));
+//	connect(bandView, SIGNAL(addPixels(const std::map<std::pair<int, int>, short> &)),
+//		viewers[viewer], SLOT(addPixels(const std::map<std::pair<int, int>, short> &)));
+//	if (viewer == GRAD) {
+//		normTargetChanged(true);
+//	}
+//	if (activeViewer->getType() == viewer) {
+//		MainWindow::updateBand();
+//	}
+//}
 
 void MainWindow::initUI()
 {
