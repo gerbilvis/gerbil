@@ -29,12 +29,52 @@ void ViewerContainer::setTaskQueue(BackgroundTaskQueue *taskQueue)
     this->taskQueue = taskQueue;
 }
 
+void ViewerContainer::setLabels(cv::Mat1s labels)
+{
+	ViewerList vl = vm.values();
+	foreach(multi_img_viewer *viewer, vl) {
+		viewer->labels = labels;
+	}
+}
+
 void ViewerContainer::addImage(representation repr, sets_ptr temp,
-                               const std::vector<cv::Rect> &regions,
-                               cv::Rect roi)
+							   const std::vector<cv::Rect> &regions,
+							   cv::Rect roi)
 {
 	multi_img_viewer *viewer = vm.value(repr);
-	viewer->addImage(temp, regions, roi);
+	if(!viewer->isPayloadHidden()) {
+		viewer->addImage(temp, regions, roi);
+	}
+}
+
+void ViewerContainer::subImage(representation repr, sets_ptr temp, const std::vector<cv::Rect> &regions, cv::Rect roi)
+{
+	multi_img_viewer *viewer = vm.value(repr);
+	if(!viewer->isPayloadHidden()) {
+		viewer->subImage(temp, regions, roi);
+	}
+}
+
+void ViewerContainer::setImage(representation repr, SharedMultiImgPtr image, cv::Rect roi)
+{
+	multi_img_viewer *viewer = vm.value(repr);
+	if(!viewer->isPayloadHidden()) {
+		viewer->setImage(image, roi);
+	}
+}
+
+void ViewerContainer::updateViewerBandSelections(int numbands)
+{
+	ViewerList vl = vm.values();
+	foreach(multi_img_viewer *viewer, vl) {
+		if (viewer->getSelection() >= numbands)
+			viewer->setSelection(0);
+	}
+}
+
+size_t ViewerContainer::size() const
+{
+	return vm.size();
 }
 
 void ViewerContainer::setGUIEnabled(bool enable, TaskType tt)
@@ -117,15 +157,18 @@ void ViewerContainer::disconnectViewer(representation repr)
 		viewer, SLOT(addPixels(const std::map<std::pair<int, int>, short> &)));
 }
 
+void ViewerContainer::disconnectAllViewers()
+{
+	ViewerList vl = vm.values();
+	foreach(multi_img_viewer *viewer, vl) {
+		disconnectViewer(viewer->getType());
+	}
+}
+
 void ViewerContainer::finishTask(bool success)
 {
 	if(success)
 		emit requestGUIEnabled(true, TT_NONE);
-}
-
-void ViewerContainer::applyROI(bool reuse)
-{
-	// TODO impl
 }
 
 void ViewerContainer::toggleViewerEnable(representation repr)

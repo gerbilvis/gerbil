@@ -124,11 +124,12 @@ void MainWindow::finishROIChange(bool success)
 
 void MainWindow::applyROI(bool reuse)
 {
-	for (size_t i = 0; i < viewers.size(); ++i)
-		disconnectViewer(i);
+	viewerContainer->disconnectAllViewers();
+
 	disconnect(&bandView->labelTimer, SIGNAL(timeout()), 
 		bandView, SLOT(commitLabelChanges()));
 
+	// reset ROI if not reuse
 	if (!reuse) {
 		SharedDataLock image_lock(image->mutex);
 		SharedDataLock gradient_lock(gradient->mutex);
@@ -147,6 +148,8 @@ void MainWindow::applyROI(bool reuse)
 		}
 	}
 
+	// get old and new ROI, compute if it is profitable to add/sub pixels,
+	// instead of
 	SharedDataLock image_lock(image->mutex);
 	cv::Rect oldRoi = (*image)->roi;
 	cv::Rect newRoi = roi;
@@ -182,14 +185,18 @@ void MainWindow::applyROI(bool reuse)
 	sets_ptr tmp_sets_gradient(new SharedData<std::vector<BinSet> >(NULL));
 	sets_ptr tmp_sets_gradientpca(new SharedData<std::vector<BinSet> >(NULL));
 	if (reuse && profitable) {
-		if (!viewIMG->isPayloadHidden())
-			viewIMG->subImage(tmp_sets_image, sub, roi);
-		if (!viewGRAD->isPayloadHidden())
-			viewGRAD->subImage(tmp_sets_gradient, sub, roi);
-		if (imagepca.get())
-			viewIMGPCA->subImage(tmp_sets_imagepca, sub, roi);
-		if (gradientpca.get())
-			viewGRADPCA->subImage(tmp_sets_gradientpca, sub, roi);
+//		if (!viewIMG->isPayloadHidden())
+//			viewIMG->subImage(tmp_sets_image, sub, roi);
+		viewerContainer->subImage(IMG, tmp_sets_image, sub, roi);
+//		if (!viewGRAD->isPayloadHidden())
+//			viewGRAD->subImage(tmp_sets_gradient, sub, roi);
+		viewerContainer->subImage(IMG, tmp_sets_gradient, sub, roi);
+//		if (imagepca.get())
+//			viewIMGPCA->subImage(tmp_sets_imagepca, sub, roi);
+		viewerContainer->subImage(IMG, tmp_sets_imagepca, sub, roi);
+//		if (gradientpca.get())
+//			viewGRADPCA->subImage(tmp_sets_gradientpca, sub, roi);
+		viewerContainer->subImage(IMG, tmp_sets_gradientpca, sub, roi);
 	}
 
 	updateRGB(true);
@@ -197,8 +204,9 @@ void MainWindow::applyROI(bool reuse)
 
 	labels = cv::Mat1s(full_labels, roi);
 	bandView->labels = labels;
-	for (size_t i = 0; i < viewers.size(); ++i)
-		viewers[i]->labels = labels;
+//	for (size_t i = 0; i < viewers.size(); ++i)
+//		viewers[i]->labels = labels;
+	viewerContainer->setLabels(labels);
 
 	size_t numbands;
 	{
@@ -208,10 +216,11 @@ void MainWindow::applyROI(bool reuse)
 			numbands = 3;
 		if (numbands > (*image_lim)->size())
 			numbands = (*image_lim)->size();
-		for (size_t i = 0; i < viewers.size(); ++i) {
-			if (viewers[i]->getSelection() >= numbands)
-				viewers[i]->setSelection(0);
-		}
+//		for (size_t i = 0; i < viewers.size(); ++i) {
+//			if (viewers[i]->getSelection() >= numbands)
+//				viewers[i]->setSelection(0);
+//		}
+		viewerContainer->updateViewerBandSelections(numbands);
 	}
 
 	SharedMultiImgPtr scoped_image(new SharedMultiImgBase(NULL));
@@ -220,7 +229,7 @@ void MainWindow::applyROI(bool reuse)
 	queue.push(taskScope);
 
 	// each vector's size is atmost #bands (e.g., gradient has one less)
-	bands.assign(viewers.size(), std::vector<QPixmap*>(numbands, NULL));
+	bands.assign(viewerContainer->size(), std::vector<QPixmap*>(numbands, NULL));
 
 	BackgroundTaskPtr taskRescale(new MultiImg::RescaleTbb(
 		scoped_image, image, numbands, roi));
@@ -243,12 +252,17 @@ void MainWindow::applyROI(bool reuse)
 		}
 	}
 
-	if (!viewIMG->isPayloadHidden()) {
-		if (reuse && profitable) {
-			viewIMG->addImage(tmp_sets_image, add, roi);	
-		} else {
-			viewIMG->setImage(image, roi);
-		}
+//	if (!viewIMG->isPayloadHidden()) {
+//		if (reuse && profitable) {
+//			viewIMG->addImage(tmp_sets_image, add, roi);
+//		} else {
+//			viewIMG->setImage(image, roi);
+//		}
+//	}
+	if (reuse && profitable) {
+		viewerContainer->addImage(IMG, tmp_sets_image, add, roi);
+	} else {
+		viewerContainer->setImage(IMG, image, roi);
 	}
 
 	BackgroundTaskPtr taskImgFinish(new BackgroundTask(roi));
@@ -283,12 +297,17 @@ void MainWindow::applyROI(bool reuse)
 		}
 	}
 
-	if (!viewGRAD->isPayloadHidden()) {
-		if (reuse && profitable) {
-			viewGRAD->addImage(tmp_sets_gradient, add, roi);
-		} else {
-			viewGRAD->setImage(gradient, roi);
-		}
+//	if (!viewGRAD->isPayloadHidden()) {
+//		if (reuse && profitable) {
+//			viewGRAD->addImage(tmp_sets_gradient, add, roi);
+//		} else {
+//			viewGRAD->setImage(gradient, roi);
+//		}
+//	}
+	if (reuse && profitable) {
+		viewerContainer->addImage(GRAD, tmp_sets_gradient, add, roi);
+	} else {
+		viewerContainer->setImage(GRAD, gradient, roi);
 	}
 
 	BackgroundTaskPtr taskGradFinish(new BackgroundTask(roi));
@@ -301,10 +320,15 @@ void MainWindow::applyROI(bool reuse)
 			image, imagepca, 0, roi));
 		queue.push(taskPca);
 
+//		if (reuse && profitable) {
+//			viewIMGPCA->addImage(tmp_sets_imagepca, add, roi);
+//		} else {
+//			viewIMGPCA->setImage(imagepca, roi);
+//		}
 		if (reuse && profitable) {
-			viewIMGPCA->addImage(tmp_sets_imagepca, add, roi);
+			viewerContainer->addImage(IMGPCA, tmp_sets_imagepca, add, roi);
 		} else {
-			viewIMGPCA->setImage(imagepca, roi);
+			viewerContainer->setImage(IMGPCA, imagepca, roi);
 		}
 
 		BackgroundTaskPtr taskImgPcaFinish(new BackgroundTask(roi));
@@ -318,10 +342,15 @@ void MainWindow::applyROI(bool reuse)
 			gradient, gradientpca, 0, roi));
 		queue.push(taskPca);
 
+//		if (reuse && profitable) {
+//			viewGRADPCA->addImage(tmp_sets_gradientpca, add, roi);
+//		} else {
+//			viewGRADPCA->setImage(gradientpca, roi);
+//		}
 		if (reuse && profitable) {
-			viewGRADPCA->addImage(tmp_sets_gradientpca, add, roi);
+			viewerContainer->addImage(GRADPCA, tmp_sets_gradientpca, add, roi);
 		} else {
-			viewGRADPCA->setImage(gradientpca, roi);
+			viewerContainer->setImage(GRADPCA, gradientpca, roi);
 		}
 
 		BackgroundTaskPtr taskGradPcaFinish(new BackgroundTask(roi));
@@ -558,7 +587,7 @@ void MainWindow::initUI()
 //		connect(vp, SIGNAL(bandSelected(representation, int)),
 //				this, SLOT(selectBand(representation, int)));
 	connect(viewerContainer, SIGNAL(viewPortBandSelected(representation,int)),
-			this, SLOT(selectBand(representation,int));
+			this, SLOT(selectBand(representation,int)));
 
 		// TODO ViewerContainer, WIP
 //		connect(v, SIGNAL(setGUIEnabled(bool, TaskType)),

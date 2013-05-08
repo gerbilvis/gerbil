@@ -26,13 +26,21 @@ public:
 
     //void clearBinSets(const std::vector<cv::Rect> &sub, const cv::Rect &roi);
 
-    void addImage(representation repr, sets_ptr temp, const std::vector<cv::Rect> &regions, cv::Rect roi);
+
+
+	void setLabels(cv::Mat1s labels);
+	void addImage(representation repr, sets_ptr temp, const std::vector<cv::Rect> &regions, cv::Rect roi);
+	void subImage(representation repr, sets_ptr temp, const std::vector<cv::Rect> &regions, cv::Rect roi);
+	void setImage(representation repr, SharedMultiImgPtr image, cv::Rect roi);
 
 	// MODEL
 	// For now these are copied from MainWindow. To be removed when refactored
 	// into model classes.
 	SharedMultiImgPtr *image, *gradient, *imagepca, *gradientpca;
 
+	void disconnectAllViewers();
+	void updateViewerBandSelections(int numbands);
+	size_t size() const;
 public slots:
 	void setGUIEnabled(bool enable, TaskType tt);
 	void toggleViewer(bool enable, representation repr);
@@ -49,7 +57,7 @@ public slots:
 
 	void finishTask(bool success);
 
-	void applyROI(bool reuse);
+
 
 signals:
 	// pass through signals
