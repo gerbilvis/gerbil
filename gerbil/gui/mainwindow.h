@@ -79,7 +79,7 @@ public slots:
 	void addToLabel()   { labelmask(false); }
 	void remFromLabel() { labelmask(true); }
 	void setActive(int id); // id mapping see initUI()
-	void newOverlay();
+	//void newOverlay();
 
 	void startGraphseg();
 
@@ -129,7 +129,7 @@ signals:
 	void clearLabel();
 	void alterLabel(const multi_img::Mask &mask, bool negative);
 	void newLabelColors(const QVector<QColor> &colors, bool changed);
-	void drawOverlay(const multi_img::Mask &mask);
+	//void drawOverlay(const multi_img::Mask &mask);
 	void seedingDone(bool yeah = false);
 signals:
 	/* BEGIN signals for viewercontainer integration */

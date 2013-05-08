@@ -501,7 +501,9 @@ void MainWindow::initUI()
 			bandView, SLOT(alterLabel(const multi_img::Mask&,bool)));
 	connect(this, SIGNAL(clearLabel()),
 			bandView, SLOT(clearLabelPixels()));
-	connect(this, SIGNAL(drawOverlay(const multi_img::Mask&)),
+//	connect(this, SIGNAL(drawOverlay(const multi_img::Mask&)),
+//			bandView, SLOT(drawOverlay(const multi_img::Mask&)));
+	connect(viewerContainer, SIGNAL(drawOverlay(const multi_img::Mask&)),
 			bandView, SLOT(drawOverlay(const multi_img::Mask&)));
 	connect(applyButton, SIGNAL(clicked()),
 			bandView, SLOT(updateLabels()));
@@ -1771,10 +1773,10 @@ void MainWindow::labelmask(bool negative)
 	}
 }
 
-void MainWindow::newOverlay()
-{
-	emit drawOverlay(activeViewer->getMask());
-}
+//void MainWindow::newOverlay()
+//{
+//	emit drawOverlay(activeViewer->getMask());
+//}
 
 void MainWindow::reshapeDock(bool floating)
 {

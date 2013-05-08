@@ -74,9 +74,8 @@ public slots:
 	void finishTask(bool success);
 	void finishNormRangeImgChange(bool success);
 	void finishNormRangeGradChange(bool success);
-
 signals:
-	// pass through signals
+	// pass through signals to viewers/viewports
 	void viewportsKillHover();
 	void viewersOverlay(int, int);
 	void viewersSubPixels(const std::map<std::pair<int, int>, short> &);
@@ -98,6 +97,7 @@ signals:
 	void viewPortRemSelection();
 
 	void normTargetChanged(bool useCurrent);
+	void drawOverlay(const multi_img::Mask &mask);
 
 signals:
 	// new signals to break-up coupling between MainWindow and ViewerContainer

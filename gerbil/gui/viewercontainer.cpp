@@ -513,3 +513,7 @@ multi_img_viewer *ViewerContainer::createViewer(representation repr)
     vLayout->addWidget(viewer);
 }
 
+void ViewerContainer::viewerNewOverlay()
+{
+	emit drawOverlay(activeViewer->getMask());
+}
