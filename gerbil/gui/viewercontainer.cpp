@@ -395,7 +395,7 @@ void ViewerContainer::toggleViewerEnable(representation repr)
 			*gradient, *gradientpca, 0, roi));
 		taskQueue->push(taskPca);
 
-		viewer->setImage(*imagepca, roi);
+		viewer->setImage(*gradientpca, roi);
 
 		BackgroundTaskPtr task(new BackgroundTask(roi));
 		QObject::connect(task.get(), SIGNAL(finished(bool)),

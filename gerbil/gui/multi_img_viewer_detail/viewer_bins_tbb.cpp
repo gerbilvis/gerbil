@@ -54,6 +54,7 @@ bool ViewerBinsTbb::run()
 	SharedDataSwapLock current_lock(current->mutex, boost::defer_lock_t());
 	if (reuse) {
 		SharedDataSwapLock temp_wlock(temp->mutex);
+		assert(multi);
 		result = temp->swap(NULL);
 		if (!result) {
 			result = new std::vector<BinSet>(**current);
@@ -64,12 +65,14 @@ bool ViewerBinsTbb::run()
 		}
 	} else if (inplace) {
 		current_lock.lock();
+		assert(multi);
 		result = &(**current);
 		for (int i = result->size(); i < colors.size(); ++i) {
 			result->push_back(BinSet(colors[i], (*multi)->size()));
 		}
 	} else {
 		result = new std::vector<BinSet>();
+		assert(multi);
 		for (int i = 0; i < colors.size(); ++i) {
 			result->push_back(BinSet(colors[i], (*multi)->size()));
 		}

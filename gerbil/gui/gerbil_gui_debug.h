@@ -59,6 +59,7 @@ public:
 
 #define GGDBG_PRINT_METHOD()
 #define GGDBG_CALL()
+#define GGDBG_ENTER_LEAVE()
 #define GGDBGM(expr)
 
 class GGDBGLeavePrint {

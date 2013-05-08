@@ -210,6 +210,8 @@ void multi_img_viewer::setImage(SharedMultiImgPtr img, cv::Rect roi)
 	args.reset.fetch_and_store(1);
 	args.wait.fetch_and_store(1);
 
+	assert(image);
+	assert(viewport->ctx);
 	BackgroundTaskPtr taskBins(new ViewerBinsTbb(
 		image, labels, labelColors, illuminant, args, viewport->ctx, viewport->sets,
 		sets_ptr(new SharedData<std::vector<BinSet> >(NULL)), std::vector<cv::Rect>(), 
