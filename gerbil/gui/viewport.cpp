@@ -20,6 +20,9 @@
 #include <QRect>
 #include <QPainter>
 
+#include <gerbil_gui_debug.h>
+#include <boost/format.hpp>
+
 using namespace std;
 
 // altmann 2013-03-07:
@@ -749,6 +752,11 @@ void Viewport::paintEvent(QPaintEvent *)
 	if (overlayMode) {
 		drawOverlay(painter);
 	}
+
+    // FIXME remove, debugging
+	std::cerr << boost::format("Viewport::paintEvent() %1%  (*sets)->empty()=%2% || (*ctx)->wait=%3% || disabled=%4%\n")
+				 % (*ctx)->type %(*sets)->empty() %(*ctx)->wait % (!isEnabled());
+
 
 	if ((*sets)->empty() || (*ctx)->wait || !isEnabled()) {
 		drawWaitMessage(painter);

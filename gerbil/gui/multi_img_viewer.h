@@ -14,6 +14,9 @@
 #include "viewport.h"
 #include "multi_img.h"
 
+#include "gerbil_gui_debug.h"
+
+
 #include <shared_data.h>
 #include <background_task.h>
 #include <background_task_queue.h>
@@ -33,8 +36,8 @@ class multi_img_viewer : public QWidget, private Ui::multi_img_viewer {
 public:
 	multi_img_viewer(QWidget *parent = 0);
 
-	SharedMultiImgPtr getImage() { return image; }
-	void resetImage() { image.reset(); }
+	SharedMultiImgPtr getImage() { DEBUG_FUN; return image; }
+	void resetImage() { DEBUG_FUN; image.reset(); }
 	Viewport* getViewport() { return viewport; }
 	void activateViewport() { viewport->activate(); }
 	const multi_img::Mask& getMask() { return maskholder; }
@@ -43,7 +46,7 @@ public:
 	representation getType() { return type; }
 	void setType(representation type);
 	void enableBinSlider(bool enable) { binSlider->setEnabled(enable); }
-	bool isPayloadHidden() { return payload->isHidden(); }
+	bool isPayloadHidden() { DEBUG_FUN; return payload->isHidden(); }
 
 	BackgroundTaskQueue *queue;
 	cv::Mat1s labels;
@@ -70,8 +73,8 @@ public slots:
 	void setAlpha(int);
 	void overlay(int x, int y);
 	void showLimiterMenu();
-	void setActive()	{ viewport->active = true; viewport->update(); }
-	void setInactive()	{ viewport->active = false; viewport->update(); }
+	void setActive()	{ DEBUG_FUN; viewport->active = true; viewport->update(); }
+	void setInactive()	{ DEBUG_FUN;  viewport->active = false; viewport->update(); }
 	void updateLabelColors(const QVector<QColor> &labelColors, bool changed);
 
 signals:

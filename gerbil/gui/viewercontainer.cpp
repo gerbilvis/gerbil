@@ -6,6 +6,10 @@
 
 #include <QSignalMapper>
 
+// for debug msgs
+#include <boost/format.hpp>
+#include <QDebug>
+
 // TODO
 //
 // * check activeViewer is handled correctly
@@ -78,6 +82,10 @@ void ViewerContainer::setImage(representation repr, SharedMultiImgPtr image, cv:
 {
 	multi_img_viewer *viewer = vm.value(repr);
 	assert(viewer);
+	std::cerr << boost::format("ViewerContainer::setImage(representation repr=%1%, SharedMultiImgPtr image=%2%)\n")
+				% repr % image;
+	std::cerr << boost::format("ViewerContainer::setImage(), image.get()=%1%\n")
+				% image.get();
 	if(!viewer->isPayloadHidden()) {
 		viewer->setImage(image, roi);
 	}
@@ -168,10 +176,14 @@ void ViewerContainer::setIlluminant(representation repr,
 
 void ViewerContainer::setGUIEnabled(bool enable, TaskType tt)
 {
+	DEBUG_FUN;
+	//qDebug() << boost::format("enable=%1%, tt=%1%\n") % enable % tt;
+	std::cerr << boost::format("ViewerContainer::setGUIEnabled(): enable=%1%, tt=%2%\n") % enable % tt;
 	ViewerList vl = vm.values();
     foreach(multi_img_viewer *viewer, vl) {
         viewer->enableBinSlider(enable);
         viewer->setEnabled(enable || tt == TT_BIN_COUNT || tt == TT_TOGGLE_VIEWER);
+		std::cerr << boost::format("ViewerContainer::setGUIEnabled(): enable viewer=%1%\n")%viewer;
     }
 }
 
@@ -187,12 +199,14 @@ void ViewerContainer::toggleViewer(bool enable, representation repr)
 
 void ViewerContainer::newROI(cv::Rect roi)
 {
+	DEBUG_FUN;
 	this->roi = roi;
 }
 
 void ViewerContainer::setActiveViewer(int repr)
 {
 	representation r = static_cast<representation>(repr);
+	std::cerr << boost::format("ViewerContainer::setActiveViewer(): repr=%1%\n") % r;
 	if (vm.value(r)->getImage().get()) {
 		activeViewer = vm.value(r);
 	} else {
@@ -202,30 +216,35 @@ void ViewerContainer::setActiveViewer(int repr)
 
 void ViewerContainer::imgCalculationComplete(bool success)
 {
+	DEBUG_FUN;
 	if (success)
 		finishViewerRefresh(IMG);
 }
 
 void ViewerContainer::gradCalculationComplete(bool success)
 {
+	DEBUG_FUN;
 	if (success)
 		finishViewerRefresh(GRAD);
 }
 
 void ViewerContainer::imgPcaCalculationComplete(bool success)
 {
+	DEBUG_FUN;
 	if (success)
 		finishViewerRefresh(IMGPCA);
 }
 
 void ViewerContainer::gradPcaCalculationComplete(bool success)
 {
+	DEBUG_FUN;
 	if (success)
 		finishViewerRefresh(GRADPCA);
 }
 
 void ViewerContainer::finishViewerRefresh(representation repr)
 {
+	DEBUG_FUN;
 	multi_img_viewer *viewer = vm.value(repr);
 	viewer->setEnabled(true);
 	connect(this, SIGNAL(viewersOverlay(int,int)),
@@ -247,6 +266,7 @@ void ViewerContainer::finishViewerRefresh(representation repr)
 
 void ViewerContainer::disconnectViewer(representation repr)
 {
+	DEBUG_FUN;
 	multi_img_viewer *viewer = vm.value(repr);
 	disconnect(this, SIGNAL(viewersOverlay(int,int)),
 		viewer, SLOT(overlay(int, int)));
@@ -260,6 +280,7 @@ void ViewerContainer::disconnectViewer(representation repr)
 
 void ViewerContainer::disconnectAllViewers()
 {
+	DEBUG_FUN;
 	ViewerList vl = vm.values();
 	foreach(multi_img_viewer *viewer, vl) {
 		disconnectViewer(viewer->getType());
@@ -268,6 +289,7 @@ void ViewerContainer::disconnectAllViewers()
 
 void ViewerContainer::finishTask(bool success)
 {
+	DEBUG_FUN;
 	if(success)
 		emit requestGUIEnabled(true, TT_NONE);
 }
@@ -288,6 +310,7 @@ void ViewerContainer::finishNormRangeImgChange(bool success)
 
 void ViewerContainer::finishNormRangeGradChange(bool success)
 {
+	DEBUG_FUN;
 	if (success) {
 		SharedDataLock hlock((*gradient)->mutex);
 		(*bands)[GRAD].assign((**gradient)->size(), NULL);
@@ -301,6 +324,7 @@ void ViewerContainer::finishNormRangeGradChange(bool success)
 
 void ViewerContainer::toggleViewerEnable(representation repr)
 {
+	DEBUG_FUN;
 	disconnectViewer(repr);
 
 	switch(repr) {
@@ -340,6 +364,7 @@ void ViewerContainer::toggleViewerEnable(representation repr)
 
 void ViewerContainer::toggleViewerDisable(representation repr)
 {
+	DEBUG_FUN;
 	multi_img_viewer *viewer = vm.value(repr);
 
 	emit requestGUIEnabled(false, TT_TOGGLE_VIEWER);
@@ -510,21 +535,30 @@ void ViewerContainer::initUi()
 		connect(viewer1, SIGNAL(toggleViewer(bool, representation)),
 				this, SLOT(toggleViewer(bool, representation)));
 
-		for (size_t j = 0; j < vl.size(); ++j) {
-			multi_img_viewer *viewer2 = vl[j];
-			const Viewport *viewport2 = viewer2->getViewport();
-			// connect folding signal to all viewports
-			connect(viewer1, SIGNAL(folding()),
-					viewport2, SLOT(folding()));
+// FIXME uncomment, debugging
+//		for (size_t j = 0; j < vl.size(); ++j) {
+//			multi_img_viewer *viewer2 = vl[j];
+//			const Viewport *viewport2 = viewer2->getViewport();
+//			// connect folding signal to all viewports
+//			connect(viewer1, SIGNAL(folding()),
+//					viewport2, SLOT(folding()));
 
-			// connect activation signal to all *other* viewers
-			if (i != j) {
-				connect(viewport1, SIGNAL(activated()),
-						viewer2, SLOT(setInactive()));
-			}
-		}
+//			// connect activation signal to all *other* viewers
+//			if (i != j) {
+//				connect(viewport1, SIGNAL(activated()),
+//						viewer2, SLOT(setInactive()));
+//			}
+//		}
 	}
+
+	// FIXME remove code to end of funtion, debugging
+	//setActiveViewer(GRAD);
+	//vm.value(IMG)->toggleFold();
+	//vm.value(GRAD)->toggleFold();
+	//vm.value(GRADPCA)->toggleFold();
+	//vm.value(IMG)->setEnabled(true);
 }
+
 
 multi_img_viewer *ViewerContainer::createViewer(representation repr)
 {
