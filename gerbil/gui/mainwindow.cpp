@@ -76,6 +76,7 @@ MainWindow::MainWindow(BackgroundTaskQueue &queue, multi_img_base *image,
 	viewerContainer->imagepca = &imagepca;
 	viewerContainer->gradientpca = &gradientpca;
 	viewerContainer->bands = &bands;
+	viewerContainer->labels = &labels;
 
 
 	// do all the bling-bling
@@ -459,8 +460,10 @@ void MainWindow::initUI()
 
 	connect(markerSelector, SIGNAL(currentIndexChanged(int)),
 			bandView, SLOT(changeLabel(int)));
+//	connect(clearButton, SIGNAL(clicked()),
+//			this, SLOT(labelflush()));
 	connect(clearButton, SIGNAL(clicked()),
-			this, SLOT(labelflush()));
+			viewerContainer, SLOT(labelflush()));
 
 	connect(bandView, SIGNAL(newLabel()),
 			this, SLOT(createLabel()));
@@ -497,9 +500,14 @@ void MainWindow::initUI()
 			this, SLOT(addToLabel()));
 	connect(remButton, SIGNAL(clicked()),
 			this, SLOT(remFromLabel()));
+	// alterLabel signal are sent by both MainWindow and viewerContainer
 	connect(this, SIGNAL(alterLabel(const multi_img::Mask&,bool)),
 			bandView, SLOT(alterLabel(const multi_img::Mask&,bool)));
+	connect(viewerContainer, SIGNAL(alterLabel(const multi_img::Mask&,bool)),
+			bandView, SLOT(alterLabel(const multi_img::Mask&,bool)));
 	connect(this, SIGNAL(clearLabel()),
+			bandView, SLOT(clearLabelPixels()));
+	connect(viewerContainer, SIGNAL(clearLabel()),
 			bandView, SLOT(clearLabelPixels()));
 //	connect(this, SIGNAL(drawOverlay(const multi_img::Mask&)),
 //			bandView, SLOT(drawOverlay(const multi_img::Mask&)));
@@ -1710,68 +1718,68 @@ void MainWindow::setActive(int id)
 	}
 }
 
-void MainWindow::labelflush()
-{
-	std::vector<sets_ptr> tmp_sets;
-	cv::Mat1b mask(labels.rows, labels.cols);
-	mask = (labels == bandView->getCurLabel());
-	bool profitable = ((2 * cv::countNonZero(mask)) < mask.total());
-	if (profitable && !bandView->isSeedModeEnabled()) {
-		setGUIEnabled(false);
-		for (size_t i = 0; i < viewers.size(); ++i) {
-			tmp_sets.push_back(sets_ptr(new SharedData<std::vector<BinSet> >(NULL)));
-			viewers[i]->subLabelMask(tmp_sets[i], mask);
-		}
-	}
+//void MainWindow::labelflush()
+//{
+//	std::vector<sets_ptr> tmp_sets;
+//	cv::Mat1b mask(labels.rows, labels.cols);
+//	mask = (labels == bandView->getCurLabel());
+//	bool profitable = ((2 * cv::countNonZero(mask)) < mask.total());
+//	if (profitable && !bandView->isSeedModeEnabled()) {
+//		setGUIEnabled(false);
+//		for (size_t i = 0; i < viewers.size(); ++i) {
+//			tmp_sets.push_back(sets_ptr(new SharedData<std::vector<BinSet> >(NULL)));
+//			viewers[i]->subLabelMask(tmp_sets[i], mask);
+//		}
+//	}
 
-	emit clearLabel();
+//	emit clearLabel();
 
-	if (!bandView->isSeedModeEnabled()) {
-		if (profitable) {
-			for (size_t i = 0; i < viewers.size(); ++i) {
-				viewers[i]->addLabelMask(tmp_sets[i], mask);
-			}
+//	if (!bandView->isSeedModeEnabled()) {
+//		if (profitable) {
+//			for (size_t i = 0; i < viewers.size(); ++i) {
+//				viewers[i]->addLabelMask(tmp_sets[i], mask);
+//			}
 
-			BackgroundTaskPtr taskEpilog(new BackgroundTask());
-			QObject::connect(taskEpilog.get(), SIGNAL(finished(bool)), 
-				this, SLOT(finishTask(bool)), Qt::QueuedConnection);
-			queue.push(taskEpilog);
-		} else {
-			//refreshLabelsInViewers();
-			viewerContainer->refreshLabelsInViewers();
-		}
-	}
-}
+//			BackgroundTaskPtr taskEpilog(new BackgroundTask());
+//			QObject::connect(taskEpilog.get(), SIGNAL(finished(bool)),
+//				this, SLOT(finishTask(bool)), Qt::QueuedConnection);
+//			queue.push(taskEpilog);
+//		} else {
+//			//refreshLabelsInViewers();
+//			viewerContainer->refreshLabelsInViewers();
+//		}
+//	}
+//}
 
-void MainWindow::labelmask(bool negative)
-{
-	std::vector<sets_ptr> tmp_sets;
-	cv::Mat1b mask = activeViewer->getMask();
-	bool profitable = ((2 * cv::countNonZero(mask)) < mask.total());
-	if (profitable) {
-		setGUIEnabled(false);
-		for (size_t i = 0; i < viewers.size(); ++i) {
-			tmp_sets.push_back(sets_ptr(new SharedData<std::vector<BinSet> >(NULL)));
-			viewers[i]->subLabelMask(tmp_sets[i], mask);
-		}
-	}
+//void MainWindow::labelmask(bool negative)
+//{
+//	std::vector<sets_ptr> tmp_sets;
+//	cv::Mat1b mask = activeViewer->getMask();
+//	bool profitable = ((2 * cv::countNonZero(mask)) < mask.total());
+//	if (profitable) {
+//		setGUIEnabled(false);
+//		for (size_t i = 0; i < viewers.size(); ++i) {
+//			tmp_sets.push_back(sets_ptr(new SharedData<std::vector<BinSet> >(NULL)));
+//			viewers[i]->subLabelMask(tmp_sets[i], mask);
+//		}
+//	}
 
-	emit alterLabel(activeViewer->getMask(), negative);
+//	emit alterLabel(activeViewer->getMask(), negative);
 
-	if (profitable) {
-		for (size_t i = 0; i < viewers.size(); ++i) {
-			viewers[i]->addLabelMask(tmp_sets[i], mask);
-		}
+//	if (profitable) {
+//		for (size_t i = 0; i < viewers.size(); ++i) {
+//			viewers[i]->addLabelMask(tmp_sets[i], mask);
+//		}
 
-		BackgroundTaskPtr taskEpilog(new BackgroundTask());
-		QObject::connect(taskEpilog.get(), SIGNAL(finished(bool)), 
-			this, SLOT(finishTask(bool)), Qt::QueuedConnection);
-		queue.push(taskEpilog);
-	} else {
-		//refreshLabelsInViewers();
-		viewerContainer->refreshLabelsInViewers();
-	}
-}
+//		BackgroundTaskPtr taskEpilog(new BackgroundTask());
+//		QObject::connect(taskEpilog.get(), SIGNAL(finished(bool)),
+//			this, SLOT(finishTask(bool)), Qt::QueuedConnection);
+//		queue.push(taskEpilog);
+//	} else {
+//		//refreshLabelsInViewers();
+//		viewerContainer->refreshLabelsInViewers();
+//	}
+//}
 
 //void MainWindow::newOverlay()
 //{

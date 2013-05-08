@@ -48,15 +48,22 @@ public:
 	// into model classes.
 	SharedMultiImgPtr *image, *gradient, *imagepca, *gradientpca;
 	std::vector<std::vector<QPixmap*> > *bands; 	// MODEL
+	cv::Mat1s *labels; // MODEL
 
 	void disconnectAllViewers();
 	void updateViewerBandSelections(int numbands);
 	size_t size() const;
+	// TODO name consistently with viewer prefix
 	const QPixmap* getBand(representation repr, int dim);
 	int getSelection(representation repr);
 	SharedMultiImgPtr getViewerImage(representation repr);
 	representation getActiveRepresentation() const;
 	void setIlluminant(representation repr, const std::vector<multi_img::Value> &illuminant, bool for_real);
+
+//	void subViewersLabelMask(sets_ptr temp, const cv::Mat1b &mask);
+	//	void addViewersLabelMask(sets_ptr temp, const cv::Mat1b &mask);
+	void labelmask(bool negative);
+
 public slots:
 	void setGUIEnabled(bool enable, TaskType tt);
 	void toggleViewer(bool enable, representation repr);
@@ -74,6 +81,8 @@ public slots:
 	void finishTask(bool success);
 	void finishNormRangeImgChange(bool success);
 	void finishNormRangeGradChange(bool success);
+
+	void labelflush(bool seedModeEnabled, short curLabel);
 signals:
 	// pass through signals to viewers/viewports
 	void viewportsKillHover();
@@ -98,6 +107,8 @@ signals:
 
 	void normTargetChanged(bool useCurrent);
 	void drawOverlay(const multi_img::Mask &mask);
+	void alterLabel(const multi_img::Mask &mask, bool negative);
+	void clearLabel();
 
 signals:
 	// new signals to break-up coupling between MainWindow and ViewerContainer

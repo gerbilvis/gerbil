@@ -517,3 +517,86 @@ void ViewerContainer::viewerNewOverlay()
 {
 	emit drawOverlay(activeViewer->getMask());
 }
+
+//void ViewerContainer::addViewersLabelMask(sets_ptr temp, const cv::Mat1b &mask)
+//{
+//	ViewerList vl = vm.values();
+//	foreach(multi_img_viewer *viewer, vl) {
+//		viewer->addLabelMask(temp, mask);
+//	}
+//}
+
+//void ViewerContainer::subViewersLabelMask(sets_ptr temp, const cv::Mat1b &mask)
+//{
+//	ViewerList vl = vm.values();
+//	foreach(multi_img_viewer *viewer, vl) {
+//		viewer->subLabelMask(temp, mask);
+//	}
+//}
+
+
+void ViewerContainer::labelflush(bool seedModeEnabled, short curLabel)
+{
+	std::vector<sets_ptr> tmp_sets;
+	ViewerList vl = vm.values();
+	cv::Mat1b mask(labels->rows, labels->cols);
+	mask = (*labels == curLabel);
+	bool profitable = ((2 * cv::countNonZero(mask)) < mask.total());
+	if (profitable && !seedModeEnabled) {
+		// setGUIEnabled(false);
+		emit requestGUIEnabled(false, TT_NONE);
+		for (size_t i = 0; i < vl.size(); ++i) {
+			tmp_sets.push_back(sets_ptr(new SharedData<std::vector<BinSet> >(NULL)));
+			vl[i]->subLabelMask(tmp_sets[i], mask);
+		}
+	}
+
+	emit clearLabel();
+
+	if (seedModeEnabled) {
+		if (profitable) {
+			for (size_t i = 0; i < vl.size(); ++i) {
+				vl[i]->addLabelMask(tmp_sets[i], mask);
+			}
+
+			BackgroundTaskPtr taskEpilog(new BackgroundTask());
+			QObject::connect(taskEpilog.get(), SIGNAL(finished(bool)),
+				this, SLOT(finishTask(bool)), Qt::QueuedConnection);
+			taskQueue->push(taskEpilog);
+		} else {
+			refreshLabelsInViewers();
+		}
+	}
+}
+
+void ViewerContainer::labelmask(bool negative)
+{
+	std::vector<sets_ptr> tmp_sets;
+	ViewerList vl = vm.values();
+	cv::Mat1b mask = activeViewer->getMask();
+	bool profitable = ((2 * cv::countNonZero(mask)) < mask.total());
+	if (profitable) {
+//		setGUIEnabled(false);
+		emit requestGUIEnabled(false, TT_NONE);
+		for (size_t i = 0; i < vl.size(); ++i) {
+			tmp_sets.push_back(sets_ptr(new SharedData<std::vector<BinSet> >(NULL)));
+			vl[i]->subLabelMask(tmp_sets[i], mask);
+		}
+	}
+
+	// TODO propagate
+	emit alterLabel(activeViewer->getMask(), negative);
+
+	if (profitable) {
+		for (size_t i = 0; i < vl.size(); ++i) {
+			vl[i]->addLabelMask(tmp_sets[i], mask);
+		}
+
+		BackgroundTaskPtr taskEpilog(new BackgroundTask());
+		QObject::connect(taskEpilog.get(), SIGNAL(finished(bool)),
+			this, SLOT(finishTask(bool)), Qt::QueuedConnection);
+		taskQueue->push(taskEpilog);
+	} else {
+		refreshLabelsInViewers();
+	}
+}

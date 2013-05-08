@@ -76,8 +76,8 @@ public slots:
 
 	void reshapeDock(bool floating);
 	void selectBand(representation type, int dim);
-	void addToLabel()   { labelmask(false); }
-	void remFromLabel() { labelmask(true); }
+	void addToLabel()   { viewerContainer->labelmask(false); }
+	void remFromLabel() { viewerContainer->labelmask(true); }
 	void setActive(int id); // id mapping see initUI()
 	//void newOverlay();
 
@@ -143,7 +143,7 @@ protected:
 
 	/* helper functions */
 	void applyROI(bool reuse);
-	void labelmask(bool negative);
+	//void labelmask(bool negative);
 	// returns true if updates were triggered, false if not (trigger yourself!)
 	bool setLabelColors(const std::vector<cv::Vec3b> &colors);
 	void setLabels(const vole::Labeling &labeling);
@@ -179,7 +179,7 @@ protected:
 	data_range_ptr normIMGRange, normGRADRange;
 
 protected slots:
-	void labelflush();
+//	void labelflush(bool seedModeEnabled);
 
 private:
 	void initUI();
