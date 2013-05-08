@@ -54,16 +54,12 @@ void ViewerContainer::refreshLabelsInViewers()
 	taskQueue->push(taskEpilog);
 }
 
-void ViewerContainer::viewersHighlight(short)
-{
-	// TODO impl
-}
-
 void ViewerContainer::addImage(representation repr, sets_ptr temp,
 							   const std::vector<cv::Rect> &regions,
 							   cv::Rect roi)
 {
 	multi_img_viewer *viewer = vm.value(repr);
+	assert(viewer);
 	if(!viewer->isPayloadHidden()) {
 		viewer->addImage(temp, regions, roi);
 	}
@@ -72,6 +68,7 @@ void ViewerContainer::addImage(representation repr, sets_ptr temp,
 void ViewerContainer::subImage(representation repr, sets_ptr temp, const std::vector<cv::Rect> &regions, cv::Rect roi)
 {
 	multi_img_viewer *viewer = vm.value(repr);
+	assert(viewer);
 	if(!viewer->isPayloadHidden()) {
 		viewer->subImage(temp, regions, roi);
 	}
@@ -157,7 +154,8 @@ SharedMultiImgPtr ViewerContainer::getViewerImage(representation repr)
 
 representation ViewerContainer::getActiveRepresentation() const
 {
-	// TODO impl
+	assert(activeViewer);
+	return vm.key(activeViewer);
 }
 
 void ViewerContainer::setIlluminant(representation repr,
@@ -449,8 +447,7 @@ void ViewerContainer::initUi()
 	activeViewer = vm.value(IMG);
 	vm.value(IMG)->setActive();
 	vm.value(IMGPCA)->toggleFold();
-	vm.value(GRAD)->toggleFold();
-
+	vm.value(GRADPCA)->toggleFold();
 
 	ViewerList vl = vm.values();
 	// for self-activation of viewports
@@ -469,16 +466,17 @@ void ViewerContainer::initUi()
 		Viewport *viewport1 = viewer1->getViewport();
 
 		// connect pass through signals from BandView
-		// TODO these were originally conditionally: if (!v->isPayloadHidden()) {},
-		//      need to push hidden state handling into multi_img_viewer.
-		connect(this, SIGNAL(viewportsKillHover()),
-				viewport1, SLOT(killHover()));
-		connect(this, SIGNAL(viewersOverlay(int,int)),
-				viewer1, SLOT(overlay(int,int)));
-		connect(this, SIGNAL(viewersSubPixels(std::map<std::pair<int,int>,short>)),
-				viewer1, SLOT(subPixels(std::map<std::pair<int,int>,short>)));
-		connect(this, SIGNAL(viewersAddPixels(std::map<std::pair<int,int>,short>)),
-				viewer1, SLOT(addPixels(std::map<std::pair<int,int>,short>)));
+		// TODO check if correctly wired from mainwindow
+		if(!viewer1->isPayloadHidden()) {
+			connect(this, SIGNAL(viewportsKillHover()),
+					viewport1, SLOT(killHover()));
+			connect(this, SIGNAL(viewersOverlay(int,int)),
+					viewer1, SLOT(overlay(int,int)));
+			connect(this, SIGNAL(viewersSubPixels(std::map<std::pair<int,int>,short>)),
+					viewer1, SLOT(subPixels(std::map<std::pair<int,int>,short>)));
+			connect(this, SIGNAL(viewersAddPixels(std::map<std::pair<int,int>,short>)),
+					viewer1, SLOT(addPixels(std::map<std::pair<int,int>,short>)));
+		}
 
 		// connect pass through signals from markButton
 		connect(this, SIGNAL(viewersToggleLabeled(bool)),
@@ -504,6 +502,9 @@ void ViewerContainer::initUi()
 				this, SIGNAL(viewportAddSelection()));
 		connect(viewport1, SIGNAL(remSelection()),
 				this, SIGNAL(viewportRemSelection()));
+
+		connect(this, SIGNAL(viewersHighlight(short)),
+				viewport1, SLOT(highlight(short)));
 
 		// non-pass-through
 		connect(viewer1, SIGNAL(toggleViewer(bool, representation)),

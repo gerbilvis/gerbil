@@ -91,6 +91,7 @@ MainWindow::MainWindow(BackgroundTaskQueue &queue, multi_img_base *image,
 
 	roi = cv::Rect(roiView->roi.x(), roiView->roi.y(), 
 		roiView->roi.width(), roiView->roi.height());
+	emit roiChanged(roi);
 
 	setGUIEnabled(false, TT_SELECT_ROI);
 
@@ -157,6 +158,7 @@ void MainWindow::applyROI(bool reuse)
 	cv::Rect oldRoi = (*image)->roi;
 	cv::Rect newRoi = roi;
 	image_lock.unlock();
+	emit roiChanged(roi);
 
 	cv::Rect isecGlob = oldRoi & newRoi;
 	cv::Rect isecOld(0, 0, 0, 0);
@@ -539,7 +541,7 @@ void MainWindow::initUI()
 	connect(bandView, SIGNAL(addPixels(const std::map<std::pair<int, int>, short> &)),
 			viewerContainer, SIGNAL(viewersAddPixels(const std::map<std::pair<int, int>, short> &)));
 	connect(bandView, SIGNAL(newSingleLabel(short)),
-			viewerContainer, SLOT(viewersHighlight(short)));
+			viewerContainer, SIGNAL(viewersHighlight(short)));
 
 	connect(markButton, SIGNAL(toggled(bool)),
 			viewerContainer, SIGNAL(viewersToggleLabeled(bool)));
@@ -579,7 +581,7 @@ void MainWindow::initUI()
 //					v, SLOT(addPixels(const std::map<std::pair<int, int>, short> &)));
 //		}
 
-//		connect(taskQueue->vp, SIGNAL(activated()),
+//		connect(vp, SIGNAL(activated()),
 //				vpmap, SLOT(map()));
 
 //		for (size_t j = 0; j < viewers.size(); ++j) {

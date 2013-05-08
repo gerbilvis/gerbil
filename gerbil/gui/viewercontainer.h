@@ -87,8 +87,6 @@ public slots:
 	void labelflush(bool seedModeEnabled, short curLabel);
 	void refreshLabelsInViewers();
 
-    // TODO
-	void viewersHighlight(short);
 signals:
 	// pass through signals to viewers/viewports
 	void viewportsKillHover();
@@ -97,6 +95,7 @@ signals:
 	void viewersAddPixels(const std::map<std::pair<int, int>, short> &);
 	void viewersToggleLabeled(bool);
 	void viewersToggleUnlabeled(bool);
+	void viewersHighlight(short);
 
 	void setViewportActive(int);
 signals:
