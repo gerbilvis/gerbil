@@ -1,5 +1,4 @@
 #include "viewercontainer.h"
-//#include "ui_viewerswidget.h"
 
 #include "viewport.h"
 #include "mainwindow.h"
@@ -17,15 +16,12 @@
 
 ViewerContainer::ViewerContainer(QWidget *parent)
     : QWidget(parent)
-    //ui(new Ui::ViewerContainer)
 {
-    //ui->setupUi(this);
-	//initUi();
 }
 
 ViewerContainer::~ViewerContainer()
 {
-    //delete ui;
+	// nothing
 }
 
 void ViewerContainer::setTaskQueue(BackgroundTaskQueue *taskQueue)
@@ -45,8 +41,6 @@ void ViewerContainer::refreshLabelsInViewers()
 {
 	//setGUIEnabled(false);
 	emit requestGUIEnabled(false, TT_NONE);
-//	for (size_t i = 0; i < viewers.size(); ++i)
-//		viewers[i]->updateLabels();
 	ViewerList vl = vm.values();
 	foreach(multi_img_viewer *viewer, vl) {
 		viewer->updateLabels();
@@ -422,28 +416,6 @@ void ViewerContainer::toggleViewerEnable(representation repr)
 	taskQueue->push(taskEpilog);
 }
 
-
-//void ViewerContainer::clearBinSets(const std::vector<cv::Rect>& sub, const cv::Rect& roi )
-//{
-//	ViewerList viewers;
-
-
-//	sets_ptr tmp_sets_imagepca(new SharedData<std::vector<BinSet> >(NULL));
-//	sets_ptr tmp_sets_gradient(new SharedData<std::vector<BinSet> >(NULL));
-//	sets_ptr tmp_sets_gradientpca(new SharedData<std::vector<BinSet> >(NULL));
-
-////    for(int repr=IMG; repr<REPSIZE; repr++) {
-////        viewers = vm.values(repr);
-////        foreach (multi_img_viewer *v, viewers) {
-////            sets_ptr tmp_sets(new SharedData<std::vector<BinSet> >(NULL));
-////            if(!v->isPayloadHidden())
-////                v->subImage(tmp_sets, sub, roi);
-////        }
-////    }
-
-
-//}
-
 void ViewerContainer::initUi()
 {
     vLayout = new QVBoxLayout(this);
@@ -477,7 +449,6 @@ void ViewerContainer::initUi()
 		Viewport *viewport1 = viewer1->getViewport();
 
 		// connect pass through signals from BandView
-		// TODO check if correctly wired from mainwindow
 		//GGDBGM(boost::format("viewer %1% isPayloadHidden()=%2%\n")
 		//					%i %viewer1->isPayloadHidden());
 		if(!viewer1->isPayloadHidden()) {
@@ -537,13 +508,6 @@ void ViewerContainer::initUi()
 			}
 		}
 	}
-
-	// FIXME remove code to end of funtion, debugging
-	//setActiveViewer(GRAD);
-	//vm.value(IMG)->toggleFold();
-	//vm.value(GRAD)->toggleFold();
-	//vm.value(GRADPCA)->toggleFold();
-	//vm.value(IMG)->setEnabled(true);
 }
 
 
@@ -562,23 +526,6 @@ void ViewerContainer::newOverlay()
 	emit drawOverlay(activeViewer->getMask());
 }
 
-//void ViewerContainer::addViewersLabelMask(sets_ptr temp, const cv::Mat1b &mask)
-//{
-//	ViewerList vl = vm.values();
-//	foreach(multi_img_viewer *viewer, vl) {
-//		viewer->addLabelMask(temp, mask);
-//	}
-//}
-
-//void ViewerContainer::subViewersLabelMask(sets_ptr temp, const cv::Mat1b &mask)
-//{
-//	ViewerList vl = vm.values();
-//	foreach(multi_img_viewer *viewer, vl) {
-//		viewer->subLabelMask(temp, mask);
-//	}
-//}
-
-
 void ViewerContainer::labelflush(bool seedModeEnabled, short curLabel)
 {
 	std::vector<sets_ptr> tmp_sets;
@@ -587,7 +534,6 @@ void ViewerContainer::labelflush(bool seedModeEnabled, short curLabel)
 	mask = (*labels == curLabel);
 	bool profitable = ((2 * cv::countNonZero(mask)) < mask.total());
 	if (profitable && !seedModeEnabled) {
-		// setGUIEnabled(false);
 		emit requestGUIEnabled(false, TT_NONE);
 		for (size_t i = 0; i < vl.size(); ++i) {
 			tmp_sets.push_back(sets_ptr(new SharedData<std::vector<BinSet> >(NULL)));
@@ -620,7 +566,6 @@ void ViewerContainer::labelmask(bool negative)
 	cv::Mat1b mask = activeViewer->getMask();
 	bool profitable = ((2 * cv::countNonZero(mask)) < mask.total());
 	if (profitable) {
-//		setGUIEnabled(false);
 		emit requestGUIEnabled(false, TT_NONE);
 		for (size_t i = 0; i < vl.size(); ++i) {
 			tmp_sets.push_back(sets_ptr(new SharedData<std::vector<BinSet> >(NULL)));
@@ -628,7 +573,6 @@ void ViewerContainer::labelmask(bool negative)
 		}
 	}
 
-	// TODO propagate
 	emit alterLabel(activeViewer->getMask(), negative);
 
 	if (profitable) {
