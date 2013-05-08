@@ -9,6 +9,7 @@ vole_add_optional_modules("seg_meanshift" "seg_medianshift" "seg_probshift")
 vole_compile_library(
 	multi_img_viewer
 	mainwindow
+	viewercontainer
 	viewport
 	scaledview
 	bandview
@@ -27,6 +28,7 @@ vole_compile_library(
 vole_moc_library(
 	multi_img_viewer.h
 	mainwindow.h
+	viewercontainer.h
 	viewport.h
 	scaledview.h
 	bandview.h
