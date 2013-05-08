@@ -97,6 +97,12 @@ void ViewerContainer::updateLabelColors(QVector<QColor> labelColors, bool change
 	}
 }
 
+void ViewerContainer::updateBinning(representation repr, int bins)
+{
+	multi_img_viewer *viewer = vm.value(repr);
+	viewer->updateBinning(bins);
+}
+
 void ViewerContainer::updateViewerBandSelections(int numbands)
 {
 	ViewerList vl = vm.values();

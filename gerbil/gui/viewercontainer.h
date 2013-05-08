@@ -38,6 +38,8 @@ public:
 	void toggleLabels(bool toggle);
 	void updateLabelColors(QVector<QColor> labelColors, bool changed);
 
+	void updateBinning(representation repr, int bins);
+
 	// MODEL
 	// For now these are copied from MainWindow. To be removed when refactored
 	// into model classes.

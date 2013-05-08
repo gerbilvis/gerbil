@@ -1206,14 +1206,16 @@ void MainWindow::applyNormUserRange()
 
 	// re-initialize gui (duplication from applyROI())
 	if (target == 0) {
-		viewIMG->updateBinning(-1);
+//		viewIMG->updateBinning(-1);
+		viewerContainer->updateBinning(IMG,-1);
 
 		BackgroundTaskPtr taskFinishNorm(new BackgroundTask());
 		QObject::connect(taskFinishNorm.get(), SIGNAL(finished(bool)), 
 			this, SLOT(finishNormRangeImgChange(bool)), Qt::QueuedConnection);
 		queue.push(taskFinishNorm);
 	} else {
-		viewGRAD->updateBinning(-1);
+//		viewGRAD->updateBinning(-1);
+		viewerContainer->updateBinning(GRAD,-1);
 
 		BackgroundTaskPtr taskFinishNorm(new BackgroundTask());
 		QObject::connect(taskFinishNorm.get(), SIGNAL(finished(bool)), 
@@ -1325,7 +1327,8 @@ void MainWindow::clampNormUserRange()
 			queue.push(taskClamp);
 		}
 
-		viewGRAD->updateBinning(-1);
+//		viewGRAD->updateBinning(-1);
+		viewerContainer->updateBinning(GRAD,-1);
 
 		BackgroundTaskPtr taskFinishClamp(new BackgroundTask());
 		QObject::connect(taskFinishClamp.get(), SIGNAL(finished(bool)), 
