@@ -69,6 +69,9 @@ public slots:
 	void toggleViewer(bool enable, representation repr);
 	void newROI(cv::Rect roi);
 
+	//unused (?)
+//	void setActiveViewer(representation repr);
+
 	void imgCalculationComplete(bool success);
 	void gradCalculationComplete(bool success);
 	void imgPcaCalculationComplete(bool success);

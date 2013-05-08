@@ -66,7 +66,7 @@ public slots:
 //	void imgPcaCalculationComplete(bool success);
 //	void gradPcaCalculationComplete(bool success);
 //	void disconnectViewer(int viewer);
-	void toggleViewer(bool enable, representation viewer);
+	//void toggleViewer(bool enable, representation viewer);
 //	void finishViewerRefresh(int viewer);
 	void finishROIChange(bool success);
 //	void finishNormRangeImgChange(bool success);
@@ -78,7 +78,7 @@ public slots:
 	void selectBand(representation type, int dim);
 	void addToLabel()   { viewerContainer->labelmask(false); }
 	void remFromLabel() { viewerContainer->labelmask(true); }
-	void setActive(int id); // id mapping see initUI()
+	//void setActive(int id); // id mapping see initUI()
 	//void newOverlay();
 
 	void startGraphseg();

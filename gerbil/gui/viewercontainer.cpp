@@ -185,6 +185,15 @@ void ViewerContainer::newROI(cv::Rect roi)
 	this->roi = roi;
 }
 
+//void ViewerContainer::setActiveViewer(representation repr)
+//{
+//	if (vm.value(repr)->getImage().get()) {
+//		activeViewer = vm.value(repr);
+//	} else {
+//		activeViewer = vm.value(IMG);
+//	}
+//}
+
 void ViewerContainer::imgCalculationComplete(bool success)
 {
 	if (success)
@@ -422,14 +431,18 @@ void ViewerContainer::initUi()
 {
     vLayout = new QVBoxLayout(this);
 
-    // CAVEAT: Only one viewer per representation type is supported now.
-	// While there is basic support for multpile viewers per representation,
-	// in many places one viewer per representation is still assumed.
-    //
+	// CAVEAT: Only one viewer per representation type is supported.
     createViewer(IMG);
     createViewer(GRAD);
     createViewer(IMGPCA);
     createViewer(GRADPCA);
+
+	// start with IMG, hide IMGPCA, GRADPCA at the beginning
+	activeViewer = vm.value(IMG);
+	vm.value(IMG)->setActive();
+	vm.value(IMGPCA)->toggleFold();
+	vm.value(GRAD)->toggleFold();
+
 
 	ViewerList vl = vm.values();
 	// for self-activation of viewports

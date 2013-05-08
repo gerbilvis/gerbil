@@ -435,11 +435,11 @@ void MainWindow::initUI()
 	/* more manual work to get GUI in proper shape */
 	graphsegWidget->hide();
 
-	// start with IMG, hide IMGPCA, GRADPCA at the beginning
-	activeViewer = viewIMG;
-	viewIMG->setActive();
-	viewIMGPCA->toggleFold();
-	viewGRADPCA->toggleFold();
+//	// start with IMG, hide IMGPCA, GRADPCA at the beginning
+//	activeViewer = viewIMG;
+//	viewIMG->setActive();
+//	viewIMGPCA->toggleFold();
+//	viewGRADPCA->toggleFold();
 
 	// dock arrangement
 	tabifyDockWidget(rgbDock, roiDock);
@@ -1709,14 +1709,14 @@ void MainWindow::usBandwidthMethodChanged(const QString &current) {}
 void MainWindow::unsupervisedSegCancelled() {}
 #endif // WITH_SEG_MEANSHIFT
 
-void MainWindow::setActive(int id)
-{
-	if (viewers[id]->getImage().get()) {
-		activeViewer = viewers[id];
-	} else {
-		activeViewer = viewers[IMG];
-	}
-}
+//void MainWindow::setActive(int id)
+//{
+//	if (viewers[id]->getImage().get()) {
+//		activeViewer = viewers[id];
+//	} else {
+//		activeViewer = viewers[IMG];
+//	}
+//}
 
 //void MainWindow::labelflush()
 //{
