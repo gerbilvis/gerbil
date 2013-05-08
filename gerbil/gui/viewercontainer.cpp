@@ -82,8 +82,8 @@ void ViewerContainer::setImage(representation repr, SharedMultiImgPtr image, cv:
 {
 	multi_img_viewer *viewer = vm.value(repr);
 	assert(viewer);
-	GGDBGM(format("repr=%1%, image.get()=%2%)\n")
-		   % repr % image.get());
+	//GGDBGM(format("repr=%1%, image.get()=%2%)\n")
+	//	   % repr % image.get());
 	if(!viewer->isPayloadHidden()) {
 		viewer->setImage(image, roi);
 	}
@@ -174,21 +174,20 @@ void ViewerContainer::setIlluminant(representation repr,
 
 void ViewerContainer::setGUIEnabled(bool enable, TaskType tt)
 {
-	GGDBG_CALL();
-	GGDBGM(format("enable=%1%, tt=%2%\n") % enable % tt);
+	//GGDBGM(format("enable=%1%, tt=%2%\n") % enable % tt);
 	ViewerList vl = vm.values();
 	foreach(multi_img_viewer *viewer, vl) {
         viewer->enableBinSlider(enable);
         viewer->setEnabled(enable || tt == TT_BIN_COUNT || tt == TT_TOGGLE_VIEWER);
-		GGDBGM(format("enable=%1% viewer=%2% %3%\n")
-					 %enable %viewer %viewer->getType());
+		//GGDBGM(format("enable=%1% viewer=%2% %3%\n")
+		//			 %enable %viewer %viewer->getType());
     }
 
 }
 
 void ViewerContainer::toggleViewer(bool enable, representation repr)
 {
-	GGDBGM("toggle " << enable << endl);
+	//GGDBGM(format("toggle=%1% representation=%2%\n") %enable % repr);
 	if(enable)
 		toggleViewerEnable(repr);
 	else
@@ -197,15 +196,13 @@ void ViewerContainer::toggleViewer(bool enable, representation repr)
 
 void ViewerContainer::newROI(cv::Rect roi)
 {
-	GGDBG_CALL();
 	this->roi = roi;
 }
 
 void ViewerContainer::setActiveViewer(int repr)
 {
-	GGDBG_CALL();
 	representation r = static_cast<representation>(repr);
-	GGDBGM(format("repr=%1%\n") % r);
+	//GGDBGM(format("repr=%1%\n") % r);
 	if (vm.value(r)->getImage().get()) {
 		activeViewer = vm.value(r);
 	} else {
@@ -215,35 +212,31 @@ void ViewerContainer::setActiveViewer(int repr)
 
 void ViewerContainer::imgCalculationComplete(bool success)
 {
-	GGDBG_CALL();
 	if (success)
 		finishViewerRefresh(IMG);
 }
 
 void ViewerContainer::gradCalculationComplete(bool success)
 {
-	GGDBG_CALL();
 	if (success)
 		finishViewerRefresh(GRAD);
 }
 
 void ViewerContainer::imgPcaCalculationComplete(bool success)
 {
-	GGDBG_CALL();
 	if (success)
 		finishViewerRefresh(IMGPCA);
 }
 
 void ViewerContainer::gradPcaCalculationComplete(bool success)
 {
-	GGDBG_CALL();
 	if (success)
 		finishViewerRefresh(GRADPCA);
 }
 
 void ViewerContainer::finishViewerRefresh(representation repr)
 {
-	GGDBG_CALL();
+	//GGDBGM(format("representation %1%\n") % repr);
 	multi_img_viewer *viewer = vm.value(repr);
 	viewer->setEnabled(true);
 	connect(this, SIGNAL(viewersOverlay(int,int)),
@@ -265,7 +258,6 @@ void ViewerContainer::finishViewerRefresh(representation repr)
 
 void ViewerContainer::disconnectViewer(representation repr)
 {
-	GGDBG_CALL();
 	multi_img_viewer *viewer = vm.value(repr);
 	disconnect(this, SIGNAL(viewersOverlay(int,int)),
 		viewer, SLOT(overlay(int, int)));
@@ -279,7 +271,6 @@ void ViewerContainer::disconnectViewer(representation repr)
 
 void ViewerContainer::disconnectAllViewers()
 {
-	GGDBG_CALL();
 	ViewerList vl = vm.values();
 	foreach(multi_img_viewer *viewer, vl) {
 		disconnectViewer(viewer->getType());
@@ -288,7 +279,6 @@ void ViewerContainer::disconnectAllViewers()
 
 void ViewerContainer::finishTask(bool success)
 {
-	GGDBG_CALL();
 	if(success)
 		emit requestGUIEnabled(true, TT_NONE);
 }
@@ -309,7 +299,6 @@ void ViewerContainer::finishNormRangeImgChange(bool success)
 
 void ViewerContainer::finishNormRangeGradChange(bool success)
 {
-	GGDBG_CALL();
 	if (success) {
 		SharedDataLock hlock((*gradient)->mutex);
 		(*bands)[GRAD].assign((**gradient)->size(), NULL);
@@ -321,9 +310,8 @@ void ViewerContainer::finishNormRangeGradChange(bool success)
 	}
 }
 
-void ViewerContainer::toggleViewerEnable(representation repr)
+void ViewerContainer::toggleViewerDisable(representation repr)
 {
-	GGDBG_CALL();
 	disconnectViewer(repr);
 
 	switch(repr) {
@@ -361,9 +349,8 @@ void ViewerContainer::toggleViewerEnable(representation repr)
 	}
 }
 
-void ViewerContainer::toggleViewerDisable(representation repr)
+void ViewerContainer::toggleViewerEnable(representation repr)
 {
-	GGDBG_CALL();
 	multi_img_viewer *viewer = vm.value(repr);
 
 	emit requestGUIEnabled(false, TT_TOGGLE_VIEWER);
@@ -377,7 +364,7 @@ void ViewerContainer::toggleViewerDisable(representation repr)
 			this, SLOT(imgCalculationComplete(bool)), Qt::QueuedConnection);
 		taskQueue->push(task);
 	}
-		break;
+	break;
 	case GRAD:
 	{
 		viewer->setImage(*gradient, roi);
@@ -463,7 +450,7 @@ void ViewerContainer::initUi()
 
 	// CAVEAT: Only one viewer per representation type is supported.
     createViewer(IMG);
-    createViewer(GRAD);
+	createViewer(GRAD);
     createViewer(IMGPCA);
     createViewer(GRADPCA);
 
@@ -491,6 +478,8 @@ void ViewerContainer::initUi()
 
 		// connect pass through signals from BandView
 		// TODO check if correctly wired from mainwindow
+		//GGDBGM(boost::format("viewer %1% isPayloadHidden()=%2%\n")
+		//					%i %viewer1->isPayloadHidden());
 		if(!viewer1->isPayloadHidden()) {
 			connect(this, SIGNAL(viewportsKillHover()),
 					viewport1, SLOT(killHover()));

@@ -36,8 +36,8 @@ class multi_img_viewer : public QWidget, private Ui::multi_img_viewer {
 public:
 	multi_img_viewer(QWidget *parent = 0);
 
-	SharedMultiImgPtr getImage() { GGDBG_CALL(); return image; }
-	void resetImage() { GGDBG_CALL(); image.reset(); }
+	SharedMultiImgPtr getImage() { return image; }
+	void resetImage() { image.reset(); }
 	Viewport* getViewport() { return viewport; }
 	void activateViewport() { viewport->activate(); }
 	const multi_img::Mask& getMask() { return maskholder; }
@@ -46,7 +46,7 @@ public:
 	representation getType() { return type; }
 	void setType(representation type);
 	void enableBinSlider(bool enable) { binSlider->setEnabled(enable); }
-	bool isPayloadHidden() { GGDBG_CALL(); return payload->isHidden(); }
+	bool isPayloadHidden() { return payload->isHidden(); }
 
 	BackgroundTaskQueue *queue;
 	cv::Mat1s labels;
@@ -73,8 +73,8 @@ public slots:
 	void setAlpha(int);
 	void overlay(int x, int y);
 	void showLimiterMenu();
-	void setActive()	{ GGDBG_CALL(); viewport->active = true; viewport->update(); }
-	void setInactive()	{ GGDBG_CALL();  viewport->active = false; viewport->update(); }
+	void setActive()	{ viewport->active = true; viewport->update(); }
+	void setInactive()	{  viewport->active = false; viewport->update(); }
 	void updateLabelColors(const QVector<QColor> &labelColors, bool changed);
 
 signals:

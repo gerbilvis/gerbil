@@ -11,7 +11,7 @@ void ggdb_print_method(const char *clsname, const char *funname);
 std::string ggdb_method_string(const char *clsname, const char *funname);
 
 // FIXME this should be configurable by CMAKE
-#define GGDBG
+//#define GGDBG
 
 // Gerbil Gui DeBuG
 #ifdef GGDBG
@@ -22,6 +22,9 @@ std::string ggdb_method_string(const char *clsname, const char *funname);
 
 // print class name and function to cerr
 #define GGDBG_CALL()  GGDBG_PRINT_METHOD(); std::cerr << std::endl;
+
+// also print viewer representation type
+#define GGDBG_CALL_VT()  GGDBG_PRINT_METHOD(); std::cerr << " repr=" << getType() << std::endl;
 
 // Gerbil Gui DeBuG class Method
 // Append class name and method followed by expr to cerr.
@@ -34,6 +37,14 @@ std::string ggdb_method_string(const char *clsname, const char *funname);
 		std::cerr.flush(); \
 	}
 
+#define GGDBGM_VT(expr) \
+	{ \
+		using namespace std; \
+		using namespace boost; \
+		GGDBG_PRINT_METHOD(); \
+		std::cerr  << " repr=" << getType() << " " << expr; \
+		std::cerr.flush(); \
+	}
 class GGDBGEnterLeavePrint {
 	std::string method_string;
 public:

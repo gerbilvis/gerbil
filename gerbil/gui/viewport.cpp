@@ -221,9 +221,15 @@ void Viewport::prepareLines()
 			" johannes.jordan@cs.fau.de. Thank you for your help!");
 		return;
 	}
+	//GGDBGM(boost::format("shuffleIdx.size()=%1%, (*ctx)->dimensionality=%2%\n")
+	//	   %shuffleIdx.size() %(*ctx)->dimensionality)
 	vb.allocate(shuffleIdx.size() * (*ctx)->dimensionality * sizeof(GLfloat) * 2);
+	//GGDBGM("before vb.map()\n");
 	GLfloat *varr = (GLfloat*)vb.map(QGLBuffer::WriteOnly);
+	//GGDBGM("after vb.map()\n");
+
 	if (!varr) {
+		//GGDBGM(boost::format("repr=%1%varr == 0\n") % (*ctx)->type)
 		QMessageBox::critical(this, "Drawing Error",
 			"Drawing spectra cannot be continued. Please notify us about this"
 			" problem, state error code 2 and what you did before it occured. Send an email to"
@@ -416,6 +422,7 @@ void Viewport::drawBins(QPainter &painter, QTimer &renderTimer,
 
 void Viewport::drawAxesFg(QPainter &painter)
 {
+
 	SharedDataLock ctxlock(ctx->mutex);
 
 	if (drawingState == SCREENSHOT)
@@ -662,13 +669,17 @@ void Viewport::updateTextures(RenderMode spectrum, RenderMode highlight)
 	QPainter spectrumPainter(fboSpectrum);
 	QPainter highlightPainter(fboHighlight);
 
-	if (spectrum) {
+	//GGDBGM("before spectrum\n");
+	//GGDBGM(boost::format("spectrum=%1%, fboSpectrum=%2%\n")
+	//	   % (int)spectrum % fboSpectrum );
+	if (spectrum != RM_SKIP) {
 		spectrumPainter.setCompositionMode(QPainter::CompositionMode_Source);
 		spectrumPainter.fillRect(rect(), Qt::transparent);
 		spectrumPainter.setCompositionMode(QPainter::CompositionMode_SourceOver);
 	}
+	//GGDBGM("after spectrum\n");
 
-	if (highlight) {
+	if (highlight != RM_SKIP) {
 		highlightPainter.setCompositionMode(QPainter::CompositionMode_Source);
 		highlightPainter.fillRect(rect(), Qt::transparent);
 		highlightPainter.setCompositionMode(QPainter::CompositionMode_SourceOver);
@@ -753,8 +764,8 @@ void Viewport::paintEvent(QPaintEvent *)
 		drawOverlay(painter);
 	}
 
-	GGDBGM(boost::format("%1%  (*sets)->empty()=%2% || (*ctx)->wait=%3% || disabled=%4%   this=%5%\n")
-				 % (*ctx)->type %(*sets)->empty() %(*ctx)->wait %(!isEnabled()) %this);
+	//GGDBGM(boost::format("%1%  (*sets)->empty()=%2% || (*ctx)->wait=%3% || disabled=%4%   this=%5%\n")
+	//			 % (*ctx)->type %(*sets)->empty() %(*ctx)->wait %(!isEnabled()) %this);
 
 	if ((*sets)->empty() || (*ctx)->wait || !isEnabled()) {
 		drawWaitMessage(painter);

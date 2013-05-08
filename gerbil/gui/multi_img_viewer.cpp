@@ -64,18 +64,20 @@ void multi_img_viewer::setType(representation type)
 
 void multi_img_viewer::toggleFold()
 {
-	GGDBG_CALL();
 	if (!payload->isHidden()) {
 		emit folding();
 		payload->setHidden(true);
 		topBar->fold();
 		setSizePolicy(QSizePolicy::Preferred, QSizePolicy::Preferred);
 		setTitle(type, 0.0, 0.0);
+		//GGDBGM(boost::format("emitting toggleViewer(false, %1%)\n") % getType());
 		emit toggleViewer(false, getType());
+		//GGDBGM(boost::format("past signal toggleViewer(false, %1%)\n") % getType());
 		viewport->sets.reset(new SharedData<std::vector<BinSet> >(new std::vector<BinSet>()));
 		viewport->shuffleIdx.clear();
 		viewport->vb.destroy();
 	} else {
+		//GGDBGM("unfolding");
 		emit folding();
 		payload->setShown(true);
 		topBar->unfold();
@@ -178,14 +180,13 @@ void multi_img_viewer::addImage(sets_ptr temp, const std::vector<cv::Rect> &regi
 
 void multi_img_viewer::setImage(SharedMultiImgPtr img, cv::Rect roi)
 {
-	GGDBG_CALL();
 	SharedDataLock ctxlock(viewport->ctx->mutex);
 	ViewportCtx args = **viewport->ctx;
 	ctxlock.unlock();
 
 	image = img;
 
-	GGDBGM(format("image.get()=%1%\n") %image.get());
+	//GGDBGM(format("image.get()=%1%\n") %image.get());
 
 	args.type = type;
 	args.ignoreLabels = ignoreLabels;
@@ -417,8 +418,10 @@ void multi_img_viewer::updateMask(int dim)
 
 void multi_img_viewer::overlay(int x, int y)
 {
+	//GGDBGM(format("multi_img_viewer::overlay(int x, int y): image.get()=%1% type=%2%\n")
+	//	   % image.get() %(int)getType());
 	assert(image);
-	GGDBGM(format("multi_img_viewer::overlay(int x, int y): image.get()=%1%\n")	% image.get());
+
 	SharedDataLock imagelock(image->mutex);
 	SharedDataLock ctxlock(viewport->ctx->mutex);
 	const multi_img::Pixel &pixel = (**image)(y, x);

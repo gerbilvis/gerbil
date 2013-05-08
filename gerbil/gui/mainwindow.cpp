@@ -113,7 +113,6 @@ MainWindow::MainWindow(BackgroundTaskQueue &queue, multi_img_base *image,
 
 void MainWindow::finishTask(bool success)
 {
-	GGDBG_CALL();
 	if (success) {
 		setGUIEnabled(true);
 	}
@@ -958,7 +957,7 @@ void MainWindow::createLabel()
 
 void MainWindow::updateBand(representation repr, int selection)
 {
-	GGDBG_CALL();
+	//GGDBGM(format(" representation=%1%\n")%repr);
 	selectBand(repr, selection);
 	bandView->update();
 }
@@ -986,8 +985,8 @@ void MainWindow::imageResetNeeded(representation repr)
 
 void MainWindow::debugRequestGUIEnabled(bool enable, TaskType tt)
 {
-	GGDBG_CALL();
-	GGDBGM(format("enable=%1%, tt=%2%\n") %enable %tt)
+	//GGDBG_CALL();
+	//GGDBGM(format("enable=%1%, tt=%2%\n") %enable %tt)
 
 }
 
