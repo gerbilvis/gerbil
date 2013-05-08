@@ -32,11 +32,14 @@ public:
     void addImage(representation repr, sets_ptr temp, const std::vector<cv::Rect> &regions, cv::Rect roi);
 
 public slots:
-	void viewportsKillHover(); // TODO impl
-	void viewersOverlay(int, int); // TODO impl
-	void viewersSubPixels(const std::map<std::pair<int, int>, short> &); // TODO impl
-	void viewersAddPixels(const std::map<std::pair<int, int>, short> &); // TODO impl
-	void setViewportActive(int); // TODO impl
+
+signals:
+	// pass through signals
+	void viewportsKillHover();
+	void viewersOverlay(int, int);
+	void viewersSubPixels(const std::map<std::pair<int, int>, short> &);
+	void viewersAddPixels(const std::map<std::pair<int, int>, short> &);
+	void setViewportActive(int);
 
 signals:
 	// TODO these need to be either wired to mainwindow or removed/broken up

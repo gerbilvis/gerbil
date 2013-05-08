@@ -479,19 +479,19 @@ void MainWindow::initUI()
 
 
 	connect(bandView, SIGNAL(killHover()),
-			viewerContainer, SLOT(viewportsKillHover()));
+			viewerContainer, SIGNAL(viewportsKillHover()));
 	connect(bandView, SIGNAL(pixelOverlay(int, int)),
-			viewerContainer, SLOT(viewersOverlay(int, int)));
+			viewerContainer, SIGNAL(viewersOverlay(int, int)));
 	connect(bandView, SIGNAL(subPixels(const std::map<std::pair<int, int>, short> &)),
-			viewerContainer, SLOT(viewersSubPixels(const std::map<std::pair<int, int>, short> &)));
+			viewerContainer, SIGNAL(viewersSubPixels(const std::map<std::pair<int, int>, short> &)));
 	connect(bandView, SIGNAL(addPixels(const std::map<std::pair<int, int>, short> &)),
-			viewerContainer, SLOT(viewersAddPixels(const std::map<std::pair<int, int>, short> &)));
+			viewerContainer, SIGNAL(viewersAddPixels(const std::map<std::pair<int, int>, short> &)));
 	connect(bandView, SIGNAL(newSingleLabel(short)),
-			viewerContainer, SLOT(viewersHighlight(short)));
+			viewerContainer, SIGNAL(viewersHighlight(short)));
 	connect(markButton, SIGNAL(toggled(bool)),
-			viewerContainer, SLOT(viewersToggleLabeled(bool)));
+			viewerContainer, SIGNAL(viewersToggleLabeled(bool)));
 	connect(nonmarkButton, SIGNAL(toggled(bool)),
-			viewerContainer, SLOT(viewersToggleUnlabeled(bool)));
+			viewerContainer, SIGNAL(viewersToggleUnlabeled(bool)));
 
 //	// for self-activation of viewports
 //	QSignalMapper *vpmap = new QSignalMapper(this);

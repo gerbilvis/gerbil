@@ -76,6 +76,19 @@ void ViewerContainer::initUi()
 		multi_img_viewer *viewer1 = vl[i];
 		Viewport *viewport1 = viewer1->getViewport();
 
+		// connect pass through signals
+		// TODO these were originally conditionally: if (!v->isPayloadHidden()) {},
+		//      need to push hidden state handling into multi_img_viewer.
+		connect(this, SIGNAL(viewportsKillHover()),
+				viewport1, SLOT(killHover()));
+		connect(this, SIGNAL(viewersOverlay(int,int)),
+				viewer1, SLOT(overlay(int,int)));
+		connect(this, SIGNAL(viewersSubPixels(std::map<std::pair<int,int>,short>)),
+				viewer1, SLOT(subPixels(std::map<std::pair<int,int>,short>)));
+		connect(this, SIGNAL(viewersAddPixels(std::map<std::pair<int,int>,short>)),
+				viewer1, SLOT(addPixels(std::map<std::pair<int,int>,short>)));
+
+
 		connect(viewport1, SIGNAL(bandSelected(representation, int)),
 				this, SIGNAL(viewportBandSelected(representation,int)));
 
