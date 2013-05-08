@@ -9,8 +9,10 @@
 #include <stdlib.h>
 #include <string.h>
 
-void ggdb_print_method(const char *clsname, const char *funname)
+std::string ggdb_method_string(const char *clsname, const char *funname)
 {
+	using namespace std;
+	string method_string;
 	int status = -1;
 #ifdef __GNUC__
 	char *dmname = abi::__cxa_demangle(clsname, NULL, NULL, &status);
@@ -19,12 +21,36 @@ void ggdb_print_method(const char *clsname, const char *funname)
 		int len = strlen(dmname);
 		dmname[len-1 >= 0 ? len-1 : 0 ] = '\0';
 		if(0 == status) {
-			std::cerr << dmname << "::" << funname << "()";
+			method_string = string(dmname) + "::" + funname + "()";
 		}
 		free(dmname);
 	}
 #endif /* __GNUC__ */
 	if(0 != status){ /* fall back to mangled name */
-		std::cerr << clsname << "::" << funname;
+		method_string = string(clsname) + "::" + funname + "()";
 	}
+	return method_string;
 }
+
+void ggdb_print_method(const char *clsname, const char *funname)
+{
+	std::cerr << ggdb_method_string(clsname, funname);
+}
+
+// Gerbil Gui DeBuG
+#ifdef GGDBG
+
+GGDBGEnterLeavePrint::GGDBGEnterLeavePrint(std::string method_string)
+	:method_string(method_string)
+{
+	std::cerr << method_string << " enter" << std::endl;
+	std::cerr.flush();
+}
+
+GGDBGEnterLeavePrint::~GGDBGEnterLeavePrint()
+{
+	std::cerr << method_string << " leave" << std::endl;
+	std::cerr.flush();
+}
+
+#endif /* GGDBG */
