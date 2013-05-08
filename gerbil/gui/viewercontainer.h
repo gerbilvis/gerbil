@@ -15,7 +15,7 @@ class ViewerContainer : public QWidget
     Q_OBJECT
 protected:
     typedef QList<multi_img_viewer*> ViewerList;
-    typedef QMultiMap<representation, multi_img_viewer*> ViewerMultiMap;
+	typedef QMap<representation, multi_img_viewer*> ViewerMap;
     
 public:
     explicit ViewerContainer(QWidget *parent = 0);
@@ -26,9 +26,6 @@ public:
 
     //void clearBinSets(const std::vector<cv::Rect> &sub, const cv::Rect &roi);
 
-	// FIXME not sure if it is a good idea to share the temp bin sets between
-	// multiple viewers of the same representation. For now it doesn't matter,
-	// since we have only one viewer for each representation.
     void addImage(representation repr, sets_ptr temp, const std::vector<cv::Rect> &regions, cv::Rect roi);
 
 	// MODEL
@@ -80,8 +77,7 @@ signals:
 	void requestGUIEnabled(bool enable, TaskType tt);
 
 protected:
-	ViewerList vl;
-	ViewerMultiMap vm;
+	ViewerMap vm;
 	BackgroundTaskQueue *taskQueue;
 	multi_img_viewer *activeViewer;
 	cv::Rect roi;

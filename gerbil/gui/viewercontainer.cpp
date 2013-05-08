@@ -28,15 +28,13 @@ void ViewerContainer::addImage(representation repr, sets_ptr temp,
                                const std::vector<cv::Rect> &regions,
                                cv::Rect roi)
 {
-    ViewerList viewers;
-    viewers = vm.values(repr);
-    foreach (multi_img_viewer *v, viewers) {
-        v->addImage(temp, regions, roi);
-    }
+	multi_img_viewer *viewer = vm.value(repr);
+	viewer->addImage(temp, regions, roi);
 }
 
 void ViewerContainer::setGUIEnabled(bool enable, TaskType tt)
 {
+	ViewerList vl = vm.values();
     foreach(multi_img_viewer *viewer, vl) {
         viewer->enableBinSlider(enable);
         viewer->setEnabled(enable || tt == TT_BIN_COUNT || tt == TT_TOGGLE_VIEWER);
@@ -103,9 +101,7 @@ void ViewerContainer::toggleViewerEnable(representation repr)
 		break;
 	case IMGPCA:
 	{
-		ViewerList pcaviewers = vm.values(IMGPCA);
-		assert(pcaviewers.size() == 1);
-		multi_img_viewer *viewer = pcaviewers.front();
+		multi_img_viewer *viewer = vm.value(IMGPCA);
 		viewer->resetImage();
 		emit imageResetNeeded(IMGPCA);
 		if(activeViewer == viewer) {
@@ -117,9 +113,7 @@ void ViewerContainer::toggleViewerEnable(representation repr)
 		break;
 	case GRADPCA:
 	{
-		ViewerList gradviewers = vm.values(GRADPCA);
-		assert(gradviewers.size() == 1);
-		multi_img_viewer *viewer = gradviewers.front();
+		multi_img_viewer *viewer = vm.value(GRADPCA);
 		viewer->resetImage();
 		emit imageResetNeeded(GRADPCA);
 		if(activeViewer == viewer) {
@@ -137,9 +131,7 @@ void ViewerContainer::toggleViewerEnable(representation repr)
 
 void ViewerContainer::toggleViewerDisable(representation repr)
 {
-	ViewerList viewers = vm.values(repr);
-	assert(viewers.size() == 1);
-	multi_img_viewer *viewer = viewers.front();
+	multi_img_viewer *viewer = vm.value(repr);
 
 	emit requestGUIEnabled(false, TT_TOGGLE_VIEWER);
 
@@ -245,6 +237,7 @@ void ViewerContainer::initUi()
     createViewer(IMGPCA);
     createViewer(GRADPCA);
 
+	ViewerList vl = vm.values();
 	// for self-activation of viewports
 	QSignalMapper *vpsmap = new QSignalMapper(this);
 	for (size_t i = 0; i < vl.size(); ++i) {
@@ -322,7 +315,6 @@ multi_img_viewer *ViewerContainer::createViewer(representation repr)
     multi_img_viewer *viewer = new multi_img_viewer(this);
     viewer->setType(repr);
     viewer->queue = taskQueue;
-    vl.append(viewer);
     vm.insert(repr, viewer);
     vLayout->addWidget(viewer);
 }
