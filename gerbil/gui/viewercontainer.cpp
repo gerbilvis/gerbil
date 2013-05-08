@@ -117,6 +117,33 @@ size_t ViewerContainer::size() const
 	return vm.size();
 }
 
+const QPixmap *ViewerContainer::getBand(representation repr, int dim)
+{
+	std::vector<QPixmap*> &v = (*bands)[repr];
+
+	if (!v[dim]) {
+		multi_img_viewer *viewer = vm.value(repr);
+		SharedMultiImgPtr multi = viewer->getImage();
+		qimage_ptr qimg(new SharedData<QImage>(new QImage()));
+
+		SharedDataLock hlock(multi->mutex);
+
+		BackgroundTaskPtr taskConvert(new MultiImg::Band2QImageTbb(multi, qimg, dim));
+		taskConvert->run();
+
+		hlock.unlock();
+
+		v[dim] = new QPixmap(QPixmap::fromImage(**qimg));
+	}
+	return v[dim];
+}
+
+SharedMultiImgPtr ViewerContainer::getViewerImage(representation repr)
+{
+	multi_img_viewer *viewer = vm.value(repr);
+	return viewer->getImage();
+}
+
 void ViewerContainer::setGUIEnabled(bool enable, TaskType tt)
 {
 	ViewerList vl = vm.values();

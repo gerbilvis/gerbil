@@ -75,6 +75,7 @@ MainWindow::MainWindow(BackgroundTaskQueue &queue, multi_img_base *image,
 	viewerContainer->gradient = &gradient;
 	viewerContainer->imagepca = &imagepca;
 	viewerContainer->gradientpca = &gradientpca;
+	viewerContainer->bands = &bands;
 
 
 	// do all the bling-bling
@@ -908,25 +909,26 @@ void MainWindow::createLabel()
 	markerSelector->setCurrentIndex(index - 1);
 }
 
-const QPixmap* MainWindow::getBand(representation type, int dim)
-{
-	std::vector<QPixmap*> &v = bands[type];
+// -> ViewerContainer
+//const QPixmap* MainWindow::getBand(representation type, int dim)
+//{
+//	std::vector<QPixmap*> &v = bands[type];
 
-	if (!v[dim]) {
-		SharedMultiImgPtr multi = viewers[type]->getImage();
-		qimage_ptr qimg(new SharedData<QImage>(new QImage()));
+//	if (!v[dim]) {
+//		SharedMultiImgPtr multi = viewers[type]->getImage();
+//		qimage_ptr qimg(new SharedData<QImage>(new QImage()));
 
-		SharedDataLock hlock(multi->mutex);
+//		SharedDataLock hlock(multi->mutex);
 
-		BackgroundTaskPtr taskConvert(new MultiImg::Band2QImageTbb(multi, qimg, dim));
-		taskConvert->run();
+//		BackgroundTaskPtr taskConvert(new MultiImg::Band2QImageTbb(multi, qimg, dim));
+//		taskConvert->run();
 
-		hlock.unlock();
+//		hlock.unlock();
 
-		v[dim] = new QPixmap(QPixmap::fromImage(**qimg));
-	}
-	return v[dim];
-}
+//		v[dim] = new QPixmap(QPixmap::fromImage(**qimg));
+//	}
+//	return v[dim];
+//}
 
 void MainWindow::updateBand(representation repr, int selection)
 {
@@ -958,8 +960,8 @@ void MainWindow::imageResetNeeded(representation repr)
 void MainWindow::selectBand(representation type, int dim)
 {
 	bandView->setEnabled(true);
-	bandView->setPixmap(*getBand(type, dim));
-	SharedMultiImgPtr m = viewers[type]->getImage();
+	bandView->setPixmap(*viewerContainer->getBand(type, dim));
+	SharedMultiImgPtr m = viewerContainer->getViewerImage(type);
 	SharedDataLock hlock(m->mutex);
 	std::string banddesc = (*m)->meta[dim].str();
 	hlock.unlock();

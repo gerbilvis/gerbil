@@ -11,6 +11,9 @@
 //class ViewersWidget;
 //}
 
+// TODO
+// * check if bands can be removed from MainWindow altogether
+
 class ViewerContainer : public QWidget
 {
     Q_OBJECT
@@ -41,13 +44,16 @@ public:
 	void updateBinning(representation repr, int bins);
 
 	// MODEL
-	// For now these are copied from MainWindow. To be removed when refactored
+	// For now these are shared with MainWindow. To be removed when refactored
 	// into model classes.
 	SharedMultiImgPtr *image, *gradient, *imagepca, *gradientpca;
+	std::vector<std::vector<QPixmap*> > *bands; 	// MODEL
 
 	void disconnectAllViewers();
 	void updateViewerBandSelections(int numbands);
 	size_t size() const;
+	const QPixmap* getBand(representation repr, int dim);
+	SharedMultiImgPtr getViewerImage(representation repr);
 public slots:
 	void setGUIEnabled(bool enable, TaskType tt);
 	void toggleViewer(bool enable, representation repr);

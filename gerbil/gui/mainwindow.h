@@ -46,7 +46,8 @@ public:
 				 QString labelfile = QString(), bool limitedMode = false,
 				 QWidget *parent = 0);
 
-	const QPixmap* getBand(representation type, int dim);
+	// -> viewerContainer
+//	const QPixmap* getBand(representation type, int dim);
 	const inline Illuminant & getIlluminant(int temp);
 	const inline std::vector<multi_img::Value> & getIlluminantC(int temp);
 
