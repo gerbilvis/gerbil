@@ -608,82 +608,83 @@ void MainWindow::initUI()
 	updateRGB(true);
 }
 
-void MainWindow::toggleViewer(bool enable, representation viewer)
-{
-	if (!enable) {
-		disconnectViewer(viewer);
+// now in ViewerContainer
+//void MainWindow::toggleViewer(bool enable, representation viewer)
+//{
+//	if (!enable) {
+//		disconnectViewer(viewer);
 
-		if (viewer == IMG) {
-			// no-op
-		} else if (viewer == GRAD) {
-			// no-op
-		} else if (viewer == IMGPCA) {
-			viewers[IMGPCA]->resetImage();
-			imagepca.reset();
-			if (viewers[IMGPCA] == activeViewer) {
-				viewers[IMG]->activateViewport();
-				updateBand();
-			}
-		} else if (viewer == GRADPCA) {
-			viewers[GRADPCA]->resetImage();
-			gradientpca.reset();
-			if (viewers[GRADPCA] == activeViewer) {
-				viewers[IMG]->activateViewport();
-				updateBand();
-			}
-		}
-	} else {
-		setGUIEnabled(false, TT_TOGGLE_VIEWER);
-		viewers[viewer]->setEnabled(false);
+//		if (viewer == IMG) {
+//			// no-op
+//		} else if (viewer == GRAD) {
+//			// no-op
+//		} else if (viewer == IMGPCA) {
+//			viewers[IMGPCA]->resetImage();
+//			imagepca.reset();
+//			if (viewers[IMGPCA] == activeViewer) {
+//				viewers[IMG]->activateViewport();
+//				updateBand();
+//			}
+//		} else if (viewer == GRADPCA) {
+//			viewers[GRADPCA]->resetImage();
+//			gradientpca.reset();
+//			if (viewers[GRADPCA] == activeViewer) {
+//				viewers[IMG]->activateViewport();
+//				updateBand();
+//			}
+//		}
+//	} else {
+//		setGUIEnabled(false, TT_TOGGLE_VIEWER);
+//		viewers[viewer]->setEnabled(false);
 
-		if (viewer == IMG) {
-			viewers[viewer]->setImage(image, roi);
+//		if (viewer == IMG) {
+//			viewers[viewer]->setImage(image, roi);
 
-			BackgroundTaskPtr taskImgFinish(new BackgroundTask(roi));
-			QObject::connect(taskImgFinish.get(), SIGNAL(finished(bool)), 
-				this, SLOT(imgCalculationComplete(bool)), Qt::QueuedConnection);
-			queue.push(taskImgFinish);
-		} else if (viewer == GRAD) {
-			viewers[viewer]->setImage(gradient, roi);
+//			BackgroundTaskPtr taskImgFinish(new BackgroundTask(roi));
+//			QObject::connect(taskImgFinish.get(), SIGNAL(finished(bool)),
+//				this, SLOT(imgCalculationComplete(bool)), Qt::QueuedConnection);
+//			queue.push(taskImgFinish);
+//		} else if (viewer == GRAD) {
+//			viewers[viewer]->setImage(gradient, roi);
 
-			BackgroundTaskPtr taskGradFinish(new BackgroundTask(roi));
-			QObject::connect(taskGradFinish.get(), SIGNAL(finished(bool)), 
-				this, SLOT(gradCalculationComplete(bool)), Qt::QueuedConnection);
-			queue.push(taskGradFinish);
-		} else if (viewer == IMGPCA) {
-			imagepca.reset(new SharedMultiImgBase(new multi_img(0, 0, 0)));
+//			BackgroundTaskPtr taskGradFinish(new BackgroundTask(roi));
+//			QObject::connect(taskGradFinish.get(), SIGNAL(finished(bool)),
+//				this, SLOT(gradCalculationComplete(bool)), Qt::QueuedConnection);
+//			queue.push(taskGradFinish);
+//		} else if (viewer == IMGPCA) {
+//			imagepca.reset(new SharedMultiImgBase(new multi_img(0, 0, 0)));
 
-			BackgroundTaskPtr taskPca(new MultiImg::PcaTbb(
-				image, imagepca, 0, roi));
-			queue.push(taskPca);
+//			BackgroundTaskPtr taskPca(new MultiImg::PcaTbb(
+//				image, imagepca, 0, roi));
+//			queue.push(taskPca);
 
-			viewers[viewer]->setImage(imagepca, roi);
+//			viewers[viewer]->setImage(imagepca, roi);
 
-			BackgroundTaskPtr taskImgPcaFinish(new BackgroundTask(roi));
-			QObject::connect(taskImgPcaFinish.get(), SIGNAL(finished(bool)), 
-				this, SLOT(imgPcaCalculationComplete(bool)), Qt::QueuedConnection);
-			queue.push(taskImgPcaFinish);
-		} else if (viewer == GRADPCA) {
-			gradientpca.reset(new SharedMultiImgBase(new multi_img(0, 0, 0)));
+//			BackgroundTaskPtr taskImgPcaFinish(new BackgroundTask(roi));
+//			QObject::connect(taskImgPcaFinish.get(), SIGNAL(finished(bool)),
+//				this, SLOT(imgPcaCalculationComplete(bool)), Qt::QueuedConnection);
+//			queue.push(taskImgPcaFinish);
+//		} else if (viewer == GRADPCA) {
+//			gradientpca.reset(new SharedMultiImgBase(new multi_img(0, 0, 0)));
 
-			BackgroundTaskPtr taskPca(new MultiImg::PcaTbb(
-				gradient, gradientpca, 0, roi));
-			queue.push(taskPca);
+//			BackgroundTaskPtr taskPca(new MultiImg::PcaTbb(
+//				gradient, gradientpca, 0, roi));
+//			queue.push(taskPca);
 
-			viewers[viewer]->setImage(gradientpca, roi);
+//			viewers[viewer]->setImage(gradientpca, roi);
 
-			BackgroundTaskPtr taskGradPcaFinish(new BackgroundTask(roi));
-			QObject::connect(taskGradPcaFinish.get(), SIGNAL(finished(bool)), 
-				this, SLOT(gradPcaCalculationComplete(bool)), Qt::QueuedConnection);
-			queue.push(taskGradPcaFinish);
-		} 
+//			BackgroundTaskPtr taskGradPcaFinish(new BackgroundTask(roi));
+//			QObject::connect(taskGradPcaFinish.get(), SIGNAL(finished(bool)),
+//				this, SLOT(gradPcaCalculationComplete(bool)), Qt::QueuedConnection);
+//			queue.push(taskGradPcaFinish);
+//		}
 
-		BackgroundTaskPtr taskEpilog(new BackgroundTask(roi));
-		QObject::connect(taskEpilog.get(), SIGNAL(finished(bool)), 
-			this, SLOT(finishTask(bool)), Qt::QueuedConnection);
-		queue.push(taskEpilog);
-	}
-}
+//		BackgroundTaskPtr taskEpilog(new BackgroundTask(roi));
+//		QObject::connect(taskEpilog.get(), SIGNAL(finished(bool)),
+//			this, SLOT(finishTask(bool)), Qt::QueuedConnection);
+//		queue.push(taskEpilog);
+//	}
+//}
 
 void MainWindow::setGUIEnabled(bool enable, TaskType tt)
 {

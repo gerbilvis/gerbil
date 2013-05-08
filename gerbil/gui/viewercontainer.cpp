@@ -45,7 +45,10 @@ void ViewerContainer::setGUIEnabled(bool enable, TaskType tt)
 
 void ViewerContainer::toggleViewer(bool enable, representation repr)
 {
-	// TODO impl
+	if(enable)
+		toggleViewerEnable(repr);
+	else
+		toggleViewerDisable(repr);
 }
 
 void ViewerContainer::newROI(cv::Rect roi)
@@ -281,8 +284,6 @@ void ViewerContainer::initUi()
 
 		connect(viewer1, SIGNAL(setGUIEnabled(bool, TaskType)),
 				this, SIGNAL(viewerSetGUIEnabled(bool, TaskType)));
-		connect(viewer1, SIGNAL(toggleViewer(bool , representation)),
-				this, SIGNAL(viewerToggleViewer(bool , representation)));
 		connect(viewer1, SIGNAL(finishTask(bool)),
 				this, SIGNAL(viewerFinishTask(bool)));
 
@@ -295,6 +296,10 @@ void ViewerContainer::initUi()
 				this, SIGNAL(viewportAddToLabel()));
 		connect(viewport1, SIGNAL(remSelection()),
 				this, SIGNAL(viewportRemFromLabel()));
+
+		// non-pass-through
+		connect(viewer1, SIGNAL(toggleViewer(bool , representation)),
+				this, SLOT(toggleViewer(bool , representation)));
 
 		for (size_t j = 0; j < vl.size(); ++j) {
 			multi_img_viewer *viewer2 = vl[j];

@@ -63,7 +63,7 @@ signals:
 	// to be processed in ViewerContainer.
 	void viewPortBandSelected(representation, int);
 	void viewerSetGUIEnabled(bool, TaskType);
-	void viewerToggleViewer(bool , representation);
+	//void viewerToggleViewer(bool , representation);
 	void viewerFinishTask(bool);
 	void viewerNewOverlay();
 	void viewPortNewOverlay(int);
