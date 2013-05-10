@@ -351,10 +351,6 @@ void Viewport::drawBins(QPainter &painter, QTimer &renderTimer,
 	// vole::Stopwatch watch("drawBins");
 	painter.beginNativePainting();
 	glEnable(GL_BLEND);
-	glEnable(GL_DEPTH_TEST);
-	if (renderedLines == 0)
-		glClear(GL_DEPTH_BUFFER_BIT);
-	glDepthFunc(GL_LESS);
 	glBlendFunc(GL_SRC_ALPHA,GL_ONE_MINUS_SRC_ALPHA);
 	bool success = vb.bind();
 	if (!success) {
@@ -423,8 +419,9 @@ void Viewport::drawBins(QPainter &painter, QTimer &renderTimer,
 		/* logarithm is used to prevent single data points to get lost.
 		   this should be configurable. */
 		alpha = useralpha *
-					(0.01 + 0.99*(log(b.weight+1) / log((float)s.totalweight)));
-		color.setAlphaF(min(alpha, 1.));
+				(0.01 + 0.99*(log(b.weight+1) / log((float)s.totalweight)));
+//	TODO: option	(0.01 + 0.99*(b.weight / (float)s.totalweight));
+		color.setAlphaF(min(alpha, 1.)); // cap at 1
 
 		if (highlighted && onlyHighlight) {
 			if (basecolor == Qt::white) {
@@ -440,10 +437,6 @@ void Viewport::drawBins(QPainter &painter, QTimer &renderTimer,
 		if (!highlighted && implicitClearView && idx.first == single) {
 			color.setRgbF(1., 1., 0., color.alphaF());
 		}
-		if (highlighted && onlyHighlight)
-			glDepthMask(GL_TRUE); // write to depth mask -> stay in foreground
-		else
-			glDepthMask(GL_FALSE); // no writing -> may be overdrawn
 
 		//painter.setPen(color);
 		//painter.drawPolyline(b.points);
@@ -452,7 +445,6 @@ void Viewport::drawBins(QPainter &painter, QTimer &renderTimer,
 		currind += (*ctx)->dimensionality;
 	}
 	vb.release();
-	glDisable(GL_DEPTH_TEST);
 	painter.endNativePainting();
 
 	renderedLines += (last - first);
@@ -830,8 +822,12 @@ void Viewport::resizeEvent(QResizeEvent *ev)
 	makeCurrent();
 
 	QGLFramebufferObjectFormat format;
-	format.setAttachment(QGLFramebufferObject::CombinedDepthStencil);
-	format.setSamples(4);
+	format.setAttachment(QGLFramebufferObject::NoAttachment);
+	format.setSamples(1); // TODO: configurable? test with other GPUs.
+
+	// use floating point for better alpha accuracy!
+	// TODO: We don't need this for highlights. do we care?
+	format.setInternalTextureFormat(GL_RGBA32F);
 
 	delete fboSpectrum;
 	delete fboHighlight;
