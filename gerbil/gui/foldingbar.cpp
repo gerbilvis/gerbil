@@ -6,10 +6,16 @@ FoldingBar::FoldingBar(QWidget *parent) :
 	QWidget(parent), folded(false)
 {
     setupUi(this);
+	// 0: folded (disabled)
 	arrows.push_back(QPixmap(":/basic/arrow-right"));
+	// 1: unfolded (enabled)
 	arrows.push_back(QPixmap(":/basic/arrow-down"));
+	// 2: mouse hover
 	arrows.push_back(QPixmap(":/basic/arrow-downright"));
 
+	/* pair of inactive/active color palettes
+	 * used for recoloring on hover
+	 */
 	palettes.push_back(palette());
 	palettes.push_back(palette());
 	palettes[1].setColor(QPalette::Window,
@@ -19,6 +25,7 @@ FoldingBar::FoldingBar(QWidget *parent) :
 	palettes[1].setColor(QPalette::Text,
 						 palette().color(QPalette::HighlightedText));
 
+	// child widgets should pass-through click events to us
 	arrowLabel->setAttribute(Qt::WA_TransparentForMouseEvents);
 	titleLabel->setAttribute(Qt::WA_TransparentForMouseEvents);
 }
