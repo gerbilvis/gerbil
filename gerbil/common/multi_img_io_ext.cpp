@@ -174,6 +174,11 @@ void multi_img::write_out(const string& base, bool normalize, bool in16bit) cons
 				              : (Value)255.f/(maxval - minval)));
 	Value shift = (!normalize ? 0.f : -scale*minval);
 
+	// parameters to image writer
+	vector<int> flags;
+	flags.push_back(CV_IMWRITE_PNG_COMPRESSION);
+	flags.push_back(9);  // [0-9] 9 being max compression, default is 3
+
 	// write out band files and corresponding text file entries at once
 	char name[1024];
 	for (size_t i = 0; i < size(); ++i) {
@@ -187,9 +192,9 @@ void multi_img::write_out(const string& base, bool normalize, bool in16bit) cons
 			cv::Mat output;
 			bands[i].convertTo(output, (in16bit ? CV_16U : CV_8U),
 							   scale, shift);
-			cv::imwrite(base + "/" + name, output);
+			cv::imwrite(base + "/" + name, output, flags);
 		} else {
-			cv::imwrite(base + "/" + name, bands[i]);
+			cv::imwrite(base + "/" + name, bands[i], flags);
 		}
 	}
 
