@@ -573,7 +573,7 @@ void ViewerContainer::labelflush(bool seedModeEnabled, short curLabel)
 
 	emit clearLabel();
 
-	if (seedModeEnabled) {
+	if (!seedModeEnabled) {
 		if (profitable) {
 			for (size_t i = 0; i < vl.size(); ++i) {
 				vl[i]->addLabelMask(tmp_sets[i], mask);
