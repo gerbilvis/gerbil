@@ -55,12 +55,24 @@ inline size_t tbb_hasher(const boost::multi_array<T, 1> &a) {
 #include <tbb/parallel_reduce.h>
 #include <tbb/tbb_allocator.h>
 
+/* N: number of bands,
+ * D: number of bins per band (discretization steps)
+ */
+/* a Bin is an entry in our N-dimensional sparse histogram
+ * it holds a representative vector and is identified by its
+ * hash key (the hash key is not part of the Bin class
+ */
 struct Bin {
 	Bin() : weight(0.f) {}
 	Bin(const multi_img::Pixel& initial_means)
 		: weight(1.f), means(initial_means) {} //, points(initial_means.size()) {}
 
+	/* we store the mean/avg. of all pixel vectors represented by this bin
+	 * the mean is not normalized during filling the bin, only afterwards
+	 */
 	inline void add(const multi_img::Pixel& p) {
+		/* weight holds the number of pixels this bin represents
+		 */
 		weight += 1.f;
 		if (means.empty())
 			means.resize(p.size(), 0.f);
@@ -68,6 +80,7 @@ struct Bin {
 					   std::plus<multi_img::Value>());
 	}
 
+	/* in incremental update of our BinSet, we can also remove pixels from a bin */
 	inline void sub(const multi_img::Pixel& p) {
 		weight -= 1.f;
 		assert(!means.empty());
@@ -77,20 +90,34 @@ struct Bin {
 
 	float weight;
 	std::vector<multi_img::Value> means;
+	/* each bin can have a color calculated for the mean vector
+	 */
 	QColor rgb;
-	//QPolygonF points;
 };
 
 struct BinSet {
 	BinSet(const QColor &c, int size)
 		: label(c), boundary(size, std::make_pair((int)255, (int)0)) { totalweight = 0; }
+	/* each BinSet represents a label and has the label color
+	 */
 	QColor label;
-	/* FIXME Why boost::multi_array? */
-	// one char per band
+	// FIXME Why boost::multi_array?
+	/* each entry is a N-dimensional vector, discretized by one char per band
+	 * this means that we can have at most D = 256
+	 */
 	typedef boost::multi_array<unsigned char, 1> HashKey;
+	/* the hash map holds all representative vectors (of size N)
+	 * the hash realizes a sparse histogram
+	 */
 	typedef tbb::concurrent_hash_map<HashKey, Bin> HashMap;
 	HashMap bins;
+	/* to set opacity value we normalize by total weight == sum of bin weights
+	 * this is atomic to allow multi-threaded adding of vectors into the hash
+	 */
 	tbb::atomic<int> totalweight;
+	/* the boundary is used for limiter mode initialization by label
+	 * it is of length N and holds min, max bin indices occupied in each dimension
+	 */
 	std::vector<std::pair<int, int> > boundary;
 };
 
