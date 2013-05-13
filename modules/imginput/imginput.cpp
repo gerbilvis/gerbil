@@ -68,7 +68,7 @@ multi_img::ptr ImgInput::execute()
 #ifdef WITH_GERBIL_COMMON
 std::pair<multi_img::ptr, multi_img::ptr> ImgInput::both()
 {
-	// (TODO:) make this a function that just fails with a nasty message. -> should work again!
+	// TODO: make this a function that just fails with a nasty message. -> sollte jetzt eig funktionieren...
 	multi_img::ptr img_ptr = execute();
 
 	// return empty image on failure
