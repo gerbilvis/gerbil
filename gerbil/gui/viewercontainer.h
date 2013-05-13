@@ -112,7 +112,9 @@ protected:
 	multi_img_viewer *activeViewer;
 	cv::Rect roi;
 
-	QLayout *vLayout;
+	QVBoxLayout *vLayout;
+ 	// if not NULL, the stretch item (last item) in the vLayout
+	QLayoutItem *stretchItem;
 
 private:
     /*! \brief Add a multi_img_viewer to the widget.

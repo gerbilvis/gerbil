@@ -346,6 +346,20 @@ void ViewerContainer::toggleViewerDisable(representation repr)
 		assert(false);
 		break;
 	}
+
+	bool allFolded = true;
+	foreach(multi_img_viewer *v, vm.values()) {
+		if(!v->isPayloadHidden()) {
+			allFolded = false;
+			break;
+		}
+	}
+	if(allFolded) {
+		//GGDBGM("all viewers folded, adding stretch to layout."<<endl);
+		vLayout->addStretch(1);
+		int stretchIdx = vLayout->count()-1;
+		stretchItem = vLayout->itemAt(stretchIdx);
+	}
 }
 
 void ViewerContainer::toggleViewerEnable(representation repr)
@@ -353,6 +367,13 @@ void ViewerContainer::toggleViewerEnable(representation repr)
 	multi_img_viewer *viewer = vm.value(repr);
 
 	emit requestGUIEnabled(false, TT_TOGGLE_VIEWER);
+
+	if(NULL != stretchItem) {
+		//GGDBGM("all viewers folded, removing stretch from layout."<<endl);
+		vLayout->removeItem(stretchItem);
+		delete stretchItem;
+		stretchItem = NULL;
+	}
 
 	switch(repr) {
 	case IMG:
@@ -430,6 +451,7 @@ void ViewerContainer::initUi()
 	createViewer(GRAD);
     createViewer(IMGPCA);
     createViewer(GRADPCA);
+	//vLayout->addStretch(0);
 
 	// start with IMG, hide IMGPCA, GRADPCA at the beginning
 	activeViewer = vm.value(IMG);
@@ -519,11 +541,14 @@ void ViewerContainer::initUi()
 multi_img_viewer *ViewerContainer::createViewer(representation repr)
 {
     multi_img_viewer *viewer = new multi_img_viewer(this);
+	viewer->setSizePolicy(QSizePolicy::Preferred, // hor
+						  QSizePolicy::Expanding); // ver
     viewer->setType(repr);
 	assert(taskQueue);
     viewer->queue = taskQueue;
     vm.insert(repr, viewer);
-    vLayout->addWidget(viewer);
+	vLayout->addWidget(viewer);
+	//vLayout->addWidget(viewer, /* stretch */ 1);
 }
 
 void ViewerContainer::newOverlay()
