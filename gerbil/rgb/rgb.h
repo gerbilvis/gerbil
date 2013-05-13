@@ -14,7 +14,6 @@ public:
 	void printShortHelp() const;
 	void printHelp() const;
 
-protected:
 	cv::Mat3f executePCA(const multi_img& src);
 #ifdef WITH_EDGE_DETECT
 	cv::Mat3f executeSOM(const multi_img& src);

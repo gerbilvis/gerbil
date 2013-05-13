@@ -17,7 +17,7 @@ multi_img::ptr ImgInput::execute()
 	// if multi_img-constructor didn't work, try GDALReader
 	if (img_ptr->empty())
 	{
-		img_ptr = GdalReader(config).readFile();
+		img_ptr = GdalReader(config, *this).readFile();
 	}
 #endif
 
@@ -38,15 +38,16 @@ multi_img::ptr ImgInput::execute()
 		{
 			// only apply ROI if it isn't already
 			if (roiVals[2] != img_ptr->width || roiVals[3] != img_ptr->height)
-				applyROI(img_ptr);
+				applyROI(img_ptr, roiVals);
 		}
 	}
 
 	// crop spectrum
-	if ((config.bandlow > 0) ||
-		(config.bandhigh > 0 && config.bandhigh < (int)img_ptr->size())) {
-		img_ptr = multi_img::ptr(new multi_img(*img_ptr, config.bandlow, config.bandhigh));
-	}
+	cropSpectrum(img_ptr);
+
+	// return empty image on failure
+	if (img_ptr->empty())
+		return img_ptr;
 
 	#ifdef WITH_GERBIL_COMMON
 	// compute gradient
@@ -67,7 +68,7 @@ multi_img::ptr ImgInput::execute()
 #ifdef WITH_GERBIL_COMMON
 std::pair<multi_img::ptr, multi_img::ptr> ImgInput::both()
 {
-	// TODO: make this a function that just fails with a nasty message. -> sollte jetzt eig funktionieren...
+	// (TODO:) make this a function that just fails with a nasty message. -> should work again!
 	multi_img::ptr img_ptr = execute();
 
 	// return empty image on failure
@@ -78,13 +79,27 @@ std::pair<multi_img::ptr, multi_img::ptr> ImgInput::both()
 
 	// apply ROI
 	if (!config.roi.empty())
-		applyROI(img_ptr);
+	{
+		std::vector<int> roiVals;
+		if (!ImgInput::parseROIString(config.roi, roiVals))
+		{
+			// Parsing of ROI String failed
+			std::cerr << "Ignoring invalid ROI specification" << std::endl;
+		}
+		else
+		{
+			// only apply ROI if it isn't already
+			if (roiVals[2] != img_ptr->width || roiVals[3] != img_ptr->height)
+				applyROI(img_ptr, roiVals);
+		}
+	}
 
 	// crop spectrum
-	if ((config.bandlow > 0) ||
-		(config.bandhigh > 0 && config.bandhigh < (int)img_ptr->size())) {
-		img_ptr = multi_img::ptr(new multi_img(*img_ptr, config.bandlow, config.bandhigh));
-	}
+	cropSpectrum(img_ptr);
+
+	// return empty image on failure
+	if (img_ptr->empty())
+		return std::make_pair(img_ptr, multi_img::ptr(new multi_img()));
 
 	// compute gradient
 	multi_img::ptr proc_ptr = multi_img::ptr(new multi_img(*img_ptr));
@@ -112,18 +127,36 @@ bool ImgInput::parseROIString(const std::string &str, std::vector<int> &vals)
 		++ctr;
 	}
 	vals.push_back(atoi(str.substr(prev_pos, pos - prev_pos).c_str()));
-	return ctr == 4;
+	return ctr == 3;
 }
 
-void ImgInput::applyROI(multi_img::ptr &img_ptr)
+void ImgInput::applyROI(multi_img::ptr &img_ptr, vector<int>& vals)
 {
-	vector<int> vals;
-	if (!parseROIString(config.roi, vals)) {
-		std::cerr << "Ignoring invalid ROI specification" << std::endl;
-		return;
-	}
-
 	img_ptr = multi_img::ptr(new multi_img(*img_ptr, cv::Rect(vals[0], vals[1], vals[2], vals[3])));
+}
+
+void ImgInput::cropSpectrum(multi_img::ptr &img_ptr)
+{
+	// File reader cropped the bands already
+	if (bandCroppingHandeled)
+		return;
+
+	if ((config.bandlow > 0) ||
+		(config.bandhigh > 0 && config.bandhigh < (int)img_ptr->size() - 1)) {
+
+		// if bandhigh is not specified, do not limit
+		int bandhigh = (config.bandhigh == 0) ? (img_ptr->size() - 1) : config.bandhigh;
+
+		// correct input?
+		if (config.bandlow > bandhigh || bandhigh > img_ptr->size() - 1)
+		{
+			std::cerr << "config.bandlow > config.bandhigh || bandhigh > dataset->GetRasterCount() - 1" << std::endl;
+			img_ptr = multi_img::ptr(new multi_img());
+			return;
+		}
+
+		img_ptr = multi_img::ptr(new multi_img(*img_ptr, config.bandlow, bandhigh));
+	}
 }
 
 } //namespace

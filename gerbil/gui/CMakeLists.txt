@@ -17,6 +17,7 @@ vole_compile_library(
 	commandrunner
 	foldingbar
 	iogui
+	model/falsecolor
 	tasks/rgbtbb
 	tasks/rgbserial
 	tasks/normrangetbb

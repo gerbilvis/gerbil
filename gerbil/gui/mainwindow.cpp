@@ -985,9 +985,13 @@ void MainWindow::clampNormUserRange()
 		applyROI(false);
 		rgbDock->setEnabled(false);
 
+		// create task to compute rgb image in parallel
 		BackgroundTaskPtr taskRgb(new RgbTbb(
 			image_lim, mat3f_ptr(new SharedData<cv::Mat3f>(new cv::Mat3f)), full_rgb_temp, roi));
+		// connect finished signal to our update slot
+		// the task will then trigger the GUI update to show computation result
 		QObject::connect(taskRgb.get(), SIGNAL(finished(bool)), this, SLOT(updateRGB(bool)), Qt::QueuedConnection);
+		// after signal is connected, enqueue the task in our taskqueue
 		queue.push(taskRgb);
 
 		BackgroundTaskPtr taskEpilog(new BackgroundTask(roi));

@@ -10,6 +10,10 @@
 #include <string>
 #include <vector>
 
+// TODO: cropped flag im multi_img oder irgendwie anders oder config.bandlow/high auf 0 setzen
+// falls flag wirklich bleibt, muss man ihn wohl in allen konstruktoren auf false setzen
+// -> Flag in ImgInput anlegen, beim erstellen von GDALReader Referenz auf ImgInput mit uebergeben? <-
+
 using std::vector;
 
 namespace vole {
@@ -73,11 +77,6 @@ multi_img::ptr GdalReader::readFile()
 
 		return multi_img::ptr(new multi_img());
 	}
-
-	multi_img::ptr img_ptr(new multi_img(
-			dataset->GetRasterYSize(),
-			dataset->GetRasterXSize(),
-			dataset->GetRasterCount()));
 
 	// Read Dataset Metadata
 	// Starting with GDAL 1.10, use dataset->GetMetadata("ENVI"); for ENVI metadata...
@@ -175,18 +174,55 @@ multi_img::ptr GdalReader::readFile()
 	// stable_sort: do not change the order of bands with unknown wavelength
 	std::stable_sort(metaTuples.begin(), metaTuples.end(), tupleCompare);
 
-	float minVal = std::numeric_limits<float>::infinity();
-	float maxVal = 0;
-
-	for (int i = 0; i < dataset->GetRasterCount(); ++i)
+	// find ROI
+	int xOff = 0;
+	int yOff = 0;
+	int sizeX = dataset->GetRasterXSize();
+	int sizeY = dataset->GetRasterYSize();
+	if (!config.roi.empty())
 	{
-		// bands are indexed from 1 to n [inclusive, inclusive]
-		int bandNr = metaTuples[i].bandId;
+		// Do not print an error message here, as it will be printed in ImgInput anyways
+		std::vector<int> roiVals;
+		if (ImgInput::parseROIString(config.roi, roiVals))
+		{
+			xOff = roiVals[0];
+			yOff = roiVals[1];
+			sizeX = roiVals[2];
+			sizeY = roiVals[3];
+		}
+	}
 
+	// crop spectrum
+	int bandlow = 0;
+	int bandhigh = dataset->GetRasterCount() - 1; // inclusive, just like config.bandhigh
+	if ((config.bandlow > 0) ||
+		(config.bandhigh > 0 && config.bandhigh < dataset->GetRasterCount() - 1))
+	{
+		// if bandhigh is not specified, do not limit
+		bandhigh = (config.bandhigh == 0) ? (dataset->GetRasterCount() - 1) : config.bandhigh;
+
+		// correct input?
+		if (config.bandlow > bandhigh || bandhigh > dataset->GetRasterCount() - 1)
+		{
+			return multi_img::ptr(new multi_img());
+		}
+		bandlow = config.bandlow;
+	}
+
+	// create multi_img & fill it with data
+	multi_img::ptr img_ptr(new multi_img(
+			sizeY,
+			sizeX,
+			bandhigh - bandlow + 1)); // bandhigh is inclusive
+	imginput.bandCroppingHandeled = true;
+
+	double maxVal = 0;
+	for (int metaDataIdx = bandlow; metaDataIdx <= bandhigh; ++metaDataIdx)
+	{
 		GDALRasterBand *band;
 		double minMax[2]; // [0] min, [1] max
 
-		band = dataset->GetRasterBand(bandNr);
+		band = dataset->GetRasterBand(metaTuples[metaDataIdx].bandId);
 
 		// Read Band Metadata
 		//std::cout << "Band" << bandNr << "'s description: " << band->GetDescription() << std::endl;
@@ -211,36 +247,15 @@ multi_img::ptr GdalReader::readFile()
 		//	std::cout << "End of Band" << bandNr << "'s metadata" << std::endl << std::endl;
 		//}
 
-		// find min & max of band
-		int gotMin, gotMax;
-		minMax[0] = band->GetMinimum(&gotMin);
+		// find max of band
+		int gotMax;
 		minMax[1] = band->GetMaximum(&gotMax);
-		if (!gotMin || !gotMax)
+		if (!gotMax)
 			GDALComputeRasterMinMax((GDALRasterBandH)band, TRUE, minMax);
 
-		// update global min & max
-		if (minMax[0] < minVal)
-			minVal = minMax[0];
-		if (minMax[0] > maxVal)
+		// update global max
+		if (minMax[1] > maxVal)
 			maxVal = minMax[1];
-
-		// apply ROI
-		int xOff = 0;
-		int yOff = 0;
-		int sizeX = band->GetXSize();
-		int sizeY = band->GetYSize();
-		if (!config.roi.empty())
-		{
-			// Do not print an error message here, as it will be printed in ImgInput anyways
-			std::vector<int> roiVals;
-			if (ImgInput::parseROIString(config.roi, roiVals))
-			{
-				xOff = roiVals[0];
-				yOff = roiVals[1];
-				sizeX = roiVals[2];
-				sizeY = roiVals[3];
-			}
-		}
 
 		// read band data
 		void *scanline;
@@ -251,17 +266,26 @@ multi_img::ptr GdalReader::readFile()
 					   gdalDataType,
 					   0, 0);
 
+		// copy (meta-)data to multi_img (multi_img indices are 0 based, metaDataIdx starts with bandlow)
+		int multiImgBandIdx = metaDataIdx - bandlow;
+
 		// copy band data to multi_img (we want a zero based index)
-		img_ptr->setBand(i, multi_img::Band(sizeY, sizeX, (multi_img::Value *)scanline));
+		img_ptr->setBand(multiImgBandIdx, multi_img::Band(sizeY, sizeX, (multi_img::Value *)scanline));
 		CPLFree(scanline);
 
-		img_ptr->meta[i] = metaTuples[i].bandDesc;
+		img_ptr->meta[multiImgBandIdx] = metaTuples[metaDataIdx].bandDesc;
 	}
+
+	// TODO: *= 4, dann haette man nur gerade 2er Potenzen...
+	// Berechnung mit Schleife ok?
+	double powMax;
+	for (powMax = 256; powMax < maxVal; powMax *= 2);
+	maxVal = powMax;
 
 	GDALClose(dataset);
 
 	// set min & max
-	img_ptr->minval = minVal;
+	img_ptr->minval = 0;
 	img_ptr->maxval = maxVal;
 
 	/* invalidate pixel cache as pixel length has changed

@@ -110,7 +110,7 @@ multi_img::multi_img(const multi_img &a, unsigned int start, unsigned int end) :
 	assert(start < a.size() && end < a.size());
 	std::cerr << "multi_img: reference w/ spectral crop" << std::endl;
 	meta.insert(meta.begin(), a.meta.begin() + start, a.meta.begin() + (end+1));
-    bands.insert(bands.begin(), a.bands.begin() + start, a.bands.begin() + (end+1));
+	bands.insert(bands.begin(), a.bands.begin() + start, a.bands.begin() + (end+1));
 	/* FIXME: - inconsistent to other copy constr.
 	          - will lead to corrupt cache data!
 			  read-only flag? no constructor but const method?
