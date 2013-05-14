@@ -1,6 +1,14 @@
 #ifndef MULTI_IMG_VIEWER_TASKS_H
 #define MULTI_IMG_VIEWER_TASKS_H
 
+#include <multi_img.h>
+
+#include <tbb/task.h>
+#include <tbb/blocked_range.h>
+#include <tbb/blocked_range2d.h>
+#include <tbb/partitioner.h>
+#include <tbb/parallel_for.h>
+
 struct fillMaskSingleBody {
 	multi_img::Mask &mask;
 	const multi_img::Band &band;

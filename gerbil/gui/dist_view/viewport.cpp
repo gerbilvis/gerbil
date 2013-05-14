@@ -8,9 +8,12 @@
 */
 
 #include "viewport.h"
-#include "iogui.h"
-#include "qtopencv.h"
+#include "../iogui.h"
+#include "../gerbil_gui_debug.h"
+
+#include <qtopencv.h>
 #include <stopwatch.h>
+
 #include <iostream>
 #include <cmath>
 #include <QApplication>
@@ -19,8 +22,6 @@
 #include <QPaintEvent>
 #include <QRect>
 #include <QPainter>
-
-#include <gerbil_gui_debug.h>
 #include <boost/format.hpp>
 
 using namespace std;

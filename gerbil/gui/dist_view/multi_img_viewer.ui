@@ -308,12 +308,12 @@
   <customwidget>
    <class>Viewport</class>
    <extends>QWidget</extends>
-   <header>viewport.h</header>
+   <header>dist_view/viewport.h</header>
   </customwidget>
   <customwidget>
    <class>FoldingBar</class>
    <extends>QWidget</extends>
-   <header>foldingbar.h</header>
+   <header>dist_view/foldingbar.h</header>
    <container>1</container>
   </customwidget>
  </customwidgets>

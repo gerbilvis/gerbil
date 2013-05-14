@@ -1,15 +1,13 @@
+#include "viewport.h"
+#include "viewer_bins_tbb.h"
+#include "curpos.h"
 
-#include "multi_img.h"
+#include <background_task.h>
+#include <multi_img.h>
 
 #include <tbb/blocked_range2d.h>
 #include <tbb/task.h>
 #include <algorithm>
-
-#include <background_task.h>
-#include "../viewport.h"
-
-#include "viewer_bins_tbb.h"
-#include "curpos.h"
 
 #define REUSE_THRESHOLD 0.1
 

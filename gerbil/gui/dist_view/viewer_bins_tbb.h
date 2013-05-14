@@ -1,6 +1,21 @@
 #ifndef MULTI_IMG_VIEWER_BINS_TBB_H
 #define MULTI_IMG_VIEWER_BINS_TBB_H
 
+#include "viewport.h"
+
+#include <background_task.h>
+#include <shared_data.h>
+
+#include <QImage>
+#include <QColor>
+#include <QVector>
+
+#include <tbb/task.h>
+#include <tbb/blocked_range.h>
+#include <tbb/blocked_range2d.h>
+#include <tbb/partitioner.h>
+#include <tbb/parallel_for.h>
+
 class ViewerBinsTbb : public BackgroundTask {
 public:
 	ViewerBinsTbb(

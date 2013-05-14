@@ -12,20 +12,14 @@
 
 #include "ui_multi_img_viewer.h"
 #include "viewport.h"
-#include "multi_img.h"
 
-#include "gerbil_gui_debug.h"
+#include "../gerbil_gui_debug.h"
 
+#include <multi_img.h>
 
 #include <shared_data.h>
 #include <background_task.h>
 #include <background_task_queue.h>
-
-#include <tbb/task.h>
-#include <tbb/blocked_range.h>
-#include <tbb/blocked_range2d.h>
-#include <tbb/partitioner.h>
-#include <tbb/parallel_for.h>
 
 #include <vector>
 #include <map>

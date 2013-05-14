@@ -8,18 +8,19 @@
 */
 
 #include "multi_img_viewer.h"
-#include "mainwindow.h"
+#include "curpos.h"
+#include "viewer_bins_tbb.h"
+#include "viewer_tasks.h"
+
+#include "../mainwindow.h"
+#include "../gerbil_gui_debug.h"
+
+#include <background_task_queue.h>
 #include <stopwatch.h>
+
 #include <opencv2/core/core.hpp>
 #include <iostream>
 #include <QThread>
-#include <background_task_queue.h>
-
-#include "multi_img_viewer_detail/viewer_tasks.h"
-#include "multi_img_viewer_detail/viewer_bins_tbb.h"
-#include "multi_img_viewer_detail/curpos.h"
-
-#include "gerbil_gui_debug.h"
 
 using namespace std;
 

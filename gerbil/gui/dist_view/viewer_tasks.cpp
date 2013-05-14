@@ -1,11 +1,10 @@
+#include "viewer_tasks.h"
+#include "curpos.h"
 
-#include "multi_img.h"
+#include <multi_img.h>
 
 #include <tbb/blocked_range2d.h>
 #include <tbb/task.h>
-
-#include "viewer_tasks.h"
-#include "curpos.h"
 
 ///////////////////////////////
 /// fillMaskSingleBody

@@ -1,6 +1,8 @@
 #ifndef MULTI_IMG_VIEWER_CURPOS_H
 #define MULTI_IMG_VIEWER_CURPOS_H
 
+#include <multi_img.h>
+
 /* translate image value to value in our coordinate system */
 static inline multi_img::Value curpos(
 	const multi_img::Value& val, int dim,

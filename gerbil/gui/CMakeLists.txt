@@ -7,42 +7,47 @@ vole_add_required_modules("gerbil_common" "seg_graphs")
 vole_add_optional_modules("seg_meanshift" "seg_medianshift" "seg_probshift")
 
 vole_compile_library(
-	multi_img_viewer
 	mainwindow
-	viewercontainer
-	viewport
 	scaledview
 	bandview
 	roiview
 	commandrunner
-	foldingbar
 	iogui
+
+	dist_view/viewercontainer
+	dist_view/multi_img_viewer
+	dist_view/viewer_tasks
+	dist_view/viewer_bins_tbb
+	dist_view/foldingbar
+	dist_view/viewport
+
 	model/falsecolor
+
 	tasks/rgbtbb
 	tasks/rgbserial
 	tasks/normrangetbb
 	tasks/normrangecuda
-	multi_img_viewer_detail/viewer_tasks
-	multi_img_viewer_detail/viewer_bins_tbb
+
     gerbil_gui_debug
 )
 
 vole_moc_library(
-	multi_img_viewer.h
 	mainwindow.h
-	viewercontainer.h
-	viewport.h
 	scaledview.h
 	bandview.h
 	roiview.h
 	commandrunner.h
-	foldingbar.h
+
+	dist_view/viewercontainer.h
+	dist_view/multi_img_viewer.h
+	dist_view/viewport.h
+	dist_view/foldingbar.h
 )
 
 vole_ui_library(
-	multi_img_viewer.ui
 	mainwindow.ui
-	foldingbar.ui
+	dist_view/multi_img_viewer.ui
+	dist_view/foldingbar.ui
 )
 
 vole_add_resources(

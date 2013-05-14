@@ -18,6 +18,8 @@
 #include <boost/multi_array.hpp> // ensure that multi_array is not visible to Qt MOC
 #endif
 
+
+// TODO: ask petr what this is all about
 inline size_t tbb_size_t_select(unsigned u, unsigned long long ull) {
 	return (sizeof(size_t) == sizeof(u)) ? size_t(u) : size_t(ull);
 }

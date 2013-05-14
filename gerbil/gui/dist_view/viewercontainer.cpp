@@ -1,7 +1,7 @@
 #include "viewercontainer.h"
 
 #include "viewport.h"
-#include "mainwindow.h"
+#include "../mainwindow.h"
 
 #include <QSignalMapper>
 

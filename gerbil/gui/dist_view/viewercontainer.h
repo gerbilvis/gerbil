@@ -1,11 +1,11 @@
 #ifndef VIEWERCONTAINER_H
 #define VIEWERCONTAINER_H
 
-#include <QWidget>
-#include <QVector>
-
 #include "multi_img_viewer.h"
 #include <background_task_queue.h>
+
+#include <QWidget>
+#include <QVector>
 
 // TODO
 // * check if bands can be removed from MainWindow altogether
