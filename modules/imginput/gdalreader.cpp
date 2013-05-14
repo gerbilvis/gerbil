@@ -12,10 +12,6 @@
 #include <vector>
 #include <algorithm>        // std::stable_sort
 
-// TODO: cropped flag im multi_img oder irgendwie anders oder config.bandlow/high auf 0 setzen
-// falls flag wirklich bleibt, muss man ihn wohl in allen konstruktoren auf false setzen
-// -> Flag in ImgInput anlegen, beim erstellen von GDALReader Referenz auf ImgInput mit uebergeben? <-
-
 using std::vector;
 
 namespace vole {
