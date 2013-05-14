@@ -1,14 +1,16 @@
 #ifdef WITH_GDAL
 
-#include <algorithm>        // std::stable_sort
-#include "gdalreader.h"
-#include <gdal/gdal_priv.h>
-#include <gdal/cpl_conv.h>
 #include "imginput.h"
+#include "gdalreader.h"
+
+#include <gdal_priv.h>
+#include <cpl_conv.h>
+
 #include <limits>
 #include <sstream>
 #include <string>
 #include <vector>
+#include <algorithm>        // std::stable_sort
 
 // TODO: cropped flag im multi_img oder irgendwie anders oder config.bandlow/high auf 0 setzen
 // falls flag wirklich bleibt, muss man ihn wohl in allen konstruktoren auf false setzen
