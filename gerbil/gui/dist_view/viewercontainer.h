@@ -6,6 +6,7 @@
 
 #include <QWidget>
 #include <QVector>
+#include <QLayout>
 
 // TODO
 // * check if bands can be removed from MainWindow altogether
@@ -111,10 +112,6 @@ protected:
 	BackgroundTaskQueue *taskQueue;
 	multi_img_viewer *activeViewer;
 	cv::Rect roi;
-
-	QVBoxLayout *vLayout;
- 	// if not NULL, the stretch item (last item) in the vLayout
-	QLayoutItem *stretchItem;
 
 private:
     /*! \brief Add a multi_img_viewer to the widget.

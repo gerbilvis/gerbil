@@ -16,7 +16,7 @@
 #define GGDBG_REPR(repr) GGDBGM(format("%1%")%repr << endl)
 
 ViewerContainer::ViewerContainer(QWidget *parent)
-    : QWidget(parent)
+	: QWidget(parent)
 {
 }
 
@@ -313,6 +313,7 @@ void ViewerContainer::toggleViewerDisable(representation repr)
 {
 	disconnectViewer(repr);
 
+	// TODO: why do we have to differentiate between IMG/GRAD and PCA variants?
 	switch(repr) {
 	case IMG:
 		break;
@@ -354,12 +355,6 @@ void ViewerContainer::toggleViewerDisable(representation repr)
 			break;
 		}
 	}
-	if(allFolded) {
-		//GGDBGM("all viewers folded, adding stretch to layout."<<endl);
-		vLayout->addStretch(1);
-		int stretchIdx = vLayout->count()-1;
-		stretchItem = vLayout->itemAt(stretchIdx);
-	}
 }
 
 void ViewerContainer::toggleViewerEnable(representation repr)
@@ -368,12 +363,8 @@ void ViewerContainer::toggleViewerEnable(representation repr)
 
 	emit requestGUIEnabled(false, TT_TOGGLE_VIEWER);
 
-	if(NULL != stretchItem) {
-		//GGDBGM("all viewers folded, removing stretch from layout."<<endl);
-		vLayout->removeItem(stretchItem);
-		delete stretchItem;
-		stretchItem = NULL;
-	}
+	//GGDBGM("all viewers folded, removing stretch from layout."<<endl);
+	//vLayout->removeItem(&stretchItem);
 
 	switch(repr) {
 	case IMG:
@@ -444,22 +435,27 @@ void ViewerContainer::toggleViewerEnable(representation repr)
 
 void ViewerContainer::initUi()
 {
-    vLayout = new QVBoxLayout(this);
-
-	// CAVEAT: Only one viewer per representation type is supported.
+	// Only one viewer per representation type is supported.
     createViewer(IMG);
 	createViewer(GRAD);
     createViewer(IMGPCA);
     createViewer(GRADPCA);
-	//vLayout->addStretch(0);
 
 	// start with IMG, hide IMGPCA, GRADPCA at the beginning
 	activeViewer = vm.value(IMG);
-	vm.value(IMG)->setActive();
+	activeViewer->setActive();
 	vm.value(IMGPCA)->toggleFold();
 	vm.value(GRADPCA)->toggleFold();
 
+	// create layout and fill with viewers
+	QVBoxLayout *vLayout = new QVBoxLayout(this);
 	ViewerList vl = vm.values();
+	foreach(multi_img_viewer *viewer, vl) {
+		// add with stretch = 1 so they will stay evenly distributed in space
+		vLayout->addWidget(viewer, 1);
+	}
+	vLayout->addStretch(); // align on top when all folded
+
 	// for self-activation of viewports
 	QSignalMapper *vpsmap = new QSignalMapper(this);
 	for (size_t i = 0; i < vl.size(); ++i) {
@@ -547,8 +543,6 @@ multi_img_viewer *ViewerContainer::createViewer(representation repr)
 	assert(taskQueue);
     viewer->queue = taskQueue;
     vm.insert(repr, viewer);
-	vLayout->addWidget(viewer);
-	//vLayout->addWidget(viewer, /* stretch */ 1);
 }
 
 void ViewerContainer::newOverlay()

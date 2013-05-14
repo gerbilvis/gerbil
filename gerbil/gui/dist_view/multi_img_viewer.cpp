@@ -70,7 +70,7 @@ void multi_img_viewer::toggleFold()
 		emit folding();
 		payload->setHidden(true);
 		topBar->fold();
-		setSizePolicy(QSizePolicy::Preferred, QSizePolicy::Preferred);
+		setSizePolicy(QSizePolicy::Preferred, QSizePolicy::Maximum);
 		setTitle(type, 0.0, 0.0);
 		//GGDBGM(boost::format("emitting toggleViewer(false, %1%)\n") % getType());
 		emit toggleViewer(false, getType());
