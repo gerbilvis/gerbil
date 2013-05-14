@@ -216,7 +216,6 @@ multi_img::ptr GdalReader::readFile()
 			sizeY,
 			sizeX,
 			bandhigh - bandlow + 1)); // bandhigh is inclusive
-	imginput.bandCroppingHandeled = true;
 
 	double maxVal = 0;
 	for (int metaDataIdx = bandlow; metaDataIdx <= bandhigh; ++metaDataIdx)

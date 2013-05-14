@@ -22,7 +22,7 @@ public:
 
 private:
 	multi_img img;
-//	QImage rgbImg, pcaImg, somImg; TODO
+//	QImage rgbImg, pcaImg, somImg; TODO: die sollten iwie nullable sein
 };
 
 #endif // FALSECOLOR_H

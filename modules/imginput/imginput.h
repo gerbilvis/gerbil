@@ -9,7 +9,7 @@ namespace vole {
 
 class ImgInput {
 public:
-	ImgInput(const ImgInputConfig& config) : config(config), bandCroppingHandeled(false) { }
+	ImgInput(const ImgInputConfig& config) : config(config) { }
 
 	// Wrapper around readFile()
 	multi_img::ptr execute();
@@ -19,8 +19,6 @@ public:
 	// provide both processed and original image (on same ROI)
 	// first: processed, second: original
 	std::pair<multi_img::ptr, multi_img::ptr> both();
-
-	bool bandCroppingHandeled;
 
 private:
 	const ImgInputConfig &config;

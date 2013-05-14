@@ -11,13 +11,21 @@ namespace vole {
 
 multi_img::ptr ImgInput::execute()
 {
+	bool bandsCropped = false;
 	multi_img::ptr img_ptr(new multi_img(config.file));
 
 #ifdef WITH_GDAL
 	// if multi_img-constructor didn't work, try GDALReader
 	if (img_ptr->empty())
 	{
-		img_ptr = GdalReader(config, *this).readFile();
+		img_ptr = GdalReader(config).readFile();
+
+		// GdalReader was used successfully
+		if (!img_ptr->empty())
+		{
+			// GdalReader applies bandCropping
+			bandsCropped = true;
+		}
 	}
 #endif
 
@@ -42,8 +50,9 @@ multi_img::ptr ImgInput::execute()
 		}
 	}
 
-	// crop spectrum
-	cropSpectrum(img_ptr);
+	// crop spectrum - maybe we used a fancy file reader that cropped the bands already
+	if (!bandsCropped)
+		cropSpectrum(img_ptr);
 
 	// return empty image on failure
 	if (img_ptr->empty())
@@ -68,37 +77,16 @@ multi_img::ptr ImgInput::execute()
 #ifdef WITH_GERBIL_COMMON
 std::pair<multi_img::ptr, multi_img::ptr> ImgInput::both()
 {
-	// TODO: make this a function that just fails with a nasty message. -> sollte jetzt eig funktionieren...
-	multi_img::ptr img_ptr = execute();
+	// TODO: make this a function that just fails with a nasty message. -> see TODO
+	std::cerr << "This function is currently not implemented." << std::endl;
+	return std::make_pair(multi_img::ptr(new multi_img()), multi_img::ptr(new multi_img()));
+
+	/*multi_img::ptr img_ptr = execute();
 
 	// return empty image on failure
 	if (img_ptr->empty())
 		// returns 2 (different) empty image objects, do not use (img, img)
 		// (changes to one are not expected to change the other one...)
-		return std::make_pair(img_ptr, multi_img::ptr(new multi_img()));
-
-	// apply ROI
-	if (!config.roi.empty())
-	{
-		std::vector<int> roiVals;
-		if (!ImgInput::parseROIString(config.roi, roiVals))
-		{
-			// Parsing of ROI String failed
-			std::cerr << "Ignoring invalid ROI specification" << std::endl;
-		}
-		else
-		{
-			// only apply ROI if it isn't already
-			if (roiVals[2] != img_ptr->width || roiVals[3] != img_ptr->height)
-				applyROI(img_ptr, roiVals);
-		}
-	}
-
-	// crop spectrum
-	cropSpectrum(img_ptr);
-
-	// return empty image on failure
-	if (img_ptr->empty())
 		return std::make_pair(img_ptr, multi_img::ptr(new multi_img()));
 
 	// compute gradient
@@ -108,12 +96,13 @@ std::pair<multi_img::ptr, multi_img::ptr> ImgInput::both()
 		*proc_ptr = proc_ptr->spec_gradient();
 	}
 
+	// TODO: das passiert jetzt vor der Berechnung des Gradienten. Problem?
 	// reduce number of bands
 	if (config.bands > 0 && config.bands < (int)proc_ptr->size()) {
 		*proc_ptr = proc_ptr->spec_rescale(config.bands);
 	}
 
-	return std::make_pair(proc_ptr, img_ptr);
+	return std::make_pair(proc_ptr, img_ptr);*/
 }
 #endif
 
@@ -137,10 +126,6 @@ void ImgInput::applyROI(multi_img::ptr &img_ptr, vector<int>& vals)
 
 void ImgInput::cropSpectrum(multi_img::ptr &img_ptr)
 {
-	// File reader cropped the bands already
-	if (bandCroppingHandeled)
-		return;
-
 	if ((config.bandlow > 0) ||
 		(config.bandhigh > 0 && config.bandhigh < (int)img_ptr->size() - 1)) {
 

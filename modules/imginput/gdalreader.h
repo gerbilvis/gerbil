@@ -12,15 +12,13 @@ namespace vole {
 
 class GdalReader {
 public:
-	GdalReader(const ImgInputConfig& config, ImgInput& imginput)
-		: config(config), imginput(imginput) { }
+	GdalReader(const ImgInputConfig& config)
+		: config(config) { }
 
 	multi_img::ptr readFile();
 
 private:
 	const ImgInputConfig &config;
-
-	ImgInput &imginput;
 
 	static bool tryConvert(std::string const&, float&);
 };
