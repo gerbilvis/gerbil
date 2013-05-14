@@ -130,7 +130,9 @@ macro(vole_add_module)
 
 		# Wrap Qt sources
 		if(WITH_QT)
-			qt4_wrap_cpp(moc_sources ${vole_module_moc_sources})
+			# The debugger option is a workaround for faulty moc preprocessor
+			# that is triggered by some boost header file code
+			qt4_wrap_cpp(moc_sources ${vole_module_moc_sources} OPTIONS -DBOOST_NO_TEMPLATE_PARTIAL_SPECIALIZATION)
 			qt4_wrap_ui(uic_sources ${vole_module_ui_sources})
 
 			list(APPEND vole_module_library_sources ${moc_sources} ${uic_sources})
