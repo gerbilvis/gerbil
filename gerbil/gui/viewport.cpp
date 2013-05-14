@@ -419,8 +419,9 @@ void Viewport::drawBins(QPainter &painter, QTimer &renderTimer,
 		/* logarithm is used to prevent single data points to get lost.
 		   this should be configurable. */
 		alpha = useralpha *
-				(0.01 + 0.99*(log(b.weight+1) / log((float)s.totalweight)));
-//	TODO: option	(0.01 + 0.99*(b.weight / (float)s.totalweight));
+		        (0.01 + 0.99*(log(b.weight+1) / log((float)s.totalweight)));
+		//	TODO: option
+		//      (0.01 + 0.99*(b.weight / (float)s.totalweight));
 		color.setAlphaF(min(alpha, 1.)); // cap at 1
 
 		if (highlighted && onlyHighlight) {
@@ -827,7 +828,7 @@ void Viewport::resizeEvent(QResizeEvent *ev)
 
 	// use floating point for better alpha accuracy!
 	// TODO: We don't need this for highlights. do we care?
-	format.setInternalTextureFormat(GL_RGBA32F);
+	format.setInternalTextureFormat(GL_RGBA16F);
 
 	delete fboSpectrum;
 	delete fboHighlight;
