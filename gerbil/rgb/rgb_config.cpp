@@ -20,24 +20,29 @@ RGBConfig::RGBConfig(const std::string& p)
  , som(prefix + "som")
 #endif
 {
-	#ifdef WITH_BOOST
+	algo = COLOR_XYZ;
+	pca_stretch = false;
+	som_depth = 5;
+	som_linear = false;
+
+	#ifdef WITH_BOOST_PROGRAM_OPTIONS
 		initBoostOptions();
 	#endif // WITH_BOOST
 }
 
-#ifdef WITH_BOOST
+#ifdef WITH_BOOST_PROGRAM_OPTIONS
 void RGBConfig::initBoostOptions() {
 	options.add_options()
-		(key("algo"), value(&algo)->default_value(COLOR_XYZ),
+		(key("algo"), value(&algo)->default_value(algo),
 		                   "Algorithm to employ: XYZ true color,\n"
 		                   "PCA or SOM false-color")
-		(key("pca_stretch"), bool_switch(&pca_stretch)->default_value(false),
+		(key("pca_stretch"), bool_switch(&pca_stretch)->default_value(pca_stretch),
 		                   "In PCA case: "
 		                   "Maximize contrast in each channel individually")
-		(key("somDepth"), value(&som_depth)->default_value(5),
+		(key("somDepth"), value(&som_depth)->default_value(som_depth),
 		                   "In SOM case: "
 		                   "number of best matching neurons to incorporate")
-		(key("somLinear"), bool_switch(&som_linear)->default_value(false),
+		(key("somLinear"), bool_switch(&som_linear)->default_value(som_linear),
 		                   "In SOM case: "
 		                   "Use linear BMU mixing instead of weighting scheme")
 		;

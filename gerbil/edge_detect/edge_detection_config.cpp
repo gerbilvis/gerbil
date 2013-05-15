@@ -10,6 +10,16 @@ namespace vole {
 EdgeDetectionConfig::EdgeDetectionConfig(const std::string& p)
 	: Config(p), similarity(prefix + "similarity")
 {
+	som_file = "";
+	hack3d = false;
+	width = 32;
+	height = 32;
+	maxIter = 40000;
+	learnStart = 0.1;
+	learnEnd = 0.001;
+	radiusStart = 4.;
+	radiusEnd = 1.;
+	seed = time(NULL);
 
 	#ifdef WITH_BOOST
 		initBoostOptions();
@@ -19,27 +29,27 @@ EdgeDetectionConfig::EdgeDetectionConfig(const std::string& p)
 #ifdef WITH_BOOST
 void EdgeDetectionConfig::initBoostOptions() {
 	options.add_options()
-		(key("som_input"), value(&som_file)->default_value(""),
+		(key("som_input"), value(&som_file)->default_value(som_file),
 			 "When set, read given multispectral image file to initialize SOM"
 			 " instead of training")
-		(key("hack3d"), bool_switch(&hack3d)->default_value(false),
+		(key("hack3d"), bool_switch(&hack3d)->default_value(hack3d),
 			 "Use hack to have 3D som of size width a*a*a, specify "
 			 "width=a, height=1")
-		(key("somWidth"), value(&width)->default_value(32),
+		(key("somWidth"), value(&width)->default_value(width),
 			"Width of the SOM")
-		(key("somHeight"), value(&height)->default_value(32),
+		(key("somHeight"), value(&height)->default_value(height),
 			"Height of the SOM")
-		(key("somMaxIter"), value(&maxIter)->default_value(40000),
+		(key("somMaxIter"), value(&maxIter)->default_value(maxIter),
 			"Number of training iterations for the SOM")
-		(key("somLearnStart"), value(&learnStart)->default_value(0.1),
+		(key("somLearnStart"), value(&learnStart)->default_value(learnStart),
 			"Learning rate at the beginning")
-		(key("somLearnEnd"), value(&learnEnd)->default_value(0.001),
+		(key("somLearnEnd"), value(&learnEnd)->default_value(learnEnd),
 			"Learning rate at the end of the training process")
-		(key("somRadiusStart"), value(&radiusStart)->default_value(4.),
+		(key("somRadiusStart"), value(&radiusStart)->default_value(radiusStart),
 			"Initial neighborhood radius")
-		(key("somRadiusEnd"), value(&radiusEnd)->default_value(1.),
+		(key("somRadiusEnd"), value(&radiusEnd)->default_value(radiusEnd),
 			"Neighborhood radius at the end of the training process")
-		(key("seed"), value(&seed)->default_value(time(NULL)),
+		(key("seed"), value(&seed)->default_value(seed),
 			"Seed value of random number generators")
 		;
 	options.add(similarity.options);

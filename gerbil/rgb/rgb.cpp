@@ -36,27 +36,7 @@ int RGB::execute()
 	if (src->empty())
 		return 1;
 	
-	cv::Mat3f bgr;
-	
-	switch (config.algo) {
-	case COLOR_XYZ:
-		bgr = src->bgr();
-		break;
-	case COLOR_PCA:
-		bgr = executePCA(*src);
-		break;
-	case COLOR_SOM:
-#ifdef WITH_EDGE_DETECT
-		bgr = executeSOM(*src);
-		break;
-#else
-		std::cerr << "FATAL: SOM functionality missing!" << std::endl;
-		return 1;
-#endif
-	default:
-		return 1;
-	}
-	
+	cv::Mat3f bgr = execute(*src);
 	if (bgr.empty())
 		return 1;
 
@@ -67,6 +47,31 @@ int RGB::execute()
 	
 	cv::imwrite(config.output_file, bgr*255.);
 	return 0;
+}
+
+cv::Mat3f RGB::execute(const multi_img& src)
+{
+	cv::Mat3f bgr;
+
+	switch (config.algo) {
+	case COLOR_XYZ:
+		bgr = src.bgr();
+		break;
+	case COLOR_PCA:
+		bgr = executePCA(src);
+		break;
+	case COLOR_SOM:
+#ifdef WITH_EDGE_DETECT
+		bgr = executeSOM(src);
+		break;
+#else
+		std::cerr << "FATAL: SOM functionality missing!" << std::endl;
+#endif
+	default:
+		true;
+	}
+
+	return bgr;
 }
 
 cv::Mat3f RGB::executePCA(const multi_img& src)
