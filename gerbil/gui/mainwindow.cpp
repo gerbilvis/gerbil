@@ -37,6 +37,11 @@
 #define USE_CUDA_CLAMP          0
 #define USE_CUDA_ILLUMINANT     0
 
+cv::Rect QRect2CVRect(QRect r) {
+	return cv::Rect(
+		r.x(), r.y(), r.width(), r.height());
+}
+
 MainWindow::MainWindow(BackgroundTaskQueue &queue, multi_img_base *image,
 						   QString labelfile, bool limitedMode, QWidget *parent)
 	: QMainWindow(parent), queue(queue),
@@ -59,6 +64,10 @@ MainWindow::MainWindow(BackgroundTaskQueue &queue, multi_img_base *image,
 	// create all objects
 	setupUi(this);
 
+	roiDock = new ROIDock(this);
+	addDockWidget(Qt::RightDockWidgetArea, roiDock);
+
+
 	// MODEL To be removed when refactored
 	// into model classes.
 	viewerContainer->image = &(this->image);
@@ -75,12 +84,14 @@ MainWindow::MainWindow(BackgroundTaskQueue &queue, multi_img_base *image,
 	setLabelColors(vole::Labeling::colors(2, true));
 
 	// default to full image if small enough
-	roiView->roi = QRect(0, 0, 
+//	roiView->roi = QRect(0, 0,
+//		(*image_lim)->width < 513 ? (*image_lim)->width : 512,
+//		(*image_lim)->height < 513 ? (*image_lim)->height : 512);
+	roiDock->setRoi(QRect(0, 0,
 		(*image_lim)->width < 513 ? (*image_lim)->width : 512,
-		(*image_lim)->height < 513 ? (*image_lim)->height : 512);
+		(*image_lim)->height < 513 ? (*image_lim)->height : 512));
 
-	roi = cv::Rect(roiView->roi.x(), roiView->roi.y(), 
-		roiView->roi.width(), roiView->roi.height());
+	roi = QRect2CVRect(roiDock->getRoi());
 	emit roiChanged(roi);
 
 	setGUIEnabled(false, TT_SELECT_ROI);
@@ -374,10 +385,16 @@ void MainWindow::initUI()
 			this, SLOT(loadSeeds()));
 
 	// signals for ROI
-	connect(roiButtons, SIGNAL(clicked(QAbstractButton*)),
-			this, SLOT(ROIDecision(QAbstractButton*)));
-	connect(roiView, SIGNAL(newSelection(QRect)),
-			this, SLOT(ROISelection(QRect)));
+//	connect(roiButtons, SIGNAL(clicked(QAbstractButton*)),
+//			this, SLOT(ROIDecision(QAbstractButton*)));
+
+	connect(roiDock, SIGNAL(resetRoiClicked()),
+			this, SLOT(roiResetClicked()));
+	connect(roiDock, SIGNAL(applyRoiClicked()),
+			this, SLOT(roiApplyClicked()));
+
+//	connect(roiView, SIGNAL(newSelection(QRect)),
+//			this, SLOT(ROISelection(QRect)));
 
 	connect(ignoreButton, SIGNAL(toggled(bool)),
 			markButton, SLOT(setDisabled(bool)));
@@ -763,8 +780,8 @@ void MainWindow::updateRGB(bool success)
 	}
 	hlock.unlock();
 
-	roiView->setPixmap(full_rgb);
-	roiView->update();
+	roiDock->setPixmap(full_rgb);
+	roiDock->update();
 	if (roi.width > 0) {
 		rgb = full_rgb.copy(roi.x, roi.y, roi.width, roi.height);
 		rgbView->setPixmap(rgb);
@@ -1569,60 +1586,98 @@ void MainWindow::screenshot()
 	io.writeFile(QString(), output);
 }
 
-void MainWindow::ROIDecision(QAbstractButton *sender)
-{
-	QDialogButtonBox::ButtonRole role = roiButtons->buttonRole(sender);
-	roiButtons->setDisabled(true);
+//void MainWindow::ROIDecision(QAbstractButton *sender)
+//{
+//	if (role == QDialogButtonBox::ResetRole) {
 
-	if (role == QDialogButtonBox::ResetRole) {
+//		if (roi.width > 1) {
+//			roiView->roi = QRect(roi.x, roi.y, roi.width, roi.height);
+//		} else {
+//			// fetch image dimensions
+//			int height;
+//			int width;
+//			{
+//				SharedMultiImgBaseGuard guard(*image_lim);
+//				height = (*image_lim)->height;
+//				width = (*image_lim)->width;
+//			}
 
-		if (roi.width > 1) {
-			roiView->roi = QRect(roi.x, roi.y, roi.width, roi.height);
-		} else {
-			// fetch image dimensions
-			int height;
-			int width;
-			{
-				SharedMultiImgBaseGuard guard(*image_lim);
-				height = (*image_lim)->height;
-				width = (*image_lim)->width;
-			}
+//			// set ROI to full image
+//			roiView->roi = QRect(0, 0, width, height);
+//		}
+//		roiView->update();
+//	} else if (role == QDialogButtonBox::ApplyRole) {
 
-			// set ROI to full image
-			roiView->roi = QRect(0, 0, width, height);
-		}
-		roiView->update();
-	} else if (role == QDialogButtonBox::ApplyRole) {
+//		bool reuse = true;
+//		if (runningTask != TT_NONE) {
+//			queue.cancelTasks(roi);
+//			reuse = false;
+//		}
 
-		bool reuse = true;
-		if (runningTask != TT_NONE) {
-			queue.cancelTasks(roi);
-			reuse = false;
-		}
-
-		const QRect &r = roiView->roi;
-		roi = cv::Rect(r.x(), r.y(), r.width(), r.height());
+//		const QRect &r = roiView->roi;
+//		roi = cv::Rect(r.x(), r.y(), r.width(), r.height());
 		
-		setGUIEnabled(false, TT_SELECT_ROI);
+//		setGUIEnabled(false, TT_SELECT_ROI);
 
-		applyROI(reuse);
+//		applyROI(reuse);
 
-		BackgroundTaskPtr taskEpilog(new BackgroundTask(roi));
-		QObject::connect(taskEpilog.get(), SIGNAL(finished(bool)), 
-			this, SLOT(finishTask(bool)), Qt::QueuedConnection);
-		queue.push(taskEpilog);
+//		BackgroundTaskPtr taskEpilog(new BackgroundTask(roi));
+//		QObject::connect(taskEpilog.get(), SIGNAL(finished(bool)),
+//			this, SLOT(finishTask(bool)), Qt::QueuedConnection);
+//		queue.push(taskEpilog);
+//	}
+//}
+
+void MainWindow::roiResetClicked() {
+	if (roi.width > 1) {
+		roiDock->setRoi(QRect(roi.x, roi.y, roi.width, roi.height));
+	} else {
+		// fetch image dimensions
+		int height;
+		int width;
+		{
+			SharedMultiImgBaseGuard guard(*image_lim);
+			height = (*image_lim)->height;
+			width = (*image_lim)->width;
+		}
+
+		// set ROI to full image
+		roiDock->setRoi(QRect(0, 0, width, height));
 	}
+	roiDock->update();
 }
 
-void MainWindow::ROISelection(const QRect &roi)
-{
-	roiButtons->setEnabled(true);
+void MainWindow::roiApplyClicked() {
+	bool reuse = true;
+	if (runningTask != TT_NONE) {
+		queue.cancelTasks(roi);
+		reuse = false;
+	}
 
-	QString title("<b>ROI:</b> %1, %2 - %3, %4 (%5x%6)");
-	title = title.arg(roi.x()).arg(roi.y()).arg(roi.right()).arg(roi.bottom())
-			.arg(roi.width()).arg(roi.height());
-	roiTitle->setText(title);
+	const QRect r = roiDock->getRoi();
+	roi = cv::Rect(r.x(), r.y(), r.width(), r.height());
+
+	setGUIEnabled(false, TT_SELECT_ROI);
+
+	applyROI(reuse);
+
+	BackgroundTaskPtr taskEpilog(new BackgroundTask(roi));
+	QObject::connect(taskEpilog.get(), SIGNAL(finished(bool)),
+		this, SLOT(finishTask(bool)), Qt::QueuedConnection);
+	queue.push(taskEpilog);
 }
+
+
+// -> ROIDock
+//void MainWindow::ROISelection(const QRect &roi)
+//{
+//	roiButtons->setEnabled(true);
+
+//	QString title("<b>ROI:</b> %1, %2 - %3, %4 (%5x%6)");
+//	title = title.arg(roi.x()).arg(roi.y()).arg(roi.right()).arg(roi.bottom())
+//			.arg(roi.width()).arg(roi.height());
+//	roiTitle->setText(title);
+//}
 
 void MainWindow::openContextMenu()
 {

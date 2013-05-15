@@ -11,6 +11,7 @@
 #define MAINWINDOW_H
 
 #include "ui_mainwindow.h"
+#include "docks/roidock.h"
 #include <shared_data.h>
 #include <background_task.h>
 #include <background_task_queue.h>
@@ -97,8 +98,10 @@ public slots:
 	// add new label (color)
 	void createLabel();
 
-	void ROIDecision(QAbstractButton *sender);
-	void ROISelection(const QRect &roi);
+	//void ROIDecision(QAbstractButton *sender);
+	//void ROISelection(const QRect &roi);
+	void roiResetClicked();
+	void roiApplyClicked();
 
 	void openContextMenu();
 
@@ -184,6 +187,8 @@ private:
 	bool limitedMode;
 
 	QString startupLabelFile;
+
+	ROIDock *roiDock;
 };
 
 #endif // MAINWINDOW_H

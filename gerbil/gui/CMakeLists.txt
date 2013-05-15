@@ -28,7 +28,10 @@ vole_compile_library(
 	tasks/normrangetbb
 	tasks/normrangecuda
 
-    gerbil_gui_debug
+	docks/dockwidget
+	docks/roidock
+
+	gerbil_gui_debug
 )
 
 vole_moc_library(
@@ -42,12 +45,16 @@ vole_moc_library(
 	dist_view/multi_img_viewer.h
 	dist_view/viewport.h
 	dist_view/foldingbar.h
+
+        docks/dockwidget.h
+        docks/roidock.h
 )
 
 vole_ui_library(
 	mainwindow.ui
 	dist_view/multi_img_viewer.ui
 	dist_view/foldingbar.ui
+	docks/roidock.ui
 )
 
 vole_add_resources(
