@@ -5,20 +5,17 @@
 ROIDock::ROIDock(QWidget *parent) :
 	DockWidget(parent)
 {
-	GGDBG_ENTER_LEAVE();
 	setupUi(this);
 	initUi();
 }
 
 QRect ROIDock::getRoi() const
 {
-	GGDBG_ENTER_LEAVE();
 	return roiView->roi;
 }
 
 void ROIDock::setRoi(const QRect roi)
 {
-	GGDBG_ENTER_LEAVE();
 	oldRoi = roi;
 	roiView->roi = roi;
 	roiView->update();
@@ -26,7 +23,6 @@ void ROIDock::setRoi(const QRect roi)
 
 void ROIDock::initUi()
 {
-	GGDBG_ENTER_LEAVE();
 	connect(roiButtons, SIGNAL(clicked(QAbstractButton*)),
 			 this, SLOT(roiButtonsClicked(QAbstractButton*)));
 	connect(roiView, SIGNAL(newSelection(QRect)),
@@ -37,7 +33,6 @@ void ROIDock::initUi()
 
 void ROIDock::roiButtonsClicked(QAbstractButton *sender)
 {
-	GGDBG_ENTER_LEAVE();
 	QDialogButtonBox::ButtonRole role = roiButtons->buttonRole(sender);
 	roiButtons->setDisabled(true);
 	if (role == QDialogButtonBox::ResetRole) {
@@ -52,7 +47,6 @@ void ROIDock::roiButtonsClicked(QAbstractButton *sender)
 
 void ROIDock::newRoiSelected(const QRect roi)
 {
-	GGDBG_ENTER_LEAVE();
 	curRoi = roi;
 	roiButtons->setEnabled(true);
 
@@ -78,7 +72,6 @@ void ROIDock::resetRoi()
 
 void ROIDock::setPixmap(const QPixmap image)
 {
-	GGDBG_ENTER_LEAVE();
 	roiView->setPixmap(image);
 	roiView->update();
 }
