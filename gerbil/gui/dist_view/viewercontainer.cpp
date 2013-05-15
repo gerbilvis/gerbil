@@ -363,9 +363,6 @@ void ViewerContainer::toggleViewerEnable(representation repr)
 
 	emit requestGUIEnabled(false, TT_TOGGLE_VIEWER);
 
-	//GGDBGM("all viewers folded, removing stretch from layout."<<endl);
-	//vLayout->removeItem(&stretchItem);
-
 	switch(repr) {
 	case IMG:
 	{

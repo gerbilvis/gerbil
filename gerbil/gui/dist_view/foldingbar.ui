@@ -2,14 +2,6 @@
 <ui version="4.0">
  <class>FoldingBar</class>
  <widget class="QWidget" name="FoldingBar">
-  <property name="geometry">
-   <rect>
-    <x>0</x>
-    <y>0</y>
-    <width>384</width>
-    <height>20</height>
-   </rect>
-  </property>
   <property name="autoFillBackground">
    <bool>true</bool>
   </property>
@@ -23,14 +15,14 @@
       <string/>
      </property>
      <property name="pixmap">
-      <pixmap resource="gerbil.qrc">:/basic/arrow-down</pixmap>
+      <pixmap resource="../gerbil.qrc">:/basic/arrow-down</pixmap>
      </property>
     </widget>
    </item>
    <item>
     <widget class="QLabel" name="titleLabel">
      <property name="text">
-      <string>Loading...</string>
+      <string>Loading…</string>
      </property>
      <property name="textFormat">
       <enum>Qt::RichText</enum>
@@ -56,7 +48,7 @@
   </layout>
  </widget>
  <resources>
-  <include location="gerbil.qrc"/>
+  <include location="../gerbil.qrc"/>
  </resources>
  <connections/>
 </ui>

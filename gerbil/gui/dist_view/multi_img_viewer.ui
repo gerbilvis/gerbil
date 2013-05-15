@@ -172,7 +172,7 @@
              <string/>
             </property>
             <property name="icon">
-             <iconset resource="gerbil.qrc">
+             <iconset resource="../gerbil.qrc">
               <normaloff>:/toolbar/limiter</normaloff>:/toolbar/limiter</iconset>
             </property>
             <property name="iconSize">
@@ -219,7 +219,7 @@
              <string/>
             </property>
             <property name="icon">
-             <iconset resource="gerbil.qrc">
+             <iconset resource="../gerbil.qrc">
               <normaloff>:/toolbar/popup</normaloff>:/toolbar/popup</iconset>
             </property>
             <property name="iconSize">
@@ -249,7 +249,7 @@
              <string/>
             </property>
             <property name="icon">
-             <iconset resource="gerbil.qrc">
+             <iconset resource="../gerbil.qrc">
               <normaloff>:/toolbar/rgb</normaloff>:/toolbar/rgb</iconset>
             </property>
             <property name="iconSize">
@@ -318,7 +318,7 @@
   </customwidget>
  </customwidgets>
  <resources>
-  <include location="gerbil.qrc"/>
+  <include location="../gerbil.qrc"/>
  </resources>
  <connections/>
 </ui>
