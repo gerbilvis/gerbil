@@ -36,14 +36,14 @@ void BandView::refresh()
 	update();
 }
 
-void BandView::setPixmap(const QPixmap &p)
+void BandView::setPixmap(QPixmap p)
 {
 	ScaledView::setPixmap(p);
 
 	// adjust seed map if necessary
 	if (seedMap.empty()
-		|| seedMap.rows != pixmap->height() || seedMap.cols != pixmap->width())
-		seedMap = cv::Mat1s(pixmap->height(), pixmap->width(), (short)127);
+		|| seedMap.rows != pixmap.height() || seedMap.cols != pixmap.width())
+		seedMap = cv::Mat1s(pixmap.height(), pixmap.width(), (short)127);
 
 	cacheValid = false;
 }
@@ -127,7 +127,7 @@ void BandView::paintEvent(QPaintEvent *ev)
 		pen.setColor(Qt::yellow); pen.setWidthF(0.5); pen.setStyle(Qt::DotLine);
 		painter.setPen(pen);
 		painter.setBrush(Qt::NoBrush);
-		painter.drawRect(0, 0, pixmap->width(), pixmap->height());
+		painter.drawRect(0, 0, pixmap.width(), pixmap.height());
 	}
 
 	painter.restore();
@@ -172,7 +172,7 @@ struct updateCacheBody {
 
 void BandView::updateCache()
 {
-	cachedPixmap = pixmap->copy(); // TODO: check for possible qt memory leak
+	cachedPixmap = pixmap.copy();
 	cacheValid = true;
 	if (!seedMode && !showLabels) // there is no overlay, leave early
 		return;
@@ -180,10 +180,10 @@ void BandView::updateCache()
 	QPainter painter(&cachedPixmap);
 //	painter.setCompositionMode(QPainter::CompositionMode_Darken);
 
-	QImage dest(pixmap->width(), pixmap->height(), QImage::Format_ARGB32);
+	QImage dest(pixmap.width(), pixmap.height(), QImage::Format_ARGB32);
 	updateCacheBody body(dest, seedMode, labels, seedMap, labelColorsA, seedColorsA);
 	tbb::parallel_for(tbb::blocked_range2d<size_t>(
-		0, pixmap->height(), 0, pixmap->width()), body);
+		0, pixmap.height(), 0, pixmap.width()), body);
 
 	painter.drawImage(0, 0, dest);
 }
@@ -219,7 +219,7 @@ void BandView::updateCache(int x, int y, short label)
 	QPixmap &p = cachedPixmap;
 	QPainter painter(&p);
 	// restore pixel
-	painter.drawPixmap(x, y, *pixmap, x, y, 1, 1);
+	painter.drawPixmap(x, y, pixmap, x, y, 1, 1);
 
 	if (!seedMode && !showLabels) // there is no overlay, leave early
 		return;
@@ -284,7 +284,7 @@ void BandView::cursorAction(QMouseEvent *ev, bool click)
 
 	int x = cursor.x(), y = cursor.y();
 
-	if (!pixmap->rect().contains(x, y))
+	if (!pixmap.rect().contains(x, y))
 		return;
 
 	if (singleLabel && showLabels) {
@@ -321,7 +321,7 @@ void BandView::cursorAction(QMouseEvent *ev, bool click)
 			int x = point.x();
 			int y = point.y();
 
-			if (!pixmap->rect().contains(x, y))
+			if (!pixmap.rect().contains(x, y))
 				break;
 
 			if (ev->buttons() & Qt::LeftButton) {

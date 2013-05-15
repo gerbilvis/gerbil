@@ -25,7 +25,7 @@ public:
 	void paintEvent(QPaintEvent *ev);
 	void leaveEvent(QEvent *ev);
 
-	void setPixmap(const QPixmap &pixmap);
+	void setPixmap(QPixmap pixmap);
 
 	bool isSeedModeEnabled() { return seedMode; }
 

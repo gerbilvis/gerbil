@@ -14,23 +14,23 @@
 #include <iostream>
 
 ScaledView::ScaledView(QWidget *parent)
-	: QGLWidget(QGLFormat(QGL::SampleBuffers), parent), pixmap(NULL)
+	: QGLWidget(QGLFormat(QGL::SampleBuffers), parent)
 {}
 
-void ScaledView::setPixmap(const QPixmap &p)
+void ScaledView::setPixmap(QPixmap p)
 {
-	pixmap = &p;
+	pixmap = p;
 	resizeEvent(0);
 	update();
 }
 
 void ScaledView::resizeEvent(QResizeEvent *ev)
 {
-	if (!pixmap)
+	if (pixmap.isNull())
 		return;
 
 	// determine scale of correct aspect-ratio
-	float src_aspect = pixmap->width()/(float)pixmap->height();
+	float src_aspect = pixmap.width()/(float)pixmap.height();
 	float dest_aspect = width()/(float)height();
 	float w;	// new width
 	if (src_aspect > dest_aspect)
@@ -38,7 +38,7 @@ void ScaledView::resizeEvent(QResizeEvent *ev)
 	else
 		w = height()*src_aspect - 1;
 
-	scale = w/pixmap->width();
+	scale = w/pixmap.width();
 	scaler = QTransform().scale(scale, scale);
 	scalerI = scaler.inverted();
 }
@@ -58,7 +58,7 @@ void ScaledView::paintEvent(QPaintEvent *ev)
 
 	painter.setWorldTransform(scaler);
 	QRect damaged = scalerI.mapRect(ev->rect());
-	painter.drawPixmap(damaged, *pixmap, damaged);
+	painter.drawPixmap(damaged, pixmap, damaged);
 
 	painter.restore();
 

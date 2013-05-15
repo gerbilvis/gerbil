@@ -20,7 +20,7 @@ ROIView::ROIView(QWidget *parent)
 
 void ROIView::paintEvent(QPaintEvent *ev)
 {
-	if (!pixmap)
+	if (pixmap.isNull())
 		return;
 
 	QPainter painter(this);
@@ -28,17 +28,17 @@ void ROIView::paintEvent(QPaintEvent *ev)
 
 	painter.setWorldTransform(scaler);
 	QRect damaged = scalerI.mapRect(ev->rect());
-	painter.drawPixmap(damaged, *pixmap, damaged);
+	painter.drawPixmap(damaged, pixmap, damaged);
 
 	QColor color(Qt::darkGray); color.setAlpha(127);
-	painter.fillRect(0, 0, roi.x(), pixmap->height(), color);
+	painter.fillRect(0, 0, roi.x(), pixmap.height(), color);
 	painter.fillRect(roi.x()+roi.width(), 0,
-					 pixmap->width() - roi.x() - roi.width(),
-					 pixmap->height(), color);
+					 pixmap.width() - roi.x() - roi.width(),
+					 pixmap.height(), color);
 
 	painter.fillRect(roi.x(), 0, roi.width(), roi.y(), color);
 	painter.fillRect(roi.x(), roi.y()+roi.height(),
-					 roi.width(), pixmap->height() - roi.y() - roi.height(),
+					 roi.width(), pixmap.height() - roi.y() - roi.height(),
 					 color);
 	painter.setPen(Qt::red);
 	painter.drawRect(roi);
@@ -55,8 +55,8 @@ void ROIView::cursorAction(QMouseEvent *ev, bool click)
 		return;
 
 	int x = cursor.x(), y = cursor.y();
-	x = std::max(std::min(x, pixmap->width() - 1), 0);
-	y = std::max(std::min(y, pixmap->height() - 1), 0);
+	x = std::max(std::min(x, pixmap.width() - 1), 0);
+	y = std::max(std::min(y, pixmap.height() - 1), 0);
 
 
 	bool right;
