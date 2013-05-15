@@ -781,7 +781,6 @@ void MainWindow::updateRGB(bool success)
 	hlock.unlock();
 
 	roiDock->setPixmap(full_rgb);
-	roiDock->update();
 	if (roi.width > 0) {
 		rgb = full_rgb.copy(roi.x, roi.y, roi.width, roi.height);
 		rgbView->setPixmap(rgb);
@@ -1644,7 +1643,6 @@ void MainWindow::roiResetClicked() {
 		// set ROI to full image
 		roiDock->setRoi(QRect(0, 0, width, height));
 	}
-	roiDock->update();
 }
 
 void MainWindow::roiApplyClicked() {

@@ -6,28 +6,29 @@ ROIDock::ROIDock(QWidget *parent) :
     DockWidget(parent)
 {
 	GGDBG_ENTER_LEAVE();
-	ui.setupUi(this);
+	setupUi(this);
 	initUi();
 }
 
 QRect ROIDock::getRoi() const
 {
 	GGDBG_ENTER_LEAVE();
-	return ui.roiView->roi;
+	return roiView->roi;
 }
 
 void ROIDock::setRoi(const QRect roi)
 {
 	GGDBG_ENTER_LEAVE();
-	ui.roiView->roi = roi;
+	roiView->roi = roi;
+	roiView->update();
 }
 
 void ROIDock::initUi()
 {
 	GGDBG_ENTER_LEAVE();
-	connect(ui.roiButtons, SIGNAL(clicked(QAbstractButton*)),
+	connect(roiButtons, SIGNAL(clicked(QAbstractButton*)),
 			 this, SLOT(roiButtonsClicked(QAbstractButton*)));
-	connect(ui.roiView, SIGNAL(newSelection(QRect)),
+	connect(roiView, SIGNAL(newSelection(QRect)),
 			this, SLOT(newRoiSelected(QRect)));
 }
 
@@ -35,8 +36,8 @@ void ROIDock::initUi()
 void ROIDock::roiButtonsClicked(QAbstractButton *sender)
 {
 	GGDBG_ENTER_LEAVE();
-	QDialogButtonBox::ButtonRole role = ui.roiButtons->buttonRole(sender);
-	ui.roiButtons->setDisabled(true);
+	QDialogButtonBox::ButtonRole role = roiButtons->buttonRole(sender);
+	roiButtons->setDisabled(true);
 	if (role == QDialogButtonBox::ResetRole) {
 		emit resetRoiClicked();
 	} else if (role == QDialogButtonBox::ApplyRole) {
@@ -48,17 +49,18 @@ void ROIDock::roiButtonsClicked(QAbstractButton *sender)
 void ROIDock::newRoiSelected(const QRect roi)
 {
 	GGDBG_ENTER_LEAVE();
-	ui.roiButtons->setEnabled(true);
+	roiButtons->setEnabled(true);
 
 	QString title("<b>ROI:</b> %1, %2 - %3, %4 (%5x%6)");
 	title = title.arg(roi.x()).arg(roi.y()).arg(roi.right()).arg(roi.bottom())
 			.arg(roi.width()).arg(roi.height());
-	ui.roiTitle->setText(title);
+	roiTitle->setText(title);
 }
 
 
 void ROIDock::setPixmap(const QPixmap image)
 {
 	GGDBG_ENTER_LEAVE();
-	ui.roiView->setPixmap(image);
+	roiView->setPixmap(image);
+	roiView->update();
 }

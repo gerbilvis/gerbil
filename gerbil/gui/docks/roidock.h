@@ -6,7 +6,7 @@
 #include "dockwidget.h"
 #include <ui_roidock.h>
 
-class ROIDock : public DockWidget
+class ROIDock : public DockWidget, private Ui::ROIDockUI
 {
 	Q_OBJECT
 public:
@@ -16,7 +16,6 @@ public:
 	QRect getRoi() const;
 	void setRoi(const QRect roi);
 	void setPixmap(const QPixmap image);
-
 signals:
 	void newSelection(QRect roi);
 	void resetRoiClicked();
@@ -25,7 +24,6 @@ public slots:
 	void roiButtonsClicked(QAbstractButton *sender);
 	void newRoiSelected(const QRect roi);
 private:
-	Ui::ROIDockUI ui;
 	void initUi();
 };
 
