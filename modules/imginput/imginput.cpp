@@ -11,6 +11,7 @@ namespace vole {
 
 multi_img::ptr ImgInput::execute()
 {
+	bool roiChanged = false;
 	bool bandsCropped = false;
 	multi_img::ptr img_ptr(new multi_img(config.file));
 
@@ -23,7 +24,8 @@ multi_img::ptr ImgInput::execute()
 		// GdalReader was used successfully
 		if (!img_ptr->empty())
 		{
-			// GdalReader applies bandCropping
+			// GdalReader applies roiChanges & bandCropping
+			roiChanged = true;
 			bandsCropped = true;
 		}
 	}
@@ -34,7 +36,7 @@ multi_img::ptr ImgInput::execute()
 		return img_ptr;
 
 	// apply ROI
-	if (!config.roi.empty())
+	if (!roiChanged && !config.roi.empty())
 	{
 		std::vector<int> roiVals;
 		if (!ImgInput::parseROIString(config.roi, roiVals))
@@ -44,9 +46,7 @@ multi_img::ptr ImgInput::execute()
 		}
 		else
 		{
-			// only apply ROI if it isn't already
-			if (roiVals[2] != img_ptr->width || roiVals[3] != img_ptr->height)
-				applyROI(img_ptr, roiVals);
+			applyROI(img_ptr, roiVals);
 		}
 	}
 
