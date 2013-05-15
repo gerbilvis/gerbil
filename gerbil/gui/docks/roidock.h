@@ -23,8 +23,14 @@ signals:
 public slots:
 	void roiButtonsClicked(QAbstractButton *sender);
 	void newRoiSelected(const QRect roi);
+protected slots:
+	void applyRoi();
+	void resetRoi();
 private:
 	void initUi();
+
+	QRect oldRoi;
+	QRect curRoi;
 };
 
 #endif // ROIDOCK_H

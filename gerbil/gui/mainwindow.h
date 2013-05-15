@@ -98,9 +98,6 @@ public slots:
 	// add new label (color)
 	void createLabel();
 
-	//void ROIDecision(QAbstractButton *sender);
-	//void ROISelection(const QRect &roi);
-	void roiResetClicked();
 	void roiApplyClicked();
 
 	void openContextMenu();
