@@ -2,11 +2,13 @@
 #define FALSECOLOR_H
 
 #include <multi_img.h>
+#include <QImage>
+#include <rgb.h>
 
 class FalseColor
 {
 public:
-	FalseColor(const multi_img& img) : img(img) { }
+	FalseColor(const multi_img& img);
 
 	// Resets current true / false color representations
 	void resetCaches();
@@ -21,8 +23,9 @@ public:
 	QImage getSom();
 
 private:
-	multi_img img;
-//	QImage rgbImg, pcaImg, somImg; TODO: die sollten iwie nullable sein
+	const multi_img* img;
+	QImage rgbImg, pcaImg, somImg;
+	gerbil::RGB rgb;
 };
 
 #endif // FALSECOLOR_H
