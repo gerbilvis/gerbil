@@ -383,8 +383,8 @@ public:
 
 	/// return sRGB color space representation of a multispectral pixel
 	cv::Vec3f bgr(const Pixel &p) const;
-	static cv::Vec3f bgr(const Pixel &p, 
-		size_t dim, std::vector<BandDesc> &meta, Value maxval);
+	static cv::Vec3f bgr(const Pixel &p,
+		size_t dim, const std::vector<BandDesc> &meta, Value maxval);
 #endif
 
 //@}
