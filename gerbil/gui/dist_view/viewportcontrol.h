@@ -2,21 +2,12 @@
 #define VIEWPORTCONTROL_H
 
 #include "ui_viewportcontrol.h"
+#include "compute.h"
 #include <QMenu>
 #include <QTimer>
 
 class Viewport;
 class multi_img_viewer;
-
-/* TODO: this is here as both multi_img_viewer.h and viewport.h include
- * this header. but it sucks to have it here. */
-enum representation {
-	IMG = 0,
-	GRAD = 1,
-	IMGPCA = 2,
-	GRADPCA = 3,
-	REPSIZE = 4
-};
 
 class ViewportControl : public QWidget, private Ui::ViewportControl
 {

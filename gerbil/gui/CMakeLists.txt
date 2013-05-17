@@ -14,6 +14,7 @@ vole_compile_library(
 	commandrunner
 	iogui
 
+	dist_view/compute
 	dist_view/viewercontainer
 	dist_view/multi_img_viewer
 	dist_view/viewer_tasks

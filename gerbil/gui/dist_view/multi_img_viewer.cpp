@@ -111,6 +111,7 @@ void multi_img_viewer::subPixels(const std::map<std::pair<int, int>, short> &poi
 		sets_ptr(new SharedData<std::vector<BinSet> >(NULL)), sub, std::vector<cv::Rect>(), cv::Mat1b(), true, false));
 	queue->push(taskSub);
 	taskSub->wait();
+	// TODO: why do we only update view after adding, but not after removing?
 }
 
 void multi_img_viewer::addPixels(const std::map<std::pair<int, int>, short> &points)
@@ -129,7 +130,7 @@ void multi_img_viewer::addPixels(const std::map<std::pair<int, int>, short> &poi
 		image, labels, control->labelColors, illuminant, args, viewport->ctx, viewport->sets,
 		sets_ptr(new SharedData<std::vector<BinSet> >(NULL)), std::vector<cv::Rect>(), add, cv::Mat1b(), true, false));
 	queue->push(taskAdd);
-	render(taskAdd->wait());
+	binningUpdate(taskAdd->wait());
 }
 
 void multi_img_viewer::subImage(sets_ptr temp, const std::vector<cv::Rect> &regions, cv::Rect roi)
@@ -150,9 +151,6 @@ void multi_img_viewer::addImage(sets_ptr temp, const std::vector<cv::Rect> &regi
 	ViewportCtx args = **viewport->ctx;
 	ctxlock.unlock();
 
-	maskReset = true;
-	titleReset = true;
-
 	args.labelsValid = false;
 	args.metaValid = false;
 	args.minvalValid = false;
@@ -165,7 +163,9 @@ void multi_img_viewer::addImage(sets_ptr temp, const std::vector<cv::Rect> &regi
 	BackgroundTaskPtr taskBins(new ViewerBinsTbb(
 		image, labels, control->labelColors, illuminant, args, viewport->ctx, viewport->sets,
 		temp, std::vector<cv::Rect>(), regions, cv::Mat1b(), false, true, roi));
-	QObject::connect(taskBins.get(), SIGNAL(finished(bool)), this, SLOT(render(bool)));
+	// connect to binningRangeUpdate as this operation can change binning range
+	QObject::connect(taskBins.get(), SIGNAL(finished(bool)),
+					 this, SLOT(binningRangeUpdate(bool)));
 	queue->push(taskBins);
 }
 
@@ -199,9 +199,6 @@ void multi_img_viewer::setImage(SharedMultiImgPtr img, cv::Rect roi)
 
 	args.nbins = control->getBinCount();
 
-	maskReset = true;
-	titleReset = true;
-
 	args.dimensionalityValid = false;
 	args.labelsValid = false;
 	args.metaValid = false;
@@ -218,7 +215,9 @@ void multi_img_viewer::setImage(SharedMultiImgPtr img, cv::Rect roi)
 		image, labels, control->labelColors, illuminant, args, viewport->ctx, viewport->sets,
 		sets_ptr(new SharedData<std::vector<BinSet> >(NULL)), std::vector<cv::Rect>(), 
 		std::vector<cv::Rect>(), cv::Mat1b(), false, true, roi));
-	QObject::connect(taskBins.get(), SIGNAL(finished(bool)), this, SLOT(render(bool)));
+	// connect to binningRangeUpdate, new image may have new range
+	QObject::connect(taskBins.get(), SIGNAL(finished(bool)),
+					 this, SLOT(binningRangeUpdate(bool)));
 	queue->push(taskBins);
 }
 
@@ -280,7 +279,8 @@ void multi_img_viewer::updateBinning(int bins)
 
 	BackgroundTaskPtr taskBins(new ViewerBinsTbb(
 		image, labels, control->labelColors, illuminant, args, viewport->ctx, viewport->sets));
-	QObject::connect(taskBins.get(), SIGNAL(finished(bool)), this, SLOT(render(bool)), Qt::QueuedConnection);
+	QObject::connect(taskBins.get(), SIGNAL(finished(bool)),
+					 this, SLOT(binningUpdate(bool)), Qt::QueuedConnection);
 	queue->push(taskBins);
 }
 
@@ -327,7 +327,8 @@ void multi_img_viewer::addLabelMask(sets_ptr temp, const cv::Mat1b &mask)
 	BackgroundTaskPtr taskBins(new ViewerBinsTbb(
 		image, labels.clone(), control->labelColors, illuminant, args, viewport->ctx, viewport->sets,
 		temp, std::vector<cv::Rect>(), add, mask, false, true));
-	QObject::connect(taskBins.get(), SIGNAL(finished(bool)), this, SLOT(render(bool)), Qt::QueuedConnection);
+	QObject::connect(taskBins.get(), SIGNAL(finished(bool)),
+					 this, SLOT(binningUpdate(bool)), Qt::QueuedConnection);
 	queue->push(taskBins);
 }
 
@@ -344,55 +345,64 @@ void multi_img_viewer::updateLabels()
 
 	BackgroundTaskPtr taskBins(new ViewerBinsTbb(
 		image, labels, control->labelColors, illuminant, args, viewport->ctx, viewport->sets));
-	QObject::connect(taskBins.get(), SIGNAL(finished(bool)), this, SLOT(render(bool)), Qt::QueuedConnection);
+	QObject::connect(taskBins.get(), SIGNAL(finished(bool)),
+					 this, SLOT(binningUpdate(bool)), Qt::QueuedConnection);
 	queue->push(taskBins);
 }
 
-void multi_img_viewer::render(bool necessary)
+void multi_img_viewer::binningUpdate(bool updated)
 {
-	if (necessary && image.get()) {
-		if (maskReset) {
-			SharedDataLock imagelock(image->mutex);
-			maskholder = multi_img::Mask((*image)->height, (*image)->width, (uchar)0);
-			maskReset = false;
-		}
-		if (titleReset) {
-			SharedDataLock ctxlock(viewport->ctx->mutex);
-			setTitle((*viewport->ctx)->type, (*viewport->ctx)->minval, (*viewport->ctx)->maxval);
-			titleReset = false;
-		}
-		viewport->rebuild();
-	}
+	if (!updated || !image.get())
+		return;
+
+	viewport->rebuild();
 }
 
+void multi_img_viewer::binningRangeUpdate(bool updated)
+{
+	if (!updated || !image.get())
+		return;
 
-/* create mask of single-band user selection */
+	{
+		SharedDataLock imagelock(image->mutex);
+		highlightMask = multi_img::Mask((*image)->height, (*image)->width, (uchar)0);
+
+		SharedDataLock ctxlock(viewport->ctx->mutex);
+		setTitle((*viewport->ctx)->type, (*viewport->ctx)->minval,
+				 (*viewport->ctx)->maxval);
+	}
+	viewport->rebuild();
+}
+
+/* create mask from single-band user selection */
 void multi_img_viewer::fillMaskSingle(int dim, int sel)
 {
 	SharedDataLock imagelock(image->mutex);
 	SharedDataLock ctxlock(viewport->ctx->mutex);
-	fillMaskSingleBody body(maskholder, (**image)[dim], dim, sel, 
+	fillMaskSingleBody body(highlightMask, (**image)[dim], dim, sel,
 		(*viewport->ctx)->minval, (*viewport->ctx)->binsize, illuminant);
 	tbb::parallel_for(tbb::blocked_range2d<size_t>(
-		0, maskholder.rows, 0, maskholder.cols), body);
+		0, highlightMask.rows, 0, highlightMask.cols), body);
 }
 
+/* create mask from multi-band range selection */
 void multi_img_viewer::fillMaskLimiters(const std::vector<std::pair<int, int> >& l)
 {
 	SharedDataLock imagelock(image->mutex);
 	SharedDataLock ctxlock(viewport->ctx->mutex);
-	fillMaskLimitersBody body(maskholder, **image, (*viewport->ctx)->minval, 
+	fillMaskLimitersBody body(highlightMask, **image, (*viewport->ctx)->minval,
 		(*viewport->ctx)->binsize, illuminant, l);
 	tbb::parallel_for(tbb::blocked_range2d<size_t>(
 		0,(*image)->height, 0, (*image)->width), body);
 }
 
+/* update mask according to user change in one band */
 void multi_img_viewer::updateMaskLimiters(
 		const std::vector<std::pair<int, int> >& l, int dim)
 {
 	SharedDataLock imagelock(image->mutex);
 	SharedDataLock ctxlock(viewport->ctx->mutex);
-	updateMaskLimitersBody body(maskholder, **image, dim, (*viewport->ctx)->minval, 
+	updateMaskLimitersBody body(highlightMask, **image, dim, (*viewport->ctx)->minval,
 		(*viewport->ctx)->binsize, illuminant, l);
 	tbb::parallel_for(tbb::blocked_range2d<size_t>(
 		0,(*image)->height, 0, (*image)->width), body);
@@ -400,12 +410,11 @@ void multi_img_viewer::updateMaskLimiters(
 
 void multi_img_viewer::updateMask(int dim)
 {
-	if (viewport->limiterMode) {		
-		if (maskValid && dim > -1)
+	if (viewport->limiterMode) {
+		if (dim > -1)	// incremental update in one dimension
 			updateMaskLimiters(viewport->limiters, dim);
-		else
+		else	// we need to build from a label/etc.
 			fillMaskLimiters(viewport->limiters);
-		maskValid = true;
 	} else {
 		fillMaskSingle(viewport->selection, viewport->hover);
 	}
@@ -460,7 +469,7 @@ void multi_img_viewer::updateLabelColors(QVector<QColor> colors, bool changed)
 			image, labels, control->labelColors, illuminant, args,
 									   viewport->ctx, viewport->sets));
 		QObject::connect(taskBins.get(), SIGNAL(finished(bool)),
-						 this, SLOT(render(bool)), Qt::QueuedConnection);
+						 this, SLOT(binningUpdate(bool)), Qt::QueuedConnection);
 		queue->push(taskBins);
 	}
 }
@@ -492,7 +501,8 @@ void multi_img_viewer::toggleLabels(bool toggle)
 
 	BackgroundTaskPtr taskBins(new ViewerBinsTbb(
 		image, labels, control->labelColors, illuminant, args, viewport->ctx, viewport->sets));
-	QObject::connect(taskBins.get(), SIGNAL(finished(bool)), this, SLOT(render(bool)), Qt::QueuedConnection);
+	QObject::connect(taskBins.get(), SIGNAL(finished(bool)),
+					 this, SLOT(binningUpdate(bool)), Qt::QueuedConnection);
 	queue->push(taskBins);
 }
 

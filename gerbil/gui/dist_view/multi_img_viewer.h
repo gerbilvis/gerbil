@@ -11,6 +11,7 @@
 #define MULTI_IMG_VIEWER_H
 
 #include "ui_multi_img_viewer.h"
+#include "compute.h"
 #include "viewport.h"
 #include "viewportcontrol.h"
 
@@ -36,7 +37,7 @@ public:
 	void resetImage() { image.reset(); }
 	Viewport* getViewport() { return viewport; }
 	void activateViewport() { viewport->activate(); }
-	const multi_img::Mask& getMask() { return maskholder; }
+	const multi_img::Mask& getMask() { return highlightMask; }
 	int getSelection() { return viewport->selection; }
 	void setSelection(int band) { viewport->selection = band; }
 	representation getType() { return type; }
@@ -92,13 +93,11 @@ protected:
 	representation type;
 	std::vector<multi_img::Value> illuminant;
 	bool ignoreLabels;
-	multi_img::Mask maskholder;
-	bool maskValid;
-	bool maskReset;
-	bool titleReset;
+	multi_img::Mask highlightMask;
 
 protected slots:
-	void render(bool necessary = true);
+	void binningUpdate(bool updated);
+	void binningRangeUpdate(bool updated);
 
 };
 

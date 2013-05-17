@@ -68,6 +68,10 @@ void fillMaskLimitersBody::operator ()(
 	}
 }
 
+///////////////////////////////
+/// updateMaskLimitersBody
+///////////////////////////////
+
 updateMaskLimitersBody::updateMaskLimitersBody(
 		multi_img::Mask &mask, const multi_img &image, int dim,
 		multi_img::Value minval, multi_img::Value binsize, 

@@ -29,33 +29,10 @@
 
 using namespace std;
 
-// altmann 2013-03-07:
-// while c++ allows initialization of static const members,
-// they need to be definined _in the module_to have external linkage.
+// default constants
 const unsigned int Viewport::renderAtOnceStep 	 = 1024 * 1024 * 1024;
 const unsigned int Viewport::spectrumRenderStep  = 10000;
 const unsigned int Viewport::highlightRenderStep = 10000;
-
-void assertBinSetsKeyDim(sets_ptr sets, vpctx_ptr ctx) {
-	using namespace std;
-	assert(sets);
-	vector<BinSet> v = **sets;
-	assert(v.size() > 0);
-
-	assert(ctx);
-
-	foreach(BinSet set, v) {
-		foreach(BinSet::HashMap::value_type pr, set.bins) {
-			const BinSet::HashKey &key = pr.first;
-			if((*ctx)->dimensionality != key.size()) {
-				GGDBGP(boost::format("failure: repr=%1% ,  (key.size()==%2%  != dim==%3%)")
-				   %(*ctx)->type %key.size() %(*ctx)->dimensionality
-				   << endl);
-				assert((*ctx)->dimensionality == key.size());
-			}
-		}
-	}
-}
 
 Viewport::Viewport(ViewportControl *control, QGLWidget *target)
 	: target(target),
@@ -92,11 +69,11 @@ Viewport::Viewport(ViewportControl *control, QGLWidget *target)
 	connect(&highlightRenderTimer, SIGNAL(timeout()), this, SLOT(continueDrawingHighlight()));
 
 
-	// add control widget
+	/** add control widget */
 	addWidget(control);
+
 	/* this is our first/only graphics item. It seems there is no better way
 	 * to retrieve the corresponding QGraphicsItem */
-
 	controlItem = items().at(0);
 	//item->setFlag(QGraphicsItem::ItemIsMovable);
 	controlItem->setCacheMode(QGraphicsItem::DeviceCoordinateCache);
@@ -193,148 +170,6 @@ void Viewport::setLimiters(int label)
 	}
 }
 
-void Viewport::PreprocessBins::operator()(const BinSet::HashMap::range_type &r)
-{
-	cv::Vec3f color;
-	multi_img::Pixel pixel(dimensionality);
-	BinSet::HashMap::iterator it;
-    for (it = r.begin(); it != r.end(); it++) {
-		Bin &b = it->second;
-		for (int d = 0; d < dimensionality; ++d) {
-			pixel[d] = b.means[d] / b.weight;
-			std::pair<int, int> &range = ranges[d];
-			range.first = std::min<int>(range.first, (int)(it->first)[d]);
-			range.second = std::max<int>(range.second, (int)(it->first)[d]);
-		}
-		color = multi_img::bgr(pixel, dimensionality, meta, maxval);
-		b.rgb = QColor(color[2]*255, color[1]*255, color[0]*255);
-		shuffleIdx.push_back(make_pair(label, it->first));
-	}
-}
-
-void Viewport::PreprocessBins::join(PreprocessBins &toJoin)
-{
-	for (int d = 0; d < dimensionality; ++d) {
-		std::pair<int, int> &local = ranges[d];
-		std::pair<int, int> &remote = toJoin.ranges[d];
-		if (local.first < remote.first)
-			local.first = remote.first;
-		if (local.second > remote.second)
-			local.second = remote.second;
-	}
-}
-
-void Viewport::prepareLines()
-{
-	SharedDataLock ctxlock(ctx->mutex);
-	SharedDataLock setslock(sets->mutex);
-	(*ctx)->wait.fetch_and_store(0);
-	if ((*ctx)->reset.fetch_and_store(0))
-		reset();
-
-	assertBinSetsKeyDim(sets, ctx);
-
-	assert(sets);
-	assert((*sets)->size()>0);
-	shuffleIdx.clear();
-	for (unsigned int i = 0; i < (*sets)->size(); ++i) {
-		BinSet &s = (**sets)[i];
-		PreprocessBins preprocess(i, (*ctx)->dimensionality, 
-			(*ctx)->maxval, (*ctx)->meta, shuffleIdx);
-		tbb::parallel_reduce(BinSet::HashMap::range_type(s.bins),
-			preprocess, tbb::auto_partitioner());
-		s.boundary = preprocess.GetRanges();
-	}
-	assert(shuffleIdx.begin() <shuffleIdx.end());
-	tbb::concurrent_vector<std::pair<int, BinSet::HashKey> >::const_iterator sit;
-
-	// DEBUG, obsolete, see assertBinSetsKeyDim()
-//	for(sit=shuffleIdx.begin(); sit<shuffleIdx.end(); sit++) {
-//		std::pair<int, BinSet::HashKey>  pr = *sit;
-//		const BinSet::HashKey hk = pr.second;
-//		// if this fails, the hash keys are not initialized correctly
-//		if(hk.size() != (*ctx)->dimensionality) {
-//			GGDBGM(boost::format("failure: repr=%1% idx=%2%,  (hk.size()==%3%  != dim==%4%)")
-//			   %(*ctx)->type %pr.first %hk.size() %(*ctx)->dimensionality << endl;)
-//		}
-//	}
-
-	// CRASHES BUG HERE FIXME TODO -> assertBinSetsKeyDim()
-	// This happens often, but appears to be non-deterministic (?).
-	//  Appears to apply only to GRAD.
-	// NOT: applies also to GRADPCA.
-	// Viewport::prepareLines() failure: repr=GRAD idx=0,  (hk.size()==31  != dim==30)
-	// Probably multi_array (==BinSet::HashKey) not correctly initialized
-	std::random_shuffle(shuffleIdx.begin(), shuffleIdx.end());
-
-	// vole::Stopwatch watch("prepareLines");
-
-	target->makeCurrent();
-	vb.setUsagePattern(QGLBuffer::StaticDraw);
-	bool success = vb.create();
-	if (!success) {
-		QMessageBox::critical(target, "Drawing Error",
-							  "Vertex Buffer Objects not supported."
-							  "\nMake sure your graphics driver supports OpenGL 1.5 or later.");
-		QApplication::quit();
-		exit(1);
-	}
-	success = vb.bind();
-	if (!success) {
-		QMessageBox::critical(target, "Drawing Error",
-			"Drawing spectra cannot be continued. Please notify us about this"
-			" problem, state error code 1 and what you did before it occured. Send an email to"
-			" johannes.jordan@cs.fau.de. Thank you for your help!");
-		return;
-	}
-	//GGDBGM(boost::format("shuffleIdx.size()=%1%, (*ctx)->dimensionality=%2%\n")
-	//	   %shuffleIdx.size() %(*ctx)->dimensionality)
-	vb.allocate(shuffleIdx.size() * (*ctx)->dimensionality * sizeof(GLfloat) * 2);
-	//GGDBGM("before vb.map()\n");
-	GLfloat *varr = (GLfloat*)vb.map(QGLBuffer::WriteOnly);
-	//GGDBGM("after vb.map()\n");
-
-	if (!varr) {
-		//GGDBGM(boost::format("repr=%1%varr == 0\n") % (*ctx)->type)
-		QMessageBox::critical(target, "Drawing Error",
-			"Drawing spectra cannot be continued. Please notify us about this"
-			" problem, state error code 2 and what you did before it occured. Send an email to"
-			" johannes.jordan@cs.fau.de. Thank you for your help!");
-		return;
-	}
-
-	GenerateVertices generate(drawMeans, (*ctx)->dimensionality, (*ctx)->minval, (*ctx)->binsize, 
-		illuminant_correction, illuminant, **sets, shuffleIdx, varr);
-	tbb::parallel_for(tbb::blocked_range<size_t>(0, shuffleIdx.size()),
-		generate, tbb::auto_partitioner());
-
-	vb.unmap();
-	vb.release();
-}
-
-void Viewport::GenerateVertices::operator()(const tbb::blocked_range<size_t> &r) const
-{
-	for (size_t i = r.begin(); i != r.end(); ++i) {
-		std::pair<int, BinSet::HashKey> &idx = shuffleIdx[i];
-		BinSet &s = sets[idx.first];
-		BinSet::HashKey &K = idx.second;
-		Bin &b = s.bins.equal_range(K).first->second;
-		int vidx = i * 2 * dimensionality;
-		for (int d = 0; d < dimensionality; ++d) {
-			qreal curpos;
-			if (drawMeans) {
-				curpos = ((b.means[d] / b.weight) - minval) / binsize;
-			} else {
-				curpos = (unsigned char)K[d] + 0.5;
-				if (illuminant_correction && !illuminant.empty())
-					curpos *= illuminant[d];
-			}
-			varr[vidx++] = d;
-			varr[vidx++] = curpos;
-		}
-	}
-}
-
 void Viewport::updateModelview()
 {
 	SharedDataLock ctxlock(ctx->mutex);
@@ -363,6 +198,44 @@ void Viewport::updateModelview()
 	modelviewI = modelview.inverted();
 }
 
+void Viewport::prepareLines()
+{
+	// lock context and sets
+	SharedDataLock ctxlock(ctx->mutex);
+	SharedDataLock setslock(sets->mutex);
+	(*ctx)->wait.fetch_and_store(0);
+	if ((*ctx)->reset.fetch_and_store(0))
+		reset();
+
+	// first step (cpu only)
+	Compute::preparePolylines(**ctx, **sets, shuffleIdx);
+
+	// second step (cpu -> gpu)
+	target->makeCurrent();
+	int success = Compute::storeVertices(**ctx, **sets, shuffleIdx, vb,
+										 drawMeans, illuminant_correction,
+										 illuminant);
+
+	// gracefully fail if there is a problem with VBO support
+	switch (success) {
+	case 0:
+		return;
+	case -1:
+		QMessageBox::critical(target, "Drawing Error",
+			"Vertex Buffer Objects not supported.\n"
+			"Make sure your graphics driver supports OpenGL 1.5 or later.");
+		QApplication::quit();
+		exit(1);
+	default:
+		QMessageBox::critical(target, "Drawing Error",
+			QString("Drawing spectra cannot be continued. "
+					"Please notify us about this problem, state error code %1 "
+					"and what actions led up to this error. Send an email to"
+			" johannes.jordan@cs.fau.de. Thank you for your help!").arg(success));
+		return;
+	}
+}
+
 void Viewport::drawBins(QPainter &painter, QTimer &renderTimer,
 	unsigned int &renderedLines, unsigned int renderStep, bool onlyHighlight)
 {
@@ -376,8 +249,9 @@ void Viewport::drawBins(QPainter &painter, QTimer &renderTimer,
 	bool success = vb.bind();
 	if (!success) {
 		QMessageBox::critical(target, "Drawing Error",
-			"Drawing spectra cannot be continued. Please notify us about this"
-			" problem, state error code 3 and what you did before it occured. Send an email to"
+			"Drawing spectra cannot be continued. "
+			"Please notify us about this problem, state error code 3 "
+			"and what actions led up to this error. Send an email to"
 			" johannes.jordan@cs.fau.de. Thank you for your help!");
 		painter.endNativePainting();
 		return;
@@ -431,35 +305,10 @@ void Viewport::drawBins(QPainter &painter, QTimer &renderTimer,
 		BinSet &s = (**sets)[idx.first];
 		Bin &b = s.bins.equal_range(K).first->second;
 
-		QColor &basecolor = s.label;
-		QColor color = (drawRGB ? b.rgb : basecolor);
-		qreal alpha;
-		/* TODO: this is far from optimal yet. challenge is to give a good
-		   view where important information is not lost, yet not clutter
-		   the view with too much low-weight information */
-		/* logarithm is used to prevent single data points to get lost.
-		   this should be configurable. */
-		alpha = useralpha *
-		        (0.01 + 0.99*(log(b.weight+1) / log((float)s.totalweight)));
-		//	TODO: option
-		//      (0.01 + 0.99*(b.weight / (float)s.totalweight));
-		color.setAlphaF(min(alpha, 1.)); // cap at 1
-
-		if (highlighted && onlyHighlight) {
-			if (basecolor == Qt::white) {
-				color = Qt::yellow;
-			} else {
-				color.setGreen(min(color.green() + 195, 255));
-				color.setRed(min(color.red() + 195, 255));
-				color.setBlue(color.blue()/2);
-			}
-			color.setAlphaF(1.);
-		}
-		// recolor singleLabel
-		if (!highlighted && implicitClearView && idx.first == single) {
-			color.setRgbF(1., 1., 0., color.alphaF());
-		}
-
+		QColor color = determineColor((drawRGB ? b.rgb : s.label),
+									  b.weight, s.totalweight,
+									  highlighted && onlyHighlight,
+									  idx.first == single);
 		target->qglColor(color);
 		glDrawArrays(GL_LINE_STRIP, currind, (*ctx)->dimensionality);
 		currind += (*ctx)->dimensionality;
@@ -475,6 +324,41 @@ void Viewport::drawBins(QPainter &painter, QTimer &renderTimer,
 			renderTimer.start(0);
 		}
 	}
+}
+
+QColor Viewport::determineColor(const QColor &basecolor,
+								float weight, float totalweight,
+								bool highlighted, bool single)
+{
+	QColor color = basecolor;
+	qreal alpha;
+	/* TODO: this is far from optimal yet. challenge is to give a good
+	   view where important information is not lost, yet not clutter
+	   the view with too much low-weight information */
+	/* logarithm is used to prevent single data points to get lost.
+	   this should be configurable. */
+	alpha = useralpha *
+			(0.01 + 0.99*(log(weight+1) / log(totalweight)));
+	//	TODO: option
+	//      (0.01 + 0.99*(weight / totalweight));
+	color.setAlphaF(min(alpha, 1.)); // cap at 1
+
+	if (highlighted) {
+		if (basecolor == Qt::white) {
+			color = Qt::yellow;
+		} else {
+			color.setGreen(min(color.green() + 195, 255));
+			color.setRed(min(color.red() + 195, 255));
+			color.setBlue(color.blue()/2);
+		}
+		color.setAlphaF(1.);
+	}
+
+	// recolor singleLabel
+	if (!highlighted && implicitClearView && single) {
+		color.setRgbF(1., 1., 0., color.alphaF());
+	}
+	return color;
 }
 
 void Viewport::drawAxesFg(QPainter *painter)
@@ -1114,6 +998,7 @@ void Viewport::keyPressEvent(QKeyEvent *event)
 		updateTextures(RM_SKIP, RM_FULL);
 		emit newOverlay(hoverdirt ? selection : -1);
 	}
+	event->accept();
 }
 
 void Viewport::killHover()
@@ -1188,28 +1073,4 @@ void Viewport::screenshot()
 	// reset drawingState and draw again nicely
 	if (endNoHQ())
 		updateTextures();
-}
-
-
-ostream &operator <<(ostream &os, const representation &r)
-{
-	assert(0 <= r);
-	assert(r <= 3);
-	switch(r) {
-	case IMG:
-		os << "IMG";
-		break;
-	case GRAD:
-		os << "GRAD";
-		break;
-	case IMGPCA:
-		os << "IMGPCA";
-		break;
-	case GRADPCA:
-		os << "GRADPCA";
-		break;
-	default:
-		assert(false);
-		break;
-	}
 }
