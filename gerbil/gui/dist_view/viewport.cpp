@@ -19,7 +19,10 @@
 #include <QApplication>
 #include <QMessageBox>
 #include <QtCore>
-#include <QPaintEvent>
+#include <QGraphicsSceneEvent>
+#include <QGraphicsProxyWidget>
+#include <QGraphicsItem>
+#include <QLayout>
 #include <QRect>
 #include <QPainter>
 #include <boost/format.hpp>
@@ -54,8 +57,8 @@ void assertBinSetsKeyDim(sets_ptr sets, vpctx_ptr ctx) {
 	}
 }
 
-Viewport::Viewport(QWidget *parent)
-	: QGLWidget(QGLFormat(QGL::SampleBuffers), parent),
+Viewport::Viewport(ViewportControl *control, QGLWidget *target)
+	: target(target),
 	  ctx(new SharedData<ViewportCtx>(new ViewportCtx())),
 	  sets(new SharedData<std::vector<BinSet> >(new std::vector<BinSet>())),
 	  selection(0), hover(-1), limiterMode(false),
@@ -66,7 +69,8 @@ Viewport::Viewport(QWidget *parent)
 	  clearView(false), implicitClearView(false),
 	  drawMeans(true), drawRGB(false), drawHQ(true), drawingState(FOLDING),
 	  yaxisWidth(0), vb(QGLBuffer::VertexBuffer),
-	  fboSpectrum(NULL), fboHighlight(NULL), fboMultisamplingBlit(NULL)
+	  fboSpectrum(NULL), fboHighlight(NULL), fboMultisamplingBlit(NULL),
+	  control(control)
 {
 	(*ctx)->wait = 1;
 	(*ctx)->reset = 1;
@@ -86,11 +90,27 @@ Viewport::Viewport(QWidget *parent)
 	highlightRenderedLines = 0;
 	highlightRenderTimer.setSingleShot(true);
 	connect(&highlightRenderTimer, SIGNAL(timeout()), this, SLOT(continueDrawingHighlight()));
+
+
+	// add control widget
+	addWidget(control);
+	/* this is our first/only graphics item. It seems there is no better way
+	 * to retrieve the corresponding QGraphicsItem */
+
+	controlItem = items().at(0);
+	//item->setFlag(QGraphicsItem::ItemIsMovable);
+	controlItem->setCacheMode(QGraphicsItem::DeviceCoordinateCache);
+
+	/* move control widget to the left margin of the display
+	 * so it will pop-out on demand
+	 */
+	const QRectF rect = controlItem->boundingRect();
+	controlItem->setPos(10.f - rect.width(), 0.f);
 }
 
 Viewport::~Viewport()
 {
-	makeCurrent();
+	target->makeCurrent();
 	delete fboSpectrum;
 	delete fboHighlight;
 	delete fboMultisamplingBlit;
@@ -249,11 +269,11 @@ void Viewport::prepareLines()
 
 	// vole::Stopwatch watch("prepareLines");
 
-	makeCurrent();
+	target->makeCurrent();
 	vb.setUsagePattern(QGLBuffer::StaticDraw);
 	bool success = vb.create();
 	if (!success) {
-		QMessageBox::critical(this, "Drawing Error",
+		QMessageBox::critical(target, "Drawing Error",
 							  "Vertex Buffer Objects not supported."
 							  "\nMake sure your graphics driver supports OpenGL 1.5 or later.");
 		QApplication::quit();
@@ -261,7 +281,7 @@ void Viewport::prepareLines()
 	}
 	success = vb.bind();
 	if (!success) {
-		QMessageBox::critical(this, "Drawing Error",
+		QMessageBox::critical(target, "Drawing Error",
 			"Drawing spectra cannot be continued. Please notify us about this"
 			" problem, state error code 1 and what you did before it occured. Send an email to"
 			" johannes.jordan@cs.fau.de. Thank you for your help!");
@@ -276,7 +296,7 @@ void Viewport::prepareLines()
 
 	if (!varr) {
 		//GGDBGM(boost::format("repr=%1%varr == 0\n") % (*ctx)->type)
-		QMessageBox::critical(this, "Drawing Error",
+		QMessageBox::critical(target, "Drawing Error",
 			"Drawing spectra cannot be continued. Please notify us about this"
 			" problem, state error code 2 and what you did before it occured. Send an email to"
 			" johannes.jordan@cs.fau.de. Thank you for your help!");
@@ -320,9 +340,9 @@ void Viewport::updateModelview()
 	SharedDataLock ctxlock(ctx->mutex);
 
 	/* apply zoom and translation in window coordinates */
-	qreal wwidth = width();
-	qreal wheight = height()*zoom;
-	int vshift = height()*shift;
+	qreal wwidth = width;
+	qreal wheight = height*zoom;
+	int vshift = height*shift;
 
 	int hp = 20, vp = 12; // horizontal and vertical padding
 	int vtp = 18; // lower padding for text (legend)
@@ -343,7 +363,7 @@ void Viewport::updateModelview()
 	modelviewI = modelview.inverted();
 }
 
-void Viewport::drawBins(QPainter &painter, QTimer &renderTimer, 
+void Viewport::drawBins(QPainter &painter, QTimer &renderTimer,
 	unsigned int &renderedLines, unsigned int renderStep, bool onlyHighlight)
 {
 	SharedDataLock ctxlock(ctx->mutex);
@@ -355,7 +375,7 @@ void Viewport::drawBins(QPainter &painter, QTimer &renderTimer,
 	glBlendFunc(GL_SRC_ALPHA,GL_ONE_MINUS_SRC_ALPHA);
 	bool success = vb.bind();
 	if (!success) {
-		QMessageBox::critical(this, "Drawing Error",
+		QMessageBox::critical(target, "Drawing Error",
 			"Drawing spectra cannot be continued. Please notify us about this"
 			" problem, state error code 3 and what you did before it occured. Send an email to"
 			" johannes.jordan@cs.fau.de. Thank you for your help!");
@@ -440,9 +460,7 @@ void Viewport::drawBins(QPainter &painter, QTimer &renderTimer,
 			color.setRgbF(1., 1., 0., color.alphaF());
 		}
 
-		//painter.setPen(color);
-		//painter.drawPolyline(b.points);
-		qglColor(color);
+		target->qglColor(color);
 		glDrawArrays(GL_LINE_STRIP, currind, (*ctx)->dimensionality);
 		currind += (*ctx)->dimensionality;
 	}
@@ -459,7 +477,7 @@ void Viewport::drawBins(QPainter &painter, QTimer &renderTimer,
 	}
 }
 
-void Viewport::drawAxesFg(QPainter &painter)
+void Viewport::drawAxesFg(QPainter *painter)
 {
 
 	SharedDataLock ctxlock(ctx->mutex);
@@ -471,17 +489,17 @@ void Viewport::drawAxesFg(QPainter &painter)
 
 	// draw selection in foreground
 	if (active)
-		painter.setPen(Qt::red);
+		painter->setPen(Qt::red);
 	else
-		painter.setPen(Qt::gray);
+		painter->setPen(Qt::gray);
 	qreal top = ((*ctx)->nbins-1);
 	if (!illuminant.empty())
 		top *= illuminant.at(selection);
-	painter.drawLine(QPointF(selection, 0.), QPointF(selection, top));
+	painter->drawLine(QPointF(selection, 0.), QPointF(selection, top));
 
 	// draw limiters
 	if (limiterMode) {
-		painter.setPen(Qt::red);
+		painter->setPen(Qt::red);
 		for (int i = 0; i < (*ctx)->dimensionality; ++i) {
 			qreal y1 = limiters[i].first, y2 = limiters[i].second;
 			if (!illuminant.empty()) {
@@ -496,60 +514,60 @@ void Viewport::drawAxesFg(QPainter &painter)
 					<< QPointF(i - 0.25, y1)
 					<< QPointF(i + 0.25, y1)
 					<< QPointF(i + 0.25, y1 + h);
-			painter.drawPolyline(polygon);
+			painter->drawPolyline(polygon);
 			polygon.clear();
 			polygon << QPointF(i - 0.25, y2 - h)
 					<< QPointF(i - 0.25, y2)
 					<< QPointF(i + 0.25, y2)
 					<< QPointF(i + 0.25, y2 - h);
-			painter.drawPolyline(polygon);
+			painter->drawPolyline(polygon);
 		}
 	}
 }
-void Viewport::drawAxesBg(QPainter &painter)
+void Viewport::drawAxesBg(QPainter *painter)
 {
 	SharedDataLock ctxlock(ctx->mutex);
 
 	// draw axes in background
-	painter.setPen(QColor(64, 64, 64));
+	painter->setPen(QColor(64, 64, 64));
 	QPolygonF poly;
 	if (!illuminant.empty()) {
 		for (int i = 0; i < (*ctx)->dimensionality; ++i) {
 			qreal top = ((*ctx)->nbins-1) * illuminant.at(i);
-			painter.drawLine(QPointF(i, 0.), QPointF(i, top));
+			painter->drawLine(QPointF(i, 0.), QPointF(i, top));
 			poly << QPointF(i, top);
 		}
 		poly << QPointF((*ctx)->dimensionality-1, (*ctx)->nbins-1);
 		poly << QPointF(0, (*ctx)->nbins-1);
 	} else {
 		for (int i = 0; i < (*ctx)->dimensionality; ++i)
-			painter.drawLine(i, 0, i, (*ctx)->nbins-1);
+			painter->drawLine(i, 0, i, (*ctx)->nbins-1);
 	}
 
 	// visualize illuminant
 	if (!illuminant.empty()) {
 		QPolygonF poly2 = modelview.map(poly);
 		poly2.translate(0., -5.);
-		painter.restore();
+		painter->restore();
 		QBrush brush(QColor(32, 32, 32), Qt::Dense3Pattern);
-		painter.setBrush(brush);
-		painter.setPen(Qt::NoPen);
-		painter.drawPolygon(poly2);
-		painter.setPen(Qt::white);
+		painter->setBrush(brush);
+		painter->setPen(Qt::NoPen);
+		painter->drawPolygon(poly2);
+		painter->setPen(Qt::white);
 		poly2.remove((*ctx)->dimensionality, 2);
-		painter.drawPolyline(poly2);
-		painter.save();
-		painter.setWorldTransform(modelview);
+		painter->drawPolyline(poly2);
+		painter->save();
+		painter->setWorldTransform(modelview);
 	}
 }
 
-void Viewport::drawLegend(QPainter &painter)
+void Viewport::drawLegend(QPainter *painter)
 {
 	SharedDataLock ctxlock(ctx->mutex);
 
 	assert((*ctx)->labels.size() == (unsigned int)(*ctx)->dimensionality);
 
-	painter.setPen(Qt::white);
+	painter->setPen(Qt::white);
 	/// x-axis
 	for (int i = 0; i < (*ctx)->dimensionality; ++i) {
 		QPointF l = modelview.map(QPointF(i - 1.f, 0.f));
@@ -575,10 +593,10 @@ void Viewport::drawLegend(QPainter &painter)
 
 		bool highlight = (i == selection && drawingState != SCREENSHOT);
 		if (highlight)
-			painter.setPen(Qt::red);
-		painter.drawText(rect, Qt::AlignCenter, (*ctx)->labels[i]);
+			painter->setPen(Qt::red);
+		painter->drawText(rect, Qt::AlignCenter, (*ctx)->labels[i]);
 		if (highlight)	// revert back color
-			painter.setPen(Qt::white);
+			painter->setPen(Qt::white);
 	}
 
 	/// y-axis
@@ -589,39 +607,40 @@ void Viewport::drawLegend(QPainter &painter)
 		QPointF t = b;
 		t -= QPointF(200.f, 40.f); // draw left of data, vcenter alignment
 		QRectF rect(t, b);
-		painter.drawText(rect, Qt::AlignVCenter | Qt::AlignRight, yaxis[i]);
+		painter->drawText(rect, Qt::AlignVCenter | Qt::AlignRight, yaxis[i]);
 	}
 }
 
-void Viewport::drawOverlay(QPainter &painter)
+void Viewport::drawOverlay(QPainter *painter)
 {
-	painter.save();
+	painter->save();
 	QPolygonF poly = modelview.map(overlayPoints);
 	QPen pen(Qt::black);
 	pen.setWidth(5);
-	painter.setPen(pen);
-	painter.drawPolyline(poly);
+	painter->setPen(pen);
+	painter->drawPolyline(poly);
 	QPen pen2(Qt::yellow);
 	pen2.setWidth(2);
-	painter.setPen(pen2);
-	painter.drawPolyline(poly);
-	painter.restore();
+	painter->setPen(pen2);
+	painter->drawPolyline(poly);
+	painter->restore();
 }
 
-void Viewport::drawWaitMessage(QPainter &painter)
+void Viewport::drawWaitMessage(QPainter *painter)
 {
-	painter.save();
+	QRect rect(0, 0, width, height);
+	painter->save();
 	// darken
-	painter.fillRect(rect(), QColor(0, 0, 0, 127));
+	painter->fillRect(rect, QColor(0, 0, 0, 127));
 
 	// text in larger size with nice color
-	painter.setPen(QColor(255, 230, 0));
+	painter->setPen(QColor(255, 230, 0));
 	QFont tmp(font());
 	tmp.setPointSize(tmp.pointSize() * 1.75);
-	painter.setFont(tmp);
-	painter.drawText(rect(), Qt::AlignCenter,
+	painter->setFont(tmp);
+	painter->drawText(rect, Qt::AlignCenter,
 					 QString::fromUtf8("Calculating…"));
-	painter.restore();
+	painter->restore();
 }
 
 void Viewport::activate()
@@ -711,16 +730,17 @@ void Viewport::updateTextures(RenderMode spectrum, RenderMode highlight)
 	//GGDBGM("before spectrum\n");
 	//GGDBGM(boost::format("spectrum=%1%, fboSpectrum=%2%\n")
 	//	   % (int)spectrum % fboSpectrum );
+	QRect rect(0, 0, width, height);
 	if (spectrum != RM_SKIP) {
 		spectrumPainter.setCompositionMode(QPainter::CompositionMode_Source);
-		spectrumPainter.fillRect(rect(), Qt::transparent);
+		spectrumPainter.fillRect(rect, Qt::transparent);
 		spectrumPainter.setCompositionMode(QPainter::CompositionMode_SourceOver);
 	}
 	//GGDBGM("after spectrum\n");
 
 	if (highlight != RM_SKIP) {
 		highlightPainter.setCompositionMode(QPainter::CompositionMode_Source);
-		highlightPainter.fillRect(rect(), Qt::transparent);
+		highlightPainter.fillRect(rect, Qt::transparent);
 		highlightPainter.setCompositionMode(QPainter::CompositionMode_SourceOver);
 	}
 
@@ -749,7 +769,7 @@ void Viewport::updateTextures(RenderMode spectrum, RenderMode highlight)
 	if (highlight) {
 		highlightPainter.save();
 		highlightPainter.setWorldTransform(modelview);
-		drawBins(highlightPainter, highlightRenderTimer, highlightRenderedLines, 
+		drawBins(highlightPainter, highlightRenderTimer, highlightRenderedLines,
 			(highlight == RM_FULL) ? renderAtOnceStep : highlightRenderStep, true);
 		highlightPainter.restore();
 	}
@@ -757,46 +777,59 @@ void Viewport::updateTextures(RenderMode spectrum, RenderMode highlight)
 	update();
 }
 
-void Viewport::paintEvent(QPaintEvent *)
+void Viewport::drawBackground(QPainter *painter, const QRectF &rectx)
 {
 	SharedDataLock ctxlock(ctx->mutex);
 	SharedDataLock setslock(sets->mutex);
 
-	makeCurrent();
-	QPainter painter(this);
-	painter.setRenderHint(QPainter::Antialiasing);
+	// TODO: maybe not needed here
+	target->makeCurrent();
+	bool resize = false;
+	int nwidth = painter->device()->width();
+	int nheight = painter->device()->height();
+	if (nwidth != width || nheight != height) {
+		width = nwidth;
+		height = nheight;
+		resizeEvent();
+	}
 
+	painter->setRenderHint(QPainter::Antialiasing);
+
+	QRect rect(0, 0, width, height);
 	if (drawingState == SCREENSHOT) {
-		painter.fillRect(rect(), Qt::black);
+		painter->fillRect(rect, Qt::black);
 	} else {
-		painter.fillRect(rect(), QColor(15, 7, 15));
+		painter->fillRect(rect, QColor(15, 7, 15));
 	}
 
 	if (!(*sets)->empty() && !(*ctx)->wait) {
 		drawLegend(painter);
-		painter.save();
-		painter.setWorldTransform(modelview);
+		painter->save();
+		painter->setWorldTransform(modelview);
 		drawAxesBg(painter);
-		painter.restore();
+		painter->restore();
 	}
-	
+
 	if (fboSpectrum) {
-		QGLFramebufferObject::blitFramebuffer(fboMultisamplingBlit, rect(), fboSpectrum, rect());
-		drawTexture(rect(), fboMultisamplingBlit->texture());
+		// TODO: this is only for multisample FBO, which we currently do NOT use
+		QGLFramebufferObject::blitFramebuffer(fboMultisamplingBlit,
+											  rect, fboSpectrum, rect);
+		target->drawTexture(rect, fboMultisamplingBlit->texture());
 	}
 
 	implicitClearView = (clearView || !active || drawingState == SCREENSHOT || (hover < 0 && !limiterMode));
 	
 	if (fboHighlight && !overlayMode && !implicitClearView) {
-		QGLFramebufferObject::blitFramebuffer(fboMultisamplingBlit, rect(), fboHighlight, rect());
-		drawTexture(rect(), fboMultisamplingBlit->texture());
+		QGLFramebufferObject::blitFramebuffer(fboMultisamplingBlit, rect,
+											  fboHighlight, rect);
+		target->drawTexture(rect, fboMultisamplingBlit->texture());
 	}
 
 	if (!(*sets)->empty() && !(*ctx)->wait) {
-		painter.save();
-		painter.setWorldTransform(modelview);
+		painter->save();
+		painter->setWorldTransform(modelview);
 		drawAxesFg(painter);
-		painter.restore();
+		painter->restore();
 	}
 
 	if (overlayMode) {
@@ -806,7 +839,7 @@ void Viewport::paintEvent(QPaintEvent *)
 	//GGDBGM(boost::format("%1%  (*sets)->empty()=%2% || (*ctx)->wait=%3% || disabled=%4%   this=%5%\n")
 	//			 % (*ctx)->type %(*sets)->empty() %(*ctx)->wait %(!isEnabled()) %this);
 
-	if ((*sets)->empty() || (*ctx)->wait || !isEnabled()) {
+	if ((*sets)->empty() || (*ctx)->wait || !target->isEnabled()) {
 		drawWaitMessage(painter);
 	}
 }
@@ -819,9 +852,10 @@ void Viewport::rebuild()
 	updateTextures();
 }
 
-void Viewport::resizeEvent(QResizeEvent *ev)
+void Viewport::resizeEvent()
 {
-	makeCurrent();
+	/* resize framebuffers */
+	target->makeCurrent();
 
 	QGLFramebufferObjectFormat format;
 	format.setAttachment(QGLFramebufferObject::NoAttachment);
@@ -829,15 +863,15 @@ void Viewport::resizeEvent(QResizeEvent *ev)
 
 	// use floating point for better alpha accuracy!
 	// TODO: We don't need this for highlights. do we care?
-	format.setInternalTextureFormat(GL_RGBA16F);
+	format.setInternalTextureFormat(GL_RGBA16F); // TODO RGBA32F yet looks better!
 
 	delete fboSpectrum;
 	delete fboHighlight;
 	delete fboMultisamplingBlit;
 
-	fboSpectrum = new QGLFramebufferObject(ev->size().width(), ev->size().height(), format);
-	fboHighlight = new QGLFramebufferObject(ev->size().width(), ev->size().height(), format);
-	fboMultisamplingBlit = new QGLFramebufferObject(ev->size().width(), ev->size().height());
+	fboSpectrum = new QGLFramebufferObject(width, height, format);
+	fboHighlight = new QGLFramebufferObject(width, height, format);
+	fboMultisamplingBlit = new QGLFramebufferObject(width, height);
 
 	if (drawingState != FOLDING) {
 		// quick drawing during resize
@@ -845,7 +879,11 @@ void Viewport::resizeEvent(QResizeEvent *ev)
 		resizeTimer.start(150);
 	}
 
+	/* update transformation matrix */
 	updateModelview();
+
+	/* update control widget */
+	control->setMinimumHeight(height);
 }
 
 void Viewport::resizeEpilog()
@@ -897,35 +935,32 @@ void Viewport::updateXY(int sel, int bin)
 	}
 }
 
-void Viewport::enterEvent(QEvent *)
+void Viewport::mouseMoveEvent(QGraphicsSceneMouseEvent *event)
 {
-	bool refresh = clearView;
+	QGraphicsScene::mouseMoveEvent(event);
+	if (event->isAccepted())
+		return;
+
+	/* we could have entered the window right now */
+	bool needRefresh = clearView;
 	clearView = false;
-	if (refresh)
+	if (needRefresh)
 		update();
 
-/*	sloppy focus. debatable.
-	if (active)
-		return;
-	SharedDataHold ctxlock(ctx->lock);
-	emit bandSelected((*ctx)->type, selection);
-	emit activated();
-	active = true;
-	ctxlock.unlock();
-	update();
-	emit newOverlay(-1);
-*/
-}
+	if (event->buttons() & Qt::LeftButton) {
+		/* cursor control */
 
-void Viewport::mouseMoveEvent(QMouseEvent *event)
-{
-	if (event->buttons() & Qt::RightButton) // panning movement
-	{
+		QPointF pos = modelviewI.map(event->scenePos());
+		updateXY(pos.x(), pos.y());
+
+	} else if (event->buttons() & Qt::RightButton) {
+		/* panning movement */
+
 		if (lasty < 0)
 			return;
 
-		shift += (event->y() - lasty)/(qreal)height();
-		lasty = event->y();
+		shift += (event->scenePos().y() - lasty)/(qreal)height;
+		lasty = event->scenePos().y(); // TODO: will be done by qgraphicsscene!
 
 		/* TODO: make sure that we use full visible space */
 
@@ -933,43 +968,62 @@ void Viewport::mouseMoveEvent(QMouseEvent *event)
 		spectrumRenderTimer.stop();
 		highlightRenderTimer.stop();
 		scrollTimer.start(10);
+
 	} else {
-		QPoint pos = modelviewI.map(event->pos());
-		updateXY(pos.x(), pos.y());
+		/* access to control widget */
+		if (event->scenePos().x() < 20)
+			control->scrollIn();
+		else if (event->scenePos().x() >
+				 controlItem->boundingRect().right() + 10)
+			control->scrollOut();
 	}
+	event->accept();
 }
 
-void Viewport::mousePressEvent(QMouseEvent *event)
+void Viewport::mousePressEvent(QGraphicsSceneMouseEvent *event)
 {
+	QGraphicsScene::mousePressEvent(event);
+	if (event->isAccepted())
+		return;
+
 	activate(); // give ourselves active role if we don't have it yet
 	startNoHQ();
 
 	if (event->button() == Qt::RightButton) {
-		this->setCursor(Qt::ClosedHandCursor);
-		lasty = event->y();
+		target->setCursor(Qt::ClosedHandCursor);
+		lasty = event->scenePos().y(); // TODO: qgraphicsscene
 	}
 
 	mouseMoveEvent(event);
 }
 
-void Viewport::mouseReleaseEvent(QMouseEvent * event)
+void Viewport::mouseReleaseEvent(QGraphicsSceneMouseEvent *event)
 {
+	QGraphicsScene::mouseReleaseEvent(event);
+	if (event->isAccepted())
+		return;
+
 	// in limiterMode, holdSelect+act.Limiter is set on first mouse action
 	holdSelection = false;
 	activeLimiter = 0;
 
 	if (event->button() == Qt::RightButton) {
-		this->setCursor(Qt::ArrowCursor);
+		target->setCursor(Qt::ArrowCursor);
 		lasty = -1;
 	}
 
 	if (endNoHQ()) {
 		updateTextures((event->button() == Qt::RightButton) ? RM_STEP : RM_SKIP, RM_STEP);
 	}
+	event->accept();
 }
 
-void Viewport::wheelEvent(QWheelEvent *event)
+void Viewport::wheelEvent(QGraphicsSceneWheelEvent *event)
 {
+	QGraphicsScene::wheelEvent(event);
+	if (event->isAccepted())
+		 return;
+
 	qreal oldzoom = zoom;
 	if (event->delta() > 0)
 		zoom *= 1.25;
@@ -1068,14 +1122,15 @@ void Viewport::killHover()
 
 	if (!implicitClearView)
 		// make sure the drawing happens before next overlay cache update
-		repaint();
+		// TODO: still relevant?
+		target->repaint();
 }
 
 void Viewport::highlight(short index)
 {
 	highlightLabel = index;
 	updateTextures();
-	repaint();
+	target->repaint();
 }
 
 void Viewport::startNoHQ(bool resize)
@@ -1101,7 +1156,7 @@ bool Viewport::endNoHQ()
 bool Viewport::updateLimiter(int dim, int bin)
 {
 	std::pair<int, int> &l = limiters[dim];
-	int *target;
+	int *target; // TODO: rename
 	if (l.first == l.second) {
 		target = (bin > l.first ? &l.second : &l.first);
 	} else if (activeLimiter) {
@@ -1122,12 +1177,12 @@ void Viewport::screenshot()
 {
 	drawingState = SCREENSHOT;
 	updateTextures(RM_FULL, RM_FULL);
-	repaint();
-	cacheImg = grabFrameBuffer();
+	target->repaint();
+	cacheImg = target->grabFrameBuffer(); // TODO: more elegant with fbo/qgv
 
 	// write out
 	cv::Mat output = vole::QImage2Mat(cacheImg);
-	IOGui io("Screenshot File", "screenshot", this);
+	IOGui io("Screenshot File", "screenshot", target);
 	io.writeFile(QString(), output);
 
 	// reset drawingState and draw again nicely

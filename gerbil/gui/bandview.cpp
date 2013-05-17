@@ -48,7 +48,7 @@ void BandView::setPixmap(QPixmap p)
 	cacheValid = false;
 }
 
-void BandView::setLabelColors(const QVector<QColor> &lc, bool changed)
+void BandView::setLabelColors(QVector<QColor> lc, bool changed)
 {
 	labelColors = lc;
 	labelColorsA.resize(lc.size());
@@ -87,7 +87,7 @@ void BandView::paintEvent(QPaintEvent *ev)
 
 	// draw current cursor
 	if (!singleLabel && (curLabel < labelColors.count())) {
-		QPen pen(seedMode ? Qt::yellow : labelColors[curLabel]);
+		QPen pen(seedMode ? Qt::yellow : labelColors.at(curLabel));
 		pen.setWidth(0);
 		painter.setPen(pen);
 		painter.drawRect(QRectF(cursor, QSizeF(1, 1)));
@@ -193,7 +193,7 @@ void BandView::markCachePixel(QPainter &p, int x, int y)
 {
 	uchar l = labels(y, x);
 	if (l > 0) {
-		p.setPen(labelColorsA[l]);
+		p.setPen(labelColorsA.at(l));
 		p.drawPoint(x, y);
 	}
 }
@@ -225,7 +225,7 @@ void BandView::updateCache(int x, int y, short label)
 		return;
 	
 	// if needed, color pixel
-	QColor *col = 0;
+	const QColor *col = 0;
 	short val = (seedMode ? seedMap(y, x) : label);
 	if (seedMode) {
 		if (val == 255)
@@ -233,7 +233,7 @@ void BandView::updateCache(int x, int y, short label)
 		else if (val == 0)
 			col = &seedColorsA.second;
 	} else if (val > 0) {
-		col = &labelColorsA[val];
+		col = &labelColorsA.at(val);
 	}
 
 	if (col) {
@@ -411,7 +411,12 @@ void BandView::clearAllLabels()
 
 void BandView::leaveEvent(QEvent *ev)
 {
+	// invalidate cursor
 	cursor = QPoint(-1, -1);
+
+	// invalidate previous overlay
+	emit pixelOverlay(-1, -1);
+
 	update();
 }
 

@@ -26,62 +26,66 @@ using namespace std;
 
 multi_img_viewer::multi_img_viewer(QWidget *parent)
 	: QWidget(parent), queue(NULL),
-	  ignoreLabels(false),
-	  limiterMenu(this)
+	  ignoreLabels(false)
 {
-	setupUi(this);	
-	connect(binSlider, SIGNAL(valueChanged(int)),
-			this, SLOT(changeBinCount(int)));
-	connect(alphaSlider, SIGNAL(valueChanged(int)),
-			this, SLOT(setAlpha(int)));
-	connect(alphaSlider, SIGNAL(sliderPressed()),
-			viewport, SLOT(startNoHQ()));
-	connect(alphaSlider, SIGNAL(sliderReleased()),
-			viewport, SLOT(endNoHQ()));
-	connect(limiterButton, SIGNAL(toggled(bool)),
-			this, SLOT(toggleLimiters(bool)));
-	connect(limiterMenuButton, SIGNAL(clicked()),
-			this, SLOT(showLimiterMenu()));
+	setupUi(this);
 
-	connect(rgbButton, SIGNAL(toggled(bool)),
-			viewport, SLOT(toggleRGB(bool)));
+	// create target widget that is rendered into (handled by viewportGV)
+	QGLWidget *target = new QGLWidget(QGLFormat(QGL::SampleBuffers), this);
+
+	// create controller widget that will reside inside viewport
+	control = new ViewportControl(this);
+
+	// create viewport. The viewport is a GraphicsScene
+	viewport = new Viewport(control, target);
+	// initialize control with viewport	  limiterMenu(this)
+
+	control->init(viewport);
+
+	// finally attach everything to our member widget == QGraphicsView
+	viewportGV->setViewport(target);
+	viewportGV->setViewportUpdateMode(QGraphicsView::FullViewportUpdate);
+	viewportGV->setScene(viewport);
 
 	connect(viewport, SIGNAL(newOverlay(int)),
 			this, SLOT(updateMask(int)));
-
-	setAlpha(alphaSlider->value());
 
 	connect(topBar, SIGNAL(toggleFold()),
 			this, SLOT(toggleFold()));
 }
 
+multi_img_viewer::~multi_img_viewer()
+{
+	delete viewport;
+}
+
 void multi_img_viewer::setType(representation type)
 {
 	this->type = type;
-	if (type != IMG)
-		rgbButton->setVisible(false);
+	control->setType(type);
 	setTitle(type, 0.0, 0.0);
 }
 
 void multi_img_viewer::toggleFold()
 {
-	if (!payload->isHidden()) {
+	if (!viewportGV->isHidden()) {
 		GGDBGM(format("viewer %1% folding")%getType() << endl);
 		emit folding();
-		payload->setHidden(true);
+		viewportGV->setHidden(true);
 		topBar->fold();
 		setSizePolicy(QSizePolicy::Preferred, QSizePolicy::Maximum);
 		setTitle(type, 0.0, 0.0);
 		//GGDBGM(boost::format("emitting toggleViewer(false, %1%)\n") % getType());
 		emit toggleViewer(false, getType());
 		//GGDBGM(boost::format("past signal toggleViewer(false, %1%)\n") % getType());
+		// TODO: let viewport clean itself up!
 		viewport->sets.reset(new SharedData<std::vector<BinSet> >(new std::vector<BinSet>()));
 		viewport->shuffleIdx.clear();
 		viewport->vb.destroy();
 	} else {
 		GGDBGM(format("viewer %1% unfolding")%getType() << endl);
 		emit folding();
-		payload->setShown(true);
+		viewportGV->setShown(true);
 		topBar->unfold();
 		QSizePolicy pol(QSizePolicy::Preferred, QSizePolicy::Expanding);
 		pol.setVerticalStretch(1);
@@ -103,7 +107,7 @@ void multi_img_viewer::subPixels(const std::map<std::pair<int, int>, short> &poi
 	ctxlock.unlock();
 
 	BackgroundTaskPtr taskSub(new ViewerBinsTbb(
-		image, labels, labelColors, illuminant, args, viewport->ctx, viewport->sets,
+		image, labels, control->labelColors, illuminant, args, viewport->ctx, viewport->sets,
 		sets_ptr(new SharedData<std::vector<BinSet> >(NULL)), sub, std::vector<cv::Rect>(), cv::Mat1b(), true, false));
 	queue->push(taskSub);
 	taskSub->wait();
@@ -122,7 +126,7 @@ void multi_img_viewer::addPixels(const std::map<std::pair<int, int>, short> &poi
 	ctxlock.unlock();
 
 	BackgroundTaskPtr taskAdd(new ViewerBinsTbb(
-		image, labels, labelColors, illuminant, args, viewport->ctx, viewport->sets,
+		image, labels, control->labelColors, illuminant, args, viewport->ctx, viewport->sets,
 		sets_ptr(new SharedData<std::vector<BinSet> >(NULL)), std::vector<cv::Rect>(), add, cv::Mat1b(), true, false));
 	queue->push(taskAdd);
 	render(taskAdd->wait());
@@ -135,24 +139,9 @@ void multi_img_viewer::subImage(sets_ptr temp, const std::vector<cv::Rect> &regi
 	ctxlock.unlock();
 
 	BackgroundTaskPtr taskBins(new ViewerBinsTbb(
-		image, labels, labelColors, illuminant, args, viewport->ctx, viewport->sets,
+		image, labels, control->labelColors, illuminant, args, viewport->ctx, viewport->sets,
 		temp, regions, std::vector<cv::Rect>(), cv::Mat1b(), false, false, roi));
 	queue->push(taskBins);
-}
-
-void multi_img_viewer::setTitle(representation type, multi_img::Value min, multi_img::Value max)
-{
-	QString title;
-	if (type == IMG)
-		title = QString("<b>Image Spectrum</b> [%1..%2]");
-	if (type == GRAD)
-		title = QString("<b>Spectral Gradient Spectrum</b> [%1..%2]");
-	if (type == IMGPCA)
-		title = QString("<b>Image PCA</b> [%1..%2]");
-	if (type == GRADPCA)
-		title = QString("<b>Spectral Gradient PCA</b> [%1..%2]");
-
-	topBar->setTitle(title.arg(min).arg(max));
 }
 
 void multi_img_viewer::addImage(sets_ptr temp, const std::vector<cv::Rect> &regions, cv::Rect roi)
@@ -174,10 +163,25 @@ void multi_img_viewer::addImage(sets_ptr temp, const std::vector<cv::Rect> &regi
 	args.wait.fetch_and_store(1);
 
 	BackgroundTaskPtr taskBins(new ViewerBinsTbb(
-		image, labels, labelColors, illuminant, args, viewport->ctx, viewport->sets,
+		image, labels, control->labelColors, illuminant, args, viewport->ctx, viewport->sets,
 		temp, std::vector<cv::Rect>(), regions, cv::Mat1b(), false, true, roi));
 	QObject::connect(taskBins.get(), SIGNAL(finished(bool)), this, SLOT(render(bool)));
 	queue->push(taskBins);
+}
+
+void multi_img_viewer::setTitle(representation type, multi_img::Value min, multi_img::Value max)
+{
+	QString title;
+	if (type == IMG)
+		title = QString("<b>Image Spectrum</b> [%1..%2]");
+	if (type == GRAD)
+		title = QString("<b>Spectral Gradient Spectrum</b> [%1..%2]");
+	if (type == IMGPCA)
+		title = QString("<b>Image PCA</b> [%1..%2]");
+	if (type == GRADPCA)
+		title = QString("<b>Spectral Gradient PCA</b> [%1..%2]");
+
+	topBar->setTitle(title.arg(min).arg(max));
 }
 
 void multi_img_viewer::setImage(SharedMultiImgPtr img, cv::Rect roi)
@@ -193,11 +197,7 @@ void multi_img_viewer::setImage(SharedMultiImgPtr img, cv::Rect roi)
 	args.type = type;
 	args.ignoreLabels = ignoreLabels;
 
-	int bins = binSlider->value();
-	if (bins > 0) {
-		args.nbins = bins;
-		binLabel->setText(QString("%1 bins").arg(bins));
-	}
+	args.nbins = control->getBinCount();
 
 	maskReset = true;
 	titleReset = true;
@@ -215,7 +215,7 @@ void multi_img_viewer::setImage(SharedMultiImgPtr img, cv::Rect roi)
 	assert(image);
 	assert(viewport->ctx);
 	BackgroundTaskPtr taskBins(new ViewerBinsTbb(
-		image, labels, labelColors, illuminant, args, viewport->ctx, viewport->sets,
+		image, labels, control->labelColors, illuminant, args, viewport->ctx, viewport->sets,
 		sets_ptr(new SharedData<std::vector<BinSet> >(NULL)), std::vector<cv::Rect>(), 
 		std::vector<cv::Rect>(), cv::Mat1b(), false, true, roi));
 	QObject::connect(taskBins.get(), SIGNAL(finished(bool)), this, SLOT(render(bool)));
@@ -247,12 +247,7 @@ void multi_img_viewer::changeBinCount(int bins)
 	queue->cancelTasks();
 
 	setGUIEnabled(false, TT_BIN_COUNT);
-	binSlider->setEnabled(true);
-	alphaSlider->setEnabled(false);
-	limiterButton->setEnabled(false);
-	limiterMenuButton->setEnabled(false);
-	rgbButton->setEnabled(false);
-	viewport->setEnabled(false);
+	viewportGV->setEnabled(false);
 
 	updateBinning(bins);
 
@@ -270,7 +265,7 @@ void multi_img_viewer::updateBinning(int bins)
 
 	if (bins > 0) {
 		args.nbins = bins;
-		binLabel->setText(QString("%1 bins").arg(bins));
+		control->setBinCount(bins);
 	}
 
 	args.minvalValid = false;
@@ -284,7 +279,7 @@ void multi_img_viewer::updateBinning(int bins)
 		return;
 
 	BackgroundTaskPtr taskBins(new ViewerBinsTbb(
-		image, labels, labelColors, illuminant, args, viewport->ctx, viewport->sets));
+		image, labels, control->labelColors, illuminant, args, viewport->ctx, viewport->sets));
 	QObject::connect(taskBins.get(), SIGNAL(finished(bool)), this, SLOT(render(bool)), Qt::QueuedConnection);
 	queue->push(taskBins);
 }
@@ -292,11 +287,7 @@ void multi_img_viewer::updateBinning(int bins)
 void multi_img_viewer::finishBinCountChange(bool success)
 {
 	if (success) {
-		viewport->setEnabled(true);
-		rgbButton->setEnabled(true);
-		limiterMenuButton->setEnabled(true);
-		limiterButton->setEnabled(true);
-		alphaSlider->setEnabled(true);
+		viewportGV->setEnabled(true);
 		emit finishTask(success);
 	}
 }
@@ -315,7 +306,7 @@ void multi_img_viewer::subLabelMask(sets_ptr temp, const cv::Mat1b &mask)
 	std::vector<cv::Rect> sub;
 	sub.push_back(cv::Rect(0, 0, mask.cols, mask.rows));
 	BackgroundTaskPtr taskBins(new ViewerBinsTbb(
-		image, labels.clone(), labelColors, illuminant, args, viewport->ctx, viewport->sets,
+		image, labels.clone(), control->labelColors, illuminant, args, viewport->ctx, viewport->sets,
 		temp, sub, std::vector<cv::Rect>(), mask, false, false));
 	queue->push(taskBins);
 }
@@ -334,7 +325,7 @@ void multi_img_viewer::addLabelMask(sets_ptr temp, const cv::Mat1b &mask)
 	std::vector<cv::Rect> add;
 	add.push_back(cv::Rect(0, 0, mask.cols, mask.rows));
 	BackgroundTaskPtr taskBins(new ViewerBinsTbb(
-		image, labels.clone(), labelColors, illuminant, args, viewport->ctx, viewport->sets,
+		image, labels.clone(), control->labelColors, illuminant, args, viewport->ctx, viewport->sets,
 		temp, std::vector<cv::Rect>(), add, mask, false, true));
 	QObject::connect(taskBins.get(), SIGNAL(finished(bool)), this, SLOT(render(bool)), Qt::QueuedConnection);
 	queue->push(taskBins);
@@ -352,7 +343,7 @@ void multi_img_viewer::updateLabels()
 		return;
 
 	BackgroundTaskPtr taskBins(new ViewerBinsTbb(
-		image, labels, labelColors, illuminant, args, viewport->ctx, viewport->sets));
+		image, labels, control->labelColors, illuminant, args, viewport->ctx, viewport->sets));
 	QObject::connect(taskBins.get(), SIGNAL(finished(bool)), this, SLOT(render(bool)), Qt::QueuedConnection);
 	queue->push(taskBins);
 }
@@ -422,10 +413,17 @@ void multi_img_viewer::updateMask(int dim)
 
 void multi_img_viewer::overlay(int x, int y)
 {
+	if (x < 0) {
+		viewport->overlayMode = false;
+		if (viewportGV->isVisible())
+			viewport->update();
+		return;
+	}
+
 	//GGDBGM(format("multi_img_viewer::overlay(int x, int y): image.get()=%1% type=%2%\n")
 	//	   % image.get() %getType());
-	if(payload->isHidden()) {
-		GGDBGM(format("WARNING: slot activated for repr %1% while payload hidden!") % getType() << endl);
+	if(viewportGV->isHidden()) {
+	//	GGDBGM(format("WARNING: slot activated for repr %1% while payload hidden!") % getType() << endl);
 		return;
 	}
 
@@ -442,49 +440,10 @@ void multi_img_viewer::overlay(int x, int y)
 	}
 
 	viewport->overlayMode = true;
-	viewport->repaint();
-	viewport->overlayMode = false;
+	viewport->update();
 }
 
-void multi_img_viewer::setAlpha(int alpha)
-{
-	viewport->useralpha = (float)alpha/100.f;
-	alphaLabel->setText(QString::fromUtf8("α: %1").arg(viewport->useralpha, 0, 'f', 2));
-	viewport->updateTextures(Viewport::RM_STEP, Viewport::RM_SKIP);
-}
-
-void multi_img_viewer::createLimiterMenu()
-{
-	limiterMenu.clear();
-	QAction *tmp;
-	tmp = limiterMenu.addAction("No limits");
-	tmp->setData(0);
-	tmp = limiterMenu.addAction("Limit from current highlight");
-	tmp->setData(-1);
-	limiterMenu.addSeparator();
-	for (int i = 1; i < labelColors.size(); ++i) {
-		tmp = limiterMenu.addAction(MainWindow::colorIcon(labelColors[i]),
-													  "Limit by label");
-		tmp->setData(i);
-	}
-}
-
-void multi_img_viewer::showLimiterMenu()
-{
-	QAction *a = limiterMenu.exec(limiterMenuButton->mapToGlobal(QPoint(0, 0)));
-	if (!a)
-		return;
-
-	int choice = a->data().toInt(); assert(choice < labelColors.size());
-	viewport->setLimiters(choice);
-	if (!limiterButton->isChecked()) {
-		limiterButton->toggle();	// change button state AND toggleLimiters()
-	} else {
-		toggleLimiters(true);
-	}
-}
-
-void multi_img_viewer::updateLabelColors(const QVector<QColor> &colors, bool changed)
+void multi_img_viewer::updateLabelColors(QVector<QColor> colors, bool changed)
 {
 	SharedDataLock ctxlock(viewport->ctx->mutex);
 	ViewportCtx args = **viewport->ctx;
@@ -492,15 +451,16 @@ void multi_img_viewer::updateLabelColors(const QVector<QColor> &colors, bool cha
 
 	args.wait.fetch_and_store(1);
 
-	labelColors = colors;
-	createLimiterMenu();
+	control->updateLabelColors(colors);
 	if (changed) {
 		if (!image.get())
 			return;
 
 		BackgroundTaskPtr taskBins(new ViewerBinsTbb(
-			image, labels, labelColors, illuminant, args, viewport->ctx, viewport->sets));
-		QObject::connect(taskBins.get(), SIGNAL(finished(bool)), this, SLOT(render(bool)), Qt::QueuedConnection);
+			image, labels, control->labelColors, illuminant, args,
+									   viewport->ctx, viewport->sets));
+		QObject::connect(taskBins.get(), SIGNAL(finished(bool)),
+						 this, SLOT(render(bool)), Qt::QueuedConnection);
 		queue->push(taskBins);
 	}
 }
@@ -531,7 +491,7 @@ void multi_img_viewer::toggleLabels(bool toggle)
 		return;
 
 	BackgroundTaskPtr taskBins(new ViewerBinsTbb(
-		image, labels, labelColors, illuminant, args, viewport->ctx, viewport->sets));
+		image, labels, control->labelColors, illuminant, args, viewport->ctx, viewport->sets));
 	QObject::connect(taskBins.get(), SIGNAL(finished(bool)), this, SLOT(render(bool)), Qt::QueuedConnection);
 	queue->push(taskBins);
 }
@@ -540,7 +500,7 @@ void multi_img_viewer::toggleLimiters(bool toggle)
 {
 	viewport->limiterMode = toggle;
 	viewport->updateTextures(Viewport::RM_SKIP, Viewport::RM_STEP);
-	viewport->repaint();
+	viewportGV->repaint();
 	viewport->activate();
 	updateMask(-1);
 	emit newOverlay();

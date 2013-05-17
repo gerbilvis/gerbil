@@ -31,7 +31,7 @@ public:
 	void setImage(representation repr, SharedMultiImgPtr image, cv::Rect roi);
 
 	void toggleLabels(bool toggle);
-	void updateLabelColors(QVector<QColor> labelColors, bool changed);
+	void updateLabelColors(QVector<QColor> colors, bool changed);
 
 	void updateBinning(representation repr, int bins);
 

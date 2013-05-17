@@ -95,11 +95,11 @@ void ViewerContainer::toggleLabels(bool toggle)
 	}
 }
 
-void ViewerContainer::updateLabelColors(QVector<QColor> labelColors, bool changed)
+void ViewerContainer::updateLabelColors(QVector<QColor> colors, bool changed)
 {
 	ViewerList vl = vm.values();
 	foreach(multi_img_viewer *viewer, vl) {
-		viewer->updateLabelColors(labelColors, changed);
+		viewer->updateLabelColors(colors, changed);
 	}
 }
 
@@ -176,7 +176,6 @@ void ViewerContainer::setGUIEnabled(bool enable, TaskType tt)
 	//GGDBGM(format("enable=%1%, tt=%2%\n") % enable % tt);
 	ViewerList vl = vm.values();
 	foreach(multi_img_viewer *viewer, vl) {
-        viewer->enableBinSlider(enable);
         viewer->setEnabled(enable || tt == TT_BIN_COUNT || tt == TT_TOGGLE_VIEWER);
 		//GGDBGM(format("enable=%1% viewer=%2% %3%\n")
 		//			 %enable %viewer %viewer->getType());

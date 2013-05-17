@@ -20,6 +20,7 @@ vole_compile_library(
 	dist_view/viewer_bins_tbb
 	dist_view/foldingbar
 	dist_view/viewport
+	dist_view/viewportcontrol
 
 	model/falsecolor
 
@@ -43,17 +44,19 @@ vole_moc_library(
 
 	dist_view/viewercontainer.h
 	dist_view/multi_img_viewer.h
-	dist_view/viewport.h
 	dist_view/foldingbar.h
+	dist_view/viewport.h
+	dist_view/viewportcontrol.h
 
-        docks/dockwidget.h
-        docks/roidock.h
+	docks/dockwidget.h
+	docks/roidock.h
 )
 
 vole_ui_library(
 	mainwindow.ui
 	dist_view/multi_img_viewer.ui
 	dist_view/foldingbar.ui
+	dist_view/viewportcontrol.ui
 	docks/roidock.ui
 )
 

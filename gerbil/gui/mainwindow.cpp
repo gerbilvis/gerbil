@@ -418,8 +418,8 @@ void MainWindow::initUI()
 	connect(bandView, SIGNAL(refreshLabels()),
 			viewerContainer, SLOT(refreshLabelsInViewers()));
 
-	connect(this, SIGNAL(newLabelColors(const QVector<QColor>&, bool)),
-			bandView, SLOT(setLabelColors(const QVector<QColor>&, bool)));
+	connect(this, SIGNAL(newLabelColors(QVector<QColor>, bool)),
+			bandView, SLOT(setLabelColors(QVector<QColor>, bool)));
 	connect(alphaSlider, SIGNAL(valueChanged(int)),
 			bandView, SLOT(applyLabelAlpha(int)));
 
@@ -573,12 +573,12 @@ void MainWindow::usInitMethodChanged(int idx)
 bool MainWindow::setLabelColors(const std::vector<cv::Vec3b> &colors)
 {
 	QVector<QColor> col = vole::Vec2QColor(colors);
-	col[0] = Qt::white; // override black for 0 label
+	col[0] = Qt::white; // override black for label 0
 
 	// test if costy rebuilds necessary (existing colors changed)
 	bool changed = false;
 	for (int i = 1; i < labelColors.size() && i < col.size(); ++i) {
-		if (col[i] != labelColors[i])
+		if (col.at(i) != labelColors.at(i))
 			changed = true;
 	}
 
@@ -588,7 +588,7 @@ bool MainWindow::setLabelColors(const std::vector<cv::Vec3b> &colors)
 	markerSelector->clear();
 	for (int i = 1; i < labelColors.size(); ++i) // 0 is index for unlabeled
 	{
-		markerSelector->addItem(colorIcon(labelColors[i]), "");
+		markerSelector->addItem(colorIcon(labelColors.at(i)), "");
 	}
 	markerSelector->addItem(QIcon(":/toolbar/add"), "");
 
@@ -598,6 +598,12 @@ bool MainWindow::setLabelColors(const std::vector<cv::Vec3b> &colors)
 	if (changed) 
 		setGUIEnabled(false);
 
+	/* TODO: i don't like this
+	 * here we tell viewercontainer the label colors directly instead of emiting
+	 * a signal. Because we know that they might start tasks and we apparently
+	 * only want to return from this function when those tasks are finished
+	 * (we wait for them, see below)
+	 */
 	viewerContainer->updateLabelColors(
 				labelColors, changed);
 
@@ -613,10 +619,6 @@ bool MainWindow::setLabelColors(const std::vector<cv::Vec3b> &colors)
 
 void MainWindow::setLabels(const vole::Labeling &labeling)
 {
-	SharedDataLock image_lock(image->mutex);
-	assert(labeling().rows == (*image)->height && labeling().cols == (*image)->width);
-	image_lock.unlock();
-
 	/* note: always update labels before updating label colors, for the case
 	   that there are less colors available than used in previous labeling */
 	cv::Mat1s labels = labeling();
@@ -624,6 +626,8 @@ void MainWindow::setLabels(const vole::Labeling &labeling)
 	bandView->labels = labels;
 	viewerContainer->setLabels(labels);
 
+	// here we want to avoid duplicate update. But it is not elegant.
+	// TODO: maybe one signal for both labels+colors?
 	bool updated = setLabelColors(labeling.colors());
 	if (!updated) {
 		bandView->refresh();
@@ -1376,6 +1380,7 @@ void MainWindow::segmentationFinished() {
 void MainWindow::segmentationApply(std::map<std::string, boost::any> output) {
 	if (output.count("labels")) {
 		boost::shared_ptr<cv::Mat1s> labelMask = boost::any_cast< boost::shared_ptr<cv::Mat1s> >(output["labels"]);
+		// TODO: assert size?
 		setLabels(*labelMask);
 	}
 
@@ -1506,8 +1511,7 @@ void MainWindow::loadLabeling(QString filename)
 		actual_filename = filename;
 	}
 
-	int height;
-	int width;
+	int height, width;
 	{
 		SharedMultiImgBaseGuard guard(*image_lim);
 		height = (*image_lim)->height;

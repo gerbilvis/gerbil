@@ -47,7 +47,7 @@ public slots:
 	void commitLabelChanges();
 	void drawOverlay(const multi_img::Mask &mask);
 
-	void setLabelColors(const QVector<QColor> &labelColors, bool changed);
+	void setLabelColors(QVector<QColor> labelColors, bool changed);
 	void applyLabelAlpha(int alpha);
 	void toggleShowLabels(bool disabled);
 	void toggleSingleLabel(bool enabled);

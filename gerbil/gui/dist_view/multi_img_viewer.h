@@ -12,6 +12,7 @@
 
 #include "ui_multi_img_viewer.h"
 #include "viewport.h"
+#include "viewportcontrol.h"
 
 #include "../gerbil_gui_debug.h"
 
@@ -29,6 +30,7 @@ class multi_img_viewer : public QWidget, private Ui::multi_img_viewer {
     Q_OBJECT
 public:
 	multi_img_viewer(QWidget *parent = 0);
+	~multi_img_viewer();
 
 	SharedMultiImgPtr getImage() { return image; }
 	void resetImage() { image.reset(); }
@@ -39,8 +41,7 @@ public:
 	void setSelection(int band) { viewport->selection = band; }
 	representation getType() { return type; }
 	void setType(representation type);
-	void enableBinSlider(bool enable) { binSlider->setEnabled(enable); }
-	bool isPayloadHidden() { return payload->isHidden(); }
+	bool isPayloadHidden() { return viewportGV->isHidden(); }
 
 	BackgroundTaskQueue *queue;
 	cv::Mat1s labels;
@@ -64,12 +65,10 @@ public slots:
 	void toggleUnlabeled(bool toggle);
 	void toggleLabels(bool toggle);
 	void toggleLimiters(bool toggle);
-	void setAlpha(int);
 	void overlay(int x, int y);
-	void showLimiterMenu();
 	void setActive()	{ viewport->active = true; viewport->update(); }
 	void setInactive()	{  viewport->active = false; viewport->update(); }
-	void updateLabelColors(const QVector<QColor> &labelColors, bool changed);
+	void updateLabelColors(QVector<QColor> labelColors, bool changed);
 
 signals:
 	void newOverlay();
@@ -87,6 +86,8 @@ protected:
 	void updateMaskLimiters(const std::vector<std::pair<int, int> >&, int dim);
 	void setTitle(representation type, multi_img::Value min, multi_img::Value max);
 
+	Viewport *viewport;
+	ViewportControl *control;
 	SharedMultiImgPtr image;
 	representation type;
 	std::vector<multi_img::Value> illuminant;
@@ -99,12 +100,6 @@ protected:
 protected slots:
 	void render(bool necessary = true);
 
-private:
-	void createLimiterMenu();
-
-	// respective data range of each bin
-	QMenu limiterMenu;
-	QVector<QColor> labelColors;
 };
 
 #endif // MULTI_IMG_VIEWER_H

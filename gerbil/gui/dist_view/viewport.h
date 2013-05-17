@@ -18,7 +18,6 @@
 #include <boost/multi_array.hpp> // ensure that multi_array is not visible to Qt MOC
 #endif
 
-
 // TODO: ask petr what this is all about
 inline size_t tbb_size_t_select(unsigned u, unsigned long long ull) {
 	return (sizeof(size_t) == sizeof(u)) ? size_t(u) : size_t(ull);
@@ -37,11 +36,15 @@ inline size_t tbb_hasher(const boost::multi_array<T, 1> &a) {
 
 }
 
+#include "viewportcontrol.h"
 #include <multi_img.h>
 #include <shared_data.h>
-#include <QGLWidget>
+#include <QGraphicsScene>
+#include <QGraphicsView>
 #include <QGLBuffer>
 #include <QGLFramebufferObject>
+#include <QResizeEvent>
+#include <QGLWidget>
 #include <vector>
 #include <QLabel>
 #include <QTimer>
@@ -125,14 +128,6 @@ struct BinSet {
 
 typedef boost::shared_ptr<SharedData<std::vector<BinSet> > > sets_ptr;
 
-enum representation {
-	IMG = 0,
-	GRAD = 1,
-	IMGPCA = 2,
-	GRADPCA = 3,
-	REPSIZE = 4
-};
-
 std::ostream &operator<<(std::ostream& os, const representation& r);
 
 struct ViewportCtx {
@@ -178,11 +173,11 @@ struct ViewportCtx {
 
 typedef boost::shared_ptr<SharedData<ViewportCtx> > vpctx_ptr;
 
-class Viewport : public QGLWidget
+class Viewport : public QGraphicsScene
 {
 	Q_OBJECT
 public:
-	Viewport(QWidget *parent = 0);
+	Viewport(ViewportControl *control, QGLWidget *target);
 	~Viewport();
 
 	void prepareLines();
@@ -213,6 +208,11 @@ public:
 		RM_STEP = 1,
 		RM_FULL = 2
 	};
+
+	// we would like this not to be public (TODO), viewportcontrol accesses it
+	QGLWidget *target;
+	ViewportControl *control;
+	QGraphicsItem *controlItem;
 
 public slots:
 	void killHover();
@@ -248,13 +248,14 @@ signals:
 
 protected:
 	void reset();
-	void paintEvent(QPaintEvent*);
-	void resizeEvent(QResizeEvent*);
-	void enterEvent(QEvent*);
-	void mouseMoveEvent(QMouseEvent*);
-	void mousePressEvent(QMouseEvent*);
-	void mouseReleaseEvent(QMouseEvent*);
-	void wheelEvent(QWheelEvent *);
+	void drawBackground(QPainter *painter, const QRectF &rect);
+	//void paintEvent(QPaintEvent*);
+
+	void resizeEvent();
+	void mouseMoveEvent(QGraphicsSceneMouseEvent*);
+	void mousePressEvent(QGraphicsSceneMouseEvent*);
+	void mouseReleaseEvent(QGraphicsSceneMouseEvent*);
+	void wheelEvent(QGraphicsSceneWheelEvent *);
 	void keyPressEvent(QKeyEvent *);
 
 	// helper function that updates Y-axis labels
@@ -267,13 +268,13 @@ protected:
 	void updateXY(int sel, int bin);
 
 	// helper functions called by paintEvent
-	void drawBins(QPainter &painter, QTimer &renderTimer, 
+	void drawBins(QPainter &painter, QTimer &renderTimer,
 		unsigned int &renderedLines, unsigned int renderStep, bool onlyHighlight);
-	void drawAxesBg(QPainter&);
-	void drawAxesFg(QPainter&);
-	void drawLegend(QPainter&);
-	void drawOverlay(QPainter &);
-	void drawWaitMessage(QPainter&);
+	void drawAxesBg(QPainter*);
+	void drawAxesFg(QPainter*);
+	void drawLegend(QPainter*);
+	void drawOverlay(QPainter*);
+	void drawWaitMessage(QPainter*);
 
 	// helper for limiter handling
 	bool updateLimiter(int dim, int bin);
@@ -324,6 +325,7 @@ protected:
 	};
 
 private:
+	int width, height;
 	QGLFramebufferObject *fboSpectrum;
 	QGLFramebufferObject *fboHighlight;
 	QGLFramebufferObject *fboMultisamplingBlit;
@@ -382,6 +384,20 @@ private:
 
 	// single label to be highlighted
 	int highlightLabel;
+};
+
+class ViewportGV : public QGraphicsView
+{
+public:
+	ViewportGV(QWidget *parent) : QGraphicsView(parent)
+	{}
+
+protected:
+	void resizeEvent(QResizeEvent *event) {
+		if (scene())
+			scene()->setSceneRect(QRect(QPoint(0, 0), event->size()));
+		QGraphicsView::resizeEvent(event);
+	}
 };
 
 #endif // VIEWPORT_H
