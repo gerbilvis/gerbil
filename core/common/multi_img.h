@@ -90,8 +90,6 @@ public:
 	static const int ValueType = CV_32F;
 	/// a spectral band
 	typedef cv::Mat_<Value> Band;
-	typedef cv::MatIterator_<Value> BandIt;
-	typedef cv::MatConstIterator_<Value> BandConstIt;
 
 	/// struct that holds optional filter information for each band
 	struct BandDesc {
@@ -202,9 +200,6 @@ public:
 	/// a spectral pixel.
 	/** @note Pixel will always be a std::vector. You can count on this. **/
 	typedef std::vector<Value> Pixel;
-	typedef cv::Mat_<uchar> Mask;
-	typedef cv::MatIterator_<uchar> MaskIt;
-	typedef cv::MatConstIterator_<uchar> MaskConstIt;
 
 //@}
 
@@ -297,9 +292,9 @@ public:
 	}
 
 	/// returns spectral data of a segment (using mask)
-	std::vector<const Pixel*> getSegment(const Mask &mask);
+	std::vector<const Pixel*> getSegment(const cv::Mat1b &mask);
 	/// returns copied spectral data of a segment (using mask)
-	std::vector<Pixel> getSegmentCopy(const Mask &mask);
+	std::vector<Pixel> getSegmentCopy(const cv::Mat1b &mask);
 
 //@}
 
@@ -320,7 +315,7 @@ public:
 
 	/// replaces a band with optional mask
 	void setBand(unsigned int band, const Band &data,
-				 const Mask &mask = Mask());
+				 const cv::Mat1b &mask = cv::Mat1b());
 
 	/// replaces all pixels in mask with given values
 	/**
@@ -328,9 +323,9 @@ public:
 		   members as non-null mask values, ordered by row index first, column
 		   index second
 	 */
-	void setSegment(const std::vector<Pixel> &values, const Mask& mask);
+	void setSegment(const std::vector<Pixel> &values, const cv::Mat1b& mask);
 	void setSegment(const std::vector<cv::Mat_<Value> > &values,
-					const Mask& mask);
+					const cv::Mat1b& mask);
 
 	/// initialize image data with a spectral vector
 	void setTo(const Pixel& p);
@@ -578,7 +573,7 @@ protected:
 
 	std::vector<Band> bands;
 	mutable std::vector<Pixel> pixels;
-	mutable Mask dirty;
+	mutable cv::Mat1b dirty;
 	mutable bool anydirt;
 
 	MULTI_IMG_FRIENDS

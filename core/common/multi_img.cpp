@@ -135,7 +135,7 @@ void multi_img::resetPixels(bool force) const
 		pixels.assign(width * height, Pixel(size()));
 	}
 	if (force || dirty.empty())
-		dirty = Mask(height, width, 255);
+		dirty = cv::Mat1b(height, width, 255);
 	else
 		dirty.setTo(255);
 	anydirt = true;
@@ -147,7 +147,7 @@ void multi_img::rebuildPixels(bool optimistic) const
 		return;
 
 	cerr << "multi_img: complete rebuild" << endl;
-	BandConstIt it;
+	Band::const_iterator it;
 	register unsigned int d, i;
 	for (d = 0; d < size(); ++d) {
 		const Band &src = bands[d];
@@ -168,7 +168,7 @@ void multi_img::rebuildPixel(unsigned int row, unsigned int col) const
 	dirty(row, col) = 0;
 }
 
-std::vector<const multi_img::Pixel*> multi_img::getSegment(const Mask &mask)
+std::vector<const multi_img::Pixel*> multi_img::getSegment(const cv::Mat1b &mask)
 {
 	assert(mask.rows == height && mask.cols == width);
 
@@ -186,7 +186,7 @@ std::vector<const multi_img::Pixel*> multi_img::getSegment(const Mask &mask)
 	return ret;
 }
 
-std::vector<multi_img::Pixel> multi_img::getSegmentCopy(const Mask &mask)
+std::vector<multi_img::Pixel> multi_img::getSegmentCopy(const cv::Mat1b &mask)
 {
 	assert(mask.rows == height && mask.cols == width);
 
@@ -233,20 +233,20 @@ void multi_img::setPixel(unsigned int row, unsigned int col,
 }
 
 void multi_img::setBand(unsigned int band, const Band &data,
-						const Mask &mask)
+						const cv::Mat1b &mask)
 {
 	assert(band < size());
 	assert(data.rows == height && data.cols == width);
 	Band &b = bands[band];
-	BandConstIt bit = b.begin();
-	MaskConstIt dit = dirty.begin();
+	Band::const_iterator bit = b.begin();
+	cv::Mat1b::const_iterator dit = dirty.begin();
 	/* we use opencv to copy the band data. afterwards, we update the pixels
 	   cache. we do this only for pixels, which are not dirty yet (and would
 	   need a complete rebuild anyways. As we instantly fix the other pixels,
 	   those do not get marked as dirty by us. */
 	if (!mask.empty()) {
 		assert(mask.rows == height && mask.cols == width);
-		MaskConstIt mit = mask.begin();
+		cv::Mat1b::const_iterator mit = mask.begin();
 		data.copyTo(b, mask);
 		for (int i = 0; bit != b.end(); ++bit, ++dit, ++mit, ++i)
 			if ((*mit > 0)&&(*dit == 0))
@@ -260,7 +260,7 @@ void multi_img::setBand(unsigned int band, const Band &data,
 	}
 }
 
-void multi_img::setSegment(const std::vector<Pixel> &values, const Mask &mask)
+void multi_img::setSegment(const std::vector<Pixel> &values, const cv::Mat1b &mask)
 {
 	assert(mask.rows == height && mask.cols == width);
 	int i = 0;
@@ -276,7 +276,7 @@ void multi_img::setSegment(const std::vector<Pixel> &values, const Mask &mask)
 }
 
 void multi_img::setSegment(const std::vector<cv::Mat_<Value> > &values,
-						   const Mask &mask)
+						   const cv::Mat1b &mask)
 {
 	assert(mask.rows == height && mask.cols == width);
 	int i = 0;
@@ -302,7 +302,7 @@ void multi_img::applyCache()
 {
 	for (unsigned int d = 0; d < size(); ++d) {
 		Band &dst = bands[d];
-		BandIt it;
+		Band::iterator it;
 		unsigned int i;
 		for (it = dst.begin(), i = 0; it != dst.end(); it++, i++)
 			*it = pixels[i][d];

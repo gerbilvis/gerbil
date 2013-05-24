@@ -77,7 +77,7 @@ cv::Mat1s MeanShift::execute(const multi_img& input, ProgressObserver *progress,
 	// prepare MS run (adaptive bandwidths)
 	bool success = cfams.PrepareFAMS(bandwidths);
 	if (!success)
-		return multi_img::Mask();
+		return cv::Mat1s();
 
 	// define starting points
 	/* done after preparation such that superpixel can rely on bandwidths */
@@ -108,7 +108,7 @@ cv::Mat1s MeanShift::execute(const multi_img& input, ProgressObserver *progress,
 	cleanup_sp_points(sp_points);
 #endif
 	if (!success)
-		return multi_img::Mask();
+		return cv::Mat1s();
 
 	// postprocess: prune modes
 	cfams.PruneModes();
