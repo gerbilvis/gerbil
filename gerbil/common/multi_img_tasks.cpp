@@ -56,7 +56,7 @@ void CommonTbb::RebuildPixels::operator()(const tbb::blocked_range<size_t> &r) c
 {
 	for (size_t d = r.begin(); d != r.end(); ++d) {
 		multi_img::Band &src = multi.bands[d];
-		multi_img::BandConstIt it; size_t i;
+		multi_img::Band::const_iterator it; size_t i;
 		for (it = src.begin(), i = 0; it != src.end(); ++it, ++i)
 			multi.pixels[i][d] = *it;
 	}
@@ -66,7 +66,7 @@ void CommonTbb::ApplyCache::operator()(const tbb::blocked_range<size_t> &r) cons
 {
 	for (size_t d = r.begin(); d != r.end(); ++d) {
 		multi_img::Band &dst = multi.bands[d];
-		multi_img::BandIt it; size_t i;
+		multi_img::Band::iterator it; size_t i;
 		for (it = dst.begin(), i = 0; it != dst.end(); ++it, ++i)
 			*it = multi.pixels[i][d];
 	}
@@ -554,7 +554,7 @@ void PcaTbb::Pixels::operator()(const tbb::blocked_range<size_t> &r) const
 {
 	for (size_t d = r.begin(); d != r.end(); ++d) {
 		multi_img::Band &src = source.bands[d];
-		multi_img::BandConstIt it; size_t i;
+		multi_img::Band::const_iterator it; size_t i;
 		for (it = src.begin(), i = 0; it != src.end(); ++it, ++i)
 			target(d, i) = *it;
 	}

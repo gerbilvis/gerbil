@@ -182,7 +182,7 @@ cv::Mat_<cv::Vec3f> multi_img::bgr() const
 		int idx = ((int)(meta[i].center + 0.5f) - 360) / 5;
 		if (idx < 0 || idx > 94)
 			continue;
-		BandConstIt src = bands[i].begin();
+		Band::const_iterator src = bands[i].begin();
 		cv::Mat_<cv::Vec3f>::iterator dst = xyz.begin();
 		for (; dst != xyz.end(); ++src, ++dst) {
 			cv::Vec3f &v = *dst;

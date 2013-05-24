@@ -170,6 +170,8 @@ typedef SharedData<multi_img_base> SharedMultiImgBase;
 typedef boost::lock_guard<SharedData<multi_img_base> >  SharedMultiImgBaseGuard;
 
 // pointer to SharedData<multi_img_base> which really behaves like SharedData<multi_img>, see above
+/* TODO: we discussed that this could be a SharedMultiImgBase const* instead
+ * to avoid confusion about the nature/functionality of the ptr */
 typedef boost::shared_ptr<SharedMultiImgBase> SharedMultiImgPtr;
 
 typedef boost::shared_ptr<SharedData<cv::Mat3f> > mat3f_ptr;
