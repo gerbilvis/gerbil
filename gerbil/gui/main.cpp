@@ -1,13 +1,4 @@
-#include "mainwindow.h"
-#include <multi_img_offloaded.h>
-#include <background_task_queue.h>
-#include <imginput.h>
-
-#include <tbb/compat/thread>
-#include <QApplication>
-#include <QFileDialog>
-#include <iostream>
-#include <string>
+#include "controller.h"
 
 #include <opencv2/gpu/gpu.hpp>
 #include <opencv2/core/core.hpp>
@@ -17,7 +8,10 @@
 #include <QGLFormat>
 #include <QGLFramebufferObject>
 #include <QMessageBox>
-#include <QFileInfo>
+#include <QApplication>
+#include <QFileDialog>
+#include <iostream>
+#include <string>
 
 /** All OpenCV functions that are called from parallelized parts of gerbil
     have to be first executed in single-threaded environment. This is actually
@@ -149,17 +143,14 @@ bool test_compatibility()
 	bool supportFBO = QGLFramebufferObject::hasOpenGLFramebufferObjects();
 	bool supportBlit = QGLFramebufferObject::hasOpenGLFramebufferBlit();
 
-	if (!supportMMX) std::cout << "MMX support not found." << std::endl;
-	if (!supportSSE) std::cout << "SSE support not found." << std::endl;
-	if (!supportSSE2) std::cout << "SSE2 support not found." << std::endl;
-	if (!supportOGL) std::cout << "OpenGL support not found." << std::endl;
-	if (!supportFBO) std::cout << "GL_EXT_framebuffer_object support not found." << std::endl;
-	if (!supportBlit) std::cout << "GL_EXT_framebuffer_blit support not found." << std::endl;
+	if (!supportMMX) std::cerr << "MMX support not found." << std::endl;
+	if (!supportSSE) std::cerr << "SSE support not found." << std::endl;
+	if (!supportSSE2) std::cerr << "SSE2 support not found." << std::endl;
+	if (!supportOGL) std::cerr << "OpenGL support not found." << std::endl;
+	if (!supportFBO) std::cerr << "GL_EXT_framebuffer_object support not found." << std::endl;
+	if (!supportBlit) std::cerr << "GL_EXT_framebuffer_blit support not found." << std::endl;
 
 	bool success = supportMMX && supportSSE && supportSSE2 && supportOGL && supportFBO && supportBlit;
-
-	if (!success) std::cout << "Machine does not meet minimal requirements to launch Gerbil." << std::endl;
-
 	return success;
 }
 
@@ -262,33 +253,23 @@ bool determine_limited(const std::pair<std::vector<std::string>, std::vector<mul
 		}
 	}
 
+	// if we could not read the image this way, default to no limiter mode
 	return false;
 }
-
-/* container to allow passing a reference to std::thread() */
-template<typename T>
-struct holder {
-	holder(T& payload) : payload(payload) {}
-	void operator()() { payload(); }
-
-	T& payload;
-};
 
 int main(int argc, char **argv)
 {
 	init_opencv();
 	init_cuda();
-
-	// start gui
-	QApplication app(argc, argv);
-
-	if (!test_compatibility())
+	if (!test_compatibility()) {
+		// TODO: window?
+		std::cerr << "Unfortunately the machine does not meet minimal"
+					 "requirements to launch Gerbil." << std::endl;
 		return 3;
+	}
 
-	// start worker thread
-	BackgroundTaskQueue queue;
-	holder<BackgroundTaskQueue> h(queue);
-	std::thread background(h);
+	// start qt before we try showing dialogs
+	QApplication app(argc, argv);
 
 	// get input file name
 	std::string filename;
@@ -304,46 +285,32 @@ int main(int argc, char **argv)
 		filename = argv[1];
 	}
 
-	QString labelfile;
-	if (argc >= 3)
-		labelfile = argv[2];
-
+	// determine limited mode in a hackish way
 	std::pair<std::vector<std::string>, std::vector<multi_img::BandDesc> >
 			filelist = multi_img::parse_filelist(filename);
 	bool limited_mode = determine_limited(filelist);
 
-	// load image
-	multi_img_base* image;
-	multi_img::ptr imgSharedPtr;
-	if (limited_mode) {
-		image = new multi_img_offloaded(filelist.first, filelist.second);
-	} else {
-		vole::ImgInputConfig inputConfig;
-		inputConfig.file = filename;
-		imgSharedPtr = vole::ImgInput(inputConfig).execute();
-		image = imgSharedPtr.get();
+	// create controller
+	Controller chief(filename, limited_mode, labelfile);
+
+	// get optional labeling filename
+/*	TODO
+	if (argc >= 3) {
+		QString labelfile = argv[2];
+		chief.loadLabeling(labelfile);
+
+		// old code for load labels TODO: why defer?!
+		if (!labelfile.isEmpty()) {
+			BackgroundTaskPtr taskLabels(new BackgroundTask(roi));
+			QObject::connect(taskLabels.get(), SIGNAL(finished(bool)),
+				this, SLOT(loadLabeling()), Qt::QueuedConnection);
+			queue.push(taskLabels);
+		}
+
 	}
+*/
 
-	if (image->empty())
-		return 2;
-	
-	// create main window
-	MainWindow window(queue, image, labelfile, limited_mode);
-	// image now belongs to MainWindow
-	image = NULL;
-
-	QFileInfo fi(filename.c_str());
-	window.setWindowTitle(QString("Gerbil - %1").arg(fi.completeBaseName()));
-	window.show();
-
-	int retval = app.exec();
-
-	// terminate worker thread
-	queue.halt();
-
-	// wait until worker thread terminates
-	background.join();
-	
-	return retval;
+	// run Qt event loop
+	return app.exec();
 }
 

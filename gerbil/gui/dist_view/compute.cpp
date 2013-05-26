@@ -143,27 +143,3 @@ void Compute::GenerateVertices::operator()(const tbb::blocked_range<size_t> &r) 
 Compute::Compute()
 {
 }
-
-// TODO: maybe use our ENUM_MAGIC macro instead?
-std::ostream &operator <<(std::ostream &os, const representation &r)
-{
-	assert(0 <= r);
-	assert(r <= 3);
-	switch(r) {
-	case IMG:
-		os << "IMG";
-		break;
-	case GRAD:
-		os << "GRAD";
-		break;
-	case IMGPCA:
-		os << "IMGPCA";
-		break;
-	case GRADPCA:
-		os << "GRADPCA";
-		break;
-	default:
-		assert(false);
-		break;
-	}
-}

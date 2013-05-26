@@ -39,34 +39,34 @@
 #include <QMenu>
 #include <opencv2/core/core.hpp>
 
+class Controller;
+
 class MainWindow : public QMainWindow, private Ui::MainWindow {
     Q_OBJECT
 public:
-	MainWindow(BackgroundTaskQueue &queue, multi_img_base *image,
-				 QString labelfile = QString(), bool limitedMode = false,
-				 QWidget *parent = 0);
+	MainWindow(bool limitedMode = false);
 
 	const inline Illuminant & getIlluminant(int temp);
 	const inline std::vector<multi_img::Value> & getIlluminantC(int temp);
+	// TODO: used by Controller; hack until we have a resp. vc-controller
+	ViewerContainer* getViewerContainer() { return viewerContainer; }
 
 	static QIcon colorIcon(const QColor& color);
-	BackgroundTaskQueue &queue;
-
-	/* BEGIN methods for viewercontainer integration */
-	bool haveImagePCA();
-	bool haveGradientPCA();
-	/* END methods for viewercontainer integration */
 
 public slots:
+	void changeBand(QPixmap band, QString desc);
+
+	void setLabelMatrix(cv::Mat1s matrix);
+	void processLabelingChange(const QVector<QColor> &colors, bool changed);
+	void processRGB(QPixmap rgb);
+
 	void setGUIEnabled(bool enable, TaskType tt = TT_NONE);
-	void finishROIChange(bool success);
 	void finishGraphSeg(bool success);
-	void finishTask(bool success);
 
 	void reshapeDock(bool floating);
-	void selectBand(representation type, int dim);
-	void addToLabel()   { viewerContainer->labelmask(false); }
-	void remFromLabel() { viewerContainer->labelmask(true); }
+	void clearLabelOrSeeds();
+	void addToLabel();
+	void remFromLabel();
 
 	void startGraphseg();
 
@@ -92,29 +92,23 @@ public slots:
 	void applyNormUserRange();
 	void clampNormUserRange();
 
-	void loadLabeling(QString filename = "");
 	void loadSeeds();
-	void saveLabeling();
-	// add new label (color)
-	void createLabel();
+	void selectLabel(int index);
 
-	void roiApplyClicked();
+	void initiateROIChange();
 
 	void openContextMenu();
 
 	void screenshot();
 
-	void updateRGB(bool success);
-public slots: // introduced by ViewerContainer
-	void updateBand(representation repr, int selection);
-	void imageResetNeeded(representation repr);
-
 	// DEBUG
 	void debugRequestGUIEnabled(bool enable, TaskType tt);
+
 signals:
-	void clearLabel();
-	void alterLabel(const multi_img::Mask &mask, bool negative);
-	void newLabelColors(const QVector<QColor> &colors, bool changed);
+	void clearLabelRequested(short index);
+	void alterLabelRequested(short index, const cv::Mat1b &mask, bool negative);
+	void rgbRequested();
+
 	void seedingDone(bool yeah = false);
 	// signal new ROI to viewerContainer (TODO needs to go into MODEL)
 	void roiChanged(cv::Rect roi);
@@ -122,44 +116,10 @@ signals:
 protected:
 	void changeEvent(QEvent *e);
 
-	/* helper functions */
-	void applyROI(bool reuse);
-	//void labelmask(bool negative);
-	// returns true if updates were triggered, false if not (trigger yourself!)
-	bool setLabelColors(const std::vector<cv::Vec3b> &colors);
-	void setLabels(const vole::Labeling &labeling);
-
 	void runGraphseg(SharedMultiImgPtr input, const vole::GraphSegConfig &config);
 
-	// FIXME SharedMultiImgPtr s are to be moved into model classes
-
-	// multispectral image and gradient
-    // FIXME rename
-    SharedMultiImgPtr image_lim;
-
-    SharedMultiImgPtr image, gradient, imagepca, gradientpca;
-
-	// current region of interest
-	cv::Rect roi;
-	// bands from all representations (image, gradient, PCA..)
-	std::vector<std::vector<QPixmap*> > bands;
-	// label colors
-	QVector<QColor> labelColors;
-	// full image labels and roi scoped labels
-	cv::Mat1s full_labels, labels;
-
-	// rgb pixmap
-	QPixmap full_rgb, rgb;
-	qimage_ptr full_rgb_temp; // QPixmap cannot be directly shared between threads
-
-	MultiImg::NormMode normIMG, normGRAD;
-	data_range_ptr normIMGRange, normGRADRange;
-
-protected slots:
-	void labelflush();
-
 private:
-	void initUI();
+	void initUI(Controller *chief);
 	void initGraphsegUI();
 	void initIlluminantUI();
 #ifdef WITH_SEG_MEANSHIFT
@@ -173,19 +133,19 @@ private:
 			Illuminant, std::vector<multi_img::Value> > > Illum_map;
 	Illum_map illuminants;
 
+#ifdef WITH_SEG_MEANSHIFT
 	CommandRunner *usRunner;
+#endif
 
 	QMenu *contextMenu;
+	ROIDock *roiDock;
 
-	TaskType runningTask;
-
-	boost::shared_ptr<multi_img::Mask> graphsegResult;
+	/* this hack sucks actually! we would get rid of this by using commandrunner
+	 * for graphseg, but I start to tend against it
+	 */
+	boost::shared_ptr<cv::Mat1s> graphsegResult;
 
 	bool limitedMode;
-
-	QString startupLabelFile;
-
-	ROIDock *roiDock;
 };
 
 #endif // MAINWINDOW_H

@@ -10,7 +10,7 @@
 #include <tbb/parallel_for.h>
 
 struct fillMaskSingleBody {
-	multi_img::Mask &mask;
+	cv::Mat1b &mask;
 	const multi_img::Band &band;
 	int dim;
 	int sel;
@@ -18,7 +18,7 @@ struct fillMaskSingleBody {
 	multi_img::Value binsize;
 	const std::vector<multi_img::Value> &illuminant;
 
-	fillMaskSingleBody(multi_img::Mask &mask, const multi_img::Band &band, int
+	fillMaskSingleBody(cv::Mat1b &mask, const multi_img::Band &band, int
 			dim, int sel, multi_img::Value minval, multi_img::Value binsize,
 			const std::vector<multi_img::Value> &illuminant);
 
@@ -26,14 +26,14 @@ struct fillMaskSingleBody {
 };
 
 struct fillMaskLimitersBody {
-	multi_img::Mask &mask;
+	cv::Mat1b &mask;
 	const multi_img &image;
 	multi_img::Value minval;
 	multi_img::Value binsize;
 	const std::vector<multi_img::Value> &illuminant;
 	const std::vector<std::pair<int, int> > &l;
 
-	fillMaskLimitersBody(multi_img::Mask &mask, const multi_img &image,
+	fillMaskLimitersBody(cv::Mat1b &mask, const multi_img &image,
 		multi_img::Value minval, multi_img::Value binsize,
 		const std::vector<multi_img::Value> &illuminant,
 		const std::vector<std::pair<int, int> > &l);
@@ -42,7 +42,7 @@ struct fillMaskLimitersBody {
 };
 
 struct updateMaskLimitersBody {
-	multi_img::Mask &mask;
+	cv::Mat1b &mask;
 	const multi_img &image;
 	int dim;
 	multi_img::Value minval;
@@ -50,7 +50,7 @@ struct updateMaskLimitersBody {
 	const std::vector<multi_img::Value> &illuminant;
 	const std::vector<std::pair<int, int> > &l;
 
-	updateMaskLimitersBody(multi_img::Mask &mask, const multi_img &image, int dim,
+	updateMaskLimitersBody(cv::Mat1b &mask, const multi_img &image, int dim,
 		multi_img::Value minval, multi_img::Value binsize,
 		const std::vector<multi_img::Value> &illuminant,
 		const std::vector<std::pair<int, int> > &l);

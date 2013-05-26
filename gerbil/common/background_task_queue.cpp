@@ -11,7 +11,13 @@
 #include "background_task_queue.h"
 #include <iostream>
 
-void BackgroundTaskQueue::halt() 
+bool BackgroundTaskQueue::isIdle()
+{
+	Lock lock(mutex);
+	return (taskQueue.empty()) && (!currentTask);
+}
+
+void BackgroundTaskQueue::halt()
 {
 	Lock lock(mutex);
 	halted = true;
@@ -59,7 +65,7 @@ void BackgroundTaskQueue::cancelTasks(const cv::Rect &roi)
 			++it;
 		}
 	}
-	if (currentTask.get() && currentTask->roi() == roi) {
+	if (currentTask && currentTask->roi() == roi) {
 		cancelled = true;
 		currentTask->cancel();
 	}

@@ -27,6 +27,9 @@ inline size_t tbb_hasher(const boost::multi_array<T, 1> &a) {
 
 }
 
+// for representations. else?
+#include "../model/image.h"
+
 #include <multi_img.h>
 #include <shared_data.h>
 
@@ -113,18 +116,6 @@ struct BinSet {
 
 typedef boost::shared_ptr<SharedData<std::vector<BinSet> > > sets_ptr;
 typedef tbb::concurrent_vector<std::pair<int, BinSet::HashKey> > binindex;
-
-/* TODO: this is here as both multi_img_viewer.h and viewport.h include
- * this header. but it sucks to have it here. */
-enum representation {
-	IMG = 0,
-	GRAD = 1,
-	IMGPCA = 2,
-	GRADPCA = 3,
-	REPSIZE = 4
-};
-
-std::ostream &operator<<(std::ostream& os, const representation& r);
 
 struct ViewportCtx {
 	ViewportCtx &operator=(const ViewportCtx &other) {

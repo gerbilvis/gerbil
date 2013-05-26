@@ -22,6 +22,9 @@ class BackgroundTaskQueue {
 public:
 	BackgroundTaskQueue() : halted(false), cancelled(false) {}
 
+	/** Any tasks in the queue? */
+	bool isIdle();
+
 	/** Flush all queued tasks and terminate worker thread. */
 	void halt();
 	/** Put task into queue for later calculation. */
@@ -37,8 +40,10 @@ protected:
 	bool pop();
 
 private:
-	BackgroundTaskQueue(const BackgroundTaskQueue &other); // do not implement
-	BackgroundTaskQueue &operator=(const BackgroundTaskQueue &other); // do not implement
+	// do not implement
+	BackgroundTaskQueue(const BackgroundTaskQueue &other);
+	// do not implement
+	BackgroundTaskQueue &operator=(const BackgroundTaskQueue &other);
 
 	typedef boost::mutex Mutex;
 	typedef boost::unique_lock<Mutex> Lock;

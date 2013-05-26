@@ -26,6 +26,7 @@ BandView::BandView(QWidget *parent)
 	  seedColorsA(std::make_pair(
             QColor(255, 0, 0, labelAlpha), QColor(255, 255, 0, labelAlpha)))
 {
+	// the timer automatically sends an accumulated update request
 	labelTimer.setSingleShot(true);
 	labelTimer.setInterval(500);
 }
@@ -48,11 +49,21 @@ void BandView::setPixmap(QPixmap p)
 	cacheValid = false;
 }
 
-void BandView::setLabelColors(QVector<QColor> lc, bool changed)
+void BandView::setLabelMatrix(cv::Mat1s matrix)
 {
+	uncommitedLabels.clear();
+	labels = matrix;
+
+	refresh();
+}
+
+void BandView::updateLabeling(const QVector<QColor> &lc, bool changed)
+{
+	// store label colors
 	labelColors = lc;
+
+	// create alpha-modified label colors
 	labelColorsA.resize(lc.size());
-	
 	labelColorsA[0] = QColor(0, 0, 0, 0);
 	for (int i = 1; i < labelColors.size(); ++i) // 0 is index for unlabeled
 	{
@@ -60,8 +71,14 @@ void BandView::setLabelColors(QVector<QColor> lc, bool changed)
 		col.setAlpha(labelAlpha);
 		labelColorsA[i] = col;
 	}
-	if (changed)
+
+	if (changed) {
+		// uncommited labels are not relevant anymore
+		uncommitedLabels.clear();
+
+		// need to redraw with new colors or even labeling
 		refresh();
+	}
 }
 
 void BandView::paintEvent(QPaintEvent *ev)
@@ -242,27 +259,7 @@ void BandView::updateCache(int x, int y, short label)
 	}
 }
 
-void BandView::alterLabel(const multi_img::Mask &mask, bool negative)
-{
-	uncommitedLabels.clear();
-
-	if (negative)
-		labels.setTo(0, mask.mul(labels == curLabel));
-	else
-		labels.setTo(curLabel, mask);
-
-	refresh();
-}
-
-void BandView::setLabels(multi_img::Mask l)
-{
-	uncommitedLabels.clear();
-	l.copyTo(labels);
-
-	refresh();
-}
-
-void BandView::drawOverlay(const multi_img::Mask &mask)
+void BandView::drawOverlay(const cv::Mat1b &mask)
 {
 	//vole::Stopwatch s("Overlay drawing");
 	overlay = &mask;
@@ -293,7 +290,7 @@ void BandView::cursorAction(QMouseEvent *ev, bool click)
 		}
 		if (!holdLabel && (labels(y, x) != curLabel)) {
 			curLabel = labels(y, x);
-			curMask = multi_img::Mask(labels.rows, labels.cols, (uchar)0);
+			curMask = cv::Mat1b(labels.rows, labels.cols, (uchar)0);
 			curMask.setTo(1, (labels == curLabel));
 			drawOverlay(curMask);
 			emit newSingleLabel(curLabel); // vp redraw
@@ -389,23 +386,9 @@ void BandView::updatePoint(const QPointF &p)
 	repaint(QRect(damagetl, damagebr));
 }
 
-void BandView::clearLabelPixels()
+void BandView::clearSeeds()
 {
-	if (seedMode) {
-		seedMap.setTo(127);
-	} else {
-		labels.setTo(0, labels == curLabel);
-		uncommitedLabels.clear();
-	}
-
-	refresh();
-}
-
-void BandView::clearAllLabels()
-{
-	labels.setTo(0);
-	uncommitedLabels.clear();
-
+	seedMap.setTo(127);
 	refresh();
 }
 
@@ -420,7 +403,7 @@ void BandView::leaveEvent(QEvent *ev)
 	update();
 }
 
-void BandView::changeLabel(int label)
+void BandView::changeCurrentLabel(int label)
 {
 	if (label < 0)	// empty selection, during initialization
 		return;
@@ -428,6 +411,10 @@ void BandView::changeLabel(int label)
 
 	if (labelColors.count() && label == labelColors.count()) {
 		// need to create label color first
+		/* as this can eventually flush our uncommited labels, we commit them
+		 * first.
+		 */
+		commitLabelChanges();
 		emit newLabel();
 	}
 	curLabel = label;

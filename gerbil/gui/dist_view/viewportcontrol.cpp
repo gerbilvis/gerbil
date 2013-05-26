@@ -129,7 +129,7 @@ void ViewportControl::timerEvent(QTimerEvent *e)
 			update = true;
 		}
 	} else {
-		if (pos.x() + width() > 10.f) {
+		if (pos.x() + width() > 9.f) { // TODO: check if it worked
 			pos.setX(std::max(pos.x() - (qreal)60.f, (qreal)10.f - width()));
 			update = true;
 		}

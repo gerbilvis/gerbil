@@ -191,6 +191,14 @@ void multi_img_viewer::setImage(SharedMultiImgPtr img, cv::Rect roi)
 	ctxlock.unlock();
 
 	image = img;
+	assert(image);
+
+	// TODO: test if it is enough to do this here
+	{
+		SharedDataLock imglock(image->mutex);
+		if (viewport->selection > (*image)->size())
+			viewport->selection = 0;
+	}
 
 	//GGDBGM(format("image.get()=%1%\n") %image.get());
 
@@ -209,7 +217,6 @@ void multi_img_viewer::setImage(SharedMultiImgPtr img, cv::Rect roi)
 	args.reset.fetch_and_store(1);
 	args.wait.fetch_and_store(1);
 
-	assert(image);
 	assert(viewport->ctx);
 	BackgroundTaskPtr taskBins(new ViewerBinsTbb(
 		image, labels, control->labelColors, illuminant, args, viewport->ctx, viewport->sets,
@@ -292,7 +299,7 @@ void multi_img_viewer::finishBinCountChange(bool success)
 	}
 }
 
-void multi_img_viewer::subLabelMask(sets_ptr temp, const cv::Mat1b &mask)
+void multi_img_viewer::updateLabelsPartially(cv::Mat1b mask, cv::Mat1s old)
 {
 	SharedDataLock ctxlock(viewport->ctx->mutex);
 	ViewportCtx args = **viewport->ctx;
@@ -303,33 +310,32 @@ void multi_img_viewer::subLabelMask(sets_ptr temp, const cv::Mat1b &mask)
 	if (!image.get())
 		return;
 
-	std::vector<cv::Rect> sub;
-	sub.push_back(cv::Rect(0, 0, mask.cols, mask.rows));
-	BackgroundTaskPtr taskBins(new ViewerBinsTbb(
-		image, labels.clone(), control->labelColors, illuminant, args, viewport->ctx, viewport->sets,
-		temp, sub, std::vector<cv::Rect>(), mask, false, false));
-	queue->push(taskBins);
-}
+	// we calculate into temp, then from temp in the second round (right?)
+	sets_ptr temp(new SharedData<std::vector<BinSet> >(NULL));
 
-void multi_img_viewer::addLabelMask(sets_ptr temp, const cv::Mat1b &mask)
-{
-	SharedDataLock ctxlock(viewport->ctx->mutex);
-	ViewportCtx args = **viewport->ctx;
-	ctxlock.unlock();
+	{	// first round: delete all pixels from their *previous* labels
+		std::vector<cv::Rect> sub;
+		sub.push_back(cv::Rect(0, 0, mask.cols, mask.rows));
+		BackgroundTaskPtr taskBins(new ViewerBinsTbb(
+			image, old.clone(), control->labelColors, illuminant, args,
+			viewport->ctx, viewport->sets, temp, sub, std::vector<cv::Rect>(),
+			mask, false, false));
+		queue->push(taskBins);
+	}
 
-	args.wait.fetch_and_store(1);
+	{	// second round: now add them back according to their current labels
+		std::vector<cv::Rect> add;
+		add.push_back(cv::Rect(0, 0, mask.cols, mask.rows));
+		BackgroundTaskPtr taskBins(new ViewerBinsTbb(
+			image, labels.clone(), control->labelColors, illuminant, args,
+			viewport->ctx, viewport->sets, temp, std::vector<cv::Rect>(), add,
+			mask, false, true));
 
-	if (!image.get())
-		return;
-
-	std::vector<cv::Rect> add;
-	add.push_back(cv::Rect(0, 0, mask.cols, mask.rows));
-	BackgroundTaskPtr taskBins(new ViewerBinsTbb(
-		image, labels.clone(), control->labelColors, illuminant, args, viewport->ctx, viewport->sets,
-		temp, std::vector<cv::Rect>(), add, mask, false, true));
-	QObject::connect(taskBins.get(), SIGNAL(finished(bool)),
-					 this, SLOT(binningUpdate(bool)), Qt::QueuedConnection);
-	queue->push(taskBins);
+		// final signal
+		QObject::connect(taskBins.get(), SIGNAL(finished(bool)),
+						 this, SLOT(binningUpdate(bool)), Qt::QueuedConnection);
+		queue->push(taskBins);
+	}
 }
 
 void multi_img_viewer::updateLabels()
@@ -344,7 +350,8 @@ void multi_img_viewer::updateLabels()
 		return;
 
 	BackgroundTaskPtr taskBins(new ViewerBinsTbb(
-		image, labels, control->labelColors, illuminant, args, viewport->ctx, viewport->sets));
+		image, labels, control->labelColors, illuminant, args, viewport->ctx,
+								   viewport->sets));
 	QObject::connect(taskBins.get(), SIGNAL(finished(bool)),
 					 this, SLOT(binningUpdate(bool)), Qt::QueuedConnection);
 	queue->push(taskBins);
@@ -365,7 +372,7 @@ void multi_img_viewer::binningRangeUpdate(bool updated)
 
 	{
 		SharedDataLock imagelock(image->mutex);
-		highlightMask = multi_img::Mask((*image)->height, (*image)->width, (uchar)0);
+		highlightMask = cv::Mat1b((*image)->height, (*image)->width, (uchar)0);
 
 		SharedDataLock ctxlock(viewport->ctx->mutex);
 		setTitle((*viewport->ctx)->type, (*viewport->ctx)->minval,

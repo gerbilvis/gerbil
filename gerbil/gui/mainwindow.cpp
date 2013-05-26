@@ -8,6 +8,7 @@
 */
 
 #include "mainwindow.h"
+#include "controller.h"
 #include "iogui.h"
 #include "commandrunner.h"
 #include "multi_img_tasks.h"
@@ -37,300 +38,79 @@
 #define USE_CUDA_CLAMP          0
 #define USE_CUDA_ILLUMINANT     0
 
-cv::Rect QRect2CVRect(QRect r) {
-	return cv::Rect(
-		r.x(), r.y(), r.width(), r.height());
-}
-
-MainWindow::MainWindow(BackgroundTaskQueue &queue, multi_img_base *image,
-						   QString labelfile, bool limitedMode, QWidget *parent)
-	: QMainWindow(parent), queue(queue),
-	  startupLabelFile(labelfile), limitedMode(limitedMode),
-	  image_lim(new SharedMultiImgBase(image)),
-	  image(new SharedMultiImgBase(new multi_img(0, 0, 0))),
-	  gradient(new SharedMultiImgBase(new multi_img(0, 0, 0))),
-	  //imagepca(new SharedData<multi_img>(new multi_img(0, 0, 0))),
-	  //gradientpca(new SharedData<multi_img>(new multi_img(0, 0, 0))),
-	  full_labels(image->height, image->width, (short)0),
-	  normIMG(MultiImg::NORM_OBSERVED), normGRAD(MultiImg::NORM_OBSERVED),
-	  normIMGRange(new SharedData<std::pair<multi_img::Value, multi_img::Value> >(
-	  		new std::pair<multi_img::Value, multi_img::Value>(0, 0))),
-	  normGRADRange(new SharedData<std::pair<multi_img::Value, multi_img::Value> >(
-	  		new std::pair<multi_img::Value, multi_img::Value>(0, 0))),
-	  full_rgb_temp(new SharedData<QImage>(new QImage())),
+MainWindow::MainWindow(bool limitedMode)
+	: limitedMode(limitedMode),
 	  usRunner(NULL), contextMenu(NULL),
-	  graphsegResult(new multi_img::Mask())
+	  graphsegResult(new cv::Mat1s())
 {
 	// create all objects
 	setupUi(this);
 
+	/* TODO: docks should belong to/interact with Controller, or DockController
+	 * so we don't have unnecessary duplication here */
 	roiDock = new ROIDock(this);
 	addDockWidget(Qt::RightDockWidgetArea, roiDock);
-
-
-	// MODEL To be removed when refactored
-	// into model classes.
-	viewerContainer->image = &(this->image);
-	viewerContainer->gradient = &gradient;
-	viewerContainer->imagepca = &imagepca;
-	viewerContainer->gradientpca = &gradientpca;
-	viewerContainer->setTaskQueue(&queue);
-	viewerContainer->bands = &bands;
-	viewerContainer->labels = &labels;
-
-
-	// do all the bling-bling
-	initUI();
-	setLabelColors(vole::Labeling::colors(2, true));
-
-	// default to full image if small enough
-	roiDock->setRoi(QRect(0, 0,
-		(*image_lim)->width < 513 ? (*image_lim)->width : 512,
-		(*image_lim)->height < 513 ? (*image_lim)->height : 512));
-
-	roi = QRect2CVRect(roiDock->getRoi());
-	emit roiChanged(roi);
-
-	setGUIEnabled(false, TT_SELECT_ROI);
-
-	applyROI(false);
-
-	BackgroundTaskPtr taskEpilog(new BackgroundTask(roi));
-	QObject::connect(taskEpilog.get(), SIGNAL(finished(bool)), 
-		this, SLOT(finishTask(bool)), Qt::QueuedConnection);
-	queue.push(taskEpilog);
-
-	// load labels
-	if (!labelfile.isEmpty()) {
-		BackgroundTaskPtr taskLabels(new BackgroundTask(roi));
-		QObject::connect(taskLabels.get(), SIGNAL(finished(bool)), 
-			this, SLOT(loadLabeling()), Qt::QueuedConnection);
-		queue.push(taskLabels);
-	}
 }
 
-void MainWindow::finishTask(bool success)
+// todo: move to the new bandDock
+void MainWindow::clearLabelOrSeeds()
 {
-	if (success) {
-		setGUIEnabled(true);
+	if (bandView->isSeedModeEnabled()) {
+		bandView->clearSeeds();
+	} else {
+		emit clearLabelRequested(bandView->getCurLabel());
 	}
 }
 
-void MainWindow::finishROIChange(bool success)
+void MainWindow::addToLabel()
 {
-	if (success) {
-		connect(&bandView->labelTimer, SIGNAL(timeout()), 
-			bandView, SLOT(commitLabelChanges()));
-	}
+	cv::Mat1b mask = viewerContainer->getHighlightMask();
+	emit alterLabelRequested(bandView->getCurLabel(), mask, false);
 }
 
-void MainWindow::applyROI(bool reuse)
+void MainWindow::remFromLabel()
 {
-	viewerContainer->disconnectAllViewers();
-
-	disconnect(&bandView->labelTimer, SIGNAL(timeout()), 
-		bandView, SLOT(commitLabelChanges()));
-
-	// reset ROI if not reuse
-	if (!reuse) {
-		SharedDataLock image_lock(image->mutex);
-		SharedDataLock gradient_lock(gradient->mutex);
-		cv::Rect empty(0, 0, 0, 0);
-		(*image)->roi = empty;
-		(*gradient)->roi = empty;
-
-		if (imagepca.get()) {
-			SharedDataLock imagepca_lock(imagepca->mutex);
-			(*imagepca)->roi = empty;
-		}
-
-		if (gradientpca.get()) {
-			SharedDataLock gradientpca_lock(gradientpca->mutex);
-			(*gradientpca)->roi = empty;
-		}
-	}
-
-	// get old and new ROI, compute if it is profitable to add/sub pixels,
-	// instead of
-	SharedDataLock image_lock(image->mutex);
-	cv::Rect oldRoi = (*image)->roi;
-	cv::Rect newRoi = roi;
-	image_lock.unlock();
-	emit roiChanged(roi);
-
-	cv::Rect isecGlob = oldRoi & newRoi;
-	cv::Rect isecOld(0, 0, 0, 0);
-	cv::Rect isecNew(0, 0, 0, 0);
-	if (isecGlob.width > 0 && isecGlob.height > 0) {
-		isecOld.x = isecGlob.x - oldRoi.x;
-		isecOld.y = isecGlob.y - oldRoi.y;
-		isecOld.width = isecGlob.width;
-		isecOld.height = isecGlob.height;
-
-		isecNew.x = isecGlob.x - newRoi.x;
-		isecNew.y = isecGlob.y - newRoi.y;
-		isecNew.width = isecGlob.width;
-		isecNew.height = isecGlob.height;
-	}
-
-	std::vector<cv::Rect> sub;
-	int subArea = MultiImg::Auxiliary::RectComplement(
-		oldRoi.width, oldRoi.height, isecOld, sub);
-
-	std::vector<cv::Rect> add;
-	int addArea = MultiImg::Auxiliary::RectComplement(
-		newRoi.width, newRoi.height, isecNew, add);
-
-	bool profitable = (subArea + addArea) < (newRoi.width * newRoi.height);
-
-	sets_ptr tmp_sets_image(new SharedData<std::vector<BinSet> >(NULL));
-	sets_ptr tmp_sets_imagepca(new SharedData<std::vector<BinSet> >(NULL));
-	sets_ptr tmp_sets_gradient(new SharedData<std::vector<BinSet> >(NULL));
-	sets_ptr tmp_sets_gradientpca(new SharedData<std::vector<BinSet> >(NULL));
-	if (reuse && profitable) {
-		viewerContainer->subImage(IMG, tmp_sets_image, sub, roi);
-		viewerContainer->subImage(IMG, tmp_sets_gradient, sub, roi);
-		viewerContainer->subImage(IMG, tmp_sets_imagepca, sub, roi);
-		viewerContainer->subImage(IMG, tmp_sets_gradientpca, sub, roi);
-	}
-
-	updateRGB(true);
-	rgbDock->setEnabled(true);
-
-	labels = cv::Mat1s(full_labels, roi);
-	bandView->labels = labels;
-	viewerContainer->setLabels(labels);
-
-	size_t numbands;
-	{
-		SharedMultiImgBaseGuard guard(*image_lim);
-		numbands = bandsSlider->value();
-		if (numbands <= 2)
-			numbands = 3;
-		if (numbands > (*image_lim)->size())
-			numbands = (*image_lim)->size();
-		viewerContainer->updateViewerBandSelections(numbands);
-	}
-
-	SharedMultiImgPtr scoped_image(new SharedMultiImgBase(NULL));
-	BackgroundTaskPtr taskScope(new MultiImg::ScopeImage(
-		image_lim, scoped_image, roi));
-	queue.push(taskScope);
-
-	// each vector's size is atmost #bands (e.g., gradient has one less)
-	bands.assign(viewerContainer->size(), std::vector<QPixmap*>(numbands, NULL));
-
-	BackgroundTaskPtr taskRescale(new MultiImg::RescaleTbb(
-		scoped_image, image, numbands, roi));
-	queue.push(taskRescale);
-
-	{
-		SharedDataLock hlock(normIMGRange->mutex);
-		double min = (*normIMGRange)->first;
-		double max = (*normIMGRange)->second;
-		hlock.unlock();
-
-		if (cv::gpu::getCudaEnabledDeviceCount() > 0 && USE_CUDA_DATARANGE) {
-			BackgroundTaskPtr taskImgNormRange(new NormRangeCuda(
-				image, normIMGRange, normIMG, 0, min, max, true, roi));
-			queue.push(taskImgNormRange);
-		} else {
-			BackgroundTaskPtr taskImgNormRange(new NormRangeTbb(
-				image, normIMGRange, normIMG, 0, min, max, true, roi));
-			queue.push(taskImgNormRange);
-		}
-	}
-
-	if (reuse && profitable) {
-		viewerContainer->addImage(IMG, tmp_sets_image, add, roi);
-	} else {
-		viewerContainer->setImage(IMG, image, roi);
-	}
-
-	BackgroundTaskPtr taskImgFinish(new BackgroundTask(roi));
-	QObject::connect(taskImgFinish.get(), SIGNAL(finished(bool)), 
-		viewerContainer, SLOT(imgCalculationComplete(bool)), Qt::QueuedConnection);
-	queue.push(taskImgFinish);
-
-	if (cv::gpu::getCudaEnabledDeviceCount() > 0 && USE_CUDA_GRADIENT) {
-		BackgroundTaskPtr taskGradient(new MultiImg::GradientCuda(
-			image, gradient, roi));
-		queue.push(taskGradient);
-	} else {
-		BackgroundTaskPtr taskGradient(new MultiImg::GradientTbb(
-			image, gradient, roi));
-		queue.push(taskGradient);
-	}
-
-	{
-		SharedDataLock hlock(normGRADRange->mutex);
-		double min = (*normGRADRange)->first;
-		double max = (*normGRADRange)->second;
-		hlock.unlock();
-
-		if (cv::gpu::getCudaEnabledDeviceCount() > 0 && USE_CUDA_DATARANGE) {
-			BackgroundTaskPtr taskGradNormRange(new NormRangeCuda(
-				gradient, normGRADRange, normGRAD, 1, min, max, true, roi));
-			queue.push(taskGradNormRange);
-		} else {
-			BackgroundTaskPtr taskGradNormRange(new NormRangeTbb(
-				gradient, normGRADRange, normGRAD, 1, min, max, true, roi));
-			queue.push(taskGradNormRange);
-		}
-	}
-
-	if (reuse && profitable) {
-		viewerContainer->addImage(GRAD, tmp_sets_gradient, add, roi);
-	} else {
-		viewerContainer->setImage(GRAD, gradient, roi);
-	}
-
-	BackgroundTaskPtr taskGradFinish(new BackgroundTask(roi));
-	QObject::connect(taskGradFinish.get(), SIGNAL(finished(bool)), 
-		viewerContainer, SLOT(gradCalculationComplete(bool)), Qt::QueuedConnection);
-	queue.push(taskGradFinish);
-
-	if (imagepca.get()) {
-		BackgroundTaskPtr taskPca(new MultiImg::PcaTbb(
-			image, imagepca, 0, roi));
-		queue.push(taskPca);
-
-		if (reuse && profitable) {
-			viewerContainer->addImage(IMGPCA, tmp_sets_imagepca, add, roi);
-		} else {
-			viewerContainer->setImage(IMGPCA, imagepca, roi);
-		}
-
-		BackgroundTaskPtr taskImgPcaFinish(new BackgroundTask(roi));
-		QObject::connect(taskImgPcaFinish.get(), SIGNAL(finished(bool)), 
-			viewerContainer, SLOT(imgPcaCalculationComplete(bool)), Qt::QueuedConnection);
-		queue.push(taskImgPcaFinish);
-	}
-
-	if (gradientpca.get()) {
-		BackgroundTaskPtr taskPca(new MultiImg::PcaTbb(
-			gradient, gradientpca, 0, roi));
-		queue.push(taskPca);
-
-		if (reuse && profitable) {
-			viewerContainer->addImage(GRADPCA, tmp_sets_gradientpca, add, roi);
-		} else {
-			viewerContainer->setImage(GRADPCA, gradientpca, roi);
-		}
-
-		BackgroundTaskPtr taskGradPcaFinish(new BackgroundTask(roi));
-		QObject::connect(taskGradPcaFinish.get(), SIGNAL(finished(bool)), 
-			viewerContainer, SLOT(gradPcaCalculationComplete(bool)), Qt::QueuedConnection);
-		queue.push(taskGradPcaFinish);
-	}
-
-	BackgroundTaskPtr roiFinish(new BackgroundTask(roi));
-	QObject::connect(roiFinish.get(), SIGNAL(finished(bool)), 
-		this, SLOT(finishROIChange(bool)), Qt::QueuedConnection);
-	queue.push(roiFinish);
+	cv::Mat1b mask = viewerContainer->getHighlightMask();
+	emit alterLabelRequested(bandView->getCurLabel(), mask, true);
 }
 
-void MainWindow::initUI()
+// todo: move to the new bandDock
+void MainWindow::changeBand(QPixmap band, QString desc)
+{
+	bandView->setEnabled(true);
+	bandView->setPixmap(band);
+	bandDock->setWindowTitle(desc);
+}
+
+// todo: move to the new bandDock
+void MainWindow::setLabelMatrix(cv::Mat1s matrix)
+{
+	bandView->setLabelMatrix(matrix);
+}
+
+// todo: move to the new bandDock
+void MainWindow::processLabelingChange(const QVector<QColor> &colors, bool changed)
+{
+	// use colors for our awesome label menu
+	markerSelector->clear();
+	for (int i = 1; i < colors.size(); ++i) // 0 is index for unlabeled
+	{
+		markerSelector->addItem(colorIcon(colors.at(i)), "");
+	}
+	markerSelector->addItem(QIcon(":/toolbar/add"), "");
+
+	// tell bandview about the update as well
+	bandView->updateLabeling(colors, changed);
+}
+
+// todo: move to the new bandDock
+void MainWindow::selectLabel(int index)
+{
+	// markerSelector has no label zero, therefore 1 off
+	markerSelector->setCurrentIndex(index - 1);
+}
+
+void MainWindow::initUI(Controller *chief)
 {
 	/* GUI elements */
 	initGraphsegUI();
@@ -355,35 +135,18 @@ void MainWindow::initUI()
 
 	viewerContainer->initUi();
 
-	/* slots & signals */
+	/* slots & signals: GUI only */
 	connect(docksButton, SIGNAL(clicked()),
 			this, SLOT(openContextMenu()));
 
-	connect(bandDock, SIGNAL(topLevelChanged(bool)),
-			this, SLOT(reshapeDock(bool)));
+	/* TODO: this all belongs to new banddock */
+
+//	we decided to remove this functionality for now
+//	connect(bandDock, SIGNAL(topLevelChanged(bool)),
+//			this, SLOT(reshapeDock(bool)));
 
 	connect(markerSelector, SIGNAL(currentIndexChanged(int)),
-			bandView, SLOT(changeLabel(int)));
-	connect(clearButton, SIGNAL(clicked()),
-			this, SLOT(labelflush()));
-
-	connect(bandView, SIGNAL(newLabel()),
-			this, SLOT(createLabel()));
-
-	connect(ignoreButton, SIGNAL(toggled(bool)),
-			this, SLOT(toggleLabels(bool)));
-
-	// label buttons
-	connect(lLoadButton, SIGNAL(clicked()),
-			this, SLOT(loadLabeling()));
-	connect(lSaveButton, SIGNAL(clicked()),
-			this, SLOT(saveLabeling()));
-	connect(lLoadSeedButton, SIGNAL(clicked()),
-			this, SLOT(loadSeeds()));
-
-	// signals for ROI (reset handled in ROIDock)
-	connect(roiDock, SIGNAL(applyRoiClicked()),
-			this, SLOT(roiApplyClicked()));
+			bandView, SLOT(changeCurrentLabel(int)));
 
 	connect(ignoreButton, SIGNAL(toggled(bool)),
 			markButton, SLOT(setDisabled(bool)));
@@ -395,33 +158,54 @@ void MainWindow::initUI()
 			bandView, SLOT(toggleShowLabels(bool)));
 	connect(singleButton, SIGNAL(toggled(bool)),
 			bandView, SLOT(toggleSingleLabel(bool)));
+	connect(alphaSlider, SIGNAL(valueChanged(int)),
+			bandView, SLOT(applyLabelAlpha(int)));
 
+
+	/* labeling manipulation triggers */
+	connect(clearButton, SIGNAL(clicked()),
+			this, SLOT(clearLabelOrSeeds()));
+
+	connect(bandView, SIGNAL(newLabel()),
+			chief, SLOT(addLabel()));
+
+
+	// labeldock
+	connect(lLoadButton, SIGNAL(clicked()),
+			this, SLOT(loadLabeling()));
+	connect(lSaveButton, SIGNAL(clicked()),
+			this, SLOT(saveLabeling()));
+	connect(lLoadSeedButton, SIGNAL(clicked()),
+			this, SLOT(loadSeeds()));
+
+	// signals for ROI (reset handled in ROIDock)
+	connect(roiDock, SIGNAL(roiRequested(const cv::Rect&)),
+			chief, SLOT(spawnROI(const cv::Rect&)));
+
+	// for viewports
+	connect(ignoreButton, SIGNAL(toggled(bool)),
+			this, SLOT(toggleLabels(bool)));
+
+	// label manipulation fuckup
 	connect(addButton, SIGNAL(clicked()),
 			this, SLOT(addToLabel()));
 	connect(remButton, SIGNAL(clicked()),
 			this, SLOT(remFromLabel()));
-	// alterLabel signal are sent by both MainWindow and viewerContainer
-	connect(this, SIGNAL(alterLabel(const multi_img::Mask&,bool)),
-			bandView, SLOT(alterLabel(const multi_img::Mask&,bool)));
-	connect(viewerContainer, SIGNAL(alterLabel(const multi_img::Mask&,bool)),
-			bandView, SLOT(alterLabel(const multi_img::Mask&,bool)));
-	connect(this, SIGNAL(clearLabel()),
-			bandView, SLOT(clearLabelPixels()));
-	connect(viewerContainer, SIGNAL(clearLabel()),
-			bandView, SLOT(clearLabelPixels()));
-	connect(viewerContainer, SIGNAL(drawOverlay(const multi_img::Mask&)),
-			bandView, SLOT(drawOverlay(const multi_img::Mask&)));
+
+	connect(viewerContainer, SIGNAL(drawOverlay(const cv::Mat1b&)),
+			bandView, SLOT(drawOverlay(const cv::Mat1b&)));
+
+	// todo: we connect it here as we disconnect it here as well. we will change
+	// that.
+	connect(&bandView->labelTimer, SIGNAL(timeout()),
+			bandView, SLOT(commitLabelChanges()));
+
+	// banddock
+	// todo: updateLabels() should be performed by model
 	connect(applyButton, SIGNAL(clicked()),
 			bandView, SLOT(updateLabels()));
-	connect(&bandView->labelTimer, SIGNAL(timeout()), 
-			bandView, SLOT(commitLabelChanges()));
 	connect(bandView, SIGNAL(refreshLabels()),
-			viewerContainer, SLOT(refreshLabelsInViewers()));
-
-	connect(this, SIGNAL(newLabelColors(QVector<QColor>, bool)),
-			bandView, SLOT(setLabelColors(QVector<QColor>, bool)));
-	connect(alphaSlider, SIGNAL(valueChanged(int)),
-			bandView, SLOT(applyLabelAlpha(int)));
+			viewerContainer, SLOT(updateLabels()));
 
 
 	connect(this, SIGNAL(roiChanged(cv::Rect)),
@@ -445,11 +229,7 @@ void MainWindow::initUI()
 
 	connect(viewerContainer, SIGNAL(normTargetChanged(bool)),
 			this, SLOT(normTargetChanged(bool)));
-	connect(viewerContainer, SIGNAL(bandUpdateNeeded(representation,int)),
-			this, SLOT(updateBand(representation,int)));
 
-	connect(viewerContainer, SIGNAL(viewportBandSelected(representation,int)),
-			this, SLOT(selectBand(representation,int)));
 	connect(viewerContainer, SIGNAL(requestGUIEnabled(bool,TaskType)),
 			this, SLOT(setGUIEnabled(bool,TaskType)));
 	connect(viewerContainer, SIGNAL(requestGUIEnabled(bool,TaskType)),
@@ -473,10 +253,8 @@ void MainWindow::initUI()
 	QShortcut *scr = new QShortcut(Qt::CTRL + Qt::Key_S, this);
 	connect(scr, SIGNAL(activated()), this, SLOT(screenshot()));
 
-	BackgroundTaskPtr taskRgb(new RgbTbb(
-		image_lim, mat3f_ptr(new SharedData<cv::Mat3f>(new cv::Mat3f)), full_rgb_temp));
-	taskRgb->run();
-	updateRGB(true);
+	/* now that we are connected, humbly request RGB image for roiView */
+	rgbRequested();
 }
 
 void MainWindow::setGUIEnabled(bool enable, TaskType tt)
@@ -510,9 +288,19 @@ void MainWindow::setGUIEnabled(bool enable, TaskType tt)
 
 	roiDock->setEnabled(enable || tt == TT_SELECT_ROI);
 
-	runningTask = tt;
+	if (tt == TT_SELECT_ROI) {
+		/* TODO: better alternative: flush uncommited labels on disable?! */
+		if (enable) {
+			connect(&bandView->labelTimer, SIGNAL(timeout()),
+				bandView, SLOT(commitLabelChanges()));
+		} else {
+			disconnect(&bandView->labelTimer, SIGNAL(timeout()),
+				bandView, SLOT(commitLabelChanges()));
+		}
+	}
 }
 
+// TODO: controller
 void MainWindow::bandsSliderMoved(int b)
 {
 	bandsLabel->setText(QString("%1 bands").arg(b));
@@ -570,134 +358,10 @@ void MainWindow::usInitMethodChanged(int idx)
 }
 #endif
 
-bool MainWindow::setLabelColors(const std::vector<cv::Vec3b> &colors)
-{
-	QVector<QColor> col = vole::Vec2QColor(colors);
-	col[0] = Qt::white; // override black for label 0
-
-	// test if costy rebuilds necessary (existing colors changed)
-	bool changed = false;
-	for (int i = 1; i < labelColors.size() && i < col.size(); ++i) {
-		if (col.at(i) != labelColors.at(i))
-			changed = true;
-	}
-
-	labelColors = col;
-
-	// use colors for our awesome label menu
-	markerSelector->clear();
-	for (int i = 1; i < labelColors.size(); ++i) // 0 is index for unlabeled
-	{
-		markerSelector->addItem(colorIcon(labelColors.at(i)), "");
-	}
-	markerSelector->addItem(QIcon(":/toolbar/add"), "");
-
-	// tell others about colors
-	emit newLabelColors(labelColors, changed);
-
-	if (changed) 
-		setGUIEnabled(false);
-
-	/* TODO: i don't like this
-	 * here we tell viewercontainer the label colors directly instead of emiting
-	 * a signal. Because we know that they might start tasks and we apparently
-	 * only want to return from this function when those tasks are finished
-	 * (we wait for them, see below)
-	 */
-	viewerContainer->updateLabelColors(
-				labelColors, changed);
-
-	if (changed) {
-		BackgroundTaskPtr taskEpilog(new BackgroundTask());
-		QObject::connect(taskEpilog.get(), SIGNAL(finished(bool)), 
-			this, SLOT(finishTask(bool)), Qt::QueuedConnection);
-		queue.push(taskEpilog);
-	}
-
-	return changed;
-}
-
-void MainWindow::setLabels(const vole::Labeling &labeling)
-{
-	/* note: always update labels before updating label colors, for the case
-	   that there are less colors available than used in previous labeling */
-	cv::Mat1s labels = labeling();
-	// following assignments are probably redundant (OpenCV shallow copy)
-	bandView->labels = labels;
-	viewerContainer->setLabels(labels);
-
-	// here we want to avoid duplicate update. But it is not elegant.
-	// TODO: maybe one signal for both labels+colors?
-	bool updated = setLabelColors(labeling.colors());
-	if (!updated) {
-		bandView->refresh();
-		viewerContainer->refreshLabelsInViewers();
-	}
-}
-
-void MainWindow::createLabel()
-{
-	int index = labelColors.count();
-	// increment colors by 1
-	setLabelColors(vole::Labeling::colors(index + 1, true));
-	// select our new label for convenience
-	markerSelector->setCurrentIndex(index - 1);
-}
-
-void MainWindow::updateBand(representation repr, int selection)
-{
-	//GGDBGM(format(" representation=%1%\n")%repr);
-	selectBand(repr, selection);
-	bandView->update();
-}
-
-void MainWindow::imageResetNeeded(representation repr)
-{
-	switch(repr){
-	case IMG:
-		image.reset();
-		break;
-	case GRAD:
-		gradient.reset();
-		break;
-	case IMGPCA:
-		imagepca.reset();
-		break;
-	case GRADPCA:
-		gradientpca.reset();
-		break;
-	default:
-		assert(false);
-		break;
-	}
-}
-
 void MainWindow::debugRequestGUIEnabled(bool enable, TaskType tt)
 {
 	//GGDBG_CALL();
 	//GGDBGM(format("enable=%1%, tt=%2%\n") %enable %tt)
-
-}
-
-void MainWindow::selectBand(representation type, int dim)
-{
-	bandView->setEnabled(true);
-	bandView->setPixmap(*viewerContainer->getBand(type, dim));
-	SharedMultiImgPtr m = viewerContainer->getViewerImage(type);
-	SharedDataLock hlock(m->mutex);
-	std::string banddesc = (*m)->meta[dim].str();
-	hlock.unlock();
-	QString title;
-	if (banddesc.empty())
-		title = QString("%1 Band #%2")
-			.arg(type == GRAD ? "Gradient" : "Image") // TODO
-			.arg(dim+1);
-	else
-		title = QString("%1 Band %2")
-			.arg(type == GRAD ? "Gradient" : "Image") // TODO
-			.arg(banddesc.c_str());
-
-	bandDock->setWindowTitle(title);
 }
 
 void MainWindow::applyIlluminant() {
@@ -762,23 +426,18 @@ void MainWindow::applyIlluminant() {
 	i1Box->setCurrentIndex(i2Box->currentIndex());
 }
 
-void MainWindow::updateRGB(bool success)
+void MainWindow::processRGB(QPixmap rgb)
 {
-	if (!success)
-		return;
+	roiDock->setPixmap(rgb);
 
-	SharedDataLock hlock(full_rgb_temp->mutex);
-	if (!(*full_rgb_temp)->isNull()) {
-		full_rgb = QPixmap::fromImage(**full_rgb_temp);
-	}
-	hlock.unlock();
-
-	roiDock->setPixmap(full_rgb);
-	if (roi.width > 0) {
-		rgb = full_rgb.copy(roi.x, roi.y, roi.width, roi.height);
-		rgbView->setPixmap(rgb);
-		rgbView->update();
-	}
+	/* TODO: in the future, rgbView is independent from this and feeds from
+	 * falsecolor model. We could think about data-sharing between image model
+	 * and falsecolor model for the CMF part.
+	 */
+	/*TODO2: move this to apply roi! or sth. like that
+	QPixmap rgbroi = rgb.copy(roi.x, roi.y, roi.width, roi.height);
+	rgbView->setPixmap(rgbroi);
+	rgbView->update();*/
 }
 
 void MainWindow::initIlluminantUI()
@@ -1049,6 +708,7 @@ void MainWindow::clampNormUserRange()
 	}
 }
 
+// todo: part of banddock
 void MainWindow::initGraphsegUI()
 {
 	graphsegSourceBox->addItem("Image", 0);
@@ -1087,6 +747,7 @@ void MainWindow::runGraphseg(SharedMultiImgPtr input,
 							   const vole::GraphSegConfig &config)
 {
 	setGUIEnabled(false);
+	// TODO: should this be a commandrunner instead? arguable..
 	BackgroundTaskPtr taskGraphseg(new GraphsegBackground(
 		config, input, bandView->seedMap, graphsegResult));
 	QObject::connect(taskGraphseg.get(), SIGNAL(finished(bool)), 
@@ -1098,14 +759,13 @@ void MainWindow::finishGraphSeg(bool success)
 {
 	if (success) {
 		/* add segmentation to current labeling */
-		emit alterLabel(*(graphsegResult.get()), false);
-		//refreshLabelsInViewers();
-		viewerContainer->refreshLabelsInViewers();
-
+		emit alterLabelRequested(bandView->getCurLabel(),
+								 *(graphsegResult.get()), false);
 		emit seedingDone();
 	}
 }
 
+// TODO: move part of this to controller who obtains image data from imagemodel
 void MainWindow::startGraphseg()
 {
 	vole::GraphSegConfig conf("graphseg");
@@ -1380,7 +1040,7 @@ void MainWindow::segmentationFinished() {
 void MainWindow::segmentationApply(std::map<std::string, boost::any> output) {
 	if (output.count("labels")) {
 		boost::shared_ptr<cv::Mat1s> labelMask = boost::any_cast< boost::shared_ptr<cv::Mat1s> >(output["labels"]);
-		// TODO: assert size?
+		// TODO: assert size?, emit signal for lm
 		setLabels(*labelMask);
 	}
 
@@ -1402,11 +1062,8 @@ void MainWindow::usBandwidthMethodChanged(const QString &current) {}
 void MainWindow::unsupervisedSegCancelled() {}
 #endif // WITH_SEG_MEANSHIFT
 
-void MainWindow::labelflush()
-{
-	viewerContainer->labelflush(bandView->isSeedModeEnabled(), bandView->getCurLabel());
-}
-
+// todo: do we really still need this? probably not
+/*
 void MainWindow::reshapeDock(bool floating)
 {
 	SharedDataLock image_lock(image->mutex);
@@ -1423,23 +1080,7 @@ void MainWindow::reshapeDock(bool floating)
 	} else
 		bandDock->resize(bandDock->height()*src_aspect, bandDock->height());
 }
-
-QIcon MainWindow::colorIcon(const QColor &color)
-{
-	QPixmap pm(32, 32);
-	pm.fill(color);
-	return QIcon(pm);
-}
-
-bool MainWindow::haveImagePCA()
-{
-	return imagepca.get();
-}
-
-bool MainWindow::haveGradientPCA()
-{
-	return gradientpca.get();
-}
+*/
 
 void MainWindow::buildIlluminant(int temp)
 {
@@ -1501,37 +1142,6 @@ void MainWindow::setI1Visible(bool visible)
 	}
 }
 
-void MainWindow::loadLabeling(QString filename)
-{
-	QString actual_filename;
-	if (!startupLabelFile.isEmpty()) {
-		actual_filename = startupLabelFile;
-		startupLabelFile.clear();
-	} else {
-		actual_filename = filename;
-	}
-
-	int height, width;
-	{
-		SharedMultiImgBaseGuard guard(*image_lim);
-		height = (*image_lim)->height;
-		width = (*image_lim)->width;
-	}
-
-	IOGui io("Labeling Image File", "labeling image", this);
-	cv::Mat input = io.readFile(actual_filename, -1, height, width);
-	if (input.empty())
-		return;
-
-	vole::Labeling labeling(input, false);
-
-	// if the user is operating within ROI, apply it to labeling as well */
-	if (roi != cv::Rect(0, 0, width, height))
-		labeling.setLabels(labeling.getLabels()(roi));
-
-	setLabels(labeling);
-}
-
 void MainWindow::loadSeeds()
 {
 	int height;
@@ -1557,15 +1167,6 @@ void MainWindow::loadSeeds()
 	}
 }
 
-void MainWindow::saveLabeling()
-{
-	vole::Labeling labeling(bandView->labels);
-	cv::Mat3b output = labeling.bgr();
-
-	IOGui io("Labeling As Image File", "labeling image", this);
-	io.writeFile(QString(), output);
-}
-
 void MainWindow::screenshot()
 {
 	// grabWindow reads from the display server, so GL parts are not missing
@@ -1578,32 +1179,18 @@ void MainWindow::screenshot()
 	io.writeFile(QString(), output);
 }
 
-/* Handle apply ROI button in ROIDock. */
-void MainWindow::roiApplyClicked() {
-	bool reuse = true;
-	if (runningTask != TT_NONE) {
-		queue.cancelTasks(roi);
-		reuse = false;
-	}
-
-	const QRect r = roiDock->getRoi();
-	roi = cv::Rect(r.x(), r.y(), r.width(), r.height());
-
-	setGUIEnabled(false, TT_SELECT_ROI);
-
-	applyROI(reuse);
-
-	BackgroundTaskPtr taskEpilog(new BackgroundTask(roi));
-	QObject::connect(taskEpilog.get(), SIGNAL(finished(bool)),
-		this, SLOT(finishTask(bool)), Qt::QueuedConnection);
-	queue.push(taskEpilog);
-}
-
 void MainWindow::openContextMenu()
 {
 	delete contextMenu;
 	contextMenu = createPopupMenu();
 	contextMenu->exec(QCursor::pos());
+}
+
+QIcon MainWindow::colorIcon(const QColor &color)
+{
+	QPixmap pm(32, 32);
+	pm.fill(color);
+	return QIcon(pm);
 }
 
 void MainWindow::changeEvent(QEvent *e)
@@ -1617,4 +1204,3 @@ void MainWindow::changeEvent(QEvent *e)
 		break;
 	}
 }
-

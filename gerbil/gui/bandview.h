@@ -26,41 +26,44 @@ public:
 	void leaveEvent(QEvent *ev);
 
 	void setPixmap(QPixmap pixmap);
+	void setLabelMatrix(cv::Mat1s matrix);
 
 	bool isSeedModeEnabled() { return seedMode; }
 
 	short getCurLabel() { return curLabel; }
 
+	// TODO: these are accessed by MainWindow
 	QTimer labelTimer;
-	cv::Mat1s labels;
 	cv::Mat1s seedMap; // mat1s to be consistent with labels matrix
-	multi_img::Mask curMask; // in single label mode contains curlabel members
+	cv::Mat1b curMask; // in single label mode contains curlabel members
 
 public slots:
 	void refresh();
-	void changeLabel(int label);
-	void clearLabelPixels();
-	void clearAllLabels(); /// TODO: add a button for this
-	void alterLabel(const multi_img::Mask &mask, bool negative);
-	void setLabels(multi_img::Mask l);
+	void changeCurrentLabel(int label);
+	void setLabels(cv::Mat1b l);
 	void updateLabels();
 	void commitLabelChanges();
-	void drawOverlay(const multi_img::Mask &mask);
+	void drawOverlay(const cv::Mat1b &mask);
 
-	void setLabelColors(QVector<QColor> labelColors, bool changed);
+	void updateLabeling(const QVector<QColor> &labelColors, bool changed);
 	void applyLabelAlpha(int alpha);
 	void toggleShowLabels(bool disabled);
 	void toggleSingleLabel(bool enabled);
 	void toggleSeedMode(bool enabled);
+	void clearSeeds();
 
 signals:
 	void pixelOverlay(int x, int y);
 	void subPixels(const std::map<std::pair<int, int>, short> &points);
 	void addPixels(const std::map<std::pair<int, int>, short> &points);
+
 	void refreshLabels();
 	void killHover();
-	void newLabel(); // user requested another label
-	void newSingleLabel(short label); // single label mode, diff. label chosen
+
+	// user requested additional label
+	void newLabel();
+	// single label mode, diff. label chosen
+	void newSingleLabel(short label);
 
 private:
 	void cursorAction(QMouseEvent *ev, bool click = false);
@@ -70,6 +73,10 @@ private:
 	void updateCache(int x, int y, short label = 0);
 	void updatePoint(const QPointF &p);
 
+	// local reference to global labeling matrix
+	cv::Mat1s labels;
+
+	// pixel labels we did change, but not yet notify other parties about
 	std::map<std::pair<int, int>, short> uncommitedLabels;
 
 	QPixmap cachedPixmap;
@@ -77,7 +84,7 @@ private:
 
 	QPointF cursor, lastcursor;
 	short curLabel;
-	const multi_img::Mask *overlay;
+	const cv::Mat1b *overlay;
 
 	/// color view according to labels
 	bool showLabels, singleLabel, holdLabel;
@@ -85,9 +92,12 @@ private:
 	/// interpret input as segmentation seeds
 	bool seedMode;
 	
-	int labelAlpha;
+	/// local copy of label colors
 	QVector<QColor> labelColors;
-	QVector<QColor> labelColorsA; /// labelColors with user-selected alpha
+	/// user-selected alpha
+	int labelAlpha;
+	/// labelColors with user-selected alpha
+	QVector<QColor> labelColorsA;
 	std::pair<QColor, QColor> seedColorsA;
 };
 

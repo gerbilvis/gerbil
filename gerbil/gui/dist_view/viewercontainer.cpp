@@ -30,15 +30,15 @@ void ViewerContainer::setTaskQueue(BackgroundTaskQueue *taskQueue)
     this->taskQueue = taskQueue;
 }
 
-void ViewerContainer::setLabels(cv::Mat1s labels)
+void ViewerContainer::setLabelMatrix(cv::Mat1s matrix)
 {
 	ViewerList vl = vm.values();
 	foreach(multi_img_viewer *viewer, vl) {
-		viewer->labels = labels;
+		viewer->labels = matrix;
 	}
 }
 
-void ViewerContainer::refreshLabelsInViewers()
+void ViewerContainer::updateLabels()
 {
 	//setGUIEnabled(false);
 	emit requestGUIEnabled(false, TT_NONE);
@@ -47,6 +47,7 @@ void ViewerContainer::refreshLabelsInViewers()
 		viewer->updateLabels();
 	}
 
+	// re-enable gui
 	BackgroundTaskPtr taskEpilog(new BackgroundTask());
 	QObject::connect(taskEpilog.get(), SIGNAL(finished(bool)),
 		this, SLOT(finishTask(bool)), Qt::QueuedConnection);
@@ -110,41 +111,6 @@ void ViewerContainer::updateBinning(representation repr, int bins)
 	viewer->updateBinning(bins);
 }
 
-void ViewerContainer::updateViewerBandSelections(int numbands)
-{
-	ViewerList vl = vm.values();
-	foreach(multi_img_viewer *viewer, vl) {
-		if (viewer->getSelection() >= numbands)
-			viewer->setSelection(0);
-	}
-}
-
-size_t ViewerContainer::size() const
-{
-	return vm.size();
-}
-
-const QPixmap *ViewerContainer::getBand(representation repr, int dim)
-{
-	std::vector<QPixmap*> &v = (*bands)[repr];
-
-	if (!v[dim]) {
-		multi_img_viewer *viewer = vm.value(repr);
-		SharedMultiImgPtr multi = viewer->getImage();
-		qimage_ptr qimg(new SharedData<QImage>(new QImage()));
-
-		SharedDataLock hlock(multi->mutex);
-
-		BackgroundTaskPtr taskConvert(new MultiImg::Band2QImageTbb(multi, qimg, dim));
-		taskConvert->run();
-
-		hlock.unlock();
-
-		v[dim] = new QPixmap(QPixmap::fromImage(**qimg));
-	}
-	return v[dim];
-}
-
 int ViewerContainer::getSelection(representation repr)
 {
 	multi_img_viewer *viewer = vm.value(repr);
@@ -161,6 +127,11 @@ representation ViewerContainer::getActiveRepresentation() const
 {
 	assert(activeViewer);
 	return vm.key(activeViewer);
+}
+
+const cv::Mat1b ViewerContainer::getHighlightMask() const
+{
+	return activeViewer->getHighlightMask();
 }
 
 void ViewerContainer::setIlluminant(representation repr,
@@ -187,9 +158,9 @@ void ViewerContainer::toggleViewer(bool enable, representation repr)
 {
 	GGDBGM(format("toggle=%1% representation=%2%\n") %enable % repr);
 	if(enable)
-		toggleViewerEnable(repr);
+		enableViewer(repr);
 	else
-		toggleViewerDisable(repr);
+		disableViewer(repr);
 }
 
 void ViewerContainer::newROI(cv::Rect roi)
@@ -249,8 +220,8 @@ void ViewerContainer::finishViewerRefresh(representation repr)
 		emit normTargetChanged(true);
 	}
 	if (activeViewer->getType() == repr) {
-		emit bandUpdateNeeded(activeViewer->getType(),
-							  activeViewer->getSelection());
+		emit bandSelected(activeViewer->getType(),
+						  activeViewer->getSelection());
 	}
 }
 
@@ -283,62 +254,57 @@ void ViewerContainer::finishTask(bool success)
 
 void ViewerContainer::finishNormRangeImgChange(bool success)
 {
+	/* TODO: this is *so* wrong. what this does is after changing the range
+	 * ensure that band cache is deleted and new band is shown
+	 * however bandSelected will select this representation, even if it was not
+	 * selected before. also this should be done by the image model
+	 * and the image model has other means of doing this (empty the map)
+	 */
 	if (success) {
 		SharedDataLock hlock((*image)->mutex);
-		(*bands)[GRAD].assign((**image)->size(), NULL);
+		(*bands)[IMG].assign((**image)->size(), NULL);
 		hlock.unlock();
-		emit bandUpdateNeeded(
-					IMG,
-					vm.value(IMG)->getSelection()
-					);
+		emit bandSelected(IMG, vm.value(IMG)->getSelection());
 	}
 }
 
 
 void ViewerContainer::finishNormRangeGradChange(bool success)
 {
+	// ************** see above
 	if (success) {
 		SharedDataLock hlock((*gradient)->mutex);
 		(*bands)[GRAD].assign((**gradient)->size(), NULL);
 		hlock.unlock();
-		emit bandUpdateNeeded(
-					GRAD,
-					vm.value(GRAD)->getSelection()
-					);
+		emit bandSelected(GRAD,	vm.value(GRAD)->getSelection());
 	}
 }
 
-void ViewerContainer::toggleViewerDisable(representation repr)
+void ViewerContainer::disableViewer(representation repr)
 {
+	// TODO: where is it connected back?
 	disconnectViewer(repr);
 
-	// TODO: why do we have to differentiate between IMG/GRAD and PCA variants?
+	/* TODO: why do we have to differentiate between IMG/GRAD and PCA variants?
+	 * probably img and grad are keep-alive, the others not. in the future
+	 * we do not want this differentiation, as other parties will ALSO
+	 * access the PCA reps. this will be part of ImageModel housekeeping! */
 	switch(repr) {
 	case IMG:
-		break;
 	case GRAD:
 		break;
+
 	case IMGPCA:
-	{
-		multi_img_viewer *viewer = vm.value(IMGPCA);
-		viewer->resetImage();
-		emit imageResetNeeded(IMGPCA);
-		if(activeViewer == viewer) {
-			viewer->activateViewport();
-			emit bandUpdateNeeded(viewer->getType(),
-								  viewer->getSelection());
-		}
-	}
-		break;
 	case GRADPCA:
 	{
-		multi_img_viewer *viewer = vm.value(GRADPCA);
-		viewer->resetImage();
-		emit imageResetNeeded(GRADPCA);
+		multi_img_viewer *viewer = vm.value(repr);
+		// TODO: here we would kill the image data. TODO: Do that in ImageModel!
+		// viewer->resetImage();
+
+		// TODO: what does this do?! I mean, WHY?
 		if(activeViewer == viewer) {
 			viewer->activateViewport();
-			emit bandUpdateNeeded(viewer->getType(),
-								  viewer->getSelection());
+			emit bandSelected(viewer->getType(), viewer->getSelection());
 		}
 	}
 		break;
@@ -356,7 +322,7 @@ void ViewerContainer::toggleViewerDisable(representation repr)
 	}
 }
 
-void ViewerContainer::toggleViewerEnable(representation repr)
+void ViewerContainer::enableViewer(representation repr)
 {
 	multi_img_viewer *viewer = vm.value(repr);
 
@@ -488,26 +454,30 @@ void ViewerContainer::initUi()
 		connect(this, SIGNAL(viewersToggleUnlabeled(bool)),
 				viewer1, SLOT(toggleUnlabeled(bool)));
 
-		connect(viewport1, SIGNAL(bandSelected(representation, int)),
-				this, SIGNAL(viewportBandSelected(representation,int)));
-
-		connect(viewer1, SIGNAL(setGUIEnabled(bool, TaskType)),
-				this, SIGNAL(requestGUIEnabled(bool,TaskType)));
+		// todo make this globally consistent
 		connect(viewer1, SIGNAL(finishTask(bool)),
 				this, SLOT(finishTask(bool)));
 
-		connect(viewer1, SIGNAL(newOverlay()),
-				this, SLOT(newOverlay()));
-		connect(viewport1, SIGNAL(newOverlay(int)),
-				this, SLOT(newOverlay()));
+		/* following stuff is used to pass to/from MainWindow / Controller */
+
+		connect(viewport1, SIGNAL(bandSelected(representation, int)),
+				this, SIGNAL(bandSelected(representation, int)));
+
+		connect(viewer1, SIGNAL(setGUIEnabled(bool, TaskType)),
+				this, SIGNAL(requestGUIEnabled(bool,TaskType)));
 
 		connect(viewport1, SIGNAL(addSelection()),
 				this, SIGNAL(viewportAddSelection()));
 		connect(viewport1, SIGNAL(remSelection()),
 				this, SIGNAL(viewportRemSelection()));
-
 		connect(this, SIGNAL(viewersHighlight(short)),
 				viewport1, SLOT(highlight(short)));
+
+		// overlay for bandview (we emit drawOverlay)
+		connect(viewer1, SIGNAL(newOverlay()),
+				this, SLOT(newOverlay()));
+		connect(viewport1, SIGNAL(newOverlay(int)),
+				this, SLOT(newOverlay()));
 
 		// non-pass-through
 		connect(viewer1, SIGNAL(toggleViewer(bool, representation)),
@@ -543,68 +513,29 @@ multi_img_viewer *ViewerContainer::createViewer(representation repr)
 
 void ViewerContainer::newOverlay()
 {
-	emit drawOverlay(activeViewer->getMask());
+	emit drawOverlay(activeViewer->getHighlightMask());
 }
 
-void ViewerContainer::labelflush(bool seedModeEnabled, short curLabel)
+void ViewerContainer::updateLabelsPartially(cv::Mat1b mask, cv::Mat1s old)
 {
-	std::vector<sets_ptr> tmp_sets;
-	ViewerList vl = vm.values();
-	cv::Mat1b mask(labels->rows, labels->cols);
-	mask = (*labels == curLabel);
-	bool profitable = ((2 * cv::countNonZero(mask)) < mask.total());
-	if (profitable && !seedModeEnabled) {
-		emit requestGUIEnabled(false, TT_NONE);
-		for (size_t i = 0; i < vl.size(); ++i) {
-			tmp_sets.push_back(sets_ptr(new SharedData<std::vector<BinSet> >(NULL)));
-			vl[i]->subLabelMask(tmp_sets[i], mask);
-		}
-	}
-
-	emit clearLabel();
-
-	if (!seedModeEnabled) {
-		if (profitable) {
-			for (size_t i = 0; i < vl.size(); ++i) {
-				vl[i]->addLabelMask(tmp_sets[i], mask);
-			}
-
-			BackgroundTaskPtr taskEpilog(new BackgroundTask());
-			QObject::connect(taskEpilog.get(), SIGNAL(finished(bool)),
-				this, SLOT(finishTask(bool)), Qt::QueuedConnection);
-			taskQueue->push(taskEpilog);
-		} else {
-			refreshLabelsInViewers();
-		}
-	}
-}
-
-void ViewerContainer::labelmask(bool negative)
-{
-	std::vector<sets_ptr> tmp_sets;
-	ViewerList vl = vm.values();
-	cv::Mat1b mask = activeViewer->getMask();
+	// is it worth it to do it incrementally (2 updates for each positive entry)
 	bool profitable = ((2 * cv::countNonZero(mask)) < mask.total());
 	if (profitable) {
+		// gui disable
 		emit requestGUIEnabled(false, TT_NONE);
-		for (size_t i = 0; i < vl.size(); ++i) {
-			tmp_sets.push_back(sets_ptr(new SharedData<std::vector<BinSet> >(NULL)));
-			vl[i]->subLabelMask(tmp_sets[i], mask);
-		}
-	}
 
-	emit alterLabel(activeViewer->getMask(), negative);
-
-	if (profitable) {
+		ViewerList vl = vm.values();
 		for (size_t i = 0; i < vl.size(); ++i) {
-			vl[i]->addLabelMask(tmp_sets[i], mask);
+			vl[i]->updateLabelsPartially(mask, old);
 		}
 
+		// gui enable when done
 		BackgroundTaskPtr taskEpilog(new BackgroundTask());
 		QObject::connect(taskEpilog.get(), SIGNAL(finished(bool)),
 			this, SLOT(finishTask(bool)), Qt::QueuedConnection);
 		taskQueue->push(taskEpilog);
 	} else {
-		refreshLabelsInViewers();
+		// just update the whole thing
+		updateLabels();
 	}
 }

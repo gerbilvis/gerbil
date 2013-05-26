@@ -2,6 +2,13 @@
 
 #include "../gerbil_gui_debug.h"
 
+cv::Rect QRect2CVRect(const QRect &r) {
+	return cv::Rect(r.x(), r.y(), r.width(), r.height());
+}
+QRect CVRect2QRect(const cv::Rect &r) {
+	return QRect(r.x, r.y, r.width, r.height);
+}
+
 ROIDock::ROIDock(QWidget *parent) :
 	DockWidget(parent)
 {
@@ -9,15 +16,18 @@ ROIDock::ROIDock(QWidget *parent) :
 	initUi();
 }
 
-QRect ROIDock::getRoi() const
+const QRect& ROIDock::getRoi() const
 {
 	return roiView->roi;
 }
 
-void ROIDock::setRoi(const QRect roi)
+void ROIDock::setRoi(const cv::Rect &roi)
 {
-	oldRoi = roi;
-	roiView->roi = roi;
+	// reset will go back to current state
+	oldRoi = CVRect2QRect(roi);
+
+	// start off our selector on new oldRoi
+	roiView->roi = oldRoi;
 	roiView->update();
 }
 
@@ -25,9 +35,8 @@ void ROIDock::initUi()
 {
 	connect(roiButtons, SIGNAL(clicked(QAbstractButton*)),
 			 this, SLOT(roiButtonsClicked(QAbstractButton*)));
-	connect(roiView, SIGNAL(newSelection(QRect)),
-			this, SLOT(newRoiSelected(QRect)));
-
+	connect(roiView, SIGNAL(newSelection(const QRect&)),
+			this, SLOT(newRoiSelected(const QRect&)));
 }
 
 
@@ -40,12 +49,10 @@ void ROIDock::roiButtonsClicked(QAbstractButton *sender)
 		resetRoi();
 	} else if (role == QDialogButtonBox::ApplyRole) {
 		applyRoi();
-		emit applyRoiClicked();
 	}
-
 }
 
-void ROIDock::newRoiSelected(const QRect roi)
+void ROIDock::newRoiSelected(const QRect &roi)
 {
 	curRoi = roi;
 	roiButtons->setEnabled(true);
@@ -58,6 +65,10 @@ void ROIDock::newRoiSelected(const QRect roi)
 
 void ROIDock::applyRoi()
 {
+	cv::Rect roi = QRect2CVRect(curRoi);
+	emit roiRequested(roi);
+
+	// reset will go back to current state
 	oldRoi = curRoi;
 }
 

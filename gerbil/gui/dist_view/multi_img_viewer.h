@@ -34,10 +34,9 @@ public:
 	~multi_img_viewer();
 
 	SharedMultiImgPtr getImage() { return image; }
-	void resetImage() { image.reset(); }
 	Viewport* getViewport() { return viewport; }
 	void activateViewport() { viewport->activate(); }
-	const multi_img::Mask& getMask() { return highlightMask; }
+	const cv::Mat1b& getHighlightMask() { return highlightMask; }
 	int getSelection() { return viewport->selection; }
 	void setSelection(int band) { viewport->selection = band; }
 	representation getType() { return type; }
@@ -58,9 +57,11 @@ public slots:
 	void changeBinCount(int bins);
 	void updateBinning(int bins);
 	void finishBinCountChange(bool success);
-	void subLabelMask(sets_ptr temp, const cv::Mat1b &mask);
-	void addLabelMask(sets_ptr temp, const cv::Mat1b &mask);
+
+	// controller stuff, actually
+	void updateLabelsPartially(cv::Mat1b mask, cv::Mat1s old);
 	void updateLabels();
+
 	void toggleFold();
 	void toggleLabeled(bool toggle);
 	void toggleUnlabeled(bool toggle);
@@ -93,7 +94,7 @@ protected:
 	representation type;
 	std::vector<multi_img::Value> illuminant;
 	bool ignoreLabels;
-	multi_img::Mask highlightMask;
+	cv::Mat1b highlightMask;
 
 protected slots:
 	void binningUpdate(bool updated);

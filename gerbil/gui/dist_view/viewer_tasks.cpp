@@ -11,7 +11,7 @@
 ///////////////////////////////
 
 fillMaskSingleBody::fillMaskSingleBody(
-		multi_img::Mask &mask, const
+		cv::Mat1b &mask, const
 		multi_img::Band &band, int dim, int sel,
 		multi_img::Value minval,
 		multi_img::Value binsize,
@@ -40,7 +40,7 @@ void fillMaskSingleBody::operator ()(
 ///////////////////////////////
 
 fillMaskLimitersBody::fillMaskLimitersBody(
-		multi_img::Mask &mask, const multi_img &image, multi_img::Value
+		cv::Mat1b &mask, const multi_img &image, multi_img::Value
 		minval, multi_img::Value binsize, const std::vector<multi_img::Value>
 		&illuminant, const std::vector<std::pair<int, int> > &l)
 	: mask(mask), image(image), minval(minval), binsize(binsize),
@@ -73,7 +73,7 @@ void fillMaskLimitersBody::operator ()(
 ///////////////////////////////
 
 updateMaskLimitersBody::updateMaskLimitersBody(
-		multi_img::Mask &mask, const multi_img &image, int dim,
+		cv::Mat1b &mask, const multi_img &image, int dim,
 		multi_img::Value minval, multi_img::Value binsize, 
 		const std::vector<multi_img::Value> &illuminant, 
 		const std::vector<std::pair<int, int> > &l)

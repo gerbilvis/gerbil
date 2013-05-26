@@ -12,10 +12,10 @@ bool NormRangeTbb::run()
 		if (!stopper.is_group_execution_cancelled()) {
 			SharedDataSwapLock lock(range->mutex);
 			// hack!
-			if (target == 0) {
+			if (target == 0) { // image
 				(*range)->first = (multi_img::Value)MULTI_IMG_MIN_DEFAULT;
 				(*range)->second = (multi_img::Value)MULTI_IMG_MAX_DEFAULT;
-			} else {
+			} else { // gradient
 				(*range)->first = (multi_img::Value)-log(MULTI_IMG_MAX_DEFAULT);
 				(*range)->second = (multi_img::Value)log(MULTI_IMG_MAX_DEFAULT);
 			}
