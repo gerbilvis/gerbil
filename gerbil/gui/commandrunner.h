@@ -10,6 +10,7 @@ class CommandRunner : public QThread, public vole::ProgressObserver
 {
     Q_OBJECT
 public:
+	// FIXME: Missing parent parameter
 	CommandRunner();
 	~CommandRunner();
 	bool update(int percent);
