@@ -6,9 +6,12 @@
 
 #include <QImage>
 #include <QMap>
+#include <QObject>
 
-class FalseColor
+class FalseColor : public QObject
 {
+	Q_OBJECT
+
 	enum coloring {
 		CMF = 0,
 		PCA = 1,
@@ -28,13 +31,18 @@ public:
 	FalseColor(const multi_img& img);
 	~FalseColor();
 
-	// Resets current true / false color representations
+	// resets current true / false color representations
+	// on the next request, the color images are recalculated with possibly new multi_img data
 	void resetCaches();
 
 	// always calls resetCaches()
 	void setMultiImg(const multi_img& img);
 
-	QImage get(coloring type);
+public slots:
+	void request(coloring type);
+
+signals:
+	void loadComplete(QImage img, coloring type, bool changed);
 
 private:
 	const multi_img *img;

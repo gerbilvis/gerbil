@@ -10,17 +10,20 @@
 
 // TODO:
 // Auf Img (Konstruktor) wird ein Pointer gespeichert
-// -> dieses muss bestehen bleiben, bis
+// -> dieses (Img) muss bestehen bleiben, bis
 // a) setMultiImg mit einem anderen Img ausgefuehrt wird
 // b) das FalseColor object deleted wird
 
-// TODO: Abhaengigkeiten rgb
-// Wie "with edge detect" handhaben? momentan leeres img + cerr
-// leeres img wird langfristig wohl auch dann returned, wenn das img im hintergrund berechnet wird
+// Jeder Request loest ein signal an alle widgets aus, egal ob sich das bild geaendert hat oder nicht
+// Da nichts kopiert werden sollte, evtl nicht so schlimm. -> Boolean Variable "Changed"?
+// Die Pixmaps werden aber wahrscheinlich neu erzeugt
+// Langfristige Frage: Sind QImages oder QPixmaps interessant? (oder beides), was davon soll nur 1x im model sein?
+
 
 // QImages have implicit data sharing, so the returned objects act as a pointer, the data is not copied
 // (The QImages should be requested for each usage again, because they are not updated inplace,
-// if resetCaches is called)
+// after resetCaches is called)
+
 
 FalseColor::FalseColor(const multi_img &img) : img(&img)
 {
@@ -71,13 +74,16 @@ void FalseColor::setMultiImg(const multi_img& img)
 	resetCaches();
 }
 
-QImage FalseColor::get(coloring type)
+void FalseColor::request(coloring type)
 {
 	payload *p = map.value(type);
 	assert(p != NULL);
+
+	bool changed = false;
 	if (p->img.isNull()) {
 		cv::Mat3b mat = (cv::Mat3b)(p->rgb.execute(*img) * 255.0f);
 		p->img = vole::Mat2QImage(mat);
+		changed = true;
 	}
-	return p->img;
+	emit loadComplete(p->img, type, changed);
 }
