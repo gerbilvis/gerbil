@@ -3,9 +3,11 @@
 
 #include <background_task_queue.h>
 #include <multi_img.h>
+#include <multi_img_tasks.h>
 #include <qtopencv.h>
 #include <rgb.h>
 #include <shared_data.h>
+
 #include <tasks/rgbtbb.h> // TODO: mit pfad?
 
 #include <QImage>
