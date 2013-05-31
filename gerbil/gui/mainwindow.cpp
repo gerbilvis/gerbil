@@ -210,10 +210,6 @@ void MainWindow::initUI(Controller *chief)
 	connect(bandView, SIGNAL(refreshLabels()),
 			viewerContainer, SLOT(updateLabels()));
 
-
-	connect(this, SIGNAL(roiChanged(cv::Rect)),
-			viewerContainer, SLOT(newROI(cv::Rect)));
-
 	connect(bandView, SIGNAL(killHover()),
 			viewerContainer, SIGNAL(viewportsKillHover()));
 	connect(bandView, SIGNAL(pixelOverlay(int, int)),

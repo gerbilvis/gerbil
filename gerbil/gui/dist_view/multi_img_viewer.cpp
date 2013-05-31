@@ -133,19 +133,24 @@ void multi_img_viewer::addPixels(const std::map<std::pair<int, int>, short> &poi
 	binningUpdate(taskAdd->wait());
 }
 
-void multi_img_viewer::subImage(sets_ptr temp, const std::vector<cv::Rect> &regions, cv::Rect roi)
+void multi_img_viewer::subImage(sets_ptr temp,
+								const std::vector<cv::Rect> &regions,
+								cv::Rect roi)
 {
 	SharedDataLock ctxlock(viewport->ctx->mutex);
 	ViewportCtx args = **viewport->ctx;
 	ctxlock.unlock();
 
 	BackgroundTaskPtr taskBins(new ViewerBinsTbb(
-		image, labels, control->labelColors, illuminant, args, viewport->ctx, viewport->sets,
-		temp, regions, std::vector<cv::Rect>(), cv::Mat1b(), false, false, roi));
+		image, labels, control->labelColors, illuminant, args, viewport->ctx,
+		viewport->sets,	temp, regions,
+		std::vector<cv::Rect>(), cv::Mat1b(), false, false, roi));
 	queue->push(taskBins);
 }
 
-void multi_img_viewer::addImage(sets_ptr temp, const std::vector<cv::Rect> &regions, cv::Rect roi)
+void multi_img_viewer::addImage(sets_ptr temp,
+								const std::vector<cv::Rect> &regions,
+								cv::Rect roi)
 {
 	SharedDataLock ctxlock(viewport->ctx->mutex);
 	ViewportCtx args = **viewport->ctx;
@@ -161,8 +166,9 @@ void multi_img_viewer::addImage(sets_ptr temp, const std::vector<cv::Rect> &regi
 	args.wait.fetch_and_store(1);
 
 	BackgroundTaskPtr taskBins(new ViewerBinsTbb(
-		image, labels, control->labelColors, illuminant, args, viewport->ctx, viewport->sets,
-		temp, std::vector<cv::Rect>(), regions, cv::Mat1b(), false, true, roi));
+		image, labels, control->labelColors, illuminant, args, viewport->ctx,
+		viewport->sets, temp, std::vector<cv::Rect>(), regions,
+		cv::Mat1b(), false, true, roi));
 	// connect to binningRangeUpdate as this operation can change binning range
 	QObject::connect(taskBins.get(), SIGNAL(finished(bool)),
 					 this, SLOT(binningRangeUpdate(bool)));

@@ -69,22 +69,28 @@ void ImageModel::spawn(const cv::Rect &newROI, bool reuse)
 		}
 	}
 
-	/* compute if it is profitable to add/sub pixels given old and new ROI,
-	 * instead of full recomputation
-	 */
-	bool profitable = checkProfitable(roi, newROI);
+	// prepare incremental update and test worthiness
+	std::vector<cv::Rect> sub, add;
+	if (reuse) {
+		/* compute if it is profitable to add/sub pixels given old and new ROI,
+		 * instead of full recomputation, and retrieve corresponding regions
+		 */
+		bool profitable = MultiImg::Auxiliary::rectTransform(roi, newROI,
+															 sub, add);
+
+		if (!profitable)
+			reuse = false;
+	}
 
 	// set new ROI
 	roi = newROI;
-	// TODO: why here?
-	emit roiChanged(roi);
-
+	// TODO: others do not know about it yet
 
 	sets_ptr tmp_sets_image(new SharedData<std::vector<BinSet> >(NULL));
 	sets_ptr tmp_sets_imagepca(new SharedData<std::vector<BinSet> >(NULL));
 	sets_ptr tmp_sets_gradient(new SharedData<std::vector<BinSet> >(NULL));
 	sets_ptr tmp_sets_gradientpca(new SharedData<std::vector<BinSet> >(NULL));
-	if (reuse && profitable) {
+	if (reuse) {
 		viewerContainer->subImage(IMG, tmp_sets_image, sub, roi);
 		viewerContainer->subImage(IMG, tmp_sets_gradient, sub, roi);
 		viewerContainer->subImage(IMG, tmp_sets_imagepca, sub, roi);
@@ -100,6 +106,8 @@ void ImageModel::spawn(const cv::Rect &newROI, bool reuse)
 	viewerContainer->setLabels(labels);
 	// end TODO
 
+	// TODO: we better test here if numbands changed, instead of just relying on
+	// what the signal sender told us
 	size_t numbands;
 	{
 		SharedMultiImgBaseGuard guard(*image_lim);
@@ -120,6 +128,7 @@ void ImageModel::spawn(const cv::Rect &newROI, bool reuse)
 		p->bands.clear();
 	}
 
+	// TODO: only do when sth. changes?
 	BackgroundTaskPtr taskRescale(new MultiImg::RescaleTbb(
 		scoped_image, image, numbands, roi));
 	queue.push(taskRescale);
@@ -141,7 +150,7 @@ void ImageModel::spawn(const cv::Rect &newROI, bool reuse)
 		}
 	}
 
-	if (reuse && profitable) {
+	if (reuse) {
 		viewerContainer->addImage(IMG, tmp_sets_image, add, roi);
 	} else {
 		viewerContainer->setImage(IMG, image, roi);
@@ -179,7 +188,7 @@ void ImageModel::spawn(const cv::Rect &newROI, bool reuse)
 		}
 	}
 
-	if (reuse && profitable) {
+	if (reuse) {
 		viewerContainer->addImage(GRAD, tmp_sets_gradient, add, roi);
 	} else {
 		viewerContainer->setImage(GRAD, gradient, roi);
@@ -195,7 +204,7 @@ void ImageModel::spawn(const cv::Rect &newROI, bool reuse)
 			image, imagepca, 0, roi));
 		queue.push(taskPca);
 
-		if (reuse && profitable) {
+		if (reuse) {
 			viewerContainer->addImage(IMGPCA, tmp_sets_imagepca, add, roi);
 		} else {
 			viewerContainer->setImage(IMGPCA, imagepca, roi);
@@ -212,7 +221,7 @@ void ImageModel::spawn(const cv::Rect &newROI, bool reuse)
 			gradient, gradientpca, 0, roi));
 		queue.push(taskPca);
 
-		if (reuse && profitable) {
+		if (reuse) {
 			viewerContainer->addImage(GRADPCA, tmp_sets_gradientpca, add, roi);
 		} else {
 			viewerContainer->setImage(GRADPCA, gradientpca, roi);
@@ -285,35 +294,6 @@ void ImageModel::postComputeRGB(bool success)
 	QPixmap ret = QPixmap::fromImage(**full_rgb);
 	hlock.unlock();
 	emit rgbUpdate(ret);
-}
-
-bool ImageModel::checkProfitable(const cv::Rect &oldRoi, const cv::Rect &newRoi)
-{
-	cv::Rect isecGlob = oldRoi & newRoi;
-	cv::Rect isecOld(0, 0, 0, 0);
-	cv::Rect isecNew(0, 0, 0, 0);
-	if (isecGlob.width > 0 && isecGlob.height > 0) {
-		isecOld.x = isecGlob.x - oldRoi.x;
-		isecOld.y = isecGlob.y - oldRoi.y;
-		isecOld.width = isecGlob.width;
-		isecOld.height = isecGlob.height;
-
-		isecNew.x = isecGlob.x - newRoi.x;
-		isecNew.y = isecGlob.y - newRoi.y;
-		isecNew.width = isecGlob.width;
-		isecNew.height = isecGlob.height;
-	}
-
-	std::vector<cv::Rect> sub;
-	int subArea = MultiImg::Auxiliary::RectComplement(
-		oldRoi.width, oldRoi.height, isecOld, sub);
-
-	std::vector<cv::Rect> add;
-	int addArea = MultiImg::Auxiliary::RectComplement(
-		newRoi.width, newRoi.height, isecNew, add);
-
-	// compare amount of pixels with both methods
-	return ((subArea + addArea) < (newRoi.width * newRoi.height));
 }
 
 /* only used for debugging */

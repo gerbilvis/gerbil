@@ -77,6 +77,9 @@ void ViewerContainer::addImage(representation repr, sets_ptr temp,
 							   const std::vector<cv::Rect> &regions,
 							   cv::Rect roi)
 {
+	// the roi change is effectively global
+	roi = newRoi;
+
 	multi_img_viewer *viewer = vm.value(repr);
 	assert(viewer);
 	if(!viewer->isPayloadHidden()) {
@@ -85,8 +88,13 @@ void ViewerContainer::addImage(representation repr, sets_ptr temp,
 	}
 }
 
-void ViewerContainer::subImage(representation repr, sets_ptr temp, const std::vector<cv::Rect> &regions, cv::Rect roi)
+void ViewerContainer::subImage(representation repr, sets_ptr temp,
+							   const std::vector<cv::Rect> &regions,
+							   cv::Rect roi)
 {
+	// the roi change is effectively global
+	roi = newRoi;
+
 	multi_img_viewer *viewer = vm.value(repr);
 	assert(viewer);
 	if(!viewer->isPayloadHidden()) {
@@ -95,8 +103,12 @@ void ViewerContainer::subImage(representation repr, sets_ptr temp, const std::ve
 	}
 }
 
-void ViewerContainer::setImage(representation repr, SharedMultiImgPtr image, cv::Rect roi)
+void ViewerContainer::setImage(representation repr, SharedMultiImgPtr image,
+							   cv::Rect newRoi)
 {
+	// the roi change is effectively global
+	roi = newRoi;
+
 	multi_img_viewer *viewer = vm.value(repr);
 	assert(viewer);
 	//GGDBGM(format("repr=%1%, image.get()=%2%)\n")
@@ -235,6 +247,12 @@ void ViewerContainer::finishViewerRefresh(representation repr)
 		viewer, SLOT(subPixels(const std::map<std::pair<int, int>, short> &)));
 	connect(this, SIGNAL(viewersAddPixels(std::map<std::pair<int,int>,short>)),
 		viewer, SLOT(addPixels(const std::map<std::pair<int, int>, short> &)));
+
+	/* TODO:
+	 * I think this is done to update the min, max values presented in the
+	 * respective GUI. and only at the "end" of the computing chain, which
+	 * is when gradient is computed. this is evil.
+	 */
 	if (repr == GRAD) {
 		emit normTargetChanged(true);
 	}
@@ -368,7 +386,7 @@ void ViewerContainer::enableViewer(representation repr)
 		break;
 	case IMGPCA:
 	{
-		// FIXME very bad style to access member of MainWindow
+		// FIXME this invalidates local pointer
 		imagepca->reset(new SharedMultiImgBase(new multi_img(0, 0, 0)));
 
 		BackgroundTaskPtr taskPca(new MultiImg::PcaTbb(
@@ -386,7 +404,7 @@ void ViewerContainer::enableViewer(representation repr)
 		break;
 	case GRADPCA:
 	{
-		// FIXME very bad style to access member of MainWindow
+		// FIXME this invalidates local pointer
 		gradientpca->reset(new SharedMultiImgBase(new multi_img(0, 0, 0)));
 
 		BackgroundTaskPtr taskPca(new MultiImg::PcaTbb(

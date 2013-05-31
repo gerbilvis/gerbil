@@ -109,8 +109,6 @@ signals:
 	void rgbRequested();
 
 	void seedingDone(bool yeah = false);
-	// signal new ROI to viewerContainer (TODO needs to go into MODEL)
-	void roiChanged(cv::Rect roi);
 
 protected:
 	void changeEvent(QEvent *e);
