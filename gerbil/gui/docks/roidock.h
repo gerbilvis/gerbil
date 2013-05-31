@@ -8,6 +8,7 @@
 #include <QRect>
 #include <QAbstractButton>
 
+// FIXME: rename ROIDockUI -> ROIDock
 class ROIDock : public DockWidget, private Ui::ROIDockUI
 {
 	Q_OBJECT

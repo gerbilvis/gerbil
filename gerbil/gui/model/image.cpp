@@ -287,16 +287,6 @@ void ImageModel::postComputeRGB(bool success)
 	emit rgbUpdate(ret);
 }
 
-// TODO: maybe use our ENUM_MAGIC macro instead?
-std::ostream &operator <<(std::ostream &os, const representation &r)
-{
-	assert(0 <= r);
-	assert(r < REPSIZE);
-	const char * const str[] = { "IMG", "GRAD", "IMGPCA", "GRADPCA" };
-	os << str[r];
-}
-
-
 bool ImageModel::checkProfitable(const cv::Rect &oldRoi, const cv::Rect &newRoi)
 {
 	cv::Rect isecGlob = oldRoi & newRoi;
@@ -324,4 +314,13 @@ bool ImageModel::checkProfitable(const cv::Rect &oldRoi, const cv::Rect &newRoi)
 
 	// compare amount of pixels with both methods
 	return ((subArea + addArea) < (newRoi.width * newRoi.height));
+}
+
+/* only used for debugging */
+std::ostream &operator <<(std::ostream &os, const representation &r)
+{
+	assert(0 <= r);
+	assert(r < REPSIZE);
+	const char * const str[] = { "IMG", "GRAD", "IMGPCA", "GRADPCA" };
+	os << str[r];
 }

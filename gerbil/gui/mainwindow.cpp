@@ -18,6 +18,10 @@
 #include "tasks/normrangetbb.h"
 #include "tasks/graphsegbackground.h"
 
+#include "docks/illumdock.h"
+
+// TODO: move to a controller
+#include "model/illumination.h"
 
 #include <background_task_queue.h>
 
@@ -114,7 +118,6 @@ void MainWindow::initUI(Controller *chief)
 {
 	/* GUI elements */
 	initGraphsegUI();
-	initIlluminantUI();
 #ifdef WITH_SEG_MEANSHIFT
 	initUnsupervisedSegUI();
 #endif
@@ -249,6 +252,33 @@ void MainWindow::initUI(Controller *chief)
 	connect(bandsSlider, SIGNAL(sliderMoved(int)),
 			this, SLOT(bandsSliderMoved(int)));
 
+	/* Illumination */
+	connect(illumDock, SIGNAL(applyIllum()),
+			illumModel, SLOT(applyIllum()));
+	connect(illumDock, SIGNAL(illum1Selected(int)),
+			illumModel, SLOT(illum1Changed(int)));
+	connect(illumDock, SIGNAL(illum2Selected(int)),
+			illumModel, SLOT(illum2Changed(int)));
+	connect(illumDock, SIGNAL(showIlluminationCurve(bool)),
+			illumModel, SLOT(setIlluminationCurveShown(bool)));
+
+	connect(illumDock, SIGNAL(showIlluminationCurve(bool)),
+			viewerContainer, SLOT(showIlluminationCurve(bool)));
+
+	connect(this, SIGNAL(roiChanged(cv::Rect)),
+			illumModel, SLOT(setRoi(cv::Rect)));
+
+	connect(illumModel, SIGNAL(requestGUIEnabled(bool,TaskType)),
+			this, SLOT(setGUIEnabled(bool, TaskType)), Qt::DirectConnection);
+	connect(illumModel, SIGNAL(requestApplyROI(bool)),
+			this, SLOT(applyROI(bool)), Qt::DirectConnection);
+	connect(illumModel, SIGNAL(requestRebuildRGB()),
+			this, SLOT(rebuildRGB()), Qt::DirectConnection);
+
+	connect(illumModel, SIGNAL(newIlluminant(cv::Mat1f)),
+			viewerContainer, SLOT(newIlluminant(cv::Mat1f)));
+	connect(illumModel, SIGNAL(illuminantIsApplied(bool)),
+			viewerContainer, SLOT(setIlluminantApplied(bool)));
 	/// global shortcuts
 	QShortcut *scr = new QShortcut(Qt::CTRL + Qt::Key_S, this);
 	connect(scr, SIGNAL(activated()), this, SLOT(screenshot()));
@@ -364,67 +394,6 @@ void MainWindow::debugRequestGUIEnabled(bool enable, TaskType tt)
 	//GGDBGM(format("enable=%1%, tt=%2%\n") %enable %tt)
 }
 
-void MainWindow::applyIlluminant() {
-	int i1 = i1Box->itemData(i1Box->currentIndex()).value<int>();
-	int i2 = i2Box->itemData(i2Box->currentIndex()).value<int>();
-	if (i1 == i2)
-		return;
-
-	i1Box->setDisabled(true);
-	i1Check->setVisible(true);
-
-	queue.cancelTasks(roi);
-	setGUIEnabled(false, TT_APPLY_ILLUM);
-
-	/* remove old illuminant */
-	if (i1 != 0) {
-		const Illuminant &il = getIlluminant(i1);
-
-		if (cv::gpu::getCudaEnabledDeviceCount() > 0 && USE_CUDA_ILLUMINANT) {
-			BackgroundTaskPtr taskIllum(new MultiImg::IlluminantCuda(
-				image_lim, il, true, roi, false));
-			queue.push(taskIllum);
-		} else {
-			BackgroundTaskPtr taskIllum(new MultiImg::IlluminantTbb(
-				image_lim, il, true, roi, false));
-			queue.push(taskIllum);
-		}
-	}
-
-	/* add new illuminant */
-	if (i2 != 0) {
-		const Illuminant &il = getIlluminant(i2);
-
-		if (cv::gpu::getCudaEnabledDeviceCount() > 0 && USE_CUDA_ILLUMINANT) {
-			BackgroundTaskPtr taskIllum(new MultiImg::IlluminantCuda(
-				image_lim, il, false, roi, false));
-			queue.push(taskIllum);
-		} else {
-			BackgroundTaskPtr taskIllum(new MultiImg::IlluminantTbb(
-				image_lim, il, false, roi, false));
-			queue.push(taskIllum);
-		}
-	}
-
-	std::vector<multi_img::Value> empty;
-	viewerContainer->setIlluminant(IMG, (i2 ? getIlluminantC(i2) : empty), true);
-
-	applyROI(false);
-	rgbDock->setEnabled(false);
-
-	BackgroundTaskPtr taskRgb(new RgbTbb(
-		image_lim, mat3f_ptr(new SharedData<cv::Mat3f>(new cv::Mat3f)), full_rgb_temp, roi));
-	QObject::connect(taskRgb.get(), SIGNAL(finished(bool)), this, SLOT(updateRGB(bool)), Qt::QueuedConnection);
-	queue.push(taskRgb);
-
-	BackgroundTaskPtr taskEpilog(new BackgroundTask(roi));
-	QObject::connect(taskEpilog.get(), SIGNAL(finished(bool)), 
-		this, SLOT(finishTask(bool)), Qt::QueuedConnection);
-	queue.push(taskEpilog);
-
-	/* reflect change in our own gui (will propagate to viewIMG) */
-	i1Box->setCurrentIndex(i2Box->currentIndex());
-}
 
 void MainWindow::processRGB(QPixmap rgb)
 {
@@ -438,27 +407,6 @@ void MainWindow::processRGB(QPixmap rgb)
 	QPixmap rgbroi = rgb.copy(roi.x, roi.y, roi.width, roi.height);
 	rgbView->setPixmap(rgbroi);
 	rgbView->update();*/
-}
-
-void MainWindow::initIlluminantUI()
-{
-	for (int i = 0; i < 2; ++i) {
-		QComboBox *b = (i ? i2Box : i1Box);
-		b->addItem("Neutral", 0);
-		b->addItem("2,856 K (Illuminant A, light bulb)",	2856);
-		b->addItem("3,100 K (Tungsten halogen lamp)",		3100);
-		b->addItem("5,000 K (Horizon light)",				5000);
-		b->addItem("5,500 K (Mid-morning daylight)",		5500);
-		b->addItem("6,500 K (Noon daylight)",				6500);
-		b->addItem("7,500 K (North sky daylight)",			7500);
-	}
-	connect(i2Button, SIGNAL(clicked()),
-			this, SLOT(applyIlluminant()));
-	connect(i1Box, SIGNAL(currentIndexChanged(int)),
-			this, SLOT(setI1(int)));
-	connect(i1Check, SIGNAL(toggled(bool)),
-			this, SLOT(setI1Visible(bool)));
-	i1Check->setVisible(false);
 }
 
 void MainWindow::initNormalizationUI()
@@ -1082,64 +1030,6 @@ void MainWindow::reshapeDock(bool floating)
 }
 */
 
-void MainWindow::buildIlluminant(int temp)
-{
-	assert(temp > 0);
-	Illuminant il(temp);
-	std::vector<multi_img::Value> cf;
-
-	SharedMultiImgBaseGuard guard(*image_lim);
-	il.calcWeight((*image_lim)->meta[0].center,
-				  (*image_lim)->meta[(*image_lim)->size()-1].center);
-	cf = (*image_lim)->getIllumCoeff(il);
-	illuminants[temp] = make_pair(il, cf);
-}
-
-const Illuminant & MainWindow::getIlluminant(int temp)
-{
-	assert(temp > 0);
-	Illum_map::iterator i = illuminants.find(temp);
-	if (i != illuminants.end())
-		return i->second.first;
-
-	buildIlluminant(temp);
-	return illuminants[temp].first;
-}
-
-const std::vector<multi_img::Value> & MainWindow::getIlluminantC(int temp)
-{
-	assert(temp > 0);
-	Illum_map::iterator i = illuminants.find(temp);
-	if (i != illuminants.end())
-		return i->second.second;
-
-	buildIlluminant(temp);
-	return illuminants[temp].second;
-}
-
-void MainWindow::setI1(int index) {
-	int i1 = i1Box->itemData(index).value<int>();
-	if (i1 > 0) {
-		i1Check->setEnabled(true);
-		if (i1Check->isChecked()) {
-			viewerContainer->setIlluminant(IMG, getIlluminantC(i1), false);
-		}
-	} else {
-		i1Check->setEnabled(false);
-		std::vector<multi_img::Value> empty;
-		viewerContainer->setIlluminant(IMG, empty, false);
-	}
-}
-
-void MainWindow::setI1Visible(bool visible)
-{
-	if (visible) {
-		int i1 = i1Box->itemData(i1Box->currentIndex()).value<int>();
-		viewerContainer->setIlluminant(IMG,getIlluminantC(i1), false);
-	} else {
-		std::vector<multi_img::Value> empty;
-		viewerContainer->setIlluminant(IMG, empty, false);
-	}
 }
 
 void MainWindow::loadSeeds()

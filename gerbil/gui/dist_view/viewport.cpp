@@ -784,7 +784,6 @@ void Viewport::updateXY(int sel, int bin)
 
 	if (sel >= 0 && sel < (*ctx)->dimensionality) {
 		/// first handle sel -> band selection
-
 		/* emit new band if either new selection or first input after
 		   activating this view */
 		if ((selection != sel && !holdSelection) || !wasActive) {

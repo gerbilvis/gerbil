@@ -54,6 +54,25 @@ void ViewerContainer::updateLabels()
 	taskQueue->push(taskEpilog);
 }
 
+void ViewerContainer::newIlluminant(cv::Mat1f illum)
+{
+	multi_img_viewer *viewer = vm.value(IMG);
+	viewer->setIlluminant(illum);
+}
+
+void ViewerContainer::showIlluminationCurve(bool show)
+{
+	//GGDBGM(show <<endl);
+	multi_img_viewer *viewer = vm.value(IMG);
+	viewer->showIlluminationCurve(show);
+}
+
+void ViewerContainer::setIlluminantApplied(bool applied)
+{
+	multi_img_viewer *viewer = vm.value(IMG);
+	viewer->setIlluminantIsApplied(applied);
+}
+
 void ViewerContainer::addImage(representation repr, sets_ptr temp,
 							   const std::vector<cv::Rect> &regions,
 							   cv::Rect roi)

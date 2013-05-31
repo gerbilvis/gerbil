@@ -23,7 +23,10 @@ vole_compile_library(
 	dist_view/viewport
 	dist_view/viewportcontrol
 
+	model/image
+	model/labeling
 	model/falsecolor
+	model/illumination
 
 	tasks/rgbtbb
 	tasks/rgbserial
@@ -32,6 +35,7 @@ vole_compile_library(
 
 	docks/dockwidget
 	docks/roidock
+	docks/illumdock
 
 	gerbil_gui_debug
 )
@@ -51,6 +55,12 @@ vole_moc_library(
 
 	docks/dockwidget.h
 	docks/roidock.h
+	docks/illumdock.h
+
+	model/image.h
+	model/labeling.h
+	model/falsecolor.h
+	model/illumination.h
 )
 
 vole_ui_library(
@@ -59,6 +69,7 @@ vole_ui_library(
 	dist_view/foldingbar.ui
 	dist_view/viewportcontrol.ui
 	docks/roidock.ui
+	docks/illumdock.ui
 )
 
 vole_add_resources(

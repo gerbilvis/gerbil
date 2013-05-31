@@ -16,8 +16,10 @@ enum representation {
 	IMGPCA = 2,
 	GRADPCA = 3,
 	REPSIZE = 4
+	// if you add something, also change operator<<!
 };
 
+// representation in debug output
 std::ostream &operator<<(std::ostream& os, const representation& r);
 
 class ImageModel : public QObject

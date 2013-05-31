@@ -228,23 +228,46 @@ void multi_img_viewer::setImage(SharedMultiImgPtr img, cv::Rect roi)
 	queue->push(taskBins);
 }
 
-void multi_img_viewer::setIlluminant(
-		const std::vector<multi_img::Value> &coeffs, bool for_real)
+void multi_img_viewer::setIlluminant(cv::Mat1f illum)
 {
-	SharedDataLock ctxlock(viewport->ctx->mutex);
+	{
+		SharedDataLock ctxlock(viewport->ctx->mutex);
 
 	if ((*viewport->ctx)->type != IMG)
 		return;
+	}
 
-	ctxlock.unlock();
+	// TODO: the whole code below this line should be done by the viewport itself!
+	viewport->illuminant = illum;
 
-	if (for_real) {
-		// only set it to true, never to false again
-		viewport->illuminant_correction = true;
-		illuminant = coeffs;
-	} else {
-		viewport->illuminant = coeffs;
+	// TODO: update after updateTextures() or even only if that one is not called?
+	viewport->update();
+
+	// vertices need to change, but TODO: should this not call prepareLines() also?
+	if(!viewport->illuminant_correction) {
 		viewport->updateTextures();
+	}
+}
+
+void multi_img_viewer::setIlluminantIsApplied(bool applied)
+{
+	// only set it to true, never to false again
+	if(applied) {
+		viewport->illuminant_correction = true;
+	}
+}
+
+
+void multi_img_viewer::showIlluminationCurve(bool show)
+{
+	if (show) {
+		// HACK
+		// nothing, illuminant is always drawn if coefficients viewport->illuminant
+		// non-empty. Should really be a bool in viewport.
+		// TODO: and that is bool illuminant_correction; not used where needed?
+	} else {
+		cv::Mat1f empty;
+		setIlluminant(empty);
 	}
 }
 

@@ -2,6 +2,7 @@
 #define VIEWERCONTAINER_H
 
 #include "multi_img_viewer.h"
+#include <illuminant.h>
 #include <background_task_queue.h>
 
 #include <QWidget>
@@ -47,7 +48,6 @@ public:
 	SharedMultiImgPtr getViewerImage(representation repr);
 	representation getActiveRepresentation() const;
 	const cv::Mat1b getHighlightMask() const;
-	void setIlluminant(representation repr, const std::vector<multi_img::Value> &illuminant, bool for_real);
 
 public slots:
 	void setLabelMatrix(cv::Mat1s matrix);
@@ -73,6 +73,9 @@ public slots:
 
 	void updateLabelsPartially(cv::Mat1b mask, cv::Mat1s old);
 	void updateLabels();
+	void newIlluminant(cv::Mat1f illum);
+	void showIlluminationCurve(bool show);
+	void setIlluminantApplied(bool applied);
 
 signals:
 	// pass through signals to viewers/viewports

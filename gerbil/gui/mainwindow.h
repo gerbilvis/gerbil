@@ -39,6 +39,8 @@
 #include <QMenu>
 #include <opencv2/core/core.hpp>
 
+class IllumDock;
+class IllumModel;
 class Controller;
 
 class MainWindow : public QMainWindow, private Ui::MainWindow {
@@ -75,9 +77,6 @@ public slots:
 	void segmentationFinished();
 	void segmentationApply(std::map<std::string, boost::any>);
 
-	void applyIlluminant();
-	void setI1(int index);
-	void setI1Visible(bool);
 	void bandsSliderMoved(int b);
 	void toggleLabels(bool toggle);
 
@@ -121,17 +120,13 @@ protected:
 private:
 	void initUI(Controller *chief);
 	void initGraphsegUI();
-	void initIlluminantUI();
 #ifdef WITH_SEG_MEANSHIFT
 	void initUnsupervisedSegUI();
 #endif
 	void initNormalizationUI();
-	void buildIlluminant(int temp);
 
-	// cache for illumination coefficients
-	typedef std::map<int, std::pair<
-			Illuminant, std::vector<multi_img::Value> > > Illum_map;
-	Illum_map illuminants;
+	IllumDock* illumDock;
+	IllumModel* illumModel;
 
 #ifdef WITH_SEG_MEANSHIFT
 	CommandRunner *usRunner;
