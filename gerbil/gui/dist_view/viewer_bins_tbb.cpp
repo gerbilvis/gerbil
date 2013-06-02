@@ -14,15 +14,15 @@
 
 class Accumulate {
 public:
-	Accumulate(bool substract, multi_img &multi, cv::Mat1s &labels, cv::Mat1b &mask,
+	Accumulate(bool subtract, multi_img &multi, cv::Mat1s &labels, cv::Mat1b &mask,
 		int nbins, multi_img::Value binsize, multi_img::Value minval, bool ignoreLabels,
 		std::vector<multi_img::Value> &illuminant,
 		std::vector<BinSet> &sets)
-		: substract(substract), multi(multi), labels(labels), mask(mask), nbins(nbins), binsize(binsize),
+		: subtract(subtract), multi(multi), labels(labels), mask(mask), nbins(nbins), binsize(binsize),
 		minval(minval), illuminant(illuminant), ignoreLabels(ignoreLabels), sets(sets) {}
 	void operator()(const tbb::blocked_range2d<int> &r) const;
 private:
-	bool substract;
+	bool subtract;
 	multi_img &multi;
 	cv::Mat1s &labels;
 	cv::Mat1b &mask;
@@ -173,7 +173,7 @@ void Accumulate::operator()(const tbb::blocked_range2d<int> &r) const
 				hashkey[d] = (unsigned char)pos;
 			}
 
-			if (substract) {
+			if (subtract) {
 				BinSet::HashMap::accessor ac;
 				if (s.bins.find(ac, hashkey)) {
 					ac->second.sub(pixel);

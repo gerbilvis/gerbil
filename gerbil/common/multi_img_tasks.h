@@ -36,7 +36,22 @@ enum NormMode {
 };
 
 namespace Auxiliary {
-	int RectComplement(int width, int height, cv::Rect r, std::vector<cv::Rect> &result);
+
+	/** compute complement rectangles
+	 *  @arg result array of rectangles to fill
+	 *  @return sum of rectangle areas
+	 */
+	int rectComplement(int width, int height, cv::Rect r,
+					   std::vector<cv::Rect> &result);
+
+	/** compute (A | B) - (A & B) and provide intersecting regions
+	 *  in coordinates relative to A and B
+	 *  @arg sub result array of A \ B (in A coords)
+	 *  @arg add result array of B \ A (in B coords)
+	 *  @return (A | B) - (A & B) < B
+	 */
+	bool rectTransform(const cv::Rect &oldR, const cv::Rect &newR,
+					   std::vector<cv::Rect> sub, std::vector<cv::Rect> add);
 }
 
 namespace CommonTbb {
@@ -88,7 +103,7 @@ protected:
 class BgrSerial : public BackgroundTask {
 public:
 	BgrSerial(SharedMultiImgPtr multi, mat3f_ptr bgr,
-		cv::Rect targetRoi = cv::Rect(0, 0, 0, 0)) 
+		cv::Rect targetRoi = cv::Rect()) 
 		: BackgroundTask(targetRoi), multi(multi), bgr(bgr) {}
 	virtual ~BgrSerial() {}
 	virtual bool run();
@@ -101,7 +116,7 @@ protected:
 class BgrTbb : public BackgroundTask {
 public:
 	BgrTbb(SharedMultiImgPtr multi, mat3f_ptr bgr,
-		cv::Rect targetRoi = cv::Rect(0, 0, 0, 0)) 
+		cv::Rect targetRoi = cv::Rect()) 
 		: BackgroundTask(targetRoi), multi(multi), bgr(bgr) {}
 	virtual ~BgrTbb() {}
 	virtual bool run();
@@ -141,7 +156,7 @@ protected:
 class Band2QImageTbb : public BackgroundTask {
 public:
 	Band2QImageTbb(SharedMultiImgPtr multi, qimage_ptr image, size_t band,
-		cv::Rect targetRoi = cv::Rect(0, 0, 0, 0))
+		cv::Rect targetRoi = cv::Rect())
 		: BackgroundTask(targetRoi), multi(multi), image(image), band(band) {}
 	virtual ~Band2QImageTbb() {}
 	virtual bool run();
@@ -171,7 +186,7 @@ protected:
 class RescaleTbb : public BackgroundTask {
 public:
 	RescaleTbb(SharedMultiImgPtr source, SharedMultiImgPtr current, size_t newsize,
-		cv::Rect targetRoi = cv::Rect(0, 0, 0, 0), bool includecache = true) 
+		cv::Rect targetRoi = cv::Rect(), bool includecache = true) 
 		: BackgroundTask(targetRoi), source(source), current(current), 
 		newsize(newsize), includecache(includecache) {}
 	virtual ~RescaleTbb() {}
@@ -200,7 +215,7 @@ protected:
 class GradientTbb : public BackgroundTask {
 public:
 	GradientTbb(SharedMultiImgPtr source, SharedMultiImgPtr current,
-		cv::Rect targetRoi = cv::Rect(0, 0, 0, 0), bool includecache = true) 
+		cv::Rect targetRoi = cv::Rect(), bool includecache = true) 
 		: BackgroundTask(targetRoi), source(source), 
 		current(current), includecache(includecache) {}
 	virtual ~GradientTbb() {}
@@ -237,7 +252,7 @@ protected:
 class GradientCuda : public BackgroundTask {
 public:
 	GradientCuda(SharedMultiImgPtr source, SharedMultiImgPtr current,
-		cv::Rect targetRoi = cv::Rect(0, 0, 0, 0), bool includecache = true) 
+		cv::Rect targetRoi = cv::Rect(), bool includecache = true) 
 		: BackgroundTask(targetRoi), source(source), 
 		current(current), includecache(includecache) {}
 	virtual ~GradientCuda() {}
@@ -253,7 +268,7 @@ protected:
 class PcaTbb : public BackgroundTask {
 public:
 	PcaTbb(SharedMultiImgPtr source, SharedMultiImgPtr current, unsigned int components = 0,
-		cv::Rect targetRoi = cv::Rect(0, 0, 0, 0), bool includecache = true) 
+		cv::Rect targetRoi = cv::Rect(), bool includecache = true) 
 		: BackgroundTask(targetRoi), source(source), current(current), 
 		components(components), includecache(includecache) {}
 	virtual ~PcaTbb() {}
@@ -292,7 +307,7 @@ protected:
 class DataRangeTbb : public BackgroundTask {
 public:
 	DataRangeTbb(SharedMultiImgPtr multi, data_range_ptr range,
-		cv::Rect targetRoi = cv::Rect(0, 0, 0, 0)) 
+		cv::Rect targetRoi = cv::Rect()) 
 		: BackgroundTask(targetRoi), multi(multi), range(range) {}
 	virtual ~DataRangeTbb() {}
 	virtual bool run();
@@ -307,7 +322,7 @@ protected:
 class DataRangeCuda : public BackgroundTask {
 public:
 	DataRangeCuda(SharedMultiImgPtr multi, data_range_ptr range,
-		cv::Rect targetRoi = cv::Rect(0, 0, 0, 0)) 
+		cv::Rect targetRoi = cv::Rect()) 
 		: BackgroundTask(targetRoi), multi(multi), range(range) {}
 	virtual ~DataRangeCuda() {}
 	virtual bool run();
@@ -322,7 +337,7 @@ protected:
 class ClampTbb : public BackgroundTask {
 public:
 	ClampTbb(SharedMultiImgPtr image, SharedMultiImgPtr minmax,
-			 cv::Rect targetRoi = cv::Rect(0, 0, 0, 0), bool includecache = true)
+			 cv::Rect targetRoi = cv::Rect(), bool includecache = true)
 		: BackgroundTask(targetRoi), image(image),	minmax(minmax),
 		  includecache(includecache)
 	{}
@@ -350,7 +365,7 @@ protected:
 class ClampCuda : public BackgroundTask {
 public:
 	ClampCuda(SharedMultiImgPtr image, SharedMultiImgPtr minmax,
-		cv::Rect targetRoi = cv::Rect(0, 0, 0, 0), bool includecache = true) 
+		cv::Rect targetRoi = cv::Rect(), bool includecache = true) 
 		: BackgroundTask(targetRoi), image(image), minmax(minmax), includecache(includecache)
 	{}
 	virtual ~ClampCuda() {}
@@ -366,7 +381,7 @@ protected:
 class IlluminantTbb : public BackgroundTask {
 public:
 	IlluminantTbb(SharedMultiImgPtr multi, const Illuminant& il, bool remove,
-		cv::Rect targetRoi = cv::Rect(0, 0, 0, 0), bool includecache = true) 
+		cv::Rect targetRoi = cv::Rect(), bool includecache = true) 
 		: BackgroundTask(targetRoi), multi(multi), 
 		il(il), remove(remove), includecache(includecache) {}
 	virtual ~IlluminantTbb() {}
@@ -396,7 +411,7 @@ protected:
 class IlluminantCuda : public BackgroundTask {
 public:
 	IlluminantCuda(SharedMultiImgPtr multi, const Illuminant& il, bool remove,
-		cv::Rect targetRoi = cv::Rect(0, 0, 0, 0), bool includecache = true) 
+		cv::Rect targetRoi = cv::Rect(), bool includecache = true) 
 		: BackgroundTask(targetRoi), multi(multi), 
 		il(il), remove(remove), includecache(includecache) {}
 	virtual ~IlluminantCuda() {}

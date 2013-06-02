@@ -4,7 +4,7 @@
 class RgbTbb : public MultiImg::BgrTbb {
 public:
 	RgbTbb(SharedMultiImgPtr multi, mat3f_ptr bgr, qimage_ptr rgb,
-		cv::Rect targetRoi = cv::Rect(0, 0, 0, 0))
+		cv::Rect targetRoi = cv::Rect())
 		: MultiImg::BgrTbb(multi, bgr, targetRoi), rgb(rgb) {}
 	virtual ~RgbTbb() {}
 	virtual bool run();

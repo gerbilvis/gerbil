@@ -4,45 +4,51 @@
 #include <QFileInfo>
 #include <cstdlib> // for exit()
 
-Controller::Controller(QString filename, bool limited_mode)
-	: im(limited_mode), queuethread(0)
+Controller::Controller(const std::string &filename, bool limited_mode)
+	: im(queue, limited_mode), queuethread(0)
 {
+	// load image
+	cv::Rect dimensions = im.loadImage(filename);
+	if (dimensions.width < 1) {
+		exit(4); // Qt's exit does not work before calling exec();
+	}
+
 	// background task queue thread
 	startQueue();
 
-	// load image
-	cv::Rect dimensions = im.loadImage(filename);
-	if (dimensions.x < 1) {
-		exit(4); // Qt's exit does not work before calling exec();
-	}
-	if (dimensions.area() > 262144) {
-		// image is bigger than 512x512, start with a smaller ROI
-		dimensions.width = std::min(dimensions.width, 512);
-		dimensions.height = std::min(dimensions.height, 512);
-	}
+	// initialize label model
+	lm.setDimensions(dimensions.width, dimensions.height);
 
-	// create gui
+	// create gui (perform initUI before connecting signals)
 	window = new MainWindow(limited_mode);
+	window->initUI(dimensions, im.getSize());
 
 	// connect slots/signals
-	window->initUI(this);
+	window->initSignals(this);
 	initImage();
 	initLabeling();
-
-	/* Initial ROI images spawning. Do it before showing the window but after
-	 * all signals were connected! */
-	spawnROI(dimensions);
+	connect(this, SIGNAL(finishedCalculation(representation)),
+			window->getViewerContainer(), SLOT(reconnectViewer(representation)));
 
 	// MODEL To be removed when refactored
 	// into model classes.
-	window->viewerContainer->image = &(this->image); // usw..
-	viewerContainer->gradient = &gradient;
-	viewerContainer->imagepca = &imagepca;
-	viewerContainer->gradientpca = &gradientpca;
-	viewerContainer->setTaskQueue(&queue);
+	window->getViewerContainer()->setTaskQueue(&queue);
+
+	// start with initial label (do this after signals, and before spawnROI()!
+	lm.addLabel();
+
+	/* Initial ROI images spawning. Do it before showing the window but after
+	 * all signals were connected! */
+	cv::Rect roi = dimensions; // initial ROI is image size, except:
+	if (roi.area() > 262144) {
+		// image is bigger than 512x512, start with a smaller ROI
+		roi.width = std::min(roi.width, 512);
+		roi.height = std::min(roi.height, 512);
+	}
+	spawnROI(roi);
 
 	// set title and show window
-	QFileInfo fi(filename.c_str());
+	QFileInfo fi(QString::fromStdString(filename));
 	window->setWindowTitle(QString("Gerbil - %1").arg(fi.completeBaseName()));
 	window->show();
 }
@@ -62,16 +68,16 @@ void Controller::initImage()
 {
 	/* gui requests */
 	connect(window->getViewerContainer(),
-			SIGNAL(bandSelected(representation, dim)),
-			im, SLOT(computeBand(representation, dim)));
+			SIGNAL(bandSelected(representation, int)),
+			&im, SLOT(computeBand(representation, int)));
 	connect(window, SIGNAL(rgbRequested()),
-			im, SLOT(computeRGB()));
+			&im, SLOT(computeRGB()));
 
 	/* im -> others */
-	connect(im, SIGNAL(bandUpdate(QPixmap, QString)),
-			window, SLOT(onBandUpdate(QPixmap, QString)));
-	connect(im, SIGNAL(rgbUpdate(QPixmap)),
-			window, SLOT(processRGB(QPixmap));
+	connect(&im, SIGNAL(bandUpdate(QPixmap, QString)),
+			window, SLOT(changeBand(QPixmap, QString)));
+	connect(&im, SIGNAL(rgbUpdate(QPixmap)),
+			window, SLOT(processRGB(QPixmap)));
 }
 
 void Controller::spawnROI(const cv::Rect &roi)
@@ -92,13 +98,112 @@ void Controller::spawnROI(const cv::Rect &roi)
 	}
 
 	disableGUI(TT_SELECT_ROI);
-
 	// TODO: check
 	window->getViewerContainer()->disconnectAllViewers();
 
-	im.spawn(roi, reuse);
+	updateROI(reuse, roi);
 
 	enableGUILater(true);
+}
+
+void Controller::rescaleSpectrum(size_t bands)
+{
+	queue.cancelTasks(im.getROI());
+	disableGUI(TT_BAND_COUNT);
+	// TODO: check
+	window->getViewerContainer()->disconnectAllViewers();
+
+	updateROI(false, cv::Rect(), bands);
+
+	enableGUILater(true);
+}
+
+void Controller::updateROI(bool reuse, cv::Rect roi, size_t bands)
+{
+	// no new ROI provided
+	if (roi == cv::Rect())
+		roi = im.getROI();
+
+	// prepare incremental update and test worthiness
+	std::vector<cv::Rect> sub, add;
+	if (reuse) {
+		/* compute if it is profitable to add/sub pixels given old and new ROI,
+		 * instead of full recomputation, and retrieve corresponding regions
+		 */
+		bool profitable = MultiImg::Auxiliary::rectTransform(im.getROI(), roi,
+															 sub, add);
+		if (!profitable)
+			reuse = false;
+	} else {
+		// invalidate existing ROI information (to not re-use data)
+		im.invalidateROI();
+	}
+
+	/** FIRST STEP: recycle existing payload **/
+	QMap<representation, sets_ptr> sets;
+	if (reuse) {
+		foreach (representation i, im.representations) {
+			sets[i] = window->getViewerContainer()->subImage(i, sub, roi);
+		}
+	}
+
+	/** SECOND STEP: update metadata */
+
+// TODO
+//	updateRGB(true);
+//	rgbDock->setEnabled(true);
+	lm.updateROI(roi);
+
+	/** THIRD STEP: update payload */
+	/* this has to be done in the right order!
+	 * IMG before all others, GRAD before GRADPCA
+	 * it is implicit here but we would like this knowledge to be part of the
+	 * logic of imagemodel
+	 */
+	foreach (representation i, im.representations) {
+
+		/* tasks to (incrementally) re-calculate image data */
+		im.spawn(i, roi, bands);
+
+		/* tasks to (incrementally) update distribution view */
+		if (reuse) {
+			window->getViewerContainer()->addImage(i, sets[i], add, roi);
+		} else {
+			window->getViewerContainer()->setImage(i, im.getImage(i), roi);
+		}
+
+		/* task that signals everything is done */
+		BackgroundTaskPtr epilog(new BackgroundTask(roi));
+		// set in our map so we will know association later
+		taskmap[epilog.get()] = i;
+		// now we can connect the signal
+		QObject::connect(epilog.get(), SIGNAL(finished(bool)),
+			this, SLOT(processFinishedCalculation(bool)), Qt::QueuedConnection);
+		// and finally enqueue
+		queue.push(epilog);
+	}
+}
+
+void Controller::processFinishedCalculation(bool success)
+{
+	if (success) {
+		if (!taskmap.contains(sender()))
+			return;
+		representation type = taskmap.value(sender());
+		std::cerr << "finished: " << type << std::endl;
+		emit finishedCalculation(type);
+
+		/* TODO:
+		 * I think this is done to update the min, max values presented in the
+		 * respective GUI. and only at the "end" of the computing chain, which
+		 * is when gradient is computed. this is evil.
+		 * better: update the explicit information directly by a signal coming
+		 * from the model to the GUI as soon as these values change
+		 */
+		/*if (type == GRAD) {
+			emit normTargetChanged(true);
+		}*/
+	}
 }
 
 /** Labeling management **/
@@ -108,24 +213,28 @@ void Controller::initLabeling()
 {
 	/* gui requests */
 	connect(window, SIGNAL(clearLabelRequested(short)),
-			lm, SLOT(alterLabel(short)));
+			&lm, SLOT(alterLabel(short)));
 	connect(window, SIGNAL(alterLabelRequested(short,cv::Mat1b,bool)),
-			lm, SLOT(alterLabel(short,cv::Mat1b,bool)));
+			&lm, SLOT(alterLabel(short,cv::Mat1b,bool)));
 
 	/* lm -> others */
-	connect(lm, SIGNAL(labelMatrix(cv::Mat1s)),
+	connect(&lm, SIGNAL(labelingMatrix(cv::Mat1s)),
 			window, SLOT(setLabelMatrix(cv::Mat1s)));
-	connect(lm, SIGNAL(labelMatrix(cv::Mat1s)),
+	connect(&lm, SIGNAL(labelingMatrix(cv::Mat1s)),
 			window->getViewerContainer(), SLOT(setLabelMatrix(cv::Mat1s)));
 
-	connect(lm, SIGNAL(newLabeling(const QVector<QColor> &, bool)),
+	connect(&lm, SIGNAL(newLabeling(const QVector<QColor> &, bool)),
 			this, SLOT(propagateLabelingChange(const QVector<QColor> &, bool)));
-	connect(lm, SIGNAL(newLabeling(const QVector<QColor> &, bool)),
-			this, SLOT(processLabelingChange(const QVector<QColor> &, bool)));
+	connect(&lm, SIGNAL(partialLabelUpdate(cv::Mat1b, cv::Mat1s)),
+			window->getViewerContainer(),
+			SLOT(updateLabelsPartially(cv::Mat1b,cv::Mat1s)));
+
 }
 
 void Controller::propagateLabelingChange(const QVector<QColor> &colors, bool changed)
 {
+	window->processLabelingChange(colors, changed);
+
 	if (changed)
 		disableGUI();
 
@@ -145,6 +254,16 @@ void Controller::addLabel()
 }
 
 /** Tasks and queue thread management */
+void Controller::toggleLabels(bool toggle)
+{
+	// TODO: is this really legit? I doubt.
+	queue.cancelTasks();
+	disableGUI(TT_TOGGLE_LABELS);
+
+	window->getViewerContainer()->toggleLabels(toggle);
+
+	enableGUILater(false);
+}
 
 void Controller::enableGUILater(bool withROI)
 {

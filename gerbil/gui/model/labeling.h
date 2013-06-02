@@ -1,6 +1,7 @@
 #ifndef MODEL_LABELING_H
 #define MODEL_LABELING_H
 
+#include <labeling.h>
 #include <opencv2/core/core.hpp>
 #include <QObject>
 #include <QColor>
@@ -15,12 +16,13 @@ public:
 	// increment number of available labels
 	int addLabel();
 
-	void loadLabeling(QString filename);
-	void saveLabeling();
+	void loadLabeling(const QString &filename = QString());
+	void saveLabeling(const QString &filename = QString());
 
 public slots:
 	void setDimensions(unsigned int height, unsigned int width);
 	void updateROI(const cv::Rect &roi);
+	void setLabels(const vole::Labeling &labeling, bool full);
 	void setLabelColors(const std::vector<cv::Vec3b> &newColors,
 						bool emitSignal = true);
 	// either clear label, or with other arguments, add/remove pixels to/from it
@@ -34,6 +36,7 @@ signals:
 	 * @arg changed true if existing labels changed in pixels or color codes
 	 */
 	void newLabeling(const QVector<QColor>& colors, bool changed);
+	void partialLabelUpdate(cv::Mat1b mask, cv::Mat1s labels);
 
 private:
 	// full image labels and roi scoped labels

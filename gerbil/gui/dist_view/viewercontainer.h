@@ -27,7 +27,7 @@ public:
     void initUi();
 
 	void addImage(representation repr, sets_ptr temp, const std::vector<cv::Rect> &regions, cv::Rect roi);
-	void subImage(representation repr, sets_ptr temp, const std::vector<cv::Rect> &regions, cv::Rect roi);
+	sets_ptr subImage(representation repr, const std::vector<cv::Rect> &regions, cv::Rect roi);
 	void setImage(representation repr, SharedMultiImgPtr image, cv::Rect roi);
 
 	void toggleLabels(bool toggle);
@@ -36,14 +36,11 @@ public:
 	void updateBinning(representation repr, int bins);
 
 	// MODEL
-	// For now these are shared with MainWindow. To be removed when refactored
-	// into model classes.
-	SharedMultiImgPtr *image, *gradient, *imagepca, *gradientpca;
+	// To be removed when refactored into model classes.
+	SharedMultiImgPtr image, gradient, imagepca, gradientpca;
 
 	void disconnectAllViewers();
 	void updateViewerBandSelections(int numbands);
-	// TODO name consistently with viewer prefix
-	const QPixmap* getBand(representation repr, int dim);
 	int getSelection(representation repr);
 	SharedMultiImgPtr getViewerImage(representation repr);
 	representation getActiveRepresentation() const;
@@ -58,13 +55,8 @@ public slots:
 	void newOverlay();
 	void setActiveViewer(int repri);
 
-	void imgCalculationComplete(bool success);
-	void gradCalculationComplete(bool success);
-	void imgPcaCalculationComplete(bool success);
-	void gradPcaCalculationComplete(bool success);
-
 	// TODO rename (reconnectViewer ?)
-	void finishViewerRefresh(representation repr);
+	void reconnectViewer(representation repr);
 	void disconnectViewer(representation repr);
 
 	void finishTask(bool success);
@@ -88,7 +80,7 @@ signals:
 	void viewersHighlight(short);
 
 	void setViewportActive(int);
-signals:
+
 	void viewportAddSelection();
 	void viewportRemSelection();
 
@@ -97,7 +89,7 @@ signals:
 
 	// new signals to break-up coupling between MainWindow and ViewerContainer
 
-	void bandSelected(representation repr, int selection);
+	void bandSelected(representation type, int selection);
 	void requestGUIEnabled(bool enable, TaskType tt);
 
 protected:

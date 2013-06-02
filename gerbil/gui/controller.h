@@ -8,29 +8,39 @@
 #include <background_task_queue.h>
 
 #include <QObject>
+#include <QMap>
 #include <tbb/compat/thread>
 
 class Controller : public QObject
 {
 	Q_OBJECT
 public:
-	explicit Controller(QString filename, bool limited_mode);
+	explicit Controller(const std::string &filename, bool limited_mode);
 	~Controller();
 	
 signals:
-	
+	// multispectral image of type is up-to-date
+	void finishedCalculation(representation type);
+
 public slots:
 	/** requests (from GUI) */
 	// change ROI, effectively spawning new image data
 	void spawnROI(const cv::Rect &roi);
+	// change number of bands, spawning new image data
+	void rescaleSpectrum(size_t bands);
+	// change binnig to reflect, or not reflect, labeling
+	void toggleLabels(bool toggle);
 
 	// need additional label color
 	void addLabel();
+	// load a labeling from file
+	void loadLabeling(const QString &filename = QString())
+	{ lm.loadLabeling(filename); }
+	// save a labeling to file
+	void saveLabeling(const QString &filename = QString())
+	{ lm.saveLabeling(filename); }
 
 	/** notifies (from models, tasks) */
-	// epilog task finished
-	void finishTask(bool success);
-
 	// label colors added/changed
 	void propagateLabelingChange(const QVector<QColor> &colors, bool changed);
 
@@ -47,7 +57,10 @@ public slots:
 	void enableGUINow(bool forreal);
 	void disableGUI(TaskType tt = TT_NONE);
 
-private:
+	// re-emit signal with correct representation attached
+	void processFinishedCalculation(bool success);
+
+protected:
 	// connect models with gui
 	void initImage();
 	void initLabeling();
@@ -57,6 +70,10 @@ private:
 	// stop and delete thread
 	// (we did not test consecutive start/stop of the queue)
 	void stopQueue();
+
+	// update ROI, or its contents
+	void updateROI(bool reuse,
+				   cv::Rect roi = cv::Rect(), size_t bands = -1);
 
 	// image model stores all multispectral image representations (IMG, GRAD, …)
 	ImageModel im;
@@ -69,6 +86,10 @@ private:
 
 	BackgroundTaskQueue queue;
 	std::thread *queuethread;
+
+	/* A map of BackgroundTasks (QObject) to representations so that we know
+	 * what representation a signaling task was working on */
+	QMap<QObject*, representation> taskmap;
 };
 
 #endif // CONTROLLER_H

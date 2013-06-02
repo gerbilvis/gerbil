@@ -9,7 +9,8 @@
 #include <background_task_queue.h>
 #include <multi_img.h>
 #include <shared_data.h>
-#include <model/representation.h>
+// for representation
+#include <model/image.h>
 
 #include "illuminant.h"
 

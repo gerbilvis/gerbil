@@ -13,6 +13,8 @@ vole_compile_library(
 	roiview
 	commandrunner
 	iogui
+	
+	controller
 
 	dist_view/compute
 	dist_view/viewercontainer
@@ -46,6 +48,8 @@ vole_moc_library(
 	bandview.h
 	roiview.h
 	commandrunner.h
+
+	controller.h
 
 	dist_view/viewercontainer.h
 	dist_view/multi_img_viewer.h

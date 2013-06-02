@@ -90,7 +90,8 @@ struct Bin {
 
 struct BinSet {
 	BinSet(const QColor &c, int size)
-		: label(c), boundary(size, std::make_pair((int)255, (int)0)) { totalweight = 0; }
+		: label(c), boundary(size, std::make_pair((int)255, (int)0))
+	{ totalweight = 0; }
 	/* each BinSet represents a label and has the label color
 	 */
 	QColor label;

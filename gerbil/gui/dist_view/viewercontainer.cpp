@@ -28,12 +28,14 @@ ViewerContainer::~ViewerContainer()
 void ViewerContainer::setTaskQueue(BackgroundTaskQueue *taskQueue)
 {
     this->taskQueue = taskQueue;
+	foreach (multi_img_viewer *viewer, vm) {
+		viewer->queue = taskQueue;
+	}
 }
 
 void ViewerContainer::setLabelMatrix(cv::Mat1s matrix)
 {
-	ViewerList vl = vm.values();
-	foreach(multi_img_viewer *viewer, vl) {
+	foreach (multi_img_viewer *viewer, vm) {
 		viewer->labels = matrix;
 	}
 }
@@ -42,8 +44,7 @@ void ViewerContainer::updateLabels()
 {
 	//setGUIEnabled(false);
 	emit requestGUIEnabled(false, TT_NONE);
-	ViewerList vl = vm.values();
-	foreach(multi_img_viewer *viewer, vl) {
+	foreach(multi_img_viewer *viewer, vm) {
 		viewer->updateLabels();
 	}
 
@@ -73,9 +74,26 @@ void ViewerContainer::setIlluminantApplied(bool applied)
 	viewer->setIlluminantIsApplied(applied);
 }
 
+sets_ptr ViewerContainer::subImage(representation repr,
+							   const std::vector<cv::Rect> &regions,
+							   cv::Rect newRoi)
+{
+	// the roi change is effectively global
+	roi = newRoi;
+
+	sets_ptr temp(new SharedData<std::vector<BinSet> >(NULL));
+	multi_img_viewer *viewer = vm.value(repr);
+	assert(viewer);
+	if(!viewer->isPayloadHidden()) {
+		GGDBG_REPR(repr);
+		viewer->subImage(temp, regions, roi);
+	}
+	return temp;
+}
+
 void ViewerContainer::addImage(representation repr, sets_ptr temp,
 							   const std::vector<cv::Rect> &regions,
-							   cv::Rect roi)
+							   cv::Rect newRoi)
 {
 	// the roi change is effectively global
 	roi = newRoi;
@@ -85,21 +103,6 @@ void ViewerContainer::addImage(representation repr, sets_ptr temp,
 	if(!viewer->isPayloadHidden()) {
 		GGDBG_REPR(repr);
 		viewer->addImage(temp, regions, roi);
-	}
-}
-
-void ViewerContainer::subImage(representation repr, sets_ptr temp,
-							   const std::vector<cv::Rect> &regions,
-							   cv::Rect roi)
-{
-	// the roi change is effectively global
-	roi = newRoi;
-
-	multi_img_viewer *viewer = vm.value(repr);
-	assert(viewer);
-	if(!viewer->isPayloadHidden()) {
-		GGDBG_REPR(repr);
-		viewer->subImage(temp, regions, roi);
 	}
 }
 
@@ -165,14 +168,6 @@ const cv::Mat1b ViewerContainer::getHighlightMask() const
 	return activeViewer->getHighlightMask();
 }
 
-void ViewerContainer::setIlluminant(representation repr,
-									const std::vector<multi_img_base::Value> &illuminant,
-									bool for_real)
-{
-	multi_img_viewer *viewer = vm.value(repr);
-	viewer->setIlluminant(illuminant, for_real);
-}
-
 void ViewerContainer::setGUIEnabled(bool enable, TaskType tt)
 {
 	//GGDBGM(format("enable=%1%, tt=%2%\n") % enable % tt);
@@ -210,34 +205,20 @@ void ViewerContainer::setActiveViewer(int repr)
 	}
 }
 
-void ViewerContainer::imgCalculationComplete(bool success)
-{
-	if (success && !vm.value(IMG)->isPayloadHidden())
-		finishViewerRefresh(IMG);
-}
-
-void ViewerContainer::gradCalculationComplete(bool success)
-{
-	if (success && !vm.value(GRAD)->isPayloadHidden())
-		finishViewerRefresh(GRAD);
-}
-
-void ViewerContainer::imgPcaCalculationComplete(bool success)
-{
-	if (success && !vm.value(IMGPCA)->isPayloadHidden())
-		finishViewerRefresh(IMGPCA);
-}
-
-void ViewerContainer::gradPcaCalculationComplete(bool success)
-{
-	if (success && !vm.value(GRADPCA)->isPayloadHidden())
-		finishViewerRefresh(GRADPCA);
-}
-
-void ViewerContainer::finishViewerRefresh(representation repr)
+void ViewerContainer::reconnectViewer(representation repr)
 {
 	GGDBGM(format("representation %1%\n") % repr);
 	multi_img_viewer *viewer = vm.value(repr);
+	/* TODO: (code was in multi_img_viewer class */
+	/*{
+		SharedDataLock imglock(image->mutex);
+		if (viewport->selection > (*image)->size())
+			viewport->selection = 0;
+	}*/
+
+	if (viewer->isPayloadHidden())
+		return;
+
 	viewer->setEnabled(true);
 	connect(this, SIGNAL(viewersOverlay(int,int)),
 		viewer, SLOT(overlay(int, int)));
@@ -248,14 +229,7 @@ void ViewerContainer::finishViewerRefresh(representation repr)
 	connect(this, SIGNAL(viewersAddPixels(std::map<std::pair<int,int>,short>)),
 		viewer, SLOT(addPixels(const std::map<std::pair<int, int>, short> &)));
 
-	/* TODO:
-	 * I think this is done to update the min, max values presented in the
-	 * respective GUI. and only at the "end" of the computing chain, which
-	 * is when gradient is computed. this is evil.
-	 */
-	if (repr == GRAD) {
-		emit normTargetChanged(true);
-	}
+	// re-announce currently selected band to ensure update.
 	if (activeViewer->getType() == repr) {
 		emit bandSelected(activeViewer->getType(),
 						  activeViewer->getSelection());
@@ -283,6 +257,7 @@ void ViewerContainer::disconnectAllViewers()
 	}
 }
 
+// TODO: see how Controller does this.
 void ViewerContainer::finishTask(bool success)
 {
 	if(success)
@@ -297,29 +272,29 @@ void ViewerContainer::finishNormRangeImgChange(bool success)
 	 * selected before. also this should be done by the image model
 	 * and the image model has other means of doing this (empty the map)
 	 */
-	if (success) {
+/*	if (success) {
 		SharedDataLock hlock((*image)->mutex);
 		(*bands)[IMG].assign((**image)->size(), NULL);
 		hlock.unlock();
 		emit bandSelected(IMG, vm.value(IMG)->getSelection());
-	}
+	}*/
 }
 
 
 void ViewerContainer::finishNormRangeGradChange(bool success)
 {
 	// ************** see above
-	if (success) {
+/*	if (success) {
 		SharedDataLock hlock((*gradient)->mutex);
 		(*bands)[GRAD].assign((**gradient)->size(), NULL);
 		hlock.unlock();
 		emit bandSelected(GRAD,	vm.value(GRAD)->getSelection());
-	}
+	}*/
 }
 
 void ViewerContainer::disableViewer(representation repr)
 {
-	// TODO: where is it connected back?
+	// TODO: where is it connected back? (probably at reconnectViewer)
 	disconnectViewer(repr);
 
 	/* TODO: why do we have to differentiate between IMG/GRAD and PCA variants?
@@ -359,16 +334,19 @@ void ViewerContainer::disableViewer(representation repr)
 	}
 }
 
+// TODO: this whole function is a joke, right?!
+// the proper way is to signal that data is needed. the model should then
+// deliver it and reconnectViewer() will be called or sth.
 void ViewerContainer::enableViewer(representation repr)
 {
-	multi_img_viewer *viewer = vm.value(repr);
+/*	multi_img_viewer *viewer = vm.value(repr);
 
 	emit requestGUIEnabled(false, TT_TOGGLE_VIEWER);
 
 	switch(repr) {
 	case IMG:
 	{
-		viewer->setImage(*image, roi);
+		viewer->setImage(image, roi);
 		BackgroundTaskPtr task(new BackgroundTask(roi));
 		QObject::connect(task.get(), SIGNAL(finished(bool)),
 			this, SLOT(imgCalculationComplete(bool)), Qt::QueuedConnection);
@@ -377,7 +355,7 @@ void ViewerContainer::enableViewer(representation repr)
 	break;
 	case GRAD:
 	{
-		viewer->setImage(*gradient, roi);
+		viewer->setImage(gradient, roi);
 		BackgroundTaskPtr task(new BackgroundTask(roi));
 		QObject::connect(task.get(), SIGNAL(finished(bool)),
 			this, SLOT(gradCalculationComplete(bool)), Qt::QueuedConnection);
@@ -386,14 +364,15 @@ void ViewerContainer::enableViewer(representation repr)
 		break;
 	case IMGPCA:
 	{
-		// FIXME this invalidates local pointer
-		imagepca->reset(new SharedMultiImgBase(new multi_img(0, 0, 0)));
+		// FIXME this only invalidates local pointer, EMIT A SIGNAL INSTEAD!
+		// (SORRY OTHER THING WAS *REALLY* TOO NASTY)
+		imagepca.reset(new SharedMultiImgBase(new multi_img(0, 0, 0)));
 
 		BackgroundTaskPtr taskPca(new MultiImg::PcaTbb(
-			*image, *imagepca, 0, roi));
+			image, imagepca, 0, roi));
 		taskQueue->push(taskPca);
 
-		viewer->setImage(*imagepca, roi);
+		viewer->setImage(imagepca, roi);
 
 		BackgroundTaskPtr task(new BackgroundTask(roi));
 		QObject::connect(task.get(), SIGNAL(finished(bool)),
@@ -404,14 +383,14 @@ void ViewerContainer::enableViewer(representation repr)
 		break;
 	case GRADPCA:
 	{
-		// FIXME this invalidates local pointer
+		// FIXME SAME SHIT AS ABOVE
 		gradientpca->reset(new SharedMultiImgBase(new multi_img(0, 0, 0)));
 
 		BackgroundTaskPtr taskPca(new MultiImg::PcaTbb(
-			*gradient, *gradientpca, 0, roi));
+			gradient, gradientpca, 0, roi));
 		taskQueue->push(taskPca);
 
-		viewer->setImage(*gradientpca, roi);
+		viewer->setImage(gradientpca, roi);
 
 		BackgroundTaskPtr task(new BackgroundTask(roi));
 		QObject::connect(task.get(), SIGNAL(finished(bool)),
@@ -430,6 +409,7 @@ void ViewerContainer::enableViewer(representation repr)
 	QObject::connect(taskEpilog.get(), SIGNAL(finished(bool)),
 		this, SLOT(finishTask(bool)), Qt::QueuedConnection);
 	taskQueue->push(taskEpilog);
+	*/
 }
 
 void ViewerContainer::initUi()
@@ -543,8 +523,6 @@ multi_img_viewer *ViewerContainer::createViewer(representation repr)
 	viewer->setSizePolicy(QSizePolicy::Preferred, // hor
 						  QSizePolicy::Expanding); // ver
     viewer->setType(repr);
-	assert(taskQueue);
-    viewer->queue = taskQueue;
     vm.insert(repr, viewer);
 }
 

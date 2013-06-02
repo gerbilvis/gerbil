@@ -37,11 +37,6 @@
 #include <iostream>
 #include <QShortcut>
 
-#define USE_CUDA_GRADIENT       1
-#define USE_CUDA_DATARANGE      0
-#define USE_CUDA_CLAMP          0
-#define USE_CUDA_ILLUMINANT     0
-
 MainWindow::MainWindow(bool limitedMode)
 	: limitedMode(limitedMode),
 	  usRunner(NULL), contextMenu(NULL),
@@ -54,6 +49,8 @@ MainWindow::MainWindow(bool limitedMode)
 	 * so we don't have unnecessary duplication here */
 	roiDock = new ROIDock(this);
 	addDockWidget(Qt::RightDockWidgetArea, roiDock);
+	illumDock = new IllumDock(this);
+	addDockWidget(Qt::RightDockWidgetArea, illumDock);
 }
 
 // todo: move to the new bandDock
@@ -110,16 +107,25 @@ void MainWindow::processLabelingChange(const QVector<QColor> &colors, bool chang
 // todo: move to the new bandDock
 void MainWindow::selectLabel(int index)
 {
-	// markerSelector has no label zero, therefore 1 off
+	// markerSelector has no label zero, therefore off by one
 	markerSelector->setCurrentIndex(index - 1);
 }
 
-void MainWindow::initUI(Controller *chief)
+void MainWindow::initUI(cv::Rect dim, size_t size)
 {
-	/* GUI elements */
+	// used in loadSeeds(), maybe also for showing generic metadata
+	dimensions = dim;
+
+	/* init bandsSlider */
+	bandsLabel->setText(QString("%1 bands").arg(size));
+	bandsSlider->setMinimum(3);
+	bandsSlider->setMaximum(size);
+	bandsSlider->setValue(size);
+
+	// TODO: these will be docks
 	initGraphsegUI();
 #ifdef WITH_SEG_MEANSHIFT
-	initUnsupervisedSegUI();
+	initUnsupervisedSegUI(size);
 #endif
 	initNormalizationUI();
 
@@ -137,7 +143,10 @@ void MainWindow::initUI(Controller *chief)
 #endif
 
 	viewerContainer->initUi();
+}
 
+void MainWindow::initSignals(Controller *chief)
+{
 	/* slots & signals: GUI only */
 	connect(docksButton, SIGNAL(clicked()),
 			this, SLOT(openContextMenu()));
@@ -175,9 +184,9 @@ void MainWindow::initUI(Controller *chief)
 
 	// labeldock
 	connect(lLoadButton, SIGNAL(clicked()),
-			this, SLOT(loadLabeling()));
+			chief, SLOT(loadLabeling()));
 	connect(lSaveButton, SIGNAL(clicked()),
-			this, SLOT(saveLabeling()));
+			chief, SLOT(saveLabeling()));
 	connect(lLoadSeedButton, SIGNAL(clicked()),
 			this, SLOT(loadSeeds()));
 
@@ -187,7 +196,7 @@ void MainWindow::initUI(Controller *chief)
 
 	// for viewports
 	connect(ignoreButton, SIGNAL(toggled(bool)),
-			this, SLOT(toggleLabels(bool)));
+			chief, SLOT(toggleLabels(bool)));
 
 	// label manipulation fuckup
 	connect(addButton, SIGNAL(clicked()),
@@ -204,7 +213,10 @@ void MainWindow::initUI(Controller *chief)
 			bandView, SLOT(commitLabelChanges()));
 
 	// banddock
-	// todo: updateLabels() should be performed by model
+	// TODO: updateLabels() should be performed by model
+	/* when applybutton is pressed, bandView flushes the uncommited labels
+	 * and calls the global update function
+	 */
 	connect(applyButton, SIGNAL(clicked()),
 			bandView, SLOT(updateLabels()));
 	connect(bandView, SIGNAL(refreshLabels()),
@@ -238,53 +250,58 @@ void MainWindow::initUI(Controller *chief)
 	connect(viewerContainer, SIGNAL(viewportRemSelection()),
 			this, SLOT(remFromLabel()));
 
-
-	/// init bandsSlider
-	bandsLabel->setText(QString("%1 bands").arg((*image_lim)->size()));
-	bandsSlider->setMaximum((*image_lim)->size());
-	bandsSlider->setValue((*image_lim)->size());
 	connect(bandsSlider, SIGNAL(valueChanged(int)),
 			this, SLOT(bandsSliderMoved(int)));
 	connect(bandsSlider, SIGNAL(sliderMoved(int)),
 			this, SLOT(bandsSliderMoved(int)));
+	connect(this, SIGNAL(specRescaleRequested(size_t)),
+			chief, SLOT(rescaleSpectrum(size_t)));
 
 	/* Illumination */
 	connect(illumDock, SIGNAL(applyIllum()),
-			illumModel, SLOT(applyIllum()));
+			&illumModel, SLOT(applyIllum()));
 	connect(illumDock, SIGNAL(illum1Selected(int)),
-			illumModel, SLOT(illum1Changed(int)));
+			&illumModel, SLOT(illum1Changed(int)));
 	connect(illumDock, SIGNAL(illum2Selected(int)),
-			illumModel, SLOT(illum2Changed(int)));
+			&illumModel, SLOT(illum2Changed(int)));
 	connect(illumDock, SIGNAL(showIlluminationCurve(bool)),
-			illumModel, SLOT(setIlluminationCurveShown(bool)));
+			&illumModel, SLOT(setIlluminationCurveShown(bool)));
 
 	connect(illumDock, SIGNAL(showIlluminationCurve(bool)),
 			viewerContainer, SLOT(showIlluminationCurve(bool)));
 
-	connect(this, SIGNAL(roiChanged(cv::Rect)),
-			illumModel, SLOT(setRoi(cv::Rect)));
+	// TODO: signal does not exist right now.
+	//connect(this, SIGNAL(roiChanged(cv::Rect)),
+//			&illumModel, SLOT(setRoi(cv::Rect)));
 
-	connect(illumModel, SIGNAL(requestGUIEnabled(bool,TaskType)),
+	connect(&illumModel, SIGNAL(requestGUIEnabled(bool,TaskType)),
 			this, SLOT(setGUIEnabled(bool, TaskType)), Qt::DirectConnection);
-	connect(illumModel, SIGNAL(requestApplyROI(bool)),
-			this, SLOT(applyROI(bool)), Qt::DirectConnection);
-	connect(illumModel, SIGNAL(requestRebuildRGB()),
-			this, SLOT(rebuildRGB()), Qt::DirectConnection);
+	// TODO: instead have a specific function in controller (like spectRescale)
+//	connect(&illumModel, SIGNAL(requestApplyROI(bool)),
+//			this, SLOT(applyROI(bool)), Qt::DirectConnection);
+	// TODO: don't know how RGB works right now.
+//	connect(&illumModel, SIGNAL(requestRebuildRGB()),
+//			this, SLOT(rebuildRGB()), Qt::DirectConnection);
 
-	connect(illumModel, SIGNAL(newIlluminant(cv::Mat1f)),
+	connect(&illumModel, SIGNAL(newIlluminant(cv::Mat1f)),
 			viewerContainer, SLOT(newIlluminant(cv::Mat1f)));
-	connect(illumModel, SIGNAL(illuminantIsApplied(bool)),
+	connect(&illumModel, SIGNAL(illuminantIsApplied(bool)),
 			viewerContainer, SLOT(setIlluminantApplied(bool)));
 	/// global shortcuts
 	QShortcut *scr = new QShortcut(Qt::CTRL + Qt::Key_S, this);
 	connect(scr, SIGNAL(activated()), this, SLOT(screenshot()));
 
 	/* now that we are connected, humbly request RGB image for roiView */
-	rgbRequested();
+	emit rgbRequested();
 }
 
 void MainWindow::setGUIEnabled(bool enable, TaskType tt)
 {
+	/** for enable, this just re-enables everything
+	 * for disable, this typically disables everything except the sender, so
+	 * that the user can re-decide on that aspect or sth.
+	 * it is a bit strange
+	 */
 	bandsSlider->setEnabled(enable || tt == TT_BAND_COUNT);
 	ignoreButton->setEnabled(enable || tt == TT_TOGGLE_LABELS);
 	addButton->setEnabled(enable);
@@ -331,30 +348,8 @@ void MainWindow::bandsSliderMoved(int b)
 {
 	bandsLabel->setText(QString("%1 bands").arg(b));
 	if (!bandsSlider->isSliderDown()) {
-		queue.cancelTasks(roi);
-		
-		setGUIEnabled(false, TT_BAND_COUNT);
-
-		applyROI(false);
-
-		BackgroundTaskPtr taskEpilog(new BackgroundTask(roi));
-		QObject::connect(taskEpilog.get(), SIGNAL(finished(bool)), 
-			this, SLOT(finishTask(bool)), Qt::QueuedConnection);
-		queue.push(taskEpilog);
+		emit specRescaleRequested(b);
 	}
-}
-
-void MainWindow::toggleLabels(bool toggle)
-{
-	queue.cancelTasks();
-	setGUIEnabled(false, TT_TOGGLE_LABELS);
-
-	viewerContainer->toggleLabels(toggle);
-
-	BackgroundTaskPtr taskEpilog(new BackgroundTask());
-	QObject::connect(taskEpilog.get(), SIGNAL(finished(bool)), 
-		this, SLOT(finishTask(bool)), Qt::QueuedConnection);
-	queue.push(taskEpilog);
 }
 
 #ifdef WITH_SEG_MEANSHIFT
@@ -428,7 +423,8 @@ void MainWindow::initNormalizationUI()
 
 void MainWindow::normTargetChanged(bool usecurrent)
 {
-	/* reset gui to current settings */
+/*
+	// reset gui to current settings
 	int target = (normIButton->isChecked() ? 0 : 1);
 	MultiImg::NormMode m = (target == 0 ? normIMG : normGRAD);
 
@@ -437,10 +433,12 @@ void MainWindow::normTargetChanged(bool usecurrent)
 
 	// update norm range spin boxes
 	normModeSelected(m, true, usecurrent);
+	*/
 }
 
 void MainWindow::normModeSelected(int mode, bool targetchange, bool usecurrent)
 {
+	/*
 	MultiImg::NormMode nm = static_cast<MultiImg::NormMode>(mode);
 	if (nm == MultiImg::NORM_FIXED && !targetchange) // user edits from currenty viewed values
 		return;
@@ -496,6 +494,7 @@ void MainWindow::normModeSelected(int mode, bool targetchange, bool usecurrent)
 	normMaxBox->setValue(max);
 	normMinBox->blockSignals(false);
 	normMaxBox->blockSignals(false);
+	*/
 }
 
 void MainWindow::normModeFixed()
@@ -506,6 +505,7 @@ void MainWindow::normModeFixed()
 
 void MainWindow::applyNormUserRange()
 {
+	/*
 	int target = (normIButton->isChecked() ? 0 : 1);
 
 	// set internal norm mode
@@ -553,18 +553,20 @@ void MainWindow::applyNormUserRange()
 	QObject::connect(taskEpilog.get(), SIGNAL(finished(bool)), 
 		this, SLOT(finishTask(bool)), Qt::QueuedConnection);
 	queue.push(taskEpilog);
+	*/
 }
 
 void MainWindow::clampNormUserRange()
 {
+	/*
 	int target = (normIButton->isChecked() ? 0 : 1);
 
 	// set internal norm mode
 	MultiImg::NormMode &nm = (target == 0 ? normIMG : normGRAD);
 	nm = static_cast<MultiImg::NormMode>(normModeBox->currentIndex());
 
-	/* if image is changed, change full image. for gradient, we cannot preserve
-		the gradient over ROI or illuminant changes, so it remains a local change */
+	/// if image is changed, change full image. for gradient, we cannot preserve
+	///	the gradient over ROI or illuminant changes, so it remains a local change
 	if (target == 0) {
 		queue.cancelTasks(roi);
 		setGUIEnabled(false, TT_CLAMP_RANGE_IMG);
@@ -650,6 +652,7 @@ void MainWindow::clampNormUserRange()
 			this, SLOT(finishTask(bool)), Qt::QueuedConnection);
 		queue.push(taskEpilog);
 	}
+	*/
 }
 
 // todo: part of banddock
@@ -690,6 +693,8 @@ void MainWindow::initGraphsegUI()
 void MainWindow::runGraphseg(SharedMultiImgPtr input,
 							   const vole::GraphSegConfig &config)
 {
+	/*
+	// TODO: why disable GUI? Where is it enabled?
 	setGUIEnabled(false);
 	// TODO: should this be a commandrunner instead? arguable..
 	BackgroundTaskPtr taskGraphseg(new GraphsegBackground(
@@ -697,21 +702,26 @@ void MainWindow::runGraphseg(SharedMultiImgPtr input,
 	QObject::connect(taskGraphseg.get(), SIGNAL(finished(bool)), 
 		this, SLOT(finishGraphSeg(bool)), Qt::QueuedConnection);
 	queue.push(taskGraphseg);
+	*/
 }
 
 void MainWindow::finishGraphSeg(bool success)
 {
+	/*
 	if (success) {
-		/* add segmentation to current labeling */
+		// add segmentation to current labeling
 		emit alterLabelRequested(bandView->getCurLabel(),
 								 *(graphsegResult.get()), false);
+		// leave seeding mode for convenience
 		emit seedingDone();
 	}
+	*/
 }
 
 // TODO: move part of this to controller who obtains image data from imagemodel
 void MainWindow::startGraphseg()
 {
+	/*
 	vole::GraphSegConfig conf("graphseg");
 	conf.algo = (vole::graphsegalg)
 				graphsegAlgoBox->itemData(graphsegAlgoBox->currentIndex())
@@ -740,10 +750,11 @@ void MainWindow::startGraphseg()
 		img_lock.unlock();
 		runGraphseg(i, conf);
 	}
+	*/
 }
 
 #ifdef WITH_SEG_MEANSHIFT
-void MainWindow::initUnsupervisedSegUI()
+void MainWindow::initUnsupervisedSegUI(size_t size)
 {
 	usMethodBox->addItem("Meanshift", 0);
 #ifdef WITH_SEG_MEDIANSHIFT
@@ -763,11 +774,8 @@ void MainWindow::initUnsupervisedSegUI()
 	usBandwidthBox->addItem("fixed");
 	usBandwidthMethodChanged("adaptive");
 
-	{
-		SharedMultiImgBaseGuard guard(*image_lim);
-		usBandsSpinBox->setValue((*image_lim)->size());
-		usBandsSpinBox->setMaximum((*image_lim)->size());
-	}
+	usBandsSpinBox->setValue(size);
+	usBandsSpinBox->setMaximum(size);
 
 	// we do not expose the density estimation functionality
 	usInitWidget->hide();
@@ -935,7 +943,7 @@ void MainWindow::startUnsupervisedSeg(bool findKL)
 	// prepare input image
 	boost::shared_ptr<multi_img> input;
 	{
-		SharedMultiImgBaseGuard guard(*image_lim);
+/*TODO		SharedMultiImgBaseGuard guard(*image_lim);
 		assert(0 != &**image_lim);
 		// FIXME 2013-04-11 georg altmann:
 		// not sure what this code is really doing, but this looks like a problem:
@@ -944,6 +952,7 @@ void MainWindow::startUnsupervisedSeg(bool findKL)
 		// since there is no locking (unless multi_img does implicit copy on write?).
 		input = boost::shared_ptr<multi_img>(
 					new multi_img(**image_lim, roi)); // image data is not copied
+*/
 	}
 	int numbands = usBandsSpinBox->value();
 	bool gradient = usGradientCheckBox->isChecked();
@@ -985,7 +994,7 @@ void MainWindow::segmentationApply(std::map<std::string, boost::any> output) {
 	if (output.count("labels")) {
 		boost::shared_ptr<cv::Mat1s> labelMask = boost::any_cast< boost::shared_ptr<cv::Mat1s> >(output["labels"]);
 		// TODO: assert size?, emit signal for lm
-		setLabels(*labelMask);
+		// TODO setLabels(*labelMask);
 	}
 
 	if (output.count("findKL.K") && output.count("findKL.L")) {
@@ -1026,20 +1035,11 @@ void MainWindow::reshapeDock(bool floating)
 }
 */
 
-}
-
 void MainWindow::loadSeeds()
 {
-	int height;
-	int width;
-	{
-		SharedMultiImgBaseGuard guard(*image_lim);
-		height = (*image_lim)->height;
-		width = (*image_lim)->width;
-	}
-
 	IOGui io("Seed Image File", "seed image", this);
-	cv::Mat1s seeding = io.readFile(QString(), 0, height, width);
+	cv::Mat1s seeding = io.readFile(QString(), 0,
+									dimensions.height, dimensions.width);
 	if (seeding.empty())
 		return;
 
@@ -1065,18 +1065,18 @@ void MainWindow::screenshot()
 	io.writeFile(QString(), output);
 }
 
-void MainWindow::openContextMenu()
-{
-	delete contextMenu;
-	contextMenu = createPopupMenu();
-	contextMenu->exec(QCursor::pos());
-}
-
 QIcon MainWindow::colorIcon(const QColor &color)
 {
 	QPixmap pm(32, 32);
 	pm.fill(color);
 	return QIcon(pm);
+}
+
+void MainWindow::openContextMenu()
+{
+	delete contextMenu;
+	contextMenu = createPopupMenu();
+	contextMenu->exec(QCursor::pos());
 }
 
 void MainWindow::changeEvent(QEvent *e)

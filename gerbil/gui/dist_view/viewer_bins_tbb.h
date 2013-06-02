@@ -27,7 +27,7 @@ public:
 		const std::vector<cv::Rect> &sub = std::vector<cv::Rect>(),
 		const std::vector<cv::Rect> &add = std::vector<cv::Rect>(),
 		const cv::Mat1b &mask = cv::Mat1b(),
-		bool inplace = false, bool apply = true, cv::Rect targetRoi = cv::Rect(0, 0, 0, 0))
+		bool inplace = false, bool apply = true, cv::Rect targetRoi = cv::Rect())
 		: BackgroundTask(targetRoi), multi(multi), labels(labels), colors(colors),
 		illuminant(illuminant), args(args), context(context),
 		current(current), temp(temp), sub(sub), add(add), mask(mask), inplace(inplace), apply(apply) {}

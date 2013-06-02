@@ -13,12 +13,10 @@
 #include "ui_mainwindow.h"
 #include "docks/roidock.h"
 #include <shared_data.h>
-#include <background_task.h>
-#include <background_task_queue.h>
 #include <multi_img.h>
-#include <multi_img_tasks.h>
 #include <labeling.h>
-#include <illuminant.h>
+// TODO: should belong to a controller
+#include <model/illumination.h>
 #include <progress_observer.h>
 #include "commandrunner.h"
 #ifdef WITH_SEG_MEANSHIFT
@@ -40,16 +38,15 @@
 #include <opencv2/core/core.hpp>
 
 class IllumDock;
-class IllumModel;
 class Controller;
 
 class MainWindow : public QMainWindow, private Ui::MainWindow {
     Q_OBJECT
 public:
 	MainWindow(bool limitedMode = false);
+	void initUI(cv::Rect dimensions, size_t size);
+	void initSignals(Controller *chief);
 
-	const inline Illuminant & getIlluminant(int temp);
-	const inline std::vector<multi_img::Value> & getIlluminantC(int temp);
 	// TODO: used by Controller; hack until we have a resp. vc-controller
 	ViewerContainer* getViewerContainer() { return viewerContainer; }
 
@@ -65,7 +62,7 @@ public slots:
 	void setGUIEnabled(bool enable, TaskType tt = TT_NONE);
 	void finishGraphSeg(bool success);
 
-	void reshapeDock(bool floating);
+	// we probably remove this functionality void reshapeDock(bool floating);
 	void clearLabelOrSeeds();
 	void addToLabel();
 	void remFromLabel();
@@ -78,7 +75,6 @@ public slots:
 	void segmentationApply(std::map<std::string, boost::any>);
 
 	void bandsSliderMoved(int b);
-	void toggleLabels(bool toggle);
 
 	void usMethodChanged(int idx);
 	void usInitMethodChanged(int idx);
@@ -94,8 +90,6 @@ public slots:
 	void loadSeeds();
 	void selectLabel(int index);
 
-	void initiateROIChange();
-
 	void openContextMenu();
 
 	void screenshot();
@@ -104,6 +98,7 @@ public slots:
 	void debugRequestGUIEnabled(bool enable, TaskType tt);
 
 signals:
+	void specRescaleRequested(size_t bands);
 	void clearLabelRequested(short index);
 	void alterLabelRequested(short index, const cv::Mat1b &mask, bool negative);
 	void rgbRequested();
@@ -116,15 +111,15 @@ protected:
 	void runGraphseg(SharedMultiImgPtr input, const vole::GraphSegConfig &config);
 
 private:
-	void initUI(Controller *chief);
 	void initGraphsegUI();
 #ifdef WITH_SEG_MEANSHIFT
-	void initUnsupervisedSegUI();
+	void initUnsupervisedSegUI(size_t size);
 #endif
 	void initNormalizationUI();
 
 	IllumDock* illumDock;
-	IllumModel* illumModel;
+// TODO: should belong to a controller
+	IllumModel illumModel;
 
 #ifdef WITH_SEG_MEANSHIFT
 	CommandRunner *usRunner;
@@ -139,6 +134,8 @@ private:
 	boost::shared_ptr<cv::Mat1s> graphsegResult;
 
 	bool limitedMode;
+	// full image dimensions, used in loadSeeds()
+	cv::Rect dimensions;
 };
 
 #endif // MAINWINDOW_H

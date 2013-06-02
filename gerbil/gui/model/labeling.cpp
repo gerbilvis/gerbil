@@ -5,7 +5,6 @@
 
 LabelingModel::LabelingModel()
 {
-	setLabelColors(vole::Labeling::colors(2, true));
 }
 
 void LabelingModel::setDimensions(unsigned int height, unsigned int width)
@@ -51,7 +50,7 @@ void LabelingModel::setLabelColors(const std::vector<cv::Vec3b> &newColors,
 	colors.swap(col); // set colors, but also keep old ones around for below
 
 	if (!emitSignal)
-		break;
+		return;
 
 	/* when changed == false, only new colors were added
 	 * and most parts of the software do not care about new, unused colors */
@@ -65,13 +64,11 @@ void LabelingModel::setLabelColors(const std::vector<cv::Vec3b> &newColors,
 
 int LabelingModel::addLabel()
 {
-	int index = colors.count();
+	// we alwys have at least one background color
+	int index = std::max(colors.count(), 1);
 
 	// increment colors by 1
 	setLabelColors(vole::Labeling::colors(index + 1, true));
-
-	// select our new label for convenience
-	markerSelector->setCurrentIndex(index - 1);
 }
 
 void LabelingModel::alterLabel(short index, cv::Mat1b mask, bool negative)
@@ -79,7 +76,7 @@ void LabelingModel::alterLabel(short index, cv::Mat1b mask, bool negative)
 	int operation = 1; // add pixels to label
 	if (mask.empty()) {
 		operation = 0; // clear label
-		mask = (*labels == index);
+		mask = (labels == index);
 	} else if (negative) {
 		operation = -1; // remove pixels from label
 	}
@@ -87,7 +84,7 @@ void LabelingModel::alterLabel(short index, cv::Mat1b mask, bool negative)
 	// save old configuration for partial updates
 	cv::Mat1s oldLabels = labels.clone();
 
-	switch (clearaddsub) {
+	switch (operation) {
 	case 0:
 		// clear the label
 		labels.setTo(0, mask);
@@ -107,14 +104,14 @@ void LabelingModel::alterLabel(short index, cv::Mat1b mask, bool negative)
 	emit partialLabelUpdate(mask, oldLabels);
 }
 
-void LabelingModel::loadLabeling(QString filename)
+void LabelingModel::loadLabeling(const QString &filename)
 {
 	/* we are properly initialized with the image dimensions
 	 * so we take these frome our initialization */
 	int height = full_labels.rows;
 	int width = full_labels.cols;
 
-	IOGui io("Labeling Image File", "labeling image", this);
+	IOGui io("Labeling Image File", "labeling image");
 	cv::Mat input = io.readFile(filename, -1, height, width);
 	if (input.empty())
 		return;
@@ -123,11 +120,11 @@ void LabelingModel::loadLabeling(QString filename)
 	setLabels(labeling, true);
 }
 
-void LabelingModel::saveLabeling()
+void LabelingModel::saveLabeling(const QString &filename)
 {
 	vole::Labeling labeling(full_labels);
 	cv::Mat3b output = labeling.bgr();
 
-	IOGui io("Labeling As Image File", "labeling image", this);
-	io.writeFile(QString(), output);
+	IOGui io("Labeling As Image File", "labeling image");
+	io.writeFile(filename, output);
 }

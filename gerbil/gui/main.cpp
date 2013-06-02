@@ -13,6 +13,8 @@
 #include <iostream>
 #include <string>
 
+#include <tbb/task_scheduler_init.h>
+
 /** All OpenCV functions that are called from parallelized parts of gerbil
     have to be first executed in single-threaded environment. This is actually
     required only for functions that contain 'static const' variables, but to 
@@ -259,6 +261,11 @@ bool determine_limited(const std::pair<std::vector<std::string>, std::vector<mul
 
 int main(int argc, char **argv)
 {
+	/* for debugging reduce to one thread */
+	tbb::task_scheduler_init(1);
+
+	// start qt before we try showing dialogs or use QGLFormat
+	QApplication app(argc, argv);
 	init_opencv();
 	init_cuda();
 	if (!test_compatibility()) {
@@ -267,9 +274,6 @@ int main(int argc, char **argv)
 					 "requirements to launch Gerbil." << std::endl;
 		return 3;
 	}
-
-	// start qt before we try showing dialogs
-	QApplication app(argc, argv);
 
 	// get input file name
 	std::string filename;
@@ -291,7 +295,7 @@ int main(int argc, char **argv)
 	bool limited_mode = determine_limited(filelist);
 
 	// create controller
-	Controller chief(filename, limited_mode, labelfile);
+	Controller chief(filename, limited_mode);
 
 	// get optional labeling filename
 /*	TODO

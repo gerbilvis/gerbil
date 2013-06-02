@@ -40,7 +40,6 @@ public:
 public slots:
 	void refresh();
 	void changeCurrentLabel(int label);
-	void setLabels(cv::Mat1b l);
 	void updateLabels();
 	void commitLabelChanges();
 	void drawOverlay(const cv::Mat1b &mask);

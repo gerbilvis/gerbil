@@ -69,6 +69,7 @@ void multi_img_viewer::setType(representation type)
 void multi_img_viewer::toggleFold()
 {
 	if (!viewportGV->isHidden()) {
+		/** HIDE **/
 		GGDBGM(format("viewer %1% folding")%getType() << endl);
 		emit folding();
 		viewportGV->setHidden(true);
@@ -83,6 +84,7 @@ void multi_img_viewer::toggleFold()
 		viewport->shuffleIdx.clear();
 		viewport->vb.destroy();
 	} else {
+		/** SHOW **/
 		GGDBGM(format("viewer %1% unfolding")%getType() << endl);
 		emit folding();
 		viewportGV->setShown(true);
@@ -192,21 +194,12 @@ void multi_img_viewer::setTitle(representation type, multi_img::Value min, multi
 
 void multi_img_viewer::setImage(SharedMultiImgPtr img, cv::Rect roi)
 {
+	image = img;
+	//GGDBGM(format("image.get()=%1%\n") %image.get());
+
 	SharedDataLock ctxlock(viewport->ctx->mutex);
 	ViewportCtx args = **viewport->ctx;
 	ctxlock.unlock();
-
-	image = img;
-	assert(image);
-
-	// TODO: test if it is enough to do this here
-	{
-		SharedDataLock imglock(image->mutex);
-		if (viewport->selection > (*image)->size())
-			viewport->selection = 0;
-	}
-
-	//GGDBGM(format("image.get()=%1%\n") %image.get());
 
 	args.type = type;
 	args.ignoreLabels = ignoreLabels;
@@ -369,14 +362,14 @@ void multi_img_viewer::updateLabelsPartially(cv::Mat1b mask, cv::Mat1s old)
 
 void multi_img_viewer::updateLabels()
 {
+	if (!image.get())
+		return;
+
 	SharedDataLock ctxlock(viewport->ctx->mutex);
 	ViewportCtx args = **viewport->ctx;
 	ctxlock.unlock();
 
 	args.wait.fetch_and_store(1);
-
-	if (!image.get())
-		return;
 
 	BackgroundTaskPtr taskBins(new ViewerBinsTbb(
 		image, labels, control->labelColors, illuminant, args, viewport->ctx,
@@ -490,24 +483,9 @@ void multi_img_viewer::overlay(int x, int y)
 
 void multi_img_viewer::updateLabelColors(QVector<QColor> colors, bool changed)
 {
-	SharedDataLock ctxlock(viewport->ctx->mutex);
-	ViewportCtx args = **viewport->ctx;
-	ctxlock.unlock();
-
-	args.wait.fetch_and_store(1);
-
 	control->updateLabelColors(colors);
-	if (changed) {
-		if (!image.get())
-			return;
-
-		BackgroundTaskPtr taskBins(new ViewerBinsTbb(
-			image, labels, control->labelColors, illuminant, args,
-									   viewport->ctx, viewport->sets));
-		QObject::connect(taskBins.get(), SIGNAL(finished(bool)),
-						 this, SLOT(binningUpdate(bool)), Qt::QueuedConnection);
-		queue->push(taskBins);
-	}
+	if (changed)
+		updateLabels();
 }
 
 void multi_img_viewer::toggleLabeled(bool toggle)

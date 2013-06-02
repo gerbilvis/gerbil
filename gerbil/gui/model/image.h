@@ -3,6 +3,7 @@
 
 #include <shared_data.h>
 #include <multi_img_tasks.h>
+#include <background_task_queue.h>
 
 #include <QObject>
 #include <QMap>
@@ -27,8 +28,12 @@ class ImageModel : public QObject
 	Q_OBJECT
 
 	struct payload {
-		payload(SharedMultiImgPtr i = SharedMultiImgPtr())
-			: image(i), norm(MultiImg::NORM_OBSERVED), normRange(
+		/* always initialize image, as the SharedData will be passed around
+		 * and used to enqueue tasks even before the image is created the
+		 * first time. */
+		payload()
+			: image(new SharedMultiImgBase(new multi_img())),
+			  normMode(MultiImg::NORM_OBSERVED), normRange(
 				new SharedData<std::pair<multi_img::Value, multi_img::Value> >(
 				  new std::pair<multi_img::Value, multi_img::Value>(0, 0)))
 		{}
@@ -45,17 +50,26 @@ class ImageModel : public QObject
 	};
 
 public:
-	explicit ImageModel(bool limitedMode);
+	explicit ImageModel(BackgroundTaskQueue &queue, bool limitedMode);
 	~ImageModel();
 
+	size_t getSize();
 	const cv::Rect& getROI() { return roi; }
+	SharedMultiImgPtr getImage(representation type) { return map[type]->image; }
+
+	// delete ROI information also in images
+	void invalidateROI();
 
 	/** @return dimensions of the image as a rectangle */
-	cv::Rect loadImage(QString filename);
-	void spawn(const cv::Rect& roi, bool reuse);
+	cv::Rect loadImage(const std::string &filename);
+	/** @arg bands number of bands needed (only effective for IMG type) */
+	void spawn(representation type, const cv::Rect& roi, size_t bands = -1);
 	
+	// for easy looping over all valid representations
+	QMap<int, representation> representations;
+
 public slots:
-	void computeBand(representation repr, int dim);
+	void computeBand(representation type, int dim);
 	void computeRGB();
 	void postComputeRGB(bool success);
 
@@ -81,6 +95,13 @@ private:
 	// rgb representation to be used for ROI selection
 	/* this is CMF currently, could be something else later on */
 	qimage_ptr full_rgb;
+
+	BackgroundTaskQueue &queue;
+
+	/* we need to keep this guy around as we cannot release ownership from a
+	 * shared_ptr.
+	 */
+	multi_img::ptr imgHolder;
 };
 
 #endif // MODEL_IMAGE_H

@@ -35,7 +35,7 @@ class BackgroundTask {
 #endif
 
 public:
-	BackgroundTask(cv::Rect targetRoi = cv::Rect(0, 0, 0, 0)) 
+	BackgroundTask(cv::Rect targetRoi = cv::Rect()) 
 		: terminated(false), success(false), targetRoi(targetRoi) {}
 	virtual ~BackgroundTask() {}
 
