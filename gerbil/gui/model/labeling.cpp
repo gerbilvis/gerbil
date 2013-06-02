@@ -69,6 +69,9 @@ int LabelingModel::addLabel()
 
 	// increment colors by 1
 	setLabelColors(vole::Labeling::colors(index + 1, true));
+
+	// return index of new label (count - 1)
+	return index;
 }
 
 void LabelingModel::alterLabel(short index, cv::Mat1b mask, bool negative)
