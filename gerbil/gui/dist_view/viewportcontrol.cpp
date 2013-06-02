@@ -129,16 +129,18 @@ void ViewportControl::timerEvent(QTimerEvent *e)
 			update = true;
 		}
 	} else {
-		if (pos.x() + width() > 9.f) { // TODO: check if it worked
-			pos.setX(std::max(pos.x() - (qreal)60.f, (qreal)10.f - width()));
+		if (pos.x() > 10.f - width()) {
+			pos.setX(std::max(pos.x() - (qreal)60.f, (qreal)(10.f - width())));
 			update = true;
 		}
 	}
 
-	if (update)
+	if (update) {
 		viewport->controlItem->setPos(pos);
-	else
+//		std::cerr << viewport->controlItem->pos().x() + width() << std::endl;
+	} else {
 		killTimer(e->timerId()); // no more updates
+	}
 }
 
 void ViewportControl::changeEvent(QEvent *e)

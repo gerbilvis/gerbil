@@ -205,7 +205,7 @@ void ViewerContainer::setActiveViewer(int repr)
 	}
 }
 
-void ViewerContainer::reconnectViewer(representation repr)
+void ViewerContainer::connectViewer(representation repr)
 {
 	GGDBGM(format("representation %1%\n") % repr);
 	multi_img_viewer *viewer = vm.value(repr);
@@ -450,20 +450,6 @@ void ViewerContainer::initUi()
 		multi_img_viewer *viewer1 = vl[i];
 		Viewport *viewport1 = viewer1->getViewport();
 
-		// connect pass through signals from BandView
-		//GGDBGM(boost::format("viewer %1% isPayloadHidden()=%2%\n")
-		//					%i %viewer1->isPayloadHidden());
-		if(!viewer1->isPayloadHidden()) {
-			connect(this, SIGNAL(viewportsKillHover()),
-					viewport1, SLOT(killHover()));
-			connect(this, SIGNAL(viewersOverlay(int,int)),
-					viewer1, SLOT(overlay(int,int)));
-			connect(this, SIGNAL(viewersSubPixels(std::map<std::pair<int,int>,short>)),
-					viewer1, SLOT(subPixels(std::map<std::pair<int,int>,short>)));
-			connect(this, SIGNAL(viewersAddPixels(std::map<std::pair<int,int>,short>)),
-					viewer1, SLOT(addPixels(std::map<std::pair<int,int>,short>)));
-		}
-
 		// connect pass through signals from markButton
 		connect(this, SIGNAL(viewersToggleLabeled(bool)),
 				viewer1, SLOT(toggleLabeled(bool)));
@@ -474,6 +460,9 @@ void ViewerContainer::initUi()
 		// todo make this globally consistent
 		connect(viewer1, SIGNAL(finishTask(bool)),
 				this, SLOT(finishTask(bool)));
+
+		connect(viewer1, SIGNAL(finishedCalculation(representation)),
+				this, SLOT(connectViewer(representation)));
 
 		/* following stuff is used to pass to/from MainWindow / Controller */
 

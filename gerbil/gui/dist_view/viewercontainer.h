@@ -56,7 +56,7 @@ public slots:
 	void setActiveViewer(int repri);
 
 	// TODO rename (reconnectViewer ?)
-	void reconnectViewer(representation repr);
+	void connectViewer(representation repr);
 	void disconnectViewer(representation repr);
 
 	void finishTask(bool success);

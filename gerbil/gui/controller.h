@@ -19,8 +19,6 @@ public:
 	~Controller();
 	
 signals:
-	// multispectral image of type is up-to-date
-	void finishedCalculation(representation type);
 
 public slots:
 	/** requests (from GUI) */
@@ -56,9 +54,6 @@ public slots:
 	// the other side of enableGUILater
 	void enableGUINow(bool forreal);
 	void disableGUI(TaskType tt = TT_NONE);
-
-	// re-emit signal with correct representation attached
-	void processFinishedCalculation(bool success);
 
 protected:
 	// connect models with gui

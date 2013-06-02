@@ -366,7 +366,9 @@ void BandView::commitLabelChanges()
 		for (it = uncommitedLabels.begin(); it != uncommitedLabels.end(); ++it)
 			labels(it->first.second, it->first.first) = it->second;
 		emit addPixels(uncommitedLabels);
+
 		uncommitedLabels.clear();
+		labelTimer.stop();
 	}
 }
 

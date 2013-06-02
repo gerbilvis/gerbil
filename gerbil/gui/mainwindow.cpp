@@ -331,15 +331,10 @@ void MainWindow::setGUIEnabled(bool enable, TaskType tt)
 
 	roiDock->setEnabled(enable || tt == TT_SELECT_ROI);
 
-	if (tt == TT_SELECT_ROI) {
-		/* TODO: better alternative: flush uncommited labels on disable?! */
-		if (enable) {
-			connect(&bandView->labelTimer, SIGNAL(timeout()),
-				bandView, SLOT(commitLabelChanges()));
-		} else {
-			disconnect(&bandView->labelTimer, SIGNAL(timeout()),
-				bandView, SLOT(commitLabelChanges()));
-		}
+	if (tt == TT_SELECT_ROI && (!enable)) {
+		/* TODO: check if this is enough to make sure no label changes
+		 * happen during ROI recomputation */
+		bandView->commitLabelChanges();
 	}
 }
 

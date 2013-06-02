@@ -80,6 +80,7 @@ signals:
 	void setGUIEnabled(bool enable, TaskType tt);
 	void toggleViewer(bool enable, representation type);
 	void finishTask(bool success);
+	void finishedCalculation(representation type);
 
 protected:
     void changeEvent(QEvent *e);

@@ -401,6 +401,10 @@ void multi_img_viewer::binningRangeUpdate(bool updated)
 				 (*viewport->ctx)->maxval);
 	}
 	viewport->rebuild();
+
+	/* we have done our binning range update, so we expect that we can now
+	 * reconnect again. */
+	emit finishedCalculation(type);
 }
 
 /* create mask from single-band user selection */

@@ -27,8 +27,6 @@ Controller::Controller(const std::string &filename, bool limited_mode)
 	window->initSignals(this);
 	initImage();
 	initLabeling();
-	connect(this, SIGNAL(finishedCalculation(representation)),
-			window->getViewerContainer(), SLOT(reconnectViewer(representation)));
 
 	// MODEL To be removed when refactored
 	// into model classes.
@@ -157,8 +155,8 @@ void Controller::updateROI(bool reuse, cv::Rect roi, size_t bands)
 	/** THIRD STEP: update payload */
 	/* this has to be done in the right order!
 	 * IMG before all others, GRAD before GRADPCA
-	 * it is implicit here but we would like this knowledge to be part of the
-	 * logic of imagemodel
+	 * it is implicit here but we would like this knowledge to be part of
+	 * image model's logic
 	 */
 	foreach (representation i, im.representations) {
 
@@ -171,39 +169,15 @@ void Controller::updateROI(bool reuse, cv::Rect roi, size_t bands)
 		} else {
 			window->getViewerContainer()->setImage(i, im.getImage(i), roi);
 		}
-
-		/* task that signals everything is done */
-		BackgroundTaskPtr epilog(new BackgroundTask(roi));
-		// set in our map so we will know association later
-		taskmap[epilog.get()] = i;
-		// now we can connect the signal
-		QObject::connect(epilog.get(), SIGNAL(finished(bool)),
-			this, SLOT(processFinishedCalculation(bool)), Qt::QueuedConnection);
-		// and finally enqueue
-		queue.push(epilog);
 	}
-}
 
-void Controller::processFinishedCalculation(bool success)
-{
-	if (success) {
-		if (!taskmap.contains(sender()))
-			return;
-		representation type = taskmap.value(sender());
-		std::cerr << "finished: " << type << std::endl;
-		emit finishedCalculation(type);
+	// TODO: better method to make sure values in normalizationDock are correct
+	// that means as soon as we have these values, report them directly to the
+	// GUI.
+	/*if (type == GRAD) {
+		emit normTargetChanged(true);
+	}*/
 
-		/* TODO:
-		 * I think this is done to update the min, max values presented in the
-		 * respective GUI. and only at the "end" of the computing chain, which
-		 * is when gradient is computed. this is evil.
-		 * better: update the explicit information directly by a signal coming
-		 * from the model to the GUI as soon as these values change
-		 */
-		/*if (type == GRAD) {
-			emit normTargetChanged(true);
-		}*/
-	}
 }
 
 /** Labeling management **/
