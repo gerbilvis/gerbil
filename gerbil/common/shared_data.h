@@ -167,7 +167,7 @@ private:
 
 typedef SharedData<multi_img_base> SharedMultiImgBase;
 // Guard type that locks the SharedData mutex
-typedef boost::lock_guard<SharedData<multi_img_base> >  SharedMultiImgBaseGuard;
+typedef boost::lock_guard<SharedData<multi_img_base> > SharedMultiImgBaseGuard;
 
 // pointer to SharedData<multi_img_base> which really behaves like SharedData<multi_img>, see above
 /* TODO: we discussed that this could be a SharedMultiImgBase const* instead

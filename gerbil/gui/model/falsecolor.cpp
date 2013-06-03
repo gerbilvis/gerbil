@@ -1,4 +1,3 @@
-
 #include "falsecolor.h"
 
 #include <background_task_queue.h>
@@ -55,39 +54,37 @@
 // Langfristige Frage: Sind QImages oder QPixmaps interessant? (oder beides), was davon soll nur 1x im model sein?
 //  \-> "QPixmaps cannot be directly shared between threads" -> model sollte aber im *einen* GUI-Thread sein.
 
-FalseColor::FalseColor(SharedMultiImgPtr shared_img, BackgroundTaskQueue queue)
-	: shared_img(shared_img), queue(queue)
-//FalseColor::FalseColor(const multi_img &img, BackgroundTaskQueue queue) : img(&img), queue(queue)
+FalseColorModel::FalseColorModel(BackgroundTaskQueue *queue)
+	: queue(queue)
 {
 	for (int i = 0; i < COLSIZE; ++i) {
 #ifndef WITH_EDGE_DETECT
 		if (i == SOM)
 			continue;
 #endif
-		payload *p = new payload;
+		payload *p = new payload();
 		map.insert((coloring)i, p);
 	}
-
-	reset();
 }
 
-void FalseColor::setMultiImg(SharedMultiImgPtr shared_img)
-//void FalseColor::setMultiImg(const multi_img *img)
+void FalseColorModel::setMultiImg(representation type, SharedMultiImgPtr shared_img)
 {
-	this->shared_img = shared_img;
-	//this->img = img;
-
-	reset();
+	// in the future, we might be interested in the other ones as well.
+	if (type == IMG) {
+		this->shared_img = shared_img;
+		reset();
+	}
 }
 
-FalseColor::~FalseColor()
+FalseColorModel::~FalseColorModel()
 {
-	terminateTasksDeleteRunners();
+	cancel();
 }
 
-void FalseColor::reset()
+void FalseColorModel::reset()
 {
-	terminateTasksDeleteRunners();
+	// in case we have some computation going on
+	cancel();
 
 	// reset all images
 	PayloadList l = map.values();
@@ -102,15 +99,15 @@ void FalseColor::reset()
 	}
 }
 
-void FalseColor::terminateTasksDeleteRunners()
+void FalseColorModel::cancel()
 {
+	// terminate command runners
 	emit terminateRunners();
 
-	// TODO: empty job queue & wait until it's done, else we could get a finished-Signal after resetting
+	// tasks in queue are expected to be cancelled by a controller at this point
 
 	// wait & destroy all runners
-	PayloadList l = map.values();
-	foreach(payload *p, l) {
+	foreach (payload *p, map) {
 		if (p->runner != NULL) {
 			p->runner->wait();
 			delete p->runner;
@@ -119,11 +116,11 @@ void FalseColor::terminateTasksDeleteRunners()
 	}
 }
 
-void FalseColor::createRunner(coloring type)
+void FalseColorModel::createRunner(coloring type)
 {
 	payload *p = map.value(type);
-	assert(p != NULL);
-	assert(p->runner == NULL); // runners are only deleted in reset(). if reset() was not called and the
+	assert(p != NULL && p->runner == NULL);
+	// runners are only deleted in reset(). if reset() was not called and the
 	// runner exists, the image has been calculated already, so there is no reason to call craeteRunner
 
 	// init runner & command
@@ -157,7 +154,7 @@ void FalseColor::createRunner(coloring type)
 }
 
 
-void FalseColor::calculateForeground(coloring type)
+void FalseColorModel::calculateForeground(coloring type)
 {
 	payload *p = map.value(type);
 	assert(p != NULL);
@@ -181,15 +178,19 @@ void FalseColor::calculateForeground(coloring type)
 	}
 	else {
 		createRunner(type);
-		cv::Mat3b mat = (cv::Mat3b)(((gerbil::RGB *)p->runner->cmd)->execute(**shared_img) * 255.0f);
-		//cv::Mat3b mat = (cv::Mat3b)(((gerbil::RGB *)p->runner->cmd)->execute(*img) * 255.0f);
-		p->img = vole::Mat2QImage(mat);
+		cv::Mat3b result;
+		{
+			SharedMultiImgBaseGuard guard(*shared_img);
+			result = (cv::Mat3b)(((gerbil::RGB *)p->runner->cmd)->execute(**shared_img) * 255.0f);
+			//cv::Mat3b mat = (cv::Mat3b)(((gerbil::RGB *)p->runner->cmd)->execute(*img) * 255.0f);
+		}
+		p->img = vole::Mat2QImage(result);
 	}
 	p->calcInProgress = false;
 	emit loadComplete(p->img, type);
 }
 
-void FalseColor::calculateBackground(coloring type)
+void FalseColorModel::calculateBackground(coloring type)
 {
 	payload *p = map.value(type);
 	assert(p != NULL);
@@ -211,23 +212,30 @@ void FalseColor::calculateBackground(coloring type)
 			shared_img, mat3f_ptr(new SharedData<cv::Mat3f>(new cv::Mat3f)), p->calcImg));
 		QObject::connect(taskRgb.get(), SIGNAL(finished(bool)),
 						 this, SLOT(handleFinishedQueueTask(bool)), Qt::QueuedConnection);
-		queue.push(taskRgb);
+		queue->push(taskRgb);
 	}
 	else {
 		createRunner(type);
+		// TODO: where do we pass image data?
+		/* note that this is an operation that cannot run concurrently with
+		 * other tasks that would invalidate (swap) the image data.
+		 * Make sure to cancel this before enqueueing tasks that invalidate
+		 * the image data! */
 		p->runner->start();
 	}
 }
 
 
-// Only CMF tasks are calculated in the queue
-void FalseColor::handleFinishedQueueTask(bool success)
+void FalseColorModel::handleFinishedQueueTask(bool success)
 {
+	// Only CMF tasks are calculated in the queue
 	coloring type = CMF;
 	payload *p = map.value(type);
 	assert(p != NULL);
+	p->calcInProgress = false;
 
-	// TODO: wenn !success evtl wieder anstossen... eher nicht, das sollte eig nur passieren, wenn reset() aufgerufen wird...
+	if (!success)
+		return;
 
 	// TODO: vom "tmp"-member (calcImg) in eigtl. var (img) "kopieren"
 	{
@@ -236,14 +244,11 @@ void FalseColor::handleFinishedQueueTask(bool success)
 		delete p->calcImg->swap(new QImage); // TODO: locks, empty the reference - how is it done correctly?
 	}
 
-	p->calcInProgress = false;
 	emit loadComplete(p->img, type);
 }
 
-void FalseColor::handleRunnerSuccess(std::map<std::string, boost::any> output)
+void FalseColorModel::handleRunnerSuccess(std::map<std::string, boost::any> output)
 {
-	// TODO: This will lead to problems, if we need to separate between e.g. img_pca and grad_pca,
-	// because RGB cannot (and should not be able to) differentiate between the two...
 	coloring type;
 	switch (boost::any_cast<gerbil::rgbalg>(output["algo"])) {
 	case gerbil::COLOR_XYZ:

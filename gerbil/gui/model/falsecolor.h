@@ -1,6 +1,8 @@
-#ifndef FALSECOLOR_H
-#define FALSECOLOR_H
+#ifndef MODEL_FALSECOLOR_H
+#define MODEL_FALSECOLOR_H
 
+// for representations
+#include "model/image.h"
 #include <background_task_queue.h>
 #include <commandrunner.h>
 #include <rgb.h>
@@ -18,7 +20,7 @@
 // Each request sends a loadComplete signal to ALL connected slots.
 // use QImage.cacheKey() to see if the image was changed
 
-class FalseColor : public QObject
+class FalseColorModel : public QObject
 {
 	Q_OBJECT
 
@@ -30,6 +32,8 @@ class FalseColor : public QObject
 	};
 
 	struct payload {
+		payload() : runner(0) {}
+
 		CommandRunner *runner;
 		QImage img;
 		qimage_ptr calcImg;  // the background task swaps its result in this variable, in taskComplete, it is copied to img & cleared
@@ -40,12 +44,14 @@ class FalseColor : public QObject
 	typedef QMap<coloring, payload*> PayloadMap;
 
 public:
-	FalseColor(SharedMultiImgPtr shared_img, const BackgroundTaskQueue queue);
-	//FalseColor(const multi_img& img, const BackgroundTaskQueue queue);
-	~FalseColor();
+	/* construct model without image data. Make sure to call setMultiImg()
+	 * before doing any other operations with this object.
+	 */
+	FalseColorModel(BackgroundTaskQueue *queue);
+	~FalseColorModel();
 
 	// calls reset()
-	void setMultiImg(SharedMultiImgPtr img);
+	void setMultiImg(representation type, SharedMultiImgPtr img);
 	//void setMultiImg(const multi_img* img);
 
 	// resets current true / false color representations
@@ -72,12 +78,12 @@ private:
 	void createRunner(coloring type);
 
 	// terminates all (queue and commandrunner) tasks and waits until the terminate is complete
-	void terminateTasksDeleteRunners();
+	void cancel();
 
 	SharedMultiImgPtr shared_img; // not const
 	//const multi_img *img; // currently, the multi_img may not be const, as the tasks expect a non-const multi_img input. this should be changed.
 	PayloadMap map;
-	BackgroundTaskQueue &queue;
+	BackgroundTaskQueue *queue;
 };
 
-#endif // FALSECOLOR_H
+#endif // MODEL_FALSECOLOR_H

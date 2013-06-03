@@ -35,7 +35,7 @@ const unsigned int Viewport::spectrumRenderStep  = 10000;
 const unsigned int Viewport::highlightRenderStep = 10000;
 
 Viewport::Viewport(ViewportControl *control, QGLWidget *target)
-	: target(target),
+	: target(target), width(0), height(0),
 	  ctx(new SharedData<ViewportCtx>(new ViewportCtx())),
 	  sets(new SharedData<std::vector<BinSet> >(new std::vector<BinSet>())),
 	  selection(0), hover(-1), limiterMode(false),

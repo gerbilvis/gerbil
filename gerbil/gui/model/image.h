@@ -23,33 +23,48 @@ enum representation {
 // representation in debug output
 std::ostream &operator<<(std::ostream& os, const representation& r);
 
+class ImageModelPayload : public QObject {
+	Q_OBJECT
+
+public:
+	/* always initialize image, as the SharedData will be passed around
+	 * and used to enqueue tasks even before the image is created the
+	 * first time. */
+	ImageModelPayload(representation type)
+		: type(type), image(new SharedMultiImgBase(new multi_img())),
+		  normMode(MultiImg::NORM_OBSERVED), normRange(
+			new SharedData<std::pair<multi_img::Value, multi_img::Value> >(
+			  new std::pair<multi_img::Value, multi_img::Value>(0, 0)))
+	{}
+
+	// the type we have
+	representation type;
+
+	// multispectral image data
+	SharedMultiImgPtr image;
+
+	// normalization mode and range
+	MultiImg::NormMode normMode;
+	data_range_ptr normRange;
+
+	// cached single bands
+	QMap<int, QPixmap> bands;
+
+public slots:
+	// connect the corresponding task's finishing with this slot
+	void propagateFinishedCalculation(bool success);
+
+signals:
+	void newImageData(representation type, SharedMultiImgPtr image);
+};
+
 class ImageModel : public QObject
 {
 	Q_OBJECT
 
-	struct payload {
-		/* always initialize image, as the SharedData will be passed around
-		 * and used to enqueue tasks even before the image is created the
-		 * first time. */
-		payload()
-			: image(new SharedMultiImgBase(new multi_img())),
-			  normMode(MultiImg::NORM_OBSERVED), normRange(
-				new SharedData<std::pair<multi_img::Value, multi_img::Value> >(
-				  new std::pair<multi_img::Value, multi_img::Value>(0, 0)))
-		{}
-
-		// multispectral image data
-		SharedMultiImgPtr image;
-
-		// normalization mode and range
-		MultiImg::NormMode normMode;
-		data_range_ptr normRange;
-
-		// cached single bands
-		QMap<int, QPixmap> bands;
-	};
-
 public:
+	typedef ImageModelPayload payload;
+
 	explicit ImageModel(BackgroundTaskQueue &queue, bool limitedMode);
 	~ImageModel();
 
@@ -76,6 +91,7 @@ public slots:
 signals:
 	void bandUpdate(QPixmap band, QString description);
 	void rgbUpdate(QPixmap rgb);
+	void imageUpdate(representation type, SharedMultiImgPtr image);
 
 private:
 	// helper to spawn()

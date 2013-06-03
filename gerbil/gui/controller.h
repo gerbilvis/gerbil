@@ -3,6 +3,7 @@
 
 #include "model/image.h"
 #include "model/labeling.h"
+#include "model/falsecolor.h"
 #include "mainwindow.h"
 #include <background_task.h>
 #include <background_task_queue.h>
@@ -42,6 +43,9 @@ public slots:
 	// label colors added/changed
 	void propagateLabelingChange(const QVector<QColor> &colors, bool changed);
 
+	// update image data in docks (to be moved to dockcontroller)
+	void docksUpdateImage(representation type, SharedMultiImgPtr image);
+
 	/** internal management (maybe make protected) */
 	/* this function enqueues an empty task that will signal when all previous
 	 * tasks are finished. the signal will trigger enableGUINow, and the
@@ -75,6 +79,10 @@ protected:
 
 	// labeling model stores pixel/label associations and label color codes
 	LabelingModel lm;
+
+	/* false color model generates and stores RGB representations of
+	 * multispectral data */
+	FalseColorModel fm;
 
 	// main window (or gui slave)
 	MainWindow *window;

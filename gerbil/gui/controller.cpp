@@ -5,7 +5,7 @@
 #include <cstdlib> // for exit()
 
 Controller::Controller(const std::string &filename, bool limited_mode)
-	: im(queue, limited_mode), queuethread(0)
+	: im(queue, limited_mode), fm(&queue), queuethread(0)
 {
 	// load image
 	cv::Rect dimensions = im.loadImage(filename);
@@ -76,6 +76,8 @@ void Controller::initImage()
 			window, SLOT(changeBand(QPixmap, QString)));
 	connect(&im, SIGNAL(rgbUpdate(QPixmap)),
 			window, SLOT(processRGB(QPixmap)));
+	connect(&im, SIGNAL(imageUpdate(representation,SharedMultiImgPtr)),
+			this, SLOT(docksUpdateImage(representation,SharedMultiImgPtr)));
 }
 
 void Controller::spawnROI(const cv::Rect &roi)
@@ -94,6 +96,8 @@ void Controller::spawnROI(const cv::Rect &roi)
 		 * desired configuration, so we will recompute from scratch */
 		reuse = false;
 	}
+	// also cancel CommandRunners
+	fm.reset();
 
 	disableGUI(TT_SELECT_ROI);
 	// TODO: check
@@ -225,6 +229,18 @@ void Controller::addLabel()
 
 	// select our new label for convenience
 	window->selectLabel(index);
+}
+
+/** DOCK stuff (to be moved to DockController */
+void Controller::docksUpdateImage(representation type, SharedMultiImgPtr image)
+{
+	/* first make sure models have access to data */
+	fm.setMultiImg(type, image);
+
+	/* conservative approach: do not initiate calculation tasks here,
+	 * just invalidate data in the GUI (which may lead to initiating tasks)
+	 */
+	// TODO: if falsecolorDock is shown, trigger re-calculation of falsecolor image
 }
 
 /** Tasks and queue thread management */

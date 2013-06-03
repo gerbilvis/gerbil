@@ -20,7 +20,12 @@ ImageModel::ImageModel(BackgroundTaskQueue &queue, bool lm)
 {
 	for (int i = 0; i < REPSIZE; ++i) {
 		representations[i] = (representation)i;
-		map.insert((representation)i, new payload());
+		map.insert((representation)i, new payload((representation)i));
+	}
+
+	foreach (payload *p, map) {
+		connect(p, SIGNAL(newImageData(representation,SharedMultiImgPtr)),
+				this, SIGNAL(imageUpdate(representation,SharedMultiImgPtr)));
 	}
 }
 
@@ -74,6 +79,15 @@ void ImageModel::invalidateROI()
 		SharedDataLock lock(p->image->mutex);
 		(*(p->image))->roi = roi;
 	}
+}
+
+void ImageModel::payload::propagateFinishedCalculation(bool success)
+{
+	if (!success)
+		return;
+
+	// signal new image data
+	emit newImageData(type, image);
 }
 
 void ImageModel::spawn(representation type, const cv::Rect &newROI, size_t bands)
@@ -158,6 +172,12 @@ void ImageModel::spawn(representation type, const cv::Rect &newROI, size_t bands
 			map[GRAD]->image, map[GRADPCA]->image, 0, roi));
 		queue.push(taskPca);
 	}
+
+	// emit signal after all tasks are finished and fully updated data available
+	BackgroundTaskPtr taskEpilog(new BackgroundTask(roi));
+	QObject::connect(taskEpilog.get(), SIGNAL(finished(bool)),
+					 map[type], SLOT(propagateFinishedCalculation(bool)));
+	queue.push(taskEpilog);
 }
 
 void ImageModel::computeBand(representation type, int dim)
