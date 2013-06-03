@@ -6,53 +6,55 @@
 #include <qtopencv.h>
 #include <rgb.h>
 #include <shared_data.h>
-
-#include <tasks/rgbtbb.h> // TODO: mit pfad?
+#include <tasks/rgbtbb.h>
 
 #include <QImage>
 #include <opencv2/core/core.hpp>
 
 // TODO:
-// reset() -> empty job queue - wie?
-// was passiert mit finished-Signalen, die schon abgeschickt, aber noch nicht bearbeitet wurden?
-// was passiert, wenn reset aus setMultiImg aufgerufen wird, aber bilder bereits angefragt sind?
-//  \-> momentan wird der runner abgebrochen, das widget bekommt davon aber nichts mit und wartet ewig
-//  \-> cancelled signal oder sowas? dann kann das widget neu anfragen, falls das bild noch benoetigt wird...
+// was passiert mit finished-Signalen, die schon abgeschickt, aber noch nicht
+//      bearbeitet wurden?
+// was passiert, wenn reset aus setMultiImg aufgerufen wird, aber bilder
+//      bereits angefragt sind?
+//  \-> momentan wird der runner abgebrochen, das widget bekommt davon aber
+//      nichts mit und wartet ewig
+//  \-> cancelled signal oder sowas? dann kann das widget neu anfragen, falls
+//      das bild noch benoetigt wird...
 
 // commandrunner.cpp
 //  \-> why is abort not synchronized in any way?
 
 // RGB:
-//  \-> RGB hat Boost momentan als optional dependency, vole braucht sie nicht, wenn man die
-//      Funktion mit boost parameter verwenden kann, dann hat man auch Boost
-//      Soll das wirklich optional bleiben?
+//  \-> RGB hat Boost momentan als optional dependency, vole braucht sie nicht,
+//      wenn man die Funktion mit boost parameter verwenden kann, dann hat man
+//      auch Boost - soll das wirklich optional bleiben?
 //  \-> progressUpdate() -> PCA Werte anpassen, mehr updates?, SOM einbauen,
 //		XYZ verwendet multi_img methode und kann somit kein update aufrufen
-//  \-> Im output speichern, welcher algorithmus berechnet wurde, ist nicht gerade toll...
-//       \-> fuers RGB modul wuerde es besser passen, wenn model auch mit gerbil::rgbalg arbeiten wuerde...
-//  \-> wie krieg ich den header zum compilieren, eig mit class ProgressObserver, namespace?
+//  \-> Im output speichern, welcher algorithmus berechnet wurde, ist nicht
+//      gerade toll...
+//       \-> fuers RGB modul wuerde es besser passen, wenn model auch mit
+//           gerbil::rgbalg arbeiten wuerde...
+//      Alternative: QSignalMapper, passt gut zum enum, der kann aber nur
+//           Signale ohne Parameter
+//       \-> Wenn das Ergebnis im Parameter uebergeben wird geht's nicht
+//       \-> output map im CommandRunner speichern? -> parameterloses signal
+//  \-> wie kompiliert der header ohne .h datei? eig per class ProgressObs;...
 
-// Wie funktioniert der Swap Lock genau, siehe SharedDataSwapLock Versuch ganz unten
-// Alternative: QSignalMapper, passt gut zum enum, der kann aber nur Signale ohne Parameter
-//  \-> Wenn das Ergebnis im Parameter uebergeben wird geht's nicht
-//  \-> Evtl die output map im CommandRunner speichern?
+// if a CommandRunner currently fails, this type of image can not be calculated
+// until reset() is called
 
 
 // Long term TODOs:
+// Langfristige Frage: Sind QImages oder QPixmaps interessant? (oder beides),
+//      was davon soll nur 1x im model sein?
+//  \-> "QPixmaps cannot be directly shared between threads"
+//       \-> model sollte aber im *einen* GUI-Thread sein.
+
 // "init rgb.configs, if non default setup is neccessary"
 
 // sichergehen, dass img immer der aktuelle ROI ausschnitt ist
-// ROI per signal slot verteilen <-> code georg --> sollte dann hier egal sein, weil das img ja immer passend gesetzt werden sollte
-
-// const multi_img* statt SharedMultiImg
-//  \-> __Momentan obsolete, da SharedPointer verwendet wird__
-//      Auf Img (Konstruktor) wird ein Pointer gespeichert.
-//      Dieses (Img) muss bestehen bleiben, bis
-//      a) setMultiImg mit einem anderen Img ausgefuehrt wird
-//      b) das FalseColor object deleted wird
-
-// Langfristige Frage: Sind QImages oder QPixmaps interessant? (oder beides), was davon soll nur 1x im model sein?
-//  \-> "QPixmaps cannot be directly shared between threads" -> model sollte aber im *einen* GUI-Thread sein.
+// ROI per signal slot verteilen <-> code georg --> sollte dann hier egal sein,
+//      weil das img ja immer passend gesetzt werden sollte
 
 FalseColorModel::FalseColorModel(BackgroundTaskQueue *queue)
 	: queue(queue)
@@ -161,7 +163,7 @@ void FalseColorModel::calculateForeground(coloring type)
 
 	// img is calculated already
 	if (!p->img.isNull()) {
-		emit loadComplete(p->img, type);
+		emit calculationComplete(p->img, type);
 		return;
 	}
 
@@ -181,13 +183,13 @@ void FalseColorModel::calculateForeground(coloring type)
 		cv::Mat3b result;
 		{
 			SharedMultiImgBaseGuard guard(*shared_img);
-			result = (cv::Mat3b)(((gerbil::RGB *)p->runner->cmd)->execute(**shared_img) * 255.0f);
-			//cv::Mat3b mat = (cv::Mat3b)(((gerbil::RGB *)p->runner->cmd)->execute(*img) * 255.0f);
+			gerbil::RGB *cmd = (gerbil::RGB *)p->runner->cmd;
+			result = (cv::Mat3b)(cmd->execute(**shared_img) * 255.0f);
 		}
 		p->img = vole::Mat2QImage(result);
 	}
 	p->calcInProgress = false;
-	emit loadComplete(p->img, type);
+	emit calculationComplete(p->img, type);
 }
 
 void FalseColorModel::calculateBackground(coloring type)
@@ -197,7 +199,7 @@ void FalseColorModel::calculateBackground(coloring type)
 
 	// img is calculated already
 	if (!p->img.isNull()) {
-		emit loadComplete(p->img, type);
+		emit calculationComplete(p->img, type);
 		return;
 	}
 
@@ -237,14 +239,9 @@ void FalseColorModel::handleFinishedQueueTask(bool success)
 	if (!success)
 		return;
 
-	// TODO: vom "tmp"-member (calcImg) in eigtl. var (img) "kopieren"
-	{
-		SharedDataSwapLock lock(p->calcImg->mutex);
-		p->img = **p->calcImg;
-		delete p->calcImg->swap(new QImage); // TODO: locks, empty the reference - how is it done correctly?
-	}
+	p->img = **p->calcImg;
 
-	emit loadComplete(p->img, type);
+	emit calculationComplete(p->img, type);
 }
 
 void FalseColorModel::handleRunnerSuccess(std::map<std::string, boost::any> output)
@@ -268,5 +265,5 @@ void FalseColorModel::handleRunnerSuccess(std::map<std::string, boost::any> outp
 	p->img = boost::any_cast<QImage>(output["multi_img"]);
 
 	p->calcInProgress = false;
-	emit loadComplete(p->img, type);
+	emit calculationComplete(p->img, type);
 }

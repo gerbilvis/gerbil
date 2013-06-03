@@ -52,7 +52,6 @@ public:
 
 	// calls reset()
 	void setMultiImg(representation type, SharedMultiImgPtr img);
-	//void setMultiImg(const multi_img* img);
 
 	// resets current true / false color representations
 	// on the next request, the color images are recalculated with possibly new multi_img data
@@ -69,7 +68,7 @@ private slots:
 
 signals:
 	// Possibly check Image.cacheKey() to determine if the update is really neccessary
-	void loadComplete(QImage img, coloring type);
+	void calculationComplete(QImage img, coloring type);
 	void terminateRunners();
 
 private:
@@ -80,8 +79,7 @@ private:
 	// terminates all (queue and commandrunner) tasks and waits until the terminate is complete
 	void cancel();
 
-	SharedMultiImgPtr shared_img; // not const
-	//const multi_img *img; // currently, the multi_img may not be const, as the tasks expect a non-const multi_img input. this should be changed.
+	SharedMultiImgPtr shared_img;
 	PayloadMap map;
 	BackgroundTaskQueue *queue;
 };
