@@ -14,6 +14,7 @@
 
 #include <stopwatch.h>
 #include <multi_img.h>
+#include <progress_observer.h>
 #include <opencv2/highgui/highgui.hpp>
 #include <tbb/parallel_for.h>
 #include <iostream>
@@ -49,20 +50,38 @@ int RGB::execute()
 	return 0;
 }
 
-cv::Mat3f RGB::execute(const multi_img& src)
+#ifdef WITH_BOOST
+std::map<std::string, boost::any> RGB::execute(std::map<std::string, boost::any> &input, vole::ProgressObserver *po)
+{
+	multi_img::ptr src = boost::any_cast<multi_img::ptr>(input["multi_img"]);
+	if (src->empty())
+		assert(false);
+
+	cv::Mat3f bgr = execute(*src, po);
+	if (bgr.empty())
+		assert(false);
+
+	std::map<std::string, boost::any> output;
+	output["multi_img"] = bgr*255.;
+	output["algo"] = config.algo;
+	return output;
+}
+#endif
+
+cv::Mat3f RGB::execute(const multi_img& src, vole::ProgressObserver *po)
 {
 	cv::Mat3f bgr;
 
 	switch (config.algo) {
 	case COLOR_XYZ:
-		bgr = src.bgr();
+		bgr = src.bgr(); // updateProgress is not called in XYZ calculation
 		break;
 	case COLOR_PCA:
-		bgr = executePCA(src);
+		bgr = executePCA(src, po);
 		break;
 	case COLOR_SOM:
 #ifdef WITH_EDGE_DETECT
-		bgr = executeSOM(src);
+		bgr = executeSOM(src, po);
 		break;
 #else
 		std::cerr << "FATAL: SOM functionality missing!" << std::endl;
@@ -74,13 +93,20 @@ cv::Mat3f RGB::execute(const multi_img& src)
 	return bgr;
 }
 
-cv::Mat3f RGB::executePCA(const multi_img& src)
+cv::Mat3f RGB::executePCA(const multi_img& src, vole::ProgressObserver *po)
 {
 	multi_img pca3 = src.project(src.pca(3));
+
+	bool cont = progressUpdate(70.0f, po); // TODO: values
+	if (!cont) return cv::Mat3f();
+
 	if (config.pca_stretch)
 		pca3.data_stretch_single(0., 1.);
 	else
 		pca3.data_rescale(0., 1.);
+
+	cont = progressUpdate(80.0f, po); // TODO: values
+	if (!cont) return cv::Mat3f();
 
 //	bgr = pca3.Mat();
 	// green: component 1, red: component 2, blue: component 3
@@ -129,7 +155,8 @@ struct SOMTBB {
 };
 
 #ifdef WITH_EDGE_DETECT
-cv::Mat3f RGB::executeSOM(const multi_img& img)
+// TODO: call progressUpdate
+cv::Mat3f RGB::executeSOM(const multi_img& img, vole::ProgressObserver *po)
 {
 	img.rebuildPixels(false);
 	config.som.hack3d = true;
@@ -203,5 +230,12 @@ void RGB::printHelp() const {
 	             "PCA and SOM do false-coloring.\"";
 	std::cout << std::endl;
 }
-}
 
+bool RGB::progressUpdate(float percent, vole::ProgressObserver *po)
+{
+	if (po == NULL)
+		return true;
+
+	return po->update(percent);
+}
+}

@@ -11,6 +11,13 @@
 #include <QMap>
 #include <QObject>
 
+// QImages have implicit data sharing, so the returned objects act as a pointer, the data is not copied
+// If the QImage is changed in the Model, this change is calculated on a copy,
+// which is then redistributed by a loadComplete signal
+
+// Each request sends a loadComplete signal to ALL connected slots.
+// use QImage.cacheKey() to see if the image was changed
+
 class FalseColor : public QObject
 {
 	Q_OBJECT
@@ -24,7 +31,6 @@ class FalseColor : public QObject
 
 	struct payload {
 		CommandRunner *runner;
-		gerbil::RGB *cmd;	 // just a shortcut, avoids casting and long code
 		QImage img;
 		qimage_ptr calcImg;  // the background task swaps its result in this variable, in taskComplete, it is copied to img & cleared
 		bool calcInProgress; // (if 2 widgets request the same coloring type before the calculation finished)
@@ -38,28 +44,38 @@ public:
 	//FalseColor(const multi_img& img, const BackgroundTaskQueue queue);
 	~FalseColor();
 
+	// calls reset()
+	void setMultiImg(SharedMultiImgPtr img);
+	//void setMultiImg(const multi_img* img);
+
 	// resets current true / false color representations
 	// on the next request, the color images are recalculated with possibly new multi_img data
-	void resetCaches();
-
-	// always calls resetCaches()
-	void setMultiImg(SharedMultiImgPtr img);
-	//void setMultiImg(const multi_img& img);
+	// (CommandRunners are stopped by terminateTasksDeleteRunners())
+	void reset();
 
 public slots:
-	void requestForeground(coloring type);
-	void requestBackground(coloring type);
+	void calculateForeground(coloring type);
+	void calculateBackground(coloring type);
 
 private slots:
-	void queueTaskFinished(bool finished);
-	void runnerSuccess(std::map<std::string, boost::any> output);
+	void handleFinishedQueueTask(bool finished);
+	void handleRunnerSuccess(std::map<std::string, boost::any> output);
 
 signals:
-	void loadComplete(QImage img, coloring type, bool changed);
+	// Possibly check Image.cacheKey() to determine if the update is really neccessary
+	void loadComplete(QImage img, coloring type);
+	void terminateRunners();
 
 private:
-	SharedMultiImgPtr shared_img; // not const - wird langfristig zu einem pointer
-	//const multi_img *img; // geht evtl nicht, weil mans beim task starten uebergeben muss - langfristig schoener?
+	// creates the runner that is neccessary for calculating the false color representation of type
+	// runners are deleted in terminatedTasksDeleteRunners (and therefore in reset() & ~FalseColor())
+	void createRunner(coloring type);
+
+	// terminates all (queue and commandrunner) tasks and waits until the terminate is complete
+	void terminateTasksDeleteRunners();
+
+	SharedMultiImgPtr shared_img; // not const
+	//const multi_img *img; // currently, the multi_img may not be const, as the tasks expect a non-const multi_img input. this should be changed.
 	PayloadMap map;
 	BackgroundTaskQueue &queue;
 };
