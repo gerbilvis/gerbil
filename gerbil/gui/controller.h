@@ -44,7 +44,7 @@ public slots:
 	void propagateLabelingChange(const QVector<QColor> &colors, bool changed);
 
 	// update image data in docks (to be moved to dockcontroller)
-	void docksUpdateImage(representation type, SharedMultiImgPtr image);
+	void docksUpdateImage(representation::t type, SharedMultiImgPtr image);
 
 	/** internal management (maybe make protected) */
 	/* this function enqueues an empty task that will signal when all previous

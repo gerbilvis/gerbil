@@ -57,24 +57,24 @@ void ViewerContainer::updateLabels()
 
 void ViewerContainer::newIlluminant(cv::Mat1f illum)
 {
-	multi_img_viewer *viewer = vm.value(IMG);
+	multi_img_viewer *viewer = vm.value(representation::IMG);
 	viewer->setIlluminant(illum);
 }
 
 void ViewerContainer::showIlluminationCurve(bool show)
 {
 	//GGDBGM(show <<endl);
-	multi_img_viewer *viewer = vm.value(IMG);
+	multi_img_viewer *viewer = vm.value(representation::IMG);
 	viewer->showIlluminationCurve(show);
 }
 
 void ViewerContainer::setIlluminantApplied(bool applied)
 {
-	multi_img_viewer *viewer = vm.value(IMG);
+	multi_img_viewer *viewer = vm.value(representation::IMG);
 	viewer->setIlluminantIsApplied(applied);
 }
 
-sets_ptr ViewerContainer::subImage(representation repr,
+sets_ptr ViewerContainer::subImage(representation::t repr,
 							   const std::vector<cv::Rect> &regions,
 							   cv::Rect newRoi)
 {
@@ -91,7 +91,7 @@ sets_ptr ViewerContainer::subImage(representation repr,
 	return temp;
 }
 
-void ViewerContainer::addImage(representation repr, sets_ptr temp,
+void ViewerContainer::addImage(representation::t repr, sets_ptr temp,
 							   const std::vector<cv::Rect> &regions,
 							   cv::Rect newRoi)
 {
@@ -106,7 +106,7 @@ void ViewerContainer::addImage(representation repr, sets_ptr temp,
 	}
 }
 
-void ViewerContainer::setImage(representation repr, SharedMultiImgPtr image,
+void ViewerContainer::setImage(representation::t repr, SharedMultiImgPtr image,
 							   cv::Rect newRoi)
 {
 	// the roi change is effectively global
@@ -138,26 +138,26 @@ void ViewerContainer::updateLabelColors(QVector<QColor> colors, bool changed)
 	}
 }
 
-void ViewerContainer::updateBinning(representation repr, int bins)
+void ViewerContainer::updateBinning(representation::t repr, int bins)
 {
 	GGDBG_REPR(repr);
 	multi_img_viewer *viewer = vm.value(repr);
 	viewer->updateBinning(bins);
 }
 
-int ViewerContainer::getSelection(representation repr)
+int ViewerContainer::getSelection(representation::t repr)
 {
 	multi_img_viewer *viewer = vm.value(repr);
 	return viewer->getSelection();
 }
 
-SharedMultiImgPtr ViewerContainer::getViewerImage(representation repr)
+SharedMultiImgPtr ViewerContainer::getViewerImage(representation::t repr)
 {
 	multi_img_viewer *viewer = vm.value(repr);
 	return viewer->getImage();
 }
 
-representation ViewerContainer::getActiveRepresentation() const
+representation::t ViewerContainer::getActiveRepresentation() const
 {
 	assert(activeViewer);
 	return vm.key(activeViewer);
@@ -180,7 +180,7 @@ void ViewerContainer::setGUIEnabled(bool enable, TaskType tt)
 
 }
 
-void ViewerContainer::toggleViewer(bool enable, representation repr)
+void ViewerContainer::toggleViewer(bool enable, representation::t repr)
 {
 	GGDBGM(format("toggle=%1% representation=%2%\n") %enable % repr);
 	if(enable)
@@ -196,16 +196,16 @@ void ViewerContainer::newROI(cv::Rect roi)
 
 void ViewerContainer::setActiveViewer(int repr)
 {
-	representation r = static_cast<representation>(repr);
+	representation::t r = static_cast<representation::t>(repr);
 	GGDBG_REPR(repr);
 	if (vm.value(r)->getImage().get()) {
 		activeViewer = vm.value(r);
 	} else {
-		activeViewer = vm.value(IMG);
+		activeViewer = vm.value(representation::IMG);
 	}
 }
 
-void ViewerContainer::connectViewer(representation repr)
+void ViewerContainer::connectViewer(representation::t repr)
 {
 	GGDBGM(format("representation %1%\n") % repr);
 	multi_img_viewer *viewer = vm.value(repr);
@@ -236,7 +236,7 @@ void ViewerContainer::connectViewer(representation repr)
 	}
 }
 
-void ViewerContainer::disconnectViewer(representation repr)
+void ViewerContainer::disconnectViewer(representation::t repr)
 {
 	multi_img_viewer *viewer = vm.value(repr);
 	disconnect(this, SIGNAL(viewersOverlay(int,int)),
@@ -274,9 +274,9 @@ void ViewerContainer::finishNormRangeImgChange(bool success)
 	 */
 /*	if (success) {
 		SharedDataLock hlock((*image)->mutex);
-		(*bands)[IMG].assign((**image)->size(), NULL);
+		(*bands)[representation::IMG].assign((**image)->size(), NULL);
 		hlock.unlock();
-		emit bandSelected(IMG, vm.value(IMG)->getSelection());
+		emit bandSelected(representation::IMG, vm.value(representation::IMG)->getSelection());
 	}*/
 }
 
@@ -292,7 +292,7 @@ void ViewerContainer::finishNormRangeGradChange(bool success)
 	}*/
 }
 
-void ViewerContainer::disableViewer(representation repr)
+void ViewerContainer::disableViewer(representation::t repr)
 {
 	// TODO: where is it connected back? (probably at reconnectViewer)
 	disconnectViewer(repr);
@@ -302,12 +302,12 @@ void ViewerContainer::disableViewer(representation repr)
 	 * we do not want this differentiation, as other parties will ALSO
 	 * access the PCA reps. this will be part of ImageModel housekeeping! */
 	switch(repr) {
-	case IMG:
-	case GRAD:
+	case representation::IMG:
+	case representation::GRAD:
 		break;
 
-	case IMGPCA:
-	case GRADPCA:
+	case representation::IMGPCA:
+	case representation::GRADPCA:
 	{
 		multi_img_viewer *viewer = vm.value(repr);
 		// TODO: here we would kill the image data. TODO: Do that in ImageModel!
@@ -337,14 +337,14 @@ void ViewerContainer::disableViewer(representation repr)
 // TODO: this whole function is a joke, right?!
 // the proper way is to signal that data is needed. the model should then
 // deliver it and reconnectViewer() will be called or sth.
-void ViewerContainer::enableViewer(representation repr)
+void ViewerContainer::enableViewer(representation::t repr)
 {
 /*	multi_img_viewer *viewer = vm.value(repr);
 
 	emit requestGUIEnabled(false, TT_TOGGLE_VIEWER);
 
 	switch(repr) {
-	case IMG:
+	case representation::IMG:
 	{
 		viewer->setImage(image, roi);
 		BackgroundTaskPtr task(new BackgroundTask(roi));
@@ -415,16 +415,14 @@ void ViewerContainer::enableViewer(representation repr)
 void ViewerContainer::initUi()
 {
 	// Only one viewer per representation type is supported.
-    createViewer(IMG);
-	createViewer(GRAD);
-    createViewer(IMGPCA);
-    createViewer(GRADPCA);
+	foreach (representation::t i, representation::all())
+		createViewer(i);
 
 	// start with IMG, hide IMGPCA, GRADPCA at the beginning
-	activeViewer = vm.value(IMG);
+	activeViewer = vm.value(representation::IMG);
 	activeViewer->setActive();
-	vm.value(IMGPCA)->toggleFold();
-	vm.value(GRADPCA)->toggleFold();
+	vm.value(representation::IMGPCA)->toggleFold();
+	vm.value(representation::GRADPCA)->toggleFold();
 
 	// create layout and fill with viewers
 	QVBoxLayout *vLayout = new QVBoxLayout(this);
@@ -461,13 +459,13 @@ void ViewerContainer::initUi()
 		connect(viewer1, SIGNAL(finishTask(bool)),
 				this, SLOT(finishTask(bool)));
 
-		connect(viewer1, SIGNAL(finishedCalculation(representation)),
-				this, SLOT(connectViewer(representation)));
+		connect(viewer1, SIGNAL(finishedCalculation(representation::t)),
+				this, SLOT(connectViewer(representation::t)));
 
 		/* following stuff is used to pass to/from MainWindow / Controller */
 
-		connect(viewport1, SIGNAL(bandSelected(representation, int)),
-				this, SIGNAL(bandSelected(representation, int)));
+		connect(viewport1, SIGNAL(bandSelected(representation::t, int)),
+				this, SIGNAL(bandSelected(representation::t, int)));
 
 		connect(viewer1, SIGNAL(setGUIEnabled(bool, TaskType)),
 				this, SIGNAL(requestGUIEnabled(bool,TaskType)));
@@ -486,8 +484,8 @@ void ViewerContainer::initUi()
 				this, SLOT(newOverlay()));
 
 		// non-pass-through
-		connect(viewer1, SIGNAL(toggleViewer(bool, representation)),
-				this, SLOT(toggleViewer(bool, representation)));
+		connect(viewer1, SIGNAL(toggleViewer(bool, representation::t)),
+				this, SLOT(toggleViewer(bool, representation::t)));
 
 		for (size_t j = 0; j < vl.size(); ++j) {
 			multi_img_viewer *viewer2 = vl[j];
@@ -506,7 +504,7 @@ void ViewerContainer::initUi()
 }
 
 
-multi_img_viewer *ViewerContainer::createViewer(representation repr)
+multi_img_viewer *ViewerContainer::createViewer(representation::t repr)
 {
     multi_img_viewer *viewer = new multi_img_viewer(this);
 	viewer->setSizePolicy(QSizePolicy::Preferred, // hor

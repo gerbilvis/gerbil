@@ -142,9 +142,9 @@ void Controller::updateROI(bool reuse, cv::Rect roi, size_t bands)
 	}
 
 	/** FIRST STEP: recycle existing payload **/
-	QMap<representation, sets_ptr> sets;
+	QMap<representation::t, sets_ptr> sets;
 	if (reuse) {
-		foreach (representation i, im.representations) {
+		foreach (representation::t i, representation::all()) {
 			sets[i] = window->getViewerContainer()->subImage(i, sub, roi);
 		}
 	}
@@ -160,7 +160,7 @@ void Controller::updateROI(bool reuse, cv::Rect roi, size_t bands)
 	 * it is implicit here but we would like this knowledge to be part of
 	 * image model's logic
 	 */
-	foreach (representation i, im.representations) {
+	foreach (representation::t i, representation::all()) {
 
 		/* tasks to (incrementally) re-calculate image data */
 		im.spawn(i, roi, bands);
@@ -230,7 +230,7 @@ void Controller::addLabel()
 }
 
 /** DOCK stuff (to be moved to DockController */
-void Controller::docksUpdateImage(representation type, SharedMultiImgPtr image)
+void Controller::docksUpdateImage(representation::t type, SharedMultiImgPtr image)
 {
 	/* first make sure models have access to data */
 	fm.setMultiImg(type, image);

@@ -18,7 +18,7 @@ public:
 	void init(Viewport *vp);
 
 	int getBinCount() { return binSlider->value(); }
-	void setType(representation type);
+	void setType(representation::t type);
 
 	QVector<QColor> labelColors;
 

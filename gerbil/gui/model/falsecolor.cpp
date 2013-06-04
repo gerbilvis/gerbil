@@ -69,10 +69,10 @@ FalseColorModel::FalseColorModel(BackgroundTaskQueue *queue)
 	}
 }
 
-void FalseColorModel::setMultiImg(representation type, SharedMultiImgPtr shared_img)
+void FalseColorModel::setMultiImg(representation::t type, SharedMultiImgPtr shared_img)
 {
 	// in the future, we might be interested in the other ones as well.
-	if (type == IMG) {
+	if (type == representation::IMG) {
 		this->shared_img = shared_img;
 		reset();
 	}

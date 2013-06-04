@@ -59,7 +59,7 @@ multi_img_viewer::~multi_img_viewer()
 	delete viewport;
 }
 
-void multi_img_viewer::setType(representation type)
+void multi_img_viewer::setType(representation::t type)
 {
 	this->type = type;
 	control->setType(type);
@@ -177,16 +177,16 @@ void multi_img_viewer::addImage(sets_ptr temp,
 	queue->push(taskBins);
 }
 
-void multi_img_viewer::setTitle(representation type, multi_img::Value min, multi_img::Value max)
+void multi_img_viewer::setTitle(representation::t type, multi_img::Value min, multi_img::Value max)
 {
 	QString title;
-	if (type == IMG)
+	if (type == representation::IMG)
 		title = QString("<b>Image Spectrum</b> [%1..%2]");
-	if (type == GRAD)
+	if (type == representation::GRAD)
 		title = QString("<b>Spectral Gradient Spectrum</b> [%1..%2]");
-	if (type == IMGPCA)
+	if (type == representation::IMGPCA)
 		title = QString("<b>Image PCA</b> [%1..%2]");
-	if (type == GRADPCA)
+	if (type == representation::GRADPCA)
 		title = QString("<b>Spectral Gradient PCA</b> [%1..%2]");
 
 	topBar->setTitle(title.arg(min).arg(max));
@@ -232,7 +232,7 @@ void multi_img_viewer::setIlluminant(cv::Mat1f illum)
 	{
 		SharedDataLock ctxlock(viewport->ctx->mutex);
 
-	if ((*viewport->ctx)->type != IMG)
+	if ((*viewport->ctx)->type != representation::IMG)
 		return;
 	}
 

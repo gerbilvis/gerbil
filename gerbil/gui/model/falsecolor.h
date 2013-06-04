@@ -51,7 +51,7 @@ public:
 	~FalseColorModel();
 
 	// calls reset()
-	void setMultiImg(representation type, SharedMultiImgPtr img);
+	void setMultiImg(representation::t type, SharedMultiImgPtr img);
 
 	// resets current true / false color representations
 	// on the next request, the color images are recalculated with possibly new multi_img data

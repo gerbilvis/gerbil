@@ -1,6 +1,7 @@
 #ifndef MODEL_IMAGE_H
 #define MODEL_IMAGE_H
 
+#include "representation.h"
 #include <shared_data.h>
 #include <multi_img_tasks.h>
 #include <background_task_queue.h>
@@ -10,19 +11,6 @@
 #include <QPixmap>
 #include <vector>
 
-// TODO: put in ImageModel namespace?
-enum representation {
-	IMG = 0,
-	GRAD = 1,
-	IMGPCA = 2,
-	GRADPCA = 3,
-	REPSIZE = 4
-	// if you add something, also change operator<<!
-};
-
-// representation in debug output
-std::ostream &operator<<(std::ostream& os, const representation& r);
-
 class ImageModelPayload : public QObject {
 	Q_OBJECT
 
@@ -30,7 +18,7 @@ public:
 	/* always initialize image, as the SharedData will be passed around
 	 * and used to enqueue tasks even before the image is created the
 	 * first time. */
-	ImageModelPayload(representation type)
+	ImageModelPayload(representation::t type)
 		: type(type), image(new SharedMultiImgBase(new multi_img())),
 		  normMode(MultiImg::NORM_OBSERVED), normRange(
 			new SharedData<std::pair<multi_img::Value, multi_img::Value> >(
@@ -38,7 +26,7 @@ public:
 	{}
 
 	// the type we have
-	representation type;
+	representation::t type;
 
 	// multispectral image data
 	SharedMultiImgPtr image;
@@ -55,7 +43,7 @@ public slots:
 	void propagateFinishedCalculation(bool success);
 
 signals:
-	void newImageData(representation type, SharedMultiImgPtr image);
+	void newImageData(representation::t type, SharedMultiImgPtr image);
 };
 
 class ImageModel : public QObject
@@ -70,7 +58,7 @@ public:
 
 	size_t getSize();
 	const cv::Rect& getROI() { return roi; }
-	SharedMultiImgPtr getImage(representation type) { return map[type]->image; }
+	SharedMultiImgPtr getImage(representation::t type) { return map[type]->image; }
 
 	// delete ROI information also in images
 	void invalidateROI();
@@ -78,20 +66,17 @@ public:
 	/** @return dimensions of the image as a rectangle */
 	cv::Rect loadImage(const std::string &filename);
 	/** @arg bands number of bands needed (only effective for IMG type) */
-	void spawn(representation type, const cv::Rect& roi, size_t bands = -1);
-	
-	// for easy looping over all valid representations
-	QMap<int, representation> representations;
+	void spawn(representation::t type, const cv::Rect& roi, size_t bands = -1);
 
 public slots:
-	void computeBand(representation type, int dim);
+	void computeBand(representation::t type, int dim);
 	void computeRGB();
 	void postComputeRGB(bool success);
 
 signals:
 	void bandUpdate(QPixmap band, QString description);
 	void rgbUpdate(QPixmap rgb);
-	void imageUpdate(representation type, SharedMultiImgPtr image);
+	void imageUpdate(representation::t type, SharedMultiImgPtr image);
 
 private:
 	// helper to spawn()
@@ -100,7 +85,7 @@ private:
 	// FIXME rename
 	SharedMultiImgPtr image_lim; // big one
 	// small ones (ROI) and their companion data:
-	QMap<representation, payload*> map;
+	QMap<representation::t, payload*> map;
 
 	// do we run in limited mode?
 	bool limitedMode;

@@ -27,8 +27,7 @@ inline size_t tbb_hasher(const boost::multi_array<T, 1> &a) {
 
 }
 
-// for representations. else?
-#include "../model/image.h"
+#include "../model/representation.h"
 
 #include <multi_img.h>
 #include <shared_data.h>
@@ -144,7 +143,7 @@ struct ViewportCtx {
 	tbb::atomic<int> reset;
 	size_t dimensionality;
 	bool dimensionalityValid;
-	representation type;
+	representation::t type;
 	std::vector<multi_img::BandDesc> meta;
 	bool metaValid;
 	std::vector<QString> labels;

@@ -25,6 +25,7 @@ vole_compile_library(
 	dist_view/viewport
 	dist_view/viewportcontrol
 
+	model/representation
 	model/image
 	model/labeling
 	model/falsecolor

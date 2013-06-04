@@ -17,7 +17,7 @@ class ViewerContainer : public QWidget
     Q_OBJECT
 protected:
     typedef QList<multi_img_viewer*> ViewerList;
-	typedef QMap<representation, multi_img_viewer*> ViewerMap;
+	typedef QMap<representation::t, multi_img_viewer*> ViewerMap;
     
 public:
     explicit ViewerContainer(QWidget *parent = 0);
@@ -26,14 +26,14 @@ public:
 	void setTaskQueue(BackgroundTaskQueue *taskQueue);
     void initUi();
 
-	void addImage(representation repr, sets_ptr temp, const std::vector<cv::Rect> &regions, cv::Rect roi);
-	sets_ptr subImage(representation repr, const std::vector<cv::Rect> &regions, cv::Rect roi);
-	void setImage(representation repr, SharedMultiImgPtr image, cv::Rect roi);
+	void addImage(representation::t repr, sets_ptr temp, const std::vector<cv::Rect> &regions, cv::Rect roi);
+	sets_ptr subImage(representation::t repr, const std::vector<cv::Rect> &regions, cv::Rect roi);
+	void setImage(representation::t repr, SharedMultiImgPtr image, cv::Rect roi);
 
 	void toggleLabels(bool toggle);
 	void updateLabelColors(QVector<QColor> colors, bool changed);
 
-	void updateBinning(representation repr, int bins);
+	void updateBinning(representation::t repr, int bins);
 
 	// MODEL
 	// To be removed when refactored into model classes.
@@ -41,23 +41,23 @@ public:
 
 	void disconnectAllViewers();
 	void updateViewerBandSelections(int numbands);
-	int getSelection(representation repr);
-	SharedMultiImgPtr getViewerImage(representation repr);
-	representation getActiveRepresentation() const;
+	int getSelection(representation::t repr);
+	SharedMultiImgPtr getViewerImage(representation::t repr);
+	representation::t getActiveRepresentation() const;
 	const cv::Mat1b getHighlightMask() const;
 
 public slots:
 	void setLabelMatrix(cv::Mat1s matrix);
 	void setGUIEnabled(bool enable, TaskType tt);
-	void toggleViewer(bool enable, representation repr);
+	void toggleViewer(bool enable, representation::t repr);
 	void newROI(cv::Rect roi);
 
 	void newOverlay();
 	void setActiveViewer(int repri);
 
 	// TODO rename (reconnectViewer ?)
-	void connectViewer(representation repr);
-	void disconnectViewer(representation repr);
+	void connectViewer(representation::t repr);
+	void disconnectViewer(representation::t repr);
 
 	void finishTask(bool success);
 	void finishNormRangeImgChange(bool success);
@@ -89,7 +89,7 @@ signals:
 
 	// new signals to break-up coupling between MainWindow and ViewerContainer
 
-	void bandSelected(representation type, int selection);
+	void bandSelected(representation::t type, int selection);
 	void requestGUIEnabled(bool enable, TaskType tt);
 
 protected:
@@ -104,10 +104,10 @@ private:
      * The viewer will be inserted at the bottom of the vertical layout.
      * Needs to be called before signal/slot wiring in initUi() is done.
      */
-    multi_img_viewer *createViewer(representation repr);
+    multi_img_viewer *createViewer(representation::t repr);
 
-    void enableViewer(representation repr);
-    void disableViewer(representation repr);
+    void enableViewer(representation::t repr);
+    void disableViewer(representation::t repr);
 };
 
 #endif // VIEWERCONTAINER_H

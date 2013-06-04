@@ -10,6 +10,7 @@
 #ifndef MULTI_IMG_VIEWER_H
 #define MULTI_IMG_VIEWER_H
 
+#include "../model/representation.h"
 #include "ui_multi_img_viewer.h"
 #include "compute.h"
 #include "viewport.h"
@@ -39,8 +40,8 @@ public:
 	const cv::Mat1b& getHighlightMask() { return highlightMask; }
 	int getSelection() { return viewport->selection; }
 	void setSelection(int band) { viewport->selection = band; }
-	representation getType() { return type; }
-	void setType(representation type);
+	representation::t getType() { return type; }
+	void setType(representation::t type);
 	bool isPayloadHidden() { return viewportGV->isHidden(); }
 
 	BackgroundTaskQueue *queue;
@@ -78,9 +79,9 @@ signals:
 	void newOverlay();
 	void folding();
 	void setGUIEnabled(bool enable, TaskType tt);
-	void toggleViewer(bool enable, representation type);
+	void toggleViewer(bool enable, representation::t type);
 	void finishTask(bool success);
-	void finishedCalculation(representation type);
+	void finishedCalculation(representation::t type);
 
 protected:
     void changeEvent(QEvent *e);
@@ -89,12 +90,12 @@ protected:
 	void fillMaskSingle(int dim, int sel);
 	void fillMaskLimiters(const std::vector<std::pair<int, int> >& limits);
 	void updateMaskLimiters(const std::vector<std::pair<int, int> >&, int dim);
-	void setTitle(representation type, multi_img::Value min, multi_img::Value max);
+	void setTitle(representation::t type, multi_img::Value min, multi_img::Value max);
 
 	Viewport *viewport;
 	ViewportControl *control;
 	SharedMultiImgPtr image;
-	representation type;
+	representation::t type;
 	cv::Mat1f illuminant;
 	bool ignoreLabels;
 	cv::Mat1b highlightMask;

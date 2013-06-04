@@ -18,14 +18,13 @@ ImageModel::ImageModel(BackgroundTaskQueue &queue, bool lm)
 	  image_lim(new SharedMultiImgBase(new multi_img())),
 	  full_rgb(new SharedData<QImage>(new QImage()))
 {
-	for (int i = 0; i < REPSIZE; ++i) {
-		representations[i] = (representation)i;
-		map.insert((representation)i, new payload((representation)i));
+	foreach (representation::t i, representation::all()) {
+		map.insert(i, new payload(i));
 	}
 
 	foreach (payload *p, map) {
-		connect(p, SIGNAL(newImageData(representation,SharedMultiImgPtr)),
-				this, SIGNAL(imageUpdate(representation,SharedMultiImgPtr)));
+		connect(p, SIGNAL(newImageData(representation::t,SharedMultiImgPtr)),
+				this, SIGNAL(imageUpdate(representation::t,SharedMultiImgPtr)));
 	}
 }
 
@@ -90,16 +89,22 @@ void ImageModel::payload::propagateFinishedCalculation(bool success)
 	emit newImageData(type, image);
 }
 
-void ImageModel::spawn(representation type, const cv::Rect &newROI, size_t bands)
+void ImageModel::spawn(representation::t type, const cv::Rect &newROI, size_t bands)
 {
 	// one ROI for all, effectively
 	roi = newROI;
 
 	// invalidate band caches
-	map[IMG]->bands.clear();
+	map[representation::IMG]->bands.clear();
+
+	// shortcuts for convenience
+	SharedMultiImgPtr image = map[representation::IMG]->image,
+			gradient = map[representation::GRAD]->image,
+			imagepca = map[representation::IMGPCA]->image,
+			gradpca = map[representation::IMGPCA]->image;
 
 	// scoping and spectral rescaling done for IMG
-	if (type == IMG) {
+	if (type == representation::IMG) {
 		// scope image to new ROI
 		SharedMultiImgPtr scoped_image(new SharedMultiImgBase(NULL));
 		BackgroundTaskPtr taskScope(new MultiImg::ScopeImage(
@@ -113,16 +118,14 @@ void ImageModel::spawn(representation type, const cv::Rect &newROI, size_t bands
 		if (bands <= 2)
 			bands = 3;
 
-		SharedMultiImgPtr image = map[IMG]->image;
-
 		// perform spectral rescaling
 		BackgroundTaskPtr taskRescale(new MultiImg::RescaleTbb(
 			scoped_image, image, bands, roi));
 		queue.push(taskRescale);
 	}
 
-	if (type == GRAD) {
-		SharedMultiImgPtr image = map[IMG]->image, gradient = map[GRAD]->image;
+	if (type == representation::GRAD) {
+
 
 		if (cv::gpu::getCudaEnabledDeviceCount() > 0 && USE_CUDA_GRADIENT) {
 			BackgroundTaskPtr taskGradient(new MultiImg::GradientCuda(
@@ -136,13 +139,13 @@ void ImageModel::spawn(representation type, const cv::Rect &newROI, size_t bands
 	}
 
 	// user-customizable norm range calculation, sets minval/maxval of the image
-	if (type == IMG || type == GRAD)
+	if (type == representation::IMG || type == representation::GRAD)
 	{
 		SharedMultiImgPtr target = map[type]->image;
 		data_range_ptr range = map[type]->normRange;
 		MultiImg::NormMode mode =  map[type]->normMode;
 		// TODO: a small hack in NormRangeTBB to determine theoretical range
-		int isGRAD = (type == GRAD ? 1 : 0);
+		int isGRAD = (type == representation::GRAD ? 1 : 0);
 
 		SharedDataLock hlock(range->mutex);
 		double min = (*range)->first;
@@ -160,16 +163,15 @@ void ImageModel::spawn(representation type, const cv::Rect &newROI, size_t bands
 		}
 	}
 
-
-	if (type == IMGPCA && map[IMGPCA]->image.get()) {
+	if (type == representation::IMGPCA && imagepca.get()) {
 		BackgroundTaskPtr taskPca(new MultiImg::PcaTbb(
-			map[IMG]->image, map[IMGPCA]->image, 0, roi));
+			image, imagepca, 0, roi));
 		queue.push(taskPca);
 	}
 
-	if (type == GRADPCA && map[GRADPCA]->image.get()) {
+	if (type == representation::GRADPCA && gradpca.get()) {
 		BackgroundTaskPtr taskPca(new MultiImg::PcaTbb(
-			map[GRAD]->image, map[GRADPCA]->image, 0, roi));
+			gradient, gradpca, 0, roi));
 		queue.push(taskPca);
 	}
 
@@ -180,7 +182,7 @@ void ImageModel::spawn(representation type, const cv::Rect &newROI, size_t bands
 	queue.push(taskEpilog);
 }
 
-void ImageModel::computeBand(representation type, int dim)
+void ImageModel::computeBand(representation::t type, int dim)
 {
 	QMap<int, QPixmap> &m = map[type]->bands;
 
@@ -236,13 +238,4 @@ void ImageModel::postComputeRGB(bool success)
 	QPixmap ret = QPixmap::fromImage(**full_rgb);
 	hlock.unlock();
 	emit rgbUpdate(ret);
-}
-
-/* only used for debugging */
-std::ostream &operator <<(std::ostream &os, const representation &r)
-{
-	assert(0 <= r);
-	assert(r < REPSIZE);
-	const char * const str[] = { "IMG", "GRAD", "IMGPCA", "GRADPCA" };
-	os << str[r];
 }

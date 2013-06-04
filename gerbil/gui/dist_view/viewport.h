@@ -89,7 +89,7 @@ protected slots:
 	void continueDrawingHighlight();
 
 signals:
-	void bandSelected(representation type, int dim);
+	void bandSelected(representation::t type, int dim);
 	void newOverlay(int dim);
 	void activated();
 	void addSelection();

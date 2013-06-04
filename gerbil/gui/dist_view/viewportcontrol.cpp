@@ -40,9 +40,9 @@ void ViewportControl::init(Viewport *vp)
 	setBinCount(binSlider->value());
 }
 
-void ViewportControl::setType(representation type)
+void ViewportControl::setType(representation::t type)
 {
-	if (type != IMG)
+	if (type != representation::IMG)
 		rgbButton->setVisible(false);
 }
 

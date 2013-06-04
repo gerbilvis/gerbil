@@ -503,7 +503,8 @@ void MainWindow::normModeFixed()
 void MainWindow::applyNormUserRange()
 {
 	/*
-	int target = (normIButton->isChecked() ? 0 : 1);
+	representation::t target = (normIButton->isChecked() ?
+							representation::IMG : representation::GRAD);
 
 	// set internal norm mode
 	MultiImg::NormMode &nm = (target == 0 ? normIMG : normGRAD);
@@ -530,7 +531,7 @@ void MainWindow::applyNormUserRange()
 	// re-initialize gui (duplication from applyROI())
 	if (target == 0) {
 //		viewIMG->updateBinning(-1);
-		viewerContainer->updateBinning(IMG,-1);
+		viewerContainer->updateBinning(representation::IMG,-1);
 
 		BackgroundTaskPtr taskFinishNorm(new BackgroundTask());
 		QObject::connect(taskFinishNorm.get(), SIGNAL(finished(bool)), 
@@ -738,7 +739,7 @@ void MainWindow::startGraphseg()
 	} else if (src == 1) {
 		runGraphseg(gradient, conf);
 	} else {	// currently shown band, construct from selection in viewport
-		representation repr = viewerContainer->getActiveRepresentation();
+		representation::t repr = viewerContainer->getActiveRepresentation();
 		int band = viewerContainer->getSelection(repr);
 		SharedMultiImgPtr img = viewerContainer->getViewerImage(repr);
 		SharedDataLock img_lock(img->mutex);
