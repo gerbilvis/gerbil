@@ -263,7 +263,6 @@ void multi_img_viewer::showIlluminationCurve(bool show)
 		// HACK
 		// nothing, illuminant is always drawn if coefficients viewport->illuminant
 		// non-empty. Should really be a bool in viewport.
-		// TODO: and that is bool illuminant_correction; not used where needed?
 	} else {
 		cv::Mat1f empty;
 		setIlluminant(empty);

@@ -151,9 +151,7 @@ void Controller::updateROI(bool reuse, cv::Rect roi, size_t bands)
 
 	/** SECOND STEP: update metadata */
 
-// TODO
-//	updateRGB(true);
-//	rgbDock->setEnabled(true);
+	im.computeRGB();
 	lm.updateROI(roi);
 
 	/** THIRD STEP: update payload */
@@ -247,6 +245,8 @@ void Controller::docksUpdateImage(representation type, SharedMultiImgPtr image)
 void Controller::toggleLabels(bool toggle)
 {
 	// TODO: is this really legit? I doubt.
+	// This is only to apply changes instantly,
+	// instead of waiting for queue.
 	queue.cancelTasks();
 	disableGUI(TT_TOGGLE_LABELS);
 

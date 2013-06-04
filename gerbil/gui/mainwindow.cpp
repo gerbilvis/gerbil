@@ -132,6 +132,8 @@ void MainWindow::initUI(cv::Rect dim, size_t size)
 	/* more manual work to get GUI in proper shape */
 	graphsegWidget->hide();
 
+	// TODO: add function addDocks(dock1, dock2, ...)
+
 	// dock arrangement
 	tabifyDockWidget(rgbDock, roiDock);
 	tabifyDockWidget(labelDock, illumDock);
@@ -261,7 +263,7 @@ void MainWindow::initSignals(Controller *chief)
 	connect(illumDock, SIGNAL(applyIllum()),
 			&illumModel, SLOT(applyIllum()));
 	connect(illumDock, SIGNAL(illum1Selected(int)),
-			&illumModel, SLOT(illum1Changed(int)));
+			&illumModel, SLOT(illum1Changed(int))); //FIXME slot name
 	connect(illumDock, SIGNAL(illum2Selected(int)),
 			&illumModel, SLOT(illum2Changed(int)));
 	connect(illumDock, SIGNAL(showIlluminationCurve(bool)),
@@ -1000,6 +1002,10 @@ void MainWindow::segmentationApply(std::map<std::string, boost::any> output) {
 	}
 }
 #else // method stubs as using define in header does not work (moc problem?)
+// TODO
+// 1. ifdef on seg dock header
+// 2. probshift, medianshift raus. (auswahl dropbox lassen)
+// 3.
 void MainWindow::startUnsupervisedSeg(bool findKL) {}
 void MainWindow::startFindKL() {}
 void MainWindow::segmentationFinished() {}
