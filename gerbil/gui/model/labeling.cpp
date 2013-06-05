@@ -19,26 +19,31 @@ void LabelingModel::updateROI(const cv::Rect &roi)
 
 	labels = cv::Mat1s(full_labels, roi);
 
-	// signal the correct matrix to others
-	emit labelingMatrix(labels);
+	// signal new matrix
+	emit newLabeling(labels);
 }
 
 void LabelingModel::setLabels(const vole::Labeling &labeling, bool full)
 {
-	// never change local reference, copy to the matrix others have referenced
 	if (full) {
 		// labeling covers full image
-		labeling().copyTo(full_labels);
+		full_labels = labeling();
 	} else {
 		// only current ROI is updated
-		labeling().copyTo(labels);
+		labels = labeling();
 	}
 
 	// set label colors, but do not emit signal (we need combined signal)
 	setLabelColors(labeling.colors(), false);
 
 	// now signal new labels and colors as well
-	emit newLabeling(colors, true);
+	emit newLabeling(labels, colors, true);
+}
+
+void LabelingModel::setLabels(const cv::Mat1s &labeling)
+{
+	labels = labeling.clone();
+	emit newLabeling(labels);
 }
 
 void LabelingModel::setLabelColors(const std::vector<cv::Vec3b> &newColors,
@@ -59,7 +64,9 @@ void LabelingModel::setLabelColors(const std::vector<cv::Vec3b> &newColors,
 		if (col.at(i) != colors.at(i))
 			changed = true;
 	}
-	emit newLabeling(colors, changed);
+
+	// signal only the colors, do not cause costly updates
+	emit newLabeling(cv::Mat1s(), colors, changed);
 }
 
 int LabelingModel::addLabel()
@@ -74,7 +81,8 @@ int LabelingModel::addLabel()
 	return index;
 }
 
-void LabelingModel::alterLabel(short index, cv::Mat1b mask, bool negative)
+void LabelingModel::alterLabel(short index, cv::Mat1b mask,
+							   bool negative)
 {
 	int operation = 1; // add pixels to label
 	if (mask.empty()) {
@@ -83,9 +91,6 @@ void LabelingModel::alterLabel(short index, cv::Mat1b mask, bool negative)
 	} else if (negative) {
 		operation = -1; // remove pixels from label
 	}
-
-	// save old configuration for partial updates
-	cv::Mat1s oldLabels = labels.clone();
 
 	switch (operation) {
 	case 0:
@@ -98,13 +103,24 @@ void LabelingModel::alterLabel(short index, cv::Mat1b mask, bool negative)
 		break;
 	case -1:
 		// remove pixels from label (not from other labels)
-		labels.setTo(0, mask.mul(labels == index));
+		mask = mask.mul(labels == index);
+		labels.setTo(0, mask);
 		break;
 	default: while(0); // no compiler complaining
 	}
 
 	// signal change
-	emit partialLabelUpdate(mask, oldLabels);
+	emit partialLabelUpdate(labels, mask);
+}
+
+void LabelingModel::alterPixels(const cv::Mat1s &newLabels,
+								const cv::Mat1b &mask)
+{
+	// replace pixels
+	newLabels.copyTo(labels, mask);
+
+	// signal change
+	emit partialLabelUpdate(labels, mask);
 }
 
 void LabelingModel::loadLabeling(const QString &filename)

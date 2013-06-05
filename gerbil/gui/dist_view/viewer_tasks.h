@@ -1,6 +1,8 @@
 #ifndef MULTI_IMG_VIEWER_TASKS_H
 #define MULTI_IMG_VIEWER_TASKS_H
 
+#include "compute.h"
+
 #include <multi_img.h>
 
 #include <tbb/task.h>

@@ -8,8 +8,7 @@
 */
 
 #include "multi_img_viewer.h"
-#include "curpos.h"
-#include "viewer_bins_tbb.h"
+#include "../tasks/distviewbinstbb.h"
 #include "viewer_tasks.h"
 
 #include "../mainwindow.h"
@@ -108,7 +107,7 @@ void multi_img_viewer::subPixels(const std::map<std::pair<int, int>, short> &poi
 	ViewportCtx args = **viewport->ctx;
 	ctxlock.unlock();
 
-	BackgroundTaskPtr taskSub(new ViewerBinsTbb(
+	BackgroundTaskPtr taskSub(new DistviewBinsTbb(
 		image, labels, control->labelColors, illuminant, args, viewport->ctx, viewport->sets,
 		sets_ptr(new SharedData<std::vector<BinSet> >(NULL)), sub, std::vector<cv::Rect>(), cv::Mat1b(), true, false));
 	queue->push(taskSub);
@@ -128,7 +127,7 @@ void multi_img_viewer::addPixels(const std::map<std::pair<int, int>, short> &poi
 	ViewportCtx args = **viewport->ctx;
 	ctxlock.unlock();
 
-	BackgroundTaskPtr taskAdd(new ViewerBinsTbb(
+	BackgroundTaskPtr taskAdd(new DistviewBinsTbb(
 		image, labels, control->labelColors, illuminant, args, viewport->ctx, viewport->sets,
 		sets_ptr(new SharedData<std::vector<BinSet> >(NULL)), std::vector<cv::Rect>(), add, cv::Mat1b(), true, false));
 	queue->push(taskAdd);
@@ -143,7 +142,7 @@ void multi_img_viewer::subImage(sets_ptr temp,
 	ViewportCtx args = **viewport->ctx;
 	ctxlock.unlock();
 
-	BackgroundTaskPtr taskBins(new ViewerBinsTbb(
+	BackgroundTaskPtr taskBins(new DistviewBinsTbb(
 		image, labels, control->labelColors, illuminant, args, viewport->ctx,
 		viewport->sets,	temp, regions,
 		std::vector<cv::Rect>(), cv::Mat1b(), false, false, roi));
@@ -167,7 +166,7 @@ void multi_img_viewer::addImage(sets_ptr temp,
 	args.reset.fetch_and_store(1);
 	args.wait.fetch_and_store(1);
 
-	BackgroundTaskPtr taskBins(new ViewerBinsTbb(
+	BackgroundTaskPtr taskBins(new DistviewBinsTbb(
 		image, labels, control->labelColors, illuminant, args, viewport->ctx,
 		viewport->sets, temp, std::vector<cv::Rect>(), regions,
 		cv::Mat1b(), false, true, roi));
@@ -217,7 +216,7 @@ void multi_img_viewer::setImage(SharedMultiImgPtr img, cv::Rect roi)
 	args.wait.fetch_and_store(1);
 
 	assert(viewport->ctx);
-	BackgroundTaskPtr taskBins(new ViewerBinsTbb(
+	BackgroundTaskPtr taskBins(new DistviewBinsTbb(
 		image, labels, control->labelColors, illuminant, args, viewport->ctx, viewport->sets,
 		sets_ptr(new SharedData<std::vector<BinSet> >(NULL)), std::vector<cv::Rect>(), 
 		std::vector<cv::Rect>(), cv::Mat1b(), false, true, roi));
@@ -305,7 +304,7 @@ void multi_img_viewer::updateBinning(int bins)
 	if (!image.get())
 		return;
 
-	BackgroundTaskPtr taskBins(new ViewerBinsTbb(
+	BackgroundTaskPtr taskBins(new DistviewBinsTbb(
 		image, labels, control->labelColors, illuminant, args, viewport->ctx, viewport->sets));
 	QObject::connect(taskBins.get(), SIGNAL(finished(bool)),
 					 this, SLOT(binningUpdate(bool)), Qt::QueuedConnection);
@@ -320,35 +319,77 @@ void multi_img_viewer::finishBinCountChange(bool success)
 	}
 }
 
-void multi_img_viewer::updateLabelsPartially(cv::Mat1b mask, cv::Mat1s old)
+void multi_img_viewer::updateLabels(const cv::Mat1s &newLabels,
+									const QVector<QColor> &colors,
+									bool colorsChanged)
 {
+	if (!colors.empty())
+		control->updateLabelColors(colors);
+
+	// binset update is needed if labels or colors changed
+	if (newLabels.empty() && (!colorsChanged))
+		return;
+
+	if (!newLabels.empty())
+		labels = newLabels.clone();
+
+	// check if we are ready to compute anything
+	// TODO: also exit when in roi change. how to propagate this properly?
+	if (!image.get() || labels.empty())
+		return;
+
 	SharedDataLock ctxlock(viewport->ctx->mutex);
 	ViewportCtx args = **viewport->ctx;
 	ctxlock.unlock();
 
 	args.wait.fetch_and_store(1);
 
+	BackgroundTaskPtr taskBins(new DistviewBinsTbb(
+		image, labels, control->labelColors, illuminant, args, viewport->ctx,
+								   viewport->sets));
+	QObject::connect(taskBins.get(), SIGNAL(finished(bool)),
+					 this, SLOT(binningUpdate(bool)), Qt::QueuedConnection);
+	queue->push(taskBins);
+}
+
+void multi_img_viewer::updateLabelsPartially(const cv::Mat1s &newLabels,
+											 const cv::Mat1b &mask)
+{
 	if (!image.get())
 		return;
 
-	// we calculate into temp, then from temp in the second round (right?)
+	// save old configuration for partial updates
+	cv::Mat1s oldLabels = labels.clone();
+	// just override the whole thing
+	labels = newLabels.clone();
+
+	SharedDataLock ctxlock(viewport->ctx->mutex);
+	ViewportCtx args = **viewport->ctx;
+	ctxlock.unlock();
+
+	args.wait.fetch_and_store(1);
+
+	// we calculate into temp, then from temp in the second round
 	sets_ptr temp(new SharedData<std::vector<BinSet> >(NULL));
 
 	{	// first round: delete all pixels from their *previous* labels
 		std::vector<cv::Rect> sub;
 		sub.push_back(cv::Rect(0, 0, mask.cols, mask.rows));
-		BackgroundTaskPtr taskBins(new ViewerBinsTbb(
-			image, old.clone(), control->labelColors, illuminant, args,
+		BackgroundTaskPtr taskBins(new DistviewBinsTbb(
+			image, oldLabels, control->labelColors, illuminant, args,
 			viewport->ctx, viewport->sets, temp, sub, std::vector<cv::Rect>(),
 			mask, false, false));
 		queue->push(taskBins);
 	}
 
 	{	// second round: now add them back according to their current labels
+		/* we do not clone labels, as labels is never changed, only replaced
+		 * TODO: write that down at the appropriate place so people will
+		 * adhere to that */
 		std::vector<cv::Rect> add;
 		add.push_back(cv::Rect(0, 0, mask.cols, mask.rows));
-		BackgroundTaskPtr taskBins(new ViewerBinsTbb(
-			image, labels.clone(), control->labelColors, illuminant, args,
+		BackgroundTaskPtr taskBins(new DistviewBinsTbb(
+			image, labels, control->labelColors, illuminant, args,
 			viewport->ctx, viewport->sets, temp, std::vector<cv::Rect>(), add,
 			mask, false, true));
 
@@ -357,25 +398,6 @@ void multi_img_viewer::updateLabelsPartially(cv::Mat1b mask, cv::Mat1s old)
 						 this, SLOT(binningUpdate(bool)), Qt::QueuedConnection);
 		queue->push(taskBins);
 	}
-}
-
-void multi_img_viewer::updateLabels()
-{
-	if (!image.get())
-		return;
-
-	SharedDataLock ctxlock(viewport->ctx->mutex);
-	ViewportCtx args = **viewport->ctx;
-	ctxlock.unlock();
-
-	args.wait.fetch_and_store(1);
-
-	BackgroundTaskPtr taskBins(new ViewerBinsTbb(
-		image, labels, control->labelColors, illuminant, args, viewport->ctx,
-								   viewport->sets));
-	QObject::connect(taskBins.get(), SIGNAL(finished(bool)),
-					 this, SLOT(binningUpdate(bool)), Qt::QueuedConnection);
-	queue->push(taskBins);
 }
 
 void multi_img_viewer::binningUpdate(bool updated)
@@ -464,7 +486,7 @@ void multi_img_viewer::overlay(int x, int y)
 	//GGDBGM(format("multi_img_viewer::overlay(int x, int y): image.get()=%1% type=%2%\n")
 	//	   % image.get() %getType());
 	if(viewportGV->isHidden()) {
-	//	GGDBGM(format("WARNING: slot activated for repr %1% while payload hidden!") % getType() << endl);
+	//	GGDBGM(format("WARNING: slot activated for type %1% while payload hidden!") % getType() << endl);
 		return;
 	}
 
@@ -476,19 +498,12 @@ void multi_img_viewer::overlay(int x, int y)
 	points.resize((*image)->size());
 
 	for (unsigned int d = 0; d < (*image)->size(); ++d) {
-		points[d] = QPointF(d, curpos(pixel[d], d, 
+		points[d] = QPointF(d, Compute::curpos(pixel[d], d,
 			(*viewport->ctx)->minval, (*viewport->ctx)->binsize, illuminant));
 	}
 
 	viewport->overlayMode = true;
 	viewport->update();
-}
-
-void multi_img_viewer::updateLabelColors(QVector<QColor> colors, bool changed)
-{
-	control->updateLabelColors(colors);
-	if (changed)
-		updateLabels();
 }
 
 void multi_img_viewer::toggleLabeled(bool toggle)
@@ -516,7 +531,7 @@ void multi_img_viewer::toggleLabels(bool toggle)
 	if (!image.get())
 		return;
 
-	BackgroundTaskPtr taskBins(new ViewerBinsTbb(
+	BackgroundTaskPtr taskBins(new DistviewBinsTbb(
 		image, labels, control->labelColors, illuminant, args, viewport->ctx, viewport->sets));
 	QObject::connect(taskBins.get(), SIGNAL(finished(bool)),
 					 this, SLOT(binningUpdate(bool)), Qt::QueuedConnection);

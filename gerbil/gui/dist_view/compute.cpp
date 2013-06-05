@@ -13,13 +13,25 @@ void assertBinSetsKeyDim(const std::vector<BinSet> &v, const ViewportCtx &ctx) {
 		foreach(BinSet::HashMap::value_type pr, set.bins) {
 			const BinSet::HashKey &key = pr.first;
 			if (ctx.dimensionality != key.size()) {
-				GGDBGP(boost::format("failure: repr=%1% ,  (key.size()==%2%  != dim==%3%)")
+				GGDBGP(boost::format("failure: type=%1% ,  (key.size()==%2%  != dim==%3%)")
 				   %ctx.type %key.size() %ctx.dimensionality
 				   << endl);
 				assert(ctx.dimensionality == key.size());
 			}
 		}
 	}
+}
+
+/* translate image value to value in binning coordinate system */
+multi_img::Value Compute::curpos(
+	const multi_img::Value& val, int dim,
+	const multi_img::Value& minval, const multi_img::Value& binsize,
+	const std::vector<multi_img::Value> &illuminant)
+{
+	multi_img::Value curpos = (val - minval) / binsize;
+	if (!illuminant.empty())
+		curpos /= illuminant[dim];
+	return curpos;
 }
 
 void Compute::PreprocessBins::operator()(const BinSet::HashMap::range_type &r)
@@ -74,7 +86,7 @@ void Compute::preparePolylines(const ViewportCtx &ctx,
 	// This happens often, but appears to be non-deterministic (?).
 	//  Appears to apply only to GRAD.
 	// NOT: applies also to GRADPCA.
-	// Viewport::prepareLines() failure: repr=GRAD idx=0,  (hk.size()==31  != dim==30)
+	// Viewport::prepareLines() failure: type=GRAD idx=0,  (hk.size()==31  != dim==30)
 	// Probably multi_array (==BinSet::HashKey) not correctly initialized
 
 	// shuffle the index for clutter-reduction

@@ -62,8 +62,10 @@ public slots:
 	void finishBinCountChange(bool success);
 
 	// controller stuff, actually
-	void updateLabelsPartially(cv::Mat1b mask, cv::Mat1s old);
-	void updateLabels();
+	void updateLabels(const cv::Mat1s& labels,
+					  const QVector<QColor> &colors = QVector<QColor>(),
+					  bool colorsChanged = false);
+	void updateLabelsPartially(const cv::Mat1s &labels, const cv::Mat1b &mask);
 
 	void toggleFold();
 	void toggleLabeled(bool toggle);
@@ -73,7 +75,6 @@ public slots:
 	void overlay(int x, int y);
 	void setActive()	{ viewport->active = true; viewport->update(); }
 	void setInactive()	{  viewport->active = false; viewport->update(); }
-	void updateLabelColors(QVector<QColor> labelColors, bool changed);
 
 signals:
 	void newOverlay();

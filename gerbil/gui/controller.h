@@ -41,7 +41,9 @@ public slots:
 
 	/** notifies (from models, tasks) */
 	// label colors added/changed
-	void propagateLabelingChange(const QVector<QColor> &colors, bool changed);
+	void propagateLabelingChange(const cv::Mat1s &labels,
+								 const QVector<QColor>& colors = QVector<QColor>(),
+								 bool colorsChanged = false);
 
 	// update image data in docks (to be moved to dockcontroller)
 	void docksUpdateImage(representation::t type, SharedMultiImgPtr image);

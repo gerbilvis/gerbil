@@ -55,14 +55,17 @@ public:
 public slots:
 	void changeBand(QPixmap band, QString desc);
 
-	void setLabelMatrix(cv::Mat1s matrix);
-	void processLabelingChange(const QVector<QColor> &colors, bool changed);
+	void processLabelingChange(const cv::Mat1s &labels,
+							   const QVector<QColor>& colors = QVector<QColor>(),
+							   bool colorsChanged = false);
+	void processLabelingChange(const cv::Mat1s &labels, const cv::Mat1b &mask);
+
 	void processRGB(QPixmap rgb);
 
 	void setGUIEnabled(bool enable, TaskType tt = TT_NONE);
 	void finishGraphSeg(bool success);
 
-	// we probably remove this functionality void reshapeDock(bool floating);
+	// we probably remove this functionality: void reshapeDock(bool floating);
 	void clearLabelOrSeeds();
 	void addToLabel();
 	void remFromLabel();
@@ -101,6 +104,11 @@ signals:
 	void specRescaleRequested(size_t bands);
 	void clearLabelRequested(short index);
 	void alterLabelRequested(short index, const cv::Mat1b &mask, bool negative);
+
+	// will be part of banddock
+	void alterLabelingRequested(const cv::Mat1s &labels, const cv::Mat1b &mask);
+	void newLabelingRequested(const cv::Mat1s &labels);
+
 	void rgbRequested();
 
 	void seedingDone(bool yeah = false);

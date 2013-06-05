@@ -24,7 +24,7 @@ std::string ggdb_method_string(const char *clsname, const char *funname);
 #define GGDBG_CALL()  GGDBG_PRINT_METHOD(); std::cerr << std::endl;
 
 // also print viewer representation type
-#define GGDBG_CALL_VT()  GGDBG_PRINT_METHOD(); std::cerr << " repr=" << getType() << std::endl;
+#define GGDBG_CALL_VT()  GGDBG_PRINT_METHOD(); std::cerr << " type=" << getType() << std::endl;
 
 // Gerbil Gui DeBuG class Method
 // Append class name and method followed by expr to cerr.
@@ -51,7 +51,7 @@ std::string ggdb_method_string(const char *clsname, const char *funname);
 		using namespace std; \
 		using namespace boost; \
 		GGDBG_PRINT_METHOD(); \
-		std::cerr  << " repr=" << getType() << " " << expr; \
+		std::cerr  << " type=" << getType() << " " << expr; \
 		std::cerr.flush(); \
 	}
 class GGDBGEnterLeavePrint {

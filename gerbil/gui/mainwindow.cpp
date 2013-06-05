@@ -84,24 +84,30 @@ void MainWindow::changeBand(QPixmap band, QString desc)
 }
 
 // todo: move to the new bandDock
-void MainWindow::setLabelMatrix(cv::Mat1s matrix)
+void MainWindow::processLabelingChange(const cv::Mat1s &labels,
+									   const QVector<QColor> &colors,
+									   bool colorsChanged)
 {
-	bandView->setLabelMatrix(matrix);
+	if (!colors.empty()) {
+		// use colors for our awesome label menu (rebuild everything)
+		markerSelector->clear();
+		for (int i = 1; i < colors.size(); ++i) // 0 is index for unlabeled
+		{
+			markerSelector->addItem(colorIcon(colors.at(i)), "");
+		}
+		markerSelector->addItem(QIcon(":/toolbar/add"), "");
+	}
+
+	// tell bandview about the update as well
+	bandView->updateLabeling(labels, colors, colorsChanged);
 }
 
 // todo: move to the new bandDock
-void MainWindow::processLabelingChange(const QVector<QColor> &colors, bool changed)
+void MainWindow::processLabelingChange(const cv::Mat1s &labels,
+									   const cv::Mat1b &mask)
 {
-	// use colors for our awesome label menu
-	markerSelector->clear();
-	for (int i = 1; i < colors.size(); ++i) // 0 is index for unlabeled
-	{
-		markerSelector->addItem(colorIcon(colors.at(i)), "");
-	}
-	markerSelector->addItem(QIcon(":/toolbar/add"), "");
-
-	// tell bandview about the update as well
-	bandView->updateLabeling(colors, changed);
+	// tell bandview about the update
+	bandView->updateLabeling(labels, mask);
 }
 
 // todo: move to the new bandDock
@@ -214,24 +220,19 @@ void MainWindow::initSignals(Controller *chief)
 	connect(&bandView->labelTimer, SIGNAL(timeout()),
 			bandView, SLOT(commitLabelChanges()));
 
-	// banddock
-	// TODO: updateLabels() should be performed by model
-	/* when applybutton is pressed, bandView flushes the uncommited labels
-	 * and calls the global update function
-	 */
+	connect(bandView, SIGNAL(alteredLabels(const cv::Mat1s&, const cv::Mat1b&)),
+			this, SIGNAL(alterLabelingRequested(cv::Mat1s,cv::Mat1b)));
+	connect(bandView, SIGNAL(newLabeling(const cv::Mat1s&)),
+			this, SIGNAL(newLabelingRequested(cv::Mat1s)));
+
+	/* when applybutton is pressed, bandView commits full label matrix */
 	connect(applyButton, SIGNAL(clicked()),
-			bandView, SLOT(updateLabels()));
-	connect(bandView, SIGNAL(refreshLabels()),
-			viewerContainer, SLOT(updateLabels()));
+			bandView, SLOT(commitLabels()));
 
 	connect(bandView, SIGNAL(killHover()),
 			viewerContainer, SIGNAL(viewportsKillHover()));
 	connect(bandView, SIGNAL(pixelOverlay(int, int)),
 			viewerContainer, SIGNAL(viewersOverlay(int, int)));
-	connect(bandView, SIGNAL(subPixels(const std::map<std::pair<int, int>, short> &)),
-			viewerContainer, SIGNAL(viewersSubPixels(const std::map<std::pair<int, int>, short> &)));
-	connect(bandView, SIGNAL(addPixels(const std::map<std::pair<int, int>, short> &)),
-			viewerContainer, SIGNAL(viewersAddPixels(const std::map<std::pair<int, int>, short> &)));
 	connect(bandView, SIGNAL(newSingleLabel(short)),
 			viewerContainer, SIGNAL(viewersHighlight(short)));
 
@@ -739,9 +740,9 @@ void MainWindow::startGraphseg()
 	} else if (src == 1) {
 		runGraphseg(gradient, conf);
 	} else {	// currently shown band, construct from selection in viewport
-		representation::t repr = viewerContainer->getActiveRepresentation();
-		int band = viewerContainer->getSelection(repr);
-		SharedMultiImgPtr img = viewerContainer->getViewerImage(repr);
+		representation::t type = viewerContainer->getActiveRepresentation();
+		int band = viewerContainer->getSelection(type);
+		SharedMultiImgPtr img = viewerContainer->getViewerImage(type);
 		SharedDataLock img_lock(img->mutex);
 		SharedMultiImgPtr i(new SharedMultiImgBase(
 			new multi_img((**img)[band], (*img)->minval, (*img)->maxval)));

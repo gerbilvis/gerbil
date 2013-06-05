@@ -164,6 +164,12 @@ class Compute
 {
 public:
 
+	/* translate image value to value in binning coordinate system */
+	static multi_img::Value curpos(const multi_img::Value &val, int dim,
+								   const multi_img::Value &minval,
+								   const multi_img::Value &binsize,
+							  const std::vector<multi_img::Value> &illuminant);
+
 	/* method and helper class to preprocess bins before vertex generation */
 	static void preparePolylines(const ViewportCtx &context,
 								 std::vector<BinSet> &sets, binindex &index);

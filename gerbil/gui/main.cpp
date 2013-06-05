@@ -13,8 +13,6 @@
 #include <iostream>
 #include <string>
 
-#include <tbb/task_scheduler_init.h>
-
 /** All OpenCV functions that are called from parallelized parts of gerbil
     have to be first executed in single-threaded environment. This is actually
     required only for functions that contain 'static const' variables, but to 
@@ -261,9 +259,6 @@ bool determine_limited(const std::pair<std::vector<std::string>, std::vector<mul
 
 int main(int argc, char **argv)
 {
-	/* for debugging reduce to one thread */
-	tbb::task_scheduler_init(1);
-
 	// start qt before we try showing dialogs or use QGLFormat
 	QApplication app(argc, argv);
 	init_opencv();

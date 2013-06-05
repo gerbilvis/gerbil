@@ -15,9 +15,6 @@
 class ViewerContainer : public QWidget
 {
     Q_OBJECT
-protected:
-    typedef QList<multi_img_viewer*> ViewerList;
-	typedef QMap<representation::t, multi_img_viewer*> ViewerMap;
     
 public:
     explicit ViewerContainer(QWidget *parent = 0);
@@ -26,45 +23,42 @@ public:
 	void setTaskQueue(BackgroundTaskQueue *taskQueue);
     void initUi();
 
-	void addImage(representation::t repr, sets_ptr temp, const std::vector<cv::Rect> &regions, cv::Rect roi);
-	sets_ptr subImage(representation::t repr, const std::vector<cv::Rect> &regions, cv::Rect roi);
-	void setImage(representation::t repr, SharedMultiImgPtr image, cv::Rect roi);
+	void addImage(representation::t type, sets_ptr temp, const std::vector<cv::Rect> &regions, cv::Rect roi);
+	sets_ptr subImage(representation::t type, const std::vector<cv::Rect> &regions, cv::Rect roi);
+	void setImage(representation::t type, SharedMultiImgPtr image, cv::Rect roi);
 
 	void toggleLabels(bool toggle);
-	void updateLabelColors(QVector<QColor> colors, bool changed);
+	void updateLabels(const cv::Mat1s &labels,
+					  const QVector<QColor>& colors = QVector<QColor>(),
+					  bool colorsChanged = false);
 
-	void updateBinning(representation::t repr, int bins);
-
-	// MODEL
-	// To be removed when refactored into model classes.
-	SharedMultiImgPtr image, gradient, imagepca, gradientpca;
+	void updateBinning(representation::t type, int bins);
 
 	void disconnectAllViewers();
 	void updateViewerBandSelections(int numbands);
-	int getSelection(representation::t repr);
-	SharedMultiImgPtr getViewerImage(representation::t repr);
+	int getSelection(representation::t type);
+	SharedMultiImgPtr getViewerImage(representation::t type);
 	representation::t getActiveRepresentation() const;
 	const cv::Mat1b getHighlightMask() const;
 
 public slots:
-	void setLabelMatrix(cv::Mat1s matrix);
 	void setGUIEnabled(bool enable, TaskType tt);
-	void toggleViewer(bool enable, representation::t repr);
+	void toggleViewer(bool enable, representation::t type);
 	void newROI(cv::Rect roi);
 
 	void newOverlay();
 	void setActiveViewer(int repri);
 
 	// TODO rename (reconnectViewer ?)
-	void connectViewer(representation::t repr);
-	void disconnectViewer(representation::t repr);
+	void connectViewer(representation::t type);
+	void disconnectViewer(representation::t type);
 
 	void finishTask(bool success);
 	void finishNormRangeImgChange(bool success);
 	void finishNormRangeGradChange(bool success);
 
-	void updateLabelsPartially(cv::Mat1b mask, cv::Mat1s old);
-	void updateLabels();
+	void updateLabelsPartially(const cv::Mat1s &labels, const cv::Mat1b &mask);
+
 	void newIlluminant(cv::Mat1f illum);
 	void showIlluminationCurve(bool show);
 	void setIlluminantApplied(bool applied);
@@ -93,7 +87,7 @@ signals:
 	void requestGUIEnabled(bool enable, TaskType tt);
 
 protected:
-	ViewerMap vm;
+	QMap<representation::t, multi_img_viewer*> map;
 	BackgroundTaskQueue *taskQueue;
 	multi_img_viewer *activeViewer;
 	cv::Rect roi;
@@ -104,10 +98,10 @@ private:
      * The viewer will be inserted at the bottom of the vertical layout.
      * Needs to be called before signal/slot wiring in initUi() is done.
      */
-    multi_img_viewer *createViewer(representation::t repr);
+	multi_img_viewer *createViewer(representation::t type);
 
-    void enableViewer(representation::t repr);
-    void disableViewer(representation::t repr);
+	void enableViewer(representation::t type);
+	void disableViewer(representation::t type);
 };
 
 #endif // VIEWERCONTAINER_H

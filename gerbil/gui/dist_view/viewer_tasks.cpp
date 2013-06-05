@@ -1,5 +1,4 @@
 #include "viewer_tasks.h"
-#include "curpos.h"
 
 #include <multi_img.h>
 
@@ -29,7 +28,8 @@ void fillMaskSingleBody::operator ()(
 		unsigned char *mrow = mask[y];
 		const multi_img::Value *brow = band[y];
 		for (int x = r.cols().begin(); x != r.cols().end(); ++x) {
-			int pos = floor(curpos(brow[x], dim, minval, binsize, illuminant));
+			int pos = floor(
+					Compute::curpos(brow[x], dim, minval, binsize, illuminant));
 			mrow[x] = (pos == sel) ? 1 : 0;
 		}
 	}
@@ -57,7 +57,7 @@ void fillMaskLimitersBody::operator ()(
 			row[x] = 1;
 			const multi_img::Pixel &p = image(y, x);
 			for (unsigned int d = 0; d < image.size(); ++d) {
-				int pos = floor(curpos(
+				int pos = floor(Compute::curpos(
 									p[d], d, minval, binsize, illuminant));
 				if (pos < l[d].first || pos > l[d].second) {
 					row[x] = 0;
@@ -89,16 +89,16 @@ void updateMaskLimitersBody::operator ()(
 		unsigned char *mrow = mask[y];
 		const multi_img::Value *brow = image[dim][y];
 		for (int x = r.cols().begin(); x != r.cols().end(); ++x) {
-			int pos = floor(
-					curpos(brow[x], dim, minval, binsize, illuminant));
+			int pos = floor(Compute::curpos(
+								brow[x], dim, minval, binsize, illuminant));
 			if (pos < l[dim].first || pos > l[dim].second) {
 				mrow[x] = 0;
 			} else if (mrow[x] == 0) { // we need to do exhaustive test
 				mrow[x] = 1;
 				const multi_img::Pixel& p = image(y, x);
 				for (unsigned int d = 0; d < image.size(); ++d) {
-					int pos = floor(
-							curpos(p[d], d, minval, binsize, illuminant));
+					int pos = floor(Compute::curpos(
+										p[d], d, minval, binsize, illuminant));
 					if (pos < l[d].first || pos > l[d].second) {
 						mrow[x] = 0;
 						break;

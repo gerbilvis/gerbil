@@ -26,7 +26,7 @@ public:
 	void leaveEvent(QEvent *ev);
 
 	void setPixmap(QPixmap pixmap);
-	void setLabelMatrix(cv::Mat1s matrix);
+	void setLabelMatrix(const cv::Mat1b & matrix);
 
 	bool isSeedModeEnabled() { return seedMode; }
 
@@ -40,11 +40,15 @@ public:
 public slots:
 	void refresh();
 	void changeCurrentLabel(int label);
-	void updateLabels();
+	void commitLabels();
 	void commitLabelChanges();
 	void drawOverlay(const cv::Mat1b &mask);
 
-	void updateLabeling(const QVector<QColor> &labelColors, bool changed);
+	/* update either labeling colors, or both them and pixel labels */
+	void updateLabeling(const cv::Mat1s &labels,
+						const QVector<QColor> &colors = QVector<QColor>(),
+						bool colorsChanged = false);
+	void updateLabeling(const cv::Mat1s &labels, const cv::Mat1b &mask);
 	void applyLabelAlpha(int alpha);
 	void toggleShowLabels(bool disabled);
 	void toggleSingleLabel(bool enabled);
@@ -53,31 +57,39 @@ public slots:
 
 signals:
 	void pixelOverlay(int x, int y);
-	void subPixels(const std::map<std::pair<int, int>, short> &points);
-	void addPixels(const std::map<std::pair<int, int>, short> &points);
-
-	void refreshLabels();
 	void killHover();
+
+	// single label mode, diff. label chosen (TODO: name "singleLabelSelected)
+	void newSingleLabel(short label);
+
+	// user changed some labels
+	void alteredLabels(const cv::Mat1s &labels, const cv::Mat1b &mask);
+
+	// user wants full labeling update
+	void newLabeling(const cv::Mat1s &labels);
 
 	// user requested additional label
 	void newLabel();
-	// single label mode, diff. label chosen
-	void newSingleLabel(short label);
+
 
 private:
 	void cursorAction(QMouseEvent *ev, bool click = false);
 	inline void markCachePixel(QPainter &p, int x, int y);
 	inline void markCachePixelS(QPainter &p, int x, int y);
 	void updateCache();
-	void updateCache(int x, int y, short label = 0);
+	void updateCache(int y, int x, short label = 0);
 	void updatePoint(const QPointF &p);
 
-	// local reference to global labeling matrix
+	// local labeling matrix
 	cv::Mat1s labels;
 
-	// pixel labels we did change, but not yet notify other parties about
-	std::map<std::pair<int, int>, short> uncommitedLabels;
+	// mask that contains pixel labels we did change, but not commit back yet
+	cv::Mat1b uncommitedLabels;
 
+	// ignore the signals when we were the originator
+	bool ignoreUpdates;
+
+	// the cachedPixmap is colored with label colors
 	QPixmap cachedPixmap;
 	bool cacheValid;
 

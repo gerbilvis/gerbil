@@ -19,7 +19,7 @@ Controller::Controller(const std::string &filename, bool limited_mode)
 	// initialize label model
 	lm.setDimensions(dimensions.width, dimensions.height);
 
-	// create gui (perform initUI before connecting signals)
+	// create gui (perform initUI before connecting signals!)
 	window = new MainWindow(limited_mode);
 	window->initUI(dimensions, im.getSize());
 
@@ -32,7 +32,7 @@ Controller::Controller(const std::string &filename, bool limited_mode)
 	// into model classes.
 	window->getViewerContainer()->setTaskQueue(&queue);
 
-	// start with initial label (do this after signals, and before spawnROI()!
+	// start with initial label (do this after signals, and before spawnROI())!
 	lm.addLabel();
 
 	/* Initial ROI images spawning. Do it before showing the window but after
@@ -66,8 +66,8 @@ void Controller::initImage()
 {
 	/* gui requests */
 	connect(window->getViewerContainer(),
-			SIGNAL(bandSelected(representation, int)),
-			&im, SLOT(computeBand(representation, int)));
+			SIGNAL(bandSelected(representation::t, int)),
+			&im, SLOT(computeBand(representation::t, int)));
 	connect(window, SIGNAL(rgbRequested()),
 			&im, SLOT(computeRGB()));
 
@@ -76,8 +76,8 @@ void Controller::initImage()
 			window, SLOT(changeBand(QPixmap, QString)));
 	connect(&im, SIGNAL(rgbUpdate(QPixmap)),
 			window, SLOT(processRGB(QPixmap)));
-	connect(&im, SIGNAL(imageUpdate(representation,SharedMultiImgPtr)),
-			this, SLOT(docksUpdateImage(representation,SharedMultiImgPtr)));
+	connect(&im, SIGNAL(imageUpdate(representation::t,SharedMultiImgPtr)),
+			this, SLOT(docksUpdateImage(representation::t,SharedMultiImgPtr)));
 }
 
 void Controller::spawnROI(const cv::Rect &roi)
@@ -192,32 +192,39 @@ void Controller::initLabeling()
 			&lm, SLOT(alterLabel(short)));
 	connect(window, SIGNAL(alterLabelRequested(short,cv::Mat1b,bool)),
 			&lm, SLOT(alterLabel(short,cv::Mat1b,bool)));
+	connect(window, SIGNAL(alterLabelingRequested(cv::Mat1s,cv::Mat1b)),
+			&lm, SLOT(alterPixels(cv::Mat1s,cv::Mat1b)));
+	connect(window, SIGNAL(newLabelingRequested(cv::Mat1s)),
+			&lm, SLOT(setLabels(cv::Mat1s)));
 
 	/* lm -> others */
-	connect(&lm, SIGNAL(labelingMatrix(cv::Mat1s)),
-			window, SLOT(setLabelMatrix(cv::Mat1s)));
-	connect(&lm, SIGNAL(labelingMatrix(cv::Mat1s)),
-			window->getViewerContainer(), SLOT(setLabelMatrix(cv::Mat1s)));
-
-	connect(&lm, SIGNAL(newLabeling(const QVector<QColor> &, bool)),
-			this, SLOT(propagateLabelingChange(const QVector<QColor> &, bool)));
-	connect(&lm, SIGNAL(partialLabelUpdate(cv::Mat1b, cv::Mat1s)),
+	connect(&lm,
+			SIGNAL(newLabeling(const cv::Mat1s&, const QVector<QColor>&, bool)),
+			this, SLOT(propagateLabelingChange(
+					 const cv::Mat1s&, const QVector<QColor> &, bool)));
+	connect(&lm, SIGNAL(partialLabelUpdate(const cv::Mat1s&,const cv::Mat1b&)),
 			window->getViewerContainer(),
-			SLOT(updateLabelsPartially(cv::Mat1b,cv::Mat1s)));
-
+			SLOT(updateLabelsPartially(const cv::Mat1s&,const cv::Mat1b&)));
+	connect(&lm, SIGNAL(partialLabelUpdate(const cv::Mat1s&,const cv::Mat1b&)),
+			window,
+			SLOT(processLabelingChange(const cv::Mat1s&,const cv::Mat1b&)));
 }
 
-void Controller::propagateLabelingChange(const QVector<QColor> &colors, bool changed)
+void Controller::propagateLabelingChange(const cv::Mat1s& labels,
+										 const QVector<QColor> &colors,
+										 bool colorsChanged)
 {
-	window->processLabelingChange(colors, changed);
+	window->processLabelingChange(labels, colors, colorsChanged);
 
-	if (changed)
+	bool grandUpdate = !labels.empty() || colorsChanged;
+
+	if (grandUpdate)
 		disableGUI();
 
 	// TODO: we will talk to ViewerController directly
-	window->getViewerContainer()->updateLabelColors(colors, changed);
+	window->getViewerContainer()->updateLabels(labels, colors, colorsChanged);
 
-	if (changed)
+	if (grandUpdate)
 		enableGUILater();
 }
 

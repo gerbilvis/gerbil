@@ -1,20 +1,18 @@
-#include "viewport.h"
-#include "viewer_bins_tbb.h"
-#include "curpos.h"
+#include "distviewbinstbb.h"
 
 #include <background_task.h>
 #include <multi_img.h>
 
-#include <tbb/blocked_range2d.h>
-#include <tbb/task.h>
 #include <algorithm>
+#include <tbb/partitioner.h>
+#include <tbb/parallel_for.h>
 
 #define REUSE_THRESHOLD 0.1
 
 
 class Accumulate {
 public:
-	Accumulate(bool subtract, multi_img &multi, cv::Mat1s &labels, cv::Mat1b &mask,
+	Accumulate(bool subtract, multi_img &multi, const cv::Mat1s &labels, const cv::Mat1b &mask,
 		int nbins, multi_img::Value binsize, multi_img::Value minval, bool ignoreLabels,
 		std::vector<multi_img::Value> &illuminant,
 		std::vector<BinSet> &sets)
@@ -24,8 +22,8 @@ public:
 private:
 	bool subtract;
 	multi_img &multi;
-	cv::Mat1s &labels;
-	cv::Mat1b &mask;
+	const cv::Mat1s &labels;
+	const cv::Mat1b &mask;
 	int nbins;
 	multi_img::Value binsize;
 	multi_img::Value minval;
@@ -34,8 +32,11 @@ private:
 	std::vector<BinSet> &sets;
 };
 
-bool ViewerBinsTbb::run()
+#include <opencv2/highgui/highgui.hpp>
+
+bool DistviewBinsTbb::run()
 {
+	cv::imwrite("/tmp/mask.png", mask);
 	bool reuse = ((!add.empty() || !sub.empty()) && !inplace);
 	bool keepOldContext = false;
 	if (reuse) {
@@ -155,9 +156,10 @@ bool ViewerBinsTbb::run()
 void Accumulate::operator()(const tbb::blocked_range2d<int> &r) const
 {
 	for (int y = r.rows().begin(); y != r.rows().end(); ++y) {
-		short *lr = labels[y];
+		const short *lr = labels[y];
+		const uchar *mr = (mask.empty() ? 0 : mask[y]);
 		for (int x = r.cols().begin(); x != r.cols().end(); ++x) {
-			if (!mask.empty() && !mask(y, x))
+			if (mr && !mr[x])
 				continue;
 
 			int label = (ignoreLabels ? 0 : lr[x]);
@@ -167,8 +169,8 @@ void Accumulate::operator()(const tbb::blocked_range2d<int> &r) const
 
 			BinSet::HashKey hashkey(boost::extents[multi.size()]);
 			for (int d = 0; d < multi.size(); ++d) {
-				int pos = floor(
-					curpos(pixel[d], d, minval, binsize, illuminant));
+				int pos = floor(Compute::curpos(
+									pixel[d], d, minval, binsize, illuminant));
 				pos = std::max(pos, 0); pos = std::min(pos, nbins-1);
 				hashkey[d] = (unsigned char)pos;
 			}

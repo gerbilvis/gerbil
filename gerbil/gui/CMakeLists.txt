@@ -17,10 +17,10 @@ vole_compile_library(
 	controller
 
 	dist_view/compute
+	dist_view/curpos
 	dist_view/viewercontainer
 	dist_view/multi_img_viewer
 	dist_view/viewer_tasks
-	dist_view/viewer_bins_tbb
 	dist_view/foldingbar
 	dist_view/viewport
 	dist_view/viewportcontrol
@@ -31,6 +31,7 @@ vole_compile_library(
 	model/falsecolor
 	model/illumination
 
+	tasks/distviewbinstbb
 	tasks/rgbtbb
 	tasks/rgbserial
 	tasks/normrangetbb

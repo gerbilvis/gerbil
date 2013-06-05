@@ -1,7 +1,7 @@
-#ifndef MULTI_IMG_VIEWER_BINS_TBB_H
-#define MULTI_IMG_VIEWER_BINS_TBB_H
+#ifndef DISTVIEWBINSTBB_H
+#define DISTVIEWBINSTBB_H
 
-#include "viewport.h"
+#include "../dist_view/compute.h"
 
 #include <background_task.h>
 #include <shared_data.h>
@@ -11,14 +11,11 @@
 #include <QVector>
 
 #include <tbb/task.h>
-#include <tbb/blocked_range.h>
 #include <tbb/blocked_range2d.h>
-#include <tbb/partitioner.h>
-#include <tbb/parallel_for.h>
 
-class ViewerBinsTbb : public BackgroundTask {
+class DistviewBinsTbb : public BackgroundTask {
 public:
-	ViewerBinsTbb(
+	DistviewBinsTbb(
 		SharedMultiImgPtr multi, const cv::Mat1s &labels,
 		const QVector<QColor> &colors,
 		const std::vector<multi_img::Value> &illuminant,
@@ -31,7 +28,7 @@ public:
 		: BackgroundTask(targetRoi), multi(multi), labels(labels), colors(colors),
 		illuminant(illuminant), args(args), context(context),
 		current(current), temp(temp), sub(sub), add(add), mask(mask), inplace(inplace), apply(apply) {}
-	virtual ~ViewerBinsTbb() {}
+	virtual ~DistviewBinsTbb() {}
 	virtual bool run();
 	virtual void cancel() { stopper.cancel_group_execution(); }
 protected:
@@ -39,8 +36,8 @@ protected:
 
 
 	SharedMultiImgPtr multi;
-	cv::Mat1s labels;
-	cv::Mat1b mask;
+	const cv::Mat1s labels;
+	const cv::Mat1b mask;
 	QVector<QColor> colors;
 	std::vector<multi_img::Value> illuminant;
 	ViewportCtx args;
@@ -54,4 +51,5 @@ protected:
 	bool inplace;
 	bool apply;
 };
-#endif // MULTI_IMG_VIEWER_BINS_TBB_H
+
+#endif // DISTVIEWBINSTBB_H

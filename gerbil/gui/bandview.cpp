@@ -22,6 +22,7 @@ BandView::BandView(QWidget *parent)
 	: ScaledView(parent),
 	  cacheValid(false), cursor(-1, -1), lastcursor(-1, -1), curLabel(1),
 	  overlay(0), showLabels(true), singleLabel(false), holdLabel(false),
+	  ignoreUpdates(false),
 	  seedMode(false), labelAlpha(63),
 	  seedColorsA(std::make_pair(
             QColor(255, 0, 0, labelAlpha), QColor(255, 255, 0, labelAlpha)))
@@ -29,12 +30,6 @@ BandView::BandView(QWidget *parent)
 	// the timer automatically sends an accumulated update request
 	labelTimer.setSingleShot(true);
 	labelTimer.setInterval(500);
-}
-
-void BandView::refresh()
-{
-	cacheValid = false;
-	update();
 }
 
 void BandView::setPixmap(QPixmap p)
@@ -49,48 +44,71 @@ void BandView::setPixmap(QPixmap p)
 	cacheValid = false;
 }
 
-void BandView::setLabelMatrix(cv::Mat1s matrix)
+void BandView::refresh()
 {
-	uncommitedLabels.clear();
-	labels = matrix;
-
-	refresh();
+	cacheValid = false;
+	update();
 }
 
-void BandView::updateLabeling(const QVector<QColor> &lc, bool changed)
+void BandView::updateLabeling(const cv::Mat1s &newLabels,
+							  const QVector<QColor> &colors,
+							  bool colorsChanged)
 {
-	// store label colors
-	labelColors = lc;
+	if (ignoreUpdates)
+		return;
 
-	// create alpha-modified label colors
-	labelColorsA.resize(lc.size());
-	labelColorsA[0] = QColor(0, 0, 0, 0);
-	for (int i = 1; i < labelColors.size(); ++i) // 0 is index for unlabeled
-	{
-		QColor col = labelColors[i];
-		col.setAlpha(labelAlpha);
-		labelColorsA[i] = col;
+	if (!colors.empty()) {
+		// store label colors
+		labelColors = colors;
+
+		// create alpha-modified label colors
+		labelColorsA.resize(colors.size());
+		labelColorsA[0] = QColor(0, 0, 0, 0);
+		for (int i = 1; i < labelColors.size(); ++i) // 0 is index for unlabeled
+		{
+			QColor col = labelColors[i];
+			col.setAlpha(labelAlpha);
+			labelColorsA[i] = col;
+		}
 	}
 
-	if (changed) {
-		// uncommited labels are not relevant anymore
-		uncommitedLabels.clear();
+	if (!newLabels.empty()) {
+		// local labeling is a copy
+		labels = newLabels.clone();
+		// initialize mask for uncommited labels with right dimensions
+		uncommitedLabels = cv::Mat1b(labels.rows, labels.cols, (uchar)0);
+	}
 
-		// need to redraw with new colors or even labeling
+	if (!newLabels.empty() || colorsChanged)
 		refresh();
-	}
+}
+
+void BandView::updateLabeling(const cv::Mat1s &newLabels, const cv::Mat1b &mask)
+{
+	if (ignoreUpdates)
+		return;
+
+	// only incorporate pixels in mask, as we may have local updates as well
+	newLabels.copyTo(labels, mask);
+
+	refresh();
 }
 
 void BandView::paintEvent(QPaintEvent *ev)
 {
 	QPainter painter(this);
-	if (!pixmap) {
+	/* deal with no pixmap set (width==0), or labeling does not fit the pixmap
+	 * (as updates to pixmap and labeling are not synchronised) */
+	bool consistent = ((pixmap.width() == labels.cols) &&
+					   (pixmap.height() == labels.rows));
+
+	if (!consistent) {
 		painter.fillRect(this->rect(), QBrush(Qt::gray, Qt::BDiagPattern));
 		drawWaitMessage(painter);
 		return;
 	}
+
 	if (!cacheValid) {
-		commitLabelChanges();
 		updateCache();
 	}
 
@@ -208,7 +226,7 @@ void BandView::updateCache()
 // helper to color single pixel with labeling
 void BandView::markCachePixel(QPainter &p, int x, int y)
 {
-	uchar l = labels(y, x);
+	short l = labels(y, x);
 	if (l > 0) {
 		p.setPen(labelColorsA.at(l));
 		p.drawPoint(x, y);
@@ -225,10 +243,9 @@ void BandView::markCachePixelS(QPainter &p, int x, int y)
 	}
 }
 
-void BandView::updateCache(int x, int y, short label)
+void BandView::updateCache(int y, int x, short label)
 {
 	if (!cacheValid) {
-		commitLabelChanges();
 		updateCache();
 		return;
 	}
@@ -311,6 +328,9 @@ void BandView::cursorAction(QMouseEvent *ev, bool click)
 	emit pixelOverlay(x, y);
 
 	if (!(ev->buttons() & Qt::NoButton)) {
+		/* alter all pixels on the line between previous and current position.
+		 * the idea is that due to lag we might not get a notification about
+		 * every pixel the mouse moved over. this is a good approximation. */
 		QLineF line(lastcursor, cursor);
 		qreal step = 1 / line.length();
 		for (qreal t = 0.0; t < 1.0; t += step) {
@@ -323,26 +343,28 @@ void BandView::cursorAction(QMouseEvent *ev, bool click)
 
 			if (ev->buttons() & Qt::LeftButton) {
 				if (!seedMode) {
-					uncommitedLabels[std::make_pair(x, y)] = curLabel;
-					updateCache(x, y, curLabel);
+					uncommitedLabels(y, x) = 1;
+					labels(y, x) = curLabel;
+					updateCache(y, x, curLabel);
 					labelTimer.start();
 				} else {
 					seedMap(y, x) = 0;
-					updateCache(x, y);
+					updateCache(y, x);
 				}
 			// erase
 			} else if (ev->buttons() & Qt::RightButton) {
 				if (!seedMode) {
 					if (labels(y, x) == curLabel) {
-						uncommitedLabels[std::make_pair(x, y)] = 0;
-						updateCache(x, y, 0);
+						uncommitedLabels(y, x) = 1;
+						labels(y, x) = 0;
+						updateCache(y, x, 0);
 						labelTimer.start();
 						if (!grandupdate)
 							updatePoint(cursor);
 					}
 				} else {
 					seedMap(y, x) = 255;
-					updateCache(x, y);
+					updateCache(y, x);
 				}
 			}
 		}
@@ -360,25 +382,24 @@ void BandView::cursorAction(QMouseEvent *ev, bool click)
 
 void BandView::commitLabelChanges()
 {
-	if (!uncommitedLabels.empty()) {
-		emit subPixels(uncommitedLabels);
-		std::map<std::pair<int, int>, short>::iterator it;
-		for (it = uncommitedLabels.begin(); it != uncommitedLabels.end(); ++it)
-			labels(it->first.second, it->first.first) = it->second;
-		emit addPixels(uncommitedLabels);
+	if (cv::sum(uncommitedLabels)[0] == 0)
+		return; // label mask empty
 
-		uncommitedLabels.clear();
-		labelTimer.stop();
-	}
+	ignoreUpdates = true;
+	emit alteredLabels(labels, uncommitedLabels);
+	ignoreUpdates = false;
+
+	/* it is important to create new matrix. Otherwise changes would overwrite
+	 * the matrix we just sent out in a signal. OpenCV… */
+	uncommitedLabels = cv::Mat1b(labels.rows, labels.cols, (uchar)0);
+	labelTimer.stop();
 }
 
-void BandView::updateLabels()
+void BandView::commitLabels()
 {
-	std::map<std::pair<int, int>, short>::iterator it;
-	for (it = uncommitedLabels.begin(); it != uncommitedLabels.end(); ++it)
-		labels(it->first.second, it->first.first) = it->second;
-	uncommitedLabels.clear();
-	emit refreshLabels();
+	ignoreUpdates = true;
+	emit newLabeling(labels);
+	ignoreUpdates = false;
 }
 
 void BandView::updatePoint(const QPointF &p)
@@ -418,8 +439,10 @@ void BandView::changeCurrentLabel(int label)
 		 */
 		commitLabelChanges();
 		emit newLabel();
+	} else {
+		// in case of new label creation, the new label will be selected by GUI
+		curLabel = label;
 	}
-	curLabel = label;
 }
 
 void BandView::toggleSeedMode(bool enabled)
