@@ -11,33 +11,12 @@
 #include <QImage>
 #include <opencv2/core/core.hpp>
 
-// TODO:
-// was passiert mit finished-Signalen, die schon abgeschickt, aber noch nicht
-//      bearbeitet wurden?
-// was passiert, wenn reset aus setMultiImg aufgerufen wird, aber bilder
-//      bereits angefragt sind?
-//  \-> momentan wird der runner abgebrochen, das widget bekommt davon aber
-//      nichts mit und wartet ewig
-//  \-> cancelled signal oder sowas? dann kann das widget neu anfragen, falls
-//      das bild noch benoetigt wird...
-
-// commandrunner.cpp
-//  \-> why is abort not synchronized in any way?
+// all representation parameters are currently ignored or expected to be IMG
 
 // RGB:
-//  \-> RGB hat Boost momentan als optional dependency, vole braucht sie nicht,
-//      wenn man die Funktion mit boost parameter verwenden kann, dann hat man
-//      auch Boost - soll das wirklich optional bleiben?
-//  \-> progressUpdate() -> PCA Werte anpassen, mehr updates?, SOM einbauen,
-//		XYZ verwendet multi_img methode und kann somit kein update aufrufen
-//  \-> Im output speichern, welcher algorithmus berechnet wurde, ist nicht
-//      gerade toll...
-//       \-> fuers RGB modul wuerde es besser passen, wenn model auch mit
-//           gerbil::rgbalg arbeiten wuerde...
-//      Alternative: QSignalMapper, passt gut zum enum, der kann aber nur
-//           Signale ohne Parameter
-//       \-> Wenn das Ergebnis im Parameter uebergeben wird geht's nicht
-//       \-> output map im CommandRunner speichern? -> parameterloses signal
+//  progressUpdate() in SOM einbauen,
+//      SOM *som = SOMTrainer::train(config.som, img);
+
 //  \-> wie kompiliert der header ohne .h datei? eig per class ProgressObs;...
 
 // if a CommandRunner currently fails, this type of image can not be calculated
@@ -56,6 +35,15 @@
 // ROI per signal slot verteilen <-> code georg --> sollte dann hier egal sein,
 //      weil das img ja immer passend gesetzt werden sollte
 
+//  \-> Im output speichern, welcher algorithmus berechnet wurde, ist nicht
+//      gerade toll...
+//       \-> fuers RGB modul wuerde es besser passen, wenn model auch mit
+//           gerbil::rgbalg arbeiten wuerde...
+//      Alternative: QSignalMapper, passt gut zum enum, der kann aber nur
+//           Signale ohne Parameter
+//       \-> Wenn das Ergebnis im Parameter uebergeben wird geht's nicht
+//       \-> output map im CommandRunner speichern? -> parameterloses signal
+
 FalseColorModel::FalseColorModel(BackgroundTaskQueue *queue)
 	: queue(queue)
 {
@@ -64,12 +52,21 @@ FalseColorModel::FalseColorModel(BackgroundTaskQueue *queue)
 		if (i == SOM)
 			continue;
 #endif
-		payload *p = new payload();
+		payload *p = new payload(representation::IMG, (coloring)i);
 		map.insert((coloring)i, p);
+
+		// FIXME:
+		// QObject::connect: Cannot queue arguments of type 'FalseColorModel::coloring'
+		// (Make sure 'FalseColorModel::coloring' is registered using qRegisterMetaType().)
+		QObject::connect(
+			p,    SIGNAL(calculationComplete(FalseColorModel::coloring, QImage)),
+			this, SIGNAL(calculationComplete(FalseColorModel::coloring, QImage)),
+			Qt::QueuedConnection);
 	}
 }
 
-void FalseColorModel::setMultiImg(representation::t type, SharedMultiImgPtr shared_img)
+void FalseColorModel::setMultiImg(representation::t repr,
+								  SharedMultiImgPtr shared_img)
 {
 	// in the future, we might be interested in the other ones as well.
 	if (type == representation::IMG) {
@@ -101,6 +98,9 @@ void FalseColorModel::reset()
 	}
 }
 
+// if Tasks / CommandRunners are running, just cancel them, do not report back
+// to widgets if the image is changed, after setMultiImg is called, all widgets
+// will request a new img
 void FalseColorModel::cancel()
 {
 	// terminate command runners
@@ -123,14 +123,19 @@ void FalseColorModel::createRunner(coloring type)
 	payload *p = map.value(type);
 	assert(p != NULL && p->runner == NULL);
 	// runners are only deleted in reset(). if reset() was not called and the
-	// runner exists, the image has been calculated already, so there is no reason to call craeteRunner
+	// runner exists, the image has been calculated already, so there is no
+	// reason to call craeteRunner
 
 	// init runner & command
-	p->runner = new CommandRunner();	// TODO: hier wuerde ein parent nicht schaden...
-	p->runner->cmd = new gerbil::RGB(); // the RGB object is deleted in ~CommandRunner()
+	p->runner = new CommandRunner();
+	std::map<std::string, boost::any> input;
+	input["multi_img"] = shared_img;
+	p->runner->input = input;
+	p->runner->cmd = new gerbil::RGB(); // deleted in ~CommandRunner()
 
-	// TODO: init rgb.config, if non-default setup is neccessary. then we need a copy of
-	// the initialized RGB object, as the obj in the runner is deleted in its destructor
+	// TODO: init rgb.config, if non-default setup is neccessary. then we need
+	// a copy of the initialized RGB object, as the obj in the runner is
+	// deleted in its destructor
 	gerbil::RGB *cmd = (gerbil::RGB *)p->runner->cmd;
 	switch (type)
 	{
@@ -146,13 +151,17 @@ void FalseColorModel::createRunner(coloring type)
 		break;
 #endif
 	default:
-		assert(false); // coloring type is COLSIZE, SOM without edge detect or missing in the switch
+		// coloring type is COLSIZE, SOM without edge detect or missing
+		assert(false);
 	}
 
-	QObject::connect(this, SIGNAL(terminateRunners()),
-					 p->runner, SLOT(terminate()), Qt::QueuedConnection);
-	QObject::connect(p->runner, SIGNAL(success(std::map<std::string, boost::any>)),
-					 this, SLOT(handleRunnerSuccess(std::map<std::string, boost::any>)), Qt::QueuedConnection);
+	QObject::connect(
+		this, SIGNAL(terminateRunners()),
+		p->runner, SLOT(terminate()), Qt::QueuedConnection);
+	QObject::connect(
+		p->runner, SIGNAL(success(std::map<std::string, boost::any>)),
+		p, SLOT(propagateRunnerSuccess(std::map<std::string, boost::any>)),
+		Qt::QueuedConnection);
 }
 
 
@@ -163,7 +172,7 @@ void FalseColorModel::calculateForeground(coloring type)
 
 	// img is calculated already
 	if (!p->img.isNull()) {
-		emit calculationComplete(p->img, type);
+		emit calculationComplete(type, p->img);
 		return;
 	}
 
@@ -175,7 +184,9 @@ void FalseColorModel::calculateForeground(coloring type)
 	p->calcInProgress = true;
 	if (type == CMF) {
 		BackgroundTaskPtr taskRgb(new RgbTbb(
-			shared_img, mat3f_ptr(new SharedData<cv::Mat3f>(new cv::Mat3f)), p->calcImg));
+			shared_img,
+			mat3f_ptr(new SharedData<cv::Mat3f>(new cv::Mat3f)),
+			p->calcImg));
 		taskRgb.get()->run();
 	}
 	else {
@@ -189,7 +200,7 @@ void FalseColorModel::calculateForeground(coloring type)
 		p->img = vole::Mat2QImage(result);
 	}
 	p->calcInProgress = false;
-	emit calculationComplete(p->img, type);
+	emit calculationComplete(type, p->img);
 }
 
 void FalseColorModel::calculateBackground(coloring type)
@@ -199,11 +210,12 @@ void FalseColorModel::calculateBackground(coloring type)
 
 	// img is calculated already
 	if (!p->img.isNull()) {
-		emit calculationComplete(p->img, type);
+		emit calculationComplete(type, p->img);
 		return;
 	}
 
-	// img is currently in calculation, loadComplete will be emitted as soon as its finished
+	// img is currently in calculation, loadComplete will
+	// be emitted as soon as its finished
 	if (p->calcInProgress)
 		return;
 
@@ -211,14 +223,16 @@ void FalseColorModel::calculateBackground(coloring type)
 	p->calcInProgress = true;
 	if (type == CMF) {
 		BackgroundTaskPtr taskRgb(new RgbTbb(
-			shared_img, mat3f_ptr(new SharedData<cv::Mat3f>(new cv::Mat3f)), p->calcImg));
+			shared_img,
+			mat3f_ptr(new SharedData<cv::Mat3f>(new cv::Mat3f)),
+			p->calcImg));
 		QObject::connect(taskRgb.get(), SIGNAL(finished(bool)),
-						 this, SLOT(handleFinishedQueueTask(bool)), Qt::QueuedConnection);
+						 p, SLOT(propagateFinishedQueueTask(bool)),
+						 Qt::QueuedConnection);
 		queue->push(taskRgb);
 	}
 	else {
 		createRunner(type);
-		// TODO: where do we pass image data?
 		/* note that this is an operation that cannot run concurrently with
 		 * other tasks that would invalidate (swap) the image data.
 		 * Make sure to cancel this before enqueueing tasks that invalidate
@@ -227,43 +241,26 @@ void FalseColorModel::calculateBackground(coloring type)
 	}
 }
 
-
-void FalseColorModel::handleFinishedQueueTask(bool success)
+void FalseColorModelPayload::propagateFinishedQueueTask(bool success)
 {
-	// Only CMF tasks are calculated in the queue
-	coloring type = CMF;
-	payload *p = map.value(type);
-	assert(p != NULL);
-	p->calcInProgress = false;
+	calcInProgress = false;
 
 	if (!success)
 		return;
 
-	p->img = **p->calcImg;
+	img = **calcImg;
 
-	emit calculationComplete(p->img, type);
+	emit calculationComplete(type, img);
 }
 
-void FalseColorModel::handleRunnerSuccess(std::map<std::string, boost::any> output)
+void FalseColorModelPayload::propagateRunnerSuccess(std::map<std::string, boost::any> output)
 {
-	coloring type;
-	switch (boost::any_cast<gerbil::rgbalg>(output["algo"])) {
-	case gerbil::COLOR_XYZ:
-		type = CMF;
-		break;
-	case gerbil::COLOR_PCA:
-		type = PCA;
-		break;
-	case gerbil::COLOR_SOM:
-		type = SOM;
-		break;
-	default:
-		assert(false); // wrong output["algo"] value
-	}
+	/* ensure that we did not cancel computation (and delete the worker) */
+	if (!runner)
+		return;
 
-	payload *p = map.value(type);
-	p->img = boost::any_cast<QImage>(output["multi_img"]);
+	img = boost::any_cast<QImage>(output["multi_img"]);
 
-	p->calcInProgress = false;
-	emit calculationComplete(p->img, type);
+	calcInProgress = false;
+	emit calculationComplete(type, img);
 }

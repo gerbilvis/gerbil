@@ -20,10 +20,13 @@
 // Each request sends a loadComplete signal to ALL connected slots.
 // use QImage.cacheKey() to see if the image was changed
 
+class FalseColorModelPayload;
+
 class FalseColorModel : public QObject
 {
 	Q_OBJECT
 
+public:
 	enum coloring {
 		CMF = 0,
 		PCA = 1,
@@ -31,19 +34,8 @@ class FalseColorModel : public QObject
 		COLSIZE = 3
 	};
 
-	struct payload {
-		payload() : runner(0) {}
+	typedef FalseColorModelPayload payload;
 
-		CommandRunner *runner;
-		QImage img;
-		qimage_ptr calcImg;  // the background task swaps its result in this variable, in taskComplete, it is copied to img & cleared
-		bool calcInProgress; // (if 2 widgets request the same coloring type before the calculation finished)
-	};
-
-	typedef QList<payload*> PayloadList;
-	typedef QMap<coloring, payload*> PayloadMap;
-
-public:
 	/* construct model without image data. Make sure to call setMultiImg()
 	 * before doing any other operations with this object.
 	 */
@@ -51,7 +43,7 @@ public:
 	~FalseColorModel();
 
 	// calls reset()
-	void setMultiImg(representation::t type, SharedMultiImgPtr img);
+	void setMultiImg(representation::t repr, SharedMultiImgPtr img);
 
 	// resets current true / false color representations
 	// on the next request, the color images are recalculated with possibly new multi_img data
@@ -59,19 +51,19 @@ public:
 	void reset();
 
 public slots:
+	// Img could be calculated in background, if the background task was started before!
 	void calculateForeground(coloring type);
 	void calculateBackground(coloring type);
 
-private slots:
-	void handleFinishedQueueTask(bool finished);
-	void handleRunnerSuccess(std::map<std::string, boost::any> output);
-
 signals:
 	// Possibly check Image.cacheKey() to determine if the update is really neccessary
-	void calculationComplete(QImage img, coloring type);
+	void calculationComplete(FalseColorModel::coloring type, QImage img);
 	void terminateRunners();
 
 private:
+	typedef QList<payload*> PayloadList;
+	typedef QMap<coloring, payload*> PayloadMap;
+
 	// creates the runner that is neccessary for calculating the false color representation of type
 	// runners are deleted in terminatedTasksDeleteRunners (and therefore in reset() & ~FalseColor())
 	void createRunner(coloring type);
@@ -84,4 +76,29 @@ private:
 	BackgroundTaskQueue *queue;
 };
 
+class FalseColorModelPayload : public QObject {
+	Q_OBJECT
+
+public:
+	FalseColorModelPayload(representation::t repr, FalseColorModel::coloring type)
+		: repr(repr), type(type), runner(0)
+	{}
+
+	virtual ~FalseColorModelPayload() {}
+
+	representation::t repr;
+	FalseColorModel::coloring type;
+	CommandRunner *runner;
+	QImage img;
+	qimage_ptr calcImg;  // the background task swaps its result in this variable, in taskComplete, it is copied to img & cleared
+	bool calcInProgress; // (if 2 widgets request the same coloring type before the calculation finished)
+
+public slots:
+	// connect the corresponding task's finishing with this slot
+	void propagateFinishedQueueTask(bool success);
+	void propagateRunnerSuccess(std::map<std::string, boost::any> output);
+
+signals:
+	void calculationComplete(FalseColorModel::coloring type, QImage img);
+};
 #endif // MODEL_FALSECOLOR_H

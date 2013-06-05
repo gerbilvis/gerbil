@@ -63,7 +63,6 @@ std::map<std::string, boost::any> RGB::execute(std::map<std::string, boost::any>
 
 	std::map<std::string, boost::any> output;
 	output["multi_img"] = bgr*255.;
-	output["algo"] = config.algo;
 	return output;
 }
 #endif

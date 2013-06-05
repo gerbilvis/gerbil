@@ -83,6 +83,7 @@ void Controller::initImage()
 void Controller::spawnROI(const cv::Rect &roi)
 {
 	bool reuse = true;
+	// TODO: make a method cancelAllComputation that does following two steps
 	/* TODO: this results in huge computation burden even if none of the
 	 * running tasks would interfere. We could think of a more fine-grained
 	 * method here. Previous was to keep track of "running task type"

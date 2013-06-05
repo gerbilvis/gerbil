@@ -16,7 +16,8 @@ public:
 	bool update(int percent);
 	void run();
 
-	bool abort;
+	// volatile to ensure worker thread reads changes done by controller thread
+	volatile bool abort;
 	vole::Command *cmd;
 	std::map<std::string, boost::any> input;
 	std::map<std::string, boost::any> output;

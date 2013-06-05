@@ -4,6 +4,9 @@
 #include "rgb_config.h"
 #include <command.h>
 #include <progress_observer.h> // TODO: raus
+#ifdef WITH_BOOST
+#include <boost/any.hpp>
+#endif
 
 namespace gerbil {
 
