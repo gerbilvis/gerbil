@@ -95,7 +95,7 @@ void ImageModel::spawn(representation::t type, const cv::Rect &newROI, size_t ba
 	roi = newROI;
 
 	// invalidate band caches
-	map[representation::IMG]->bands.clear();
+	map[type]->bands.clear();
 
 	// shortcuts for convenience
 	SharedMultiImgPtr image = map[representation::IMG]->image,
