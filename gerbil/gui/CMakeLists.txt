@@ -39,6 +39,7 @@ vole_compile_library(
 	docks/dockwidget
 	docks/roidock
 	docks/illumdock
+	docks/rgbdock
 
 	gerbil_gui_debug
 )
@@ -61,6 +62,7 @@ vole_moc_library(
 	docks/dockwidget.h
 	docks/roidock.h
 	docks/illumdock.h
+	docks/rgbdock.h
 
 	model/image.h
 	model/labeling.h

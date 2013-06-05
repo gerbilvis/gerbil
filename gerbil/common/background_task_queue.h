@@ -30,6 +30,8 @@ public:
 	/** Put task into queue for later calculation. */
 	void push(BackgroundTaskPtr &task);
 	/** Cancel all tasks associated with the given ROI. */
+	// TODO FIXME This is a major PITA,
+	// since everybody who wants to cancel tasks needs to know the ROI.
 	void cancelTasks(const cv::Rect &roi = cv::Rect());
 
 	/** Background worker thread's main(). */

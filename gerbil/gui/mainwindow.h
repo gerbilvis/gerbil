@@ -38,6 +38,7 @@
 #include <opencv2/core/core.hpp>
 
 class IllumDock;
+class RgbDock;
 class Controller;
 
 class MainWindow : public QMainWindow, private Ui::MainWindow {
@@ -135,6 +136,7 @@ private:
 
 	QMenu *contextMenu;
 	ROIDock *roiDock;
+	RgbDock *rgbDock;
 
 	/* this hack sucks actually! we would get rid of this by using commandrunner
 	 * for graphseg, but I start to tend against it
