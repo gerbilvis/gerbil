@@ -12,6 +12,8 @@
 #include <QMap>
 #include <tbb/compat/thread>
 
+class DockController;
+
 class Controller : public QObject
 {
 	Q_OBJECT
@@ -66,6 +68,9 @@ protected:
 	void initImage();
 	void initLabeling();
 
+	// init DockController
+	void initDocks();
+
 	// create background thread that processes BackgroundTaskQueue
 	void startQueue();
 	// stop and delete thread
@@ -85,6 +90,9 @@ protected:
 	/* false color model generates and stores RGB representations of
 	 * multispectral data */
 	FalseColorModel fm;
+
+	// setup dock widgets and manage interaction with models
+	DockController *dc;
 
 	// main window (or gui slave)
 	MainWindow *window;

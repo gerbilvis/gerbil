@@ -15,6 +15,7 @@ vole_compile_library(
 	iogui
 	
 	controller
+	dockcontroller
 
 	dist_view/compute
 	dist_view/viewercontainer
@@ -52,6 +53,7 @@ vole_moc_library(
 	commandrunner.h
 
 	controller.h
+	dockcontroller.h
 
 	dist_view/viewercontainer.h
 	dist_view/multi_img_viewer.h

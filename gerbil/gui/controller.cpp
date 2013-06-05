@@ -1,4 +1,5 @@
 #include "controller.h"
+#include "dockcontroller.h"
 #include <imginput.h>
 
 #include <QFileInfo>
@@ -25,6 +26,7 @@ Controller::Controller(const std::string &filename, bool limited_mode)
 
 	// connect slots/signals
 	window->initSignals(this);
+	initDocks();
 	initImage();
 	initLabeling();
 
@@ -71,11 +73,12 @@ void Controller::initImage()
 	connect(window, SIGNAL(rgbRequested()),
 			&im, SLOT(computeRGB()));
 
+	// TODO this belongs in DocksController
 	/* im -> others */
 	connect(&im, SIGNAL(bandUpdate(QPixmap, QString)),
 			window, SLOT(changeBand(QPixmap, QString)));
-	connect(&im, SIGNAL(rgbUpdate(QPixmap)),
-			window, SLOT(processRGB(QPixmap)));
+//	connect(&im, SIGNAL(rgbUpdate(QPixmap)),
+//			window, SLOT(processRGB(QPixmap)));
 	connect(&im, SIGNAL(imageUpdate(representation::t,SharedMultiImgPtr)),
 			this, SLOT(docksUpdateImage(representation::t,SharedMultiImgPtr)));
 }
@@ -209,6 +212,15 @@ void Controller::initLabeling()
 	connect(&lm, SIGNAL(partialLabelUpdate(const cv::Mat1s&,const cv::Mat1b&)),
 			window,
 			SLOT(processLabelingChange(const cv::Mat1s&,const cv::Mat1b&)));
+}
+
+void Controller::initDocks()
+{
+	dc = new DockController(this);
+	dc->setImageModel(&im);
+	dc->setFalseColorModel(&fm);
+	dc->setMainWindow(window);
+	dc->init();
 }
 
 void Controller::propagateLabelingChange(const cv::Mat1s& labels,

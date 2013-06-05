@@ -39,6 +39,9 @@
 
 class IllumDock;
 class RgbDock;
+//TODO create
+//class LabelDock;
+
 class Controller;
 
 class MainWindow : public QMainWindow, private Ui::MainWindow {
@@ -53,15 +56,27 @@ public:
 
 	static QIcon colorIcon(const QColor& color);
 
+	//TODO make this complete
+	// need to remove all Docks from mainwindow.ui
+	void tabifyDockWidgets(ROIDock *roiDock,
+						   RgbDock *rgbDock
+						   );
+
 public slots:
+	// TODO -> DockController
 	void changeBand(QPixmap band, QString desc);
 
+
+	// TODO -> DockController
 	void processLabelingChange(const cv::Mat1s &labels,
 							   const QVector<QColor>& colors = QVector<QColor>(),
 							   bool colorsChanged = false);
+
+	// TODO -> DockController
 	void processLabelingChange(const cv::Mat1s &labels, const cv::Mat1b &mask);
 
-	void processRGB(QPixmap rgb);
+// -> DockController
+//	void processRGB(QPixmap rgb);
 
 	void setGUIEnabled(bool enable, TaskType tt = TT_NONE);
 	void finishGraphSeg(bool success);
@@ -71,8 +86,9 @@ public slots:
 	void addToLabel();
 	void remFromLabel();
 
+	// TODO -> segmentationDock
 	void startGraphseg();
-
+	// TODO -> segmentationDock
 	void startUnsupervisedSeg(bool findKL = false);
 	void startFindKL();
 	void segmentationFinished();
@@ -80,11 +96,13 @@ public slots:
 
 	void bandsSliderMoved(int b);
 
+	// TODO -> segmentationDock
 	void usMethodChanged(int idx);
 	void usInitMethodChanged(int idx);
 	void usBandwidthMethodChanged(const QString &current);
 	void unsupervisedSegCancelled();
 
+	// TODO -> NormDock
 	void normTargetChanged(bool usecurrent = false);
 	void normModeSelected(int mode, bool targetchange = false, bool usecurrent = false);
 	void normModeFixed();
@@ -114,6 +132,9 @@ signals:
 
 	void seedingDone(bool yeah = false);
 
+	// part of setGUIEnabled(), handled by DocksController
+	void requestEnableDocks(bool enable, TaskType tt);
+
 protected:
 	void changeEvent(QEvent *e);
 
@@ -126,6 +147,7 @@ private:
 #endif
 	void initNormalizationUI();
 
+	// TODO: move to DockController
 	IllumDock* illumDock;
 // TODO: should belong to a controller
 	IllumModel illumModel;
@@ -135,8 +157,6 @@ private:
 #endif
 
 	QMenu *contextMenu;
-	ROIDock *roiDock;
-	RgbDock *rgbDock;
 
 	/* this hack sucks actually! we would get rid of this by using commandrunner
 	 * for graphseg, but I start to tend against it

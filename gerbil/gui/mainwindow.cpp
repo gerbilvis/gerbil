@@ -19,6 +19,7 @@
 #include "tasks/graphsegbackground.h"
 
 #include "docks/illumdock.h"
+#include "docks/rgbdock.h"
 
 // TODO: move to a controller
 #include "model/illumination.h"
@@ -47,8 +48,7 @@ MainWindow::MainWindow(bool limitedMode)
 
 	/* TODO: docks should belong to/interact with Controller, or DockController
 	 * so we don't have unnecessary duplication here */
-	roiDock = new ROIDock(this);
-	addDockWidget(Qt::RightDockWidgetArea, roiDock);
+	// TODO -> dockscontroller
 	illumDock = new IllumDock(this);
 	addDockWidget(Qt::RightDockWidgetArea, illumDock);
 }
@@ -138,12 +138,6 @@ void MainWindow::initUI(cv::Rect dim, size_t size)
 	/* more manual work to get GUI in proper shape */
 	graphsegWidget->hide();
 
-	// TODO: add function addDocks(dock1, dock2, ...)
-
-	// dock arrangement
-	tabifyDockWidget(rgbDock, roiDock);
-	tabifyDockWidget(labelDock, illumDock);
-	tabifyDockWidget(labelDock, normDock);
 #ifdef WITH_SEG_MEANSHIFT
 	usDock->hide();
 #else
@@ -198,9 +192,6 @@ void MainWindow::initSignals(Controller *chief)
 	connect(lLoadSeedButton, SIGNAL(clicked()),
 			this, SLOT(loadSeeds()));
 
-	// signals for ROI (reset handled in ROIDock)
-	connect(roiDock, SIGNAL(roiRequested(const cv::Rect&)),
-			chief, SLOT(spawnROI(const cv::Rect&)));
 
 	// for viewports
 	connect(ignoreButton, SIGNAL(toggled(bool)),
@@ -295,7 +286,8 @@ void MainWindow::initSignals(Controller *chief)
 	connect(scr, SIGNAL(activated()), this, SLOT(screenshot()));
 
 	/* now that we are connected, humbly request RGB image for roiView */
-	emit rgbRequested();
+	// FIXME no, this can be requested by the rgb dock itself.
+	//emit rgbRequested();
 }
 
 void MainWindow::setGUIEnabled(bool enable, TaskType tt)
@@ -324,15 +316,7 @@ void MainWindow::setGUIEnabled(bool enable, TaskType tt)
 	normApplyButton->setEnabled(enable || tt == TT_NORM_RANGE);
 	normClampButton->setEnabled(enable || tt == TT_CLAMP_RANGE_IMG || tt == TT_CLAMP_RANGE_GRAD);
 
-	labelDock->setEnabled(enable);
-
-	rgbDock->setEnabled(enable);
-
-	illumDock->setEnabled((enable || tt == TT_APPLY_ILLUM) && !limitedMode);
-
-	usDock->setEnabled(enable && !limitedMode);
-
-	roiDock->setEnabled(enable || tt == TT_SELECT_ROI);
+	emit requestEnableDocks(enable, tt);
 
 	if (tt == TT_SELECT_ROI && (!enable)) {
 		/* TODO: check if this is enough to make sure no label changes
@@ -381,21 +365,6 @@ void MainWindow::debugRequestGUIEnabled(bool enable, TaskType tt)
 {
 	//GGDBG_CALL();
 	//GGDBGM(format("enable=%1%, tt=%2%\n") %enable %tt)
-}
-
-
-void MainWindow::processRGB(QPixmap rgb)
-{
-	roiDock->setPixmap(rgb);
-
-	/* TODO: in the future, rgbView is independent from this and feeds from
-	 * falsecolor model. We could think about data-sharing between image model
-	 * and falsecolor model for the CMF part.
-	 */
-	/*TODO2: move this to apply roi! or sth. like that
-	QPixmap rgbroi = rgb.copy(roi.x, roi.y, roi.width, roi.height);
-	rgbView->setPixmap(rgbroi);
-	rgbView->update();*/
 }
 
 void MainWindow::initNormalizationUI()
@@ -1073,6 +1042,14 @@ QIcon MainWindow::colorIcon(const QColor &color)
 	QPixmap pm(32, 32);
 	pm.fill(color);
 	return QIcon(pm);
+}
+
+void MainWindow::tabifyDockWidgets(ROIDock *roiDock, RgbDock *rgbDock)
+{
+	// dock arrangement
+	tabifyDockWidget(rgbDock, roiDock);
+	tabifyDockWidget(labelDock, illumDock);
+	tabifyDockWidget(labelDock, normDock);
 }
 
 void MainWindow::openContextMenu()
