@@ -13,9 +13,11 @@ RgbDock::RgbDock(QWidget *parent) :
 
 void RgbDock::updatePixmap(QPixmap p)
 {
-	GGDBG_CALL();
+//	GGDBG_CALL();
+	view->setEnabled(true);
 	view->setPixmap(p);
 	view->update();
+	rgbValid=true;
 
 	/* TODO: old(from johannes, not sure what this is to mean):
 	 * We could think about data-sharing between image model
@@ -35,21 +37,31 @@ void RgbDock::initUi()
 				QSizePolicy::Expanding,
 				QSizePolicy::Expanding);
 	setWidget(child);
-	child->setVisible(true);
+	view->setEnabled(false);
+
+	connect(this, SIGNAL(visibilityChanged(bool)),
+			this, SLOT(processVisibilityChanged(bool)));
 }
 
 void RgbDock::processVisibilityChanged(bool visible)
 {
-	if(visible && !rgbValid) {
+	dockVisible = visible;
+	//GGDBGM(format("visible=%1%  rgbValid=%2%")%dockVisible %rgbValid <<endl);
+	if(dockVisible && !rgbValid) {
+		//GGDBGM("requesting rgb"<<endl);
+		view->setEnabled(false);
 		emit rgbRequested();
 	}
 }
 
 void RgbDock::processImageUpdate(representation::t type, SharedMultiImgPtr)
 {
+	//GGDBGM(format("visible=%1%  rgbValid=%2%")%dockVisible %rgbValid <<endl);
 	if(representation::IMG == type) {
 		rgbValid = false;
-		if(this->isVisible()) {
+		view->setEnabled(false);
+		if(dockVisible) {
+			//GGDBGM("requesting rgb"<<endl);
 			emit rgbRequested();
 		}
 	}
