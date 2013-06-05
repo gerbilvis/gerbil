@@ -16,6 +16,11 @@ void RgbDock::updatePixmap(QPixmap p)
 	GGDBG_CALL();
 	view->setPixmap(p);
 	view->update();
+
+	/* TODO: old(from johannes, not sure what this is to mean):
+	 * We could think about data-sharing between image model
+	 * and falsecolor model for the CMF part.
+	 */
 }
 
 void RgbDock::initUi()
@@ -31,4 +36,21 @@ void RgbDock::initUi()
 				QSizePolicy::Expanding);
 	setWidget(child);
 	child->setVisible(true);
+}
+
+void RgbDock::processVisibilityChanged(bool visible)
+{
+	if(visible && !rgbValid) {
+		emit rgbRequested();
+	}
+}
+
+void RgbDock::processImageUpdate(representation::t type, SharedMultiImgPtr)
+{
+	if(representation::IMG == type) {
+		rgbValid = false;
+		if(this->isVisible()) {
+			emit rgbRequested();
+		}
+	}
 }

@@ -40,16 +40,18 @@ void DockController::createDocks()
 void DockController::setupDocks()
 {
 	connect(im, SIGNAL(imageUpdate(representation::t,SharedMultiImgPtr)),
-			this, SLOT(processNewImageData(representation::t,SharedMultiImgPtr)));
+			rgbDock, SLOT(processImageUpdate(representation::t,SharedMultiImgPtr)));
 
-	connect(this, SIGNAL(rgbRequested()),
+	// TODO: use FalseColorModel
+	connect(rgbDock, SIGNAL(rgbRequested()),
 			im, SLOT(computeRGB()));
+
+	// TODO: use FalseColorModel
+	connect(im, SIGNAL(rgbUpdate(QPixmap)),
+			rgbDock, SLOT(updatePixmap(QPixmap)));
 
 	connect(im, SIGNAL(rgbUpdate(QPixmap)),
 			this, SLOT(processRGB(QPixmap)));
-
-	connect(rgbDock, SIGNAL(visibilityChanged(bool)),
-			this, SLOT(setRgbVisible(bool)));
 
 	// signals for ROI (reset handled in ROIDock)
 	connect(roiDock, SIGNAL(roiRequested(const cv::Rect&)),
@@ -74,37 +76,12 @@ void DockController::enableDocks(bool enable, TaskType tt)
 	roiDock->setEnabled(enable || tt == TT_SELECT_ROI);
 }
 
-void DockController::processNewImageData(representation::t type, SharedMultiImgPtr image)
-{
-	GGDBG_CALL();
-	rgbImageValid=false;
-	if(type==representation::IMG && rgbVisible) {
-		emit rgbRequested();
-	}
-}
-
 void DockController::processRGB(QPixmap rgb)
 {
+	// TODO FIXME this should be handled the same way as for RGBDock
 	GGDBG_CALL();
-	rgbDock->updatePixmap(rgb);
 	roiDock->setPixmap(rgb);
-	rgbImageValid=true;
 
-	/* TODO: in the future, rgbView is independent from this and feeds from
-	 * falsecolor model. We could think about data-sharing between image model
-	 * and falsecolor model for the CMF part.
-	 */
-	/*TODO2: move this to apply roi! or sth. like that
-	QPixmap rgbroi = rgb.copy(roi.x, roi.y, roi.width, roi.height);
-	rgbView->setPixmap(rgbroi);
-	rgbView->update();*/
 }
 
-void DockController::setRgbVisible(bool visible)
-{
-	rgbVisible = visible;
-	GGDBGM(format("visible=%1% valid=%2%\n") %visible %rgbImageValid );
-	if(rgbVisible && !rgbImageValid) {
-		emit rgbRequested();
-	}
-}
+

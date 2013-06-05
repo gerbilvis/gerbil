@@ -36,9 +36,7 @@ signals:
 	void rgbRequested();
 public slots:
 	void enableDocks(bool enable, TaskType tt);
-	void processNewImageData(representation::t type, SharedMultiImgPtr image);
 	void processRGB(QPixmap rgb);
-	void setRgbVisible(bool visible);
 protected:
 	/* Create dock widget objects. */
 	void createDocks();
@@ -56,12 +54,6 @@ protected:
 	ROIDock *roiDock;
 	RgbDock *rgbDock;
 	IllumDock *illumDock;
-
-	// FalseColor currently does not do any reference counting of users.
-	// Therefore managing state of the rgb image is handled here in the
-	// controller.
-	bool rgbVisible;
-	bool rgbImageValid;
 };
 
 #endif // DOCKCONTROLLER_H
