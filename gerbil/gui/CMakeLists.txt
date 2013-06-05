@@ -17,7 +17,6 @@ vole_compile_library(
 	controller
 
 	dist_view/compute
-	dist_view/curpos
 	dist_view/viewercontainer
 	dist_view/multi_img_viewer
 	dist_view/viewer_tasks
