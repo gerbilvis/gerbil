@@ -9,6 +9,7 @@
 #include <tasks/rgbtbb.h>
 
 #include <QImage>
+#include <QPixmap>
 #include <opencv2/core/core.hpp>
 
 // all representation parameters are currently ignored or expected to be IMG
@@ -24,11 +25,6 @@
 
 
 // Long term TODOs:
-// Langfristige Frage: Sind QImages oder QPixmaps interessant? (oder beides),
-//      was davon soll nur 1x im model sein?
-//  \-> "QPixmaps cannot be directly shared between threads"
-//       \-> model sollte aber im *einen* GUI-Thread sein.
-
 // "init rgb.configs, if non default setup is neccessary"
 
 // sichergehen, dass img immer der aktuelle ROI ausschnitt ist
@@ -47,6 +43,10 @@
 FalseColorModel::FalseColorModel(BackgroundTaskQueue *queue)
 	: queue(queue)
 {
+	int type = QMetaType::type("coloring");
+	if (type == 0 || !QMetaType::isRegistered(type))
+		qRegisterMetaType<coloring>("coloring");
+
 	for (int i = 0; i < COLSIZE; ++i) {
 #ifndef WITH_EDGE_DETECT
 		if (i == SOM)
@@ -55,12 +55,9 @@ FalseColorModel::FalseColorModel(BackgroundTaskQueue *queue)
 		payload *p = new payload(representation::IMG, (coloring)i);
 		map.insert((coloring)i, p);
 
-		// FIXME:
-		// QObject::connect: Cannot queue arguments of type 'FalseColorModel::coloring'
-		// (Make sure 'FalseColorModel::coloring' is registered using qRegisterMetaType().)
 		QObject::connect(
-			p,    SIGNAL(calculationComplete(FalseColorModel::coloring, QImage)),
-			this, SIGNAL(calculationComplete(FalseColorModel::coloring, QImage)),
+			p,    SIGNAL(calculationComplete(coloring, QPixmap)),
+			this, SIGNAL(calculationComplete(coloring, QPixmap)),
 			Qt::QueuedConnection);
 	}
 }
@@ -88,7 +85,7 @@ void FalseColorModel::reset()
 	// reset all images
 	PayloadList l = map.values();
 	foreach(payload *p, l) {
-		p->img = QImage();
+		p->img = QPixmap();
 		p->calcImg = qimage_ptr(new SharedData<QImage>(new QImage()));
 		p->calcInProgress = false;
 		/* TODO: maybe send the empty image as signal to
@@ -165,7 +162,7 @@ void FalseColorModel::createRunner(coloring type)
 }
 
 
-void FalseColorModel::calculateForeground(coloring type)
+void FalseColorModel::computeForeground(coloring type)
 {
 	payload *p = map.value(type);
 	assert(p != NULL);
@@ -197,13 +194,13 @@ void FalseColorModel::calculateForeground(coloring type)
 			gerbil::RGB *cmd = (gerbil::RGB *)p->runner->cmd;
 			result = (cv::Mat3b)(cmd->execute(**shared_img) * 255.0f);
 		}
-		p->img = vole::Mat2QImage(result);
+		p->img.convertFromImage(vole::Mat2QImage(result));
 	}
 	p->calcInProgress = false;
 	emit calculationComplete(type, p->img);
 }
 
-void FalseColorModel::calculateBackground(coloring type)
+void FalseColorModel::computeBackground(coloring type)
 {
 	payload *p = map.value(type);
 	assert(p != NULL);
@@ -248,7 +245,7 @@ void FalseColorModelPayload::propagateFinishedQueueTask(bool success)
 	if (!success)
 		return;
 
-	img = **calcImg;
+	img.convertFromImage(**calcImg);
 
 	emit calculationComplete(type, img);
 }
@@ -259,7 +256,7 @@ void FalseColorModelPayload::propagateRunnerSuccess(std::map<std::string, boost:
 	if (!runner)
 		return;
 
-	img = boost::any_cast<QImage>(output["multi_img"]);
+	img.convertFromImage(boost::any_cast<QImage>(output["multi_img"]));
 
 	calcInProgress = false;
 	emit calculationComplete(type, img);

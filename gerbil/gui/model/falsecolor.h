@@ -11,6 +11,7 @@
 
 #include <QImage>
 #include <QMap>
+#include <QMetaType>
 #include <QObject>
 
 // QImages have implicit data sharing, so the returned objects act as a pointer, the data is not copied
@@ -22,18 +23,20 @@
 
 class FalseColorModelPayload;
 
+enum coloring {
+	CMF = 0,
+	PCA = 1,
+	SOM = 2,
+	COLSIZE = 3
+};
+Q_DECLARE_METATYPE(::coloring)
+
 class FalseColorModel : public QObject
 {
 	Q_OBJECT
 
 public:
-	enum coloring {
-		CMF = 0,
-		PCA = 1,
-		SOM = 2,
-		COLSIZE = 3
-	};
-
+	typedef ::coloring coloring;
 	typedef FalseColorModelPayload payload;
 
 	/* construct model without image data. Make sure to call setMultiImg()
@@ -52,12 +55,12 @@ public:
 
 public slots:
 	// Img could be calculated in background, if the background task was started before!
-	void calculateForeground(coloring type);
-	void calculateBackground(coloring type);
+	void computeForeground(coloring type);
+	void computeBackground(coloring type);
 
 signals:
 	// Possibly check Image.cacheKey() to determine if the update is really neccessary
-	void calculationComplete(FalseColorModel::coloring type, QImage img);
+	void calculationComplete(coloring type, QPixmap img);
 	void terminateRunners();
 
 private:
@@ -89,7 +92,7 @@ public:
 	representation::t repr;
 	FalseColorModel::coloring type;
 	CommandRunner *runner;
-	QImage img;
+	QPixmap img;
 	qimage_ptr calcImg;  // the background task swaps its result in this variable, in taskComplete, it is copied to img & cleared
 	bool calcInProgress; // (if 2 widgets request the same coloring type before the calculation finished)
 
@@ -99,6 +102,6 @@ public slots:
 	void propagateRunnerSuccess(std::map<std::string, boost::any> output);
 
 signals:
-	void calculationComplete(FalseColorModel::coloring type, QImage img);
+	void calculationComplete(coloring type, QPixmap img);
 };
 #endif // MODEL_FALSECOLOR_H
