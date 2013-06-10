@@ -2,8 +2,17 @@
 #include "dockcontroller.h"
 #include <imginput.h>
 
+#include "gerbil_gui_debug.h"
+
 #include <QFileInfo>
 #include <cstdlib> // for exit()
+
+// for DEBUG
+std::ostream &operator<<(std::ostream& os, const cv::Rect& r)
+{
+	os << boost::format("%1%x%2%+%3%+%4%") % r.x % r.y % r.width % r.height;
+	return os;
+}
 
 Controller::Controller(const std::string &filename, bool limited_mode)
 	: im(queue, limited_mode), fm(&queue), queuethread(0)
@@ -39,12 +48,14 @@ Controller::Controller(const std::string &filename, bool limited_mode)
 
 	/* Initial ROI images spawning. Do it before showing the window but after
 	 * all signals were connected! */
+	//GGDBGM("dimensions " << dimensions << endl);
 	cv::Rect roi = dimensions; // initial ROI is image size, except:
 	if (roi.area() > 262144) {
 		// image is bigger than 512x512, start with a smaller ROI
 		roi.width = std::min(roi.width, 512);
 		roi.height = std::min(roi.height, 512);
 	}
+	//GGDBGM("roi " << roi << endl);
 	spawnROI(roi);
 
 	// set title and show window
