@@ -1,44 +1,30 @@
 #include "falsecolor.h"
 
-#include <background_task_queue.h>
-#include <multi_img.h>
-#include <multi_img_tasks.h>
-#include <qtopencv.h>
-#include <rgb.h>
-#include <shared_data.h>
-#include <tasks/rgbtbb.h>
+#include "representation.h"
+#include "../commandrunner.h"
+#include "../tasks/rgbtbb.h"
+
+#include "../../rgb/rgb.h"
+#include "../../common/shared_data.h"
+#include "../../common/background_task_queue.h"
+#include "../../common/multi_img_tasks.h"
+#include "../../core/common/multi_img.h"
+#include "../../core/common/qtopencv.h"
 
 #include <QImage>
 #include <QPixmap>
 #include <opencv2/core/core.hpp>
 
-// all representation parameters are currently ignored or expected to be IMG
-
-// RGB:
-//  progressUpdate() in SOM einbauen,
-//      SOM *som = SOMTrainer::train(config.som, img);
-
-//  \-> wie kompiliert der header ohne .h datei? eig per class ProgressObs;...
-
+// TODO:
 // if a CommandRunner currently fails, this type of image can not be calculated
 // until reset() is called
 
+// TODO RGB:
+//  progressUpdate() in SOM einbauen,
+//      SOM *som = SOMTrainer::train(config.som, img);
 
 // Long term TODOs:
 // "init rgb.configs, if non default setup is neccessary"
-
-// sichergehen, dass img immer der aktuelle ROI ausschnitt ist
-// ROI per signal slot verteilen <-> code georg --> sollte dann hier egal sein,
-//      weil das img ja immer passend gesetzt werden sollte
-
-//  \-> Im output speichern, welcher algorithmus berechnet wurde, ist nicht
-//      gerade toll...
-//       \-> fuers RGB modul wuerde es besser passen, wenn model auch mit
-//           gerbil::rgbalg arbeiten wuerde...
-//      Alternative: QSignalMapper, passt gut zum enum, der kann aber nur
-//           Signale ohne Parameter
-//       \-> Wenn das Ergebnis im Parameter uebergeben wird geht's nicht
-//       \-> output map im CommandRunner speichern? -> parameterloses signal
 
 FalseColorModel::FalseColorModel(BackgroundTaskQueue *queue)
 	: queue(queue)

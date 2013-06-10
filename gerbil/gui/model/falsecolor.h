@@ -1,18 +1,16 @@
 #ifndef MODEL_FALSECOLOR_H
 #define MODEL_FALSECOLOR_H
 
-// for representations
-#include "model/image.h"
-#include <background_task_queue.h>
-#include <commandrunner.h>
-#include <rgb.h>
-#include <multi_img.h>
-#include <shared_data.h>
+#include "representation.h"
+#include "../commandrunner.h"
+#include "../../common/shared_data.h"
 
-#include <QImage>
+#include <QPixmap>
 #include <QMap>
 #include <QMetaType>
 #include <QObject>
+
+// All representation parameters are currently ignored or expected to be IMG
 
 // QImages have implicit data sharing, so the returned objects act as a pointer, the data is not copied
 // If the QImage is changed in the Model, this change is calculated on a copy,
@@ -22,6 +20,7 @@
 // use QImage.cacheKey() to see if the image was changed
 
 class FalseColorModelPayload;
+class BackgroundTaskQueue;
 
 enum coloring {
 	CMF = 0,
