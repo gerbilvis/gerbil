@@ -11,7 +11,7 @@ RgbDock::RgbDock(QWidget *parent) :
 	initUi();
 }
 
-void RgbDock::updatePixmap(QPixmap p)
+void RgbDock::updatePixmap(coloring type, QPixmap p)
 {
 //	GGDBG_CALL();
 	view->setEnabled(true);
@@ -50,7 +50,7 @@ void RgbDock::processVisibilityChanged(bool visible)
 	if(dockVisible && !rgbValid) {
 		//GGDBGM("requesting rgb"<<endl);
 		view->setEnabled(false);
-		emit rgbRequested();
+		emit rgbRequested(CMF);
 	}
 }
 
@@ -62,7 +62,7 @@ void RgbDock::processImageUpdate(representation::t type, SharedMultiImgPtr)
 		view->setEnabled(false);
 		if(dockVisible) {
 			//GGDBGM("requesting rgb"<<endl);
-			emit rgbRequested();
+			emit rgbRequested(CMF);
 		}
 	}
 }

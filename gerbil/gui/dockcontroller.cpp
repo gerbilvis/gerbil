@@ -42,13 +42,13 @@ void DockController::setupDocks()
 	connect(im, SIGNAL(imageUpdate(representation::t,SharedMultiImgPtr)),
 			rgbDock, SLOT(processImageUpdate(representation::t,SharedMultiImgPtr)));
 
-	// TODO: use FalseColorModel
-	connect(rgbDock, SIGNAL(rgbRequested()),
-			im, SLOT(computeRGB()));
+	// TODO: are the signals in the image model still used?
+	// SLOT(computeRGB) and SIGNAL(rgbUpdate(QPixmap))
+	connect(rgbDock, SIGNAL(rgbRequested(coloring)),
+			fm, SLOT(computeBackground(coloring)));
 
-	// TODO: use FalseColorModel
-	connect(im, SIGNAL(rgbUpdate(QPixmap)),
-			rgbDock, SLOT(updatePixmap(QPixmap)));
+	connect(fm, SIGNAL(calculationComplete(coloring, QPixmap)),
+			rgbDock, SLOT(updatePixmap(coloring, QPixmap)));
 
 	connect(im, SIGNAL(rgbUpdate(QPixmap)),
 			this, SLOT(processRGB(QPixmap)));

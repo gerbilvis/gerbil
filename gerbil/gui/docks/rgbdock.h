@@ -4,6 +4,7 @@
 #include <QDockWidget>
 #include "../../common/shared_data.h"
 #include "../model/representation.h"
+#include "../model/falsecolor.h"
 
 class ScaledView;
 
@@ -14,11 +15,11 @@ public:
 	explicit RgbDock(QWidget *parent = 0);
 	
 signals:
-	void rgbRequested();
+	void rgbRequested(coloring type);
 public slots:
 	void processImageUpdate(representation::t type, SharedMultiImgPtr image);
 	void processVisibilityChanged(bool visible);
-	void updatePixmap(QPixmap p);
+	void updatePixmap(coloring type, QPixmap p);
 protected:
 	void initUi();
 	ScaledView *view;
