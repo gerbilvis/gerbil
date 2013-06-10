@@ -15,8 +15,7 @@
 
 ImageModel::ImageModel(BackgroundTaskQueue &queue, bool lm)
 	: limitedMode(lm), queue(queue),
-	  image_lim(new SharedMultiImgBase(new multi_img())),
-	  full_rgb(new SharedData<QImage>(new QImage()))
+	  image_lim(new SharedMultiImgBase(new multi_img()))
 {
 	foreach (representation::t i, representation::all()) {
 		map.insert(i, new payload(i));
@@ -215,27 +214,16 @@ void ImageModel::computeBand(representation::t type, int dim)
 	emit bandUpdate(m[dim], desc);
 }
 
-void ImageModel::computeRGB() // TODO: bool instantly
+void ImageModel::computeFullRgb()
 {
-	SharedDataLock hlock(full_rgb->mutex);
-
+	qimage_ptr fullRgb(new SharedData<QImage>(NULL));
 	/* we do it instantly as this is typically what the user wants to see first,
 	 * and not wait for it while the queue processes other things */
 	BackgroundTaskPtr taskRgb(new RgbTbb(
 		image_lim, mat3f_ptr(new SharedData<cv::Mat3f>(new cv::Mat3f)),
-								  full_rgb));
+								  fullRgb));
 	taskRgb->run();
-	hlock.unlock();
-	postComputeRGB(true);
-}
 
-void ImageModel::postComputeRGB(bool success)
-{
-	if (!success)
-		return;
-
-	SharedDataLock hlock(full_rgb->mutex);
-	QPixmap ret = QPixmap::fromImage(**full_rgb);
-	hlock.unlock();
-	emit rgbUpdate(ret);
+	QPixmap p = QPixmap::fromImage(**fullRgb);
+	emit fullRgbUpdate(p);
 }

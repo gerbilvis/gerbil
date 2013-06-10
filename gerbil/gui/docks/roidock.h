@@ -18,7 +18,6 @@ public:
 	
 	const QRect &getRoi() const;
 	void setRoi(const cv::Rect &roi); //TODO: slot?
-	void setPixmap(const QPixmap image);
 
 signals:
 	void newSelection(const QRect &roi);
@@ -30,6 +29,7 @@ signals:
 public slots:
 	void roiButtonsClicked(QAbstractButton *sender);
 	void newRoiSelected(const QRect &roi);
+	void updatePixmap(const QPixmap image);
 
 protected:
 	// helper functions to roiButtonsClicked

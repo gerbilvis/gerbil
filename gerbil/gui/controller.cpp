@@ -35,9 +35,9 @@ Controller::Controller(const std::string &filename, bool limited_mode)
 
 	// connect slots/signals
 	window->initSignals(this);
-	initDocks();
 	initImage();
 	initLabeling();
+	initDocks();
 
 	// MODEL To be removed when refactored
 	// into model classes.
@@ -81,8 +81,6 @@ void Controller::initImage()
 	connect(window->getViewerContainer(),
 			SIGNAL(bandSelected(representation::t, int)),
 			&im, SLOT(computeBand(representation::t, int)));
-	connect(window, SIGNAL(rgbRequested()),
-			&im, SLOT(computeRGB()));
 
 	// TODO this belongs in DocksController
 	/* im -> others */
@@ -166,7 +164,6 @@ void Controller::updateROI(bool reuse, cv::Rect roi, size_t bands)
 
 	/** SECOND STEP: update metadata */
 
-	im.computeRGB();
 	lm.updateROI(roi);
 
 	/** THIRD STEP: update payload */

@@ -70,12 +70,19 @@ public:
 
 public slots:
 	void computeBand(representation::t type, int dim);
-	void computeRGB();
-	void postComputeRGB(bool success);
+	/** Compute rgb representation of full image.
+	 *
+	 * Emits fullRgbUpdate() when finished.
+	 *
+	 * @note Typically this is called once for each image, since the RGB representation
+	 * for ROI-View does not need to be updated.
+	 */
+	void computeFullRgb();
 
 signals:
 	void bandUpdate(QPixmap band, QString description);
-	void rgbUpdate(QPixmap rgb);
+
+	void fullRgbUpdate(QPixmap fullRgb);
 	void imageUpdate(representation::t type, SharedMultiImgPtr image);
 
 private:
@@ -92,10 +99,6 @@ private:
 
 	// current region of interest
 	cv::Rect roi;
-
-	// rgb representation to be used for ROI selection
-	/* this is CMF currently, could be something else later on */
-	qimage_ptr full_rgb;
 
 	BackgroundTaskQueue &queue;
 

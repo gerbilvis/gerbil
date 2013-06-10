@@ -23,6 +23,8 @@ void DockController::init()
 	mw->addDockWidget(Qt::RightDockWidgetArea, rgbDock);
 	//mw->addDockWidget(Qt::RightDockWidgetArea, illumDock));
 
+	im->computeFullRgb();
+
 	//TODO make this complete
 	mw->tabifyDockWidgets(roiDock, rgbDock);
 
@@ -50,10 +52,11 @@ void DockController::setupDocks()
 	connect(fm, SIGNAL(calculationComplete(coloring, QPixmap)),
 			rgbDock, SLOT(updatePixmap(coloring, QPixmap)));
 
-	connect(im, SIGNAL(rgbUpdate(QPixmap)),
-			this, SLOT(processRGB(QPixmap)));
 
 	// signals for ROI (reset handled in ROIDock)
+	connect(im, SIGNAL(fullRgbUpdate(QPixmap)),
+			roiDock, SLOT(updatePixmap(QPixmap)));
+
 	connect(roiDock, SIGNAL(roiRequested(const cv::Rect&)),
 			chief, SLOT(spawnROI(const cv::Rect&)));
 }
@@ -76,12 +79,11 @@ void DockController::enableDocks(bool enable, TaskType tt)
 	roiDock->setEnabled(enable || tt == TT_SELECT_ROI);
 }
 
+// TODO: remove
 void DockController::processRGB(QPixmap rgb)
 {
 	// TODO FIXME this should be handled the same way as for RGBDock
 	GGDBG_CALL();
-	roiDock->setPixmap(rgb);
-
 }
 
 

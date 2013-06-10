@@ -1,5 +1,6 @@
 #include "roidock.h"
 
+#include <iostream>
 #include "../gerbil_gui_debug.h"
 
 cv::Rect QRect2CVRect(const QRect &r) {
@@ -81,8 +82,9 @@ void ROIDock::resetRoi()
 }
 
 
-void ROIDock::setPixmap(const QPixmap image)
+void ROIDock::updatePixmap(const QPixmap image)
 {
 	roiView->setPixmap(image);
+	//GGDBGM(format("pixmap size %1%x%2%")%image.width() %image.height()<<endl);
 	roiView->update();
 }
