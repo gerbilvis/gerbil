@@ -3,6 +3,7 @@
 
 #include "representation.h"
 #include "../commandrunner.h"
+#include "../../common/multi_img_tasks.h"
 #include "../../common/shared_data.h"
 
 #include <QPixmap>

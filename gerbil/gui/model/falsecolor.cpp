@@ -4,10 +4,9 @@
 #include "../commandrunner.h"
 #include "../tasks/rgbtbb.h"
 
-#include "../../rgb/rgb.h"
 #include "../../common/shared_data.h"
 #include "../../common/background_task_queue.h"
-#include "../../common/multi_img_tasks.h"
+#include "../../rgb/rgb.h"
 #include "../../core/common/multi_img.h"
 #include "../../core/common/qtopencv.h"
 
