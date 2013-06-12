@@ -61,7 +61,7 @@ void IllumModel::applyIllum()
 	queue->push(taskEpilog);
 }
 
-void IllumModel::illum1Changed(int t)
+void IllumModel::updateIllum1(int t)
 {
 	//GGDBGM(idx << endl);
 	i1 = t;
@@ -72,7 +72,7 @@ void IllumModel::illum1Changed(int t)
 	emit newIlluminant(il);
 }
 
-void IllumModel::illum2Changed(int t)
+void IllumModel::updateIllum2(int t)
 {
 	//GGDBGM(idx << endl);
 	i2 = t;

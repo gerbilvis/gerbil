@@ -3,6 +3,7 @@
 
 #include "model/image.h"
 #include "model/labeling.h"
+#include "model/illumination.h"
 #include "model/falsecolor.h"
 #include "mainwindow.h"
 #include <background_task.h>
@@ -66,6 +67,7 @@ public slots:
 protected:
 	// connect models with gui
 	void initImage();
+	void initIlluminant();
 	void initLabeling();
 
 	// init DockController
@@ -86,6 +88,9 @@ protected:
 
 	// labeling model stores pixel/label associations and label color codes
 	LabelingModel lm;
+
+	// illumination model
+	IllumModel illumm;
 
 	/* false color model generates and stores RGB representations of
 	 * multispectral data */

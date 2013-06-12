@@ -21,9 +21,6 @@
 #include "docks/illumdock.h"
 #include "docks/rgbdock.h"
 
-// TODO: move to a controller
-#include "model/illumination.h"
-
 #include <background_task_queue.h>
 
 #include <labeling.h>
@@ -45,12 +42,6 @@ MainWindow::MainWindow(bool limitedMode)
 {
 	// create all objects
 	setupUi(this);
-
-	/* TODO: docks should belong to/interact with Controller, or DockController
-	 * so we don't have unnecessary duplication here */
-	// TODO -> dockscontroller
-	illumDock = new IllumDock(this);
-	addDockWidget(Qt::RightDockWidgetArea, illumDock);
 }
 
 // todo: move to the new bandDock
@@ -251,36 +242,6 @@ void MainWindow::initSignals(Controller *chief)
 	connect(this, SIGNAL(specRescaleRequested(size_t)),
 			chief, SLOT(rescaleSpectrum(size_t)));
 
-	/* Illumination */
-	connect(illumDock, SIGNAL(applyIllum()),
-			&illumModel, SLOT(applyIllum()));
-	connect(illumDock, SIGNAL(illum1Selected(int)),
-			&illumModel, SLOT(illum1Changed(int))); //FIXME slot name
-	connect(illumDock, SIGNAL(illum2Selected(int)),
-			&illumModel, SLOT(illum2Changed(int)));
-	connect(illumDock, SIGNAL(showIlluminationCurve(bool)),
-			&illumModel, SLOT(setIlluminationCurveShown(bool)));
-
-	connect(illumDock, SIGNAL(showIlluminationCurve(bool)),
-			viewerContainer, SLOT(showIlluminationCurve(bool)));
-
-	// TODO: signal does not exist right now.
-	//connect(this, SIGNAL(roiChanged(cv::Rect)),
-//			&illumModel, SLOT(setRoi(cv::Rect)));
-
-	connect(&illumModel, SIGNAL(requestGUIEnabled(bool,TaskType)),
-			this, SLOT(setGUIEnabled(bool, TaskType)), Qt::DirectConnection);
-	// TODO: instead have a specific function in controller (like spectRescale)
-//	connect(&illumModel, SIGNAL(requestApplyROI(bool)),
-//			this, SLOT(applyROI(bool)), Qt::DirectConnection);
-	// TODO: don't know how RGB works right now.
-//	connect(&illumModel, SIGNAL(requestRebuildRGB()),
-//			this, SLOT(rebuildRGB()), Qt::DirectConnection);
-
-	connect(&illumModel, SIGNAL(newIlluminant(cv::Mat1f)),
-			viewerContainer, SLOT(newIlluminant(cv::Mat1f)));
-	connect(&illumModel, SIGNAL(illuminantIsApplied(bool)),
-			viewerContainer, SLOT(setIlluminantApplied(bool)));
 	/// global shortcuts
 	QShortcut *scr = new QShortcut(Qt::CTRL + Qt::Key_S, this);
 	connect(scr, SIGNAL(activated()), this, SLOT(screenshot()));
@@ -1044,7 +1005,7 @@ QIcon MainWindow::colorIcon(const QColor &color)
 	return QIcon(pm);
 }
 
-void MainWindow::tabifyDockWidgets(ROIDock *roiDock, RgbDock *rgbDock)
+void MainWindow::tabifyDockWidgets(ROIDock *roiDock, RgbDock *rgbDock, IllumDock *illumDock)
 {
 	// dock arrangement
 	tabifyDockWidget(rgbDock, roiDock);

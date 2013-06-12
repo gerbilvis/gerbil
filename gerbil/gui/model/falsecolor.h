@@ -3,8 +3,8 @@
 
 #include "representation.h"
 #include "../commandrunner.h"
-#include "../../common/multi_img_tasks.h"
-#include "../../common/shared_data.h"
+#include <multi_img_tasks.h>
+#include <shared_data.h>
 
 #include <QPixmap>
 #include <QMap>
@@ -42,7 +42,7 @@ public:
 	/* construct model without image data. Make sure to call setMultiImg()
 	 * before doing any other operations with this object.
 	 */
-	FalseColorModel(BackgroundTaskQueue *queue);
+	FalseColorModel(QObject *parent, BackgroundTaskQueue *queue);
 	~FalseColorModel();
 
 	// calls reset()
@@ -76,7 +76,7 @@ private:
 
 	SharedMultiImgPtr shared_img;
 	PayloadMap map;
-	BackgroundTaskQueue *queue;
+	BackgroundTaskQueue *const queue;
 };
 
 class FalseColorModelPayload : public QObject {

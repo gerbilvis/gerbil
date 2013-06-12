@@ -15,7 +15,7 @@ std::ostream &operator<<(std::ostream& os, const cv::Rect& r)
 }
 
 Controller::Controller(const std::string &filename, bool limited_mode)
-	: im(queue, limited_mode), fm(&queue), queuethread(0)
+	: im(queue, limited_mode), illumm(this), fm(this, &queue), queuethread(0)
 {
 	// load image
 	cv::Rect dimensions = im.loadImage(filename);
@@ -26,6 +26,10 @@ Controller::Controller(const std::string &filename, bool limited_mode)
 	// background task queue thread
 	startQueue();
 
+	// initialize illuminant model
+	// TODO: why is the queue not passed in the constructor? (FalseColorModel currently does it that way)
+	illumm.setTaskQueue(&queue);
+
 	// initialize label model
 	lm.setDimensions(dimensions.width, dimensions.height);
 
@@ -35,7 +39,10 @@ Controller::Controller(const std::string &filename, bool limited_mode)
 
 	// connect slots/signals
 	window->initSignals(this);
+	// TODO: these functions should be called connectXY(-Model)
+	// because all the initialization is already done & they just contain connects...
 	initImage();
+	initIlluminant();
 	initLabeling();
 	initDocks();
 
@@ -86,10 +93,31 @@ void Controller::initImage()
 	/* im -> others */
 	connect(&im, SIGNAL(bandUpdate(QPixmap, QString)),
 			window, SLOT(changeBand(QPixmap, QString)));
-//	connect(&im, SIGNAL(rgbUpdate(QPixmap)),
-//			window, SLOT(processRGB(QPixmap)));
 	connect(&im, SIGNAL(imageUpdate(representation::t,SharedMultiImgPtr)),
 			this, SLOT(docksUpdateImage(representation::t,SharedMultiImgPtr)));
+}
+
+void Controller::initIlluminant()
+{
+	// signals illumm <-> viewer container
+	connect(&illumm, SIGNAL(newIlluminant(cv::Mat1f)),
+			window->getViewerContainer(), SLOT(newIlluminant(cv::Mat1f)));
+	connect(&illumm, SIGNAL(illuminantIsApplied(bool)),
+			window->getViewerContainer(), SLOT(setIlluminantApplied(bool)));
+
+	// TODO: signal does not exist right now.
+	//connect(window, SIGNAL(roiChanged(cv::Rect)),
+//			&illumm, SLOT(setRoi(cv::Rect)));
+
+	// TODO: instead have a specific function in controller (like spectRescale)
+//	connect(&illumm, SIGNAL(requestApplyROI(bool)),
+//			window, SLOT(applyROI(bool)), Qt::DirectConnection);
+	// TODO: don't know how RGB works right now.
+//	connect(&illumm, SIGNAL(requestRebuildRGB()),
+//			window, SLOT(rebuildRGB()), Qt::DirectConnection);
+
+	connect(&illumm, SIGNAL(requestGUIEnabled(bool,TaskType)),
+			window, SLOT(setGUIEnabled(bool, TaskType)), Qt::DirectConnection);
 }
 
 void Controller::spawnROI(const cv::Rect &roi)
@@ -226,6 +254,7 @@ void Controller::initDocks()
 {
 	dc = new DockController(this);
 	dc->setImageModel(&im);
+	dc->setIllumModel(&illumm);
 	dc->setFalseColorModel(&fm);
 	dc->setMainWindow(window);
 	dc->init();
@@ -262,6 +291,10 @@ void Controller::docksUpdateImage(representation::t type, SharedMultiImgPtr imag
 {
 	/* first make sure models have access to data */
 	fm.setMultiImg(type, image);
+
+	// TODO: wurde das vorher auch bei jedem Update neu gesetzt?
+	// IllumModel wants a ptr to the shared pointer, which obviously does NOT work like this:
+	// illumm.setMultiImage(&image);
 
 	/* conservative approach: do not initiate calculation tasks here,
 	 * just invalidate data in the GUI (which may lead to initiating tasks)

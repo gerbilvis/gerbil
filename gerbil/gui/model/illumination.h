@@ -21,8 +21,8 @@ class IllumModel : public QObject
 public:
 	explicit IllumModel(QObject *parent = 0);
 
-	void setTaskQueue(BackgroundTaskQueue* queue);
-	void setMultiImage(SharedMultiImgPtr* image);
+	void setTaskQueue(BackgroundTaskQueue *queue);
+	void setMultiImage(SharedMultiImgPtr *image);
 
 
 signals:
@@ -38,8 +38,8 @@ signals:
 	void illuminantIsApplied(bool applied);
 public slots:
 	void applyIllum();
-	void illum1Changed(int t);
-	void illum2Changed(int t);
+	void updateIllum1(int t);
+	void updateIllum2(int t);
 	void setIlluminationCurveShown(bool shown);
 	void setRoi(cv::Rect roi);
 protected slots:

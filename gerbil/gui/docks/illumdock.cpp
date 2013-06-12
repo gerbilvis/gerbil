@@ -61,7 +61,7 @@ void IllumDock::onIllum1Selected(int idx)
 	int i1 = i1Box->itemData(idx).value<int>();
 	i1Check->setEnabled(i1 > 0);
 	emit illum1Selected(i1);
-	emit showIlluminationCurve(i1 > 0);
+	emit showIlluminationCurveChanged(i1 > 0);
 }
 
 void IllumDock::onIllum2Selected(int idx)
@@ -70,11 +70,11 @@ void IllumDock::onIllum2Selected(int idx)
 	int i2 = i1Box->itemData(idx).value<int>();
 	emit illum2Selected(i2);
 	if(0==i2) {
-		emit showIlluminationCurve(false);
+		emit showIlluminationCurveChanged(false);
 	}
 }
 
 void IllumDock::onShowToggled(bool show)
 {
-	emit showIlluminationCurve(show);
+	emit showIlluminationCurveChanged(show);
 }

@@ -19,11 +19,11 @@ protected slots:
 	void onShowToggled(bool show);
 	void onApplyClicked();
 signals:
-	void applyIllum();
+	void applyIllum(); // TODO: rename
 	void illum1Selected(int idx);
 	void illum2Selected(int idx);
 	/* effect: if(show): illuminat curve shown in viewers .*/
-	void showIlluminationCurve(bool show);
+	void showIlluminationCurveChanged(bool show);
 private:
 	void initUi();
 };

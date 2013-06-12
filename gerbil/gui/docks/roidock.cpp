@@ -35,13 +35,13 @@ void ROIDock::setRoi(const cv::Rect &roi)
 void ROIDock::initUi()
 {
 	connect(roiButtons, SIGNAL(clicked(QAbstractButton*)),
-			 this, SLOT(roiButtonsClicked(QAbstractButton*)));
+			 this, SLOT(processRoiButtonsClicked(QAbstractButton*)));
 	connect(roiView, SIGNAL(newSelection(const QRect&)),
-			this, SLOT(newRoiSelected(const QRect&)));
+			this, SLOT(updateRoi(const QRect&)));
 }
 
 
-void ROIDock::roiButtonsClicked(QAbstractButton *sender)
+void ROIDock::processRoiButtonsClicked(QAbstractButton *sender)
 {
 	QDialogButtonBox::ButtonRole role = roiButtons->buttonRole(sender);
 	roiButtons->setDisabled(true);
@@ -53,7 +53,7 @@ void ROIDock::roiButtonsClicked(QAbstractButton *sender)
 	}
 }
 
-void ROIDock::newRoiSelected(const QRect &roi)
+void ROIDock::updateRoi(const QRect &roi)
 {
 	curRoi = roi;
 	roiButtons->setEnabled(true);
@@ -77,7 +77,7 @@ void ROIDock::resetRoi()
 {
 	curRoi = oldRoi;
 	roiView->roi = curRoi;
-	newRoiSelected(curRoi);
+	updateRoi(curRoi);
 	roiView->update();
 }
 

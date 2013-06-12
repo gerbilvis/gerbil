@@ -27,8 +27,8 @@ signals:
 	void roiRequested(const cv::Rect &roi);
 
 public slots:
-	void roiButtonsClicked(QAbstractButton *sender);
-	void newRoiSelected(const QRect &roi);
+	void processRoiButtonsClicked(QAbstractButton *sender);
+	void updateRoi(const QRect &roi);
 	void updatePixmap(const QPixmap image);
 
 protected:

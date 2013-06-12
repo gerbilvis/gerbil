@@ -4,11 +4,11 @@
 #include "../commandrunner.h"
 #include "../tasks/rgbtbb.h"
 
-#include "../../common/shared_data.h"
-#include "../../common/background_task_queue.h"
-#include "../../rgb/rgb.h"
-#include "../../core/common/multi_img.h"
-#include "../../core/common/qtopencv.h"
+#include <shared_data.h>
+#include <background_task_queue.h>
+#include <rgb.h>
+#include <multi_img.h>
+#include <qtopencv.h>
 
 #include <QImage>
 #include <QPixmap>
@@ -25,8 +25,8 @@
 // Long term TODOs:
 // "init rgb.configs, if non default setup is neccessary"
 
-FalseColorModel::FalseColorModel(BackgroundTaskQueue *queue)
-	: queue(queue)
+FalseColorModel::FalseColorModel(QObject *parent, BackgroundTaskQueue *queue)
+	: QObject(parent), queue(queue)
 {
 	int type = QMetaType::type("coloring");
 	if (type == 0 || !QMetaType::isRegistered(type))

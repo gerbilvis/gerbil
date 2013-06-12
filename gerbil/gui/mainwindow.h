@@ -59,8 +59,8 @@ public:
 	//TODO make this complete
 	// need to remove all Docks from mainwindow.ui
 	void tabifyDockWidgets(ROIDock *roiDock,
-						   RgbDock *rgbDock
-						   );
+						   RgbDock *rgbDock,
+						   IllumDock *illumDock);
 
 public slots:
 	// TODO -> DockController
@@ -146,11 +146,6 @@ private:
 	void initUnsupervisedSegUI(size_t size);
 #endif
 	void initNormalizationUI();
-
-	// TODO: move to DockController
-	IllumDock* illumDock;
-// TODO: should belong to a controller
-	IllumModel illumModel;
 
 #ifdef WITH_SEG_MEANSHIFT
 	CommandRunner *usRunner;

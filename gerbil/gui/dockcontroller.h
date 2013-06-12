@@ -9,6 +9,7 @@
 #include <QPixmap>
 
 class ImageModel;
+class IllumModel;
 class FalseColorModel;
 
 class Controller;
@@ -29,6 +30,7 @@ public:
 	
 
 	void setImageModel(ImageModel *im) {this->im = im;}
+	void setIllumModel(IllumModel *illumm) {this->illumm = illumm;}
 	void setFalseColorModel(FalseColorModel *fm) {this->fm =fm;}
 	void setMainWindow(MainWindow *mw) {this->mw = mw;}
 	void init();
@@ -47,6 +49,7 @@ protected:
 	Controller* chief;
 	
 	ImageModel *im;
+	IllumModel *illumm;
 	FalseColorModel *fm;
 
 	MainWindow *mw;
