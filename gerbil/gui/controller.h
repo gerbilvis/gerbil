@@ -5,6 +5,7 @@
 #include "model/labeling.h"
 #include "model/illumination.h"
 #include "model/falsecolor.h"
+#include "model/ussegmentationmodel.h"
 #include "mainwindow.h"
 #include <background_task.h>
 #include <background_task_queue.h>
@@ -95,6 +96,11 @@ protected:
 	/* false color model generates and stores RGB representations of
 	 * multispectral data */
 	FalseColorModel fm;
+
+#ifdef WITH_SEG_MEANSHIFT
+	// unsupervised segmentation model
+	UsSegmentationModel um;
+#endif /* WITH_SEG_MEANSHIFT */
 
 	// setup dock widgets and manage interaction with models
 	DockController *dc;

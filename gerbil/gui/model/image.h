@@ -59,6 +59,7 @@ public:
 	size_t getSize();
 	const cv::Rect& getROI() { return roi; }
 	SharedMultiImgPtr getImage(representation::t type) { return map[type]->image; }
+	bool isLimitedMode() { return limitedMode; }
 
 	// delete ROI information also in images
 	void invalidateROI();

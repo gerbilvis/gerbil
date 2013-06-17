@@ -123,15 +123,12 @@ void UsSegmentationDock::startFindKL()
 
 void UsSegmentationDock::startUnsupervisedSeg(bool findKL)
 {
-	// allow only one runner at a time (UI enforces that)
-	assert(usRunner == NULL);
-	usRunner = new CommandRunner();
-
 	int method = usMethodBox->itemData(usMethodBox->currentIndex()).value<int>();
-
+	vole::Command *cmd;
 	if (findKL) { // run MeanShift::findKL()
-		usRunner->cmd = new vole::MeanShiftShell();
-		vole::MeanShiftConfig &config = ((vole::MeanShiftShell *) usRunner->cmd)->config;
+		cmd = new vole::MeanShiftShell();
+		vole::MeanShiftConfig &config =
+				static_cast<vole::MeanShiftShell*>(cmd)->config;
 
 		config.batch = true;
 		config.findKL = true;
@@ -142,8 +139,9 @@ void UsSegmentationDock::startUnsupervisedSeg(bool findKL)
 		config.Kjump = usFindKLKStepBox->value();
 		config.epsilon = usFindKLEpsilonBox->value();
 	} else if (method == 0) { // Meanshift
-		usRunner->cmd = new vole::MeanShiftShell();
-		vole::MeanShiftConfig &config = ((vole::MeanShiftShell *) usRunner->cmd)->config;
+		cmd = new vole::MeanShiftShell();
+		vole::MeanShiftConfig &config =
+				static_cast<vole::MeanShiftShell*>(cmd)->config;
 
 		// fixed settings
 		config.batch = true;
@@ -163,10 +161,10 @@ void UsSegmentationDock::startUnsupervisedSeg(bool findKL)
 			config.bandwidth = 0;
 		}
 
-// medianshift and probshift to be removed from GUI
+// old: medianshift and probshift removed from GUI
 //#ifdef WITH_SEG_MEDIANSHIFT
 //	} else if (method == 1) { // Medianshift
-//		usRunner->cmd = new vole::MedianShiftShell();
+//		cmd = new vole::MedianShiftShell();
 //		vole::MedianShiftConfig &config = ((vole::MedianShiftShell *) usRunner->cmd)->config;
 
 //		config.K = usKSpinBox->value();
@@ -176,7 +174,7 @@ void UsSegmentationDock::startUnsupervisedSeg(bool findKL)
 //#endif
 //#ifdef WITH_SEG_PROBSHIFT
 //	} else { // Probabilistic Shift
-//		usRunner->cmd = new vole::ProbShiftShell();
+//		cmd = new vole::ProbShiftShell();
 //		vole::ProbShiftConfig &config = ((vole::ProbShiftShell *) usRunner->cmd)->config;
 
 //		config.useLSH = usLshCheckBox->isChecked();
@@ -193,85 +191,43 @@ void UsSegmentationDock::startUnsupervisedSeg(bool findKL)
 	}
 
 	// connect runner with progress bar, cancel button and finish-slot
-	connect(usRunner, SIGNAL(progressChanged(int)), usProgressBar, SLOT(setValue(int)));
-	connect(usCancelButton, SIGNAL(clicked()), usRunner, SLOT(terminate()));
 
-	qRegisterMetaType< std::map<std::string, boost::any> >("std::map<std::string, boost::any>");
-	connect(usRunner, SIGNAL(success(std::map<std::string,boost::any>)), this, SLOT(segmentationApply(std::map<std::string,boost::any>)));
-	connect(usRunner, SIGNAL(finished()), this, SLOT(segmentationFinished()));
+	// -> controller
+	//connect(usRunner, SIGNAL(progressChanged(int)), usProgressBar, SLOT(setValue(int)));
+
+	connect(usCancelButton, SIGNAL(clicked()),
+			this, SLOT(cancel()));
+
+	// -> controller
+	//connect(usRunner, SIGNAL(success(std::map<std::string,boost::any>)), this, SLOT(segmentationApply(std::map<std::string,boost::any>)));
+
+	// -> removed
+	//connect(usRunner, SIGNAL(finished()), this, SLOT(segmentationFinished()));
 
 	usProgressWidget->show();
 	usSettingsWidget->setDisabled(true);
 
-	// prepare input image
-	boost::shared_ptr<multi_img> input;
-	{
-/*TODO		SharedMultiImgBaseGuard guard(*image_lim);
-		assert(0 != &**image_lim);
-		// FIXME 2013-04-11 georg altmann:
-		// not sure what this code is really doing, but this looks like a problem:
-		// is input sharing image data with image_lim?
-		// If so, another thread could overwrite data while image segmentation is working on it,
-		// since there is no locking (unless multi_img does implicit copy on write?).
-		input = boost::shared_ptr<multi_img>(
-					new multi_img(**image_lim, roi)); // image data is not copied
-*/
-	}
 	int numbands = usBandsSpinBox->value();
 	bool gradient = usGradientCheckBox->isChecked();
 
-	if (numbands > 0 && numbands < (int) input->size()) {
-		boost::shared_ptr<multi_img> input_tmp(new multi_img(input->spec_rescale(numbands)));
-		input = input_tmp;
-	}
-
-	if (gradient) {
-		// copy needed here
-		multi_img loginput(*input);
-		loginput.apply_logarithm();
-		input = boost::shared_ptr<multi_img>(new multi_img(loginput.spec_gradient()));
-	}
-
-	usRunner->input["multi_img"] = input;
-
-	usRunner->start();
+	emit segmentationRequested(cmd, numbands, gradient);
 }
 
-void UsSegmentationDock::segmentationFinished() {
-	if (usRunner->abort) {
-		// restore Cancel button
-		usCancelButton->setEnabled(true);
-		usCancelButton->setText("Cancel");
-	}
+//void UsSegmentationDock::segmentationApply(std::map<std::string, boost::any> output) {
+//	if (output.count("labels")) {
+//		boost::shared_ptr<cv::Mat1s> labelMask = boost::any_cast< boost::shared_ptr<cv::Mat1s> >(output["labels"]);
+//		// TODO: assert size?, emit signal for lm
+//		// TODO setLabels(*labelMask);
+//	}
 
-	// hide progress, re-enable settings
-	usProgressWidget->hide();
-	usSettingsWidget->setEnabled(true);
-
-	/// clean up runner
-	delete usRunner;
-	usRunner = NULL;
-}
-
-void UsSegmentationDock::segmentationApply(std::map<std::string, boost::any> output) {
-	if (output.count("labels")) {
-		boost::shared_ptr<cv::Mat1s> labelMask = boost::any_cast< boost::shared_ptr<cv::Mat1s> >(output["labels"]);
-		// TODO: assert size?, emit signal for lm
-		// TODO setLabels(*labelMask);
-	}
-
-	if (output.count("findKL.K") && output.count("findKL.L")) {
-		int foundK = boost::any_cast<int>(output["findKL.K"]);
-		int foundL = boost::any_cast<int>(output["findKL.L"]);
-		usFoundKLLabel->setText(QString("Found values: K=%1 L=%2").arg(foundK).arg(foundL));
-		usFoundKLWidget->show();
-	}
-}
+//	if (output.count("findKL.K") && output.count("findKL.L")) {
+//		int foundK = boost::any_cast<int>(output["findKL.K"]);
+//		int foundL = boost::any_cast<int>(output["findKL.L"]);
+//		usFoundKLLabel->setText(QString("Found values: K=%1 L=%2").arg(foundK).arg(foundL));
+//		usFoundKLWidget->show();
+//	}
+//}
 #else // method stubs as using define in header does not work (moc problem?)
-// TODO
-// 1. ifdef on seg dock header
-// 2. probshift, medianshift raus. (auswahl dropbox lassen)
-// 3.
 void UsSegmentationDock::startUnsupervisedSeg(bool findKL) {}
 void UsSegmentationDock::startFindKL() {}
 void UsSegmentationDock::segmentationFinished() {}
@@ -309,5 +265,38 @@ void UsSegmentationDock::usInitMethodChanged(int idx)
 		usInitPercentWidget->hide();
 	}
 }
+int UsSegmentationDock::updateProgress(int percent)
+{
+	usProgressBar->setValue(percent);
+}
+
+int UsSegmentationDock::processResultKL(int k, int l)
+{
+	usFoundKLLabel->setText(QString("Found values: K=%1 L=%2").arg(k).arg(l));
+	usFoundKLWidget->show();
+}
+
+void UsSegmentationDock::processSegmentationCompleted()
+{
+	// hide progress, re-enable settings
+	usProgressWidget->hide();
+	usSettingsWidget->setEnabled(true);
+
+}
+
+void UsSegmentationDock::cancel()
+{
+	emit cancelSegmentationRequested();
+
+	// restore Cancel button
+	usCancelButton->setEnabled(true);
+	usCancelButton->setText("Cancel");
+
+
+	// hide progress, re-enable settings
+	usProgressWidget->hide();
+	usSettingsWidget->setEnabled(true);
+}
+
 #endif
 

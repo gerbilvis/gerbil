@@ -30,6 +30,7 @@ vole_compile_library(
 	model/labeling
 	model/falsecolor
 	model/illumination
+	model/ussegmentationmodel
 
 	tasks/distviewbinstbb
 	tasks/rgbtbb
@@ -74,6 +75,7 @@ vole_moc_library(
 	model/labeling.h
 	model/falsecolor.h
 	model/illumination.h
+	model/ussegmentationmodel.h
 )
 
 vole_ui_library(

@@ -11,6 +11,8 @@
 class ImageModel;
 class IllumModel;
 class FalseColorModel;
+class UsSegmentationModel;
+class LabelingModel;
 
 class Controller;
 
@@ -34,6 +36,8 @@ public:
 	void setImageModel(ImageModel *im) {this->im = im;}
 	void setIllumModel(IllumModel *illumm) {this->illumm = illumm;}
 	void setFalseColorModel(FalseColorModel *fm) {this->fm =fm;}
+	void setUsSegModel(UsSegmentationModel *um) {this->um = um; }
+	void setLabelingModel(LabelingModel *lm) {this->lm = lm; }
 	void setMainWindow(MainWindow *mw) {this->mw = mw;}
 	void init();
 signals:
@@ -53,6 +57,8 @@ protected:
 	ImageModel *im;
 	IllumModel *illumm;
 	FalseColorModel *fm;
+	UsSegmentationModel *um;
+	LabelingModel *lm;
 
 	MainWindow *mw;
 

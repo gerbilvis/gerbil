@@ -33,6 +33,10 @@ Controller::Controller(const std::string &filename, bool limited_mode)
 	// initialize label model
 	lm.setDimensions(dimensions.width, dimensions.height);
 
+#ifdef WITH_SEG_MEANSHIFT
+	um.setMultiImage(im.getImage(representation::IMG));
+#endif /* WITH_SEG_MEANSHIFT */
+
 	// create gui (perform initUI before connecting signals!)
 	window = new MainWindow(limited_mode);
 	window->initUI(dimensions, im.getSize());
@@ -256,6 +260,8 @@ void Controller::initDocks()
 	dc->setImageModel(&im);
 	dc->setIllumModel(&illumm);
 	dc->setFalseColorModel(&fm);
+	dc->setUsSegModel(&um);
+	dc->setLabelingModel(&lm);
 	dc->setMainWindow(window);
 	dc->init();
 }

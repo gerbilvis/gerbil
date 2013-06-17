@@ -10,6 +10,7 @@
 #include "docks/graphsegmentationdock.h"
 #include "docks/ussegmentationdock.h"
 
+#include "model/ussegmentationmodel.h"
 
 DockController::DockController(Controller *chief) :
 	QObject(chief), chief(chief)
@@ -35,7 +36,6 @@ void DockController::init()
 	im->computeFullRgb();
 
 	//TODO make this complete
-	// SEGMENTATION_TODO add seg docks
 	mw->tabifyDockWidgets(roiDock, rgbDock, illumDock, graphSegDock, usSegDock);
 
 	connect(mw, SIGNAL(requestEnableDocks(bool,TaskType)),
@@ -98,27 +98,40 @@ void DockController::setupDocks()
 	graphSegDock->setVisible(false); // start hidden
 
 	/* Unsupervised Segmentation Dock */
+#ifdef WITH_SEG_MEANSHIFT
+	connect(um, SIGNAL(progressChanged(int)),
+			usSegDock, SLOT(updateProgress(int)));
+	connect(um, SIGNAL(segmentationCompleted()),
+			usSegDock, SLOT(processSegmentationCompleted()));
+	connect(usSegDock, SIGNAL(segmentationRequested(vole::Command*,int,bool)),
+			um, SLOT(startSegmentation(vole::Command*,int,bool)));
+	connect(usSegDock, SIGNAL(cancelSegmentationRequested()),
+			um, SLOT(cancel()));
+	// FIXME: 2013-06-17 altmann
+	// If enabled, gerbil crashes. I am not familiar to the labeling stuff.
+	// Probably need to connect to different slot in LabelingModel or the computed
+	// labeling is inconsistent with the current state in LabelingModel.
+	// connect(um, SIGNAL(setLabelsRequested(cv::Mat1s)),
+	//			lm, SLOT(setLabels(cv::Mat1s)));
 
-	#ifdef WITH_SEG_MEANSHIFT
-		// FIXME hide for release?
-		//usSegDock->hide();
-	#endif
-		// TODO usSeg connections
+	// FIXME hide for release?
+	//usSegDock->hide();
+#endif /* WITH_SEG_MEANSHIFT */
+
 }
 
 
 void DockController::enableDocks(bool enable, TaskType tt)
 {
 	//TODO
-//	labelDock->setEnabled(enable);
+	//	labelDock->setEnabled(enable);
 	rgbDock->setEnabled(enable);
 
 	// TODO limitedMode - availabe from Controller?
-	//illumDock->setEnabled((enable || tt == TT_APPLY_ILLUM) && !limitedMode);
+	//illumDock->setEnabled((enable || tt == TT_APPLY_ILLUM) && !im->isLimitedMode());
 	illumDock->setEnabled((enable || tt == TT_APPLY_ILLUM));
 
-	//TODO
-//	usDock->setEnabled(enable && !limitedMode);
+	usSegDock->setEnabled(enable && !im->isLimitedMode());
 	roiDock->setEnabled(enable || tt == TT_SELECT_ROI);
 
 	graphSegDock->setEnabled(enable);

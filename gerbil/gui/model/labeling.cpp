@@ -42,6 +42,7 @@ void LabelingModel::setLabels(const vole::Labeling &labeling, bool full)
 
 void LabelingModel::setLabels(const cv::Mat1s &labeling)
 {
+	assert(labeling.size == labels.size);
 	labels = labeling.clone();
 	emit newLabeling(labels);
 }
