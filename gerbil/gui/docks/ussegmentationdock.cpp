@@ -190,19 +190,8 @@ void UsSegmentationDock::startUnsupervisedSeg(bool findKL)
 //#endif
 	}
 
-	// connect runner with progress bar, cancel button and finish-slot
-
-	// -> controller
-	//connect(usRunner, SIGNAL(progressChanged(int)), usProgressBar, SLOT(setValue(int)));
-
 	connect(usCancelButton, SIGNAL(clicked()),
 			this, SLOT(cancel()));
-
-	// -> controller
-	//connect(usRunner, SIGNAL(success(std::map<std::string,boost::any>)), this, SLOT(segmentationApply(std::map<std::string,boost::any>)));
-
-	// -> removed
-	//connect(usRunner, SIGNAL(finished()), this, SLOT(segmentationFinished()));
 
 	usProgressWidget->show();
 	usSettingsWidget->setDisabled(true);
@@ -212,21 +201,6 @@ void UsSegmentationDock::startUnsupervisedSeg(bool findKL)
 
 	emit segmentationRequested(cmd, numbands, gradient);
 }
-
-//void UsSegmentationDock::segmentationApply(std::map<std::string, boost::any> output) {
-//	if (output.count("labels")) {
-//		boost::shared_ptr<cv::Mat1s> labelMask = boost::any_cast< boost::shared_ptr<cv::Mat1s> >(output["labels"]);
-//		// TODO: assert size?, emit signal for lm
-//		// TODO setLabels(*labelMask);
-//	}
-
-//	if (output.count("findKL.K") && output.count("findKL.L")) {
-//		int foundK = boost::any_cast<int>(output["findKL.K"]);
-//		int foundL = boost::any_cast<int>(output["findKL.L"]);
-//		usFoundKLLabel->setText(QString("Found values: K=%1 L=%2").arg(foundK).arg(foundL));
-//		usFoundKLWidget->show();
-//	}
-//}
 #else // method stubs as using define in header does not work (moc problem?)
 void UsSegmentationDock::startUnsupervisedSeg(bool findKL) {}
 void UsSegmentationDock::startFindKL() {}
@@ -296,6 +270,5 @@ void UsSegmentationDock::cancel()
 	usProgressWidget->hide();
 	usSettingsWidget->setEnabled(true);
 }
-
 #endif
 
