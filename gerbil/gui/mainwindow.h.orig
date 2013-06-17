@@ -59,9 +59,15 @@ public:
 
 	//TODO make this complete
 	// need to remove all Docks from mainwindow.ui
+<<<<<<< HEAD
 	void tabifyDockWidgets(ROIDock *roiDock,
 						   RgbDock *rgbDock,
-						   IllumDock *illumDock,
+						   IllumDock *illumDock);
+=======
+>>>>>>> began implementation of graph and unsupervised segmentation docks (wip).
+
+	void tabifyDockWidgets(ROIDock *roiDock,
+						   RgbDock *rgbDock,
 						   GraphSegmentationDock *graphSegDock,
 						   UsSegmentationDock *usSegDock);
 public slots:
@@ -152,6 +158,17 @@ private:
 //#endif
 	void initNormalizationUI();
 
+<<<<<<< HEAD
+#ifdef WITH_SEG_MEANSHIFT
+	CommandRunner *usRunner;
+#endif
+=======
+	// TODO: move to DockController
+	IllumDock* illumDock;
+// TODO: should belong to a controller
+	IllumModel illumModel;
+
+>>>>>>> began implementation of graph and unsupervised segmentation docks (wip).
 
 	QMenu *contextMenu;
 

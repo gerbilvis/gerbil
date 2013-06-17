@@ -19,6 +19,8 @@ class MainWindow;
 class ROIDock;
 class RgbDock;
 class IllumDock;
+class GraphSegmentationDock;
+class UsSegmentationDock;
 
 #include <QObject>
 
@@ -57,6 +59,8 @@ protected:
 	ROIDock *roiDock;
 	RgbDock *rgbDock;
 	IllumDock *illumDock;
+	GraphSegmentationDock *graphSegDock;
+	UsSegmentationDock *usSegDock;
 };
 
 #endif // DOCKCONTROLLER_H

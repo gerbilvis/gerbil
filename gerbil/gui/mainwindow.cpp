@@ -20,6 +20,9 @@
 
 #include "docks/illumdock.h"
 #include "docks/rgbdock.h"
+#include "docks/graphsegmentationdock.h"
+#include "docks/ussegmentationdock.h"
+
 
 #include <background_task_queue.h>
 
@@ -37,8 +40,9 @@
 
 MainWindow::MainWindow(bool limitedMode)
 	: limitedMode(limitedMode),
-	  usRunner(NULL), contextMenu(NULL),
-	  graphsegResult(new cv::Mat1s())
+	  contextMenu(NULL)
+	  //FIXME SEGMENTATION_TODO
+//	  ,graphsegResult(new cv::Mat1s())
 {
 	// create all objects
 	setupUi(this);
@@ -119,21 +123,23 @@ void MainWindow::initUI(cv::Rect dim, size_t size)
 	bandsSlider->setMaximum(size);
 	bandsSlider->setValue(size);
 
+	// FIXME SEGMENTATION_TODO
 	// TODO: these will be docks
-	initGraphsegUI();
-#ifdef WITH_SEG_MEANSHIFT
-	initUnsupervisedSegUI(size);
-#endif
+	//initGraphsegUI()
+//#ifdef WITH_SEG_MEANSHIFT
+//	initUnsupervisedSegUI(size);
+//#endif
 	initNormalizationUI();
 
-	/* more manual work to get GUI in proper shape */
-	graphsegWidget->hide();
+	// FIXME SEGMENTATION_TODO
+//	/* more manual work to get GUI in proper shape */
+//	graphsegWidget->hide();
 
-#ifdef WITH_SEG_MEANSHIFT
-	usDock->hide();
-#else
-	usDock->deleteLater();
-#endif
+//#ifdef WITH_SEG_MEANSHIFT
+//	usDock->hide();
+//#else
+//	usDock->deleteLater();
+//#endif
 
 	viewerContainer->initUi();
 }
@@ -249,6 +255,17 @@ void MainWindow::initSignals(Controller *chief)
 	/* now that we are connected, humbly request RGB image for roiView */
 	// FIXME no, this can be requested by the rgb dock itself.
 	//emit rgbRequested();
+
+// old
+//	connect(graphsegButton, SIGNAL(toggled(bool)),
+//			graphsegWidget, SLOT(setVisible(bool)));
+//	connect(graphsegButton, SIGNAL(toggled(bool)),
+//			bandView, SLOT(toggleSeedMode(bool)));
+// new
+	connect(graphsegButton, SIGNAL(toggled(bool)),
+			this, SIGNAL(graphSegDockVisibleRequested(bool)));
+	connect(graphsegButton, SIGNAL(toggled(bool)),
+			bandView, SLOT(toggleSeedMode(bool)));
 }
 
 void MainWindow::setGUIEnabled(bool enable, TaskType tt)
@@ -268,7 +285,6 @@ void MainWindow::setGUIEnabled(bool enable, TaskType tt)
 	applyButton->setEnabled(enable);
 	clearButton->setEnabled(enable);
 	bandView->setEnabled(enable);
-	graphsegWidget->setEnabled(enable);
 
 	normDock->setEnabled((enable || tt == TT_NORM_RANGE || tt == TT_CLAMP_RANGE_IMG || tt == TT_CLAMP_RANGE_GRAD) && !limitedMode);
 	normIButton->setEnabled(enable || tt == TT_NORM_RANGE || tt == TT_CLAMP_RANGE_IMG);
@@ -295,32 +311,32 @@ void MainWindow::bandsSliderMoved(int b)
 	}
 }
 
-#ifdef WITH_SEG_MEANSHIFT
-void MainWindow::usMethodChanged(int idx)
-{
-	// idx: 0 Meanshift, 1 Medianshift, 2 Probabilistic Shift
-	usSkipPropWidget->setEnabled(idx == 1);
-	usSpectralWidget->setEnabled(idx == 2);
-	usMSPPWidget->setEnabled(idx == 2);
-}
+//#ifdef WITH_SEG_MEANSHIFT
+//void MainWindow::usMethodChanged(int idx)
+//{
+//	// idx: 0 Meanshift, 1 Medianshift, 2 Probabilistic Shift
+//	usSkipPropWidget->setEnabled(idx == 1);
+//	usSpectralWidget->setEnabled(idx == 2);
+//	usMSPPWidget->setEnabled(idx == 2);
+//}
 
-void MainWindow::usInitMethodChanged(int idx)
-{
-	switch (usInitMethodBox->itemData(idx).toInt()) {
-	case vole::JUMP:
-		usInitPercentWidget->hide();
-		usInitJumpWidget->show();
-		break;
-	case vole::PERCENT:
-		usInitJumpWidget->hide();
-		usInitPercentWidget->show();
-		break;
-	default:
-		usInitJumpWidget->hide();
-		usInitPercentWidget->hide();
-	}
-}
-#endif
+//void MainWindow::usInitMethodChanged(int idx)
+//{
+//	switch (usInitMethodBox->itemData(idx).toInt()) {
+//	case vole::JUMP:
+//		usInitPercentWidget->hide();
+//		usInitJumpWidget->show();
+//		break;
+//	case vole::PERCENT:
+//		usInitJumpWidget->hide();
+//		usInitPercentWidget->show();
+//		break;
+//	default:
+//		usInitJumpWidget->hide();
+//		usInitPercentWidget->hide();
+//	}
+//}
+//#endif
 
 void MainWindow::debugRequestGUIEnabled(bool enable, TaskType tt)
 {
@@ -585,368 +601,368 @@ void MainWindow::clampNormUserRange()
 }
 
 // todo: part of banddock
-void MainWindow::initGraphsegUI()
-{
-	graphsegSourceBox->addItem("Image", 0);
-	graphsegSourceBox->addItem("Gradient", 1); // TODO PCA
-	graphsegSourceBox->addItem("Shown Band", 2);
-	graphsegSourceBox->setCurrentIndex(0);
+//void MainWindow::initGraphsegUI()
+//{
+//	graphsegSourceBox->addItem("Image", 0);
+//	graphsegSourceBox->addItem("Gradient", 1); // TODO PCA
+//	graphsegSourceBox->addItem("Shown Band", 2);
+//	graphsegSourceBox->setCurrentIndex(0);
 
-	graphsegSimilarityBox->addItem("Manhattan distance (L1)", vole::MANHATTAN);
-	graphsegSimilarityBox->addItem("Euclidean distance (L2)", vole::EUCLIDEAN);
-	graphsegSimilarityBox->addItem(QString::fromUtf8("Chebyshev distance (L∞)"),
-								   vole::CHEBYSHEV);
-	graphsegSimilarityBox->addItem("Spectral Angle", vole::MOD_SPEC_ANGLE);
-	graphsegSimilarityBox->addItem("Spectral Information Divergence",
-								   vole::SPEC_INF_DIV);
-	graphsegSimilarityBox->addItem("SID+SAM I", vole::SIDSAM1);
-	graphsegSimilarityBox->addItem("SID+SAM II", vole::SIDSAM2);
-	graphsegSimilarityBox->addItem("Normalized L2", vole::NORM_L2);
-	graphsegSimilarityBox->setCurrentIndex(3);
+//	graphsegSimilarityBox->addItem("Manhattan distance (L1)", vole::MANHATTAN);
+//	graphsegSimilarityBox->addItem("Euclidean distance (L2)", vole::EUCLIDEAN);
+//	graphsegSimilarityBox->addItem(QString::fromUtf8("Chebyshev distance (L∞)"),
+//								   vole::CHEBYSHEV);
+//	graphsegSimilarityBox->addItem("Spectral Angle", vole::MOD_SPEC_ANGLE);
+//	graphsegSimilarityBox->addItem("Spectral Information Divergence",
+//								   vole::SPEC_INF_DIV);
+//	graphsegSimilarityBox->addItem("SID+SAM I", vole::SIDSAM1);
+//	graphsegSimilarityBox->addItem("SID+SAM II", vole::SIDSAM2);
+//	graphsegSimilarityBox->addItem("Normalized L2", vole::NORM_L2);
+//	graphsegSimilarityBox->setCurrentIndex(3);
 
-	graphsegAlgoBox->addItem("Kruskal", vole::KRUSKAL);
-	graphsegAlgoBox->addItem("Prim", vole::PRIM);
-	graphsegAlgoBox->addItem("Power Watershed q=2", vole::WATERSHED2);
-	graphsegAlgoBox->setCurrentIndex(1);
+//	graphsegAlgoBox->addItem("Kruskal", vole::KRUSKAL);
+//	graphsegAlgoBox->addItem("Prim", vole::PRIM);
+//	graphsegAlgoBox->addItem("Power Watershed q=2", vole::WATERSHED2);
+//	graphsegAlgoBox->setCurrentIndex(1);
 
-	connect(graphsegButton, SIGNAL(toggled(bool)),
-			graphsegWidget, SLOT(setVisible(bool)));
-	connect(graphsegButton, SIGNAL(toggled(bool)),
-			bandView, SLOT(toggleSeedMode(bool)));
-	connect(graphsegGoButton, SIGNAL(clicked()),
-			this, SLOT(startGraphseg()));
-	connect(this, SIGNAL(seedingDone(bool)),
-			graphsegButton, SLOT(setChecked(bool)));
-}
+//	connect(graphsegButton, SIGNAL(toggled(bool)),
+//			graphsegWidget, SLOT(setVisible(bool)));
+//	connect(graphsegButton, SIGNAL(toggled(bool)),
+//			bandView, SLOT(toggleSeedMode(bool)));
+//	connect(graphsegGoButton, SIGNAL(clicked()),
+//			this, SLOT(startGraphseg()));
+//	connect(this, SIGNAL(seedingDone(bool)),
+//			graphsegButton, SLOT(setChecked(bool)));
+//}
 
-void MainWindow::runGraphseg(SharedMultiImgPtr input,
-							   const vole::GraphSegConfig &config)
-{
-	/*
-	// TODO: why disable GUI? Where is it enabled?
-	setGUIEnabled(false);
-	// TODO: should this be a commandrunner instead? arguable..
-	BackgroundTaskPtr taskGraphseg(new GraphsegBackground(
-		config, input, bandView->seedMap, graphsegResult));
-	QObject::connect(taskGraphseg.get(), SIGNAL(finished(bool)), 
-		this, SLOT(finishGraphSeg(bool)), Qt::QueuedConnection);
-	queue.push(taskGraphseg);
-	*/
-}
+//void MainWindow::runGraphseg(SharedMultiImgPtr input,
+//							   const vole::GraphSegConfig &config)
+//{
+//	/*
+//	// TODO: why disable GUI? Where is it enabled?
+//	setGUIEnabled(false);
+//	// TODO: should this be a commandrunner instead? arguable..
+//	BackgroundTaskPtr taskGraphseg(new GraphsegBackground(
+//		config, input, bandView->seedMap, graphsegResult));
+//	QObject::connect(taskGraphseg.get(), SIGNAL(finished(bool)),
+//		this, SLOT(finishGraphSeg(bool)), Qt::QueuedConnection);
+//	queue.push(taskGraphseg);
+//	*/
+//}
 
-void MainWindow::finishGraphSeg(bool success)
-{
-	/*
-	if (success) {
-		// add segmentation to current labeling
-		emit alterLabelRequested(bandView->getCurLabel(),
-								 *(graphsegResult.get()), false);
-		// leave seeding mode for convenience
-		emit seedingDone();
-	}
-	*/
-}
+//void MainWindow::finishGraphSeg(bool success)
+//{
+//	/*
+//	if (success) {
+//		// add segmentation to current labeling
+//		emit alterLabelRequested(bandView->getCurLabel(),
+//								 *(graphsegResult.get()), false);
+//		// leave seeding mode for convenience
+//		emit seedingDone();
+//	}
+//	*/
+//}
 
-// TODO: move part of this to controller who obtains image data from imagemodel
-void MainWindow::startGraphseg()
-{
-	/*
-	vole::GraphSegConfig conf("graphseg");
-	conf.algo = (vole::graphsegalg)
-				graphsegAlgoBox->itemData(graphsegAlgoBox->currentIndex())
-				.value<int>();
-	conf.similarity.measure = (vole::similarity_fun)
-	      graphsegSimilarityBox->itemData(graphsegSimilarityBox->currentIndex())
-	      .value<int>();
-#ifdef WITH_EDGE_DETECT
-	conf.som_similarity = false;
-#endif
-	conf.geodesic = graphsegGeodCheck->isChecked();
-	conf.multi_seed = false;
-	int src = graphsegSourceBox->itemData(graphsegSourceBox->currentIndex())
-								 .value<int>();
-	if (src == 0) {
-		runGraphseg(image, conf);
-	} else if (src == 1) {
-		runGraphseg(gradient, conf);
-	} else {	// currently shown band, construct from selection in viewport
-		representation::t type = viewerContainer->getActiveRepresentation();
-		int band = viewerContainer->getSelection(type);
-		SharedMultiImgPtr img = viewerContainer->getViewerImage(type);
-		SharedDataLock img_lock(img->mutex);
-		SharedMultiImgPtr i(new SharedMultiImgBase(
-			new multi_img((**img)[band], (*img)->minval, (*img)->maxval)));
-		img_lock.unlock();
-		runGraphseg(i, conf);
-	}
-	*/
-}
+//// TODO: move part of this to controller who obtains image data from imagemodel
+//void MainWindow::startGraphseg()
+//{
+//	/*
+//	vole::GraphSegConfig conf("graphseg");
+//	conf.algo = (vole::graphsegalg)
+//				graphsegAlgoBox->itemData(graphsegAlgoBox->currentIndex())
+//				.value<int>();
+//	conf.similarity.measure = (vole::similarity_fun)
+//	      graphsegSimilarityBox->itemData(graphsegSimilarityBox->currentIndex())
+//	      .value<int>();
+//#ifdef WITH_EDGE_DETECT
+//	conf.som_similarity = false;
+//#endif
+//	conf.geodesic = graphsegGeodCheck->isChecked();
+//	conf.multi_seed = false;
+//	int src = graphsegSourceBox->itemData(graphsegSourceBox->currentIndex())
+//								 .value<int>();
+//	if (src == 0) {
+//		runGraphseg(image, conf);
+//	} else if (src == 1) {
+//		runGraphseg(gradient, conf);
+//	} else {	// currently shown band, construct from selection in viewport
+//		representation::t type = viewerContainer->getActiveRepresentation();
+//		int band = viewerContainer->getSelection(type);
+//		SharedMultiImgPtr img = viewerContainer->getViewerImage(type);
+//		SharedDataLock img_lock(img->mutex);
+//		SharedMultiImgPtr i(new SharedMultiImgBase(
+//			new multi_img((**img)[band], (*img)->minval, (*img)->maxval)));
+//		img_lock.unlock();
+//		runGraphseg(i, conf);
+//	}
+//	*/
+//}
 
-#ifdef WITH_SEG_MEANSHIFT
-void MainWindow::initUnsupervisedSegUI(size_t size)
-{
-	usMethodBox->addItem("Meanshift", 0);
-#ifdef WITH_SEG_MEDIANSHIFT
-	usMethodBox->addItem("Medianshift", 1);
-#endif
-#ifdef WITH_SEG_PROBSHIFT
-	usMethodBox->addItem("Probabilistic Shift", 2);
-#endif
-	usMethodChanged(0); // set default state
+//#ifdef WITH_SEG_MEANSHIFT
+//void MainWindow::initUnsupervisedSegUI(size_t size)
+//{
+//	usMethodBox->addItem("Meanshift", 0);
+//#ifdef WITH_SEG_MEDIANSHIFT
+//	usMethodBox->addItem("Medianshift", 1);
+//#endif
+//#ifdef WITH_SEG_PROBSHIFT
+//	usMethodBox->addItem("Probabilistic Shift", 2);
+//#endif
+//	usMethodChanged(0); // set default state
 
-	usInitMethodBox->addItem("all", vole::ALL);
-	usInitMethodBox->addItem("jump", vole::JUMP);
-	usInitMethodBox->addItem("percent", vole::PERCENT);
-	usInitMethodChanged(0);
+//	usInitMethodBox->addItem("all", vole::ALL);
+//	usInitMethodBox->addItem("jump", vole::JUMP);
+//	usInitMethodBox->addItem("percent", vole::PERCENT);
+//	usInitMethodChanged(0);
 
-	usBandwidthBox->addItem("adaptive");
-	usBandwidthBox->addItem("fixed");
-	usBandwidthMethodChanged("adaptive");
+//	usBandwidthBox->addItem("adaptive");
+//	usBandwidthBox->addItem("fixed");
+//	usBandwidthMethodChanged("adaptive");
 
-	usBandsSpinBox->setValue(size);
-	usBandsSpinBox->setMaximum(size);
+//	usBandsSpinBox->setValue(size);
+//	usBandsSpinBox->setMaximum(size);
 
-	// we do not expose the density estimation functionality
-	usInitWidget->hide();
-	// we also do not expose options exclusive to unavailable methods
-#ifndef WITH_SEG_MEDIANSHIFT
-	usSkipPropWidget->hide();
-#endif
-#ifndef WITH_SEG_PROBSHIFT
-	usSpectralWidget->hide();
-	usMSPPWidget->hide();
-#endif
+//	// we do not expose the density estimation functionality
+//	usInitWidget->hide();
+//	// we also do not expose options exclusive to unavailable methods
+//#ifndef WITH_SEG_MEDIANSHIFT
+//	usSkipPropWidget->hide();
+//#endif
+//#ifndef WITH_SEG_PROBSHIFT
+//	usSpectralWidget->hide();
+//	usMSPPWidget->hide();
+//#endif
 
-	usInitJumpWidget->hide();
-	usInitPercentWidget->hide();
-	usFoundKLWidget->hide();
-	usProgressWidget->hide();
+//	usInitJumpWidget->hide();
+//	usInitPercentWidget->hide();
+//	usFoundKLWidget->hide();
+//	usProgressWidget->hide();
 
-	connect(usGoButton, SIGNAL(clicked()),
-			this, SLOT(startUnsupervisedSeg()));
-	connect(usFindKLGoButton, SIGNAL(clicked()),
-			this, SLOT(startFindKL()));
-	connect(usCancelButton, SIGNAL(clicked()),
-			this, SLOT(unsupervisedSegCancelled()));
+//	connect(usGoButton, SIGNAL(clicked()),
+//			this, SLOT(startUnsupervisedSeg()));
+//	connect(usFindKLGoButton, SIGNAL(clicked()),
+//			this, SLOT(startFindKL()));
+//	connect(usCancelButton, SIGNAL(clicked()),
+//			this, SLOT(unsupervisedSegCancelled()));
 
-	connect(usMethodBox, SIGNAL(currentIndexChanged(int)),
-			this, SLOT(usMethodChanged(int)));
+//	connect(usMethodBox, SIGNAL(currentIndexChanged(int)),
+//			this, SLOT(usMethodChanged(int)));
 
-	connect(usLshCheckBox, SIGNAL(toggled(bool)),
-			usLshWidget, SLOT(setEnabled(bool)));
+//	connect(usLshCheckBox, SIGNAL(toggled(bool)),
+//			usLshWidget, SLOT(setEnabled(bool)));
 
-	connect(usBandwidthBox, SIGNAL(currentIndexChanged(const QString&)),
-			this, SLOT(usBandwidthMethodChanged(const QString&)));
+//	connect(usBandwidthBox, SIGNAL(currentIndexChanged(const QString&)),
+//			this, SLOT(usBandwidthMethodChanged(const QString&)));
 
-	connect(usInitMethodBox, SIGNAL(currentIndexChanged(int)),
-			this, SLOT(usInitMethodChanged(int)));
+//	connect(usInitMethodBox, SIGNAL(currentIndexChanged(int)),
+//			this, SLOT(usInitMethodChanged(int)));
 
-	connect(usSpectralCheckBox, SIGNAL(toggled(bool)),
-			usSpectralConvCheckBox, SLOT(setEnabled(bool)));
-	connect(usSpectralCheckBox, SIGNAL(toggled(bool)),
-			usSpectralMinMaxWidget, SLOT(setEnabled(bool)));
+//	connect(usSpectralCheckBox, SIGNAL(toggled(bool)),
+//			usSpectralConvCheckBox, SLOT(setEnabled(bool)));
+//	connect(usSpectralCheckBox, SIGNAL(toggled(bool)),
+//			usSpectralMinMaxWidget, SLOT(setEnabled(bool)));
 
-	/// pull default values from temporary instance of config class
-	vole::MeanShiftConfig def;
-	usKSpinBox->setValue(def.K);
-	usLSpinBox->setValue(def.L);
-	/// TODO: random seed box
-	usPilotKSpinBox->setValue(def.k);
-	usInitMethodBox->setCurrentIndex(
-			usInitMethodBox->findData(def.starting));
-	usInitJumpBox->setValue(def.jump);
-	usFixedBWSpinBox->setValue(def.bandwidth);
-	usFindKLKMinBox->setValue(def.Kmin);
-	usFindKLKStepBox->setValue(def.Kjump);
-	usFindKLEpsilonBox->setValue(def.epsilon);
+//	/// pull default values from temporary instance of config class
+//	vole::MeanShiftConfig def;
+//	usKSpinBox->setValue(def.K);
+//	usLSpinBox->setValue(def.L);
+//	/// TODO: random seed box
+//	usPilotKSpinBox->setValue(def.k);
+//	usInitMethodBox->setCurrentIndex(
+//			usInitMethodBox->findData(def.starting));
+//	usInitJumpBox->setValue(def.jump);
+//	usFixedBWSpinBox->setValue(def.bandwidth);
+//	usFindKLKMinBox->setValue(def.Kmin);
+//	usFindKLKStepBox->setValue(def.Kjump);
+//	usFindKLEpsilonBox->setValue(def.epsilon);
 
-#ifdef WITH_SEG_PROBSHIFT
-	vole::ProbShiftConfig def_ps;
-	usProbShiftMSPPAlphaSpinBox->setValue(def_ps.msBwFactor);
-#endif
-}
+//#ifdef WITH_SEG_PROBSHIFT
+//	vole::ProbShiftConfig def_ps;
+//	usProbShiftMSPPAlphaSpinBox->setValue(def_ps.msBwFactor);
+//#endif
+//}
 
-void MainWindow::usBandwidthMethodChanged(const QString &current) {
-	if (current == "fixed") {
-		usAdaptiveBWWidget->hide();
-		usFixedBWWidget->show();
-	} else if (current == "adaptive") {
-		usFixedBWWidget->hide();
-		usAdaptiveBWWidget->show();
-	} else {
-		assert(0);
-	}
-}
+//void MainWindow::usBandwidthMethodChanged(const QString &current) {
+//	if (current == "fixed") {
+//		usAdaptiveBWWidget->hide();
+//		usFixedBWWidget->show();
+//	} else if (current == "adaptive") {
+//		usFixedBWWidget->hide();
+//		usAdaptiveBWWidget->show();
+//	} else {
+//		assert(0);
+//	}
+//}
 
-void MainWindow::unsupervisedSegCancelled() {
-	usCancelButton->setDisabled(true);
-	usCancelButton->setText("Please wait...");
-	/// runner->terminate() will be called by the Cancel button
-}
+//void MainWindow::unsupervisedSegCancelled() {
+//	usCancelButton->setDisabled(true);
+//	usCancelButton->setText("Please wait...");
+//	/// runner->terminate() will be called by the Cancel button
+//}
 
-void MainWindow::startFindKL()
-{
-	startUnsupervisedSeg(true);
-}
+//void MainWindow::startFindKL()
+//{
+//	startUnsupervisedSeg(true);
+//}
 
-void MainWindow::startUnsupervisedSeg(bool findKL)
-{
-	// allow only one runner at a time (UI enforces that)
-	assert(usRunner == NULL);
-	usRunner = new CommandRunner();
+//void MainWindow::startUnsupervisedSeg(bool findKL)
+//{
+//	// allow only one runner at a time (UI enforces that)
+//	assert(usRunner == NULL);
+//	usRunner = new CommandRunner();
 
-	int method = usMethodBox->itemData(usMethodBox->currentIndex()).value<int>();
+//	int method = usMethodBox->itemData(usMethodBox->currentIndex()).value<int>();
 
-	if (findKL) { // run MeanShift::findKL()
-		usRunner->cmd = new vole::MeanShiftShell();
-		vole::MeanShiftConfig &config = ((vole::MeanShiftShell *) usRunner->cmd)->config;
+//	if (findKL) { // run MeanShift::findKL()
+//		usRunner->cmd = new vole::MeanShiftShell();
+//		vole::MeanShiftConfig &config = ((vole::MeanShiftShell *) usRunner->cmd)->config;
 
-		config.batch = true;
-		config.findKL = true;
-		config.k = usPilotKSpinBox->value();
-		config.K = usFindKLKmaxBox->value();
-		config.L = usFindKLLmaxBox->value();
-		config.Kmin = usFindKLKMinBox->value();
-		config.Kjump = usFindKLKStepBox->value();
-		config.epsilon = usFindKLEpsilonBox->value();
-	} else if (method == 0) { // Meanshift
-		usRunner->cmd = new vole::MeanShiftShell();
-		vole::MeanShiftConfig &config = ((vole::MeanShiftShell *) usRunner->cmd)->config;
+//		config.batch = true;
+//		config.findKL = true;
+//		config.k = usPilotKSpinBox->value();
+//		config.K = usFindKLKmaxBox->value();
+//		config.L = usFindKLLmaxBox->value();
+//		config.Kmin = usFindKLKMinBox->value();
+//		config.Kjump = usFindKLKStepBox->value();
+//		config.epsilon = usFindKLEpsilonBox->value();
+//	} else if (method == 0) { // Meanshift
+//		usRunner->cmd = new vole::MeanShiftShell();
+//		vole::MeanShiftConfig &config = ((vole::MeanShiftShell *) usRunner->cmd)->config;
 
-		// fixed settings
-		config.batch = true;
+//		// fixed settings
+//		config.batch = true;
 
-		config.use_LSH = usLshCheckBox->isChecked();
-		config.K = usKSpinBox->value();
-		config.L = usLSpinBox->value();
+//		config.use_LSH = usLshCheckBox->isChecked();
+//		config.K = usKSpinBox->value();
+//		config.L = usLSpinBox->value();
 
-		config.starting = (vole::ms_sampling) usInitMethodBox->itemData(usInitMethodBox->currentIndex()).value<int>();
-		config.percent = usInitPercentBox->value();
-		config.jump = usInitJumpBox->value();
-		config.k = usPilotKSpinBox->value();
+//		config.starting = (vole::ms_sampling) usInitMethodBox->itemData(usInitMethodBox->currentIndex()).value<int>();
+//		config.percent = usInitPercentBox->value();
+//		config.jump = usInitJumpBox->value();
+//		config.k = usPilotKSpinBox->value();
 
-		if (usBandwidthBox->currentText() == "fixed") {
-			config.bandwidth = usFixedBWSpinBox->value();
-		} else {
-			config.bandwidth = 0;
-		}
-#ifdef WITH_SEG_MEDIANSHIFT
-	} else if (method == 1) { // Medianshift
-		usRunner->cmd = new vole::MedianShiftShell();
-		vole::MedianShiftConfig &config = ((vole::MedianShiftShell *) usRunner->cmd)->config;
+//		if (usBandwidthBox->currentText() == "fixed") {
+//			config.bandwidth = usFixedBWSpinBox->value();
+//		} else {
+//			config.bandwidth = 0;
+//		}
+//#ifdef WITH_SEG_MEDIANSHIFT
+//	} else if (method == 1) { // Medianshift
+//		usRunner->cmd = new vole::MedianShiftShell();
+//		vole::MedianShiftConfig &config = ((vole::MedianShiftShell *) usRunner->cmd)->config;
 
-		config.K = usKSpinBox->value();
-		config.L = usLSpinBox->value();
-		config.k = usPilotKSpinBox->value();
-		config.skipprop = usSkipPropCheckBox->isChecked();
-#endif
-#ifdef WITH_SEG_PROBSHIFT
-	} else { // Probabilistic Shift
-		usRunner->cmd = new vole::ProbShiftShell();
-		vole::ProbShiftConfig &config = ((vole::ProbShiftShell *) usRunner->cmd)->config;
+//		config.K = usKSpinBox->value();
+//		config.L = usLSpinBox->value();
+//		config.k = usPilotKSpinBox->value();
+//		config.skipprop = usSkipPropCheckBox->isChecked();
+//#endif
+//#ifdef WITH_SEG_PROBSHIFT
+//	} else { // Probabilistic Shift
+//		usRunner->cmd = new vole::ProbShiftShell();
+//		vole::ProbShiftConfig &config = ((vole::ProbShiftShell *) usRunner->cmd)->config;
 
-		config.useLSH = usLshCheckBox->isChecked();
-		config.lshK = usKSpinBox->value();
-		config.lshL = usLSpinBox->value();
+//		config.useLSH = usLshCheckBox->isChecked();
+//		config.lshK = usKSpinBox->value();
+//		config.lshL = usLSpinBox->value();
 
-		config.useSpectral = usSpectralCheckBox->isChecked();
-		config.useConverged = usSpectralConvCheckBox->isChecked();
-		config.minClusts = usSpectralMinBox->value();
-		config.maxClusts = usSpectralMaxBox->value();
-		config.useMeanShift = usProbShiftMSPPCheckBox->isChecked();
-		config.msBwFactor = usProbShiftMSPPAlphaSpinBox->value();
-#endif
-	}
+//		config.useSpectral = usSpectralCheckBox->isChecked();
+//		config.useConverged = usSpectralConvCheckBox->isChecked();
+//		config.minClusts = usSpectralMinBox->value();
+//		config.maxClusts = usSpectralMaxBox->value();
+//		config.useMeanShift = usProbShiftMSPPCheckBox->isChecked();
+//		config.msBwFactor = usProbShiftMSPPAlphaSpinBox->value();
+//#endif
+//	}
 
-	// connect runner with progress bar, cancel button and finish-slot
-	connect(usRunner, SIGNAL(progressChanged(int)), usProgressBar, SLOT(setValue(int)));
-	connect(usCancelButton, SIGNAL(clicked()), usRunner, SLOT(terminate()));
+//	// connect runner with progress bar, cancel button and finish-slot
+//	connect(usRunner, SIGNAL(progressChanged(int)), usProgressBar, SLOT(setValue(int)));
+//	connect(usCancelButton, SIGNAL(clicked()), usRunner, SLOT(terminate()));
 
-	qRegisterMetaType< std::map<std::string, boost::any> >("std::map<std::string, boost::any>");
-	connect(usRunner, SIGNAL(success(std::map<std::string,boost::any>)), this, SLOT(segmentationApply(std::map<std::string,boost::any>)));
-	connect(usRunner, SIGNAL(finished()), this, SLOT(segmentationFinished()));
+//	qRegisterMetaType< std::map<std::string, boost::any> >("std::map<std::string, boost::any>");
+//	connect(usRunner, SIGNAL(success(std::map<std::string,boost::any>)), this, SLOT(segmentationApply(std::map<std::string,boost::any>)));
+//	connect(usRunner, SIGNAL(finished()), this, SLOT(segmentationFinished()));
 
-	usProgressWidget->show();
-	usSettingsWidget->setDisabled(true);
+//	usProgressWidget->show();
+//	usSettingsWidget->setDisabled(true);
 
-	// prepare input image
-	boost::shared_ptr<multi_img> input;
-	{
-/*TODO		SharedMultiImgBaseGuard guard(*image_lim);
-		assert(0 != &**image_lim);
-		// FIXME 2013-04-11 georg altmann:
-		// not sure what this code is really doing, but this looks like a problem:
-		// is input sharing image data with image_lim?
-		// If so, another thread could overwrite data while image segmentation is working on it,
-		// since there is no locking (unless multi_img does implicit copy on write?).
-		input = boost::shared_ptr<multi_img>(
-					new multi_img(**image_lim, roi)); // image data is not copied
-*/
-	}
-	int numbands = usBandsSpinBox->value();
-	bool gradient = usGradientCheckBox->isChecked();
+//	// prepare input image
+//	boost::shared_ptr<multi_img> input;
+//	{
+///*TODO		SharedMultiImgBaseGuard guard(*image_lim);
+//		assert(0 != &**image_lim);
+//		// FIXME 2013-04-11 georg altmann:
+//		// not sure what this code is really doing, but this looks like a problem:
+//		// is input sharing image data with image_lim?
+//		// If so, another thread could overwrite data while image segmentation is working on it,
+//		// since there is no locking (unless multi_img does implicit copy on write?).
+//		input = boost::shared_ptr<multi_img>(
+//					new multi_img(**image_lim, roi)); // image data is not copied
+//*/
+//	}
+//	int numbands = usBandsSpinBox->value();
+//	bool gradient = usGradientCheckBox->isChecked();
 
-	if (numbands > 0 && numbands < (int) input->size()) {
-		boost::shared_ptr<multi_img> input_tmp(new multi_img(input->spec_rescale(numbands)));
-		input = input_tmp;
-	}
+//	if (numbands > 0 && numbands < (int) input->size()) {
+//		boost::shared_ptr<multi_img> input_tmp(new multi_img(input->spec_rescale(numbands)));
+//		input = input_tmp;
+//	}
 
-	if (gradient) {
-		// copy needed here
-		multi_img loginput(*input);
-		loginput.apply_logarithm();
-		input = boost::shared_ptr<multi_img>(new multi_img(loginput.spec_gradient()));
-	}
+//	if (gradient) {
+//		// copy needed here
+//		multi_img loginput(*input);
+//		loginput.apply_logarithm();
+//		input = boost::shared_ptr<multi_img>(new multi_img(loginput.spec_gradient()));
+//	}
 
-	usRunner->input["multi_img"] = input;
+//	usRunner->input["multi_img"] = input;
 
-	usRunner->start();
-}
+//	usRunner->start();
+//}
 
-void MainWindow::segmentationFinished() {
-	if (usRunner->abort) {
-		// restore Cancel button
-		usCancelButton->setEnabled(true);
-		usCancelButton->setText("Cancel");
-	}
+//void MainWindow::segmentationFinished() {
+//	if (usRunner->abort) {
+//		// restore Cancel button
+//		usCancelButton->setEnabled(true);
+//		usCancelButton->setText("Cancel");
+//	}
 
-	// hide progress, re-enable settings
-	usProgressWidget->hide();
-	usSettingsWidget->setEnabled(true);
+//	// hide progress, re-enable settings
+//	usProgressWidget->hide();
+//	usSettingsWidget->setEnabled(true);
 
-	/// clean up runner
-	delete usRunner;
-	usRunner = NULL;
-}
+//	/// clean up runner
+//	delete usRunner;
+//	usRunner = NULL;
+//}
 
-void MainWindow::segmentationApply(std::map<std::string, boost::any> output) {
-	if (output.count("labels")) {
-		boost::shared_ptr<cv::Mat1s> labelMask = boost::any_cast< boost::shared_ptr<cv::Mat1s> >(output["labels"]);
-		// TODO: assert size?, emit signal for lm
-		// TODO setLabels(*labelMask);
-	}
+//void MainWindow::segmentationApply(std::map<std::string, boost::any> output) {
+//	if (output.count("labels")) {
+//		boost::shared_ptr<cv::Mat1s> labelMask = boost::any_cast< boost::shared_ptr<cv::Mat1s> >(output["labels"]);
+//		// TODO: assert size?, emit signal for lm
+//		// TODO setLabels(*labelMask);
+//	}
 
-	if (output.count("findKL.K") && output.count("findKL.L")) {
-		int foundK = boost::any_cast<int>(output["findKL.K"]);
-		int foundL = boost::any_cast<int>(output["findKL.L"]);
-		usFoundKLLabel->setText(QString("Found values: K=%1 L=%2").arg(foundK).arg(foundL));
-		usFoundKLWidget->show();
-	}
-}
-#else // method stubs as using define in header does not work (moc problem?)
-// TODO
-// 1. ifdef on seg dock header
-// 2. probshift, medianshift raus. (auswahl dropbox lassen)
-// 3.
-void MainWindow::startUnsupervisedSeg(bool findKL) {}
-void MainWindow::startFindKL() {}
-void MainWindow::segmentationFinished() {}
-void MainWindow::segmentationApply(std::map<std::string, boost::any>) {}
-void MainWindow::usMethodChanged(int idx) {}
-void MainWindow::usInitMethodChanged(int idx) {}
-void MainWindow::usBandwidthMethodChanged(const QString &current) {}
-void MainWindow::unsupervisedSegCancelled() {}
-#endif // WITH_SEG_MEANSHIFT
+//	if (output.count("findKL.K") && output.count("findKL.L")) {
+//		int foundK = boost::any_cast<int>(output["findKL.K"]);
+//		int foundL = boost::any_cast<int>(output["findKL.L"]);
+//		usFoundKLLabel->setText(QString("Found values: K=%1 L=%2").arg(foundK).arg(foundL));
+//		usFoundKLWidget->show();
+//	}
+//}
+//#else // method stubs as using define in header does not work (moc problem?)
+//// TODO
+//// 1. ifdef on seg dock header
+//// 2. probshift, medianshift raus. (auswahl dropbox lassen)
+//// 3.
+//void MainWindow::startUnsupervisedSeg(bool findKL) {}
+//void MainWindow::startFindKL() {}
+//void MainWindow::segmentationFinished() {}
+//void MainWindow::segmentationApply(std::map<std::string, boost::any>) {}
+//void MainWindow::usMethodChanged(int idx) {}
+//void MainWindow::usInitMethodChanged(int idx) {}
+//void MainWindow::usBandwidthMethodChanged(const QString &current) {}
+//void MainWindow::unsupervisedSegCancelled() {}
+//#endif // WITH_SEG_MEANSHIFT
 
 // todo: do we really still need this? probably not
 /*
@@ -1005,10 +1021,19 @@ QIcon MainWindow::colorIcon(const QColor &color)
 	return QIcon(pm);
 }
 
-void MainWindow::tabifyDockWidgets(ROIDock *roiDock, RgbDock *rgbDock, IllumDock *illumDock)
+void MainWindow::tabifyDockWidgets(ROIDock *roiDock, RgbDock *rgbDock, IllumDock *illumDock,
+		GraphSegmentationDock *graphSegDock, 
+		UsSegmentationDock *usSegDock)
 {
+	// FIXME altmann: IMHO dock arrangement is borked right now.
+	// need to decide what goes where.
+
 	// dock arrangement
-	tabifyDockWidget(rgbDock, roiDock);
+	tabifyDockWidget(roiDock, rgbDock);
+#ifdef WITH_SEG_MEANSHIFT
+	tabifyDockWidget(roiDock, usSegDock);
+#endif
+	roiDock->raise();
 	tabifyDockWidget(labelDock, illumDock);
 	tabifyDockWidget(labelDock, normDock);
 }

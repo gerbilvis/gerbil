@@ -7,6 +7,8 @@
 #include "docks/rgbdock.h"
 #include "docks/roidock.h"
 #include "docks/illumdock.h"
+#include "docks/graphsegmentationdock.h"
+#include "docks/ussegmentationdock.h"
 
 
 DockController::DockController(Controller *chief) :
@@ -19,14 +21,22 @@ void DockController::init()
 	createDocks();
 	setupDocks();
 
-	mw->addDockWidget(Qt::RightDockWidgetArea, roiDock);
+	// FIXME: Put graphSegDock below band view dock.
+	// Can't do this here until *all* docks are added here instead of being created
+	// in the mainwindow ui file. (well we could drag programmatically -> arghl).
+	mw->addDockWidget(Qt::RightDockWidgetArea, graphSegDock);
+#ifdef WITH_SEG_MEANSHIFT
+	mw->addDockWidget(Qt::RightDockWidgetArea, usSegDock);
+#endif
 	mw->addDockWidget(Qt::RightDockWidgetArea, rgbDock);
+	mw->addDockWidget(Qt::RightDockWidgetArea, roiDock);
 	mw->addDockWidget(Qt::RightDockWidgetArea, illumDock);
 
 	im->computeFullRgb();
 
 	//TODO make this complete
-	mw->tabifyDockWidgets(roiDock, rgbDock, illumDock);
+	// SEGMENTATION_TODO add seg docks
+	mw->tabifyDockWidgets(roiDock, rgbDock, illumDock, graphSegDock, usSegDock);
 
 	connect(mw, SIGNAL(requestEnableDocks(bool,TaskType)),
 			this, SLOT(enableDocks(bool,TaskType)));
@@ -38,14 +48,33 @@ void DockController::createDocks()
 	roiDock = new ROIDock(mw);
 	illumDock = new IllumDock(mw);
 	rgbDock = new RgbDock(mw);
+	graphSegDock = new GraphSegmentationDock(mw);
+#ifdef WITH_SEG_MEANSHIFT
+	usSegDock = new UsSegmentationDock(mw);
+#endif
 }
 
 void DockController::setupDocks()
 {
+	/* RGB Dock */
 	connect(im, SIGNAL(imageUpdate(representation::t,SharedMultiImgPtr)),
 			rgbDock, SLOT(processImageUpdate(representation::t,SharedMultiImgPtr)));
 
-	// siganls for the illumDock
+	connect(rgbDock, SIGNAL(rgbRequested(coloring)),
+			fm, SLOT(computeBackground(coloring)));
+
+	connect(fm, SIGNAL(calculationComplete(coloring, QPixmap)),
+			rgbDock, SLOT(updatePixmap(coloring, QPixmap)));
+
+	/* ROI Dock */
+	// signals for ROI (reset handled in ROIDock)
+	connect(im, SIGNAL(fullRgbUpdate(QPixmap)),
+			roiDock, SLOT(updatePixmap(QPixmap)));
+
+	connect(roiDock, SIGNAL(roiRequested(const cv::Rect&)),
+			chief, SLOT(spawnROI(const cv::Rect&)));
+
+	/* Illumination Dock */
 	connect(illumDock, SIGNAL(applyIllum()),
 			illumm, SLOT(applyIllum()));
 	connect(illumDock, SIGNAL(illum1Selected(int)),
@@ -59,20 +88,22 @@ void DockController::setupDocks()
 	connect(illumDock, SIGNAL(showIlluminationCurveChanged(bool)),
 			mw->getViewerContainer(), SLOT(showIlluminationCurve(bool)));
 
-	// signals for the rgbDock
-	connect(rgbDock, SIGNAL(rgbRequested(coloring)),
-			fm, SLOT(computeBackground(coloring)));
-
-	connect(fm, SIGNAL(calculationComplete(coloring, QPixmap)),
-			rgbDock, SLOT(updatePixmap(coloring, QPixmap)));
 
 
-	// signals for ROI (reset handled in ROIDock)
-	connect(im, SIGNAL(fullRgbUpdate(QPixmap)),
-			roiDock, SLOT(updatePixmap(QPixmap)));
+	/* Graph Segmentation Dock */
 
-	connect(roiDock, SIGNAL(roiRequested(const cv::Rect&)),
-			chief, SLOT(spawnROI(const cv::Rect&)));
+	// TODO more
+	connect(mw, SIGNAL(graphSegDockVisibleRequested(bool)),
+			graphSegDock, SLOT(setVisible(bool)));
+	graphSegDock->setVisible(false); // start hidden
+
+	/* Unsupervised Segmentation Dock */
+
+	#ifdef WITH_SEG_MEANSHIFT
+		// FIXME hide for release?
+		//usSegDock->hide();
+	#endif
+		// TODO usSeg connections
 }
 
 
@@ -89,6 +120,8 @@ void DockController::enableDocks(bool enable, TaskType tt)
 	//TODO
 //	usDock->setEnabled(enable && !limitedMode);
 	roiDock->setEnabled(enable || tt == TT_SELECT_ROI);
+
+	graphSegDock->setEnabled(enable);
 }
 
 // TODO: remove
@@ -97,5 +130,3 @@ void DockController::processRGB(QPixmap rgb)
 	// TODO FIXME this should be handled the same way as for RGBDock
 	GGDBG_CALL();
 }
-
-
