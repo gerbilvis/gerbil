@@ -260,7 +260,9 @@ void Controller::initDocks()
 	dc->setImageModel(&im);
 	dc->setIllumModel(&illumm);
 	dc->setFalseColorModel(&fm);
+#ifdef WITH_SEG_MEANSHIFT
 	dc->setUsSegModel(&um);
+#endif
 	dc->setLabelingModel(&lm);
 	dc->setMainWindow(window);
 	dc->init();

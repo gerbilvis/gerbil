@@ -131,7 +131,9 @@ void DockController::enableDocks(bool enable, TaskType tt)
 	//illumDock->setEnabled((enable || tt == TT_APPLY_ILLUM) && !im->isLimitedMode());
 	illumDock->setEnabled((enable || tt == TT_APPLY_ILLUM));
 
+#ifdef WITH_SEG_MEANSHIFT
 	usSegDock->setEnabled(enable && !im->isLimitedMode());
+#endif
 	roiDock->setEnabled(enable || tt == TT_SELECT_ROI);
 
 	graphSegDock->setEnabled(enable);

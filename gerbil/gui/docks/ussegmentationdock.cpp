@@ -230,7 +230,6 @@ void UsSegmentationDock::startUnsupervisedSeg(bool findKL)
 #else // method stubs as using define in header does not work (moc problem?)
 void UsSegmentationDock::startUnsupervisedSeg(bool findKL) {}
 void UsSegmentationDock::startFindKL() {}
-void UsSegmentationDock::segmentationFinished() {}
 void UsSegmentationDock::segmentationApply(std::map<std::string, boost::any>) {}
 void UsSegmentationDock::usMethodChanged(int idx) {}
 void UsSegmentationDock::usInitMethodChanged(int idx) {}
