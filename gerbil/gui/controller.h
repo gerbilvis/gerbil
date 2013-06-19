@@ -68,8 +68,9 @@ public slots:
 protected:
 	// connect models with gui
 	void initImage();
+	void initFalseColor();
 	void initIlluminant();
-	void initLabeling();
+	void initLabeling(cv::Rect dimensions);
 
 	// init DockController
 	void initDocks();

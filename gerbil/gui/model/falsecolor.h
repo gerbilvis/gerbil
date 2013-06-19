@@ -54,6 +54,8 @@ public:
 	void reset();
 
 public slots:
+	void processImageUpdate(representation::t type);
+
 	// Img could be calculated in background, if the background task was started before!
 	void computeForeground(coloring type);
 	void computeBackground(coloring type);

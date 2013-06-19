@@ -19,7 +19,7 @@ void IllumModel::setTaskQueue(BackgroundTaskQueue *queue)
 	this->queue = queue;
 }
 
-void IllumModel::setMultiImage(SharedMultiImgPtr *image)
+void IllumModel::setMultiImage(SharedMultiImgPtr image)
 {
 	this->image = image;
 }
@@ -123,10 +123,10 @@ void IllumModel::buildIllum(int t)
 	Illuminant il(t);
 	cv::Mat1f cf;
 	{
-		SharedMultiImgBaseGuard guard(**image);
-		il.calcWeight((**image)->meta[0].center,
-					  (**image)->meta[(**image)->size()-1].center);
-		std::vector<float> cfv = (**image)->getIllumCoeff(il);
+		SharedMultiImgBaseGuard guard(*image);
+		il.calcWeight((*image)->meta[0].center,
+					  (*image)->meta[(*image)->size()-1].center);
+		std::vector<float> cfv = (*image)->getIllumCoeff(il);
 		cf = cv::Mat1f(cfv, /* copy */ true);
 
 	}
@@ -141,11 +141,11 @@ void IllumModel::submitRemoveOldIllumTask()
 
 		if (cv::gpu::getCudaEnabledDeviceCount() > 0 && USE_CUDA_ILLUMINANT) {
 			BackgroundTaskPtr taskIllum(new MultiImg::IlluminantCuda(
-				*image, il, true, roi, false));
+				image, il, true, roi, false));
 			queue->push(taskIllum);
 		} else {
 			BackgroundTaskPtr taskIllum(new MultiImg::IlluminantTbb(
-				*image, il, true, roi, false));
+				image, il, true, roi, false));
 			queue->push(taskIllum);
 		}
 	}
@@ -159,11 +159,11 @@ void IllumModel::submitAddNewIllumTask()
 
 		if (cv::gpu::getCudaEnabledDeviceCount() > 0 && USE_CUDA_ILLUMINANT) {
 			BackgroundTaskPtr taskIllum(new MultiImg::IlluminantCuda(
-				*image, il, false, roi, false));
+				image, il, false, roi, false));
 			queue->push(taskIllum);
 		} else {
 			BackgroundTaskPtr taskIllum(new MultiImg::IlluminantTbb(
-				*image, il, false, roi, false));
+				image, il, false, roi, false));
 			queue->push(taskIllum);
 		}
 	}

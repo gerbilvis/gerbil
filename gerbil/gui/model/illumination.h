@@ -22,7 +22,7 @@ public:
 	explicit IllumModel(QObject *parent = 0);
 
 	void setTaskQueue(BackgroundTaskQueue *queue);
-	void setMultiImage(SharedMultiImgPtr *image);
+	void setMultiImage(SharedMultiImgPtr image);
 
 
 signals:
@@ -56,7 +56,7 @@ private:
 	BackgroundTaskQueue* queue;						// FIXME MODEL
 
 	// pointer to shared pointer to multi_img
-	SharedMultiImgPtr* image;						// FIXME MODEL
+	SharedMultiImgPtr image;						// FIXME MODEL
 
 	// current region of interest
 	cv::Rect roi;

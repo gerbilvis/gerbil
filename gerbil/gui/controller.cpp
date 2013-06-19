@@ -26,28 +26,24 @@ Controller::Controller(const std::string &filename, bool limited_mode)
 	// background task queue thread
 	startQueue();
 
-	// initialize illuminant model
-	// TODO: why is the queue not passed in the constructor? (FalseColorModel currently does it that way)
-	illumm.setTaskQueue(&queue);
-
-	// initialize label model
-	lm.setDimensions(dimensions.width, dimensions.height);
-
-#ifdef WITH_SEG_MEANSHIFT
-	um.setMultiImage(im.getImage(representation::IMG));
-#endif /* WITH_SEG_MEANSHIFT */
-
 	// create gui (perform initUI before connecting signals!)
 	window = new MainWindow(limited_mode);
 	window->initUI(dimensions, im.getSize());
 
 	// connect slots/signals
 	window->initSignals(this);
-	// TODO: these functions should be called connectXY(-Model)
-	// because all the initialization is already done & they just contain connects...
+
+	// initialize models
 	initImage();
+	initFalseColor(); // depends on ImageModel
 	initIlluminant();
-	initLabeling();
+	initLabeling(dimensions);
+
+#ifdef WITH_SEG_MEANSHIFT
+	um.setMultiImage(im.getImage(representation::IMG));
+#endif /* WITH_SEG_MEANSHIFT */
+
+	// initialize docks (after initializing the models...)
 	initDocks();
 
 	// MODEL To be removed when refactored
@@ -101,8 +97,20 @@ void Controller::initImage()
 			this, SLOT(docksUpdateImage(representation::t,SharedMultiImgPtr)));
 }
 
+// depends on ImageModel
+void Controller::initFalseColor()
+{
+	fm.setMultiImg(representation::IMG, im.getImage(representation::IMG));
+
+	connect(&im, SIGNAL(imageUpdate(representation::t,SharedMultiImgPtr)),
+			&fm, SLOT(processImageUpdate(representation::t,SharedMultiImgPtr)));
+}
+
 void Controller::initIlluminant()
 {
+	illumm.setTaskQueue(&queue);
+	illumm.setMultiImage(im.getImage(representation::IMG));
+
 	// signals illumm <-> viewer container
 	connect(&illumm, SIGNAL(newIlluminant(cv::Mat1f)),
 			window->getViewerContainer(), SLOT(newIlluminant(cv::Mat1f)));
@@ -122,6 +130,51 @@ void Controller::initIlluminant()
 
 	connect(&illumm, SIGNAL(requestGUIEnabled(bool,TaskType)),
 			window, SLOT(setGUIEnabled(bool, TaskType)), Qt::DirectConnection);
+}
+
+/** Labeling management **/
+
+// connect all signals between model and other parties
+void Controller::initLabeling(cv::Rect dimensions)
+{
+	// initialize label model
+	lm.setDimensions(dimensions.width, dimensions.height);
+
+	/* gui requests */
+	connect(window, SIGNAL(clearLabelRequested(short)),
+			&lm, SLOT(alterLabel(short)));
+	connect(window, SIGNAL(alterLabelRequested(short,cv::Mat1b,bool)),
+			&lm, SLOT(alterLabel(short,cv::Mat1b,bool)));
+	connect(window, SIGNAL(alterLabelingRequested(cv::Mat1s,cv::Mat1b)),
+			&lm, SLOT(alterPixels(cv::Mat1s,cv::Mat1b)));
+	connect(window, SIGNAL(newLabelingRequested(cv::Mat1s)),
+			&lm, SLOT(setLabels(cv::Mat1s)));
+
+	/* lm -> others */
+	connect(&lm,
+			SIGNAL(newLabeling(const cv::Mat1s&, const QVector<QColor>&, bool)),
+			this, SLOT(propagateLabelingChange(
+					 const cv::Mat1s&, const QVector<QColor> &, bool)));
+	connect(&lm, SIGNAL(partialLabelUpdate(const cv::Mat1s&,const cv::Mat1b&)),
+			window->getViewerContainer(),
+			SLOT(updateLabelsPartially(const cv::Mat1s&,const cv::Mat1b&)));
+	connect(&lm, SIGNAL(partialLabelUpdate(const cv::Mat1s&,const cv::Mat1b&)),
+			window,
+			SLOT(processLabelingChange(const cv::Mat1s&,const cv::Mat1b&)));
+}
+
+void Controller::initDocks()
+{
+	dc = new DockController(this);
+	dc->setImageModel(&im);
+	dc->setIllumModel(&illumm);
+	dc->setFalseColorModel(&fm);
+#ifdef WITH_SEG_MEANSHIFT
+	dc->setUsSegModel(&um);
+#endif
+	dc->setLabelingModel(&lm);
+	dc->setMainWindow(window);
+	dc->init();
 }
 
 void Controller::spawnROI(const cv::Rect &roi)
@@ -226,48 +279,6 @@ void Controller::updateROI(bool reuse, cv::Rect roi, size_t bands)
 
 }
 
-/** Labeling management **/
-
-// connect all signals between model and other parties
-void Controller::initLabeling()
-{
-	/* gui requests */
-	connect(window, SIGNAL(clearLabelRequested(short)),
-			&lm, SLOT(alterLabel(short)));
-	connect(window, SIGNAL(alterLabelRequested(short,cv::Mat1b,bool)),
-			&lm, SLOT(alterLabel(short,cv::Mat1b,bool)));
-	connect(window, SIGNAL(alterLabelingRequested(cv::Mat1s,cv::Mat1b)),
-			&lm, SLOT(alterPixels(cv::Mat1s,cv::Mat1b)));
-	connect(window, SIGNAL(newLabelingRequested(cv::Mat1s)),
-			&lm, SLOT(setLabels(cv::Mat1s)));
-
-	/* lm -> others */
-	connect(&lm,
-			SIGNAL(newLabeling(const cv::Mat1s&, const QVector<QColor>&, bool)),
-			this, SLOT(propagateLabelingChange(
-					 const cv::Mat1s&, const QVector<QColor> &, bool)));
-	connect(&lm, SIGNAL(partialLabelUpdate(const cv::Mat1s&,const cv::Mat1b&)),
-			window->getViewerContainer(),
-			SLOT(updateLabelsPartially(const cv::Mat1s&,const cv::Mat1b&)));
-	connect(&lm, SIGNAL(partialLabelUpdate(const cv::Mat1s&,const cv::Mat1b&)),
-			window,
-			SLOT(processLabelingChange(const cv::Mat1s&,const cv::Mat1b&)));
-}
-
-void Controller::initDocks()
-{
-	dc = new DockController(this);
-	dc->setImageModel(&im);
-	dc->setIllumModel(&illumm);
-	dc->setFalseColorModel(&fm);
-#ifdef WITH_SEG_MEANSHIFT
-	dc->setUsSegModel(&um);
-#endif
-	dc->setLabelingModel(&lm);
-	dc->setMainWindow(window);
-	dc->init();
-}
-
 void Controller::propagateLabelingChange(const cv::Mat1s& labels,
 										 const QVector<QColor> &colors,
 										 bool colorsChanged)
@@ -297,13 +308,6 @@ void Controller::addLabel()
 /** DOCK stuff (to be moved to DockController */
 void Controller::docksUpdateImage(representation::t type, SharedMultiImgPtr image)
 {
-	/* first make sure models have access to data */
-	fm.setMultiImg(type, image);
-
-	// TODO: wurde das vorher auch bei jedem Update neu gesetzt?
-	// IllumModel wants a ptr to the shared pointer, which obviously does NOT work like this:
-	// illumm.setMultiImage(&image);
-
 	/* conservative approach: do not initiate calculation tasks here,
 	 * just invalidate data in the GUI (which may lead to initiating tasks)
 	 */

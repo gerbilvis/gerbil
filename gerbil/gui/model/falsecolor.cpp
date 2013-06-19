@@ -47,19 +47,26 @@ FalseColorModel::FalseColorModel(QObject *parent, BackgroundTaskQueue *queue)
 	}
 }
 
+FalseColorModel::~FalseColorModel()
+{
+	cancel();
+}
+
 void FalseColorModel::setMultiImg(representation::t type,
 								  SharedMultiImgPtr shared_img)
 {
 	// in the future, we might be interested in the other ones as well.
-	if (type == representation::IMG) {
-		this->shared_img = shared_img;
-		reset();
-	}
+	// currently, we don't process other types, so "warn" the caller
+	assert(type == representation::IMG);
+
+	this->shared_img = shared_img;
+	reset();
 }
 
-FalseColorModel::~FalseColorModel()
+void FalseColorModel::processImageUpdate(representation::t type)
 {
-	cancel();
+	if (type == representation::IMG)
+		reset();
 }
 
 void FalseColorModel::reset()
