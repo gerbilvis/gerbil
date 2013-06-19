@@ -25,6 +25,8 @@ public:
 	
 signals:
 	void nSpectralBandsChanged(int);
+	// setGUIEnabled() part of the dock windows
+	void requestEnableDocks(bool enable, TaskType tt);
 
 public slots:
 	/** requests (from GUI) */
@@ -54,6 +56,16 @@ public slots:
 
 	// update image data in docks (to be moved to dockcontroller)
 	void docksUpdateImage(representation::t type, SharedMultiImgPtr image);
+
+	/** Enable and disable GUI as indicated by enable flag.
+	 *
+	 * When disable is requested all GUI elements other than those involved
+	 * with the task indicated by TaskType whill be disabled. This is to enable
+	 * the user to trigger a new operation of the same TaskType before the
+	 * previous one is finished.  In this case the model in charge should
+	 * cancel the ongoing calculations and re-start with the new user input.
+	 */
+	void setGUIEnabled(bool enable, TaskType tt = TT_NONE);
 
 	/** internal management (maybe make protected) */
 	/* this function enqueues an empty task that will signal when all previous

@@ -64,6 +64,9 @@ public:
 						   IllumDock *illumDock,
 						   GraphSegmentationDock *graphSegDock,
 						   UsSegmentationDock *usSegDock);
+
+	// setGUIEnabled() slot is now in Controller class
+	void setGUIEnabled(bool enable, TaskType tt = TT_NONE);
 public slots:
 	// TODO -> DockController
 	void changeBand(QPixmap band, QString desc);
@@ -80,8 +83,7 @@ public slots:
 // -> DockController
 //	void processRGB(QPixmap rgb);
 
-	void setGUIEnabled(bool enable, TaskType tt = TT_NONE);
-//	void finishGraphSeg(bool success);
+	//	void finishGraphSeg(bool success);
 
 	// we probably remove this functionality: void reshapeDock(bool floating);
 	void clearLabelOrSeeds();
@@ -118,9 +120,6 @@ public slots:
 
 	void screenshot();
 
-	// DEBUG
-	void debugRequestGUIEnabled(bool enable, TaskType tt);
-
 signals:
 	void specRescaleRequested(size_t bands);
 	void clearLabelRequested(short index);
@@ -135,7 +134,9 @@ signals:
 	void seedingDone(bool yeah = false);
 
 	// part of setGUIEnabled(), handled by DocksController
-	void requestEnableDocks(bool enable, TaskType tt);
+	//void requestEnableDocks(bool enable, TaskType tt);
+
+	void setGUIEnabledRequested(bool enable, TaskType tt);
 
 	void graphSegDockVisibleRequested(bool visible);
 

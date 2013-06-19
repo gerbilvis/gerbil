@@ -79,7 +79,7 @@ public slots:
 signals:
 	void newOverlay();
 	void folding();
-	void setGUIEnabled(bool enable, TaskType tt);
+	void setGUIEnabledRequested(bool enable, TaskType tt);
 	void toggleViewer(bool enable, representation::t type);
 	void finishTask(bool success);
 	void finishedCalculation(representation::t type);

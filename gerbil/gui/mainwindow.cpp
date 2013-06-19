@@ -224,10 +224,8 @@ void MainWindow::initSignals(Controller *chief)
 	connect(viewerContainer, SIGNAL(normTargetChanged(bool)),
 			this, SLOT(normTargetChanged(bool)));
 
-	connect(viewerContainer, SIGNAL(requestGUIEnabled(bool,TaskType)),
-			this, SLOT(setGUIEnabled(bool,TaskType)));
-	connect(viewerContainer, SIGNAL(requestGUIEnabled(bool,TaskType)),
-			this, SLOT(debugRequestGUIEnabled(bool,TaskType)));
+	connect(viewerContainer, SIGNAL(setGUIEnabledRequested(bool,TaskType)),
+			this, SIGNAL(setGUIEnabledRequested(bool,TaskType)));
 	connect(viewerContainer, SIGNAL(viewportAddSelection()),
 			this, SLOT(addToLabel()));
 	connect(viewerContainer, SIGNAL(viewportRemSelection()),
@@ -262,11 +260,6 @@ void MainWindow::initSignals(Controller *chief)
 
 void MainWindow::setGUIEnabled(bool enable, TaskType tt)
 {
-	/** for enable, this just re-enables everything
-	 * for disable, this typically disables everything except the sender, so
-	 * that the user can re-decide on that aspect or sth.
-	 * it is a bit strange
-	 */
 	bandsSlider->setEnabled(enable || tt == TT_BAND_COUNT);
 	ignoreButton->setEnabled(enable || tt == TT_TOGGLE_LABELS);
 	addButton->setEnabled(enable);
@@ -278,6 +271,7 @@ void MainWindow::setGUIEnabled(bool enable, TaskType tt)
 	clearButton->setEnabled(enable);
 	bandView->setEnabled(enable);
 
+	// TODO -> NormDock
 	normDock->setEnabled((enable || tt == TT_NORM_RANGE || tt == TT_CLAMP_RANGE_IMG || tt == TT_CLAMP_RANGE_GRAD) && !limitedMode);
 	normIButton->setEnabled(enable || tt == TT_NORM_RANGE || tt == TT_CLAMP_RANGE_IMG);
 	normGButton->setEnabled(enable || tt == TT_NORM_RANGE || tt == TT_CLAMP_RANGE_GRAD);
@@ -285,8 +279,7 @@ void MainWindow::setGUIEnabled(bool enable, TaskType tt)
 	normApplyButton->setEnabled(enable || tt == TT_NORM_RANGE);
 	normClampButton->setEnabled(enable || tt == TT_CLAMP_RANGE_IMG || tt == TT_CLAMP_RANGE_GRAD);
 
-	emit requestEnableDocks(enable, tt);
-
+	// TODO -> BandDock
 	if (tt == TT_SELECT_ROI && (!enable)) {
 		/* TODO: check if this is enough to make sure no label changes
 		 * happen during ROI recomputation */
@@ -301,12 +294,6 @@ void MainWindow::bandsSliderMoved(int b)
 	if (!bandsSlider->isSliderDown()) {
 		emit specRescaleRequested(b);
 	}
-}
-
-void MainWindow::debugRequestGUIEnabled(bool enable, TaskType tt)
-{
-	//GGDBG_CALL();
-	//GGDBGM(format("enable=%1%, tt=%2%\n") %enable %tt)
 }
 
 void MainWindow::initNormalizationUI()

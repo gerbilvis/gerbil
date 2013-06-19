@@ -270,9 +270,10 @@ void multi_img_viewer::showIlluminationCurve(bool show)
 
 void multi_img_viewer::changeBinCount(int bins)
 {
+	// TODO: MODEL
 	queue->cancelTasks();
 
-	setGUIEnabled(false, TT_BIN_COUNT);
+	emit setGUIEnabledRequested(false, TT_BIN_COUNT);
 	viewportGV->setEnabled(false);
 
 	updateBinning(bins);

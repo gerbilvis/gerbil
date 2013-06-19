@@ -38,7 +38,7 @@ void DockController::init()
 	//TODO make this complete
 	mw->tabifyDockWidgets(roiDock, rgbDock, illumDock, graphSegDock, usSegDock);
 
-	connect(mw, SIGNAL(requestEnableDocks(bool,TaskType)),
+	connect(chief, SIGNAL(requestEnableDocks(bool,TaskType)),
 			this, SLOT(enableDocks(bool,TaskType)));
 }
 

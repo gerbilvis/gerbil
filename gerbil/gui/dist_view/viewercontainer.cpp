@@ -239,7 +239,7 @@ void ViewerContainer::disconnectAllViewers()
 void ViewerContainer::finishTask(bool success)
 {
 	if(success)
-		emit requestGUIEnabled(true, TT_NONE);
+		emit setGUIEnabledRequested(true, TT_NONE);
 }
 
 void ViewerContainer::finishNormRangeImgChange(bool success)
@@ -445,8 +445,8 @@ void ViewerContainer::initUi()
 		connect(viewport1, SIGNAL(bandSelected(representation::t, int)),
 				this, SIGNAL(bandSelected(representation::t, int)));
 
-		connect(viewer1, SIGNAL(setGUIEnabled(bool, TaskType)),
-				this, SIGNAL(requestGUIEnabled(bool,TaskType)));
+		connect(viewer1, SIGNAL(setGUIEnabledRequested(bool,TaskType)),
+				this, SIGNAL(setGUIEnabledRequested(bool,TaskType)));
 
 		connect(viewport1, SIGNAL(addSelection()),
 				this, SIGNAL(viewportAddSelection()));
@@ -503,7 +503,7 @@ void ViewerContainer::updateLabelsPartially(const cv::Mat1s &labels,
 	bool profitable = ((2 * cv::countNonZero(mask)) < mask.total());
 	if (profitable) {
 		// gui disable
-		emit requestGUIEnabled(false, TT_NONE);
+		emit setGUIEnabledRequested(false, TT_NONE);
 
 		foreach (multi_img_viewer *i, map) {
 			i->updateLabelsPartially(labels, mask);

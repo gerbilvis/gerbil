@@ -121,8 +121,8 @@ void Controller::initIlluminant()
 	connect(&illumm, SIGNAL(requestInvalidateROI(cv::Rect)),
 			this, SLOT(invalidateROI(cv::Rect)));
 
-	connect(&illumm, SIGNAL(requestGUIEnabled(bool,TaskType)),
-			window, SLOT(setGUIEnabled(bool, TaskType)), Qt::DirectConnection);
+	connect(&illumm, SIGNAL(setGUIEnabledRequested(bool,TaskType)),
+			this, SLOT(setGUIEnabled(bool, TaskType)), Qt::DirectConnection);
 }
 
 /** Labeling management **/
@@ -142,6 +142,8 @@ void Controller::initLabeling(cv::Rect dimensions)
 			&lm, SLOT(alterPixels(cv::Mat1s,cv::Mat1b)));
 	connect(window, SIGNAL(newLabelingRequested(cv::Mat1s)),
 			&lm, SLOT(setLabels(cv::Mat1s)));
+	connect(window, SIGNAL(setGUIEnabledRequested(bool,TaskType)),
+			this, SLOT(setGUIEnabled(bool, TaskType)));
 
 	/* lm -> others */
 	connect(&lm,
@@ -323,6 +325,19 @@ void Controller::docksUpdateImage(representation::t type, SharedMultiImgPtr imag
 	// TODO: if falsecolorDock is shown, trigger re-calculation of falsecolor image
 }
 
+void Controller::setGUIEnabled(bool enable, TaskType tt)
+{
+	/** for enable, this just re-enables everything
+	 * for disable, this typically disables everything except the sender, so
+	 * that the user can re-decide on that aspect or sth.
+	 * it is a bit strange
+	 */
+
+	window->setGUIEnabled(enable, tt);
+
+	// tell dock controller
+	emit requestEnableDocks(enable, tt);
+}
 /** Tasks and queue thread management */
 void Controller::toggleLabels(bool toggle)
 {
@@ -357,12 +372,12 @@ void Controller::enableGUINow(bool forreal)
 		spectralRescaleInProgress = false;
 	}
 	if (forreal)
-		window->setGUIEnabled(true);
+		setGUIEnabled(true);
 }
 
 void Controller::disableGUI(TaskType tt)
 {
-	window->setGUIEnabled(false, tt);
+	setGUIEnabled(false, tt);
 }
 
 /* container to allow passing an object reference to std::thread()

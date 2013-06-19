@@ -84,7 +84,7 @@ signals:
 	// new signals to break-up coupling between MainWindow and ViewerContainer
 
 	void bandSelected(representation::t type, int selection);
-	void requestGUIEnabled(bool enable, TaskType tt);
+	void setGUIEnabledRequested(bool enable, TaskType tt);
 
 protected:
 	QMap<representation::t, multi_img_viewer*> map;

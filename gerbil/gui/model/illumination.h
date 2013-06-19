@@ -27,7 +27,7 @@ public:
 
 signals:
 	/* effect: gerbil GUI enabled/disabled. */
-	void requestGUIEnabled(bool enable, TaskType tt);
+	void setGUIEnabledRequested(bool enable, TaskType tt);
 	/* effect: rebuild ROI from input full image. */
 	void requestInvalidateROI(cv::Rect roi);
 	/* effect: illuminant curve is drawn in viewers */
