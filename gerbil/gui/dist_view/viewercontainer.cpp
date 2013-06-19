@@ -63,7 +63,7 @@ sets_ptr ViewerContainer::subImage(representation::t type,
 	multi_img_viewer *viewer = map.value(type);
 	assert(viewer);
 	if(!viewer->isPayloadHidden()) {
-		GGDBG_REPR(type);
+		//GGDBG_REPR(type);
 		viewer->subImage(temp, regions, roi);
 	}
 	return temp;
@@ -120,7 +120,7 @@ void ViewerContainer::updateLabels(const cv::Mat1s& labels,
 
 void ViewerContainer::updateBinning(representation::t type, int bins)
 {
-	GGDBG_REPR(type);
+	//GGDBG_REPR(type);
 	multi_img_viewer *viewer = map.value(type);
 	viewer->updateBinning(bins);
 }
