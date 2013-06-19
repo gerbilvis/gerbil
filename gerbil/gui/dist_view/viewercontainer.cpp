@@ -79,7 +79,7 @@ void ViewerContainer::addImage(representation::t type, sets_ptr temp,
 	multi_img_viewer *viewer = map.value(type);
 	assert(viewer);
 	if(!viewer->isPayloadHidden()) {
-		GGDBG_REPR(type);
+		//GGDBG_REPR(type);
 		viewer->addImage(temp, regions, roi);
 	}
 }
@@ -95,7 +95,7 @@ void ViewerContainer::setImage(representation::t type, SharedMultiImgPtr image,
 	//GGDBGM(format("type=%1%, image.get()=%2%)\n")
 	//	   % type % image.get());
 	if(!viewer->isPayloadHidden()) {
-		GGDBG_REPR(type);
+		//GGDBG_REPR(type);
 		viewer->setImage(image, roi);
 	}
 }
@@ -161,7 +161,7 @@ void ViewerContainer::setGUIEnabled(bool enable, TaskType tt)
 
 void ViewerContainer::toggleViewer(bool enable, representation::t type)
 {
-	GGDBGM(format("toggle=%1% representation=%2%\n") %enable % type);
+	//GGDBGM(format("toggle=%1% representation=%2%\n") %enable % type);
 	if(enable)
 		enableViewer(type);
 	else
@@ -176,7 +176,7 @@ void ViewerContainer::newROI(cv::Rect roi)
 void ViewerContainer::setActiveViewer(int type)
 {
 	representation::t r = static_cast<representation::t>(type);
-	GGDBG_REPR(type);
+	//GGDBG_REPR(type);
 	if (map.value(r)->getImage().get()) {
 		activeViewer = map.value(r);
 	} else {
@@ -186,7 +186,7 @@ void ViewerContainer::setActiveViewer(int type)
 
 void ViewerContainer::connectViewer(representation::t type)
 {
-	GGDBGM(format("representation %1%\n") % type);
+	//GGDBGM(format("representation %1%\n") % type);
 	multi_img_viewer *viewer = map.value(type);
 	/* TODO: (code was in multi_img_viewer class */
 	/*{

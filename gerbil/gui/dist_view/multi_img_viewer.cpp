@@ -69,7 +69,7 @@ void multi_img_viewer::toggleFold()
 {
 	if (!viewportGV->isHidden()) {
 		/** HIDE **/
-		GGDBGM(format("viewer %1% folding")%getType() << endl);
+		//GGDBGM(format("viewer %1% folding")%getType() << endl);
 		emit folding();
 		viewportGV->setHidden(true);
 		topBar->fold();
@@ -84,7 +84,7 @@ void multi_img_viewer::toggleFold()
 		viewport->vb.destroy();
 	} else {
 		/** SHOW **/
-		GGDBGM(format("viewer %1% unfolding")%getType() << endl);
+		//GGDBGM(format("viewer %1% unfolding")%getType() << endl);
 		emit folding();
 		viewportGV->setShown(true);
 		topBar->unfold();

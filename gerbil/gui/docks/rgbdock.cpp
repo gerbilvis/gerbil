@@ -13,7 +13,7 @@ RgbDock::RgbDock(QWidget *parent) :
 
 void RgbDock::updatePixmap(coloring type, QPixmap p)
 {
-//	GGDBG_CALL();
+	//GGDBG_CALL();
 	view->setEnabled(true);
 	view->setPixmap(p);
 	view->update();

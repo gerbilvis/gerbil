@@ -367,7 +367,7 @@ void Controller::enableGUINow(bool forreal)
 	if(spectralRescaleInProgress) {
 		// The number of spectral bands changed - let the GUI know about it.
 		int nbands = im.getNumBandsROI();
-		GGDBGM(format("emitting nSpectralBandsChanged(%1%)")%nbands << endl);
+		//GGDBGM(format("emitting nSpectralBandsChanged(%1%)")%nbands << endl);
 		emit nSpectralBandsChanged(nbands);
 		spectralRescaleInProgress = false;
 	}

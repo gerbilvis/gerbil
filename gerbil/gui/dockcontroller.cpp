@@ -147,5 +147,5 @@ void DockController::enableDocks(bool enable, TaskType tt)
 void DockController::processRGB(QPixmap rgb)
 {
 	// TODO FIXME this should be handled the same way as for RGBDock
-	GGDBG_CALL();
+	//GGDBG_CALL();
 }
