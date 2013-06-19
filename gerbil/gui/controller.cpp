@@ -110,7 +110,7 @@ void Controller::initFalseColor()
 void Controller::initIlluminant()
 {
 	illumm.setTaskQueue(&queue);
-	illumm.setMultiImage(im.getImage(representation::IMG));
+	illumm.setMultiImage(im.getFullImage());
 
 	// signals illumm <-> viewer container
 	connect(&illumm, SIGNAL(newIlluminant(cv::Mat1f)),
@@ -118,16 +118,8 @@ void Controller::initIlluminant()
 	connect(&illumm, SIGNAL(illuminantIsApplied(bool)),
 			window->getViewerContainer(), SLOT(setIlluminantApplied(bool)));
 
-	// TODO: signal does not exist right now.
-	//connect(window, SIGNAL(roiChanged(cv::Rect)),
-//			&illumm, SLOT(setRoi(cv::Rect)));
-
-	// TODO: instead have a specific function in controller (like spectRescale)
-//	connect(&illumm, SIGNAL(requestApplyROI(bool)),
-//			window, SLOT(applyROI(bool)), Qt::DirectConnection);
-	// TODO: don't know how RGB works right now.
-//	connect(&illumm, SIGNAL(requestRebuildRGB()),
-//			window, SLOT(rebuildRGB()), Qt::DirectConnection);
+	connect(&illumm, SIGNAL(requestInvalidateROI(cv::Rect)),
+			this, SLOT(invalidateROI(cv::Rect)));
 
 	connect(&illumm, SIGNAL(requestGUIEnabled(bool,TaskType)),
 			window, SLOT(setGUIEnabled(bool, TaskType)), Qt::DirectConnection);
@@ -180,7 +172,33 @@ void Controller::initDocks()
 
 void Controller::spawnROI(const cv::Rect &roi)
 {
-	bool reuse = true;
+	const bool reuse = true;
+	doSpawnROI(reuse, roi);
+}
+
+void Controller::invalidateROI(const cv::Rect &roi)
+{
+	const bool reuse = false;
+	doSpawnROI(reuse, roi);
+}
+
+void Controller::rescaleSpectrum(size_t bands)
+{
+	queue.cancelTasks(im.getROI());
+	disableGUI(TT_BAND_COUNT);
+	// TODO: check
+    // 2013-06-19 altmann: seems to work without disconnect as well.
+	window->getViewerContainer()->disconnectAllViewers();
+
+	spectralRescaleInProgress = true;
+
+	updateROI(false, cv::Rect(), bands);
+
+	enableGUILater(true);
+}
+
+void Controller::doSpawnROI(bool reuse, const cv::Rect &roi)
+{
 	// TODO: make a method cancelAllComputation that does following two steps
 	/* TODO: this results in huge computation burden even if none of the
 	 * running tasks would interfere. We could think of a more fine-grained
@@ -200,23 +218,10 @@ void Controller::spawnROI(const cv::Rect &roi)
 
 	disableGUI(TT_SELECT_ROI);
 	// TODO: check
+	// 2013-06-19 altmann: seems to work without disconnect as well.
 	window->getViewerContainer()->disconnectAllViewers();
 
 	updateROI(reuse, roi);
-
-	enableGUILater(true);
-}
-
-void Controller::rescaleSpectrum(size_t bands)
-{
-	queue.cancelTasks(im.getROI());
-	disableGUI(TT_BAND_COUNT);
-	// TODO: check
-	window->getViewerContainer()->disconnectAllViewers();
-
-	spectralRescaleInProgress = true;
-
-	updateROI(false, cv::Rect(), bands);
 
 	enableGUILater(true);
 }
@@ -253,6 +258,7 @@ void Controller::updateROI(bool reuse, cv::Rect roi, size_t bands)
 	/** SECOND STEP: update metadata */
 
 	lm.updateROI(roi);
+	illumm.setRoi(roi);
 
 	/** THIRD STEP: update payload */
 	/* this has to be done in the right order!

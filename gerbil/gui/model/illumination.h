@@ -23,15 +23,13 @@ public:
 
 	void setTaskQueue(BackgroundTaskQueue *queue);
 	void setMultiImage(SharedMultiImgPtr image);
-
+	void setRoi(cv::Rect roi);
 
 signals:
 	/* effect: gerbil GUI enabled/disabled. */
 	void requestGUIEnabled(bool enable, TaskType tt);
-	/* effect: MainWindow::applyROI() ... sort of rebuild everything. */
-	void requestApplyROI(bool reuse);
-	/* effect: rebuild false color RGB data. */
-	void requestRebuildRGB();
+	/* effect: rebuild ROI from input full image. */
+	void requestInvalidateROI(cv::Rect roi);
 	/* effect: illuminant curve is drawn in viewers */
 	void newIlluminant(cv::Mat1f illum);
 	/* if(applied): illuminant has been applied to image data. */
@@ -41,7 +39,6 @@ public slots:
 	void updateIllum1(int t);
 	void updateIllum2(int t);
 	void setIlluminationCurveShown(bool shown);
-	void setRoi(cv::Rect roi);
 protected slots:
 	void finishTask(bool success);
 protected:

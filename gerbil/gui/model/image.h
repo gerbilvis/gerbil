@@ -70,6 +70,7 @@ public:
 	int getNumBandsROI();
 	const cv::Rect& getROI() { return roi; }
 	SharedMultiImgPtr getImage(representation::t type) { return map[type]->image; }
+	SharedMultiImgPtr getFullImage() { return image_lim; }
 	bool isLimitedMode() { return limitedMode; }
 
 	// delete ROI information also in images
@@ -96,7 +97,6 @@ signals:
 
 	void fullRgbUpdate(QPixmap fullRgb);
 	void imageUpdate(representation::t type, SharedMultiImgPtr image);
-
 private:
 	// helper to spawn()
 	bool checkProfitable(const cv::Rect& oldROI, const cv::Rect& newROI);

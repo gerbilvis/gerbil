@@ -28,7 +28,7 @@ void IllumModel::setMultiImage(SharedMultiImgPtr image)
 void IllumModel::finishTask(bool success)
 {
 	if(success) {
-		emit requestGUIEnabled(true, TT_NONE);
+		emit requestInvalidateROI(roi);
 	} else {
 		GGDBGM("failure"<<endl);
 	}
@@ -38,13 +38,13 @@ void IllumModel::finishTask(bool success)
 void IllumModel::applyIllum()
 {
 	queue->cancelTasks();
+	// FIXME re-apply illuminant while calculation in progess is currently
+	// not implemented (?) and probably broken.
 	emit requestGUIEnabled(false, TT_APPLY_ILLUM);
 
 	submitRemoveOldIllumTask();
 	submitAddNewIllumTask();
 
-	emit requestApplyROI(false);
-	emit requestRebuildRGB();
 
 	if(i2>0) {
 		cv::Mat1f il = getIllumCoeff(i2);

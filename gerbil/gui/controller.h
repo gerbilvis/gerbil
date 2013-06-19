@@ -28,8 +28,10 @@ signals:
 
 public slots:
 	/** requests (from GUI) */
-	// change ROI, effectively spawning new image data
+	// change ROI, effectively spawning new image data, reusing cached ROI data
 	void spawnROI(const cv::Rect &roi);
+	// change ROI, spawn new image data, rebuild everything from scratch.
+	void invalidateROI(const cv::Rect &roi);
 	// change number of bands, spawning new image data
 	void rescaleSpectrum(size_t bands);
 	// change binnig to reflect, or not reflect, labeling
@@ -81,6 +83,8 @@ protected:
 	// stop and delete thread
 	// (we did not test consecutive start/stop of the queue)
 	void stopQueue();
+
+	void doSpawnROI(bool reuse, const cv::Rect &roi);
 
 	// update ROI, or its contents
 	void updateROI(bool reuse,
