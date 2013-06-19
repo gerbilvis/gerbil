@@ -4,6 +4,7 @@ GraphSegmentationDock::GraphSegmentationDock(QWidget *parent) :
 	QDockWidget(parent)
 {
 	setupUi(this);
+	// TODO initUi
 }
 
 GraphSegmentationDock::~GraphSegmentationDock()
@@ -42,11 +43,13 @@ void GraphSegmentationDock::initUi()
 //			graphsegButton, SLOT(setChecked(bool)));
 }
 
+// TODO: -> GraphSegModel
 void GraphSegmentationDock::runGraphseg(SharedMultiImgPtr input,
 							   const vole::GraphSegConfig &config)
 {
 	/*
-	// TODO: why disable GUI? Where is it enabled?
+	// TODO: why disable GUI? Where is it enabled? -> do it in finishGraphSeg
+	// TODO: build signal requestGUI
 	setGUIEnabled(false);
 	// TODO: should this be a commandrunner instead? arguable..
 	BackgroundTaskPtr taskGraphseg(new GraphsegBackground(
@@ -57,9 +60,12 @@ void GraphSegmentationDock::runGraphseg(SharedMultiImgPtr input,
 	*/
 }
 
+
+// TODO: -> GraphSegModel
 void GraphSegmentationDock::finishGraphSeg(bool success)
 {
 	/*
+	 * @ploner probably doesn't work yet (?).
 	if (success) {
 		// add segmentation to current labeling
 		emit alterLabelRequested(bandView->getCurLabel(),
@@ -70,7 +76,10 @@ void GraphSegmentationDock::finishGraphSeg(bool success)
 	*/
 }
 
-// TODO: move part of this to controller who obtains image data from imagemodel
+// TODO: move this to GraphSegModel (create it)
+// multi_img should not be seen by dock/GUI code.
+// Only parse GUI parameters into vole::GraphSegConfig here and
+// pass it to model via signal requestSegmentation(config).
 void GraphSegmentationDock::startGraphseg()
 {
 	/*
