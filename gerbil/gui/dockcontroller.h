@@ -43,7 +43,6 @@ signals:
 	void rgbRequested();
 public slots:
 	void enableDocks(bool enable, TaskType tt);
-	void processRGB(QPixmap rgb);
 protected:
 	/* Create dock widget objects. */
 	void createDocks();

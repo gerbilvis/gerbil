@@ -80,9 +80,6 @@ public slots:
 	// TODO -> DockController
 	void processLabelingChange(const cv::Mat1s &labels, const cv::Mat1b &mask);
 
-// -> DockController
-//	void processRGB(QPixmap rgb);
-
 	//	void finishGraphSeg(bool success);
 
 	// we probably remove this functionality: void reshapeDock(bool floating);
