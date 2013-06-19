@@ -45,7 +45,8 @@ Controller::Controller(const std::string &filename, bool limited_mode)
 #endif /* WITH_SEG_MEANSHIFT */
 
 	// initialize docks (after initializing the models...)
-	initDocks();
+	dc = new DockController(this);
+	dc->init();
 
 	// MODEL To be removed when refactored
 	// into model classes.
@@ -156,20 +157,6 @@ void Controller::initLabeling(cv::Rect dimensions)
 	connect(&lm, SIGNAL(partialLabelUpdate(const cv::Mat1s&,const cv::Mat1b&)),
 			window,
 			SLOT(processLabelingChange(const cv::Mat1s&,const cv::Mat1b&)));
-}
-
-void Controller::initDocks()
-{
-	dc = new DockController(this);
-	dc->setImageModel(&im);
-	dc->setIllumModel(&illumm);
-	dc->setFalseColorModel(&fm);
-#ifdef WITH_SEG_MEANSHIFT
-	dc->setUsSegModel(&um);
-#endif
-	dc->setLabelingModel(&lm);
-	dc->setMainWindow(window);
-	dc->init();
 }
 
 void Controller::spawnROI(const cv::Rect &roi)

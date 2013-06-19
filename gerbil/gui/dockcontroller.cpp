@@ -25,18 +25,19 @@ void DockController::init()
 	// FIXME: Put graphSegDock below band view dock.
 	// Can't do this here until *all* docks are added here instead of being created
 	// in the mainwindow ui file. (well we could drag programmatically -> arghl).
-	mw->addDockWidget(Qt::RightDockWidgetArea, graphSegDock);
+	chief->mainWindow()->addDockWidget(Qt::RightDockWidgetArea, graphSegDock);
 #ifdef WITH_SEG_MEANSHIFT
-	mw->addDockWidget(Qt::RightDockWidgetArea, usSegDock);
+	chief->mainWindow()->addDockWidget(Qt::RightDockWidgetArea, usSegDock);
 #endif
-	mw->addDockWidget(Qt::RightDockWidgetArea, rgbDock);
-	mw->addDockWidget(Qt::RightDockWidgetArea, roiDock);
-	mw->addDockWidget(Qt::RightDockWidgetArea, illumDock);
+	chief->mainWindow()->addDockWidget(Qt::RightDockWidgetArea, rgbDock);
+	chief->mainWindow()->addDockWidget(Qt::RightDockWidgetArea, roiDock);
+	chief->mainWindow()->addDockWidget(Qt::RightDockWidgetArea, illumDock);
 
-	im->computeFullRgb();
+	chief->imageModel()->computeFullRgb();
 
 	//TODO make this complete
-	mw->tabifyDockWidgets(roiDock, rgbDock, illumDock, graphSegDock, usSegDock);
+	chief->mainWindow()->tabifyDockWidgets(
+				roiDock, rgbDock, illumDock, graphSegDock, usSegDock);
 
 	connect(chief, SIGNAL(requestEnableDocks(bool,TaskType)),
 			this, SLOT(enableDocks(bool,TaskType)));
@@ -44,31 +45,31 @@ void DockController::init()
 
 void DockController::createDocks()
 {
-	assert(NULL != mw);
-	roiDock = new ROIDock(mw);
-	illumDock = new IllumDock(mw);
-	rgbDock = new RgbDock(mw);
-	graphSegDock = new GraphSegmentationDock(mw);
+	assert(NULL != chief->mainWindow());
+	roiDock = new ROIDock(chief->mainWindow());
+	illumDock = new IllumDock(chief->mainWindow());
+	rgbDock = new RgbDock(chief->mainWindow());
+	graphSegDock = new GraphSegmentationDock(chief->mainWindow());
 #ifdef WITH_SEG_MEANSHIFT
-	usSegDock = new UsSegmentationDock(mw);
+	usSegDock = new UsSegmentationDock(chief->mainWindow());
 #endif
 }
 
 void DockController::setupDocks()
 {
 	/* RGB Dock */
-	connect(im, SIGNAL(imageUpdate(representation::t,SharedMultiImgPtr)),
+	connect(chief->imageModel(), SIGNAL(imageUpdate(representation::t,SharedMultiImgPtr)),
 			rgbDock, SLOT(processImageUpdate(representation::t,SharedMultiImgPtr)));
 
 	connect(rgbDock, SIGNAL(rgbRequested(coloring)),
-			fm, SLOT(computeBackground(coloring)));
+			chief->falseColorModel(), SLOT(computeBackground(coloring)));
 
-	connect(fm, SIGNAL(calculationComplete(coloring, QPixmap)),
+	connect(chief->falseColorModel(), SIGNAL(calculationComplete(coloring, QPixmap)),
 			rgbDock, SLOT(updatePixmap(coloring, QPixmap)));
 
 	/* ROI Dock */
 	// signals for ROI (reset handled in ROIDock)
-	connect(im, SIGNAL(fullRgbUpdate(QPixmap)),
+	connect(chief->imageModel(), SIGNAL(fullRgbUpdate(QPixmap)),
 			roiDock, SLOT(updatePixmap(QPixmap)));
 
 	connect(roiDock, SIGNAL(roiRequested(const cv::Rect&)),
@@ -76,30 +77,31 @@ void DockController::setupDocks()
 
 	/* Illumination Dock */
 	connect(illumDock, SIGNAL(applyIllum()),
-			illumm, SLOT(applyIllum()));
+			chief->illumModel(), SLOT(applyIllum()));
 	connect(illumDock, SIGNAL(illum1Selected(int)),
-			illumm, SLOT(updateIllum1(int))); //FIXME slot name
+			chief->illumModel(), SLOT(updateIllum1(int))); //FIXME slot name
 	connect(illumDock, SIGNAL(illum2Selected(int)),
-			illumm, SLOT(updateIllum2(int)));
+			chief->illumModel(), SLOT(updateIllum2(int)));
 	connect(illumDock, SIGNAL(showIlluminationCurveChanged(bool)),
-			illumm, SLOT(setIlluminationCurveShown(bool)));
+			chief->illumModel(), SLOT(setIlluminationCurveShown(bool)));
 
 	// TODO: connections between illumDock and viewer container
 	connect(illumDock, SIGNAL(showIlluminationCurveChanged(bool)),
-			mw->getViewerContainer(), SLOT(showIlluminationCurve(bool)));
+			chief->mainWindow()->getViewerContainer(), SLOT(showIlluminationCurve(bool)));
 
 
 
 	/* Graph Segmentation Dock */
 
 	// TODO more
-	connect(mw, SIGNAL(graphSegDockVisibleRequested(bool)),
+	connect(chief->mainWindow(), SIGNAL(graphSegDockVisibleRequested(bool)),
 			graphSegDock, SLOT(setVisible(bool)));
 	graphSegDock->setVisible(false); // start hidden
 
 	/* Unsupervised Segmentation Dock */
 #ifdef WITH_SEG_MEANSHIFT
-	int nbands = im->getSize();
+	UsSegmentationModel const*um = chief->usSegmentationModel();
+	int nbands = chief->imageModel()->getSize();
 	usSegDock->setNumBands(nbands);
 	connect(chief, SIGNAL(nSpectralBandsChanged(int)),
 			usSegDock, SLOT(setNumBands(int)));
@@ -136,7 +138,7 @@ void DockController::enableDocks(bool enable, TaskType tt)
 	illumDock->setEnabled((enable || tt == TT_APPLY_ILLUM));
 
 #ifdef WITH_SEG_MEANSHIFT
-	usSegDock->setEnabled(enable && !im->isLimitedMode());
+	usSegDock->setEnabled(enable && !chief->imageModel()->isLimitedMode());
 #endif
 	roiDock->setEnabled(enable || tt == TT_SELECT_ROI);
 

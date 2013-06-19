@@ -22,7 +22,12 @@ class Controller : public QObject
 public:
 	explicit Controller(const std::string &filename, bool limited_mode);
 	~Controller();
-	
+
+	MainWindow* mainWindow() { return window; }
+	ImageModel* imageModel() { return &im; }
+	FalseColorModel* falseColorModel() { return &fm; }
+	IllumModel* illumModel() { return &illumm; }
+	UsSegmentationModel* usSegmentationModel() { return &um; }
 signals:
 	void nSpectralBandsChanged(int);
 	// setGUIEnabled() part of the dock windows
@@ -86,9 +91,6 @@ protected:
 	void initFalseColor();
 	void initIlluminant();
 	void initLabeling(cv::Rect dimensions);
-
-	// init DockController
-	void initDocks();
 
 	// create background thread that processes BackgroundTaskQueue
 	void startQueue();

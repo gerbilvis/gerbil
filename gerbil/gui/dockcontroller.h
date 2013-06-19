@@ -31,13 +31,6 @@ class DockController : public QObject
 	Q_OBJECT
 public:
 	explicit DockController(Controller *chief);
-
-	void setImageModel(ImageModel *im) {this->im = im;}
-	void setIllumModel(IllumModel *illumm) {this->illumm = illumm;}
-	void setFalseColorModel(FalseColorModel *fm) {this->fm =fm;}
-	void setUsSegModel(UsSegmentationModel *um) {this->um = um; }
-	void setLabelingModel(LabelingModel *lm) {this->lm = lm; }
-	void setMainWindow(MainWindow *mw) {this->mw = mw;}
 	void init();
 signals:
 	void rgbRequested();
@@ -51,14 +44,6 @@ protected:
 	void setupDocks();
 
 	Controller* chief;
-	
-	ImageModel *im;
-	IllumModel *illumm;
-	FalseColorModel *fm;
-	UsSegmentationModel *um;
-	LabelingModel *lm;
-
-	MainWindow *mw;
 
 	ROIDock *roiDock;
 	RgbDock *rgbDock;
