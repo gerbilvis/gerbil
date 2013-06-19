@@ -5,17 +5,19 @@
 #include <meanshift_shell.h>
 
 #include "../commandrunner.h"
+#include "../gerbil_gui_debug.h"
 
 UsSegmentationDock::UsSegmentationDock(QWidget *parent) :
-    QDockWidget(parent)
+	QDockWidget(parent),
+	nBandsOld(-1)
 {
 	Ui::UsSegmentationDock::setupUi(this);
-	// FIXME nbands
-	initUi(31);
+
+	initUi();
 }
 
 #ifdef WITH_SEG_MEANSHIFT
-void UsSegmentationDock::initUi(size_t nbands)
+void UsSegmentationDock::initUi()
 {
 	usMethodBox->addItem("Meanshift", 0);
 //#ifdef WITH_SEG_MEDIANSHIFT
@@ -35,8 +37,9 @@ void UsSegmentationDock::initUi(size_t nbands)
 	usBandwidthBox->addItem("fixed");
 	usBandwidthMethodChanged("adaptive");
 
-	usBandsSpinBox->setValue(nbands);
-	usBandsSpinBox->setMaximum(nbands);
+	// will be set later by controller
+	usBandsSpinBox->setValue(-1);
+	usBandsSpinBox->setMaximum(-1);
 
 	// we do not expose the density estimation functionality
 	usInitWidget->hide();
@@ -270,5 +273,26 @@ void UsSegmentationDock::cancel()
 	usProgressWidget->hide();
 	usSettingsWidget->setEnabled(true);
 }
+
+void UsSegmentationDock::setNumBands(int nBands)
+{
+	int nBandsSpin = usBandsSpinBox->value();
+	//GGDBGM(nBandsSpin <<" " << nBands<<" " <<nBandsOld<<endl);
+
+	usBandsSpinBox->setMaximum(nBands);
+
+	// first time init
+	if(nBandsSpin == -1) {
+		usBandsSpinBox->setMinimum(0);
+		usBandsSpinBox->setValue(nBands);
+		nBandsOld = nBands;
+	} else if(nBandsSpin == nBandsOld) {
+		// Track the global number of bands until the user manually changes the
+		// value in the spinbox.
+		usBandsSpinBox->setValue(nBands);
+		nBandsOld = nBands;
+	}
+}
+
 #endif
 

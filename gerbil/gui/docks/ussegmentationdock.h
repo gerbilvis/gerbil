@@ -21,7 +21,6 @@ public:
 	explicit UsSegmentationDock(QWidget *parent = 0);
 	
 	void segmentationApply(std::map<std::string, boost::any> output);
-	void initUi(size_t nbands);
 
 signals:
 	void cancelSegmentationRequested();
@@ -29,6 +28,7 @@ signals:
 								   int numbands,
 								   bool gradient);
 public slots:
+	void setNumBands(int nBands);
 	int updateProgress(int percent);
 	int processResultKL(int k, int l);
 	void processSegmentationCompleted();
@@ -40,8 +40,11 @@ protected slots:
 	void usInitMethodChanged(int idx);
 	void unsupervisedSegCancelled();
 	void usBandwidthMethodChanged(const QString &current);
-private:
+//	void setBandsSpinBoxTouched(bool touched=true);
+protected:
 	void initUi();
+
+	int nBandsOld;
 };
 
 #endif // USSEGMENTATIONDOCK_H

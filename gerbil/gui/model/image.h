@@ -56,7 +56,18 @@ public:
 	explicit ImageModel(BackgroundTaskQueue &queue, bool limitedMode);
 	~ImageModel();
 
+	/** Return the number of bands in the input image.
+	 *
+	 * @note The number of bands in the current ROI image(s) may differ, see
+	 * getNumBandsROI().
+	 */
+	// FIXME: rename getNumBandsFull()
 	size_t getSize();
+	/** Return the number of bands in the multispectral image that is currently
+	 * used as ROI. */
+	// FIXME 2013-06-19 altmann: This is assuming the number of bands is fixed for
+	// all representations. Not sure if this is necessarily true.
+	int getNumBandsROI();
 	const cv::Rect& getROI() { return roi; }
 	SharedMultiImgPtr getImage(representation::t type) { return map[type]->image; }
 	bool isLimitedMode() { return limitedMode; }

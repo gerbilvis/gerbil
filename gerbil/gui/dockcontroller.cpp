@@ -99,6 +99,10 @@ void DockController::setupDocks()
 
 	/* Unsupervised Segmentation Dock */
 #ifdef WITH_SEG_MEANSHIFT
+	int nbands = im->getSize();
+	usSegDock->setNumBands(nbands);
+	connect(chief, SIGNAL(nSpectralBandsChanged(int)),
+			usSegDock, SLOT(setNumBands(int)));
 	connect(um, SIGNAL(progressChanged(int)),
 			usSegDock, SLOT(updateProgress(int)));
 	connect(um, SIGNAL(segmentationCompleted()),

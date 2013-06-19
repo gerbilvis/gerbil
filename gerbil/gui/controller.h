@@ -24,6 +24,7 @@ public:
 	~Controller();
 	
 signals:
+	void nSpectralBandsChanged(int);
 
 public slots:
 	/** requests (from GUI) */
@@ -115,6 +116,10 @@ protected:
 	/* A map of BackgroundTasks (QObject) to representations so that we know
 	 * what representation a signaling task was working on */
 	QMap<QObject*, representation> taskmap;
+
+	// True if GUI needs to be notified about changed number of spectral bands.
+	// See signal nSpectralBandsChanged(int).
+	bool spectralRescaleInProgress;
 };
 
 #endif // CONTROLLER_H

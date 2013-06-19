@@ -44,6 +44,13 @@ size_t ImageModel::getSize()
 	return (*image_lim)->size();
 }
 
+int ImageModel::getNumBandsROI()
+{
+	SharedMultiImgPtr img = map.begin().value()->image;
+	SharedMultiImgBaseGuard guard(*img);
+	return (*img)->size();
+}
+
 cv::Rect ImageModel::loadImage(const std::string &filename)
 {
 	if (limitedMode) {

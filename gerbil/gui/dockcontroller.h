@@ -31,7 +31,6 @@ class DockController : public QObject
 	Q_OBJECT
 public:
 	explicit DockController(Controller *chief);
-	
 
 	void setImageModel(ImageModel *im) {this->im = im;}
 	void setIllumModel(IllumModel *illumm) {this->illumm = illumm;}

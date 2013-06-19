@@ -15,7 +15,8 @@ std::ostream &operator<<(std::ostream& os, const cv::Rect& r)
 }
 
 Controller::Controller(const std::string &filename, bool limited_mode)
-	: im(queue, limited_mode), illumm(this), fm(this, &queue), queuethread(0)
+	: im(queue, limited_mode), illumm(this), fm(this, &queue), queuethread(0),
+	  spectralRescaleInProgress(false)
 {
 	// load image
 	cv::Rect dimensions = im.loadImage(filename);
@@ -213,6 +214,8 @@ void Controller::rescaleSpectrum(size_t bands)
 	// TODO: check
 	window->getViewerContainer()->disconnectAllViewers();
 
+	spectralRescaleInProgress = true;
+
 	updateROI(false, cv::Rect(), bands);
 
 	enableGUILater(true);
@@ -276,7 +279,6 @@ void Controller::updateROI(bool reuse, cv::Rect roi, size_t bands)
 	/*if (type == GRAD) {
 		emit normTargetChanged(true);
 	}*/
-
 }
 
 void Controller::propagateLabelingChange(const cv::Mat1s& labels,
@@ -308,6 +310,7 @@ void Controller::addLabel()
 /** DOCK stuff (to be moved to DockController */
 void Controller::docksUpdateImage(representation::t type, SharedMultiImgPtr image)
 {
+	//GGDBGM(format("type=%1%  *image=%2% width=%3%") %type % (void*)(&**image) %(*image)->width << endl );
 	/* conservative approach: do not initiate calculation tasks here,
 	 * just invalidate data in the GUI (which may lead to initiating tasks)
 	 */
@@ -340,6 +343,13 @@ void Controller::enableGUILater(bool withROI)
 
 void Controller::enableGUINow(bool forreal)
 {
+	if(spectralRescaleInProgress) {
+		// The number of spectral bands changed - let the GUI know about it.
+		int nbands = im.getNumBandsROI();
+		GGDBGM(format("emitting nSpectralBandsChanged(%1%)")%nbands << endl);
+		emit nSpectralBandsChanged(nbands);
+		spectralRescaleInProgress = false;
+	}
 	if (forreal)
 		window->setGUIEnabled(true);
 }
