@@ -24,9 +24,6 @@ BandDock::~BandDock()
 
 void BandDock::initUi()
 {
-	connect(&bv->labelTimer, SIGNAL(timeout()),
-			bv, SLOT(commitLabelChanges()));
-
 	connect(markerSelector, SIGNAL(currentIndexChanged(int)),
 			bv, SLOT(changeCurrentLabel(int)));
 	connect(markerSelector, SIGNAL(currentIndexChanged(int)),
@@ -57,6 +54,8 @@ void BandDock::initUi()
 			this, SIGNAL(graphSegModeToggled(bool)));
 	connect(graphsegButton, SIGNAL(toggled(bool)),
 			bv, SLOT(toggleSeedMode(bool)));
+
+	bv->initUi();
 }
 
 void BandDock::changeBand(QPixmap band, QString desc)

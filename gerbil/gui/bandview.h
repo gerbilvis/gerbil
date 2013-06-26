@@ -22,6 +22,9 @@ class BandView : public ScaledView
 	Q_OBJECT
 public:
 	BandView(QWidget *parent = 0);
+
+	void initUi();
+
 	void paintEvent(QPaintEvent *ev);
 	void leaveEvent(QEvent *ev);
 
@@ -31,12 +34,6 @@ public:
 	bool isSeedModeEnabled() { return seedMode; }
 
 	short getCurLabel() { return curLabel; }
-
-	// TODO: these are accessed by MainWindow
-	QTimer labelTimer;
-	cv::Mat1s seedMap; // mat1s to be consistent with labels matrix
-	cv::Mat1b curMask; // in single label mode contains curlabel members
-
 public slots:
 	void refresh();
 	void changeCurrentLabel(int label);
@@ -110,6 +107,10 @@ private:
 	/// labelColors with user-selected alpha
 	QVector<QColor> labelColorsA;
 	std::pair<QColor, QColor> seedColorsA;
+
+	QTimer labelTimer;
+	cv::Mat1s seedMap; // mat1s to be consistent with labels matrix
+	cv::Mat1b curMask; // in single label mode contains curlabel members
 };
 
 #endif // BANDVIEW_H

@@ -34,6 +34,12 @@ BandView::BandView(QWidget *parent)
 	labelTimer.setInterval(500);
 }
 
+void BandView::initUi()
+{
+	connect(&labelTimer, SIGNAL(timeout()),
+			this, SLOT(commitLabelChanges()));
+}
+
 void BandView::setPixmap(QPixmap p)
 {
 	ScaledView::setPixmap(p);
