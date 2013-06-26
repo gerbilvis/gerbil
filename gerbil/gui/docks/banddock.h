@@ -19,20 +19,30 @@ public:
 	// separate entity and not just a GUI element. This is cleaner than
 	// duplicating the entire BandView interface in BandDock.
 	BandView *bandView() {return bv;}
-
 signals:
-	void graphSegRequested();
+	void graphSegModeToggled(bool enable);
+	/** The label being edited by the user has changed. */
+	void currentLabelChanged(int);
+	// FIXME short -> int (affects LabelModel)
+	// GUI elements should use int consistently. Convert from int to short for
+	// storage if necessary.
+	void clearLabelRequested(short labelIdx);
+	/** User requested a new label (markerSelector) */
+	void newLabelRequested();
 public slots:
 	void changeBand(QPixmap band, QString desc);
-	//void changeCurrentLabel(int);
-	//void toggleShowLabels(bool);
-	//void toggleSingleLabel(bool);
-	//void applyLabelAlpha(int);
-	//void clearLabelOrSeeds();
+
+	void processLabelingChange(const cv::Mat1s &labels, const QVector<QColor> &colors, bool colorsChanged);
+	void processLabelingChange(const cv::Mat1s &labels, const cv::Mat1b &mask);
+
+protected slots:
+	void clearLabelOrSeeds();
+	void processMarkerSelectorIndexChanged(int idx);
 
 protected:
 	void initUi();
-
+	// local copy
+	QVector<QColor> labelColors;
 };
 
 #endif // BANDDOCK_H

@@ -46,7 +46,7 @@ public slots:
 	void toggleLabels(bool toggle);
 
 	// need additional label color
-	void addLabel();
+	//void addLabel();
 	// load a labeling from file
 	void loadLabeling(const QString &filename = QString())
 	{ lm.loadLabeling(filename); }

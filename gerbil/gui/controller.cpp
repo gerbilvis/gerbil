@@ -151,9 +151,10 @@ void Controller::initLabeling(cv::Rect dimensions)
 	connect(&lm, SIGNAL(partialLabelUpdate(const cv::Mat1s&,const cv::Mat1b&)),
 			window->getViewerContainer(),
 			SLOT(updateLabelsPartially(const cv::Mat1s&,const cv::Mat1b&)));
-	connect(&lm, SIGNAL(partialLabelUpdate(const cv::Mat1s&,const cv::Mat1b&)),
-			window,
-			SLOT(processLabelingChange(const cv::Mat1s&,const cv::Mat1b&)));
+	//old, now im -> bandDock
+//	connect(&lm, SIGNAL(partialLabelUpdate(const cv::Mat1s&,const cv::Mat1b&)),
+//			window,
+//			SLOT(processLabelingChange(const cv::Mat1s&,const cv::Mat1b&)));
 }
 
 void Controller::spawnROI(const cv::Rect &roi)
@@ -277,7 +278,8 @@ void Controller::propagateLabelingChange(const cv::Mat1s& labels,
 										 const QVector<QColor> &colors,
 										 bool colorsChanged)
 {
-	window->processLabelingChange(labels, colors, colorsChanged);
+	// -> now a slot in bandDock (lm -> banddock)
+	//window->processLabelingChange(labels, colors, colorsChanged);
 
 	bool grandUpdate = !labels.empty() || colorsChanged;
 
@@ -291,13 +293,13 @@ void Controller::propagateLabelingChange(const cv::Mat1s& labels,
 		enableGUILater();
 }
 
-void Controller::addLabel()
-{
-	int index = lm.addLabel();
+//void Controller::addLabel()
+//{
+//	int index = lm.addLabel();
 
-	// select our new label for convenience
-	window->selectLabel(index);
-}
+//	// select our new label for convenience
+//	window->selectLabel(index);
+//}
 
 /** DOCK stuff (to be moved to DockController */
 void Controller::docksUpdateImage(representation::t type, SharedMultiImgPtr image)

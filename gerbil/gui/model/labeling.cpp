@@ -3,6 +3,8 @@
 
 #include <qtopencv.h>
 
+#include "../gerbil_gui_debug.h"
+
 LabelingModel::LabelingModel()
 {
 }
@@ -72,7 +74,8 @@ void LabelingModel::setLabelColors(const std::vector<cv::Vec3b> &newColors,
 
 int LabelingModel::addLabel()
 {
-	// we alwys have at least one background color
+	//GGDBG_CALL();
+	// we always have at least one background color
 	int index = std::max(colors.count(), 1);
 
 	// increment colors by 1

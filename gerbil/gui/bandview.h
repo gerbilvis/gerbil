@@ -103,7 +103,7 @@ private:
 	/// interpret input as segmentation seeds
 	bool seedMode;
 	
-	/// local copy of label colors
+	// local copy of label colors
 	QVector<QColor> labelColors;
 	/// user-selected alpha
 	int labelAlpha;

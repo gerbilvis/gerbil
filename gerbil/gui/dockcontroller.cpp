@@ -85,6 +85,12 @@ void DockController::setupDocks()
 //			this, SLOT(docksUpdateImage(representation::t,SharedMultiImgPtr)));
 
 	/* Band Dock */
+
+	connect(chief->labelingModel(), SIGNAL(partialLabelUpdate(const cv::Mat1s&,const cv::Mat1b&)),
+			bandDock, SLOT(processLabelingChange(cv::Mat1s,cv::Mat1b)));
+	connect(chief->labelingModel(), SIGNAL(newLabeling(cv::Mat1s,QVector<QColor>,bool)),
+			bandDock, SLOT(processLabelingChange(cv::Mat1s,QVector<QColor>,bool)));
+
 	connect(bandDock->bandView(), SIGNAL(alteredLabels(cv::Mat1s,cv::Mat1b)),
 			chief->labelingModel(), SLOT(alterPixels(cv::Mat1s,cv::Mat1b)));
 	connect(bandDock->bandView(), SIGNAL(newLabeling(cv::Mat1s)),
@@ -96,6 +102,15 @@ void DockController::setupDocks()
 			chief->mainWindow()->getViewerContainer(), SIGNAL(viewersOverlay(int,int)));
 	connect(bandDock->bandView(), SIGNAL(newSingleLabel(short)),
 			chief->mainWindow()->getViewerContainer(), SIGNAL(viewersHighlight(short)));
+	connect(bandDock, SIGNAL(currentLabelChanged(int)),
+			chief->mainWindow(), SLOT(setCurrentLabel(int)));
+	// alterLabel(short) -> clear label
+	connect(bandDock, SIGNAL(clearLabelRequested(short)),
+			chief->labelingModel(), SLOT(alterLabel(short)));
+	connect(bandDock, SIGNAL(newLabelRequested()),
+			chief->labelingModel(), SLOT(addLabel()));
+	connect(bandDock, SIGNAL(graphSegModeToggled(bool)),
+			graphSegDock, SLOT(setVisible(bool)));
 
 	connect(chief->mainWindow()->getViewerContainer(), SIGNAL(drawOverlay(const cv::Mat1b&)),
 		bandDock->bandView(), SLOT(drawOverlay(const cv::Mat1b&)));
@@ -141,8 +156,9 @@ void DockController::setupDocks()
 	/* Graph Segmentation Dock */
 
 	// TODO more
-	connect(chief->mainWindow(), SIGNAL(graphSegDockVisibleRequested(bool)),
-			graphSegDock, SLOT(setVisible(bool)));
+	// now signal from bandDock, see above
+//	connect(chief->mainWindow(), SIGNAL(graphSegDockVisibleRequested(bool)),
+//			graphSegDock, SLOT(setVisible(bool)));
 	graphSegDock->setVisible(false); // start hidden
 
 	/* Unsupervised Segmentation Dock */

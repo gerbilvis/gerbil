@@ -60,14 +60,14 @@ void MainWindow::clearLabelOrSeeds()
 
 void MainWindow::addToLabel()
 {
-//	cv::Mat1b mask = viewerContainer->getHighlightMask();
-//	emit alterLabelRequested(bandView->getCurLabel(), mask, false);
+	cv::Mat1b mask = viewerContainer->getHighlightMask();
+	emit alterLabelRequested(currentLabel, mask, false);
 }
 
 void MainWindow::remFromLabel()
 {
-//	cv::Mat1b mask = viewerContainer->getHighlightMask();
-//	emit alterLabelRequested(bandView->getCurLabel(), mask, true);
+	cv::Mat1b mask = viewerContainer->getHighlightMask();
+	emit alterLabelRequested(currentLabel, mask, true);
 }
 
 // todo: move to the new bandDock
@@ -78,34 +78,34 @@ void MainWindow::changeBand(QPixmap band, QString desc) {
 //	bandDock->setWindowTitle(desc);
 }
 
-// todo: move to the new bandDock
-void MainWindow::processLabelingChange(const cv::Mat1s &labels,
-									   const QVector<QColor> &colors,
-									   bool colorsChanged)
-{
-//	if (!colors.empty()) {
-//		// use colors for our awesome label menu (rebuild everything)
-//		markerSelector->clear();
-//		for (int i = 1; i < colors.size(); ++i) // 0 is index for unlabeled
-//		{
-//			markerSelector->addItem(colorIcon(colors.at(i)), "");
-//		}
-//		markerSelector->addItem(QIcon(":/toolbar/add"), "");
-//	}
+// -> bandDock
+//void MainWindow::processLabelingChange(const cv::Mat1s &labels,
+//									   const QVector<QColor> &colors,
+//									   bool colorsChanged)
+//{
+////	if (!colors.empty()) {
+////		// use colors for our awesome label menu (rebuild everything)
+////		markerSelector->clear();
+////		for (int i = 1; i < colors.size(); ++i) // 0 is index for unlabeled
+////		{
+////			markerSelector->addItem(colorIcon(colors.at(i)), "");
+////		}
+////		markerSelector->addItem(QIcon(":/toolbar/add"), "");
+////	}
 
-//	// tell bandview about the update as well
-//	bandView->updateLabeling(labels, colors, colorsChanged);
-}
+////	// tell bandview about the update as well
+////	bandView->updateLabeling(labels, colors, colorsChanged);
+//}
 
-// todo: move to the new bandDock
-void MainWindow::processLabelingChange(const cv::Mat1s &labels,
-									   const cv::Mat1b &mask)
-{
-//	// tell bandview about the update
-//	bandView->updateLabeling(labels, mask);
-}
+//->  bandDock
+//void MainWindow::processLabelingChange(const cv::Mat1s &labels,
+//									   const cv::Mat1b &mask)
+//{
+////	// tell bandview about the update
+////	bandView->updateLabeling(labels, mask);
+//}
 
-// todo: move to the new bandDock
+// -> BandDock
 void MainWindow::selectLabel(int index)
 {
 //	// markerSelector has no label zero, therefore off by one
@@ -177,14 +177,21 @@ void MainWindow::initSignals(Controller *chief)
 
 
 	/* labeling manipulation triggers */
+//	-> BandDock
 //	connect(clearButton, SIGNAL(clicked()),
 //			this, SLOT(clearLabelOrSeeds()));
 
+
+// ???
+// This should be handled by BandView _without_ using a slot in Controller
+// New:
+//	BandDock::newLabel() -> LabelModel::addLabel()
+//  LabelingModel will emit newLabeling and markerSelector will be rebuild.
 //	connect(bandView, SIGNAL(newLabel()),
 //			chief, SLOT(addLabel()));
 
 
-	// labeldock
+// TODO LabelDock
 //	connect(lLoadButton, SIGNAL(clicked()),
 //			chief, SLOT(loadLabeling()));
 //	connect(lSaveButton, SIGNAL(clicked()),
@@ -695,13 +702,6 @@ void MainWindow::screenshot()
 
 	IOGui io("Screenshot File", "screenshot", this);
 	io.writeFile(QString(), output);
-}
-
-QIcon MainWindow::colorIcon(const QColor &color)
-{
-	QPixmap pm(32, 32);
-	pm.fill(color);
-	return QIcon(pm);
 }
 
 void MainWindow::tabifyDockWidgets(ROIDock *roiDock, RgbDock *rgbDock, IllumDock *illumDock,

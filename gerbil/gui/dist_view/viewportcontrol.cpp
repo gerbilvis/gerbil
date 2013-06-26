@@ -4,6 +4,14 @@
 
 #include <QGraphicsItem>
 
+/** Return a 32x32px icon filled with color. */
+static QIcon colorIcon(const QColor &color)
+{
+	QPixmap pm(32, 32);
+	pm.fill(color);
+	return QIcon(pm);
+}
+
 ViewportControl::ViewportControl(multi_img_viewer *parent) :
 	holder(parent), viewport(0),
 	limiterMenu((QWidget*)holder), // menu needs parent outside GraphicsScene
@@ -73,7 +81,7 @@ void ViewportControl::updateLabelColors(QVector<QColor> colors)
 	tmp->setData(-1);
 	limiterMenu.addSeparator();
 	for (int i = 1; i < labelColors.size(); ++i) {
-		tmp = limiterMenu.addAction(MainWindow::colorIcon(labelColors[i]),
+		tmp = limiterMenu.addAction(colorIcon(labelColors[i]),
 													  "Limit by label");
 		tmp->setData(i);
 	}

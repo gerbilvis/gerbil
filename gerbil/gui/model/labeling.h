@@ -13,9 +13,6 @@ class LabelingModel : public QObject
 public:
 	explicit LabelingModel();
 	
-	// increment number of available labels
-	int addLabel();
-
 	void loadLabeling(const QString &filename = QString());
 	void saveLabeling(const QString &filename = QString());
 
@@ -31,7 +28,8 @@ public slots:
 					bool negative = false);
 	// change label of pixels in mask
 	void alterPixels(const cv::Mat1s &newLabels, const cv::Mat1b &mask);
-
+	// increment number of available labels
+	int addLabel();
 signals:
 	/** entirely new label matrix, or different label colors, or both
 	 * @arg changedColors true if previously existing colors changed

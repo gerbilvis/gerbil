@@ -55,8 +55,6 @@ public:
 	// TODO: used by Controller; hack until we have a resp. vc-controller
 	ViewerContainer* getViewerContainer() { return viewerContainer; }
 
-	static QIcon colorIcon(const QColor& color);
-
 	//TODO make this complete
 	// need to remove all Docks from mainwindow.ui
 	void tabifyDockWidgets(ROIDock *roiDock,
@@ -73,14 +71,16 @@ public slots:
 
 
 	// TODO -> DockController
-	void processLabelingChange(const cv::Mat1s &labels,
-							   const QVector<QColor>& colors = QVector<QColor>(),
-							   bool colorsChanged = false);
+//	void processLabelingChange(const cv::Mat1s &labels,
+//							   const QVector<QColor>& colors = QVector<QColor>(),
+//							   bool colorsChanged = false);
 
 	// TODO -> DockController
-	void processLabelingChange(const cv::Mat1s &labels, const cv::Mat1b &mask);
+	//void processLabelingChange(const cv::Mat1s &labels, const cv::Mat1b &mask);
 
 	//	void finishGraphSeg(bool success);
+
+	void setCurrentLabel(int cl) { currentLabel = cl;}
 
 	// we probably remove this functionality: void reshapeDock(bool floating);
 	void clearLabelOrSeeds();
@@ -163,6 +163,8 @@ private:
 	bool limitedMode;
 	// full image dimensions, used in loadSeeds()
 	cv::Rect dimensions;
+	// the index of the label currently being edited
+	int currentLabel;
 };
 
 #endif // MAINWINDOW_H

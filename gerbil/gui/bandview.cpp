@@ -18,6 +18,8 @@
 #include <tbb/blocked_range2d.h>
 #include <tbb/parallel_for.h>
 
+#include "gerbil_gui_debug.h"
+
 BandView::BandView(QWidget *parent)
 	: ScaledView(parent),
 	  cacheValid(false), cursor(-1, -1), lastcursor(-1, -1), curLabel(1),
@@ -121,7 +123,9 @@ void BandView::paintEvent(QPaintEvent *ev)
 	painter.drawPixmap(damaged, cachedPixmap, damaged);
 
 	// draw current cursor
-	if (!singleLabel && (curLabel < labelColors.count())) {
+	if (!singleLabel && curLabel>=0 && (curLabel < labelColors.count())) {
+//		GGDBGM(boost::format("count=%1% curLabel=%2%")
+//			  %labelColors.count()% curLabel << endl);
 		QPen pen(seedMode ? Qt::yellow : labelColors.at(curLabel));
 		pen.setWidth(0);
 		painter.setPen(pen);
@@ -428,21 +432,7 @@ void BandView::leaveEvent(QEvent *ev)
 
 void BandView::changeCurrentLabel(int label)
 {
-	if (label < 0)	// empty selection, during initialization
-		return;
-	label += 1; // we start with 1, combobox with 0
-
-	if (labelColors.count() && label == labelColors.count()) {
-		// need to create label color first
-		/* as this can eventually flush our uncommited labels, we commit them
-		 * first.
-		 */
-		commitLabelChanges();
-		emit newLabel();
-	} else {
-		// in case of new label creation, the new label will be selected by GUI
-		curLabel = label;
-	}
+	curLabel = label;
 }
 
 void BandView::toggleSeedMode(bool enabled)
