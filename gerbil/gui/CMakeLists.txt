@@ -38,6 +38,9 @@ vole_compile_library(
 	tasks/normrangetbb
 	tasks/normrangecuda
 
+	docks/banddock
+	docks/labelingdock
+	docks/normdock
 	docks/dockwidget
 	docks/roidock
 	docks/illumdock
@@ -64,6 +67,9 @@ vole_moc_library(
 	dist_view/viewport.h
 	dist_view/viewportcontrol.h
 
+	docks/banddock.h
+	docks/labelingdock.h
+	docks/normdock.h
 	docks/dockwidget.h
 	docks/roidock.h
 	docks/illumdock.h
@@ -87,6 +93,9 @@ vole_ui_library(
 	docks/illumdock.ui
 	docks/graphsegmentationdock.ui
 	docks/ussegmentationdock.ui
+	docks/banddock.ui
+	docks/labelingdock.ui
+	docks/normdock.ui
 )
 
 vole_add_resources(

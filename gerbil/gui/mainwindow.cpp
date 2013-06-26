@@ -51,31 +51,31 @@ MainWindow::MainWindow(bool limitedMode)
 // todo: move to the new bandDock
 void MainWindow::clearLabelOrSeeds()
 {
-	if (bandView->isSeedModeEnabled()) {
-		bandView->clearSeeds();
-	} else {
-		emit clearLabelRequested(bandView->getCurLabel());
-	}
+//	if (bandView->isSeedModeEnabled()) {
+//		bandView->clearSeeds();
+//	} else {
+//		emit clearLabelRequested(bandView->getCurLabel());
+//	}
 }
 
 void MainWindow::addToLabel()
 {
-	cv::Mat1b mask = viewerContainer->getHighlightMask();
-	emit alterLabelRequested(bandView->getCurLabel(), mask, false);
+//	cv::Mat1b mask = viewerContainer->getHighlightMask();
+//	emit alterLabelRequested(bandView->getCurLabel(), mask, false);
 }
 
 void MainWindow::remFromLabel()
 {
-	cv::Mat1b mask = viewerContainer->getHighlightMask();
-	emit alterLabelRequested(bandView->getCurLabel(), mask, true);
+//	cv::Mat1b mask = viewerContainer->getHighlightMask();
+//	emit alterLabelRequested(bandView->getCurLabel(), mask, true);
 }
 
 // todo: move to the new bandDock
 void MainWindow::changeBand(QPixmap band, QString desc)
 {
-	bandView->setEnabled(true);
-	bandView->setPixmap(band);
-	bandDock->setWindowTitle(desc);
+//	bandView->setEnabled(true);
+//	bandView->setPixmap(band);
+//	bandDock->setWindowTitle(desc);
 }
 
 // todo: move to the new bandDock
@@ -83,33 +83,33 @@ void MainWindow::processLabelingChange(const cv::Mat1s &labels,
 									   const QVector<QColor> &colors,
 									   bool colorsChanged)
 {
-	if (!colors.empty()) {
-		// use colors for our awesome label menu (rebuild everything)
-		markerSelector->clear();
-		for (int i = 1; i < colors.size(); ++i) // 0 is index for unlabeled
-		{
-			markerSelector->addItem(colorIcon(colors.at(i)), "");
-		}
-		markerSelector->addItem(QIcon(":/toolbar/add"), "");
-	}
+//	if (!colors.empty()) {
+//		// use colors for our awesome label menu (rebuild everything)
+//		markerSelector->clear();
+//		for (int i = 1; i < colors.size(); ++i) // 0 is index for unlabeled
+//		{
+//			markerSelector->addItem(colorIcon(colors.at(i)), "");
+//		}
+//		markerSelector->addItem(QIcon(":/toolbar/add"), "");
+//	}
 
-	// tell bandview about the update as well
-	bandView->updateLabeling(labels, colors, colorsChanged);
+//	// tell bandview about the update as well
+//	bandView->updateLabeling(labels, colors, colorsChanged);
 }
 
 // todo: move to the new bandDock
 void MainWindow::processLabelingChange(const cv::Mat1s &labels,
 									   const cv::Mat1b &mask)
 {
-	// tell bandview about the update
-	bandView->updateLabeling(labels, mask);
+//	// tell bandview about the update
+//	bandView->updateLabeling(labels, mask);
 }
 
 // todo: move to the new bandDock
 void MainWindow::selectLabel(int index)
 {
-	// markerSelector has no label zero, therefore off by one
-	markerSelector->setCurrentIndex(index - 1);
+//	// markerSelector has no label zero, therefore off by one
+//	markerSelector->setCurrentIndex(index - 1);
 }
 
 void MainWindow::initUI(cv::Rect dim, size_t size)
@@ -148,38 +148,38 @@ void MainWindow::initSignals(Controller *chief)
 //	connect(bandDock, SIGNAL(topLevelChanged(bool)),
 //			this, SLOT(reshapeDock(bool)));
 
-	connect(markerSelector, SIGNAL(currentIndexChanged(int)),
-			bandView, SLOT(changeCurrentLabel(int)));
+//	connect(markerSelector, SIGNAL(currentIndexChanged(int)),
+//			bandView, SLOT(changeCurrentLabel(int)));
 
-	connect(ignoreButton, SIGNAL(toggled(bool)),
-			markButton, SLOT(setDisabled(bool)));
-	connect(ignoreButton, SIGNAL(toggled(bool)),
-			nonmarkButton, SLOT(setDisabled(bool)));
-	connect(ignoreButton, SIGNAL(toggled(bool)),
-			singleButton, SLOT(setDisabled(bool)));
-	connect(ignoreButton, SIGNAL(toggled(bool)),
-			bandView, SLOT(toggleShowLabels(bool)));
-	connect(singleButton, SIGNAL(toggled(bool)),
-			bandView, SLOT(toggleSingleLabel(bool)));
-	connect(alphaSlider, SIGNAL(valueChanged(int)),
-			bandView, SLOT(applyLabelAlpha(int)));
+//	connect(ignoreButton, SIGNAL(toggled(bool)),
+//			markButton, SLOT(setDisabled(bool)));
+//	connect(ignoreButton, SIGNAL(toggled(bool)),
+//			nonmarkButton, SLOT(setDisabled(bool)));
+//	connect(ignoreButton, SIGNAL(toggled(bool)),
+//			singleButton, SLOT(setDisabled(bool)));
+//	connect(ignoreButton, SIGNAL(toggled(bool)),
+//			bandView, SLOT(toggleShowLabels(bool)));
+//	connect(singleButton, SIGNAL(toggled(bool)),
+//			bandView, SLOT(toggleSingleLabel(bool)));
+//	connect(alphaSlider, SIGNAL(valueChanged(int)),
+//			bandView, SLOT(applyLabelAlpha(int)));
 
 
 	/* labeling manipulation triggers */
-	connect(clearButton, SIGNAL(clicked()),
-			this, SLOT(clearLabelOrSeeds()));
+//	connect(clearButton, SIGNAL(clicked()),
+//			this, SLOT(clearLabelOrSeeds()));
 
-	connect(bandView, SIGNAL(newLabel()),
-			chief, SLOT(addLabel()));
+//	connect(bandView, SIGNAL(newLabel()),
+//			chief, SLOT(addLabel()));
 
 
 	// labeldock
-	connect(lLoadButton, SIGNAL(clicked()),
-			chief, SLOT(loadLabeling()));
-	connect(lSaveButton, SIGNAL(clicked()),
-			chief, SLOT(saveLabeling()));
-	connect(lLoadSeedButton, SIGNAL(clicked()),
-			this, SLOT(loadSeeds()));
+//	connect(lLoadButton, SIGNAL(clicked()),
+//			chief, SLOT(loadLabeling()));
+//	connect(lSaveButton, SIGNAL(clicked()),
+//			chief, SLOT(saveLabeling()));
+//	connect(lLoadSeedButton, SIGNAL(clicked()),
+//			this, SLOT(loadSeeds()));
 
 
 	// for viewports
@@ -192,29 +192,32 @@ void MainWindow::initSignals(Controller *chief)
 	connect(remButton, SIGNAL(clicked()),
 			this, SLOT(remFromLabel()));
 
-	connect(viewerContainer, SIGNAL(drawOverlay(const cv::Mat1b&)),
-			bandView, SLOT(drawOverlay(const cv::Mat1b&)));
+// TODO
+//	connect(viewerContainer, SIGNAL(drawOverlay(const cv::Mat1b&)),
+//			bandView, SLOT(drawOverlay(const cv::Mat1b&)));
 
 	// todo: we connect it here as we disconnect it here as well. we will change
 	// that.
-	connect(&bandView->labelTimer, SIGNAL(timeout()),
-			bandView, SLOT(commitLabelChanges()));
+	// TODO
+//	connect(&bandView->labelTimer, SIGNAL(timeout()),
+//			bandView, SLOT(commitLabelChanges()));
 
-	connect(bandView, SIGNAL(alteredLabels(const cv::Mat1s&, const cv::Mat1b&)),
-			this, SIGNAL(alterLabelingRequested(cv::Mat1s,cv::Mat1b)));
-	connect(bandView, SIGNAL(newLabeling(const cv::Mat1s&)),
-			this, SIGNAL(newLabelingRequested(cv::Mat1s)));
+//	connect(bandView, SIGNAL(alteredLabels(const cv::Mat1s&, const cv::Mat1b&)),
+//			this, SIGNAL(alterLabelingRequested(cv::Mat1s,cv::Mat1b)));
+//	connect(bandView, SIGNAL(newLabeling(const cv::Mat1s&)),
+//			this, SIGNAL(newLabelingRequested(cv::Mat1s)));
 
 	/* when applybutton is pressed, bandView commits full label matrix */
-	connect(applyButton, SIGNAL(clicked()),
-			bandView, SLOT(commitLabels()));
+//	connect(applyButton, SIGNAL(clicked()),
+//			bandView, SLOT(commitLabels()));
 
-	connect(bandView, SIGNAL(killHover()),
-			viewerContainer, SIGNAL(viewportsKillHover()));
-	connect(bandView, SIGNAL(pixelOverlay(int, int)),
-			viewerContainer, SIGNAL(viewersOverlay(int, int)));
-	connect(bandView, SIGNAL(newSingleLabel(short)),
-			viewerContainer, SIGNAL(viewersHighlight(short)));
+
+//	connect(bandView, SIGNAL(killHover()),
+//			viewerContainer, SIGNAL(viewportsKillHover()));
+//	connect(bandView, SIGNAL(pixelOverlay(int, int)),
+//			viewerContainer, SIGNAL(viewersOverlay(int, int)));
+//	connect(bandView, SIGNAL(newSingleLabel(short)),
+//			viewerContainer, SIGNAL(viewersHighlight(short)));
 
 	connect(markButton, SIGNAL(toggled(bool)),
 			viewerContainer, SIGNAL(viewersToggleLabeled(bool)));
@@ -252,10 +255,11 @@ void MainWindow::initSignals(Controller *chief)
 //	connect(graphsegButton, SIGNAL(toggled(bool)),
 //			bandView, SLOT(toggleSeedMode(bool)));
 // new
-	connect(graphsegButton, SIGNAL(toggled(bool)),
-			this, SIGNAL(graphSegDockVisibleRequested(bool)));
-	connect(graphsegButton, SIGNAL(toggled(bool)),
-			bandView, SLOT(toggleSeedMode(bool)));
+	// TODO BandDock
+//	connect(graphsegButton, SIGNAL(toggled(bool)),
+//			this, SIGNAL(graphSegDockVisibleRequested(bool)));
+//	connect(graphsegButton, SIGNAL(toggled(bool)),
+//			bandView, SLOT(toggleSeedMode(bool)));
 }
 
 void MainWindow::setGUIEnabled(bool enable, TaskType tt)
@@ -267,24 +271,25 @@ void MainWindow::setGUIEnabled(bool enable, TaskType tt)
 
 	viewerContainer->setGUIEnabled(enable, tt);
 
-	applyButton->setEnabled(enable);
-	clearButton->setEnabled(enable);
-	bandView->setEnabled(enable);
+	// TODO
+//	applyButton->setEnabled(enable);
+//	clearButton->setEnabled(enable);
+//	bandView->setEnabled(enable);
 
 	// TODO -> NormDock
-	normDock->setEnabled((enable || tt == TT_NORM_RANGE || tt == TT_CLAMP_RANGE_IMG || tt == TT_CLAMP_RANGE_GRAD) && !limitedMode);
-	normIButton->setEnabled(enable || tt == TT_NORM_RANGE || tt == TT_CLAMP_RANGE_IMG);
-	normGButton->setEnabled(enable || tt == TT_NORM_RANGE || tt == TT_CLAMP_RANGE_GRAD);
-	normModeBox->setEnabled(enable);
-	normApplyButton->setEnabled(enable || tt == TT_NORM_RANGE);
-	normClampButton->setEnabled(enable || tt == TT_CLAMP_RANGE_IMG || tt == TT_CLAMP_RANGE_GRAD);
+//	normDock->setEnabled((enable || tt == TT_NORM_RANGE || tt == TT_CLAMP_RANGE_IMG || tt == TT_CLAMP_RANGE_GRAD) && !limitedMode);
+//	normIButton->setEnabled(enable || tt == TT_NORM_RANGE || tt == TT_CLAMP_RANGE_IMG);
+//	normGButton->setEnabled(enable || tt == TT_NORM_RANGE || tt == TT_CLAMP_RANGE_GRAD);
+//	normModeBox->setEnabled(enable);
+//	normApplyButton->setEnabled(enable || tt == TT_NORM_RANGE);
+//	normClampButton->setEnabled(enable || tt == TT_CLAMP_RANGE_IMG || tt == TT_CLAMP_RANGE_GRAD);
 
 	// TODO -> BandDock
-	if (tt == TT_SELECT_ROI && (!enable)) {
-		/* TODO: check if this is enough to make sure no label changes
-		 * happen during ROI recomputation */
-		bandView->commitLabelChanges();
-	}
+//	if (tt == TT_SELECT_ROI && (!enable)) {
+//		/* TODO: check if this is enough to make sure no label changes
+//		 * happen during ROI recomputation */
+//		bandView->commitLabelChanges();
+//	}
 }
 
 // TODO: controller
@@ -296,25 +301,26 @@ void MainWindow::bandsSliderMoved(int b)
 	}
 }
 
+// TODO
 void MainWindow::initNormalizationUI()
 {
-	normModeBox->addItem("Observed");
-	normModeBox->addItem("Theoretical");
-	normModeBox->addItem("Fixed");
-	connect(normIButton, SIGNAL(toggled(bool)),
-			this, SLOT(normTargetChanged()));
-	connect(normGButton, SIGNAL(toggled(bool)),
-			this, SLOT(normTargetChanged()));
-	connect(normModeBox, SIGNAL(currentIndexChanged(int)),
-			this, SLOT(normModeSelected(int)));
-	connect(normMinBox, SIGNAL(valueChanged(double)),
-			this, SLOT(normModeFixed()));
-	connect(normMaxBox, SIGNAL(valueChanged(double)),
-			this, SLOT(normModeFixed()));
-	connect(normApplyButton, SIGNAL(clicked()),
-			this, SLOT(applyNormUserRange()));
-	connect(normClampButton, SIGNAL(clicked()),
-			this, SLOT(clampNormUserRange()));
+//	normModeBox->addItem("Observed");
+//	normModeBox->addItem("Theoretical");
+//	normModeBox->addItem("Fixed");
+//	connect(normIButton, SIGNAL(toggled(bool)),
+//			this, SLOT(normTargetChanged()));
+//	connect(normGButton, SIGNAL(toggled(bool)),
+//			this, SLOT(normTargetChanged()));
+//	connect(normModeBox, SIGNAL(currentIndexChanged(int)),
+//			this, SLOT(normModeSelected(int)));
+//	connect(normMinBox, SIGNAL(valueChanged(double)),
+//			this, SLOT(normModeFixed()));
+//	connect(normMaxBox, SIGNAL(valueChanged(double)),
+//			this, SLOT(normModeFixed()));
+//	connect(normApplyButton, SIGNAL(clicked()),
+//			this, SLOT(applyNormUserRange()));
+//	connect(normClampButton, SIGNAL(clicked()),
+//			this, SLOT(clampNormUserRange()));
 }
 
 void MainWindow::normTargetChanged(bool usecurrent)
@@ -395,8 +401,8 @@ void MainWindow::normModeSelected(int mode, bool targetchange, bool usecurrent)
 
 void MainWindow::normModeFixed()
 {
-	if (normModeBox->currentIndex() != 2)
-		normModeBox->setCurrentIndex(2);
+//	if (normModeBox->currentIndex() != 2)
+//		normModeBox->setCurrentIndex(2);
 }
 
 void MainWindow::applyNormUserRange()
@@ -652,20 +658,20 @@ void MainWindow::clampNormUserRange()
 
 void MainWindow::loadSeeds()
 {
-	IOGui io("Seed Image File", "seed image", this);
-	cv::Mat1s seeding = io.readFile(QString(), 0,
-									dimensions.height, dimensions.width);
-	if (seeding.empty())
-		return;
+//	IOGui io("Seed Image File", "seed image", this);
+//	cv::Mat1s seeding = io.readFile(QString(), 0,
+//									dimensions.height, dimensions.width);
+//	if (seeding.empty())
+//		return;
 
-	bandView->seedMap = seeding;
+//	bandView->seedMap = seeding;
 
-	// now make sure we are in seed mode
-	if (graphsegButton->isChecked()) {
-		bandView->refresh();
-	} else {
-		graphsegButton->toggle();
-	}
+//	// now make sure we are in seed mode
+//	if (graphsegButton->isChecked()) {
+//		bandView->refresh();
+//	} else {
+//		graphsegButton->toggle();
+//	}
 }
 
 void MainWindow::screenshot()
@@ -691,17 +697,7 @@ void MainWindow::tabifyDockWidgets(ROIDock *roiDock, RgbDock *rgbDock, IllumDock
 		GraphSegmentationDock *graphSegDock, 
 		UsSegmentationDock *usSegDock)
 {
-	// FIXME altmann: IMHO dock arrangement is borked right now.
-	// need to decide what goes where.
 
-	// dock arrangement
-	tabifyDockWidget(roiDock, rgbDock);
-#ifdef WITH_SEG_MEANSHIFT
-	tabifyDockWidget(roiDock, usSegDock);
-#endif
-	roiDock->raise();
-	tabifyDockWidget(labelDock, illumDock);
-	tabifyDockWidget(labelDock, normDock);
 }
 
 void MainWindow::openContextMenu()

@@ -18,6 +18,9 @@ class Controller;
 
 class MainWindow;
 
+class BandDock;
+class LabelingDock;
+class NormDock;
 class ROIDock;
 class RgbDock;
 class IllumDock;
@@ -45,6 +48,9 @@ protected:
 
 	Controller* chief;
 
+	BandDock *bandDock;
+	LabelingDock *labelingDock;
+	NormDock *normDock;
 	ROIDock *roiDock;
 	RgbDock *rgbDock;
 	IllumDock *illumDock;

@@ -4,6 +4,9 @@
 
 #include "mainwindow.h"
 
+#include "docks/banddock.h"
+#include "docks/labelingdock.h"
+#include "docks/normdock.h"
 #include "docks/rgbdock.h"
 #include "docks/roidock.h"
 #include "docks/illumdock.h"
@@ -22,10 +25,12 @@ void DockController::init()
 	createDocks();
 	setupDocks();
 
-	// FIXME: Put graphSegDock below band view dock.
-	// Can't do this here until *all* docks are added here instead of being created
-	// in the mainwindow ui file. (well we could drag programmatically -> arghl).
+	//TODO: re-implement bandDock, labelingDock and NormDock
+
+	chief->mainWindow()->addDockWidget(Qt::RightDockWidgetArea, bandDock);
 	chief->mainWindow()->addDockWidget(Qt::RightDockWidgetArea, graphSegDock);
+	chief->mainWindow()->addDockWidget(Qt::RightDockWidgetArea, labelingDock);
+	chief->mainWindow()->addDockWidget(Qt::RightDockWidgetArea, normDock);
 #ifdef WITH_SEG_MEANSHIFT
 	chief->mainWindow()->addDockWidget(Qt::RightDockWidgetArea, usSegDock);
 	usSegDock->setVisible(false);
@@ -33,6 +38,16 @@ void DockController::init()
 	chief->mainWindow()->addDockWidget(Qt::RightDockWidgetArea, rgbDock);
 	chief->mainWindow()->addDockWidget(Qt::RightDockWidgetArea, roiDock);
 	chief->mainWindow()->addDockWidget(Qt::RightDockWidgetArea, illumDock);
+
+	// dock arrangement
+	chief->mainWindow()->tabifyDockWidget(roiDock, rgbDock);
+#ifdef WITH_SEG_MEANSHIFT
+	chief->mainWindow()->tabifyDockWidget(roiDock, usSegDock);
+#endif
+	roiDock->raise();
+
+	chief->mainWindow()->tabifyDockWidget(labelingDock, illumDock);
+	chief->mainWindow()->tabifyDockWidget(labelingDock, normDock);
 
 	chief->imageModel()->computeFullRgb();
 
@@ -47,6 +62,9 @@ void DockController::init()
 void DockController::createDocks()
 {
 	assert(NULL != chief->mainWindow());
+	bandDock = new BandDock(chief->mainWindow());
+	labelingDock = new LabelingDock(chief->mainWindow());
+	normDock = new NormDock(chief->mainWindow());
 	roiDock = new ROIDock(chief->mainWindow());
 	illumDock = new IllumDock(chief->mainWindow());
 	rgbDock = new RgbDock(chief->mainWindow());
