@@ -1,6 +1,8 @@
 #ifndef GRAPHSEGBACKGROUND_H
 #define GRAPHSEGBACKGROUND_H
 
+#include <graphseg.h>
+
 class GraphsegBackground : public BackgroundTask {
 public:
 	GraphsegBackground(const vole::GraphSegConfig &config, SharedMultiImgPtr input,

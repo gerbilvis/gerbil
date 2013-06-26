@@ -5,7 +5,7 @@
 #include <QMetaClassInfo>
 #include <map>
 
-#include "../../common/shared_data.h"
+#include <shared_data.h>
 
 // vole modules
 #include <meanshift.h>

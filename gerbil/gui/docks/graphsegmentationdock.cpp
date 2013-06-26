@@ -1,4 +1,5 @@
 #include "graphsegmentationdock.h"
+#include "../model/representation.h"
 
 GraphSegmentationDock::GraphSegmentationDock(QWidget *parent) :
 	QDockWidget(parent)
@@ -43,46 +44,10 @@ void GraphSegmentationDock::initUi()
 //			graphsegButton, SLOT(setChecked(bool)));
 }
 
-// TODO: -> GraphSegModel
-void GraphSegmentationDock::runGraphseg(SharedMultiImgPtr input,
-							   const vole::GraphSegConfig &config)
-{
-	/*
-	// TODO: why disable GUI? Where is it enabled? -> do it in finishGraphSeg
-	// TODO: build signal requestGUI
-	setGUIEnabled(false);
-	// TODO: should this be a commandrunner instead? arguable..
-	BackgroundTaskPtr taskGraphseg(new GraphsegBackground(
-		config, input, bandView->seedMap, graphsegResult));
-	QObject::connect(taskGraphseg.get(), SIGNAL(finished(bool)),
-		this, SLOT(finishGraphSeg(bool)), Qt::QueuedConnection);
-	queue.push(taskGraphseg);
-	*/
-}
 
-
-// TODO: -> GraphSegModel
-void GraphSegmentationDock::finishGraphSeg(bool success)
-{
-	/*
-	 * @ploner probably doesn't work yet (?).
-	if (success) {
-		// add segmentation to current labeling
-		emit alterLabelRequested(bandView->getCurLabel(),
-								 *(graphsegResult.get()), false);
-		// leave seeding mode for convenience
-		emit seedingDone();
-	}
-	*/
-}
-
-// TODO: move this to GraphSegModel (create it)
-// multi_img should not be seen by dock/GUI code.
-// Only parse GUI parameters into vole::GraphSegConfig here and
 // pass it to model via signal requestSegmentation(config).
 void GraphSegmentationDock::startGraphseg()
 {
-	/*
 	vole::GraphSegConfig conf("graphseg");
 	conf.algo = (vole::graphsegalg)
 				graphsegAlgoBox->itemData(graphsegAlgoBox->currentIndex())
@@ -98,18 +63,18 @@ void GraphSegmentationDock::startGraphseg()
 	int src = graphsegSourceBox->itemData(graphsegSourceBox->currentIndex())
 								 .value<int>();
 	if (src == 0) {
-		runGraphseg(image, conf);
+		emit requestGraphseg(representation::IMG, conf);
 	} else if (src == 1) {
-		runGraphseg(gradient, conf);
+		emit requestGraphseg(representation::GRAD, conf);
 	} else {	// currently shown band, construct from selection in viewport
-		representation::t type = viewerContainer->getActiveRepresentation();
+		assert(false); // TODO
+		/*representation::t type = viewerContainer->getActiveRepresentation();
 		int band = viewerContainer->getSelection(type);
 		SharedMultiImgPtr img = viewerContainer->getViewerImage(type);
 		SharedDataLock img_lock(img->mutex);
 		SharedMultiImgPtr i(new SharedMultiImgBase(
 			new multi_img((**img)[band], (*img)->minval, (*img)->maxval)));
 		img_lock.unlock();
-		runGraphseg(i, conf);
+		emit requestGraphseg(i, conf);*/
 	}
-	*/
 }

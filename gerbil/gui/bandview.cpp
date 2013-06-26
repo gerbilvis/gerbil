@@ -47,7 +47,10 @@ void BandView::setPixmap(QPixmap p)
 	// adjust seed map if necessary
 	if (seedMap.empty()
 		|| seedMap.rows != pixmap.height() || seedMap.cols != pixmap.width())
+	{
 		seedMap = cv::Mat1s(pixmap.height(), pixmap.width(), (short)127);
+		// TODO: send signal to model, maybe move whole seed map to model
+	}
 
 	cacheValid = false;
 }

@@ -28,8 +28,9 @@ vole_compile_library(
 	model/representation
 	model/image
 	model/labeling
-	model/falsecolor
-	model/illumination
+        model/falsecolor
+        model/illumination
+        model/graphsegmentation
 	model/ussegmentationmodel
 
 	tasks/distviewbinstbb

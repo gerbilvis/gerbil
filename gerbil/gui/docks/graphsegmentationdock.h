@@ -1,13 +1,13 @@
 #ifndef GRAPHSEGMENTATIONDOCK_H
 #define GRAPHSEGMENTATIONDOCK_H
 
-#include <QDockWidget>
+#include "ui_graphsegmentationdock.h"
+#include "../model/representation.h"
 
 #include <graphseg.h>
+#include <shared_data.h>
 
-#include "../../common/shared_data.h"
-
-#include "ui_graphsegmentationdock.h"
+#include <QDockWidget>
 
 class GraphSegmentationDock : public QDockWidget, private Ui::GraphSegmentationDock
 {
@@ -21,8 +21,10 @@ public:
 protected:
 	void initUi();
 	void startGraphseg();
-	void finishGraphSeg(bool success);
-	void runGraphseg(SharedMultiImgPtr input, const vole::GraphSegConfig &config);
+
+signals:
+	void requestGraphseg(representation::t, const vole::GraphSegConfig &config);
+
 private:
 
 };

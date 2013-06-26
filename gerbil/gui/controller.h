@@ -4,6 +4,7 @@
 #include "model/image.h"
 #include "model/labeling.h"
 #include "model/illumination.h"
+#include "model/graphsegmentation.h"
 #include "model/falsecolor.h"
 #include "model/ussegmentationmodel.h"
 #include "mainwindow.h"
@@ -27,6 +28,7 @@ public:
 	ImageModel* imageModel() { return &im; }
 	FalseColorModel* falseColorModel() { return &fm; }
 	IllumModel* illumModel() { return &illumm; }
+	GraphSegmentationModel* graphSegmentationModel() { return &gsm; }
 	UsSegmentationModel* usSegmentationModel() { return &um; }
 	LabelingModel* labelingModel() {return &lm;}
 signals:
@@ -86,6 +88,7 @@ protected:
 	void initImage();
 	void initFalseColor();
 	void initIlluminant();
+	void initGraphSegmentation();
 	void initLabeling(cv::Rect dimensions);
 
 	// create background thread that processes BackgroundTaskQueue
@@ -103,15 +106,15 @@ protected:
 	// image model stores all multispectral image representations (IMG, GRAD, …)
 	ImageModel im;
 
-	// labeling model stores pixel/label associations and label color codes
-	LabelingModel lm;
-
-	// illumination model
-	IllumModel illumm;
-
 	/* false color model generates and stores RGB representations of
 	 * multispectral data */
 	FalseColorModel fm;
+
+	IllumModel illumm;
+	GraphSegmentationModel gsm;
+
+	// labeling model stores pixel/label associations and label color codes
+	LabelingModel lm;
 
 #ifdef WITH_SEG_MEANSHIFT
 	// unsupervised segmentation model

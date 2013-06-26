@@ -15,8 +15,8 @@ std::ostream &operator<<(std::ostream& os, const cv::Rect& r)
 }
 
 Controller::Controller(const std::string &filename, bool limited_mode)
-	: im(queue, limited_mode), illumm(this), fm(this, &queue), queuethread(0),
-	  spectralRescaleInProgress(false)
+	: im(queue, limited_mode), fm(this, &queue), illumm(this), gsm(this, &queue),
+	   queuethread(0), spectralRescaleInProgress(false)
 {
 	// load image
 	cv::Rect dimensions = im.loadImage(filename);
@@ -38,6 +38,7 @@ Controller::Controller(const std::string &filename, bool limited_mode)
 	initImage();
 	initFalseColor(); // depends on ImageModel
 	initIlluminant();
+	initGraphSegmentation(); // depends on ImageModel
 	initLabeling(dimensions);
 
 #ifdef WITH_SEG_MEANSHIFT
@@ -117,6 +118,14 @@ void Controller::initIlluminant()
 
 	connect(&illumm, SIGNAL(setGUIEnabledRequested(bool,TaskType)),
 			this, SLOT(setGUIEnabled(bool, TaskType)), Qt::DirectConnection);
+}
+
+void Controller::initGraphSegmentation()
+{
+	gsm.setMultiImage(representation::IMG, im.getImage(representation::IMG));
+	gsm.setMultiImage(representation::GRAD, im.getImage(representation::GRAD));
+
+	// TODO: init connections for updating img / grad?
 }
 
 /** Labeling management **/
