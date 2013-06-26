@@ -55,14 +55,6 @@ public:
 	// TODO: used by Controller; hack until we have a resp. vc-controller
 	ViewerContainer* getViewerContainer() { return viewerContainer; }
 
-	//TODO make this complete
-	// need to remove all Docks from mainwindow.ui
-	void tabifyDockWidgets(ROIDock *roiDock,
-						   RgbDock *rgbDock,
-						   IllumDock *illumDock,
-						   GraphSegmentationDock *graphSegDock,
-						   UsSegmentationDock *usSegDock);
-
 	// setGUIEnabled() slot is now in Controller class
 	void setGUIEnabled(bool enable, TaskType tt = TT_NONE);
 public slots:

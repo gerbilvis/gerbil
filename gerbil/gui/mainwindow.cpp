@@ -560,13 +560,6 @@ void MainWindow::screenshot()
 	io.writeFile(QString(), output);
 }
 
-void MainWindow::tabifyDockWidgets(ROIDock *roiDock, RgbDock *rgbDock, IllumDock *illumDock,
-		GraphSegmentationDock *graphSegDock, 
-		UsSegmentationDock *usSegDock)
-{
-
-}
-
 void MainWindow::openContextMenu()
 {
 	delete contextMenu;

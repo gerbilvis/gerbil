@@ -39,6 +39,8 @@ signals:
 	void rgbRequested();
 public slots:
 	void enableDocks(bool enable, TaskType tt);
+protected slots:
+	void raiseGraphSegDock(bool enable);
 protected:
 	/* Create dock widget objects. */
 	void createDocks();

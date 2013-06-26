@@ -48,12 +48,9 @@ void DockController::init()
 
 	chief->mainWindow()->tabifyDockWidget(labelingDock, illumDock);
 	chief->mainWindow()->tabifyDockWidget(labelingDock, normDock);
+	chief->mainWindow()->tabifyDockWidget(labelingDock, graphSegDock);
 
 	chief->imageModel()->computeFullRgb();
-
-	//TODO make this complete
-	chief->mainWindow()->tabifyDockWidgets(
-				roiDock, rgbDock, illumDock, graphSegDock, usSegDock);
 
 	connect(chief, SIGNAL(requestEnableDocks(bool,TaskType)),
 			this, SLOT(enableDocks(bool,TaskType)));
@@ -107,6 +104,9 @@ void DockController::setupDocks()
 			chief->labelingModel(), SLOT(addLabel()));
 	connect(bandDock, SIGNAL(graphSegModeToggled(bool)),
 			graphSegDock, SLOT(setVisible(bool)));
+	connect(bandDock, SIGNAL(graphSegModeToggled(bool)),
+			this, SLOT(raiseGraphSegDock(bool)));
+
 
 	connect(chief->mainWindow()->getViewerContainer(), SIGNAL(drawOverlay(const cv::Mat1b&)),
 		bandDock->bandView(), SLOT(drawOverlay(const cv::Mat1b&)));
@@ -179,6 +179,15 @@ void DockController::setupDocks()
 	//usSegDock->hide();
 #endif /* WITH_SEG_MEANSHIFT */
 
+}
+
+void DockController::raiseGraphSegDock(bool enable)
+{
+	if(enable) {
+		//GGDBGM("raising graph seg dock"<<endl);
+		graphSegDock->setVisible(true);
+		graphSegDock->raise();
+	}
 }
 
 
