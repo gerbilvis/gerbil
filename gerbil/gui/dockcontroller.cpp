@@ -107,6 +107,10 @@ void DockController::setupDocks()
 	connect(bandDock, SIGNAL(graphSegModeToggled(bool)),
 			this, SLOT(raiseGraphSegDock(bool)));
 
+	// GraphSegModel -> BandDock
+	connect(chief->graphSegmentationModel(), SIGNAL(seedingDone(bool)),
+			bandDock, SIGNAL(seedingDone(bool)));
+
 
 	connect(chief->mainWindow()->getViewerContainer(), SIGNAL(drawOverlay(const cv::Mat1b&)),
 		bandDock->bandView(), SLOT(drawOverlay(const cv::Mat1b&)));
@@ -150,7 +154,13 @@ void DockController::setupDocks()
 
 
 	/* Graph Segmentation Dock */
-	// TODO re-implement GraphSeg
+	chief->graphSegmentationModel()->setSeedMap(
+				bandDock->bandView()->getSeedMap()
+				);
+	chief->graphSegmentationModel()->setCurLabel(
+				bandDock->bandView()->getCurLabelPtr()
+				);
+
 	connect(chief->mainWindow(), SIGNAL(graphSegDockVisibleRequested(bool)),
 			graphSegDock, SLOT(setVisible(bool)));
 	connect(graphSegDock,

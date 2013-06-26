@@ -29,6 +29,7 @@ signals:
 	void clearLabelRequested(short labelIdx);
 	/** User requested a new label (markerSelector) */
 	void newLabelRequested();
+	void seedingDone(bool yeah = false);
 public slots:
 	void changeBand(QPixmap band, QString desc);
 

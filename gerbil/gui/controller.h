@@ -4,8 +4,8 @@
 #include "model/image.h"
 #include "model/labeling.h"
 #include "model/illumination.h"
-#include "model/graphsegmentation.h"
 #include "model/falsecolor.h"
+#include "model/graphsegmentation.h"
 #include "model/ussegmentationmodel.h"
 #include "mainwindow.h"
 #include <background_task.h>

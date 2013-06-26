@@ -34,6 +34,8 @@ public:
 	bool isSeedModeEnabled() { return seedMode; }
 
 	short getCurLabel() { return curLabel; }
+	short *getCurLabelPtr() { return &curLabel; } // TODO: that's not very nice...
+	cv::Mat1s *getSeedMap() { return &seedMap;}
 public slots:
 	void refresh();
 	void changeCurrentLabel(int label);

@@ -55,6 +55,9 @@ void BandDock::initUi()
 	connect(graphsegButton, SIGNAL(toggled(bool)),
 			bv, SLOT(toggleSeedMode(bool)));
 
+	connect(this, SIGNAL(seedingDone(bool)),
+			graphsegButton, SLOT(setEnabled(bool)));
+
 	bv->initUi();
 }
 

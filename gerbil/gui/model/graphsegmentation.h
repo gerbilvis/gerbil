@@ -21,10 +21,12 @@ class GraphSegmentationModel : public QObject
 
 public:
 	GraphSegmentationModel(QObject *parent, BackgroundTaskQueue *queue);
-	//~GraphSegmentationModel();
+	~GraphSegmentationModel();
 
 	// always set img and grad before using the class
 	void setMultiImage(representation::t type, SharedMultiImgPtr image);
+	void setSeedMap(cv::Mat1s *seedMap);
+	void setCurLabel(short *curLabelPtr);
 
 public slots:
 	void runGraphseg(representation::t type,
@@ -33,8 +35,14 @@ public slots:
 protected slots:
 	void finishGraphSeg(bool success);
 
+signals:
+	void alterLabelRequested(short index, const cv::Mat1b &mask, bool negative);
+	void seedingDone(bool yeah = false);
+
 protected:
 	BackgroundTaskQueue *const queue;
+	cv::Mat1s *seedMap;
+	short *curLabel; // That's not nice...
 	// multi image of current ROI
 	SharedMultiImgPtr img, grad;
 	boost::shared_ptr<cv::Mat1s> graphsegResult;

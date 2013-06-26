@@ -36,9 +36,9 @@ Controller::Controller(const std::string &filename, bool limited_mode)
 
 	// initialize models
 	initImage();
-	initFalseColor(); // depends on ImageModel
+	initFalseColor(); // depends on ImageModel / initImage()
 	initIlluminant();
-	initGraphSegmentation(); // depends on ImageModel
+	initGraphSegmentation(); // depends on ImageModel / initImage()
 	initLabeling(dimensions);
 
 #ifdef WITH_SEG_MEANSHIFT
@@ -125,7 +125,9 @@ void Controller::initGraphSegmentation()
 	gsm.setMultiImage(representation::IMG, im.getImage(representation::IMG));
 	gsm.setMultiImage(representation::GRAD, im.getImage(representation::GRAD));
 
-	// TODO: init connections for updating img / grad?
+	connect(&gsm, SIGNAL(alterLabelRequested(short,cv::Mat1b,bool)),
+			&lm, SLOT(alterLabel(short,cv::Mat1b,bool)));
+	// connect gsm seedingDone <-> bandDock seedingDone in initDocks
 }
 
 /** Labeling management **/

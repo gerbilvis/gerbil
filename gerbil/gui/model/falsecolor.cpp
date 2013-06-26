@@ -63,7 +63,8 @@ void FalseColorModel::setMultiImg(representation::t type,
 	reset();
 }
 
-void FalseColorModel::processImageUpdate(representation::t type)
+void FalseColorModel::processImageUpdate(representation::t type,
+										 SharedMultiImgPtr img)
 {
 	if (type == representation::IMG)
 		reset();

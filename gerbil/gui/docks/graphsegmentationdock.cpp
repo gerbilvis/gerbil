@@ -5,7 +5,7 @@ GraphSegmentationDock::GraphSegmentationDock(QWidget *parent) :
 	QDockWidget(parent)
 {
 	setupUi(this);
-	// TODO initUi
+	initUi();
 }
 
 GraphSegmentationDock::~GraphSegmentationDock()
@@ -40,6 +40,8 @@ void GraphSegmentationDock::initUi()
 	connect(graphsegGoButton, SIGNAL(clicked()),
 			this, SLOT(startGraphseg()));
 	// TODO
+	// Ploner: graphsegButton is on the bandView or not?
+	//         just delete the following?
 //	connect(this, SIGNAL(seedingDone(bool)),
 //			graphsegButton, SLOT(setChecked(bool)));
 }

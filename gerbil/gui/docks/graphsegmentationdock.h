@@ -20,13 +20,12 @@ public:
 
 protected:
 	void initUi();
-	void startGraphseg();
 
 signals:
 	void requestGraphseg(representation::t, const vole::GraphSegConfig &config);
 
-private:
-
+protected slots:
+	void startGraphseg();
 };
 
 #endif // GRAPHSEGMENTATIONDOCK_H

@@ -82,6 +82,7 @@ vole_moc_library(
 	model/labeling.h
 	model/falsecolor.h
 	model/illumination.h
+	model/graphsegmentation.h
 	model/ussegmentationmodel.h
 )
 

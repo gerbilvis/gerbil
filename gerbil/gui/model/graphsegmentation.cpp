@@ -8,9 +8,9 @@
 
 GraphSegmentationModel::GraphSegmentationModel(QObject *parent,
 											   BackgroundTaskQueue *queue)
-	: QObject(parent), queue(queue), graphsegResult(new cv::Mat1s())
-{
-}
+	: QObject(parent), queue(queue), graphsegResult(new cv::Mat1s()) { }
+
+GraphSegmentationModel::~GraphSegmentationModel() { }
 
 void GraphSegmentationModel::setMultiImage(representation::t type,
 										   SharedMultiImgPtr mulit_image)
@@ -19,11 +19,23 @@ void GraphSegmentationModel::setMultiImage(representation::t type,
 	{
 	case representation::IMG:
 		img = mulit_image;
+		break;
 	case representation::GRAD:
 		grad = mulit_image;
+		break;
 	default: // tryed setting an image of an unsupported representation type
 		assert(false);
 	}
+}
+
+void GraphSegmentationModel::setSeedMap(cv::Mat1s *seedMap)
+{
+	this->seedMap = seedMap;
+}
+
+void GraphSegmentationModel::setCurLabel(short *curLabelPtr)
+{
+	this->curLabel = curLabelPtr;
 }
 
 void GraphSegmentationModel::runGraphseg(representation::t type,
@@ -34,8 +46,10 @@ void GraphSegmentationModel::runGraphseg(representation::t type,
 	{
 	case representation::IMG:
 		input = img;
+		break;
 	case representation::GRAD:
 		input = grad;
+		break;
 	default:
 		assert(false);
 	}
@@ -45,7 +59,7 @@ void GraphSegmentationModel::runGraphseg(representation::t type,
 	// setGUIEnabled(false);
 	// TODO: should this be a commandrunner instead? arguable..
 	BackgroundTaskPtr taskGraphseg(new GraphsegBackground(
-		config, input, bandView->seedMap, graphsegResult));
+		config, input, *seedMap, graphsegResult));
 	QObject::connect(taskGraphseg.get(), SIGNAL(finished(bool)),
 		this, SLOT(finishGraphSeg(bool)), Qt::QueuedConnection);
 	queue->push(taskGraphseg);
@@ -53,14 +67,10 @@ void GraphSegmentationModel::runGraphseg(representation::t type,
 
 void GraphSegmentationModel::finishGraphSeg(bool success)
 {
-	/*
-	 * @ploner probably doesn't work yet (?).
 	if (success) {
 		// add segmentation to current labeling
-		emit alterLabelRequested(bandView->getCurLabel(),
-								 *(graphsegResult.get()), false);
+		emit alterLabelRequested(*curLabel, *(graphsegResult.get()), false);
 		// leave seeding mode for convenience
 		emit seedingDone();
 	}
-	*/
 }
