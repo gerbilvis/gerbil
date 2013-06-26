@@ -31,11 +31,12 @@ void RgbDock::initUi()
 	QWidget *child = new QWidget(this);
 	QVBoxLayout *layout = new QVBoxLayout();
 	view = new ScaledView();
+	view->setMinimumSize(150,150);
 	layout->addWidget(view);
 	child->setLayout(layout);
 	child->setSizePolicy(
-				QSizePolicy::Expanding,
-				QSizePolicy::Expanding);
+				QSizePolicy::MinimumExpanding,
+				QSizePolicy::MinimumExpanding);
 	setWidget(child);
 	view->setEnabled(false);
 

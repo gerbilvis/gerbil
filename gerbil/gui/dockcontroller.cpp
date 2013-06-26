@@ -28,6 +28,7 @@ void DockController::init()
 	chief->mainWindow()->addDockWidget(Qt::RightDockWidgetArea, graphSegDock);
 #ifdef WITH_SEG_MEANSHIFT
 	chief->mainWindow()->addDockWidget(Qt::RightDockWidgetArea, usSegDock);
+	usSegDock->setVisible(false);
 #endif
 	chief->mainWindow()->addDockWidget(Qt::RightDockWidgetArea, rgbDock);
 	chief->mainWindow()->addDockWidget(Qt::RightDockWidgetArea, roiDock);
