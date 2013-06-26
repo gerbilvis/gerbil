@@ -90,8 +90,6 @@ void Controller::initImage()
 	connect(window->getViewerContainer(),
 			SIGNAL(bandSelected(representation::t, int)),
 			&im, SLOT(computeBand(representation::t, int)));
-
-	// -> DocksController
 }
 
 // depends on ImageModel
@@ -134,12 +132,6 @@ void Controller::initLabeling(cv::Rect dimensions)
 			&lm, SLOT(alterLabel(short)));
 	connect(window, SIGNAL(alterLabelRequested(short,cv::Mat1b,bool)),
 			&lm, SLOT(alterLabel(short,cv::Mat1b,bool)));
-// moved to DockController
-//	connect(window, SIGNAL(alterLabelingRequested(cv::Mat1s,cv::Mat1b)),
-//			&lm, SLOT(alterPixels(cv::Mat1s,cv::Mat1b)));
-// moved to DockController
-//	connect(window, SIGNAL(newLabelingRequested(cv::Mat1s)),
-//			&lm, SLOT(setLabels(cv::Mat1s)));
 	connect(window, SIGNAL(setGUIEnabledRequested(bool,TaskType)),
 			this, SLOT(setGUIEnabled(bool, TaskType)));
 
@@ -151,10 +143,6 @@ void Controller::initLabeling(cv::Rect dimensions)
 	connect(&lm, SIGNAL(partialLabelUpdate(const cv::Mat1s&,const cv::Mat1b&)),
 			window->getViewerContainer(),
 			SLOT(updateLabelsPartially(const cv::Mat1s&,const cv::Mat1b&)));
-	//old, now im -> bandDock
-//	connect(&lm, SIGNAL(partialLabelUpdate(const cv::Mat1s&,const cv::Mat1b&)),
-//			window,
-//			SLOT(processLabelingChange(const cv::Mat1s&,const cv::Mat1b&)));
 }
 
 void Controller::spawnROI(const cv::Rect &roi)
@@ -291,24 +279,6 @@ void Controller::propagateLabelingChange(const cv::Mat1s& labels,
 
 	if (grandUpdate)
 		enableGUILater();
-}
-
-//void Controller::addLabel()
-//{
-//	int index = lm.addLabel();
-
-//	// select our new label for convenience
-//	window->selectLabel(index);
-//}
-
-/** DOCK stuff (to be moved to DockController */
-void Controller::docksUpdateImage(representation::t type, SharedMultiImgPtr image)
-{
-	//GGDBGM(format("type=%1%  *image=%2% width=%3%") %type % (void*)(&**image) %(*image)->width << endl );
-	/* conservative approach: do not initiate calculation tasks here,
-	 * just invalidate data in the GUI (which may lead to initiating tasks)
-	 */
-	// TODO: if falsecolorDock is shown, trigger re-calculation of falsecolor image
 }
 
 void Controller::setGUIEnabled(bool enable, TaskType tt)

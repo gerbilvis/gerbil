@@ -66,42 +66,20 @@ public:
 	// setGUIEnabled() slot is now in Controller class
 	void setGUIEnabled(bool enable, TaskType tt = TT_NONE);
 public slots:
-	// TODO -> DockController
-	void changeBand(QPixmap band, QString desc);
-
-
-	// TODO -> DockController
-//	void processLabelingChange(const cv::Mat1s &labels,
-//							   const QVector<QColor>& colors = QVector<QColor>(),
-//							   bool colorsChanged = false);
-
-	// TODO -> DockController
-	//void processLabelingChange(const cv::Mat1s &labels, const cv::Mat1b &mask);
-
 	//	void finishGraphSeg(bool success);
 
 	void setCurrentLabel(int cl) { currentLabel = cl;}
 
-	// we probably remove this functionality: void reshapeDock(bool floating);
-	void clearLabelOrSeeds();
 	void addToLabel();
 	void remFromLabel();
 
 	// TODO -> segmentationDock
 //	void startGraphseg();
 	// TODO -> segmentationDock
-//	void startUnsupervisedSeg(bool findKL = false);
-//	void startFindKL();
 //	void segmentationFinished();
 //	void segmentationApply(std::map<std::string, boost::any>);
 
 	void bandsSliderMoved(int b);
-
-	// TODO -> segmentationDock
-//	void usMethodChanged(int idx);
-//	void usInitMethodChanged(int idx);
-//	void usBandwidthMethodChanged(const QString &current);
-//	void unsupervisedSegCancelled();
 
 	// TODO -> NormDock
 	void normTargetChanged(bool usecurrent = false);
@@ -111,7 +89,6 @@ public slots:
 	void clampNormUserRange();
 
 	void loadSeeds();
-	void selectLabel(int index);
 
 	void openContextMenu();
 
@@ -132,9 +109,6 @@ signals:
 
 	void seedingDone(bool yeah = false);
 
-	// part of setGUIEnabled(), handled by DocksController
-	//void requestEnableDocks(bool enable, TaskType tt);
-
 	void setGUIEnabledRequested(bool enable, TaskType tt);
 
 	void graphSegDockVisibleRequested(bool visible);
@@ -147,9 +121,6 @@ protected:
 private:
 
 //	void initGraphsegUI();
-//#ifdef WITH_SEG_MEANSHIFT
-//	void initUnsupervisedSegUI(size_t size);
-//#endif
 	void initNormalizationUI();
 
 

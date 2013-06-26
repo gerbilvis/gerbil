@@ -25,7 +25,7 @@ void DockController::init()
 	createDocks();
 	setupDocks();
 
-	//TODO: re-implement bandDock, labelingDock and NormDock
+	//TODO: re-implement labelingDock and NormDock
 
 	chief->mainWindow()->addDockWidget(Qt::RightDockWidgetArea, bandDock);
 	chief->mainWindow()->addDockWidget(Qt::RightDockWidgetArea, graphSegDock);
@@ -80,12 +80,8 @@ void DockController::setupDocks()
 	/* im -> others */
 	connect(chief->imageModel(), SIGNAL(bandUpdate(QPixmap, QString)),
 			bandDock, SLOT(changeBand(QPixmap, QString)));
-	// obsolete
-//	connect(&im, SIGNAL(imageUpdate(representation::t,SharedMultiImgPtr)),
-//			this, SLOT(docksUpdateImage(representation::t,SharedMultiImgPtr)));
 
 	/* Band Dock */
-
 	connect(chief->labelingModel(), SIGNAL(partialLabelUpdate(const cv::Mat1s&,const cv::Mat1b&)),
 			bandDock, SLOT(processLabelingChange(cv::Mat1s,cv::Mat1b)));
 	connect(chief->labelingModel(), SIGNAL(newLabeling(cv::Mat1s,QVector<QColor>,bool)),
@@ -154,11 +150,7 @@ void DockController::setupDocks()
 
 
 	/* Graph Segmentation Dock */
-
-	// TODO more
-	// now signal from bandDock, see above
-//	connect(chief->mainWindow(), SIGNAL(graphSegDockVisibleRequested(bool)),
-//			graphSegDock, SLOT(setVisible(bool)));
+	// TODO re-implement GraphSeg
 	graphSegDock->setVisible(false); // start hidden
 
 	/* Unsupervised Segmentation Dock */

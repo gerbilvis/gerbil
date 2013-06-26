@@ -45,8 +45,6 @@ public slots:
 	// change binnig to reflect, or not reflect, labeling
 	void toggleLabels(bool toggle);
 
-	// need additional label color
-	//void addLabel();
 	// load a labeling from file
 	void loadLabeling(const QString &filename = QString())
 	{ lm.loadLabeling(filename); }
@@ -59,10 +57,6 @@ public slots:
 	void propagateLabelingChange(const cv::Mat1s &labels,
 								 const QVector<QColor>& colors = QVector<QColor>(),
 								 bool colorsChanged = false);
-
-	// FIXME REMOVE OBSOLETE
-	// update image data in docks (to be moved to dockcontroller)
-	void docksUpdateImage(representation::t type, SharedMultiImgPtr image);
 
 	/** Enable and disable GUI as indicated by enable flag.
 	 *

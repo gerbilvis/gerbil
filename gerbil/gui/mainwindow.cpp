@@ -48,16 +48,6 @@ MainWindow::MainWindow(bool limitedMode)
 	setupUi(this);
 }
 
-// todo: move to the new bandDock
-void MainWindow::clearLabelOrSeeds()
-{
-//	if (bandView->isSeedModeEnabled()) {
-//		bandView->clearSeeds();
-//	} else {
-//		emit clearLabelRequested(bandView->getCurLabel());
-//	}
-}
-
 void MainWindow::addToLabel()
 {
 	cv::Mat1b mask = viewerContainer->getHighlightMask();
@@ -68,48 +58,6 @@ void MainWindow::remFromLabel()
 {
 	cv::Mat1b mask = viewerContainer->getHighlightMask();
 	emit alterLabelRequested(currentLabel, mask, true);
-}
-
-// todo: move to the new bandDock
-void MainWindow::changeBand(QPixmap band, QString desc) {
-
-//	bandView->setEnabled(true);
-//	bandView->setPixmap(band);
-//	bandDock->setWindowTitle(desc);
-}
-
-// -> bandDock
-//void MainWindow::processLabelingChange(const cv::Mat1s &labels,
-//									   const QVector<QColor> &colors,
-//									   bool colorsChanged)
-//{
-////	if (!colors.empty()) {
-////		// use colors for our awesome label menu (rebuild everything)
-////		markerSelector->clear();
-////		for (int i = 1; i < colors.size(); ++i) // 0 is index for unlabeled
-////		{
-////			markerSelector->addItem(colorIcon(colors.at(i)), "");
-////		}
-////		markerSelector->addItem(QIcon(":/toolbar/add"), "");
-////	}
-
-////	// tell bandview about the update as well
-////	bandView->updateLabeling(labels, colors, colorsChanged);
-//}
-
-//->  bandDock
-//void MainWindow::processLabelingChange(const cv::Mat1s &labels,
-//									   const cv::Mat1b &mask)
-//{
-////	// tell bandview about the update
-////	bandView->updateLabeling(labels, mask);
-//}
-
-// -> BandDock
-void MainWindow::selectLabel(int index)
-{
-//	// markerSelector has no label zero, therefore off by one
-//	markerSelector->setCurrentIndex(index - 1);
 }
 
 void MainWindow::initUI(cv::Rect dim, size_t size)
@@ -142,15 +90,11 @@ void MainWindow::initSignals(Controller *chief)
 	connect(docksButton, SIGNAL(clicked()),
 			this, SLOT(openContextMenu()));
 
-	/* TODO: this all belongs to new banddock */
 
 //	we decided to remove this functionality for now
 //	connect(bandDock, SIGNAL(topLevelChanged(bool)),
 //			this, SLOT(reshapeDock(bool)));
 
-//	-> BandDock
-//	connect(markerSelector, SIGNAL(currentIndexChanged(int)),
-//			bandView, SLOT(changeCurrentLabel(int)));
 
 	connect(ignoreButton, SIGNAL(toggled(bool)),
 			markButton, SLOT(setDisabled(bool)));
@@ -159,46 +103,10 @@ void MainWindow::initSignals(Controller *chief)
 	connect(ignoreButton, SIGNAL(toggled(bool)),
 			singleButton, SLOT(setDisabled(bool)));
 
-	// old, see below
-//	connect(ignoreButton, SIGNAL(toggled(bool)),
-//			bandView, SLOT(toggleShowLabels(bool)));
 	connect(ignoreButton, SIGNAL(toggled(bool)),
 			this, SIGNAL(ignoreLabelsRequested(bool)));
-
-	// old, see below
-	//	connect(singleButton, SIGNAL(toggled(bool)),
-//			bandView, SLOT(toggleSingleLabel(bool)));
 	connect(singleButton, SIGNAL(toggled(bool)),
 			this, SIGNAL(singleLabelRequested(bool)));
-
-// -> BandDock
-//	connect(alphaSlider, SIGNAL(valueChanged(int)),
-//			bandView, SLOT(applyLabelAlpha(int)));
-
-
-	/* labeling manipulation triggers */
-//	-> BandDock
-//	connect(clearButton, SIGNAL(clicked()),
-//			this, SLOT(clearLabelOrSeeds()));
-
-
-// ???
-// This should be handled by BandView _without_ using a slot in Controller
-// New:
-//	BandDock::newLabel() -> LabelModel::addLabel()
-//  LabelingModel will emit newLabeling and markerSelector will be rebuild.
-//	connect(bandView, SIGNAL(newLabel()),
-//			chief, SLOT(addLabel()));
-
-
-// TODO LabelDock
-//	connect(lLoadButton, SIGNAL(clicked()),
-//			chief, SLOT(loadLabeling()));
-//	connect(lSaveButton, SIGNAL(clicked()),
-//			chief, SLOT(saveLabeling()));
-//	connect(lLoadSeedButton, SIGNAL(clicked()),
-//			this, SLOT(loadSeeds()));
-
 
 	// for viewports
 	connect(ignoreButton, SIGNAL(toggled(bool)),
@@ -209,30 +117,6 @@ void MainWindow::initSignals(Controller *chief)
 			this, SLOT(addToLabel()));
 	connect(remButton, SIGNAL(clicked()),
 			this, SLOT(remFromLabel()));
-
-// -> DockController
-//	connect(viewerContainer, SIGNAL(drawOverlay(const cv::Mat1b&)),
-//			bandView, SLOT(drawOverlay(const cv::Mat1b&)));
-
-	// todo: we connect it here as we disconnect it here as well. we will change
-	// that.
-	// TODO
-
-
-
-	// -> BandDock
-	/* when applybutton is pressed, bandView commits full label matrix */
-//	connect(applyButton, SIGNAL(clicked()),
-//			bandView, SLOT(commitLabels()));
-
-
-	// -> DockController
-//	connect(bandView, SIGNAL(killHover()),
-//			viewerContainer, SIGNAL(viewportsKillHover()));
-//	connect(bandView, SIGNAL(pixelOverlay(int, int)),
-//			viewerContainer, SIGNAL(viewersOverlay(int, int)));
-//	connect(bandView, SIGNAL(newSingleLabel(short)),
-//			viewerContainer, SIGNAL(viewersHighlight(short)));
 
 	connect(markButton, SIGNAL(toggled(bool)),
 			viewerContainer, SIGNAL(viewersToggleLabeled(bool)));
@@ -259,22 +143,6 @@ void MainWindow::initSignals(Controller *chief)
 	/// global shortcuts
 	QShortcut *scr = new QShortcut(Qt::CTRL + Qt::Key_S, this);
 	connect(scr, SIGNAL(activated()), this, SLOT(screenshot()));
-
-	/* now that we are connected, humbly request RGB image for roiView */
-	// FIXME no, this can be requested by the rgb dock itself.
-	//emit rgbRequested();
-
-// old
-//	connect(graphsegButton, SIGNAL(toggled(bool)),
-//			graphsegWidget, SLOT(setVisible(bool)));
-//	connect(graphsegButton, SIGNAL(toggled(bool)),
-//			bandView, SLOT(toggleSeedMode(bool)));
-// new
-	// TODO BandDock
-//	connect(graphsegButton, SIGNAL(toggled(bool)),
-//			this, SIGNAL(graphSegDockVisibleRequested(bool)));
-//	connect(graphsegButton, SIGNAL(toggled(bool)),
-//			bandView, SLOT(toggleSeedMode(bool)));
 }
 
 void MainWindow::setGUIEnabled(bool enable, TaskType tt)
@@ -286,11 +154,6 @@ void MainWindow::setGUIEnabled(bool enable, TaskType tt)
 
 	viewerContainer->setGUIEnabled(enable, tt);
 
-	// -> DockController
-//	applyButton->setEnabled(enable);
-//	clearButton->setEnabled(enable);
-//	bandView->setEnabled(enable);
-
 	// TODO -> NormDock
 //	normDock->setEnabled((enable || tt == TT_NORM_RANGE || tt == TT_CLAMP_RANGE_IMG || tt == TT_CLAMP_RANGE_GRAD) && !limitedMode);
 //	normIButton->setEnabled(enable || tt == TT_NORM_RANGE || tt == TT_CLAMP_RANGE_IMG);
@@ -298,13 +161,6 @@ void MainWindow::setGUIEnabled(bool enable, TaskType tt)
 //	normModeBox->setEnabled(enable);
 //	normApplyButton->setEnabled(enable || tt == TT_NORM_RANGE);
 //	normClampButton->setEnabled(enable || tt == TT_CLAMP_RANGE_IMG || tt == TT_CLAMP_RANGE_GRAD);
-
-	// -> DockController
-//	if (tt == TT_SELECT_ROI && (!enable)) {
-//		/* TODO: check if this is enough to make sure no label changes
-//		 * happen during ROI recomputation */
-//		bandView->commitLabelChanges();
-//	}
 }
 
 // TODO: controller
