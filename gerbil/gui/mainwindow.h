@@ -118,6 +118,8 @@ public slots:
 	void screenshot();
 
 signals:
+	void ignoreLabelsRequested(bool);
+	void singleLabelRequested(bool);
 	void specRescaleRequested(size_t bands);
 	void clearLabelRequested(short index);
 	void alterLabelRequested(short index, const cv::Mat1b &mask, bool negative);

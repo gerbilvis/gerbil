@@ -71,8 +71,8 @@ void MainWindow::remFromLabel()
 }
 
 // todo: move to the new bandDock
-void MainWindow::changeBand(QPixmap band, QString desc)
-{
+void MainWindow::changeBand(QPixmap band, QString desc) {
+
 //	bandView->setEnabled(true);
 //	bandView->setPixmap(band);
 //	bandDock->setWindowTitle(desc);
@@ -148,19 +148,30 @@ void MainWindow::initSignals(Controller *chief)
 //	connect(bandDock, SIGNAL(topLevelChanged(bool)),
 //			this, SLOT(reshapeDock(bool)));
 
+//	-> BandDock
 //	connect(markerSelector, SIGNAL(currentIndexChanged(int)),
 //			bandView, SLOT(changeCurrentLabel(int)));
 
-//	connect(ignoreButton, SIGNAL(toggled(bool)),
-//			markButton, SLOT(setDisabled(bool)));
-//	connect(ignoreButton, SIGNAL(toggled(bool)),
-//			nonmarkButton, SLOT(setDisabled(bool)));
-//	connect(ignoreButton, SIGNAL(toggled(bool)),
-//			singleButton, SLOT(setDisabled(bool)));
+	connect(ignoreButton, SIGNAL(toggled(bool)),
+			markButton, SLOT(setDisabled(bool)));
+	connect(ignoreButton, SIGNAL(toggled(bool)),
+			nonmarkButton, SLOT(setDisabled(bool)));
+	connect(ignoreButton, SIGNAL(toggled(bool)),
+			singleButton, SLOT(setDisabled(bool)));
+
+	// old, see below
 //	connect(ignoreButton, SIGNAL(toggled(bool)),
 //			bandView, SLOT(toggleShowLabels(bool)));
-//	connect(singleButton, SIGNAL(toggled(bool)),
+	connect(ignoreButton, SIGNAL(toggled(bool)),
+			this, SIGNAL(ignoreLabelsRequested(bool)));
+
+	// old, see below
+	//	connect(singleButton, SIGNAL(toggled(bool)),
 //			bandView, SLOT(toggleSingleLabel(bool)));
+	connect(singleButton, SIGNAL(toggled(bool)),
+			this, SIGNAL(singleLabelRequested(bool)));
+
+// -> BandDock
 //	connect(alphaSlider, SIGNAL(valueChanged(int)),
 //			bandView, SLOT(applyLabelAlpha(int)));
 
@@ -192,26 +203,23 @@ void MainWindow::initSignals(Controller *chief)
 	connect(remButton, SIGNAL(clicked()),
 			this, SLOT(remFromLabel()));
 
-// TODO
+// -> DockController
 //	connect(viewerContainer, SIGNAL(drawOverlay(const cv::Mat1b&)),
 //			bandView, SLOT(drawOverlay(const cv::Mat1b&)));
 
 	// todo: we connect it here as we disconnect it here as well. we will change
 	// that.
 	// TODO
-//	connect(&bandView->labelTimer, SIGNAL(timeout()),
-//			bandView, SLOT(commitLabelChanges()));
 
-//	connect(bandView, SIGNAL(alteredLabels(const cv::Mat1s&, const cv::Mat1b&)),
-//			this, SIGNAL(alterLabelingRequested(cv::Mat1s,cv::Mat1b)));
-//	connect(bandView, SIGNAL(newLabeling(const cv::Mat1s&)),
-//			this, SIGNAL(newLabelingRequested(cv::Mat1s)));
 
+
+	// -> BandDock
 	/* when applybutton is pressed, bandView commits full label matrix */
 //	connect(applyButton, SIGNAL(clicked()),
 //			bandView, SLOT(commitLabels()));
 
 
+	// -> DockController
 //	connect(bandView, SIGNAL(killHover()),
 //			viewerContainer, SIGNAL(viewportsKillHover()));
 //	connect(bandView, SIGNAL(pixelOverlay(int, int)),
@@ -271,7 +279,7 @@ void MainWindow::setGUIEnabled(bool enable, TaskType tt)
 
 	viewerContainer->setGUIEnabled(enable, tt);
 
-	// TODO
+	// -> DockController
 //	applyButton->setEnabled(enable);
 //	clearButton->setEnabled(enable);
 //	bandView->setEnabled(enable);
@@ -284,7 +292,7 @@ void MainWindow::setGUIEnabled(bool enable, TaskType tt)
 //	normApplyButton->setEnabled(enable || tt == TT_NORM_RANGE);
 //	normClampButton->setEnabled(enable || tt == TT_CLAMP_RANGE_IMG || tt == TT_CLAMP_RANGE_GRAD);
 
-	// TODO -> BandDock
+	// -> DockController
 //	if (tt == TT_SELECT_ROI && (!enable)) {
 //		/* TODO: check if this is enough to make sure no label changes
 //		 * happen during ROI recomputation */
@@ -558,7 +566,7 @@ void MainWindow::clampNormUserRange()
 	*/
 }
 
-// todo: part of banddock
+// TODO Graphseg
 //void MainWindow::initGraphsegUI()
 //{
 //	graphsegSourceBox->addItem("Image", 0);
@@ -593,6 +601,7 @@ void MainWindow::clampNormUserRange()
 //			graphsegButton, SLOT(setChecked(bool)));
 //}
 
+// TODO Graphseg
 //void MainWindow::runGraphseg(SharedMultiImgPtr input,
 //							   const vole::GraphSegConfig &config)
 //{
@@ -608,6 +617,7 @@ void MainWindow::clampNormUserRange()
 //	*/
 //}
 
+// TODO Graphseg
 //void MainWindow::finishGraphSeg(bool success)
 //{
 //	/*
@@ -656,6 +666,7 @@ void MainWindow::clampNormUserRange()
 //	*/
 //}
 
+// TODO LabelingModel
 void MainWindow::loadSeeds()
 {
 //	IOGui io("Seed Image File", "seed image", this);

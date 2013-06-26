@@ -91,12 +91,7 @@ void Controller::initImage()
 			SIGNAL(bandSelected(representation::t, int)),
 			&im, SLOT(computeBand(representation::t, int)));
 
-	// TODO this belongs in DocksController
-	/* im -> others */
-	connect(&im, SIGNAL(bandUpdate(QPixmap, QString)),
-			window, SLOT(changeBand(QPixmap, QString)));
-	connect(&im, SIGNAL(imageUpdate(representation::t,SharedMultiImgPtr)),
-			this, SLOT(docksUpdateImage(representation::t,SharedMultiImgPtr)));
+	// -> DocksController
 }
 
 // depends on ImageModel
@@ -139,10 +134,12 @@ void Controller::initLabeling(cv::Rect dimensions)
 			&lm, SLOT(alterLabel(short)));
 	connect(window, SIGNAL(alterLabelRequested(short,cv::Mat1b,bool)),
 			&lm, SLOT(alterLabel(short,cv::Mat1b,bool)));
-	connect(window, SIGNAL(alterLabelingRequested(cv::Mat1s,cv::Mat1b)),
-			&lm, SLOT(alterPixels(cv::Mat1s,cv::Mat1b)));
-	connect(window, SIGNAL(newLabelingRequested(cv::Mat1s)),
-			&lm, SLOT(setLabels(cv::Mat1s)));
+// moved to DockController
+//	connect(window, SIGNAL(alterLabelingRequested(cv::Mat1s,cv::Mat1b)),
+//			&lm, SLOT(alterPixels(cv::Mat1s,cv::Mat1b)));
+// moved to DockController
+//	connect(window, SIGNAL(newLabelingRequested(cv::Mat1s)),
+//			&lm, SLOT(setLabels(cv::Mat1s)));
 	connect(window, SIGNAL(setGUIEnabledRequested(bool,TaskType)),
 			this, SLOT(setGUIEnabled(bool, TaskType)));
 

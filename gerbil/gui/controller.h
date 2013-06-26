@@ -28,6 +28,7 @@ public:
 	FalseColorModel* falseColorModel() { return &fm; }
 	IllumModel* illumModel() { return &illumm; }
 	UsSegmentationModel* usSegmentationModel() { return &um; }
+	LabelingModel* labelingModel() {return &lm;}
 signals:
 	void nSpectralBandsChanged(int);
 	// setGUIEnabled() part of the dock windows
@@ -59,6 +60,7 @@ public slots:
 								 const QVector<QColor>& colors = QVector<QColor>(),
 								 bool colorsChanged = false);
 
+	// FIXME REMOVE OBSOLETE
 	// update image data in docks (to be moved to dockcontroller)
 	void docksUpdateImage(representation::t type, SharedMultiImgPtr image);
 

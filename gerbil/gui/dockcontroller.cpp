@@ -76,6 +76,34 @@ void DockController::createDocks()
 
 void DockController::setupDocks()
 {
+
+	/* im -> others */
+	connect(chief->imageModel(), SIGNAL(bandUpdate(QPixmap, QString)),
+			bandDock, SLOT(changeBand(QPixmap, QString)));
+	// obsolete
+//	connect(&im, SIGNAL(imageUpdate(representation::t,SharedMultiImgPtr)),
+//			this, SLOT(docksUpdateImage(representation::t,SharedMultiImgPtr)));
+
+	/* Band Dock */
+	connect(bandDock->bandView(), SIGNAL(alteredLabels(cv::Mat1s,cv::Mat1b)),
+			chief->labelingModel(), SLOT(alterPixels(cv::Mat1s,cv::Mat1b)));
+	connect(bandDock->bandView(), SIGNAL(newLabeling(cv::Mat1s)),
+			chief->labelingModel(), SLOT(setLabels(cv::Mat1s)));
+
+	connect(bandDock->bandView(), SIGNAL(killHover()),
+			chief->mainWindow()->getViewerContainer(), SIGNAL(viewportsKillHover()));
+	connect(bandDock->bandView(), SIGNAL(pixelOverlay(int,int)),
+			chief->mainWindow()->getViewerContainer(), SIGNAL(viewersOverlay(int,int)));
+	connect(bandDock->bandView(), SIGNAL(newSingleLabel(short)),
+			chief->mainWindow()->getViewerContainer(), SIGNAL(viewersHighlight(short)));
+
+	connect(chief->mainWindow()->getViewerContainer(), SIGNAL(drawOverlay(const cv::Mat1b&)),
+		bandDock->bandView(), SLOT(drawOverlay(const cv::Mat1b&)));
+	connect(chief->mainWindow(), SIGNAL(ignoreLabelsRequested(bool)),
+			bandDock->bandView(), SLOT(toggleShowLabels(bool)));
+	connect(chief->mainWindow(), SIGNAL(singleLabelRequested(bool)),
+			bandDock->bandView(), SLOT(toggleSingleLabel(bool)));
+
 	/* RGB Dock */
 	connect(chief->imageModel(), SIGNAL(imageUpdate(representation::t,SharedMultiImgPtr)),
 			rgbDock, SLOT(processImageUpdate(representation::t,SharedMultiImgPtr)));
@@ -148,6 +176,15 @@ void DockController::setupDocks()
 
 void DockController::enableDocks(bool enable, TaskType tt)
 {
+	bandDock->setEnabled(enable);
+	bandDock->bandView()->setEnabled(enable);
+
+	if (tt == TT_SELECT_ROI && (!enable)) {
+		/* TODO: check if this is enough to make sure no label changes
+		 * happen during ROI recomputation */
+		bandDock->bandView()->commitLabelChanges();
+	}
+
 	//TODO
 	//	labelDock->setEnabled(enable);
 	rgbDock->setEnabled(enable);
