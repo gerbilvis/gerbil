@@ -136,7 +136,7 @@ void Controller::initGraphSegmentation()
 void Controller::initLabeling(cv::Rect dimensions)
 {
 	// initialize label model
-	lm.setDimensions(dimensions.width, dimensions.height);
+	lm.setDimensions(dimensions.height, dimensions.width);
 
 	/* gui requests */
 	connect(window, SIGNAL(clearLabelRequested(short)),

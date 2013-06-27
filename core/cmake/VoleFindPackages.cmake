@@ -189,26 +189,6 @@ vole_check_package(BOOST_PYTHON
 	"${Boost_PYTHON_LIBRARY}"
 )
 
-# Python
-find_package(PythonLibs)
-vole_check_package(PYTHON
-	"Python"
-	"Please install Python"
-	PYTHONLIBS_FOUND
-	"${PYTHON_INCLUDE_DIR}"
-	"${PYTHON_LIBRARIES}"
-)
-
-# Numpy
-find_package(NumPy)
-vole_check_package(NUMPY
-	"Numpy"
-	"Please install Numpy"
-	NUMPY_FOUND
-	"${NUMPY_INCLUDE_DIRS}"
-	""
-)
-
 # PETSc && SLEPc
 find_package(PETSc)
 vole_check_package(PETSC
