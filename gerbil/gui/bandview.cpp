@@ -20,6 +20,11 @@
 
 #include "gerbil_gui_debug.h"
 
+// for debugging
+std::ostream& operator<<(std::ostream& stream, const QPointF &p) {
+	stream << "(" << p.x() << "," << p.y() << ")";
+}
+
 BandView::BandView(QWidget *parent)
 	: ScaledView(parent),
 	  cacheValid(false), cursor(-1, -1), lastcursor(-1, -1), curLabel(1),
@@ -305,9 +310,14 @@ void BandView::cursorAction(QMouseEvent *ev, bool click)
 	cursor.setX(std::floor(cursor.x() - 0.25));
 	cursor.setY(std::floor(cursor.y() - 0.25));
 
-	// nothing new after all..
-	if ((cursor == lastcursor) && !click)
-		return;
+	//GGDBGM(boost::format("lastcursor %1%, cursor %2%, clicked %3%")%lastcursor%cursor%click << endl);
+
+	if(!click) {
+		if ((cursor == lastcursor))  // nothing new after all..
+			return;
+	} else {
+		lastcursor = cursor; // begin drawing new line
+	}
 
 	int x = cursor.x(), y = cursor.y();
 
