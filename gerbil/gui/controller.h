@@ -100,8 +100,7 @@ protected:
 	void doSpawnROI(bool reuse, const cv::Rect &roi);
 
 	// update ROI, or its contents
-	void updateROI(bool reuse,
-				   cv::Rect roi = cv::Rect(), size_t bands = -1);
+	void updateROI(bool reuse, cv::Rect roi = cv::Rect(), size_t bands = -1);
 
 	// image model stores all multispectral image representations (IMG, GRAD, …)
 	ImageModel im;

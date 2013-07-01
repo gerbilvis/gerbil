@@ -108,9 +108,8 @@ void DockController::setupDocks()
 			this, SLOT(raiseGraphSegDock(bool)));
 
 	// GraphSegModel -> BandDock
-	connect(chief->graphSegmentationModel(), SIGNAL(seedingDone(bool)),
-			bandDock, SIGNAL(seedingDone(bool)));
-
+	connect(chief->graphSegmentationModel(), SIGNAL(seedingDone()),
+			bandDock, SLOT(processSeedingDone()));
 
 	connect(chief->mainWindow()->getViewerContainer(), SIGNAL(drawOverlay(const cv::Mat1b&)),
 		bandDock->bandView(), SLOT(drawOverlay(const cv::Mat1b&)));
@@ -147,7 +146,7 @@ void DockController::setupDocks()
 	connect(illumDock, SIGNAL(showIlluminationCurveChanged(bool)),
 			chief->illumModel(), SLOT(setIlluminationCurveShown(bool)));
 
-	// TODO: connections between illumDock and viewer container
+	// connections between illumDock and viewer container
 	connect(illumDock, SIGNAL(showIlluminationCurveChanged(bool)),
 			chief->mainWindow()->getViewerContainer(), SLOT(showIlluminationCurve(bool)));
 
@@ -155,11 +154,9 @@ void DockController::setupDocks()
 
 	/* Graph Segmentation Dock */
 	chief->graphSegmentationModel()->setSeedMap(
-				bandDock->bandView()->getSeedMap()
-				);
-	chief->graphSegmentationModel()->setCurLabel(
-				bandDock->bandView()->getCurLabelPtr()
-				);
+		bandDock->bandView()->getSeedMap());
+	connect(bandDock, SIGNAL(currentLabelChanged(int)),
+			chief->graphSegmentationModel(), SLOT(setCurLabel(int)));
 
 	connect(chief->mainWindow(), SIGNAL(graphSegDockVisibleRequested(bool)),
 			graphSegDock, SLOT(setVisible(bool)));
@@ -167,6 +164,9 @@ void DockController::setupDocks()
 			SIGNAL(requestGraphseg(representation::t,vole::GraphSegConfig)),
 			chief->graphSegmentationModel(),
 			SLOT(runGraphseg(representation::t,vole::GraphSegConfig)));
+	connect(graphSegDock, SIGNAL(requestGraphsegCurBand(vole::GraphSegConfig)),
+			chief->graphSegmentationModel(),
+			SLOT(runGraphsegBand(vole::GraphSegConfig)));
 	graphSegDock->setVisible(false); // start hidden
 
 	/* Unsupervised Segmentation Dock */

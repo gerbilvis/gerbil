@@ -55,9 +55,6 @@ void BandDock::initUi()
 	connect(graphsegButton, SIGNAL(toggled(bool)),
 			bv, SLOT(toggleSeedMode(bool)));
 
-	connect(this, SIGNAL(seedingDone(bool)),
-			graphsegButton, SLOT(setEnabled(bool)));
-
 	bv->initUi();
 }
 
@@ -68,6 +65,11 @@ void BandDock::changeBand(QPixmap band, QString desc)
 	bv->setEnabled(true);
 	bv->setPixmap(band);
 	setWindowTitle(desc);
+}
+
+void BandDock::processSeedingDone()
+{
+	graphsegButton->setChecked(false);
 }
 
 void BandDock::clearLabelOrSeeds()

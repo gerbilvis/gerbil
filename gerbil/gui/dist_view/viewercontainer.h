@@ -83,7 +83,7 @@ signals:
 
 	// new signals to break-up coupling between MainWindow and ViewerContainer
 
-	void bandSelected(representation::t type, int selection);
+	void bandSelected(representation::t type, int bandId);
 	void setGUIEnabledRequested(bool enable, TaskType tt);
 
 protected:

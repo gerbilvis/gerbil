@@ -16,13 +16,13 @@ class GraphSegmentationDock : public QDockWidget, private Ui::GraphSegmentationD
 public:
 	explicit GraphSegmentationDock(QWidget *parent = 0);
 	~GraphSegmentationDock();
-	
 
 protected:
 	void initUi();
 
 signals:
 	void requestGraphseg(representation::t, const vole::GraphSegConfig &config);
+	void requestGraphsegCurBand(const vole::GraphSegConfig &config);
 
 protected slots:
 	void startGraphseg();

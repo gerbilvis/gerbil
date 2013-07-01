@@ -33,6 +33,8 @@ Controller::Controller(const std::string &filename, bool limited_mode)
 
 	// connect slots/signals
 	window->initSignals(this);
+	connect(window, SIGNAL(setGUIEnabledRequested(bool,TaskType)),
+			this, SLOT(setGUIEnabled(bool, TaskType)));
 
 	// initialize models
 	initImage();
@@ -127,7 +129,15 @@ void Controller::initGraphSegmentation()
 
 	connect(&gsm, SIGNAL(alterLabelRequested(short,cv::Mat1b,bool)),
 			&lm, SLOT(alterLabel(short,cv::Mat1b,bool)));
-	// connect gsm seedingDone <-> bandDock seedingDone in initDocks
+
+	connect(window->getViewerContainer(),
+			SIGNAL(bandSelected(representation::t,int)),
+			&gsm, SLOT(setCurBand(representation::t, int)));
+
+	connect(&gsm, SIGNAL(setGUIEnabledRequested(bool,TaskType)),
+			this, SLOT(setGUIEnabled(bool, TaskType)));
+
+	// gsm seedingDone <-> bandDock seedingDone connection in initDocks
 }
 
 /** Labeling management **/
@@ -143,8 +153,6 @@ void Controller::initLabeling(cv::Rect dimensions)
 			&lm, SLOT(alterLabel(short)));
 	connect(window, SIGNAL(alterLabelRequested(short,cv::Mat1b,bool)),
 			&lm, SLOT(alterLabel(short,cv::Mat1b,bool)));
-	connect(window, SIGNAL(setGUIEnabledRequested(bool,TaskType)),
-			this, SLOT(setGUIEnabled(bool, TaskType)));
 
 	/* lm -> others */
 	connect(&lm,
@@ -299,7 +307,6 @@ void Controller::setGUIEnabled(bool enable, TaskType tt)
 	 * that the user can re-decide on that aspect or sth.
 	 * it is a bit strange
 	 */
-
 	window->setGUIEnabled(enable, tt);
 
 	// tell dock controller

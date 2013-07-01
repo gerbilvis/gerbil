@@ -58,15 +58,11 @@ public:
 	// setGUIEnabled() slot is now in Controller class
 	void setGUIEnabled(bool enable, TaskType tt = TT_NONE);
 public slots:
-	//	void finishGraphSeg(bool success);
-
 	void setCurrentLabel(int cl) { currentLabel = cl;}
 
 	void addToLabel();
 	void remFromLabel();
 
-	// TODO -> segmentationDock
-//	void startGraphseg();
 	// TODO -> segmentationDock
 //	void segmentationFinished();
 //	void segmentationApply(std::map<std::string, boost::any>);
@@ -108,20 +104,11 @@ signals:
 protected:
 	void changeEvent(QEvent *e);
 
-//	void runGraphseg(SharedMultiImgPtr input, const vole::GraphSegConfig &config);
-
 private:
-
-//	void initGraphsegUI();
 	void initNormalizationUI();
 
 
 	QMenu *contextMenu;
-
-//	/* this hack sucks actually! we would get rid of this by using commandrunner
-//	 * for graphseg, but I start to tend against it
-//	 */
-//	boost::shared_ptr<cv::Mat1s> graphsegResult;
 
 	bool limitedMode;
 	// full image dimensions, used in loadSeeds()

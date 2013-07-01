@@ -8,10 +8,7 @@ GraphSegmentationDock::GraphSegmentationDock(QWidget *parent) :
 	initUi();
 }
 
-GraphSegmentationDock::~GraphSegmentationDock()
-{
-
-}
+GraphSegmentationDock::~GraphSegmentationDock() { }
 
 void GraphSegmentationDock::initUi()
 {
@@ -39,11 +36,6 @@ void GraphSegmentationDock::initUi()
 
 	connect(graphsegGoButton, SIGNAL(clicked()),
 			this, SLOT(startGraphseg()));
-	// TODO
-	// Ploner: graphsegButton is on the bandView or not?
-	//         just delete the following?
-//	connect(this, SIGNAL(seedingDone(bool)),
-//			graphsegButton, SLOT(setChecked(bool)));
 }
 
 
@@ -68,15 +60,7 @@ void GraphSegmentationDock::startGraphseg()
 		emit requestGraphseg(representation::IMG, conf);
 	} else if (src == 1) {
 		emit requestGraphseg(representation::GRAD, conf);
-	} else {	// currently shown band, construct from selection in viewport
-		assert(false); // TODO
-		/*representation::t type = viewerContainer->getActiveRepresentation();
-		int band = viewerContainer->getSelection(type);
-		SharedMultiImgPtr img = viewerContainer->getViewerImage(type);
-		SharedDataLock img_lock(img->mutex);
-		SharedMultiImgPtr i(new SharedMultiImgBase(
-			new multi_img((**img)[band], (*img)->minval, (*img)->maxval)));
-		img_lock.unlock();
-		emit requestGraphseg(i, conf);*/
+	} else {
+		emit requestGraphsegCurBand(conf); // currently shown band
 	}
 }
