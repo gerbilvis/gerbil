@@ -199,6 +199,7 @@ void MainWindow::normTargetChanged(bool usecurrent)
 	*/
 }
 
+// -> NormDock::processNormModeSelected()
 void MainWindow::normModeSelected(int mode, bool targetchange, bool usecurrent)
 {
 	/*

@@ -148,14 +148,14 @@ void ImageModel::spawn(representation::t type, const cv::Rect &newROI, size_t ba
 	if (type == representation::IMG || type == representation::GRAD)
 	{
 		SharedMultiImgPtr target = map[type]->image;
-		data_range_ptr range = map[type]->normRange;
+		SharedDataRangePtr range = map[type]->normRange;
 		MultiImg::NormMode mode =  map[type]->normMode;
 		// TODO: a small hack in NormRangeTBB to determine theoretical range
 		int isGRAD = (type == representation::GRAD ? 1 : 0);
 
 		SharedDataLock hlock(range->mutex);
-		double min = (*range)->first;
-		double max = (*range)->second;
+		double min = (*range)->min;
+		double max = (*range)->max;
 		hlock.unlock();
 
 		if (cv::gpu::getCudaEnabledDeviceCount() > 0 && USE_CUDA_DATARANGE) {

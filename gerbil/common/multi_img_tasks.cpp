@@ -616,8 +616,8 @@ bool DataRangeTbb::run()
 
 	if (!stopper.is_group_execution_cancelled()) {
 		SharedDataSwapLock lock(range->mutex);
-		(*range)->first = determineRange.GetMin();
-		(*range)->second = determineRange.GetMax();
+		(*range)->min = determineRange.GetMin();
+		(*range)->max = determineRange.GetMax();
 		return true;
 	} else {
 		return false;
@@ -643,8 +643,8 @@ bool DataRangeCuda::run()
 
 	if (!stopper.is_group_execution_cancelled()) {
 		SharedDataSwapLock lock(range->mutex);
-		(*range)->first = min;
-		(*range)->second = max;
+		(*range)->min = min;
+		(*range)->max = max;
 		return true;
 	} else {
 		return false;

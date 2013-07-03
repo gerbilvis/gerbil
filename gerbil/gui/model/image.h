@@ -3,6 +3,7 @@
 
 #include "representation.h"
 #include <shared_data.h>
+#include <multi_img_util.h>
 #include <multi_img_tasks.h>
 #include <background_task_queue.h>
 
@@ -21,8 +22,8 @@ public:
 	ImageModelPayload(representation::t type)
 		: type(type), image(new SharedMultiImgBase(new multi_img())),
 		  normMode(MultiImg::NORM_OBSERVED), normRange(
-			new SharedData<std::pair<multi_img::Value, multi_img::Value> >(
-			  new std::pair<multi_img::Value, multi_img::Value>(0, 0)))
+			new SharedData<ImageDataRange> (
+			  new ImageDataRange(0, 0)))
 	{}
 
 	// the type we have
@@ -33,7 +34,7 @@ public:
 
 	// normalization mode and range
 	MultiImg::NormMode normMode;
-	data_range_ptr normRange;
+	SharedDataRangePtr normRange;
 
 	// cached single bands
 	QMap<int, QPixmap> bands;
