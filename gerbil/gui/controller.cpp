@@ -70,6 +70,10 @@ Controller::Controller(const std::string &filename, bool limited_mode)
 	//GGDBGM("roi " << roi << endl);
 	spawnROI(roi);
 
+	// compute data ranges. Currently only for normDock.
+	im.computeDataRange(representation::IMG);
+	im.computeDataRange(representation::GRAD);
+
 	// set title and show window
 	QFileInfo fi(QString::fromStdString(filename));
 	window->setWindowTitle(QString("Gerbil - %1").arg(fi.completeBaseName()));
@@ -164,13 +168,13 @@ void Controller::initLabeling(cv::Rect dimensions)
 			SLOT(updateLabelsPartially(const cv::Mat1s&,const cv::Mat1b&)));
 }
 
-void Controller::spawnROI(const cv::Rect &roi)
+void Controller::spawnROI(cv::Rect roi)
 {
 	const bool reuse = true;
 	doSpawnROI(reuse, roi);
 }
 
-void Controller::invalidateROI(const cv::Rect &roi)
+void Controller::invalidateROI(cv::Rect roi)
 {
 	const bool reuse = false;
 	doSpawnROI(reuse, roi);

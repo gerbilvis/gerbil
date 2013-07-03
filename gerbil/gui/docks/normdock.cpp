@@ -93,6 +93,7 @@ void NormDock::setGuiEnabled(bool enable, TaskType tt)
 
 void NormDock::setNormRange(representation::t type, const ImageDataRange &range)
 {
+	//GGDBGM(type << " " << range << endl);
 	assert(representation::IMG == type || representation::GRAD == type );
 	ranges[type] = range;
 	// update GUI with new values
@@ -121,6 +122,10 @@ void NormDock::setNormTarget(representation::t type)
 void NormDock::processApplyClicked()
 {
 	//GGDBG_CALL();
+	emit normalizationParametersChanged(
+				normTarget,
+				modes[normTarget],
+				ranges[normTarget]);
 	emit applyNormalizationRequested();
 }
 

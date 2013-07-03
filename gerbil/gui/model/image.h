@@ -40,11 +40,12 @@ public:
 	QMap<int, QPixmap> bands;
 
 public slots:
-	// connect the corresponding task's finishing with this slot
-	void propagateFinishedCalculation(bool success);
+	void processImageDataTaskFinished(bool success);
+	void processDataRangeTaskFinished(bool success);
 
 signals:
 	void newImageData(representation::t type, SharedMultiImgPtr image);
+	void dataRangeUpdate(representation::t type, ImageDataRange range);
 };
 
 class ImageModel : public QObject
@@ -93,12 +94,24 @@ public slots:
 	 */
 	void computeFullRgb();
 
+	/** Compute data range for given image representation.
+	 *
+	 * Emits dataRangeUdpate() after task has finished.
+	 */
+	void computeDataRange(representation::t type);
+
+	void setNormalizationParameters(
+			representation::t type,
+			MultiImg::NormMode normMode,
+			ImageDataRange targetRange);
 signals:
 	/** The data of the currently selected band has changed. */
 	void bandUpdate(QPixmap band, QString description);
 
 	void fullRgbUpdate(QPixmap fullRgb);
 	void imageUpdate(representation::t type, SharedMultiImgPtr image);
+	/** The data range for representation type has changed. */
+	void dataRangeUdpate(representation::t type, const ImageDataRange& range);
 private:
 	// helper to spawn()
 	bool checkProfitable(const cv::Rect& oldROI, const cv::Rect& newROI);

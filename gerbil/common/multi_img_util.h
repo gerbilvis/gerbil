@@ -26,4 +26,9 @@ struct ImageDataRange {
 	}
 };
 
+// for debugging
+inline std::ostream& operator<<(std::ostream& stream, const ImageDataRange& r) {
+	stream << "[" << r.min << "," << r.max << "]";
+}
+
 #endif // MULTI_IMG_UTIL_H

@@ -321,6 +321,7 @@ void MainWindow::applyNormUserRange()
 	*/
 }
 
+// TODO missing in ImageModel
 void MainWindow::clampNormUserRange()
 {
 	/*

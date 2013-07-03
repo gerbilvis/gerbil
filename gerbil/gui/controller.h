@@ -39,9 +39,9 @@ signals:
 public slots:
 	/** requests (from GUI) */
 	// change ROI, effectively spawning new image data, reusing cached ROI data
-	void spawnROI(const cv::Rect &roi);
+	void spawnROI(cv::Rect roi = cv::Rect());
 	// change ROI, spawn new image data, rebuild everything from scratch.
-	void invalidateROI(const cv::Rect &roi);
+	void invalidateROI(cv::Rect roi = cv::Rect());
 	// change number of bands, spawning new image data
 	void rescaleSpectrum(size_t bands);
 	// change binnig to reflect, or not reflect, labeling

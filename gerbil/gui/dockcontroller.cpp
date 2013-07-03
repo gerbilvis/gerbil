@@ -195,6 +195,25 @@ void DockController::setupDocks()
 	//usSegDock->hide();
 #endif /* WITH_SEG_MEANSHIFT */
 
+	/* Normalization Dock */
+	connect(chief->imageModel(),
+			SIGNAL(dataRangeUdpate(representation::t,ImageDataRange)),
+			normDock,
+			SLOT(setNormRange(representation::t,ImageDataRange)));
+	connect(normDock,
+			SIGNAL(computeDataRangeRequested(representation::t)),
+			chief->imageModel(),
+			SLOT(computeDataRange(representation::t)));
+	connect(normDock,
+			SIGNAL(normalizationParametersChanged(
+					   representation::t,MultiImg::NormMode,ImageDataRange)),
+			chief->imageModel(),
+			SLOT(setNormalizationParameters(
+					 representation::t,MultiImg::NormMode,ImageDataRange)));
+	connect(normDock, SIGNAL(applyNormalizationRequested()),
+			chief,
+			SLOT(invalidateROI()));
+
 }
 
 void DockController::raiseGraphSegDock(bool enable)

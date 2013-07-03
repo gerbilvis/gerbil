@@ -3,7 +3,10 @@
 #include "tasks/normrangetbb.h"
 #include "tasks/rgbtbb.h"
 
+#include "../gerbil_gui_debug.h"
+
 #include <multi_img_offloaded.h>
+#include <multi_img_tasks.h>
 #include <imginput.h>
 #include <boost/make_shared.hpp>
 
@@ -24,6 +27,8 @@ ImageModel::ImageModel(BackgroundTaskQueue &queue, bool lm)
 	foreach (payload *p, map) {
 		connect(p, SIGNAL(newImageData(representation::t,SharedMultiImgPtr)),
 				this, SIGNAL(imageUpdate(representation::t,SharedMultiImgPtr)));
+		connect(p, SIGNAL(dataRangeUpdate(representation::t,ImageDataRange)),
+				this, SIGNAL(dataRangeUdpate(representation::t,ImageDataRange)));
 	}
 }
 
@@ -86,13 +91,22 @@ void ImageModel::invalidateROI()
 	}
 }
 
-void ImageModel::payload::propagateFinishedCalculation(bool success)
+void ImageModel::payload::processImageDataTaskFinished(bool success)
 {
 	if (!success)
 		return;
 
 	// signal new image data
 	emit newImageData(type, image);
+}
+
+void ImageModelPayload::processDataRangeTaskFinished(bool success)
+{
+	if (!success)
+		return;
+
+	// TODO
+	//emit dataRangeUpdate();
 }
 
 void ImageModel::spawn(representation::t type, const cv::Rect &newROI, size_t bands)
@@ -154,6 +168,7 @@ void ImageModel::spawn(representation::t type, const cv::Rect &newROI, size_t ba
 		int isGRAD = (type == representation::GRAD ? 1 : 0);
 
 		SharedDataLock hlock(range->mutex);
+		//GGDBGM(format("%1% range %2%") %type %**range << endl);
 		double min = (*range)->min;
 		double max = (*range)->max;
 		hlock.unlock();
@@ -184,7 +199,7 @@ void ImageModel::spawn(representation::t type, const cv::Rect &newROI, size_t ba
 	// emit signal after all tasks are finished and fully updated data available
 	BackgroundTaskPtr taskEpilog(new BackgroundTask(roi));
 	QObject::connect(taskEpilog.get(), SIGNAL(finished(bool)),
-					 map[type], SLOT(propagateFinishedCalculation(bool)));
+					 map[type], SLOT(processImageDataTaskFinished(bool)));
 	queue.push(taskEpilog);
 }
 
@@ -233,4 +248,35 @@ void ImageModel::computeFullRgb()
 
 	QPixmap p = QPixmap::fromImage(**fullRgb);
 	emit fullRgbUpdate(p);
+}
+
+void ImageModel::computeDataRange(representation::t type)
+{
+	// FIXME data range on roi or on full image???
+	// for now on full image
+
+	// FIXME DataRange computation appears to be broken.
+	SharedDataRangePtr rangep(
+		new SharedData<ImageDataRange>(
+			new ImageDataRange()));
+
+	BackgroundTaskPtr dataRangeTask(
+				new MultiImg::DataRangeTbb(
+					map[type]->image,
+					rangep));
+	// TODO: use queue and payload slot processDataRangeTaskFinished()
+	dataRangeTask->run();
+
+	emit dataRangeUdpate(type, **rangep);
+}
+
+void ImageModel::setNormalizationParameters(
+		representation::t type,
+		MultiImg::NormMode normMode,
+		ImageDataRange targetRange)
+{
+	//GGDBGM(type << " " << targetRange << endl);
+	map[type]->normMode = normMode;
+	SharedDataLock lock(map[type]->normRange->mutex);
+	**(map[type]->normRange) = targetRange;
 }
