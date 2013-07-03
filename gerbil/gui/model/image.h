@@ -94,11 +94,11 @@ public slots:
 	 */
 	void computeFullRgb();
 
-	/** Compute data range for given image representation.
-	 *
-	 * Emits dataRangeUdpate() after task has finished.
-	 */
-	void computeDataRange(representation::t type);
+//	/** Compute data range for given image representation.
+//	 *
+//	 * Emits dataRangeUdpate() after task has finished.
+//	 */
+//	void computeDataRange(representation::t type);
 
 	void setNormalizationParameters(
 			representation::t type,

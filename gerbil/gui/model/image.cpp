@@ -98,6 +98,7 @@ void ImageModel::payload::processImageDataTaskFinished(bool success)
 
 	// signal new image data
 	emit newImageData(type, image);
+	emit dataRangeUpdate(type, **normRange);
 }
 
 void ImageModelPayload::processDataRangeTaskFinished(bool success)
@@ -250,25 +251,25 @@ void ImageModel::computeFullRgb()
 	emit fullRgbUpdate(p);
 }
 
-void ImageModel::computeDataRange(representation::t type)
-{
-	// FIXME data range on roi or on full image???
-	// for now on full image
+//void ImageModel::computeDataRange(representation::t type)
+//{
+//	// FIXME data range on roi or on full image???
+//	// for now on full image
 
-	// FIXME DataRange computation appears to be broken.
-	SharedDataRangePtr rangep(
-		new SharedData<ImageDataRange>(
-			new ImageDataRange()));
+//	// FIXME DataRange computation appears to be broken.
+//	SharedDataRangePtr rangep(
+//		new SharedData<ImageDataRange>(
+//			new ImageDataRange()));
 
-	BackgroundTaskPtr dataRangeTask(
-				new MultiImg::DataRangeTbb(
-					map[type]->image,
-					rangep));
-	// TODO: use queue and payload slot processDataRangeTaskFinished()
-	dataRangeTask->run();
+//	BackgroundTaskPtr dataRangeTask(
+//				new MultiImg::DataRangeTbb(
+//					map[type]->image,
+//					rangep));
+//	// TODO: use queue and payload slot processDataRangeTaskFinished()
+//	dataRangeTask->run();
 
-	emit dataRangeUdpate(type, **rangep);
-}
+//	emit dataRangeUdpate(type, **rangep);
+//}
 
 void ImageModel::setNormalizationParameters(
 		representation::t type,

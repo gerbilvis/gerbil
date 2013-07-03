@@ -70,9 +70,10 @@ Controller::Controller(const std::string &filename, bool limited_mode)
 	//GGDBGM("roi " << roi << endl);
 	spawnROI(roi);
 
-	// compute data ranges. Currently only for normDock.
-	im.computeDataRange(representation::IMG);
-	im.computeDataRange(representation::GRAD);
+	// obsolete
+//	// compute data ranges. Currently only for normDock.
+//	im.computeDataRange(representation::IMG);
+//	im.computeDataRange(representation::GRAD);
 
 	// set title and show window
 	QFileInfo fi(QString::fromStdString(filename));

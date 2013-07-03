@@ -45,9 +45,9 @@ public slots:
 
 protected slots:
 	void processApplyClicked();
-	void processNormTargetSelected();
-	void processNormModeSelected(int idx)
-		{ modes[normTarget] = static_cast<MultiImg::NormMode>(idx); }
+	/** Update GUI elements from data, except normTarget buttons. */
+	void updateGUI();
+	void processNormModeSelected(int idx);
 	void processMinValueChanged();
 	void processMaxValueChanged();
 signals:

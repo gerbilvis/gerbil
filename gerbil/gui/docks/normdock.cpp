@@ -25,8 +25,8 @@ NormDock::NormDock(QWidget *parent) :
 	ranges.insert(representation::IMG, ImageDataRange());
 	ranges.insert(representation::GRAD, ImageDataRange());
 
-	modes.insert(representation::IMG, MultiImg::NORM_FIXED);
-	modes.insert(representation::GRAD, MultiImg::NORM_FIXED);
+	modes.insert(representation::IMG, MultiImg::NORM_OBSERVED);
+	modes.insert(representation::GRAD, MultiImg::NORM_OBSERVED);
 
 	setupUi(this);
 	initUi();
@@ -48,9 +48,9 @@ void NormDock::initUi()
 	normClampButton->hide();
 
 	connect(normIButton, SIGNAL(toggled(bool)),
-			this, SLOT(processNormTargetSelected()));
+			this, SLOT(updateGUI()));
 	connect(normGButton, SIGNAL(toggled(bool)),
-			this, SLOT(processNormTargetSelected()));
+			this, SLOT(updateGUI()));
 	connect(normModeBox, SIGNAL(currentIndexChanged(int)),
 			this, SLOT(processNormModeSelected(int)));
 	connect(normMinBox, SIGNAL(editingFinished()),
@@ -61,7 +61,7 @@ void NormDock::initUi()
 			this, SLOT(processApplyClicked()));
 
 	// update values in GUI elements
-	processNormTargetSelected();
+	updateGUI();
 }
 
 
@@ -94,23 +94,26 @@ void NormDock::setGuiEnabled(bool enable, TaskType tt)
 void NormDock::setNormRange(representation::t type, const ImageDataRange &range)
 {
 	//GGDBGM(type << " " << range << endl);
-	assert(representation::IMG == type || representation::GRAD == type );
+	if(!(representation::IMG == type || representation::GRAD == type ))
+		return;
 	ranges[type] = range;
 	// update GUI with new values
-	processNormTargetSelected();
+	updateGUI();
 }
 
 void NormDock::setNormMode(representation::t type,MultiImg::NormMode mode)
 {
-	assert(representation::IMG == type || representation::GRAD == type );
+	if(!(representation::IMG == type || representation::GRAD == type ))
+		return;
 	modes[type] = mode;
 	// update GUI with new values
-	processNormTargetSelected();
+	updateGUI();
 }
 
 void NormDock::setNormTarget(representation::t type)
 {
-	assert(representation::IMG == type || representation::GRAD == type );
+	if(!(representation::IMG == type || representation::GRAD == type ))
+		return;
 	if(representation::IMG == type) {
 		normIButton->toggle();
 	} else { // GRAD
@@ -129,7 +132,7 @@ void NormDock::processApplyClicked()
 	emit applyNormalizationRequested();
 }
 
-void NormDock::processNormTargetSelected()
+void NormDock::updateGUI()
 {
 	if(normIButton->isChecked()) {
 		normTarget = representation::IMG;
@@ -142,12 +145,31 @@ void NormDock::processNormTargetSelected()
 	normModeBox->blockSignals(false);
 
 	normMinBox->blockSignals(true);
-	normMinBox->setValue(ranges[normTarget].min);
-	normMinBox->blockSignals(false);
-
 	normMaxBox->blockSignals(true);
+	normMinBox->setEnabled(false);
+	normMaxBox->setEnabled(false);
+	// FIXME when switching from THEORETICAL or FIXED to OBSERVED,
+	// the actual observed values will not be displayed.
+	normMinBox->setValue(ranges[normTarget].min);
 	normMaxBox->setValue(ranges[normTarget].max);
+	if(modes[normTarget] == MultiImg::NORM_FIXED) {
+		normMinBox->setEnabled(true);
+		normMaxBox->setEnabled(true);
+	} else if (modes[normTarget] == MultiImg::NORM_THEORETICAL) {
+		// FIXME assuming image depth is 8-bit always.
+		normMinBox->setValue(0.);
+		normMaxBox->setValue(255.);
+	} else { // OBSERVED
+		// nothing
+	}
+	normMinBox->blockSignals(false);
 	normMaxBox->blockSignals(false);
+}
+
+void NormDock::processNormModeSelected(int idx)
+{
+	modes[normTarget] = static_cast<MultiImg::NormMode>(idx);
+	updateGUI();
 }
 
 void NormDock::processMinValueChanged()
@@ -158,7 +180,7 @@ void NormDock::processMinValueChanged()
 	//GGDBGM(ranges[normTarget].max << endl);
 	ranges[normTarget].max = max(val, ranges[normTarget].max);
 	//GGDBGM(ranges[normTarget].max << endl);
-	processNormTargetSelected();
+	updateGUI();
 }
 
 void NormDock::processMaxValueChanged()
@@ -167,7 +189,7 @@ void NormDock::processMaxValueChanged()
 	const double val = normMaxBox->value();
 	ranges[normTarget].max = val;
 	ranges[normTarget].min = min(val, ranges[normTarget].min);
-	processNormTargetSelected();
+	updateGUI();
 }
 
 
