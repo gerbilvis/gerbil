@@ -8,13 +8,12 @@
 #include <opencv2/core/core.hpp>
 
 #include <QObject>
+#include <QPixmap>
 
 namespace vole
 {
 	class GraphSegConfig;
 }
-
-// TODO: Warum auf IMG und GRAD beschraenken?
 
 class GraphSegmentationModel : public QObject
 {
@@ -34,7 +33,8 @@ protected:
 
 public slots:
 	void setCurLabel(int curLabel);
-	void setCurBand(representation::t type, int bandId);
+//	void setCurBand(representation::t type, int bandId);
+	void setCurBand(QPixmap band, QString description);
 	void runGraphseg(representation::t type,
 					 const vole::GraphSegConfig &config);
 	void runGraphsegBand(const vole::GraphSegConfig &config);
@@ -56,8 +56,9 @@ protected:
 	ImageMap map;
 	cv::Mat1s *seedMap;
 
-	representation::t curRepr;
-	int curBand;
+//	representation::t curRepr;
+//	int curBand;
+	QPixmap curBand;
 	int curLabel;
 
 	boost::shared_ptr<cv::Mat1s> graphsegResult;

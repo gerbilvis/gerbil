@@ -135,9 +135,8 @@ void Controller::initGraphSegmentation()
 	connect(&gsm, SIGNAL(alterLabelRequested(short,cv::Mat1b,bool)),
 			&lm, SLOT(alterLabel(short,cv::Mat1b,bool)));
 
-	connect(window->getViewerContainer(),
-			SIGNAL(bandSelected(representation::t,int)),
-			&gsm, SLOT(setCurBand(representation::t, int)));
+	connect(&im, SIGNAL(bandUpdate(QPixmap,QString)),
+			&gsm, SLOT(setCurBand(QPixmap,QString)));
 
 	connect(&gsm, SIGNAL(setGUIEnabledRequested(bool,TaskType)),
 			this, SLOT(setGUIEnabled(bool, TaskType)));

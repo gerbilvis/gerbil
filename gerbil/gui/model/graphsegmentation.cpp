@@ -4,6 +4,8 @@
 #include "../tasks/graphsegbackground.h"
 
 #include <background_task_queue.h>
+#include <opencv2/core/core.hpp>
+#include <qtopencv.h>
 
 
 GraphSegmentationModel::GraphSegmentationModel(QObject *parent,
@@ -31,13 +33,17 @@ void GraphSegmentationModel::setCurLabel(int curLabel)
 	this->curLabel = curLabel;
 }
 
-void GraphSegmentationModel::setCurBand(representation::t type, int bandId)
+//void GraphSegmentationModel::setCurBand(representation::t type, int bandId)
+//{
+//	if (type == representation::IMG || type == representation::GRAD)
+//	{
+//		this->curRepr = type;
+//		this->curBand = bandId;
+//	}
+//}
+void GraphSegmentationModel::setCurBand(QPixmap band, QString description)
 {
-	if (type == representation::IMG || type == representation::GRAD)
-	{
-		this->curRepr = type;
-		this->curBand = bandId;
-	}
+	this->curBand = band;
 }
 
 void GraphSegmentationModel::runGraphseg(representation::t type,
@@ -52,14 +58,13 @@ void GraphSegmentationModel::runGraphseg(representation::t type,
 
 void GraphSegmentationModel::runGraphsegBand(const vole::GraphSegConfig &config)
 {
-	SharedMultiImgPtr image = map.value(curRepr);
-	if (!image) // image of type type was not set with setMultiImg
-		assert(false);
+	// TODO: make sure that we receive the first band selection at startup
+	// currently seems to work and will be changed soon
 
-	SharedDataLock img_lock(image->mutex);
-	SharedMultiImgPtr input(new SharedMultiImgBase(
-		new multi_img((**image)[curBand], (*image)->minval, (*image)->maxval)));
-	img_lock.unlock();
+	cv::Mat3b bandRgb = vole::QImage2Mat(curBand.toImage());
+	cv::Mat1b bandGray;
+	cv::cvtColor(bandRgb, bandGray, cv::COLOR_BGR2GRAY);
+	SharedMultiImgPtr input(new SharedMultiImgBase(new multi_img(bandGray)));
 	startGraphseg(input, config);
 }
 
@@ -87,5 +92,4 @@ void GraphSegmentationModel::finishGraphSeg(bool success)
 
 		emit setGUIEnabledRequested(true, TT_NONE);
 	}
-	// TODO: warn user in case of failure?
 }
