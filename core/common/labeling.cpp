@@ -110,8 +110,10 @@ void Labeling::read(const cv::Mat &src, bool binary)
 					labels(y, x) = indices[intensity];
 				}
 			}
-		} else {
+		} else { // rgb images
 			assert(src.channels() == 3 && bins == 256);
+
+			// calculate histogram of the image colors, stored in indices[b,g,r]
 			vector<vector<vector<int> > > indices
 					(bins, vector<vector<int> >(bins, vector<int>(bins, 0)));
 			for (int y = 0; y < src.rows; ++y) {
@@ -120,6 +122,11 @@ void Labeling::read(const cv::Mat &src, bool binary)
 					indices[v[0]][v[1]][v[2]]++;
 				}
 			}
+
+			// find colors in the rgb image and add them as label colors
+			// at the same time, replace the frequency of the color by its index
+			// FIXME: 256^3 iterations for adding 1 - 10 label colors?
+			//		  use map or similar structure instead -> bugtracker #26
 			labelColors.clear();
 			int index = 0;
 			for (int b = 0; b < bins; ++b) {
@@ -134,6 +141,8 @@ void Labeling::read(const cv::Mat &src, bool binary)
 				}
 			}
 			labelcount = index;
+
+			// assign the color indices to the label matrix
 			labels = cv::Mat1s(src.rows, src.cols);
 			for (int y = 0; y < src.rows; ++y) {
 				for (int x = 0; x < src.cols; ++x) {
