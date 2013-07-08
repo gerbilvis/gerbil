@@ -289,25 +289,14 @@ int main(int argc, char **argv)
 			filelist = multi_img::parse_filelist(filename);
 	bool limited_mode = determine_limited(filelist);
 
-	// create controller
-	Controller chief(filename, limited_mode);
-
 	// get optional labeling filename
-/*	TODO
+	QString labelfile;
 	if (argc >= 3) {
-		QString labelfile = argv[2];
-		chief.loadLabeling(labelfile);
-
-		// old code for load labels TODO: why defer?!
-		if (!labelfile.isEmpty()) {
-			BackgroundTaskPtr taskLabels(new BackgroundTask(roi));
-			QObject::connect(taskLabels.get(), SIGNAL(finished(bool)),
-				this, SLOT(loadLabeling()), Qt::QueuedConnection);
-			queue.push(taskLabels);
-		}
-
+		labelfile = argv[2];
 	}
-*/
+
+	// create controller
+	Controller chief(filename, limited_mode, labelfile);
 
 	// run Qt event loop
 	return app.exec();

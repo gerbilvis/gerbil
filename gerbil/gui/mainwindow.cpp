@@ -60,6 +60,7 @@ void MainWindow::remFromLabel()
 
 void MainWindow::initUI(cv::Rect dim, size_t size)
 {
+	// TODO: maybe we can delete this after moving loadSeeds to labelModel?
 	// used in loadSeeds(), maybe also for showing generic metadata
 	dimensions = dim;
 

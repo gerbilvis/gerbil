@@ -14,9 +14,10 @@ std::ostream &operator<<(std::ostream& os, const cv::Rect& r)
 	return os;
 }
 
-Controller::Controller(const std::string &filename, bool limited_mode)
-	: im(queue, limited_mode), fm(this, &queue), illumm(this), gsm(this, &queue),
-	   queuethread(0), spectralRescaleInProgress(false)
+Controller::Controller(const std::string &filename, bool limited_mode,
+	const QString &labelfile)
+	: im(queue, limited_mode), fm(this, &queue), illumm(this),
+	  gsm(this, &queue), queuethread(0), spectralRescaleInProgress(false)
 {
 	// load image
 	cv::Rect dimensions = im.loadImage(filename);
@@ -41,7 +42,7 @@ Controller::Controller(const std::string &filename, bool limited_mode)
 	initFalseColor(); // depends on ImageModel / initImage()
 	initIlluminant();
 	initGraphSegmentation(); // depends on ImageModel / initImage()
-	initLabeling(dimensions);
+	initLabeling(dimensions, labelfile);
 
 #ifdef WITH_SEG_MEANSHIFT
 	um.setMultiImage(im.getImage(representation::IMG));
@@ -147,10 +148,14 @@ void Controller::initGraphSegmentation()
 /** Labeling management **/
 
 // connect all signals between model and other parties
-void Controller::initLabeling(cv::Rect dimensions)
+void Controller::initLabeling(cv::Rect dimensions, const QString &labelfile)
 {
 	// initialize label model
 	lm.setDimensions(dimensions.height, dimensions.width);
+
+	if (!labelfile.isEmpty()) {
+		lm.loadLabeling(labelfile);
+	}
 
 	/* gui requests */
 	connect(window, SIGNAL(clearLabelRequested(short)),

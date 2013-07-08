@@ -21,7 +21,8 @@ class Controller : public QObject
 {
 	Q_OBJECT
 public:
-	explicit Controller(const std::string &filename, bool limited_mode);
+	explicit Controller(const std::string &filename, bool limited_mode,
+						const QString &labelfile);
 	~Controller();
 
 	MainWindow* mainWindow() { return window; }
@@ -82,7 +83,7 @@ protected:
 	void initFalseColor();
 	void initIlluminant();
 	void initGraphSegmentation();
-	void initLabeling(cv::Rect dimensions);
+	void initLabeling(cv::Rect dimensions, const QString &labelfile);
 
 	// create background thread that processes BackgroundTaskQueue
 	void startQueue();
