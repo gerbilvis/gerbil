@@ -29,10 +29,11 @@ void LabelingModel::setLabels(const vole::Labeling &labeling, bool full)
 {
 	if (full) {
 		// labeling covers full image
-		full_labels = labeling();
+		labeling().copyTo(full_labels);
 	} else {
 		// only current ROI is updated
-		labels = labeling();
+		cv::Mat1s updateRegion = cv::Mat1s(full_labels, roi);
+		labeling().copyTo(updateRegion);
 	}
 
 	// set label colors, but do not emit signal (we need combined signal)
@@ -76,13 +77,14 @@ int LabelingModel::addLabel()
 {
 	//GGDBG_CALL();
 	// we always have at least one background color
-	int index = std::max(colors.count(), 1);
+	int labelcount = std::max(colors.count(), 1);
 
-	// increment colors by 1
-	setLabelColors(vole::Labeling::colors(index + 1, true));
+	// increment colors by 1 (add label)
+	labelcount++;
+	setLabelColors(vole::Labeling::colors(labelcount, true));
 
 	// return index of new label (count - 1)
-	return index;
+	return labelcount -1;
 }
 
 void LabelingModel::alterLabel(short index, cv::Mat1b mask,
@@ -150,4 +152,23 @@ void LabelingModel::saveLabeling(const QString &filename)
 
 	IOGui io("Labeling As Image File", "labeling image");
 	io.writeFile(filename, output);
+}
+
+void LabelingModel::loadSeeds()
+{
+	IOGui io("Seed Image File", "seed image");
+	// TODO
+	/*cv::Mat1s seeding = io.readFile(QString(), 0,
+									dimensions.height, dimensions.width);
+	if (seeding.empty())
+		return;
+
+	bandView->seedMap = seeding;
+
+	// now make sure we are in seed mode
+	if (graphsegButton->isChecked()) {
+		bandView->refresh();
+	} else {
+		graphsegButton->toggle();
+	}*/
 }

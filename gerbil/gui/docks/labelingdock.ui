@@ -6,7 +6,7 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>230</width>
+    <width>297</width>
     <height>76</height>
    </rect>
   </property>
@@ -16,7 +16,7 @@
   <widget class="QWidget" name="dockWidgetContents">
    <layout class="QGridLayout" name="gridLayout">
     <item row="0" column="0">
-     <widget class="QPushButton" name="lLoadButton">
+     <widget class="QPushButton" name="loadLabelingButton">
       <property name="toolTip">
        <string>load pixel labeling from a file</string>
       </property>
@@ -26,7 +26,7 @@
      </widget>
     </item>
     <item row="0" column="1">
-     <widget class="QPushButton" name="lSaveButton">
+     <widget class="QPushButton" name="saveLabelingButton">
       <property name="toolTip">
        <string>save pixel labeling to a file</string>
       </property>
@@ -49,7 +49,7 @@
      </spacer>
     </item>
     <item row="0" column="3">
-     <widget class="QPushButton" name="lLoadSeedButton">
+     <widget class="QPushButton" name="loadSeedsButton">
       <property name="toolTip">
        <string>load seeding for segmentation from a file</string>
       </property>

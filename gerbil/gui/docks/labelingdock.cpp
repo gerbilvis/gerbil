@@ -2,13 +2,22 @@
 #include "ui_labelingdock.h"
 
 LabelingDock::LabelingDock(QWidget *parent) :
-    QDockWidget(parent),
-    ui(new Ui::LabelingDock)
+	QDockWidget(parent)
 {
-	ui->setupUi(this);
+	setupUi(this);
+	initUi();
 }
 
 LabelingDock::~LabelingDock()
 {
-	delete ui;
+}
+
+void LabelingDock::initUi()
+{
+	connect(loadLabelingButton, SIGNAL(clicked()),
+			this, SIGNAL(requestLoadLabeling()));
+	connect(saveLabelingButton, SIGNAL(clicked()),
+			this, SIGNAL(requestSaveLabeling()));
+	connect(loadSeedsButton, SIGNAL(clicked()),
+			this, SIGNAL(requestLoadSeeds()));
 }

@@ -47,13 +47,6 @@ public slots:
 	// change binnig to reflect, or not reflect, labeling
 	void toggleLabels(bool toggle);
 
-	// load a labeling from file
-	void loadLabeling(const QString &filename = QString())
-	{ lm.loadLabeling(filename); }
-	// save a labeling to file
-	void saveLabeling(const QString &filename = QString())
-	{ lm.saveLabeling(filename); }
-
 	/** notifies (from models, tasks) */
 	// label colors added/changed
 	void propagateLabelingChange(const cv::Mat1s &labels,

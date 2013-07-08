@@ -25,7 +25,7 @@ void DockController::init()
 	createDocks();
 	setupDocks();
 
-	//TODO: re-implement labelingDock and NormDock
+	//TODO: re-implement NormDock
 
 	chief->mainWindow()->addDockWidget(Qt::RightDockWidgetArea, bandDock);
 	chief->mainWindow()->addDockWidget(Qt::RightDockWidgetArea, graphSegDock);
@@ -135,6 +135,15 @@ void DockController::setupDocks()
 
 	connect(roiDock, SIGNAL(roiRequested(const cv::Rect&)),
 			chief, SLOT(spawnROI(const cv::Rect&)));
+
+	/* Labeling Dock */
+	connect(labelingDock, SIGNAL(requestLoadLabeling()),
+			chief->labelingModel(), SLOT(loadLabeling()));
+	connect(labelingDock, SIGNAL(requestSaveLabeling()),
+			chief->labelingModel(), SLOT(saveLabeling()));
+	// TODO
+	//connect(labelingDock, SIGNAL(requestLoadSeeds()),
+	//		...);
 
 	/* Illumination Dock */
 	connect(illumDock, SIGNAL(applyIllum()),

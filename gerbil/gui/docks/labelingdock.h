@@ -3,20 +3,23 @@
 
 #include <QDockWidget>
 
-namespace Ui {
-class LabelingDock;
-}
+#include "ui_labelingdock.h"
 
-class LabelingDock : public QDockWidget
+class LabelingDock : public QDockWidget, protected Ui::LabelingDock
 {
 	Q_OBJECT
 	
 public:
 	explicit LabelingDock(QWidget *parent = 0);
 	~LabelingDock();
+
+	void initUi();
+
+signals:
+	void requestLoadLabeling();
+	void requestSaveLabeling();
+	void requestLoadSeeds();
 	
-private:
-	Ui::LabelingDock *ui;
 };
 
 #endif // LABELINGDOCK_H

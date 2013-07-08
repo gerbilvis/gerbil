@@ -12,9 +12,6 @@ class LabelingModel : public QObject
 	Q_OBJECT
 public:
 	explicit LabelingModel();
-	
-	void loadLabeling(const QString &filename = QString());
-	void saveLabeling(const QString &filename = QString());
 
 public slots:
 	void setDimensions(unsigned int height, unsigned int width);
@@ -30,6 +27,10 @@ public slots:
 	void alterPixels(const cv::Mat1s &newLabels, const cv::Mat1b &mask);
 	// increment number of available labels
 	int addLabel();
+
+	void loadLabeling(const QString &filename = QString());
+	void saveLabeling(const QString &filename = QString());
+	void loadSeeds();
 signals:
 	/** entirely new label matrix, or different label colors, or both
 	 * @arg changedColors true if previously existing colors changed
