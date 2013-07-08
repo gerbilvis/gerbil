@@ -28,8 +28,6 @@ void BandDock::initUi()
 			bv, SLOT(changeCurrentLabel(int)));
 	connect(markerSelector, SIGNAL(currentIndexChanged(int)),
 			this, SLOT(processMarkerSelectorIndexChanged(int)));
-	connect(markerSelector, SIGNAL(currentIndexChanged(int)),
-			this, SIGNAL(currentLabelChanged(int)));
 
 	connect(alphaSlider, SIGNAL(valueChanged(int)),
 			bv, SLOT(applyLabelAlpha(int)));
@@ -83,6 +81,9 @@ void BandDock::clearLabelOrSeeds()
 
 void BandDock::processMarkerSelectorIndexChanged(int idx)
 {
+	// notify other parties
+	emit currentLabelChanged(idx);
+
 	///GGDBGM(format("idx=%1%")%idx<<endl);
 	if (idx < 0)	// empty selection, during initialization
 		return;
@@ -90,7 +91,7 @@ void BandDock::processMarkerSelectorIndexChanged(int idx)
 
 	int nlabels = labelColors.count();
 
-	if (labelColors.count() && idx == labelColors.count()) {
+	if (nlabels && idx == nlabels) {
 		// new label requested
 
 		// commit uncommitted label changes in the bandview
@@ -103,7 +104,6 @@ void BandDock::processMarkerSelectorIndexChanged(int idx)
 	} else {
 		bv->changeCurrentLabel(idx);
 	}
-
 }
 
 void BandDock::processLabelingChange(const cv::Mat1s &labels,

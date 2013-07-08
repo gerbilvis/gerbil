@@ -30,6 +30,7 @@ signals:
 	/** User requested a new label (markerSelector) */
 	void newLabelRequested();
 public slots:
+	// TODO representation::t, bandId
 	void changeBand(QPixmap band, QString desc);
 
 	void processSeedingDone();
