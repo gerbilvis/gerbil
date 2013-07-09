@@ -75,14 +75,14 @@ vole_check_package(QT_XML
 )
 
 # ITK
-find_package(ITK)
-vole_check_package(ITK
-    "ITK"
-    "Please install ITK."
-    ITK_FOUND
-    "${ITK_INCLUDE_DIRS}"
-    "${ITK_LIBRARIES}"
-)
+#find_package(ITK)
+#vole_check_package(ITK
+#    "ITK"
+#    "Please install ITK."
+#    ITK_FOUND
+#    "${ITK_INCLUDE_DIRS}"
+#    "${ITK_LIBRARIES}"
+#)
 
 # Boost
 if(WIN32)
@@ -190,22 +190,22 @@ vole_check_package(BOOST_PYTHON
 )
 
 # PETSc && SLEPc
-find_package(PETSc)
-vole_check_package(PETSC
-	"PETSc"
-	"Please install PETSc (and SLEPc) or set PETSC_DIR."
-	PETSC_FOUND
-	"${PETSC_INCLUDE_DIR}"
-	"${PETSC_LIBRARIES}"
-)
-find_package(SLEPc)
-vole_check_package(SLEPC
-	"SLEPc"
-	"Please install SLEPc >=${VOLE_MINIMUM_SLEPC_VERSION} or set SLEPC_DIR."
-	SLEPC_FOUND
-	"${SLEPC_INCLUDE_DIR}"
-	"${SLEPC_LIBRARIES}"
-)
+#find_package(PETSc)
+#vole_check_package(PETSC
+#	"PETSc"
+#	"Please install PETSc (and SLEPc) or set PETSC_DIR."
+#	PETSC_FOUND
+#	"${PETSC_INCLUDE_DIR}"
+#	"${PETSC_LIBRARIES}"
+#)
+#find_package(SLEPc)
+#vole_check_package(SLEPC
+#	"SLEPc"
+#	"Please install SLEPc >=${VOLE_MINIMUM_SLEPC_VERSION} or set SLEPC_DIR."
+#	SLEPC_FOUND
+#	"${SLEPC_INCLUDE_DIR}"
+#	"${SLEPC_LIBRARIES}"
+#)
 
 # libEigen3
 find_package(Eigen3 ${VOLE_MINIMUM_EIGEN_VERSION})

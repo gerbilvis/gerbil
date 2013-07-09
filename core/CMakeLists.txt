@@ -20,7 +20,7 @@ mark_as_advanced(VOLE_CHECK_DEPENDENCIES)
 option(VOLE_AUTO_OPTIONAL_MODULES "Automatically link optional modules if possible." ON)
 mark_as_advanced(VOLE_AUTO_OPTIONAL_MODULES)
 option(VOLE_SINGLE_TARGETS "Build single targets for each command." OFF)
-set(VOLE_MODULE_DIRECTORIES "${CMAKE_SOURCE_DIR}/" CACHE STRING "Semicolon-separated list of module directories for vole, e.g. the forensics or the color code.")
+set(VOLE_MODULE_DIRECTORIES "${CMAKE_SOURCE_DIR}/" CACHE STRING "Semicolon-separated list of module directories.")
 
 # Global variables
 set(VOLE_LIBRARY_SUFFIX "-lib" CACHE INTERNAL "Module library suffix" FORCE)

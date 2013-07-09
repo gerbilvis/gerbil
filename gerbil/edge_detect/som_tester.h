@@ -11,12 +11,10 @@ public:
     SOMTester(const SOM &map, const multi_img &image, const vole::EdgeDetectionConfig &conf);
 
 	/**
-	*
 	* Compute directional distance images using a fake Sobel operator
 	*
 	*	@param dx	Horizontal distance map (output)
 	*	@param dx	Vertical distance map (output)
-	*
 	*/
 	void getEdge(cv::Mat1d &dx, cv::Mat1d &dy);
 

@@ -19,7 +19,7 @@ namespace vole {
 
 ImgInputConfig::ImgInputConfig(const std::string& prefix)
 	: Config(prefix) {
-	/// set default values
+	// set default values
 #ifdef WITH_GERBIL_COMMON
 	gradient = false;
 	bands = 0;

@@ -27,11 +27,13 @@ SOM* SOMTrainer::train(const vole::EdgeDetectionConfig &config, const multi_img&
 	if (config.som_file.empty()) {
 		vole::Stopwatch running_time("Total running time");
 		SOM *som = new SOM(config, img.size());
-		std::cout << "# Generated SOM " << config.width << "x" << config.height << " with dimension " << img.size() << std::endl;
+		std::cout << "# Generated SOM " << config.width << "x" << config.height
+		          << " with dimension " << img.size() << std::endl;
 
 		SOMTrainer trainer(*som, img, config);
 
-		std::cout << "# SOM Trainer starts to feed the network using "<< config.maxIter << " iterations..." << std::endl;
+		std::cout << "# SOM Trainer starts to feed the network using "
+		          << config.maxIter << " iterations..." << std::endl;
 
 		vole::Stopwatch watch("Training");
 		trainer.feedNetwork();
@@ -103,7 +105,7 @@ void SOMTrainer::feedNetwork()
 	//	displayBmuMap(false);
 
 //		if (config.withUMap)
-//			umatrix(false);	 // TODO: do we need this for operation? if yes, bug!
+//			umatrix(false);	
 	//	if(config.isGraphical && m_withGraph)
 	//	{
 	//	compareMultispectralData();
@@ -396,68 +398,68 @@ cv::Mat1d SOMTrainer::umatrix(bool write)
 
 double SOMTrainer::generateBWSom() {
 
-  int width = som.getWidth();
-  int height = som.getHeight();
+	int width = som.getWidth();
+	int height = som.getHeight();
 
-  m_img_bwsom = cv::Mat_<float>(height, width);
+	m_img_bwsom = cv::Mat_<float>(height, width);
 
-  int radius = 1;
+	int radius = 1;
 
-  // determine radius
-  if( height % 2 == 0) {
-    int order = 0;
-    int length = 2;
-    for(order = 1; order < 10; order++) {
-      length *= 2;
-      if(length == height) { break; }
-    }
-    radius = order;//static_cast<unsigned int>(pow(2., order));
-  } else if( height % 3 == 0 ) {
-    int order = 0;
-    int length = 3;
-    for(order = 1; order < 10; order++) {
-      if(length == height) { break; }
-      length *= 3;
-    }
-    radius = order;//static_cast<unsigned int>(pow(2., order));
-  }
-  if(height == 1 ) {
-    if( width < 16 ) {
-      radius = 3;
-    } else {
-      radius = 1 + width/10;
-    }
-  }
-  radius = 1;
+	// determine radius
+	if( height % 2 == 0) {
+		int order = 0;
+		int length = 2;
+		for(order = 1; order < 10; order++) {
+			length *= 2;
+			if(length == height) { break; }
+		}
+		radius = order;//static_cast<unsigned int>(pow(2., order));
+	} else if( height % 3 == 0 ) {
+		int order = 0;
+		int length = 3;
+		for(order = 1; order < 10; order++) {
+			if(length == height) { break; }
+			length *= 3;
+		}
+		radius = order;//static_cast<unsigned int>(pow(2., order));
+	}
+	if(height == 1 ) {
+		if( width < 16 ) {
+			radius = 3;
+		} else {
+			radius = 1 + width/10;
+		}
+	}
+	radius = 1;
 
-  double totalDiff = 0.;
+	double totalDiff = 0.;
 
-  for(int y = 0; y < height; y++) {
-    for(int x = 0; x < width; x++) {
+	for(int y = 0; y < height; y++) {
+		for(int x = 0; x < width; x++) {
 
-      double difference = 0.;
+			double difference = 0.;
 			const Neuron *cn = som.getNeuron(x,y);
-      int count = 0;
+			int count = 0;
 
-      for(int posY = y-radius; posY <= y+radius; posY++) {
-        if(posY < 0 || posY >= height) { continue; }
-        for(int posX = x-radius; posX <= x+radius; posX++) {
-          if(posX < 0 || posX >= width) { continue; }
-          //double dist = (x - posX)*(x - posX) + (y - posY)*(y - posY);
-        //  if(dist <= radius) {
-            count++;
+			for(int posY = y-radius; posY <= y+radius; posY++) {
+				if(posY < 0 || posY >= height) { continue; }
+				for(int posX = x-radius; posX <= x+radius; posX++) {
+					if(posX < 0 || posX >= width) { continue; }
+					//double dist = (x - posX)*(x - posX) + (y - posY)*(y - posY);
+				//	if(dist <= radius) {
+						count++;
 					const Neuron *neighbor = som.getNeuron(posX,posY);
 					difference += som.distfun->getSimilarity(*cn, *neighbor);
-        //  }
-        }
-      }
-      if(count > 1) { difference = difference / static_cast<double>(count-1); }
-      totalDiff += difference;
-      m_img_bwsom(y,x) = static_cast<float>(difference);
-    }
-  }
-  // normalize on number of neurons
-  totalDiff /= (double)(width*height);
+				//	}
+				}
+			}
+			if(count > 1) { difference = difference / static_cast<double>(count-1); }
+			totalDiff += difference;
+			m_img_bwsom(y,x) = static_cast<float>(difference);
+		}
+	}
+	// normalize on number of neurons
+	totalDiff /= (double)(width*height);
 
-  return totalDiff;
+	return totalDiff;
 }

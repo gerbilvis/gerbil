@@ -17,6 +17,6 @@ vole_compile_library(
 	${CMAKE_CURRENT_BINARY_DIR}/modules.h
 )
 
-vole_add_executable("vole" "main.cxx")
+vole_add_executable("gerbil" "main.cxx")
 
 vole_add_module()

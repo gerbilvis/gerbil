@@ -12,13 +12,6 @@ class SOMTrainer {
 
 public:
 
-	/**
-	* Simple SomTrainer constructor
-	*
-	* @param	map pointer to SOM which should be used
-	* @param	image pointer to a multi_img
-	* @param	name filename of the multispectral image
-	*/
 	SOMTrainer(SOM &map, const multi_img &image,
 	           const vole::EdgeDetectionConfig &conf);
 

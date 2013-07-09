@@ -3,14 +3,19 @@
 #include <string>
 #include <vector>
 
-// TODO: copy operationen einsparen, indem statt multi_img multi_img::ptr returnt werden
-
 using std::vector;
 
 namespace vole {
 
 multi_img::ptr ImgInput::execute()
 {
+	if (config.file.empty())
+	{
+		std::cerr << "No input file specified. Try -H to see available options."
+		          << std::endl;
+		return multi_img::ptr(new multi_img()); // empty image
+	}
+
 	bool roiChanged = false;
 	bool bandsCropped = false;
 	multi_img::ptr img_ptr(new multi_img(config.file));

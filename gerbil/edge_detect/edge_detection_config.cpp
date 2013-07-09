@@ -35,19 +35,19 @@ void EdgeDetectionConfig::initBoostOptions() {
 		(key("hack3d"), bool_switch(&hack3d)->default_value(hack3d),
 			 "Use hack to have 3D som of size width a*a*a, specify "
 			 "width=a, height=1")
-		(key("somWidth"), value(&width)->default_value(width),
+		(key("width"), value(&width)->default_value(width),
 			"Width of the SOM")
-		(key("somHeight"), value(&height)->default_value(height),
+		(key("height"), value(&height)->default_value(height),
 			"Height of the SOM")
-		(key("somMaxIter"), value(&maxIter)->default_value(maxIter),
+		(key("maxIter"), value(&maxIter)->default_value(maxIter),
 			"Number of training iterations for the SOM")
-		(key("somLearnStart"), value(&learnStart)->default_value(learnStart),
+		(key("learnStart"), value(&learnStart)->default_value(learnStart),
 			"Learning rate at the beginning")
-		(key("somLearnEnd"), value(&learnEnd)->default_value(learnEnd),
+		(key("learnEnd"), value(&learnEnd)->default_value(learnEnd),
 			"Learning rate at the end of the training process")
-		(key("somRadiusStart"), value(&radiusStart)->default_value(radiusStart),
+		(key("radiusStart"), value(&radiusStart)->default_value(radiusStart),
 			"Initial neighborhood radius")
-		(key("somRadiusEnd"), value(&radiusEnd)->default_value(radiusEnd),
+		(key("radiusEnd"), value(&radiusEnd)->default_value(radiusEnd),
 			"Neighborhood radius at the end of the training process")
 		(key("seed"), value(&seed)->default_value(seed),
 			"Seed value of random number generators")
@@ -78,14 +78,14 @@ std::string EdgeDetectionConfig::getString() const {
 		;
 	}
 	s	<< "som_input=" << som_file << " # SOM image file instead of training" << std::endl
-		<< "somWidth=" << width << " # Width of the SOM" << std::endl
-		<< "somHeight=" << height << " # Height of the SOM" << std::endl
+		<< "width=" << width << " # Width of the SOM" << std::endl
+		<< "height=" << height << " # Height of the SOM" << std::endl
 		<< "hack3d=" << hack3d << " # use hack for 3D SOM" << std::endl
-		<< "somMaxIter=" << maxIter << " # Number of training iterations for the SOM" << std::endl
-		<< "somLearnStart=" << learnStart << " # Start value for the learning rate in SOM" << std::endl
-		<< "somLearnEnd=" << learnEnd << " # End value for the learning rate in SOM" << std::endl
-		<< "somRadiusStart=" << radiusStart << " # Start value for the radius of the neighborhood function in SOM" << std::endl
-		<< "somRadiusEnd=" << radiusEnd << " # End value for the radius of the neighborhood function in SOM" << std::endl
+		<< "maxIter=" << maxIter << " # Number of training iterations for the SOM" << std::endl
+		<< "learnStart=" << learnStart << " # Start value for the learning rate in SOM" << std::endl
+		<< "learnEnd=" << learnEnd << " # End value for the learning rate in SOM" << std::endl
+		<< "radiusStart=" << radiusStart << " # Start value for the radius of the neighborhood function in SOM" << std::endl
+		<< "radiusEnd=" << radiusEnd << " # End value for the radius of the neighborhood function in SOM" << std::endl
 		<< "seed=" << seed << " # Seed value of random number generators " << std::endl
         << similarity.getString();
 	;
