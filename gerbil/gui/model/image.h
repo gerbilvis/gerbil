@@ -63,7 +63,7 @@ public:
 	 * @note The number of bands in the current ROI image(s) may differ, see
 	 * getNumBandsROI().
 	 */
-	// FIXME: rename getNumBandsFull()
+	// FIXME: rename getNumBandsFull() (altmann, jordan: ack)
 	size_t getSize();
 	/** Return the number of bands in the multispectral image that is currently
 	 * used as ROI. */
@@ -126,6 +126,9 @@ private:
 
 	// current region of interest
 	cv::Rect roi;
+
+	// TODO
+	// int nBands;
 
 	BackgroundTaskQueue &queue;
 

@@ -133,6 +133,7 @@ void ImageModel::spawn(representation::t type, const cv::Rect &newROI, size_t ba
 		queue.push(taskScope);
 
 		// sanitize spectral rescaling parameters
+		// TODO use nBands instead of getSize
 		size_t fullbands = getSize();
 		if (bands == -1 || bands > fullbands)
 			bands = fullbands;
@@ -153,6 +154,10 @@ void ImageModel::spawn(representation::t type, const cv::Rect &newROI, size_t ba
 				image, gradient, roi));
 			queue.push(taskGradient);
 		} else {
+			// FIXME GradientTbb relies on image.size() == gradient.size(),
+			// crash if image.size() < gradient.size()
+			GGDBGM(format("image size: %1%, gradient size: %2%") %
+				   (*image)->size() %(*image)->size() << endl );
 			BackgroundTaskPtr taskGradient(new MultiImg::GradientTbb(
 				image, gradient, roi));
 			queue.push(taskGradient);
