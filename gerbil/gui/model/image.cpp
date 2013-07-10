@@ -28,7 +28,6 @@ ImageModel::ImageModel(BackgroundTaskQueue &queue, bool lm)
 	foreach (payload *p, map) {
 		connect(p, SIGNAL(newImageData(representation::t,SharedMultiImgPtr)),
 				this, SLOT(processNewImageData(representation::t,SharedMultiImgPtr)));
-		// FIXME OBSOLETE remove
 		connect(p, SIGNAL(dataRangeUpdate(representation::t,ImageDataRange)),
 				this, SIGNAL(dataRangeUdpate(representation::t,ImageDataRange)));
 	}
@@ -103,15 +102,6 @@ void ImageModel::payload::processImageDataTaskFinished(bool success)
 	emit dataRangeUpdate(type, **normRange);
 }
 
-void ImageModelPayload::processDataRangeTaskFinished(bool success)
-{
-	if (!success)
-		return;
-
-	// TODO
-	//emit dataRangeUpdate();
-}
-
 void ImageModel::spawn(representation::t type, const cv::Rect &newROI, size_t bands)
 {
 	// one ROI for all, effectively
@@ -149,17 +139,11 @@ void ImageModel::spawn(representation::t type, const cv::Rect &newROI, size_t ba
 	}
 
 	if (type == representation::GRAD) {
-
-
 		if (cv::gpu::getCudaEnabledDeviceCount() > 0 && USE_CUDA_GRADIENT) {
 			BackgroundTaskPtr taskGradient(new MultiImg::GradientCuda(
 				image, gradient, roi));
 			queue.push(taskGradient);
 		} else {
-			// FIXME GradientTbb relies on image.size() == gradient.size(),
-			// crash if image.size() < gradient.size()
-			GGDBGM(format("image size: %1%, gradient size: %2%") %
-				   (*image)->size() %(*image)->size() << endl );
 			BackgroundTaskPtr taskGradient(new MultiImg::GradientTbb(
 				image, gradient, roi));
 			queue.push(taskGradient);
@@ -258,26 +242,6 @@ void ImageModel::computeFullRgb()
 	emit fullRgbUpdate(p);
 }
 
-//void ImageModel::computeDataRange(representation::t type)
-//{
-//	// FIXME data range on roi or on full image???
-//	// for now on full image
-
-//	// FIXME DataRange computation appears to be broken.
-//	SharedDataRangePtr rangep(
-//		new SharedData<ImageDataRange>(
-//			new ImageDataRange()));
-
-//	BackgroundTaskPtr dataRangeTask(
-//				new MultiImg::DataRangeTbb(
-//					map[type]->image,
-//					rangep));
-//	// TODO: use queue and payload slot processDataRangeTaskFinished()
-//	dataRangeTask->run();
-
-//	emit dataRangeUdpate(type, **rangep);
-//}
-
 void ImageModel::setNormalizationParameters(
 		representation::t type,
 		MultiImg::NormMode normMode,
@@ -295,7 +259,6 @@ void ImageModel::processNewImageData(representation::t type, SharedMultiImgPtr i
 	if(representation::IMG == type) {
 		SharedDataLock lock(image->mutex);
 		nBands = (*image)->size();
-		GGDBGM("image size is now "<< nBands << endl);
 	}
 	emit imageUpdate(type, image);
 }

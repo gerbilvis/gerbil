@@ -41,8 +41,6 @@ public:
 
 public slots:
 	void processImageDataTaskFinished(bool success);
-	// TODO FIXME remove
-	void processDataRangeTaskFinished(bool success);
 
 signals:
 	void newImageData(representation::t type, SharedMultiImgPtr image);
@@ -91,13 +89,6 @@ public slots:
 	 * for ROI-View does not need to be updated.
 	 */
 	void computeFullRgb();
-
-	// FIXME OBSOLETE remove
-//	/** Compute data range for given image representation.
-//	 *
-//	 * Emits dataRangeUdpate() after task has finished.
-//	 */
-//	void computeDataRange(representation::t type);
 
 	void setNormalizationParameters(
 			representation::t type,

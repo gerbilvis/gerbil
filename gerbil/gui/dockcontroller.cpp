@@ -25,8 +25,6 @@ void DockController::init()
 	createDocks();
 	setupDocks();
 
-	//TODO: re-implement NormDock
-
 	chief->mainWindow()->addDockWidget(Qt::RightDockWidgetArea, bandDock);
 	chief->mainWindow()->addDockWidget(Qt::RightDockWidgetArea, graphSegDock);
 	chief->mainWindow()->addDockWidget(Qt::RightDockWidgetArea, labelingDock);
@@ -209,10 +207,6 @@ void DockController::setupDocks()
 			SIGNAL(dataRangeUdpate(representation::t,ImageDataRange)),
 			normDock,
 			SLOT(setNormRange(representation::t,ImageDataRange)));
-	connect(normDock,
-			SIGNAL(computeDataRangeRequested(representation::t)),
-			chief->imageModel(),
-			SLOT(computeDataRange(representation::t)));
 	connect(normDock,
 			SIGNAL(normalizationParametersChanged(
 					   representation::t,MultiImg::NormMode,ImageDataRange)),

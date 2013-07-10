@@ -71,11 +71,6 @@ Controller::Controller(const std::string &filename, bool limited_mode,
 	//GGDBGM("roi " << roi << endl);
 	spawnROI(roi);
 
-	// obsolete
-//	// compute data ranges. Currently only for normDock.
-//	im.computeDataRange(representation::IMG);
-//	im.computeDataRange(representation::GRAD);
-
 	// set title and show window
 	QFileInfo fi(QString::fromStdString(filename));
 	window->setWindowTitle(QString("Gerbil - %1").arg(fi.completeBaseName()));
