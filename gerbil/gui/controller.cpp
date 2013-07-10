@@ -222,7 +222,7 @@ void Controller::doSpawnROI(bool reuse, const cv::Rect &roi)
 	// 2013-06-19 altmann: seems to work without disconnect as well.
 	window->getViewerContainer()->disconnectAllViewers();
 
-	updateROI(reuse, roi);
+	updateROI(reuse, roi, im.getNumBandsROI());
 
 	enableGUILater(true);
 }

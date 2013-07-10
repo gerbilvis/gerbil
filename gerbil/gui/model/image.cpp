@@ -18,7 +18,8 @@
 
 ImageModel::ImageModel(BackgroundTaskQueue &queue, bool lm)
 	: limitedMode(lm), queue(queue),
-	  image_lim(new SharedMultiImgBase(new multi_img()))
+	  image_lim(new SharedMultiImgBase(new multi_img())),
+	  nBands(-1)
 {
 	foreach (representation::t i, representation::all()) {
 		map.insert(i, new payload(i));
@@ -26,7 +27,8 @@ ImageModel::ImageModel(BackgroundTaskQueue &queue, bool lm)
 
 	foreach (payload *p, map) {
 		connect(p, SIGNAL(newImageData(representation::t,SharedMultiImgPtr)),
-				this, SIGNAL(imageUpdate(representation::t,SharedMultiImgPtr)));
+				this, SLOT(processNewImageData(representation::t,SharedMultiImgPtr)));
+		// FIXME OBSOLETE remove
 		connect(p, SIGNAL(dataRangeUpdate(representation::t,ImageDataRange)),
 				this, SIGNAL(dataRangeUdpate(representation::t,ImageDataRange)));
 	}
@@ -51,9 +53,7 @@ size_t ImageModel::getNumBandsFull()
 
 int ImageModel::getNumBandsROI()
 {
-	SharedMultiImgPtr img = map.begin().value()->image;
-	SharedMultiImgBaseGuard guard(*img);
-	return (*img)->size();
+	return nBands;
 }
 
 cv::Rect ImageModel::loadImage(const std::string &filename)
@@ -75,12 +75,14 @@ cv::Rect ImageModel::loadImage(const std::string &filename)
 	if ((*image_lim)->empty()) {
 		return cv::Rect();
 	} else {
+		nBands = (*image_lim)->size();
 		return cv::Rect(0, 0, (*image_lim)->width, (*image_lim)->height);
 	}
 }
 
 void ImageModel::invalidateROI()
 {
+	// set roi to empty rect
 	roi = cv::Rect();
 	foreach (payload *p, map) {
 		if (!p->image)
@@ -133,12 +135,12 @@ void ImageModel::spawn(representation::t type, const cv::Rect &newROI, size_t ba
 		queue.push(taskScope);
 
 		// sanitize spectral rescaling parameters
-		// TODO use nBands instead of getSize
-		size_t fullbands = getNumBandsFull();
-		if (bands == -1 || bands > fullbands)
-			bands = fullbands;
+		assert(-1 != getNumBandsFull());
+		if (bands == -1 || bands > getNumBandsFull())
+			bands = getNumBandsFull();
 		if (bands <= 2)
 			bands = 3;
+		assert(-1 != bands);
 
 		// perform spectral rescaling
 		BackgroundTaskPtr taskRescale(new MultiImg::RescaleTbb(
@@ -285,4 +287,15 @@ void ImageModel::setNormalizationParameters(
 	map[type]->normMode = normMode;
 	SharedDataLock lock(map[type]->normRange->mutex);
 	**(map[type]->normRange) = targetRange;
+}
+
+
+void ImageModel::processNewImageData(representation::t type, SharedMultiImgPtr image)
+{
+	if(representation::IMG == type) {
+		SharedDataLock lock(image->mutex);
+		nBands = (*image)->size();
+		GGDBGM("image size is now "<< nBands << endl);
+	}
+	emit imageUpdate(type, image);
 }

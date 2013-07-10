@@ -41,6 +41,7 @@ public:
 
 public slots:
 	void processImageDataTaskFinished(bool success);
+	// TODO FIXME remove
 	void processDataRangeTaskFinished(bool success);
 
 signals:
@@ -66,8 +67,6 @@ public:
 	size_t getNumBandsFull();
 	/** Return the number of bands in the multispectral image that is currently
 	 * used as ROI. */
-	// FIXME 2013-06-19 altmann: This is assuming the number of bands is fixed for
-	// all representations. Not sure if this is necessarily true.
 	int getNumBandsROI();
 	const cv::Rect& getROI() { return roi; }
 	SharedMultiImgPtr getImage(representation::t type) { return map[type]->image; }
@@ -93,6 +92,7 @@ public slots:
 	 */
 	void computeFullRgb();
 
+	// FIXME OBSOLETE remove
 //	/** Compute data range for given image representation.
 //	 *
 //	 * Emits dataRangeUdpate() after task has finished.
@@ -103,6 +103,7 @@ public slots:
 			representation::t type,
 			MultiImg::NormMode normMode,
 			ImageDataRange targetRange);
+
 signals:
 	/** The data of the currently selected band has changed. */
 	void bandUpdate(QPixmap band, QString description);
@@ -111,6 +112,10 @@ signals:
 	void imageUpdate(representation::t type, SharedMultiImgPtr image);
 	/** The data range for representation type has changed. */
 	void dataRangeUdpate(representation::t type, const ImageDataRange& range);
+
+protected slots:
+	// payload background task has finished
+	void processNewImageData(representation::t type, SharedMultiImgPtr image);
 private:
 	// helper to spawn()
 	bool checkProfitable(const cv::Rect& oldROI, const cv::Rect& newROI);
@@ -126,8 +131,8 @@ private:
 	// current region of interest
 	cv::Rect roi;
 
-	// TODO
-	// int nBands;
+	// current number of spectral bands in the IMG representation
+	int nBands;
 
 	BackgroundTaskQueue &queue;
 
