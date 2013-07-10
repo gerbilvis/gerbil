@@ -33,6 +33,13 @@ public:
 	UsSegmentationModel* usSegmentationModel() { return &um; }
 	LabelingModel* labelingModel() {return &lm;}
 signals:
+	/** Signal the number of spectral bands.
+	 *
+	 * Currently this emitted whenever the GUI is re-enabled, regardless of if
+	 * the number of bands actually changed. This OK, since no expensive
+	 * operation depends on this. As soon as this becomes expensive, a better
+	 * way of tracking the state may become appropriate (KISS).
+	 */
 	void nSpectralBandsChanged(int);
 	// setGUIEnabled() part of the dock windows
 	void requestEnableDocks(bool enable, TaskType tt);
@@ -126,10 +133,6 @@ protected:
 	/* A map of BackgroundTasks (QObject) to representations so that we know
 	 * what representation a signaling task was working on */
 	QMap<QObject*, representation> taskmap;
-
-	// True if GUI needs to be notified about changed number of spectral bands.
-	// See signal nSpectralBandsChanged(int).
-	bool spectralRescaleInProgress;
 };
 
 #endif // CONTROLLER_H

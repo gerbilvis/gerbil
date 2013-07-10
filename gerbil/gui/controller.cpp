@@ -17,7 +17,7 @@ std::ostream &operator<<(std::ostream& os, const cv::Rect& r)
 Controller::Controller(const std::string &filename, bool limited_mode,
 	const QString &labelfile)
 	: im(queue, limited_mode), fm(this, &queue), illumm(this),
-	  gsm(this, &queue), queuethread(0), spectralRescaleInProgress(false)
+	  gsm(this, &queue), queuethread(0)
 {
 	// load image
 	cv::Rect dimensions = im.loadImage(filename);
@@ -193,8 +193,6 @@ void Controller::rescaleSpectrum(size_t bands)
     // 2013-06-19 altmann: seems to work without disconnect as well.
 	window->getViewerContainer()->disconnectAllViewers();
 
-	spectralRescaleInProgress = true;
-
 	updateROI(false, cv::Rect(), bands);
 
 	enableGUILater(true);
@@ -347,13 +345,10 @@ void Controller::enableGUILater(bool withROI)
 
 void Controller::enableGUINow(bool forreal)
 {
-	if(spectralRescaleInProgress) {
-		// The number of spectral bands changed - let the GUI know about it.
-		int nbands = im.getNumBandsROI();
-		//GGDBGM(format("emitting nSpectralBandsChanged(%1%)")%nbands << endl);
-		emit nSpectralBandsChanged(nbands);
-		spectralRescaleInProgress = false;
-	}
+	int nbands = im.getNumBandsROI();
+	//GGDBGM(format("emitting nSpectralBandsChanged(%1%)")%nbands << endl);
+	emit nSpectralBandsChanged(nbands);
+
 	if (forreal)
 		setGUIEnabled(true);
 }
