@@ -63,8 +63,7 @@ public:
 	 * @note The number of bands in the current ROI image(s) may differ, see
 	 * getNumBandsROI().
 	 */
-	// FIXME: rename getNumBandsFull() (altmann, jordan: ack)
-	size_t getSize();
+	size_t getNumBandsFull();
 	/** Return the number of bands in the multispectral image that is currently
 	 * used as ROI. */
 	// FIXME 2013-06-19 altmann: This is assuming the number of bands is fixed for

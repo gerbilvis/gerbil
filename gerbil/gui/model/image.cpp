@@ -43,7 +43,7 @@ ImageModel::~ImageModel()
 	}
 }
 
-size_t ImageModel::getSize()
+size_t ImageModel::getNumBandsFull()
 {
 	SharedMultiImgBaseGuard guard(*image_lim);
 	return (*image_lim)->size();
@@ -134,7 +134,7 @@ void ImageModel::spawn(representation::t type, const cv::Rect &newROI, size_t ba
 
 		// sanitize spectral rescaling parameters
 		// TODO use nBands instead of getSize
-		size_t fullbands = getSize();
+		size_t fullbands = getNumBandsFull();
 		if (bands == -1 || bands > fullbands)
 			bands = fullbands;
 		if (bands <= 2)

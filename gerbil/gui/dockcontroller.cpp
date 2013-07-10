@@ -181,7 +181,7 @@ void DockController::setupDocks()
 	/* Unsupervised Segmentation Dock */
 #ifdef WITH_SEG_MEANSHIFT
 	UsSegmentationModel const*um = chief->usSegmentationModel();
-	int nbands = chief->imageModel()->getSize();
+	int nbands = chief->imageModel()->getNumBandsFull();
 	usSegDock->setNumBands(nbands);
 	connect(chief, SIGNAL(nSpectralBandsChanged(int)),
 			usSegDock, SLOT(setNumBands(int)));

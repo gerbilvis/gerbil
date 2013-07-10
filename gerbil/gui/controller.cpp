@@ -30,7 +30,7 @@ Controller::Controller(const std::string &filename, bool limited_mode,
 
 	// create gui (perform initUI before connecting signals!)
 	window = new MainWindow(limited_mode);
-	window->initUI(dimensions, im.getSize());
+	window->initUI(dimensions, im.getNumBandsFull());
 
 	// connect slots/signals
 	window->initSignals(this);
