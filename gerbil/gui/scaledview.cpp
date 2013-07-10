@@ -67,6 +67,18 @@ void ScaledView::paintEvent(QPaintEvent *ev)
 	}
 }
 
+void ScaledView::mouseMoveEvent(QMouseEvent *ev)
+{
+	QGLWidget::mouseMoveEvent(ev);
+	cursorAction(ev);
+}
+
+void ScaledView::mousePressEvent(QMouseEvent *ev)
+{
+	QGLWidget::mousePressEvent(ev);
+	cursorAction(ev, true);
+}
+
 void ScaledView::drawWaitMessage(QPainter &painter)
 {
 	painter.save();

@@ -73,6 +73,8 @@ void BandDock::processSeedingDone()
 
 void BandDock::clearLabelOrSeeds()
 {
+	// FIXME need to stop label timer of bandview
+
 	if (bv->isSeedModeEnabled()) {
 		bv->clearSeeds();
 	} else {

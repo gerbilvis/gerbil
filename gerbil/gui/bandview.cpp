@@ -37,6 +37,7 @@ BandView::BandView(QWidget *parent)
 	// the timer automatically sends an accumulated update request
 	labelTimer.setSingleShot(true);
 	labelTimer.setInterval(500);
+	setMouseTracking(true);
 }
 
 void BandView::initUi()
@@ -312,17 +313,26 @@ void BandView::cursorAction(QMouseEvent *ev, bool click)
 
 	//GGDBGM(boost::format("lastcursor %1%, cursor %2%, clicked %3%")%lastcursor%cursor%click << endl);
 
-	if(!click) {
-		if ((cursor == lastcursor))  // nothing new after all..
-			return;
-	} else {
-		lastcursor = cursor; // begin drawing new line
+	// invalidate lastcursor
+	if(click) {
+		lastcursor = QPoint(-1, -1);
+	}
+
+	// nothing new after all..
+	if ((cursor == lastcursor))
+		return;
+
+	// lastcursor invalid -> begin drawing at cursor
+	if(QPoint(-1, -1) == lastcursor) {
+		lastcursor = cursor;
 	}
 
 	int x = cursor.x(), y = cursor.y();
 
-	if (!pixmap.rect().contains(x, y))
+	if (!pixmap.rect().contains(x, y)) {
+		lastcursor = QPoint(-1,-1);
 		return;
+	}
 
 	if (singleLabel && showLabels) {
 		if (ev->buttons() & Qt::LeftButton) {
@@ -438,13 +448,24 @@ void BandView::clearSeeds()
 	refresh();
 }
 
+void BandView::enterEvent(QEvent *event)
+{
+//	GGDBGM("enterEvent" << endl);
+	ScaledView::enterEvent(event);
+}
+
+
 void BandView::leaveEvent(QEvent *ev)
 {
+//	GGDBGM("leaveEvent" << endl);
 	// invalidate cursor
 	cursor = QPoint(-1, -1);
+	lastcursor = QPoint(-1, -1);
 
 	// invalidate previous overlay
 	emit pixelOverlay(-1, -1);
+
+	ScaledView::leaveEvent(ev);
 
 	update();
 }

@@ -25,6 +25,7 @@ public:
 
 	void initUi();
 
+	// FIXME make protected
 	void paintEvent(QPaintEvent *ev);
 	void leaveEvent(QEvent *ev);
 
@@ -69,6 +70,8 @@ signals:
 	// user requested additional label
 	void newLabel();
 
+protected:
+	void enterEvent (QEvent *event);
 
 private:
 	void cursorAction(QMouseEvent *ev, bool click = false);

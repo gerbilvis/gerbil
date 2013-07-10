@@ -11,8 +11,8 @@ public:
 	virtual ~ScaledView() {}
 	void resizeEvent(QResizeEvent * ev);
 	virtual void paintEvent(QPaintEvent *ev);
-	void mouseMoveEvent(QMouseEvent *ev) { cursorAction(ev); }
-	void mousePressEvent(QMouseEvent *ev) { cursorAction(ev, true); }
+	void mouseMoveEvent(QMouseEvent *ev);
+	void mousePressEvent(QMouseEvent *ev);
 	virtual void setPixmap(QPixmap p);
 protected:
 	virtual void cursorAction(QMouseEvent *ev, bool click = false);
