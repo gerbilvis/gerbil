@@ -24,7 +24,7 @@ class NormDock;
 class ROIDock;
 class RgbDock;
 class IllumDock;
-class GraphSegmentationDock;
+class GraphSegWidget;
 class UsSegmentationDock;
 
 #include <QObject>
@@ -39,8 +39,6 @@ signals:
 	void rgbRequested();
 public slots:
 	void enableDocks(bool enable, TaskType tt);
-protected slots:
-	void raiseGraphSegDock(bool enable);
 protected:
 	/* Create dock widget objects. */
 	void createDocks();
@@ -56,7 +54,6 @@ protected:
 	ROIDock *roiDock;
 	RgbDock *rgbDock;
 	IllumDock *illumDock;
-	GraphSegmentationDock *graphSegDock;
 	UsSegmentationDock *usSegDock;
 };
 

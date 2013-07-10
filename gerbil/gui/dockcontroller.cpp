@@ -10,7 +10,7 @@
 #include "docks/rgbdock.h"
 #include "docks/roidock.h"
 #include "docks/illumdock.h"
-#include "docks/graphsegmentationdock.h"
+#include "docks/graphsegwidget.h"
 #include "docks/ussegmentationdock.h"
 
 #include "model/ussegmentationmodel.h"
@@ -26,7 +26,6 @@ void DockController::init()
 	setupDocks();
 
 	chief->mainWindow()->addDockWidget(Qt::RightDockWidgetArea, bandDock);
-	chief->mainWindow()->addDockWidget(Qt::RightDockWidgetArea, graphSegDock);
 	chief->mainWindow()->addDockWidget(Qt::RightDockWidgetArea, labelingDock);
 	chief->mainWindow()->addDockWidget(Qt::RightDockWidgetArea, normDock);
 #ifdef WITH_SEG_MEANSHIFT
@@ -46,7 +45,6 @@ void DockController::init()
 
 	chief->mainWindow()->tabifyDockWidget(labelingDock, illumDock);
 	chief->mainWindow()->tabifyDockWidget(labelingDock, normDock);
-	chief->mainWindow()->tabifyDockWidget(labelingDock, graphSegDock);
 
 	chief->imageModel()->computeFullRgb();
 
@@ -63,7 +61,6 @@ void DockController::createDocks()
 	roiDock = new ROIDock(chief->mainWindow());
 	illumDock = new IllumDock(chief->mainWindow());
 	rgbDock = new RgbDock(chief->mainWindow());
-	graphSegDock = new GraphSegmentationDock(chief->mainWindow());
 #ifdef WITH_SEG_MEANSHIFT
 	usSegDock = new UsSegmentationDock(chief->mainWindow());
 #endif
@@ -100,12 +97,13 @@ void DockController::setupDocks()
 			chief->labelingModel(), SLOT(alterLabel(short)));
 	connect(bandDock, SIGNAL(newLabelRequested()),
 			chief->labelingModel(), SLOT(addLabel()));
-	connect(bandDock, SIGNAL(graphSegModeToggled(bool)),
-			graphSegDock, SLOT(setVisible(bool)));
-	connect(bandDock, SIGNAL(graphSegModeToggled(bool)),
-			this, SLOT(raiseGraphSegDock(bool)));
 
 	// GraphSegModel -> BandDock
+	// TODO: move seedmap to bandDock
+	chief->graphSegmentationModel()->setSeedMap(
+		bandDock->bandView()->getSeedMap());
+	connect(bandDock, SIGNAL(currentLabelChanged(int)),
+			chief->graphSegmentationModel(), SLOT(setCurLabel(int)));
 	connect(chief->graphSegmentationModel(), SIGNAL(seedingDone()),
 			bandDock, SLOT(processSeedingDone()));
 
@@ -115,6 +113,16 @@ void DockController::setupDocks()
 			bandDock->bandView(), SLOT(toggleShowLabels(bool)));
 	connect(chief->mainWindow(), SIGNAL(singleLabelRequested(bool)),
 			bandDock->bandView(), SLOT(toggleSingleLabel(bool)));
+
+	/* Graph Segmentation Widget */
+	connect(bandDock->graphSegWidget(),
+			SIGNAL(requestGraphseg(representation::t,vole::GraphSegConfig,bool)),
+			chief->graphSegmentationModel(),
+			SLOT(runGraphseg(representation::t,vole::GraphSegConfig,bool)));
+	connect(bandDock->graphSegWidget(),
+			SIGNAL(requestGraphsegCurBand(vole::GraphSegConfig,bool)),
+			chief->graphSegmentationModel(),
+			SLOT(runGraphsegBand(vole::GraphSegConfig,bool)));
 
 	/* RGB Dock */
 	connect(chief->imageModel(), SIGNAL(imageUpdate(representation::t,SharedMultiImgPtr)),
@@ -156,26 +164,6 @@ void DockController::setupDocks()
 	// connections between illumDock and viewer container
 	connect(illumDock, SIGNAL(showIlluminationCurveChanged(bool)),
 			chief->mainWindow()->getViewerContainer(), SLOT(showIlluminationCurve(bool)));
-
-
-
-	/* Graph Segmentation Dock */
-	chief->graphSegmentationModel()->setSeedMap(
-		bandDock->bandView()->getSeedMap());
-	connect(bandDock, SIGNAL(currentLabelChanged(int)),
-			chief->graphSegmentationModel(), SLOT(setCurLabel(int)));
-
-	connect(chief->mainWindow(), SIGNAL(graphSegDockVisibleRequested(bool)),
-			graphSegDock, SLOT(setVisible(bool)));
-	connect(graphSegDock,
-			SIGNAL(requestGraphseg(representation::t,vole::GraphSegConfig,bool)),
-			chief->graphSegmentationModel(),
-			SLOT(runGraphseg(representation::t,vole::GraphSegConfig,bool)));
-	connect(graphSegDock,
-			SIGNAL(requestGraphsegCurBand(vole::GraphSegConfig,bool)),
-			chief->graphSegmentationModel(),
-			SLOT(runGraphsegBand(vole::GraphSegConfig,bool)));
-	graphSegDock->setVisible(false); // start hidden
 
 	/* Unsupervised Segmentation Dock */
 #ifdef WITH_SEG_MEANSHIFT
@@ -220,16 +208,6 @@ void DockController::setupDocks()
 
 }
 
-void DockController::raiseGraphSegDock(bool enable)
-{
-	if(enable) {
-		//GGDBGM("raising graph seg dock"<<endl);
-		graphSegDock->setVisible(true);
-		graphSegDock->raise();
-	}
-}
-
-
 void DockController::enableDocks(bool enable, TaskType tt)
 {
 	bandDock->setEnabled(enable);
@@ -253,6 +231,4 @@ void DockController::enableDocks(bool enable, TaskType tt)
 	usSegDock->setEnabled(enable && !chief->imageModel()->isLimitedMode());
 #endif
 	roiDock->setEnabled(enable || tt == TT_SELECT_ROI);
-
-	graphSegDock->setEnabled(enable);
 }

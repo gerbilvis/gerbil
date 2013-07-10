@@ -46,7 +46,7 @@ vole_compile_library(
 	docks/roidock
 	docks/illumdock
 	docks/rgbdock
-	docks/graphsegmentationdock
+	docks/graphsegwidget
 	docks/ussegmentationdock
 
 	gerbil_gui_debug
@@ -75,7 +75,7 @@ vole_moc_library(
 	docks/roidock.h
 	docks/illumdock.h
 	docks/rgbdock.h
-	docks/graphsegmentationdock.h
+	docks/graphsegwidget.h
 	docks/ussegmentationdock.h
 
 	model/image.h
@@ -93,7 +93,7 @@ vole_ui_library(
 	dist_view/viewportcontrol.ui
 	docks/roidock.ui
 	docks/illumdock.ui
-	docks/graphsegmentationdock.ui
+	docks/graphsegwidget.ui
 	docks/ussegmentationdock.ui
 	docks/banddock.ui
 	docks/labelingdock.ui

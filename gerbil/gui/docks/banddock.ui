@@ -6,8 +6,8 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>483</width>
-    <height>337</height>
+    <width>488</width>
+    <height>455</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -178,6 +178,9 @@
       </property>
      </widget>
     </item>
+    <item row="2" column="0">
+     <widget class="GraphSegWidget" name="gs" native="true"/>
+    </item>
    </layout>
   </widget>
  </widget>
@@ -186,6 +189,12 @@
    <class>BandView</class>
    <extends>QWidget</extends>
    <header>bandview.h</header>
+  </customwidget>
+  <customwidget>
+   <class>GraphSegWidget</class>
+   <extends>QWidget</extends>
+   <header>docks/graphsegwidget.h</header>
+   <container>1</container>
   </customwidget>
  </customwidgets>
  <resources>

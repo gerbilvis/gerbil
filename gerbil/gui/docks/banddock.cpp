@@ -49,11 +49,12 @@ void BandDock::initUi()
 	applyButton->setVisible(false);
 
 	connect(graphsegButton, SIGNAL(toggled(bool)),
-			this, SIGNAL(graphSegModeToggled(bool)));
+			this, SLOT(graphSegModeToggled(bool)));
 	connect(graphsegButton, SIGNAL(toggled(bool)),
 			bv, SLOT(toggleSeedMode(bool)));
 
 	bv->initUi();
+	gs->setVisible(false);
 }
 
 void BandDock::changeBand(QPixmap band, QString desc)
@@ -132,4 +133,10 @@ void BandDock::processLabelingChange(const cv::Mat1s &labels,
 {
 	//GGDBG_CALL();
 	bv->updateLabeling(labels, mask);
+}
+
+
+void BandDock::graphSegModeToggled(bool enable)
+{
+	gs->setVisible(enable);
 }

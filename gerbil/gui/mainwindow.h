@@ -41,7 +41,6 @@ class IllumDock;
 class RgbDock;
 //TODO create
 //class LabelDock;
-class GraphSegmentationDock;
 class UsSegmentationDock;
 class Controller;
 

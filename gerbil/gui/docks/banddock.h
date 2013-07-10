@@ -19,8 +19,8 @@ public:
 	// separate entity and not just a GUI element. This is cleaner than
 	// duplicating the entire BandView interface in BandDock.
 	BandView *bandView() {return bv;}
+	GraphSegWidget *graphSegWidget() {return gs;}
 signals:
-	void graphSegModeToggled(bool enable);
 	/** The label being edited by the user has changed. */
 	void currentLabelChanged(int);
 	// FIXME short -> int (affects LabelModel)
@@ -30,6 +30,8 @@ signals:
 	/** User requested a new label (markerSelector) */
 	void newLabelRequested();
 public slots:
+	void graphSegModeToggled(bool enable);
+
 	// TODO representation::t, bandId
 	void changeBand(QPixmap band, QString desc);
 

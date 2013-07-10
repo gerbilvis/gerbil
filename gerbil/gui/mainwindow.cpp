@@ -20,7 +20,6 @@
 
 #include "docks/illumdock.h"
 #include "docks/rgbdock.h"
-#include "docks/graphsegmentationdock.h"
 #include "docks/ussegmentationdock.h"
 
 
