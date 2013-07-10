@@ -47,16 +47,18 @@ void GraphSegmentationModel::setCurBand(QPixmap band, QString description)
 }
 
 void GraphSegmentationModel::runGraphseg(representation::t type,
-							   const vole::GraphSegConfig &config)
+							   const vole::GraphSegConfig &config,
+							   bool resetLabel)
 {
 	SharedMultiImgPtr input = map.value(type);
 	if (!input) // image of type type was not set with setMultiImg
 		assert(false);
 
-	startGraphseg(input, config);
+	startGraphseg(input, config, resetLabel);
 }
 
-void GraphSegmentationModel::runGraphsegBand(const vole::GraphSegConfig &config)
+void GraphSegmentationModel::runGraphsegBand(const vole::GraphSegConfig &config,
+											 bool resetLabel)
 {
 	// TODO: make sure that we receive the first band selection at startup
 	// currently seems to work and will be changed soon
@@ -65,13 +67,23 @@ void GraphSegmentationModel::runGraphsegBand(const vole::GraphSegConfig &config)
 	cv::Mat1b bandGray;
 	cv::cvtColor(bandRgb, bandGray, cv::COLOR_BGR2GRAY);
 	SharedMultiImgPtr input(new SharedMultiImgBase(new multi_img(bandGray)));
-	startGraphseg(input, config);
+	startGraphseg(input, config, resetLabel);
 }
 
 void GraphSegmentationModel::startGraphseg(SharedMultiImgPtr input,
-										   const vole::GraphSegConfig &config)
+										   const vole::GraphSegConfig &config,
+										   bool resetLabel)
 {
 	emit setGUIEnabledRequested(false, TT_NONE);
+
+	// clear current label
+	if (resetLabel) {
+		cv::Mat1b emptyMat;
+		emit alterLabelRequested((short)curLabel + 1,
+								 emptyMat,
+								 false);
+	}
+
 	// TODO: should this be a commandrunner instead? arguable..
 	BackgroundTaskPtr taskGraphseg(new GraphsegBackground(
 		config, input, *seedMap, graphsegResult));

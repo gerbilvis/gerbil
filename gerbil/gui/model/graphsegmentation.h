@@ -29,15 +29,15 @@ public:
 
 protected:
 	void startGraphseg(SharedMultiImgPtr input,
-					   const vole::GraphSegConfig &config);
+					   const vole::GraphSegConfig &config, bool resetLabel);
 
 public slots:
 	void setCurLabel(int curLabel);
 //	void setCurBand(representation::t type, int bandId);
 	void setCurBand(QPixmap band, QString description);
 	void runGraphseg(representation::t type,
-					 const vole::GraphSegConfig &config);
-	void runGraphsegBand(const vole::GraphSegConfig &config);
+					 const vole::GraphSegConfig &config, bool resetLabel);
+	void runGraphsegBand(const vole::GraphSegConfig &config, bool resetLabel);
 
 protected slots:
 	void finishGraphSeg(bool success);

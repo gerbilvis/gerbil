@@ -21,8 +21,10 @@ protected:
 	void initUi();
 
 signals:
-	void requestGraphseg(representation::t, const vole::GraphSegConfig &config);
-	void requestGraphsegCurBand(const vole::GraphSegConfig &config);
+	void requestGraphseg(representation::t, const vole::GraphSegConfig &config,
+						 bool resetLabel);
+	void requestGraphsegCurBand(const vole::GraphSegConfig &config,
+								bool resetLabel);
 
 protected slots:
 	void startGraphseg();

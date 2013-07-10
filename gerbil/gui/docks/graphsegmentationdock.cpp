@@ -56,11 +56,14 @@ void GraphSegmentationDock::startGraphseg()
 	conf.multi_seed = false;
 	int src = graphsegSourceBox->itemData(graphsegSourceBox->currentIndex())
 								 .value<int>();
+
+	bool resetLabel = resetLabelRadio->isChecked();
+
 	if (src == 0) {
-		emit requestGraphseg(representation::IMG, conf);
+		emit requestGraphseg(representation::IMG, conf, resetLabel);
 	} else if (src == 1) {
-		emit requestGraphseg(representation::GRAD, conf);
+		emit requestGraphseg(representation::GRAD, conf, resetLabel);
 	} else {
-		emit requestGraphsegCurBand(conf); // currently shown band
+		emit requestGraphsegCurBand(conf, resetLabel); // currently shown band
 	}
 }

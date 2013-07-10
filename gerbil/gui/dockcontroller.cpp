@@ -168,12 +168,13 @@ void DockController::setupDocks()
 	connect(chief->mainWindow(), SIGNAL(graphSegDockVisibleRequested(bool)),
 			graphSegDock, SLOT(setVisible(bool)));
 	connect(graphSegDock,
-			SIGNAL(requestGraphseg(representation::t,vole::GraphSegConfig)),
+			SIGNAL(requestGraphseg(representation::t,vole::GraphSegConfig,bool)),
 			chief->graphSegmentationModel(),
-			SLOT(runGraphseg(representation::t,vole::GraphSegConfig)));
-	connect(graphSegDock, SIGNAL(requestGraphsegCurBand(vole::GraphSegConfig)),
+			SLOT(runGraphseg(representation::t,vole::GraphSegConfig,bool)));
+	connect(graphSegDock,
+			SIGNAL(requestGraphsegCurBand(vole::GraphSegConfig,bool)),
 			chief->graphSegmentationModel(),
-			SLOT(runGraphsegBand(vole::GraphSegConfig)));
+			SLOT(runGraphsegBand(vole::GraphSegConfig,bool)));
 	graphSegDock->setVisible(false); // start hidden
 
 	/* Unsupervised Segmentation Dock */
