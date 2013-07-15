@@ -66,7 +66,7 @@ public:
 	 * @note The number of bands in the current ROI image(s) may differ, see
 	 * getNumBandsROI().
 	 */
-	size_t getNumBandsFull();
+	int getNumBandsFull();
 
 	/** Return the number of bands in the multispectral image that is currently
 	 * used as ROI. */
@@ -101,7 +101,7 @@ public:
 	/** @return dimensions of the image as a rectangle */
 	cv::Rect loadImage(const std::string &filename);
 	/** @arg bands number of bands needed (only effective for IMG type) */
-	void spawn(representation::t type, const cv::Rect& roi, size_t bands = -1);
+	void spawn(representation::t type, const cv::Rect& roi, int bands = -1);
 
 public slots:
 	void computeBand(representation::t type, int dim);
@@ -129,6 +129,9 @@ signals:
 	/** The data range for representation type has changed. */
 	void dataRangeUdpate(representation::t type, const ImageDataRange& range);
 
+	/** The number of spectral bands of the ROI image has changed to nBands. */
+	void numBandsROIChanged(int nBands);
+
 protected slots:
 	// payload background task has finished
 	void processNewImageData(representation::t type, SharedMultiImgPtr image);
@@ -149,6 +152,9 @@ private:
 
 	// current number of spectral bands in the IMG representation
 	int nBands;
+
+	// previous number of spectral bands in the IMG representation
+	int nBandsOld;
 
 	BackgroundTaskQueue &queue;
 

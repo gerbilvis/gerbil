@@ -181,7 +181,7 @@ void Controller::invalidateROI(cv::Rect roi)
 	doSpawnROI(reuse, roi);
 }
 
-void Controller::rescaleSpectrum(size_t bands)
+void Controller::rescaleSpectrum(int bands)
 {
 	queue.cancelTasks(im.getROI());
 	disableGUI(TT_BAND_COUNT);
@@ -218,12 +218,12 @@ void Controller::doSpawnROI(bool reuse, const cv::Rect &roi)
 	// 2013-06-19 altmann: seems to work without disconnect as well.
 	window->getViewerContainer()->disconnectAllViewers();
 
-	updateROI(reuse, roi, im.getNumBandsROI());
+	updateROI(reuse, roi);
 
 	enableGUILater(true);
 }
 
-void Controller::updateROI(bool reuse, cv::Rect roi, size_t bands)
+void Controller::updateROI(bool reuse, cv::Rect roi, int bands)
 {
 	// no new ROI provided
 	if (roi == cv::Rect())
@@ -341,10 +341,6 @@ void Controller::enableGUILater(bool withROI)
 
 void Controller::enableGUINow(bool forreal)
 {
-	int nbands = im.getNumBandsROI();
-	//GGDBGM(format("emitting nSpectralBandsChanged(%1%)")%nbands << endl);
-	emit nSpectralBandsChanged(nbands);
-
 	if (forreal)
 		setGUIEnabled(true);
 }

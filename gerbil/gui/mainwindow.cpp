@@ -123,8 +123,8 @@ void MainWindow::initSignals(Controller *chief)
 			this, SLOT(bandsSliderMoved(int)));
 	connect(bandsSlider, SIGNAL(sliderMoved(int)),
 			this, SLOT(bandsSliderMoved(int)));
-	connect(this, SIGNAL(specRescaleRequested(size_t)),
-			chief, SLOT(rescaleSpectrum(size_t)));
+	connect(this, SIGNAL(specRescaleRequested(int)),
+			chief, SLOT(rescaleSpectrum(int)));
 
 	/// global shortcuts
 	QShortcut *scr = new QShortcut(Qt::CTRL + Qt::Key_S, this);

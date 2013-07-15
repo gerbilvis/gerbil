@@ -33,14 +33,6 @@ public:
 	UsSegmentationModel* usSegmentationModel() { return &um; }
 	LabelingModel* labelingModel() {return &lm;}
 signals:
-	/** Signal the number of spectral bands.
-	 *
-	 * Currently this emitted whenever the GUI is re-enabled, regardless of if
-	 * the number of bands actually changed. This OK, since no expensive
-	 * operation depends on this. As soon as this becomes expensive, a better
-	 * way of tracking the state may become appropriate (KISS).
-	 */
-	void nSpectralBandsChanged(int);
 	// setGUIEnabled() part of the dock windows
 	void requestEnableDocks(bool enable, TaskType tt);
 
@@ -51,7 +43,7 @@ public slots:
 	// change ROI, spawn new image data, rebuild everything from scratch.
 	void invalidateROI(cv::Rect roi = cv::Rect());
 	// change number of bands, spawning new image data
-	void rescaleSpectrum(size_t bands);
+	void rescaleSpectrum(int bands);
 	// change binnig to reflect, or not reflect, labeling
 	void toggleLabels(bool toggle);
 
@@ -101,7 +93,7 @@ protected:
 	void doSpawnROI(bool reuse, const cv::Rect &roi);
 
 	// update ROI, or its contents
-	void updateROI(bool reuse, cv::Rect roi = cv::Rect(), size_t bands = -1);
+	void updateROI(bool reuse, cv::Rect roi = cv::Rect(), int bands = -1);
 
 	// image model stores all multispectral image representations (IMG, GRAD, …)
 	ImageModel im;

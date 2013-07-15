@@ -19,7 +19,7 @@
 ImageModel::ImageModel(BackgroundTaskQueue &queue, bool lm)
 	: limitedMode(lm), queue(queue),
 	  image_lim(new SharedMultiImgBase(new multi_img())),
-	  nBands(-1)
+	  nBands(-1), nBandsOld(-1)
 {
 	foreach (representation::t i, representation::all()) {
 		map.insert(i, new payload(i));
@@ -44,7 +44,7 @@ ImageModel::~ImageModel()
 	}
 }
 
-size_t ImageModel::getNumBandsFull()
+int ImageModel::getNumBandsFull()
 {
 	SharedMultiImgBaseGuard guard(*image_lim);
 	return (*image_lim)->size();
@@ -74,7 +74,6 @@ cv::Rect ImageModel::loadImage(const std::string &filename)
 	if ((*image_lim)->empty()) {
 		return cv::Rect();
 	} else {
-		nBands = (*image_lim)->size();
 		return cv::Rect(0, 0, (*image_lim)->width, (*image_lim)->height);
 	}
 }
@@ -102,8 +101,10 @@ void ImageModelPayload::processImageDataTaskFinished(bool success)
 	emit dataRangeUpdate(type, **normRange);
 }
 
-void ImageModel::spawn(representation::t type, const cv::Rect &newROI, size_t bands)
+void ImageModel::spawn(representation::t type, const cv::Rect &newROI, int bands)
 {
+	nBandsOld = nBands;
+
 	// one ROI for all, effectively
 	roi = newROI;
 
@@ -126,10 +127,15 @@ void ImageModel::spawn(representation::t type, const cv::Rect &newROI, size_t ba
 
 		// sanitize spectral rescaling parameters
 		assert(-1 != getNumBandsFull());
-		if (bands == -1 || bands > getNumBandsFull())
+		if ( (bands == -1  && getNumBandsROI() == -1) // no ROI yet
+			 || bands > getNumBandsFull()) { // bands too large
 			bands = getNumBandsFull();
-		if (bands <= 2)
+		} else if (bands == -1) {
+			// default, use nbands from ROI
+			bands = getNumBandsROI();
+		} else if (bands <= 2) { // to few bands
 			bands = 3;
+		}
 		assert(-1 != bands);
 
 		// perform spectral rescaling
@@ -259,6 +265,9 @@ void ImageModel::processNewImageData(representation::t type, SharedMultiImgPtr i
 	if(representation::IMG == type) {
 		SharedDataLock lock(image->mutex);
 		nBands = (*image)->size();
+	}
+	if(nBandsOld != nBands) {
+		emit numBandsROIChanged(nBands);
 	}
 	emit imageUpdate(type, image);
 }

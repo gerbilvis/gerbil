@@ -175,7 +175,7 @@ void DockController::setupDocks()
 	UsSegmentationModel const*um = chief->usSegmentationModel();
 	int nbands = chief->imageModel()->getNumBandsFull();
 	usSegDock->setNumBands(nbands);
-	connect(chief, SIGNAL(nSpectralBandsChanged(int)),
+	connect(chief->imageModel(), SIGNAL(numBandsROIChanged(int)),
 			usSegDock, SLOT(setNumBands(int)));
 	connect(um, SIGNAL(progressChanged(int)),
 			usSegDock, SLOT(updateProgress(int)));
