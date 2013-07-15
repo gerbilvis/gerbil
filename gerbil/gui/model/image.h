@@ -40,9 +40,13 @@ public:
 	QMap<int, QPixmap> bands;
 
 public slots:
+	// This slot is connected to the epilog task in Image::spawn() and in turn
+	// emits the signals newImageData() and dataRangeUpdate() in this order.
 	void processImageDataTaskFinished(bool success);
 
 signals:
+	// newImageData() and dataRangeUpdate are availabe to ImageModel clients
+	// as ImageModel::imageUpdate() and ImageModel::dataRangeUdpate().
 	void newImageData(representation::t type, SharedMultiImgPtr image);
 	void dataRangeUpdate(representation::t type, ImageDataRange range);
 };
@@ -63,11 +67,31 @@ public:
 	 * getNumBandsROI().
 	 */
 	size_t getNumBandsFull();
+
 	/** Return the number of bands in the multispectral image that is currently
 	 * used as ROI. */
 	int getNumBandsROI();
+
+	/** Returns the Region of Interest (ROI) of the stored image representations. */
 	const cv::Rect& getROI() { return roi; }
+
+	/** Returns a SharedMultiImgPtr to the image data with representation type.
+	 *
+	 * This is limited to the current ROI. The referenced SharedMultiImgBase
+	 * object will remain in-place during runtime. The multi_img managed by it
+	 * will be replaced on ROI changes and other operations.  The
+	 * SharedMultiImgBase provides a mutex that needs to be locked for
+	 * concurrent access.
+	 */
 	SharedMultiImgPtr getImage(representation::t type) { return map[type]->image; }
+
+	/** Returns a SharedMultiImgPtr to the input image data.
+	 *
+	 * Although the image data may be modified, the referenced
+	 * SharedMultiImgBase will remain in-place during runtime.
+	 * SharedMultiImgBase provides a mutex that needs to be locked for
+	 * concurrent access.
+	 */
 	SharedMultiImgPtr getFullImage() { return image_lim; }
 	bool isLimitedMode() { return limitedMode; }
 
@@ -85,8 +109,8 @@ public slots:
 	 *
 	 * Emits fullRgbUpdate() when finished.
 	 *
-	 * @note Typically this is called once for each image, since the RGB representation
-	 * for ROI-View does not need to be updated.
+	 * @note Typically this is called once for each image, since the RGB
+	 * representation for ROI-View does not need to be updated.
 	 */
 	void computeFullRgb();
 
