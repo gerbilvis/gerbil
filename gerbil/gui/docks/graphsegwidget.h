@@ -23,7 +23,8 @@ protected:
 signals:
 	void requestShowAndRefreshSeedMap(cv::Mat1s seeding);
 	void requestLoadSeeds();
-	void requestGraphseg(representation::t, const vole::GraphSegConfig &config,
+	void requestGraphseg(representation::t type,
+						 const vole::GraphSegConfig &config,
 						 bool resetLabel);
 	void requestGraphsegCurBand(const vole::GraphSegConfig &config,
 								bool resetLabel);

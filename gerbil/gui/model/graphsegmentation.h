@@ -23,19 +23,18 @@ public:
 	GraphSegmentationModel(QObject *parent, BackgroundTaskQueue *queue);
 	~GraphSegmentationModel();
 
-	// always set img and grad before using the class
+	// always set required iamges before using the class
 	void setMultiImage(representation::t type, SharedMultiImgPtr image);
-	void setSeedMap(cv::Mat1s *seedMap);
 
 protected:
-	void startGraphseg(SharedMultiImgPtr input,
+	void startGraphseg(SharedMultiImgPtr input, cv::Mat1s seedMap,
 					   const vole::GraphSegConfig &config, bool resetLabel);
 
 public slots:
 	void setCurLabel(int curLabel);
-	void runGraphseg(representation::t type,
+	void runGraphseg(representation::t type, cv::Mat1s seedMap,
 					 const vole::GraphSegConfig &config, bool resetLabel);
-	void runGraphsegBand(representation::t type, int bandId,
+	void runGraphsegBand(representation::t type, int bandId, cv::Mat1s seedMap,
 						 const vole::GraphSegConfig &config, bool resetLabel);
 
 protected slots:
@@ -53,7 +52,6 @@ protected:
 
 	BackgroundTaskQueue *const queue;
 	ImageMap map;
-	cv::Mat1s *seedMap;
 
 	int curLabel; // keep in mind that 0 is no label, the first index is 1!
 

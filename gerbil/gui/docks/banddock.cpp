@@ -108,8 +108,7 @@ void BandDock::processMarkerSelectorIndexChanged(int idx)
 		emit newLabelRequested();
 
 		// will not loop.
-		markerSelector->setCurrentIndex(
-					idx-1);
+		markerSelector->setCurrentIndex(idx-1);
 	} else {
 		bv->changeCurrentLabel(idx);
 	}
@@ -159,9 +158,7 @@ void BandDock::loadSeeds()
 	bv->setSeedMap(seeding);
 
 	// now make sure we are in seed mode
-	if (graphsegButton->isChecked()) {
-		bv->refresh();
-	} else {
+	if (!graphsegButton->isChecked()) {
 		graphsegButton->toggle();
 	}
 }

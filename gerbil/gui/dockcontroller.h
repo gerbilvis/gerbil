@@ -42,12 +42,22 @@ public:
 	void init();
 signals:
 	void rgbRequested();
+	// these are send to the graphSegModel
+	void requestGraphseg(representation::t type,
+						 cv::Mat1s seedMap,
+						 const vole::GraphSegConfig &config,
+						 bool resetLabel);
 	void requestGraphsegBand(representation::t type, int bandId,
+							 cv::Mat1s seedMap,
 							 const vole::GraphSegConfig &config,
 							 bool resetLabel);
 public slots:
 	void enableDocks(bool enable, TaskType tt);
 protected slots:
+	// these are requested by the graphSegWidget
+	void requestGraphseg(representation::t,
+						 const vole::GraphSegConfig &config,
+						 bool resetLabel);
 	void requestGraphsegCurBand(const vole::GraphSegConfig &config,
 								bool resetLabel);
 protected:

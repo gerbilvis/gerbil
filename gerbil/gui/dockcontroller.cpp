@@ -101,25 +101,31 @@ void DockController::setupDocks()
 			chief->labelingModel(), SLOT(addLabel()));
 
 	/* Graph Segmentation Widget */
+	// DockController adds missing information and resends the signal
 	connect(bandDock->graphSegWidget(),
-			SIGNAL(requestGraphseg(representation::t,vole::GraphSegConfig,bool)),
+			SIGNAL(requestGraphseg(representation::t,
+								   vole::GraphSegConfig,bool)),
+			this,
+			SLOT(requestGraphseg(representation::t,
+							 vole::GraphSegConfig,bool)));
+	connect(this,
+			SIGNAL(requestGraphseg(representation::t,cv::Mat1s,
+								   vole::GraphSegConfig,bool)),
 			chief->graphSegmentationModel(),
-			SLOT(runGraphseg(representation::t,vole::GraphSegConfig,bool)));
+			SLOT(runGraphseg(representation::t,cv::Mat1s,
+							 vole::GraphSegConfig,bool)));
 	connect(bandDock->graphSegWidget(),
 			SIGNAL(requestGraphsegCurBand(const vole::GraphSegConfig &,bool)),
 			this,
 			SLOT(requestGraphsegCurBand(const vole::GraphSegConfig &,bool)));
 	connect(this,
-			SIGNAL(requestGraphsegBand(representation::t,int,
+			SIGNAL(requestGraphsegBand(representation::t,int,cv::Mat1s,
 									   const vole::GraphSegConfig &,bool)),
 			chief->graphSegmentationModel(),
-			SLOT(runGraphsegBand(representation::t,int,
+			SLOT(runGraphsegBand(representation::t,int,cv::Mat1s,
 								 const vole::GraphSegConfig &,bool)));
 
 	// GraphSegModel -> BandDock
-	// TODO: send seedmap per signal/slot
-	chief->graphSegmentationModel()->setSeedMap(
-		bandDock->bandView()->getSeedMap());
 	connect(bandDock, SIGNAL(currentLabelChanged(int)),
 			chief->graphSegmentationModel(), SLOT(setCurLabel(int)));
 	connect(chief->graphSegmentationModel(), SIGNAL(seedingDone()),
@@ -238,10 +244,19 @@ void DockController::enableDocks(bool enable, TaskType tt)
 	roiDock->setEnabled(enable || tt == TT_SELECT_ROI);
 }
 
+void DockController::requestGraphseg(representation::t repr,
+									 const vole::GraphSegConfig &config,
+									 bool resetLabel)
+{
+	cv::Mat1s seedMap = bandDock->bandView()->getSeedMap();
+	emit requestGraphseg(repr, seedMap, config, resetLabel);
+}
+
 void DockController::requestGraphsegCurBand(const vole::GraphSegConfig &config,
 											bool resetLabel)
 {
 	representation::t repr = bandDock->getCurRepresentation();
 	int bandId = bandDock->getCurBandId();
-	emit requestGraphsegBand(repr, bandId, config, resetLabel);
+	cv::Mat1s seedMap = bandDock->bandView()->getSeedMap();
+	emit requestGraphsegBand(repr, bandId, seedMap, config, resetLabel);
 }
