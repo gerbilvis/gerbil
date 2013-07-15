@@ -92,7 +92,7 @@ void ImageModel::invalidateROI()
 	}
 }
 
-void ImageModel::payload::processImageDataTaskFinished(bool success)
+void ImageModelPayload::processImageDataTaskFinished(bool success)
 {
 	if (!success)
 		return;
