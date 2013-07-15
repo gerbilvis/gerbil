@@ -36,7 +36,7 @@ private:
 
 bool DistviewBinsTbb::run()
 {
-	cv::imwrite("/tmp/mask.png", mask);
+	//cv::imwrite("/tmp/mask.png", mask);
 	bool reuse = ((!add.empty() || !sub.empty()) && !inplace);
 	bool keepOldContext = false;
 	if (reuse) {
