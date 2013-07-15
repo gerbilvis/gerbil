@@ -38,7 +38,7 @@ class DockController : public QObject
 {
 	Q_OBJECT
 public:
-	explicit DockController(Controller *chief, cv::Rect fullImgSize);
+	explicit DockController(Controller *chief);
 	void init();
 signals:
 	void rgbRequested();
@@ -68,7 +68,6 @@ protected:
 	void setupDocks();
 
 	Controller* chief;
-	cv::Rect fullImgSize;
 
 	BandDock *bandDock;
 	LabelingDock *labelingDock;

@@ -93,6 +93,13 @@ public:
 	 * concurrent access.
 	 */
 	SharedMultiImgPtr getFullImage() { return image_lim; }
+
+	/** Return the dimensions of the full (input) image as a cv::Rect.
+	 *
+	 * @note Be aware that this function locks the SharedData mutex.
+	 */
+	cv::Rect getFullImageRect();
+
 	bool isLimitedMode() { return limitedMode; }
 
 	// delete ROI information also in images

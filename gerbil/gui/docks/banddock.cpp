@@ -12,8 +12,8 @@ static QIcon colorIcon(const QColor &color)
 	return QIcon(pm);
 }
 
-BandDock::BandDock(cv::Rect dimensions, QWidget *parent) :
-	QDockWidget(parent), fulllmgSize(dimensions)
+BandDock::BandDock(cv::Rect fullImgSize, QWidget *parent)
+	: QDockWidget(parent), fullImgSize(fullImgSize)
 {
 	setupUi(this);
 	initUi();
@@ -151,7 +151,7 @@ void BandDock::loadSeeds()
 {
 	IOGui io("Seed Image File", "seed image", this);
 	cv::Mat1s seeding = io.readFile(QString(), 0,
-									fulllmgSize.height, fulllmgSize.width);
+									fullImgSize.height, fullImgSize.width);
 	if (seeding.empty())
 		return;
 
@@ -162,3 +162,5 @@ void BandDock::loadSeeds()
 		graphsegButton->toggle();
 	}
 }
+
+

@@ -55,6 +55,13 @@ int ImageModel::getNumBandsROI()
 	return nBands;
 }
 
+cv::Rect ImageModel::getFullImageRect()
+{
+	SharedDataLock lock(image_lim->mutex);
+	cv::Rect dims(0, 0, (*image_lim)->width, (*image_lim)->height);
+	return dims;
+}
+
 cv::Rect ImageModel::loadImage(const std::string &filename)
 {
 	if (limitedMode) {

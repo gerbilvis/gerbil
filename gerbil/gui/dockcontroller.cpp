@@ -15,8 +15,8 @@
 
 #include "model/ussegmentationmodel.h"
 
-DockController::DockController(Controller *chief, cv::Rect fullImgSize) :
-	QObject(chief), chief(chief), fullImgSize(fullImgSize)
+DockController::DockController(Controller *chief) :
+	QObject(chief), chief(chief)
 {
 }
 
@@ -55,7 +55,9 @@ void DockController::init()
 void DockController::createDocks()
 {
 	assert(NULL != chief->mainWindow());
-	bandDock = new BandDock(fullImgSize, chief->mainWindow());
+
+	bandDock = new BandDock(chief->imageModel()->getFullImageRect(),
+							chief->mainWindow());
 	labelingDock = new LabelingDock(chief->mainWindow());
 	normDock = new NormDock(chief->mainWindow());
 	roiDock = new ROIDock(chief->mainWindow());

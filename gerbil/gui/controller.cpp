@@ -49,7 +49,7 @@ Controller::Controller(const std::string &filename, bool limited_mode,
 #endif /* WITH_SEG_MEANSHIFT */
 
 	// initialize docks (after initializing the models...)
-	dc = new DockController(this, dimensions);
+	dc = new DockController(this);
 	dc->init();
 
 	// MODEL To be removed when refactored

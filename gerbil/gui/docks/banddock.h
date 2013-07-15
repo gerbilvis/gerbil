@@ -12,7 +12,7 @@ class BandDock : public QDockWidget, private Ui::BandDock
 	Q_OBJECT
 	
 public:
-	explicit BandDock(cv::Rect fulllmgSize, QWidget *parent = 0);
+	explicit BandDock(cv::Rect fullImgSize, QWidget *parent = 0);
 	~BandDock();
 	/** Returns the BandView. */
 	// It is OK for the controller to access BandView directly. It is a
@@ -56,7 +56,7 @@ protected:
 	void initUi();
 	// local copy
 	QVector<QColor> labelColors;
-	cv::Rect fulllmgSize;
+	cv::Rect fullImgSize;
 
 	// representation and bandId of currently shown band
 	representation::t curRepr;
