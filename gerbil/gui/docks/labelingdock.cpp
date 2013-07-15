@@ -18,6 +18,4 @@ void LabelingDock::initUi()
 			this, SIGNAL(requestLoadLabeling()));
 	connect(saveLabelingButton, SIGNAL(clicked()),
 			this, SIGNAL(requestSaveLabeling()));
-	connect(loadSeedsButton, SIGNAL(clicked()),
-			this, SIGNAL(requestLoadSeeds()));
 }

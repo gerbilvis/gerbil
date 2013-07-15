@@ -15,8 +15,8 @@
 
 #include "model/ussegmentationmodel.h"
 
-DockController::DockController(Controller *chief) :
-	QObject(chief), chief(chief)
+DockController::DockController(Controller *chief, cv::Rect fullImgSize) :
+	QObject(chief), chief(chief), fullImgSize(fullImgSize)
 {
 }
 
@@ -55,7 +55,7 @@ void DockController::init()
 void DockController::createDocks()
 {
 	assert(NULL != chief->mainWindow());
-	bandDock = new BandDock(chief->mainWindow());
+	bandDock = new BandDock(fullImgSize, chief->mainWindow());
 	labelingDock = new LabelingDock(chief->mainWindow());
 	normDock = new NormDock(chief->mainWindow());
 	roiDock = new ROIDock(chief->mainWindow());
@@ -70,8 +70,10 @@ void DockController::setupDocks()
 {
 
 	/* im -> others */
-	connect(chief->imageModel(), SIGNAL(bandUpdate(QPixmap, QString)),
-			bandDock, SLOT(changeBand(QPixmap, QString)));
+	connect(chief->imageModel(),
+			SIGNAL(bandUpdate(representation::t, int, QPixmap, QString)),
+			bandDock,
+			SLOT(changeBand(representation::t, int, QPixmap, QString)));
 
 	/* Band Dock */
 	connect(chief->labelingModel(), SIGNAL(partialLabelUpdate(const cv::Mat1s&,const cv::Mat1b&)),
@@ -98,8 +100,24 @@ void DockController::setupDocks()
 	connect(bandDock, SIGNAL(newLabelRequested()),
 			chief->labelingModel(), SLOT(addLabel()));
 
+	/* Graph Segmentation Widget */
+	connect(bandDock->graphSegWidget(),
+			SIGNAL(requestGraphseg(representation::t,vole::GraphSegConfig,bool)),
+			chief->graphSegmentationModel(),
+			SLOT(runGraphseg(representation::t,vole::GraphSegConfig,bool)));
+	connect(bandDock->graphSegWidget(),
+			SIGNAL(requestGraphsegCurBand(const vole::GraphSegConfig &,bool)),
+			this,
+			SLOT(requestGraphsegCurBand(const vole::GraphSegConfig &,bool)));
+	connect(this,
+			SIGNAL(requestGraphsegBand(representation::t,int,
+									   const vole::GraphSegConfig &,bool)),
+			chief->graphSegmentationModel(),
+			SLOT(runGraphsegBand(representation::t,int,
+								 const vole::GraphSegConfig &,bool)));
+
 	// GraphSegModel -> BandDock
-	// TODO: move seedmap to bandDock
+	// TODO: send seedmap per signal/slot
 	chief->graphSegmentationModel()->setSeedMap(
 		bandDock->bandView()->getSeedMap());
 	connect(bandDock, SIGNAL(currentLabelChanged(int)),
@@ -113,16 +131,6 @@ void DockController::setupDocks()
 			bandDock->bandView(), SLOT(toggleShowLabels(bool)));
 	connect(chief->mainWindow(), SIGNAL(singleLabelRequested(bool)),
 			bandDock->bandView(), SLOT(toggleSingleLabel(bool)));
-
-	/* Graph Segmentation Widget */
-	connect(bandDock->graphSegWidget(),
-			SIGNAL(requestGraphseg(representation::t,vole::GraphSegConfig,bool)),
-			chief->graphSegmentationModel(),
-			SLOT(runGraphseg(representation::t,vole::GraphSegConfig,bool)));
-	connect(bandDock->graphSegWidget(),
-			SIGNAL(requestGraphsegCurBand(vole::GraphSegConfig,bool)),
-			chief->graphSegmentationModel(),
-			SLOT(runGraphsegBand(vole::GraphSegConfig,bool)));
 
 	/* RGB Dock */
 	connect(chief->imageModel(), SIGNAL(imageUpdate(representation::t,SharedMultiImgPtr)),
@@ -147,9 +155,6 @@ void DockController::setupDocks()
 			chief->labelingModel(), SLOT(loadLabeling()));
 	connect(labelingDock, SIGNAL(requestSaveLabeling()),
 			chief->labelingModel(), SLOT(saveLabeling()));
-	// TODO
-	//connect(labelingDock, SIGNAL(requestLoadSeeds()),
-	//		...);
 
 	/* Illumination Dock */
 	connect(illumDock, SIGNAL(applyIllum()),
@@ -231,4 +236,12 @@ void DockController::enableDocks(bool enable, TaskType tt)
 	usSegDock->setEnabled(enable && !chief->imageModel()->isLimitedMode());
 #endif
 	roiDock->setEnabled(enable || tt == TT_SELECT_ROI);
+}
+
+void DockController::requestGraphsegCurBand(const vole::GraphSegConfig &config,
+											bool resetLabel)
+{
+	representation::t repr = bandDock->getCurRepresentation();
+	int bandId = bandDock->getCurBandId();
+	emit requestGraphsegBand(repr, bandId, config, resetLabel);
 }

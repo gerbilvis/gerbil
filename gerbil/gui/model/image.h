@@ -121,7 +121,8 @@ public slots:
 
 signals:
 	/** The data of the currently selected band has changed. */
-	void bandUpdate(QPixmap band, QString description);
+	void bandUpdate(representation::t repr, int bandId,
+					QPixmap band, QString description);
 
 	void fullRgbUpdate(QPixmap fullRgb);
 	void imageUpdate(representation::t type, SharedMultiImgPtr image);

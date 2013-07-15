@@ -30,7 +30,7 @@ Controller::Controller(const std::string &filename, bool limited_mode,
 
 	// create gui (perform initUI before connecting signals!)
 	window = new MainWindow(limited_mode);
-	window->initUI(dimensions, im.getNumBandsFull());
+	window->initUI(im.getNumBandsFull());
 
 	// connect slots/signals
 	window->initSignals(this);
@@ -49,7 +49,7 @@ Controller::Controller(const std::string &filename, bool limited_mode,
 #endif /* WITH_SEG_MEANSHIFT */
 
 	// initialize docks (after initializing the models...)
-	dc = new DockController(this);
+	dc = new DockController(this, dimensions);
 	dc->init();
 
 	// MODEL To be removed when refactored
@@ -135,13 +135,10 @@ void Controller::initGraphSegmentation()
 	connect(&gsm, SIGNAL(alterLabelRequested(short,cv::Mat1b,bool)),
 			&lm, SLOT(alterLabel(short,cv::Mat1b,bool)));
 
-	connect(&im, SIGNAL(bandUpdate(QPixmap,QString)),
-			&gsm, SLOT(setCurBand(QPixmap,QString)));
-
 	connect(&gsm, SIGNAL(setGUIEnabledRequested(bool,TaskType)),
 			this, SLOT(setGUIEnabled(bool, TaskType)));
 
-	// gsm seedingDone <-> bandDock seedingDone connection in initDocks
+	// (gsm seedingDone <-> bandDock seedingDone connection in initDocks)
 }
 
 /** Labeling management **/

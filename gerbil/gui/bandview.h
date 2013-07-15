@@ -35,7 +35,8 @@ public:
 	bool isSeedModeEnabled() { return seedMode; }
 
 	short getCurLabel() { return curLabel; }
-	cv::Mat1s *getSeedMap() { return &seedMap;}
+	void setSeedMap(cv::Mat1s seeding);
+	cv::Mat1s *getSeedMap() { return &seedMap; } // TODO: signal/slot
 public slots:
 	void refresh();
 	void changeCurrentLabel(int label);

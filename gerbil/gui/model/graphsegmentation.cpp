@@ -33,19 +33,6 @@ void GraphSegmentationModel::setCurLabel(int curLabel)
 	this->curLabel = curLabel;
 }
 
-//void GraphSegmentationModel::setCurBand(representation::t type, int bandId)
-//{
-//	if (type == representation::IMG || type == representation::GRAD)
-//	{
-//		this->curRepr = type;
-//		this->curBand = bandId;
-//	}
-//}
-void GraphSegmentationModel::setCurBand(QPixmap band, QString description)
-{
-	this->curBand = band;
-}
-
 void GraphSegmentationModel::runGraphseg(representation::t type,
 							   const vole::GraphSegConfig &config,
 							   bool resetLabel)
@@ -57,16 +44,13 @@ void GraphSegmentationModel::runGraphseg(representation::t type,
 	startGraphseg(input, config, resetLabel);
 }
 
-void GraphSegmentationModel::runGraphsegBand(const vole::GraphSegConfig &config,
+void GraphSegmentationModel::runGraphsegBand(representation::t type, int bandId,
+											 const vole::GraphSegConfig &config,
 											 bool resetLabel)
 {
-	// TODO: make sure that we receive the first band selection at startup
-	// currently seems to work and will be changed soon
-
-	cv::Mat3b bandRgb = vole::QImage2Mat(curBand.toImage());
-	cv::Mat1b bandGray;
-	cv::cvtColor(bandRgb, bandGray, cv::COLOR_BGR2GRAY);
-	SharedMultiImgPtr input(new SharedMultiImgBase(new multi_img(bandGray)));
+	SharedMultiImgPtr img = map.value(type);
+	multi_img::Band band = (**img)[bandId];
+	SharedMultiImgPtr input(new SharedMultiImgBase(new multi_img(band)));
 	startGraphseg(input, config, resetLabel);
 }
 

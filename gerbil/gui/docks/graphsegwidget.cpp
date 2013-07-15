@@ -34,10 +34,12 @@ void GraphSegWidget::initUi()
 	graphsegAlgoBox->addItem("Power Watershed q=2", vole::WATERSHED2);
 	graphsegAlgoBox->setCurrentIndex(1);
 
+	connect(loadSeedsButton, SIGNAL(clicked()),
+			this, SIGNAL(requestLoadSeeds()));
+
 	connect(graphsegGoButton, SIGNAL(clicked()),
 			this, SLOT(startGraphseg()));
 }
-
 
 // pass it to model via signal requestSegmentation(config).
 void GraphSegWidget::startGraphseg()

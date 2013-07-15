@@ -33,11 +33,10 @@ protected:
 
 public slots:
 	void setCurLabel(int curLabel);
-//	void setCurBand(representation::t type, int bandId);
-	void setCurBand(QPixmap band, QString description);
 	void runGraphseg(representation::t type,
 					 const vole::GraphSegConfig &config, bool resetLabel);
-	void runGraphsegBand(const vole::GraphSegConfig &config, bool resetLabel);
+	void runGraphsegBand(representation::t type, int bandId,
+						 const vole::GraphSegConfig &config, bool resetLabel);
 
 protected slots:
 	void finishGraphSeg(bool success);
@@ -56,10 +55,7 @@ protected:
 	ImageMap map;
 	cv::Mat1s *seedMap;
 
-//	representation::t curRepr;
-//	int curBand;
-	QPixmap curBand;
-	int curLabel;
+	int curLabel; // keep in mind that 0 is no label, the first index is 1!
 
 	boost::shared_ptr<cv::Mat1s> graphsegResult;
 };

@@ -21,6 +21,8 @@ protected:
 	void initUi();
 
 signals:
+	void requestShowAndRefreshSeedMap(cv::Mat1s seeding);
+	void requestLoadSeeds();
 	void requestGraphseg(representation::t, const vole::GraphSegConfig &config,
 						 bool resetLabel);
 	void requestGraphsegCurBand(const vole::GraphSegConfig &config,

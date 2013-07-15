@@ -512,3 +512,10 @@ void BandView::applyLabelAlpha(int alpha)
 
 	refresh();
 }
+
+
+void BandView::setSeedMap(cv::Mat1s seeding)
+{
+	seedMap = seeding;
+//	emit newSeedMap(); TODO
+}

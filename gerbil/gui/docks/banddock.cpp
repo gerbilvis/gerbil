@@ -1,4 +1,5 @@
 #include "banddock.h"
+#include "../iogui.h"
 #include "ui_banddock.h"
 
 #include "../gerbil_gui_debug.h"
@@ -11,8 +12,8 @@ static QIcon colorIcon(const QColor &color)
 	return QIcon(pm);
 }
 
-BandDock::BandDock(QWidget *parent) :
-	QDockWidget(parent)
+BandDock::BandDock(cv::Rect dimensions, QWidget *parent) :
+	QDockWidget(parent), fulllmgSize(dimensions)
 {
 	setupUi(this);
 	initUi();
@@ -24,6 +25,9 @@ BandDock::~BandDock()
 
 void BandDock::initUi()
 {
+	connect(gs, SIGNAL(requestLoadSeeds()),
+			this, SLOT(loadSeeds()));
+
 	connect(markerSelector, SIGNAL(currentIndexChanged(int)),
 			bv, SLOT(changeCurrentLabel(int)));
 	connect(markerSelector, SIGNAL(currentIndexChanged(int)),
@@ -57,9 +61,11 @@ void BandDock::initUi()
 	gs->setVisible(false);
 }
 
-void BandDock::changeBand(QPixmap band, QString desc)
+void BandDock::changeBand(representation::t repr, int bandId,
+						  QPixmap band, QString desc)
 {
-	//GGDBGM(band.width()<<endl);
+	curRepr = repr;
+	curBandId = bandId;
 
 	bv->setEnabled(true);
 	bv->setPixmap(band);
@@ -137,8 +143,25 @@ void BandDock::processLabelingChange(const cv::Mat1s &labels,
 	bv->updateLabeling(labels, mask);
 }
 
-
 void BandDock::graphSegModeToggled(bool enable)
 {
 	gs->setVisible(enable);
+}
+
+void BandDock::loadSeeds()
+{
+	IOGui io("Seed Image File", "seed image", this);
+	cv::Mat1s seeding = io.readFile(QString(), 0,
+									fulllmgSize.height, fulllmgSize.width);
+	if (seeding.empty())
+		return;
+
+	bv->setSeedMap(seeding);
+
+	// now make sure we are in seed mode
+	if (graphsegButton->isChecked()) {
+		bv->refresh();
+	} else {
+		graphsegButton->toggle();
+	}
 }

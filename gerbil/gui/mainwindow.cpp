@@ -57,12 +57,8 @@ void MainWindow::remFromLabel()
 	emit alterLabelRequested(currentLabel, mask, true);
 }
 
-void MainWindow::initUI(cv::Rect dim, size_t size)
+void MainWindow::initUI(size_t size)
 {
-	// TODO: maybe we can delete this after moving loadSeeds to labelModel?
-	// used in loadSeeds(), maybe also for showing generic metadata
-	dimensions = dim;
-
 	/* init bandsSlider */
 	bandsLabel->setText(QString("%1 bands").arg(size));
 	bandsSlider->setMinimum(3);
@@ -421,7 +417,7 @@ void MainWindow::clampNormUserRange()
 	*/
 }
 
-// TODO LabelingModel
+// TODO GraphSegmentationWidget
 void MainWindow::loadSeeds()
 {
 //	IOGui io("Seed Image File", "seed image", this);

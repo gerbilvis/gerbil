@@ -27,18 +27,29 @@ class IllumDock;
 class GraphSegWidget;
 class UsSegmentationDock;
 
+namespace vole
+{
+	class GraphSegConfig;
+}
+
 #include <QObject>
 
 class DockController : public QObject
 {
 	Q_OBJECT
 public:
-	explicit DockController(Controller *chief);
+	explicit DockController(Controller *chief, cv::Rect fullImgSize);
 	void init();
 signals:
 	void rgbRequested();
+	void requestGraphsegBand(representation::t type, int bandId,
+							 const vole::GraphSegConfig &config,
+							 bool resetLabel);
 public slots:
 	void enableDocks(bool enable, TaskType tt);
+protected slots:
+	void requestGraphsegCurBand(const vole::GraphSegConfig &config,
+								bool resetLabel);
 protected:
 	/* Create dock widget objects. */
 	void createDocks();
@@ -47,6 +58,7 @@ protected:
 	void setupDocks();
 
 	Controller* chief;
+	cv::Rect fullImgSize;
 
 	BandDock *bandDock;
 	LabelingDock *labelingDock;

@@ -48,7 +48,7 @@ class MainWindow : public QMainWindow, private Ui::MainWindow {
     Q_OBJECT
 public:
 	MainWindow(bool limitedMode = false);
-	void initUI(cv::Rect dimensions, size_t size);
+	void initUI(size_t size);
 	void initSignals(Controller *chief);
 
 	// TODO: used by Controller; hack until we have a resp. vc-controller
@@ -110,8 +110,6 @@ private:
 	QMenu *contextMenu;
 
 	bool limitedMode;
-	// full image dimensions, used in loadSeeds()
-	cv::Rect dimensions;
 	// the index of the label currently being edited
 	int currentLabel;
 };

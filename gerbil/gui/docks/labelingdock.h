@@ -18,8 +18,6 @@ public:
 signals:
 	void requestLoadLabeling();
 	void requestSaveLabeling();
-	void requestLoadSeeds();
-	
 };
 
 #endif // LABELINGDOCK_H

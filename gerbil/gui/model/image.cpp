@@ -225,7 +225,7 @@ void ImageModel::computeBand(representation::t type, int dim)
 	else
 		desc = QString("%1 Band %2").arg(str[type]).arg(banddesc.c_str());
 
-	emit bandUpdate(m[dim], desc);
+	emit bandUpdate(type, dim, m[dim], desc);
 }
 
 void ImageModel::computeFullRgb()
