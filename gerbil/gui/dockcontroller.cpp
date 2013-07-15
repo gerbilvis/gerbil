@@ -155,6 +155,9 @@ void DockController::setupDocks()
 	connect(chief->imageModel(), SIGNAL(fullRgbUpdate(QPixmap)),
 			roiDock, SLOT(updatePixmap(QPixmap)));
 
+	connect(chief->imageModel(), SIGNAL(roiRectChanged(cv::Rect)),
+			roiDock, SLOT(setRoi(cv::Rect)));
+
 	connect(roiDock, SIGNAL(roiRequested(const cv::Rect&)),
 			chief, SLOT(spawnROI(const cv::Rect&)));
 

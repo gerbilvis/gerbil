@@ -116,7 +116,7 @@ public slots:
 	 *
 	 * Emits fullRgbUpdate() when finished.
 	 *
-	 * @note Typically this is called once for each image, since the RGB
+	 * @note Typically this is called only once upon loading, since the RGB
 	 * representation for ROI-View does not need to be updated.
 	 */
 	void computeFullRgb();
@@ -132,12 +132,34 @@ signals:
 					QPixmap band, QString description);
 
 	void fullRgbUpdate(QPixmap fullRgb);
+
+	/** The ROI image data for representation type has changed.
+	 *
+	 * This signal is emitted whenever the ROI is set to a new rect or the
+	 * underlying data has been altered. Basically it is emitted after every
+	 * spawn().
+	 * See dataRangeUdpate, numBandsROIChanged and roiRectChanged for more
+	 * specific signals.
+	 */
 	void imageUpdate(representation::t type, SharedMultiImgPtr image);
+
 	/** The data range for representation type has changed. */
 	void dataRangeUdpate(representation::t type, const ImageDataRange& range);
 
-	/** The number of spectral bands of the ROI image has changed to nBands. */
+	/** The number of spectral bands of the ROI image has changed to nBands. 
+	 * 
+	 * numBandsROIChanged() is only emitted if the number of spectral bands has
+	 * actually changed. That is, there will be no signal if the ROI image data
+	 * has been altered while keeping the number of bands unchanged. 
+	 */
 	void numBandsROIChanged(int nBands);
+
+	/** A new ROI has been applied.
+	 *
+	 * roiRectChanged() is emitted when the rect of the ROI changes,
+	 * independently of wheter the image data in the ROI has changed.
+	 */
+	void roiRectChanged(cv::Rect roi);
 
 protected slots:
 	// payload background task has finished
@@ -156,6 +178,9 @@ private:
 
 	// current region of interest
 	cv::Rect roi;
+
+	// previous region of interest
+	cv::Rect oldRoi;
 
 	// current number of spectral bands in the IMG representation
 	int nBands;

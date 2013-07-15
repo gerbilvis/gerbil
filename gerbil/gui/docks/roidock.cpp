@@ -3,10 +3,11 @@
 #include <iostream>
 #include "../gerbil_gui_debug.h"
 
-cv::Rect QRect2CVRect(const QRect &r) {
+static cv::Rect QRect2CVRect(const QRect &r) {
 	return cv::Rect(r.x(), r.y(), r.width(), r.height());
 }
-QRect CVRect2QRect(const cv::Rect &r) {
+
+static QRect CVRect2QRect(const cv::Rect &r) {
 	return QRect(r.x, r.y, r.width, r.height);
 }
 
@@ -24,12 +25,16 @@ const QRect& ROIDock::getRoi() const
 
 void ROIDock::setRoi(const cv::Rect &roi)
 {
-	// reset will go back to current state
-	oldRoi = CVRect2QRect(roi);
+	if(roi == QRect2CVRect(curRoi)) {
+		// GUI already up-to-date, prevent loop
+		return;
+	}
 
-	// start off our selector on new oldRoi
-	roiView->roi = oldRoi;
+	curRoi = CVRect2QRect(roi);
+	oldRoi = curRoi;
+	roiView->roi = CVRect2QRect(roi);
 	roiView->update();
+	processNewSelection(CVRect2QRect(roi));
 }
 
 void ROIDock::initUi()
@@ -37,7 +42,7 @@ void ROIDock::initUi()
 	connect(roiButtons, SIGNAL(clicked(QAbstractButton*)),
 			 this, SLOT(processRoiButtonsClicked(QAbstractButton*)));
 	connect(roiView, SIGNAL(newSelection(const QRect&)),
-			this, SLOT(updateRoi(const QRect&)));
+			this, SLOT(processNewSelection(const QRect&)));
 }
 
 
@@ -46,14 +51,13 @@ void ROIDock::processRoiButtonsClicked(QAbstractButton *sender)
 	QDialogButtonBox::ButtonRole role = roiButtons->buttonRole(sender);
 	roiButtons->setDisabled(true);
 	if (role == QDialogButtonBox::ResetRole) {
-		emit resetRoiClicked();
 		resetRoi();
 	} else if (role == QDialogButtonBox::ApplyRole) {
 		applyRoi();
 	}
 }
 
-void ROIDock::updateRoi(const QRect &roi)
+void ROIDock::processNewSelection(const QRect &roi)
 {
 	curRoi = roi;
 	roiButtons->setEnabled(true);
@@ -77,7 +81,7 @@ void ROIDock::resetRoi()
 {
 	curRoi = oldRoi;
 	roiView->roi = curRoi;
-	updateRoi(curRoi);
+	processNewSelection(curRoi);
 	roiView->update();
 }
 

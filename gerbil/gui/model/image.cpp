@@ -16,6 +16,10 @@
 #define USE_CUDA_DATARANGE      0
 #define USE_CUDA_CLAMP          0
 
+// for DEBUG, FIXME: defined in controller.cpp,
+// put these operator<<s in a separate module, e.g. gerbil_debug_streams.{h,cpp}
+std::ostream &operator<<(std::ostream& os, const cv::Rect& r);
+
 ImageModel::ImageModel(BackgroundTaskQueue &queue, bool lm)
 	: limitedMode(lm), queue(queue),
 	  image_lim(new SharedMultiImgBase(new multi_img())),
@@ -110,7 +114,15 @@ void ImageModelPayload::processImageDataTaskFinished(bool success)
 
 void ImageModel::spawn(representation::t type, const cv::Rect &newROI, int bands)
 {
-	nBandsOld = nBands;
+	// store previous states
+	// FIXME altmann: this a bit of a HACK. However there is no possibility to spawn a
+	// ROI without spawning it for IMG, is there?
+	if(representation::IMG == type) {
+		nBandsOld = nBands;
+		oldRoi = roi;
+	}
+
+	// GGDBGM("oldRoi "<< oldRoi << " newROI " << newROI << endl);
 
 	// one ROI for all, effectively
 	roi = newROI;
@@ -275,6 +287,10 @@ void ImageModel::processNewImageData(representation::t type, SharedMultiImgPtr i
 	}
 	if(nBandsOld != nBands) {
 		emit numBandsROIChanged(nBands);
+	}
+	if(representation::IMG == type && oldRoi != roi) {
+		//GGDBGM("oldRoi "<< oldRoi << " cur roi " << roi << endl);
+		emit roiRectChanged(roi);
 	}
 	emit imageUpdate(type, image);
 }

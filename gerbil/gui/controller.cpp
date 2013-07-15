@@ -69,9 +69,6 @@ Controller::Controller(const std::string &filename, bool limited_mode,
 		roi.height = std::min(roi.height, 512);
 	}
 
-	// TODO
-	// trigger roi setting through ROI-Dock (bug #18)
-
 	//GGDBGM("roi " << roi << endl);
 	spawnROI(roi);
 

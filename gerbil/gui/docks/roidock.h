@@ -8,7 +8,8 @@
 #include <QRect>
 #include <QAbstractButton>
 
-// FIXME: rename ROIDockUI -> ROIDock
+// FIXME: rename ROIDockUI -> RoiDock
+// FIXME: rename ROIDock -> RoiDock
 class ROIDock : public DockWidget, private Ui::ROIDockUI
 {
 	Q_OBJECT
@@ -17,19 +18,22 @@ public:
 	virtual ~ROIDock() {}
 	
 	const QRect &getRoi() const;
-	void setRoi(const cv::Rect &roi); //TODO: slot?
+
 
 signals:
-	void newSelection(const QRect &roi);
-	void resetRoiClicked();
-	void applyRoiClicked();
-	// this one goes outside
+	/** The user has requested a new ROI by clicking apply. */
 	void roiRequested(const cv::Rect &roi);
 
 public slots:
-	void processRoiButtonsClicked(QAbstractButton *sender);
-	void updateRoi(const QRect &roi);
+	/** Update the pixmap displayed in the ROI-View. */
 	void updatePixmap(const QPixmap image);
+	/** Change the ROI in the GUI programmatically. */
+	void setRoi(const cv::Rect &roi);
+
+protected slots:
+	void processRoiButtonsClicked(QAbstractButton *sender);
+	// new roi selected in RoiView
+	void processNewSelection(const QRect &roi);
 
 protected:
 	// helper functions to roiButtonsClicked
@@ -39,7 +43,9 @@ protected:
 private:
 	void initUi();
 
+	// The old ROI before apply (used for reset).
 	QRect oldRoi;
+	// The current ROI selected, but possibly not yet applied.
 	QRect curRoi;
 };
 
