@@ -5,13 +5,18 @@
 
 #include "../gerbil_gui_debug.h"
 
+// for DEBUG, FIXME defined in controller.cpp, all operator<<s should go in one module.
+std::ostream &operator<<(std::ostream& os, const cv::Rect& r);
+
 LabelingModel::LabelingModel()
 {
+	labels = full_labels;
 }
 
 void LabelingModel::setDimensions(unsigned int height, unsigned int width)
 {
 	full_labels = cv::Mat1s(height, width, (short)0);
+	labels = full_labels;
 }
 
 void LabelingModel::updateROI(const cv::Rect &roi)
@@ -27,13 +32,16 @@ void LabelingModel::updateROI(const cv::Rect &roi)
 
 void LabelingModel::setLabels(const vole::Labeling &labeling, bool full)
 {
+	// the label matrix
+	cv::Mat1s m = labeling();
 	if (full) {
 		// labeling covers full image
-		labeling().copyTo(full_labels);
+		assert(full_labels.size == m.size);
+		m.copyTo(full_labels);
 	} else {
 		// only current ROI is updated
-		cv::Mat1s updateRegion = cv::Mat1s(full_labels, roi);
-		labeling().copyTo(updateRegion);
+		assert(labels.size == m.size);
+		m.copyTo(labels);
 	}
 
 	// set label colors, but do not emit signal (we need combined signal)
@@ -46,8 +54,11 @@ void LabelingModel::setLabels(const vole::Labeling &labeling, bool full)
 void LabelingModel::setLabels(const cv::Mat1s &labeling)
 {
 	assert(labeling.size == labels.size);
-	labels = labeling.clone();
-	emit newLabeling(labels);
+	// create vole labeling object (build colors) and
+	// note: this iterates over the whole label matrix without concurrency.
+	// OPTIMIZE
+	vole::Labeling vl(labeling, false);
+	setLabels(vl,false);
 }
 
 void LabelingModel::setLabelColors(const std::vector<cv::Vec3b> &newColors,
@@ -75,7 +86,6 @@ void LabelingModel::setLabelColors(const std::vector<cv::Vec3b> &newColors,
 
 int LabelingModel::addLabel()
 {
-	//GGDBG_CALL();
 	// we always have at least one background color
 	int labelcount = std::max(colors.count(), 1);
 

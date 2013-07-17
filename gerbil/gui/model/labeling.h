@@ -18,6 +18,7 @@ public slots:
 	void updateROI(const cv::Rect &roi);
 	void setLabels(const vole::Labeling &labeling, bool full);
 	void setLabels(const cv::Mat1s &labeling);
+	// FIXME should _NOT_ be part of the public API (emitSignal)
 	void setLabelColors(const std::vector<cv::Vec3b> &newColors,
 						bool emitSignal = true);
 	// either clear label, or with other arguments, add/remove pixels to/from it
@@ -44,8 +45,11 @@ signals:
 
 private:
 	// full image labels and roi scoped labels
-	/* note that due to CV memory sharing, all other parties autonomously update
-	 * the content of labels (and full_labels simultaneously)
+	/* labels is always a header with the same data as full_labels (CV memory
+	 * sharing and reference counting). That is, the contents of labels and
+	 * full_labels are updated simultaneously, when changing data in either of
+	 * the two objects. Be careful not to reassign labels to an independent
+	 * copy (see CV docs).
 	 */
 	cv::Mat1s full_labels, labels;
 	// roi

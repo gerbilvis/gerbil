@@ -30,7 +30,8 @@ void DockController::init()
 	chief->mainWindow()->addDockWidget(Qt::RightDockWidgetArea, normDock);
 #ifdef WITH_SEG_MEANSHIFT
 	chief->mainWindow()->addDockWidget(Qt::RightDockWidgetArea, usSegDock);
-	usSegDock->setVisible(false);
+	// FIXME set to false
+	usSegDock->setVisible(true);
 #endif
 	chief->mainWindow()->addDockWidget(Qt::RightDockWidgetArea, rgbDock);
 	chief->mainWindow()->addDockWidget(Qt::RightDockWidgetArea, roiDock);
@@ -196,12 +197,8 @@ void DockController::setupDocks()
 			um, SLOT(startSegmentation(vole::Command*,int,bool)));
 	connect(usSegDock, SIGNAL(cancelSegmentationRequested()),
 			um, SLOT(cancel()));
-	// FIXME: 2013-06-17 altmann
-	// If enabled, gerbil crashes. I am not familiar to the labeling stuff.
-	// Probably need to connect to different slot in LabelingModel or the computed
-	// labeling is inconsistent with the current state in LabelingModel.
-	// connect(um, SIGNAL(setLabelsRequested(cv::Mat1s)),
-	//			lm, SLOT(setLabels(cv::Mat1s)));
+	 connect(um, SIGNAL(setLabelsRequested(cv::Mat1s)),
+				chief->labelingModel(), SLOT(setLabels(cv::Mat1s)));
 
 	// FIXME hide for release?
 	//usSegDock->hide();
