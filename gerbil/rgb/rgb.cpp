@@ -21,6 +21,10 @@
 #include <vector>
 #include <algorithm>
 
+#ifdef WITH_BOOST
+#include <shared_data.h>
+#endif
+
 namespace gerbil {
 
 RGB::RGB()
@@ -53,16 +57,16 @@ int RGB::execute()
 #ifdef WITH_BOOST
 std::map<std::string, boost::any> RGB::execute(std::map<std::string, boost::any> &input, vole::ProgressObserver *po)
 {
-	multi_img::ptr src = boost::any_cast<multi_img::ptr>(input["multi_img"]);
-	if (src->empty())
+	SharedMultiImgPtr src = boost::any_cast<SharedMultiImgPtr>(input["multi_img"]);
+	if ((**src).empty())
 		assert(false);
 
-	cv::Mat3f bgr = execute(*src, po);
+	cv::Mat3f bgr = execute(**src, po);
 	if (bgr.empty())
 		assert(false);
 
 	std::map<std::string, boost::any> output;
-	output["multi_img"] = bgr*255.;
+	output["multi_img"] = (cv::Mat3f)(bgr*255.0f);
 	return output;
 }
 #endif

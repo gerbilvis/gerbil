@@ -98,6 +98,7 @@ vole_ui_library(
 	docks/banddock.ui
 	docks/labelingdock.ui
 	docks/normdock.ui
+	docks/rgbdock.ui
 )
 
 vole_add_resources(

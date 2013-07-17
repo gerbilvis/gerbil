@@ -14,10 +14,6 @@
 #include <QPixmap>
 #include <opencv2/core/core.hpp>
 
-// TODO:
-// if a CommandRunner currently fails, this type of image can not be calculated
-// until reset() is called
-
 // TODO RGB:
 //  progressUpdate() in SOM einbauen,
 //      SOM *som = SOMTrainer::train(config.som, img);
@@ -31,6 +27,11 @@ FalseColorModel::FalseColorModel(QObject *parent, BackgroundTaskQueue *queue)
 	int type = QMetaType::type("coloring");
 	if (type == 0 || !QMetaType::isRegistered(type))
 		qRegisterMetaType<coloring>("coloring");
+
+	type = QMetaType::type("std::map<std::string, boost::any>");
+	if (type == 0 || !QMetaType::isRegistered(type))
+		qRegisterMetaType< std::map<std::string, boost::any> >(
+					"std::map<std::string, boost::any>");
 
 	for (int i = 0; i < COLSIZE; ++i) {
 #ifndef WITH_EDGE_DETECT
@@ -57,7 +58,7 @@ void FalseColorModel::setMultiImg(representation::t type,
 {
 	// in the future, we might be interested in the other ones as well.
 	// currently, we don't process other types, so "warn" the caller
-	assert(type == representation::IMG);
+	assert(type == representation::IMG); // TODO: add gradient
 
 	this->shared_img = shared_img;
 	reset();
@@ -66,7 +67,7 @@ void FalseColorModel::setMultiImg(representation::t type,
 void FalseColorModel::processImageUpdate(representation::t type,
 										 SharedMultiImgPtr img)
 {
-	if (type == representation::IMG)
+	if (type == representation::IMG) // TODO: add gradient
 		reset();
 }
 
@@ -119,7 +120,7 @@ void FalseColorModel::createRunner(coloring type)
 	// init runner & command
 	p->runner = new CommandRunner();
 	std::map<std::string, boost::any> input;
-	input["multi_img"] = shared_img;
+	input["multi_img"] = shared_img; // direct pointer to multi image
 	p->runner->input = input;
 	p->runner->cmd = new gerbil::RGB(); // deleted in ~CommandRunner()
 
@@ -249,7 +250,8 @@ void FalseColorModelPayload::propagateRunnerSuccess(std::map<std::string, boost:
 	if (!runner)
 		return;
 
-	img.convertFromImage(boost::any_cast<QImage>(output["multi_img"]));
+	cv::Mat3f mat = boost::any_cast<cv::Mat3f>(output["multi_img"]);
+	img.convertFromImage(vole::Mat2QImage((cv::Mat3b)mat));
 
 	calcInProgress = false;
 	emit calculationComplete(type, img);
