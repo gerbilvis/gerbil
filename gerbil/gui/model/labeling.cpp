@@ -100,29 +100,14 @@ int LabelingModel::addLabel()
 void LabelingModel::alterLabel(short index, cv::Mat1b mask,
 							   bool negative)
 {
-	int operation = 1; // add pixels to label
-	if (mask.empty()) {
-		operation = 0; // clear label
+	if (mask.empty()) {  // clear label
 		mask = (labels == index);
-	} else if (negative) {
-		operation = -1; // remove pixels from label
-	}
-
-	switch (operation) {
-	case 0:
-		// clear the label
 		labels.setTo(0, mask);
-		break;
-	case 1:
-		// add pixels to label
-		labels.setTo(index, mask);
-		break;
-	case -1:
-		// remove pixels from label (not from other labels)
+	} else if (negative) { // remove pixels from label
 		mask = mask.mul(labels == index);
 		labels.setTo(0, mask);
-		break;
-	default: while(0); // no compiler complaining
+	} else { // add pixels to label
+		labels.setTo(index, mask);
 	}
 
 	// signal change
