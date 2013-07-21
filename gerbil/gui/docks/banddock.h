@@ -25,6 +25,7 @@ public:
 	representation::t getCurRepresentation() {return curRepr;}
 	// get representation of currently shown band
 	int getCurBandId() {return curBandId;}
+
 signals:
 	/** The label being edited by the user has changed. */
 	void currentLabelChanged(int);
@@ -34,6 +35,7 @@ signals:
 	void clearLabelRequested(short labelIdx);
 	/** User requested a new label (markerSelector) */
 	void newLabelRequested();
+
 public slots:
 	void loadSeeds();
 	void graphSegModeToggled(bool enable);
