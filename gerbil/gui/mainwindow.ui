@@ -30,6 +30,13 @@
       <item>
        <layout class="QHBoxLayout" name="toolbarLayout">
         <item>
+         <widget class="QLabel" name="label">
+          <property name="text">
+           <string>&lt;b&gt;Binning:&lt;/b&gt;</string>
+          </property>
+         </widget>
+        </item>
+        <item>
          <widget class="QSlider" name="bandsSlider">
           <property name="sizePolicy">
            <sizepolicy hsizetype="Preferred" vsizetype="Fixed">
@@ -65,6 +72,22 @@
          </widget>
         </item>
         <item>
+         <spacer name="horizontalSpacer_2">
+          <property name="orientation">
+           <enum>Qt::Horizontal</enum>
+          </property>
+          <property name="sizeType">
+           <enum>QSizePolicy::Fixed</enum>
+          </property>
+          <property name="sizeHint" stdset="0">
+           <size>
+            <width>6</width>
+            <height>1</height>
+           </size>
+          </property>
+         </spacer>
+        </item>
+        <item>
          <widget class="Line" name="line">
           <property name="orientation">
            <enum>Qt::Vertical</enum>
@@ -77,7 +100,7 @@
            <string>draw vectors of unlabeled pixels</string>
           </property>
           <property name="text">
-           <string>Show Unlabeled</string>
+           <string>Unlabeled</string>
           </property>
           <property name="checkable">
            <bool>true</bool>
@@ -93,13 +116,20 @@
            <string>draw vectors of labeled pixels</string>
           </property>
           <property name="text">
-           <string>Show Labeled</string>
+           <string>Labeled</string>
           </property>
           <property name="checkable">
            <bool>true</bool>
           </property>
           <property name="checked">
            <bool>true</bool>
+          </property>
+         </widget>
+        </item>
+        <item>
+         <widget class="Line" name="line_2">
+          <property name="orientation">
+           <enum>Qt::Vertical</enum>
           </property>
          </widget>
         </item>

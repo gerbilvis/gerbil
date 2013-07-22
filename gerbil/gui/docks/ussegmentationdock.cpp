@@ -41,6 +41,14 @@ void UsSegmentationDock::initUi()
 	usBandsSpinBox->setValue(-1);
 	usBandsSpinBox->setMaximum(-1);
 
+	// we do not expose parameters that nobody uses, incl. findKL functionality
+	usLshWidget->hide();
+	usBandwidthWidget->hide();
+	findKLWidget->hide();
+	usSkipPropWidget->hide();
+	usMSPPWidget->hide();
+	usSpectralWidget->hide();
+
 	// we do not expose the density estimation functionality
 	usInitWidget->hide();
 	// we also do not expose options exclusive to unavailable methods
