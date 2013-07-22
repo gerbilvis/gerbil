@@ -32,6 +32,7 @@ public slots:
 	void loadLabeling(const QString &filename = QString());
 	void saveLabeling(const QString &filename = QString());
 	void loadSeeds();
+
 signals:
 	/** entirely new label matrix, or different label colors, or both
 	 * @arg changedColors true if previously existing colors changed

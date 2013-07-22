@@ -7,7 +7,9 @@
 #include "model/falsecolor.h"
 #include "model/graphsegmentation.h"
 #include "model/ussegmentationmodel.h"
+
 #include "mainwindow.h"
+
 #include <background_task.h>
 #include <background_task_queue.h>
 
@@ -16,6 +18,7 @@
 #include <tbb/compat/thread>
 
 class DockController;
+class DistViewController;
 
 class Controller : public QObject
 {
@@ -27,14 +30,28 @@ public:
 
 	MainWindow* mainWindow() { return window; }
 	ImageModel* imageModel() { return &im; }
+	LabelingModel* labelingModel() {return &lm; }
 	FalseColorModel* falseColorModel() { return &fm; }
 	IllumModel* illumModel() { return &illumm; }
 	GraphSegmentationModel* graphSegmentationModel() { return &gsm; }
 	UsSegmentationModel* usSegmentationModel() { return &um; }
-	LabelingModel* labelingModel() {return &lm;}
+
 signals:
-	// setGUIEnabled() part of the dock windows
-	void requestEnableDocks(bool enable, TaskType tt);
+
+	void currentLabelChanged(int);
+
+	/* pass-through to our other controller friends */
+	void toggleIgnoreLabels(bool);
+	void toggleSingleLabel(bool);
+	void singleLabelSelected(int);
+
+	void showIlluminationCurve(bool);
+
+	void requestKillHover();
+	void requestPixelOverlay(int y, int x);
+
+	/* pass-through from our other controller friends */
+	void requestOverlay(const cv::Mat1b&);
 
 public slots:
 	/** requests (from GUI) */
@@ -44,14 +61,6 @@ public slots:
 	void invalidateROI(cv::Rect roi = cv::Rect());
 	// change number of bands, spawning new image data
 	void rescaleSpectrum(int bands);
-	// change binnig to reflect, or not reflect, labeling
-	void toggleLabels(bool toggle);
-
-	/** notifies (from models, tasks) */
-	// label colors added/changed
-	void propagateLabelingChange(const cv::Mat1s &labels,
-								 const QVector<QColor>& colors = QVector<QColor>(),
-								 bool colorsChanged = false);
 
 	/** Enable and disable GUI as indicated by enable flag.
 	 *
@@ -82,7 +91,7 @@ protected:
 	void initFalseColor();
 	void initIlluminant();
 	void initGraphSegmentation();
-	void initLabeling(cv::Rect dimensions, const QString &labelfile);
+	void initLabeling(cv::Rect dimensions);
 
 	// create background thread that processes BackgroundTaskQueue
 	void startQueue();
@@ -98,33 +107,35 @@ protected:
 	// image model stores all multispectral image representations (IMG, GRAD, …)
 	ImageModel im;
 
+	/* labeling model stores pixel/label associations and label color codes */
+	LabelingModel lm;
+
 	/* false color model generates and stores RGB representations of
 	 * multispectral data */
 	FalseColorModel fm;
 
+	/* illumnation model performs illumination changes */
 	IllumModel illumm;
+
+	/* graph segmentation model performs supervised segmentation */
 	GraphSegmentationModel gsm;
 
-	// labeling model stores pixel/label associations and label color codes
-	LabelingModel lm;
-
 #ifdef WITH_SEG_MEANSHIFT
-	// unsupervised segmentation model
+	/* unsupervised segmentation model provides global clustering */
 	UsSegmentationModel um;
 #endif /* WITH_SEG_MEANSHIFT */
 
 	// setup dock widgets and manage interaction with models
 	DockController *dc;
 
+	// setup distribution views and manage them and their models
+	DistViewController *dvc;
+
 	// main window (or gui slave)
 	MainWindow *window;
 
 	BackgroundTaskQueue queue;
 	std::thread *queuethread;
-
-	/* A map of BackgroundTasks (QObject) to representations so that we know
-	 * what representation a signaling task was working on */
-	QMap<QObject*, representation> taskmap;
 };
 
 #endif // CONTROLLER_H

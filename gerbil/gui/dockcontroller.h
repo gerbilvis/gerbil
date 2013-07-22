@@ -40,6 +40,7 @@ class DockController : public QObject
 public:
 	explicit DockController(Controller *chief);
 	void init();
+
 signals:
 	void rgbRequested();
 	// these are send to the graphSegModel
@@ -52,7 +53,8 @@ signals:
 							 const vole::GraphSegConfig &config,
 							 bool resetLabel);
 public slots:
-	void enableDocks(bool enable, TaskType tt);
+	void setGUIEnabled(bool enable, TaskType tt);
+
 protected slots:
 	// these are requested by the graphSegWidget
 	void requestGraphseg(representation::t,

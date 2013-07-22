@@ -56,11 +56,11 @@ public slots:
 	void clearSeeds();
 
 signals:
-	void pixelOverlay(int x, int y);
+	void pixelOverlay(int y, int x);
 	void killHover();
 
-	// single label mode, diff. label chosen (TODO: name "singleLabelSelected)
-	void newSingleLabel(short label);
+	// single label mode, diff. label chosen
+	void singleLabelSelected(int label);
 
 	// user changed some labels
 	void alteredLabels(const cv::Mat1s &labels, const cv::Mat1b &mask);

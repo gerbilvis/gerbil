@@ -11,9 +11,7 @@
 #define VIEWPORT_H
 
 #include "compute.h"
-#include "viewportcontrol.h"
 #include <QGraphicsScene>
-#include <QGraphicsView>
 #include <QGLWidget>
 #include <vector>
 #include <QLabel>
@@ -24,25 +22,13 @@ class Viewport : public QGraphicsScene
 {
 	Q_OBJECT
 public:
-	Viewport(ViewportControl *control, QGLWidget *target);
+	Viewport(QGLWidget *target);
 	~Viewport();
+
+	QGraphicsProxyWidget* createControlProxy();
 
 	void prepareLines();
 	void setLimiters(int label);
-
-	bool illuminant_correction;
-	std::vector<multi_img::Value> illuminant;
-
-	int selection, hover;
-	bool limiterMode;
-	std::vector<std::pair<int, int> > limiters;
-	bool active, wasActive;
-
-	float useralpha;
-
-	bool showLabeled, showUnlabeled;
-	bool overlayMode;
-	QPolygonF overlayPoints;
 
 	enum RenderMode {
 		RM_SKIP = 0,
@@ -50,24 +36,26 @@ public:
 		RM_FULL = 2
 	};
 
-	// we would like this not to be public (TODO), viewportcontrol accesses it
-	QGLWidget *target;
-	ViewportControl *control;
-	QGraphicsItem *controlItem;
-
+	/* TODO: make non-public. I am just too tired right now. */
 	// viewport context
 	vpctx_ptr ctx;
 	// histograms (binsets)
 	sets_ptr sets;
-
-	QGLBuffer vb;
-	binindex shuffleIdx;
+	bool active;
 
 public slots:
 	void killHover();
-	void highlight(short index);
-	void toggleRGB(bool enabled)
-	{ drawRGB = enabled; updateTextures(); }
+
+	void highlightSingleLabel(int index);
+
+	// TODO: do we actually draw during fold? We don't get resizeevents anymore!
+	void setFoldingState() { drawingState = FOLDING; resizeTimer.start(50); }
+
+	void toggleRGB(bool enabled) { drawRGB = enabled; updateTextures(); }
+
+	void setAlpha(float alpha);
+
+	void setLimitersMode(bool enabled);
 	void activate();
 
 	// entry and exit point of user interaction with quick drawing
@@ -75,32 +63,59 @@ public slots:
 	bool endNoHQ();
 	void resizeEpilog();
 
-	// acknowledge folding
-	void folding() { drawingState = FOLDING; resizeTimer.start(50); }
-
 	void screenshot();
 
 	void rebuild();
-
+	// why a slot?
 	void updateTextures(RenderMode spectrum = RM_STEP, RenderMode highlight = RM_STEP);
+
+	// toggle which sets are shown
+	void toggleLabeled(bool enabled);
+	void toggleUnlabeled(bool enabled);
+
+	// pixel overlay
+	void removePixelOverlay();
+	void insertPixelOverlay(const QPolygonF &points);
+
+	// illuminant correction
+	void changeIlluminant(cv::Mat1f illum);
+	void setIlluminantIsApplied(bool applied);
+	void setIlluminationCurveShown(bool show);
+
 
 protected slots:
 	void continueDrawingSpectrum();
 	void continueDrawingHighlight();
 
 signals:
-	void bandSelected(representation::t type, int dim);
-	void newOverlay(int dim);
-	void activated();
-	void addSelection();
-	void remSelection();
+	// we are the active viewer
+	void activated(representation::t type);
+
+	// selection changed -> band display
+	void bandSelected(int dim);
+	// highlight changed -> band display overlay
+	void requestOverlay(int dim, int bin);
+	void requestOverlay(const std::vector<std::pair<int, int> >& limiters,
+						int dim);
+
+	// add/remove highlight from/to current label
+	void addSelectionRequested();
+	void remSelectionRequested();
+
+	// mouse movement triggers showing/hiding control widget
+	void scrollInControl();
+	void scrollOutControl();
 
 protected:
+	void initTimers();
+
 	void reset();
 	// handles both resize and drawing
 	void drawBackground(QPainter *painter, const QRectF &rect);
 
-	void resizeEvent();
+	// helper to drawBackground
+	void resizeScene();
+
 	void mouseMoveEvent(QGraphicsSceneMouseEvent*);
 	void mousePressEvent(QGraphicsSceneMouseEvent*);
 	void mouseReleaseEvent(QGraphicsSceneMouseEvent*);
@@ -114,11 +129,12 @@ protected:
 	void updateModelview();
 
 	// helper functions called by mouseMoveEvent
-	void updateXY(int sel, int bin);
+	bool updateXY(int sel, int bin);
 
 	// helper functions called by drawBackground
 	void drawBins(QPainter &painter, QTimer &renderTimer,
-		unsigned int &renderedLines, unsigned int renderStep, bool onlyHighlight);
+		unsigned int &renderedLines, unsigned int renderStep,
+				  bool onlyHighlight);
 	// helper function called by drawBins
 	QColor determineColor(const QColor &basecolor, float weight,
 						  float totalweight, bool highlighted, bool single);
@@ -137,6 +153,27 @@ private:
 	QGLFramebufferObject *fboSpectrum;
 	QGLFramebufferObject *fboHighlight;
 	QGLFramebufferObject *fboMultisamplingBlit;
+
+	bool illuminant_correction;
+	std::vector<multi_img::Value> illuminant;
+
+	int selection, hover;
+	bool limiterMode;
+	std::vector<std::pair<int, int> > limiters;
+
+	float useralpha;
+
+	bool showLabeled, showUnlabeled;
+	bool overlayMode;
+	QPolygonF overlayPoints;
+
+	// target widget needed for GL context
+	QGLWidget *target;
+
+	// vertex buffer
+	QGLBuffer vb;
+	// index to vertex buffer
+	binindex shuffleIdx;
 
 	// modelview matrix and its inverse
 	QTransform modelview, modelviewI;
@@ -192,20 +229,9 @@ private:
 
 	// single label to be highlighted
 	int highlightLabel;
-};
 
-class ViewportGV : public QGraphicsView
-{
-public:
-	ViewportGV(QWidget *parent) : QGraphicsView(parent)
-	{}
-
-protected:
-	void resizeEvent(QResizeEvent *event) {
-		if (scene())
-			scene()->setSceneRect(QRect(QPoint(0, 0), event->size()));
-		QGraphicsView::resizeEvent(event);
-	}
+	// item in the scene that holds the control widget
+	QGraphicsProxyWidget* controlItem;
 };
 
 #endif // VIEWPORT_H

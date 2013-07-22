@@ -20,7 +20,7 @@
 // Each request sends a loadComplete signal to ALL connected slots.
 // use QImage.cacheKey() to see if the image was changed
 
-class FalseColorModelPayload;
+class FalseColorModelPayload; // find declaration below FalseColorModel decl.
 class BackgroundTaskQueue;
 
 enum coloring {

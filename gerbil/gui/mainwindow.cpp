@@ -9,21 +9,20 @@
 
 #include "mainwindow.h"
 #include "controller.h"
+#include "dist_view/distviewcontroller.h"
 #include "iogui.h"
 #include "commandrunner.h"
 #include "multi_img_tasks.h"
-#include "tasks/rgbtbb.h"
+/*#include "tasks/rgbtbb.h"
 #include "tasks/rgbserial.h"
 #include "tasks/normrangecuda.h"
 #include "tasks/normrangetbb.h"
-#include "tasks/graphsegbackground.h"
+#include <background_task_queue.h>
+*/
 
 #include "docks/illumdock.h"
 #include "docks/rgbdock.h"
 #include "docks/ussegmentationdock.h"
-
-
-#include <background_task_queue.h>
 
 #include <labeling.h>
 #include <qtopencv.h>
@@ -36,6 +35,7 @@
 #include <QSignalMapper>
 #include <iostream>
 #include <QShortcut>
+#include <QFileInfo>
 
 MainWindow::MainWindow(bool limitedMode)
 	: limitedMode(limitedMode),
@@ -45,43 +45,30 @@ MainWindow::MainWindow(bool limitedMode)
 	setupUi(this);
 }
 
-void MainWindow::addToLabel()
+void MainWindow::initUI(std::string filename, size_t size)
 {
-	cv::Mat1b mask = viewerContainer->getHighlightMask();
-	emit alterLabelRequested(currentLabel, mask, false);
-}
+	/* set title */
+	QFileInfo fi(QString::fromStdString(filename));
+	setWindowTitle(QString("Gerbil - %1").arg(fi.completeBaseName()));
 
-void MainWindow::remFromLabel()
-{
-	cv::Mat1b mask = viewerContainer->getHighlightMask();
-	emit alterLabelRequested(currentLabel, mask, true);
-}
-
-void MainWindow::initUI(size_t size)
-{
 	/* init bandsSlider */
 	bandsLabel->setText(QString("%1 bands").arg(size));
 	bandsSlider->setMinimum(3);
 	bandsSlider->setMaximum(size);
 	bandsSlider->setValue(size);
-
-	initNormalizationUI();
-
-	viewerContainer->initUi();
 }
 
-void MainWindow::initSignals(Controller *chief)
+void MainWindow::initSignals(Controller *chief, DistViewController *chief2)
 {
 	/* slots & signals: GUI only */
 	connect(docksButton, SIGNAL(clicked()),
 			this, SLOT(openContextMenu()));
 
-
 //	we decided to remove this functionality for now
 //	connect(bandDock, SIGNAL(topLevelChanged(bool)),
 //			this, SLOT(reshapeDock(bool)));
 
-
+	/* buttons to alter label display dynamics */
 	connect(ignoreButton, SIGNAL(toggled(bool)),
 			markButton, SLOT(setDisabled(bool)));
 	connect(ignoreButton, SIGNAL(toggled(bool)),
@@ -90,34 +77,23 @@ void MainWindow::initSignals(Controller *chief)
 			singleButton, SLOT(setDisabled(bool)));
 
 	connect(ignoreButton, SIGNAL(toggled(bool)),
-			this, SIGNAL(ignoreLabelsRequested(bool)));
+			chief, SIGNAL(toggleIgnoreLabels(bool)));
 	connect(singleButton, SIGNAL(toggled(bool)),
-			this, SIGNAL(singleLabelRequested(bool)));
+			chief, SIGNAL(toggleSingleLabel(bool)));
 
-	// for viewports
-	connect(ignoreButton, SIGNAL(toggled(bool)),
-			chief, SLOT(toggleLabels(bool)));
-
-	// label manipulation fuckup
+	// label manipulation from current dist_view
 	connect(addButton, SIGNAL(clicked()),
-			this, SLOT(addToLabel()));
+			chief2, SLOT(addHighlightToLabel()));
 	connect(remButton, SIGNAL(clicked()),
-			this, SLOT(remFromLabel()));
+			chief2, SLOT(remHighlightFromLabel()));
 
 	connect(markButton, SIGNAL(toggled(bool)),
-			viewerContainer, SIGNAL(viewersToggleLabeled(bool)));
+			chief2, SIGNAL(toggleLabeled(bool)));
 	connect(nonmarkButton, SIGNAL(toggled(bool)),
-			viewerContainer, SIGNAL(viewersToggleUnlabeled(bool)));
+			chief2, SIGNAL(toggleUnlabeled(bool)));
 
-	connect(viewerContainer, SIGNAL(normTargetChanged(bool)),
-			this, SLOT(normTargetChanged(bool)));
-
-	connect(viewerContainer, SIGNAL(setGUIEnabledRequested(bool,TaskType)),
-			this, SIGNAL(setGUIEnabledRequested(bool,TaskType)));
-	connect(viewerContainer, SIGNAL(viewportAddSelection()),
-			this, SLOT(addToLabel()));
-	connect(viewerContainer, SIGNAL(viewportRemSelection()),
-			this, SLOT(remFromLabel()));
+//	connect(chief2, SIGNAL(normTargetChanged(bool)),
+//			this, SLOT(normTargetChanged(bool)));
 
 	connect(bandsSlider, SIGNAL(valueChanged(int)),
 			this, SLOT(bandsSliderMoved(int)));
@@ -131,14 +107,24 @@ void MainWindow::initSignals(Controller *chief)
 	connect(scr, SIGNAL(activated()), this, SLOT(screenshot()));
 }
 
+void MainWindow::addDistView(QWidget *frame)
+{
+	// determine position before spacer (last element in the layout)
+	int pos = distviewLayout->count() - 1;
+	// add with stretch = 1 so they will stay evenly distributed in space
+	distviewLayout->insertWidget(pos, frame, 1);
+
+	/* TODO: the spacer which is now in the .ui would be added like this
+	 * previously. If current method fails, reconsider doing this: */
+	// vLayout->addStretch(); // align on top when all folded
+}
+
 void MainWindow::setGUIEnabled(bool enable, TaskType tt)
 {
 	bandsSlider->setEnabled(enable || tt == TT_BAND_COUNT);
 	ignoreButton->setEnabled(enable || tt == TT_TOGGLE_LABELS);
 	addButton->setEnabled(enable);
 	remButton->setEnabled(enable);
-
-	viewerContainer->setGUIEnabled(enable, tt);
 
 	// TODO -> NormDock
 //	normDock->setEnabled((enable || tt == TT_NORM_RANGE || tt == TT_CLAMP_RANGE_IMG || tt == TT_CLAMP_RANGE_GRAD) && !limitedMode);
@@ -149,35 +135,12 @@ void MainWindow::setGUIEnabled(bool enable, TaskType tt)
 //	normClampButton->setEnabled(enable || tt == TT_CLAMP_RANGE_IMG || tt == TT_CLAMP_RANGE_GRAD);
 }
 
-// TODO: controller
 void MainWindow::bandsSliderMoved(int b)
 {
 	bandsLabel->setText(QString("%1 bands").arg(b));
 	if (!bandsSlider->isSliderDown()) {
 		emit specRescaleRequested(b);
 	}
-}
-
-// TODO
-void MainWindow::initNormalizationUI()
-{
-//	normModeBox->addItem("Observed");
-//	normModeBox->addItem("Theoretical");
-//	normModeBox->addItem("Fixed");
-//	connect(normIButton, SIGNAL(toggled(bool)),
-//			this, SLOT(normTargetChanged()));
-//	connect(normGButton, SIGNAL(toggled(bool)),
-//			this, SLOT(normTargetChanged()));
-//	connect(normModeBox, SIGNAL(currentIndexChanged(int)),
-//			this, SLOT(normModeSelected(int)));
-//	connect(normMinBox, SIGNAL(valueChanged(double)),
-//			this, SLOT(normModeFixed()));
-//	connect(normMaxBox, SIGNAL(valueChanged(double)),
-//			this, SLOT(normModeFixed()));
-//	connect(normApplyButton, SIGNAL(clicked()),
-//			this, SLOT(applyNormUserRange()));
-//	connect(normClampButton, SIGNAL(clicked()),
-//			this, SLOT(clampNormUserRange()));
 }
 
 void MainWindow::normTargetChanged(bool usecurrent)
@@ -417,23 +380,11 @@ void MainWindow::clampNormUserRange()
 	*/
 }
 
-// TODO GraphSegmentationWidget
-void MainWindow::loadSeeds()
+void MainWindow::openContextMenu()
 {
-//	IOGui io("Seed Image File", "seed image", this);
-//	cv::Mat1s seeding = io.readFile(QString(), 0,
-//									dimensions.height, dimensions.width);
-//	if (seeding.empty())
-//		return;
-
-//	bandView->seedMap = seeding;
-
-//	// now make sure we are in seed mode
-//	if (graphsegButton->isChecked()) {
-//		bandView->refresh();
-//	} else {
-//		graphsegButton->toggle();
-//	}
+	delete contextMenu;
+	contextMenu = createPopupMenu();
+	contextMenu->exec(QCursor::pos());
 }
 
 void MainWindow::screenshot()
@@ -446,13 +397,6 @@ void MainWindow::screenshot()
 
 	IOGui io("Screenshot File", "screenshot", this);
 	io.writeFile(QString(), output);
-}
-
-void MainWindow::openContextMenu()
-{
-	delete contextMenu;
-	contextMenu = createPopupMenu();
-	contextMenu->exec(QCursor::pos());
 }
 
 void MainWindow::changeEvent(QEvent *e)

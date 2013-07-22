@@ -58,7 +58,7 @@ void LabelingModel::setLabels(const cv::Mat1s &labeling)
 	// note: this iterates over the whole label matrix without concurrency.
 	// OPTIMIZE
 	vole::Labeling vl(labeling, false);
-	setLabels(vl,false);
+	setLabels(vl, false);
 }
 
 void LabelingModel::setLabelColors(const std::vector<cv::Vec3b> &newColors,

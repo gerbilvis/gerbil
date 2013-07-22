@@ -47,6 +47,7 @@ void Compute::PreprocessBins::operator()(const BinSet::HashMap::range_type &r)
 			range.first = std::min<int>(range.first, (int)(it->first)[d]);
 			range.second = std::max<int>(range.second, (int)(it->first)[d]);
 		}
+		// TODO: calculate colors for all pixels BEFORE this step with functor
 		color = multi_img::bgr(pixel, dimensionality, meta, maxval);
 		b.rgb = QColor(color[2]*255, color[1]*255, color[0]*255);
 		index.push_back(make_pair(label, it->first));
@@ -81,13 +82,7 @@ void Compute::preparePolylines(const ViewportCtx &ctx,
 		s.boundary = preprocess.GetRanges();
 	}
 
-	assert(index.begin() < index.end()); // shuffleIdx is not empty
-	// CRASHES BUG HERE FIXME TODO -> assertBinSetsKeyDim()
-	// This happens often, but appears to be non-deterministic (?).
-	//  Appears to apply only to GRAD.
-	// NOT: applies also to GRADPCA.
-	// Viewport::prepareLines() failure: type=GRAD idx=0,  (hk.size()==31  != dim==30)
-	// Probably multi_array (==BinSet::HashKey) not correctly initialized
+	assert(index.begin() < index.end()); // index is not empty
 
 	// shuffle the index for clutter-reduction
 	std::random_shuffle(index.begin(), index.end());

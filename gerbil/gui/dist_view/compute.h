@@ -31,7 +31,6 @@ inline size_t tbb_hasher(const boost::multi_array<T, 1> &a) {
 
 #include <multi_img.h>
 #include <shared_data.h>
-#include <model/representation.h>
 
 #include <QGLBuffer>
 #include <QGLFramebufferObject>

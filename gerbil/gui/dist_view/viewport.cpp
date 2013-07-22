@@ -34,12 +34,12 @@ const unsigned int Viewport::renderAtOnceStep 	 = 1024 * 1024 * 1024;
 const unsigned int Viewport::spectrumRenderStep  = 10000;
 const unsigned int Viewport::highlightRenderStep = 10000;
 
-Viewport::Viewport(ViewportControl *control, QGLWidget *target)
+Viewport::Viewport(QGLWidget *target)
 	: target(target), width(0), height(0),
 	  ctx(new SharedData<ViewportCtx>(new ViewportCtx())),
 	  sets(new SharedData<std::vector<BinSet> >(new std::vector<BinSet>())),
 	  selection(0), hover(-1), limiterMode(false),
-	  active(false), wasActive(false), useralpha(1.f),
+	  active(false), useralpha(1.f),
 	  showLabeled(true), showUnlabeled(true),
 	  overlayMode(false), highlightLabel(-1), illuminant_correction(false),
 	  zoom(1.), shift(0), lasty(-1), holdSelection(false), activeLimiter(0),
@@ -47,12 +47,36 @@ Viewport::Viewport(ViewportControl *control, QGLWidget *target)
 	  drawMeans(true), drawRGB(false), drawHQ(true), drawingState(FOLDING),
 	  yaxisWidth(0), vb(QGLBuffer::VertexBuffer),
 	  fboSpectrum(NULL), fboHighlight(NULL), fboMultisamplingBlit(NULL),
-	  control(control)
+	  controlItem(NULL)
 {
 	(*ctx)->wait = 1;
 	(*ctx)->reset = 1;
 	(*ctx)->ignoreLabels = false;
 
+	initTimers();
+}
+
+Viewport::~Viewport()
+{
+	target->makeCurrent();
+	delete fboSpectrum;
+	delete fboHighlight;
+	delete fboMultisamplingBlit;
+}
+
+/********* I N I T **************/
+
+QGraphicsProxyWidget* Viewport::createControlProxy()
+{
+	// proxy for control widget
+	controlItem = new QGraphicsProxyWidget();
+	addItem(controlItem);
+
+	return controlItem;
+}
+
+void Viewport::initTimers()
+{
 	resizeTimer.setSingleShot(true);
 	connect(&resizeTimer, SIGNAL(timeout()), this, SLOT(resizeEpilog()));
 	resizeTimer.start(0);
@@ -67,36 +91,81 @@ Viewport::Viewport(ViewportControl *control, QGLWidget *target)
 	highlightRenderedLines = 0;
 	highlightRenderTimer.setSingleShot(true);
 	connect(&highlightRenderTimer, SIGNAL(timeout()), this, SLOT(continueDrawingHighlight()));
-
-
-	/** add control widget */
-	addWidget(control);
-
-	/* this is our first/only graphics item. It seems there is no better way
-	 * to retrieve the corresponding QGraphicsItem */
-	controlItem = items().at(0);
-	//item->setFlag(QGraphicsItem::ItemIsMovable);
-	controlItem->setCacheMode(QGraphicsItem::DeviceCoordinateCache);
-
-	/* move control widget to the left margin of the display
-	 * so it will pop-out on demand
-	 */
-	const QRectF rect = controlItem->boundingRect();
-	controlItem->setPos(10.f - rect.width(), 0.f);
 }
 
-Viewport::~Viewport()
+/********* S T A T E ********/
+
+void Viewport::activate()
 {
-	target->makeCurrent();
-	delete fboSpectrum;
-	delete fboHighlight;
-	delete fboMultisamplingBlit;
+	if (!active) {
+		active = true;
+		{	// yeah, maybe really add the member just for this one occasion..
+			SharedDataLock ctxlock(ctx->mutex);
+			emit activated((*ctx)->type);
+		}
+		emit bandSelected(selection);
+
+		// this is a sometimes redundant operation (matrix maybe still valid)
+		if (limiterMode)
+			emit requestOverlay(limiters, -1);
+		else
+			emit requestOverlay(selection, hover);
+	}
+}
+
+void Viewport::removePixelOverlay()
+{
+	overlayMode = false;
+	if (target->isVisible()) // TODO: does this work?
+		update();
+}
+
+void Viewport::insertPixelOverlay(const QPolygonF &points)
+{
+	overlayPoints = points;
+	overlayMode = true;
+	update();
+}
+
+void Viewport::changeIlluminant(cv::Mat1f illum)
+{
+	illuminant = illum;
+
+	if (!illuminant_correction) { // vertices need to change
+		// TODO: should this not call prepareLines() also?
+		updateTextures();
+	} else {
+		update();
+	}
+}
+
+void Viewport::setIlluminantIsApplied(bool applied)
+{
+	// only set it to true, never to false again (you cannot unapply)
+	if (applied) {
+		illuminant_correction = true;
+	}
+}
+
+
+void Viewport::setIlluminationCurveShown(bool show)
+{
+	if (show) {
+		// HACK
+		// nothing, illuminant is always drawn if coefficients viewport->illuminant
+		// non-empty. Should really be a bool in viewport.
+	} else {
+		cv::Mat1f empty;
+		changeIlluminant(empty);
+	}
 }
 
 void Viewport::reset()
 {
-	// reset hover value that would become inappropr.
+	// reset values that would become inappropr.
+	selection = 0;
 	hover = -1;
+
 	// reset limiters to most-lazy values
 	setLimiters(0);
 
@@ -106,6 +175,143 @@ void Viewport::reset()
 	// update coordinate system
 	updateModelview();
 }
+
+void Viewport::setLimiters(int label)
+{
+	if (label < 1) {	// not label
+		SharedDataLock ctxlock(ctx->mutex);
+		limiters.assign((*ctx)->dimensionality, make_pair(0, (*ctx)->nbins-1));
+		if (label == -1) {	// use hover data
+			int b = selection;
+			int h = hover;
+			limiters[b] = std::make_pair(h, h);
+		}
+	} else {            // label holds data
+		SharedDataLock setslock(sets->mutex);
+		if ((int)(*sets)->size() > label && (**sets)[label].totalweight > 0) {
+			// use range from this label
+			const std::vector<std::pair<int, int> > &b = (**sets)[label].boundary;
+			limiters.assign(b.begin(), b.end());
+		} else {
+			setLimiters(0);
+		}
+	}
+}
+
+void Viewport::rebuild()
+{
+	// guess: we want the lock to carry over both methods..
+	SharedDataLock ctxlock(ctx->mutex);
+	SharedDataLock setslock(sets->mutex);
+
+	// TODO: is this the right place?
+	if (selection > (*ctx)->dimensionality)
+		selection = 0;
+
+	// make sure band view is on track
+	if (active) {
+		emit bandSelected(selection);
+	}
+
+	prepareLines();
+	updateTextures();
+}
+
+void Viewport::killHover()
+{
+	clearView = true;
+
+	if (!implicitClearView)
+		// make sure the drawing happens before next overlay cache update
+		// TODO: still relevant?
+		target->repaint();
+}
+
+void Viewport::highlightSingleLabel(int index)
+{
+	highlightLabel = index;
+	updateTextures();
+}
+
+void Viewport::setAlpha(float alpha)
+{
+	useralpha = alpha;
+	updateTextures(Viewport::RM_STEP, Viewport::RM_SKIP);
+}
+
+void Viewport::setLimitersMode(bool enabled)
+{
+	limiterMode = enabled;
+	updateTextures(Viewport::RM_SKIP, Viewport::RM_STEP);
+	if (!active) {
+		activate(); // will call requestOverlay()
+	} else {
+		// this is a sometimes redundant operation (matrix maybe still valid)
+		if (limiterMode)
+			emit requestOverlay(limiters, -1);
+		else
+			emit requestOverlay(selection, hover);
+	}
+}
+
+void Viewport::startNoHQ(bool resize)
+{
+	if (resize)
+		drawingState = RESIZE;
+	else
+		drawingState = (drawingState == HIGH_QUALITY ? HIGH_QUALITY_QUICK : QUICK);
+}
+
+bool Viewport::endNoHQ()
+{
+	bool dirty = true;
+	if (drawingState == HIGH_QUALITY || drawingState == HIGH_QUALITY_QUICK)
+		dirty = false;
+	if (!drawHQ && drawingState == QUICK)
+		dirty = false;
+
+	drawingState = (drawHQ ? HIGH_QUALITY : QUICK);
+	return dirty;
+}
+
+bool Viewport::updateLimiter(int dim, int bin)
+{
+	std::pair<int, int> &l = limiters[dim];
+	int *target;
+	if (l.first == l.second) { // both top and bottom are same
+		target = (bin > l.first ? &l.second : &l.first);
+	} else if (activeLimiter) {
+		target = activeLimiter;
+	} else { // choose closest between top and bottom
+		target = (std::abs(l.first-bin) < std::abs(l.second-bin) ?
+				  &l.first : &l.second);
+	}
+	if (*target == bin) // no change
+		return false;
+
+	*target = bin;
+	activeLimiter = target;
+	return true;
+}
+
+void Viewport::screenshot()
+{
+	drawingState = SCREENSHOT;
+	updateTextures(RM_FULL, RM_FULL);
+	target->repaint();
+	cacheImg = target->grabFrameBuffer(); // TODO: more elegant with fbo/qgv
+
+	// write out
+	cv::Mat output = vole::QImage2Mat(cacheImg);
+	IOGui io("Screenshot File", "screenshot", target);
+	io.writeFile(QString(), output);
+
+	// reset drawingState and draw again nicely
+	if (endNoHQ())
+		updateTextures();
+}
+
+/***** D R A W I N G ******/
 
 void Viewport::updateYAxis()
 {
@@ -149,27 +355,6 @@ void Viewport::updateYAxis()
 	}
 }
 
-void Viewport::setLimiters(int label)
-{
-	if (label < 1) {	// not label
-		SharedDataLock ctxlock(ctx->mutex);
-		limiters.assign((*ctx)->dimensionality, make_pair(0, (*ctx)->nbins-1));
-		if (label == -1) {	// use hover data
-			int b = selection;
-			int h = hover;
-			limiters[b] = std::make_pair(h, h);
-		}
-	} else {                       // label holds data
-		SharedDataLock setslock(sets->mutex);
-		if ((int)(*sets)->size() > label && (**sets)[label].totalweight > 0) {
-			// use range from this label
-			const std::vector<std::pair<int, int> > &b = (**sets)[label].boundary;
-			limiters.assign(b.begin(), b.end());
-		} else
-			setLimiters(0);
-	}
-}
-
 void Viewport::updateModelview()
 {
 	SharedDataLock ctxlock(ctx->mutex);
@@ -203,8 +388,8 @@ void Viewport::prepareLines()
 	// lock context and sets
 	SharedDataLock ctxlock(ctx->mutex);
 	SharedDataLock setslock(sets->mutex);
-	(*ctx)->wait.fetch_and_store(0);
-	if ((*ctx)->reset.fetch_and_store(0))
+	(*ctx)->wait.fetch_and_store(0); // set to zero: our data will be usable
+	if ((*ctx)->reset.fetch_and_store(0)) // is true if it was 1 before
 		reset();
 
 	// first step (cpu only)
@@ -240,7 +425,7 @@ void Viewport::drawBins(QPainter &painter, QTimer &renderTimer,
 	unsigned int &renderedLines, unsigned int renderStep, bool onlyHighlight)
 {
 	SharedDataLock ctxlock(ctx->mutex);
-	SharedDataLock setslock(sets->mutex);
+	SharedDataLock setslock(sets->mutex); // TODO: this also locks shuffleIdx implic.
 
 	// vole::Stopwatch watch("drawBins");
 	painter.beginNativePainting();
@@ -527,15 +712,6 @@ void Viewport::drawWaitMessage(QPainter *painter)
 	painter->restore();
 }
 
-void Viewport::activate()
-{
-	if (!active) {
-		wasActive = false;
-		emit activated();
-		active = true;
-	}
-}
-
 void Viewport::continueDrawingSpectrum()
 {
 	if (!fboSpectrum)
@@ -661,6 +837,18 @@ void Viewport::updateTextures(RenderMode spectrum, RenderMode highlight)
 	update();
 }
 
+void Viewport::toggleLabeled(bool enabled)
+{
+	showLabeled = enabled;
+	updateTextures();
+}
+
+void Viewport::toggleUnlabeled(bool enabled)
+{
+	showUnlabeled = enabled;
+	updateTextures();
+}
+
 void Viewport::drawBackground(QPainter *painter, const QRectF &rectx)
 {
 	SharedDataLock ctxlock(ctx->mutex);
@@ -668,13 +856,12 @@ void Viewport::drawBackground(QPainter *painter, const QRectF &rectx)
 
 	// TODO: maybe not needed here
 	target->makeCurrent();
-	bool resize = false;
 	int nwidth = painter->device()->width();
 	int nheight = painter->device()->height();
 	if (nwidth != width || nheight != height) {
 		width = nwidth;
 		height = nheight;
-		resizeEvent();
+		resizeScene();
 	}
 
 	painter->setRenderHint(QPainter::Antialiasing);
@@ -723,20 +910,12 @@ void Viewport::drawBackground(QPainter *painter, const QRectF &rectx)
 	//GGDBGM(boost::format("%1%  (*sets)->empty()=%2% || (*ctx)->wait=%3% || disabled=%4%   this=%5%\n")
 	//			 % (*ctx)->type %(*sets)->empty() %(*ctx)->wait %(!isEnabled()) %this);
 
-	if ((*sets)->empty() || (*ctx)->wait || !target->isEnabled()) {
+	if ((*sets)->empty() || (*ctx)->wait) {
 		drawWaitMessage(painter);
 	}
 }
 
-void Viewport::rebuild()
-{
-	SharedDataLock ctxlock(ctx->mutex);
-	SharedDataLock setslock(sets->mutex);
-	prepareLines();
-	updateTextures();
-}
-
-void Viewport::resizeEvent()
+void Viewport::resizeScene()
 {
 	/* resize framebuffers */
 	target->makeCurrent();
@@ -767,7 +946,7 @@ void Viewport::resizeEvent()
 	updateModelview();
 
 	/* update control widget */
-	control->setMinimumHeight(height);
+	controlItem->setMinimumHeight(height);
 }
 
 void Viewport::resizeEpilog()
@@ -776,65 +955,74 @@ void Viewport::resizeEpilog()
 		updateTextures();
 }
 
-void Viewport::updateXY(int sel, int bin)
+/********** M O U S E / K E Y B .    I N P U T  ***********/
+
+bool Viewport::updateXY(int sel, int bin)
 {
 	SharedDataLock ctxlock(ctx->mutex);
 
-	bool emitOverlay = !wasActive;
+	if (sel <= 0 || sel >= (*ctx)->dimensionality)
+		return false;
 
-	if (sel >= 0 && sel < (*ctx)->dimensionality) {
-		/// first handle sel -> band selection
-		/* emit new band if either new selection or first input after
-		   activating this view */
-		if ((selection != sel && !holdSelection) || !wasActive) {
-			wasActive = true;
-			selection = sel;
-			emitOverlay = true;
-			emit bandSelected((*ctx)->type, sel);
+	bool highlightChanged = false;
+
+	/* first: handle sel -> band selection */
+
+	if (selection != sel && !holdSelection) {
+		selection = sel;
+		// selection results in new band to be shown
+		emit bandSelected(selection);
+		// it also results in a new overlay
+		emit requestOverlay(selection, hover);
+		// and we changed our own highlight
+		highlightChanged = true;
+	}
+
+	// do this after the first chance to change selection (above)
+	if (limiterMode)
+		// no accidential jumping to limiters of other bands
+		holdSelection = true;
+
+	/* second: handle bin -> intensity highlight */
+
+	/* correct y for illuminant */
+	if (!illuminant.empty() && illuminant_correction)
+		bin = std::floor(bin / illuminant.at(sel) + 0.5f);
+
+	if (bin >= 0 && bin < (*ctx)->nbins) {
+		if (!limiterMode && (hover != bin)) {
+			hover = bin;
+			emit requestOverlay(selection, hover);
+			highlightChanged = true;
 		}
-
-		// do this after the first chance to change selection (above)
-		if (limiterMode)
-			holdSelection = true;
-
-		/// second handle bin -> intensity highlight
-		if (!illuminant.empty() && illuminant_correction)	/* correct y for illuminant */
-			bin = std::floor(bin / illuminant.at(sel) + 0.5f);
-
-		if (bin >= 0 && bin < (*ctx)->nbins) {
-			if (!limiterMode && (hover != bin)) {
-				hover = bin;
-				emitOverlay = true;
-			}
-			if (limiterMode && updateLimiter(selection, bin))
-				emitOverlay = true;
+		if (limiterMode && updateLimiter(selection, bin)) {
+			emit requestOverlay(limiters, selection);
+			highlightChanged = true;
 		}
 	}
 
-	/// finally update
-	if (emitOverlay) {
-		updateTextures(RM_SKIP, limiterMode ? RM_STEP : RM_FULL);
-		emit newOverlay(selection);
-	}
+	return highlightChanged;
 }
 
 void Viewport::mouseMoveEvent(QGraphicsSceneMouseEvent *event)
 {
+	// check for scene elements first (we are technically the background)
 	QGraphicsScene::mouseMoveEvent(event);
 	if (event->isAccepted())
 		return;
 
-	/* we could have entered the window right now */
-	bool needRefresh = clearView;
+	bool needUpdate = false, needTextureUpdate = false;
+
+	/* we could have entered the window right now, need to refresh
+	   in case there was a pixel highlight (just a guess!!) */
+	needUpdate = clearView;
 	clearView = false;
-	if (needRefresh)
-		update();
 
 	if (event->buttons() & Qt::LeftButton) {
 		/* cursor control */
 
 		QPointF pos = modelviewI.map(event->scenePos());
-		updateXY(pos.x(), pos.y());
+		needTextureUpdate = updateXY(pos.x(), pos.y());
 
 	} else if (event->buttons() & Qt::RightButton) {
 		/* panning movement */
@@ -854,22 +1042,33 @@ void Viewport::mouseMoveEvent(QGraphicsSceneMouseEvent *event)
 
 	} else {
 		/* access to control widget */
-		if (event->scenePos().x() < 20)
-			control->scrollIn();
-		else if (event->scenePos().x() >
-				 controlItem->boundingRect().right() + 10)
-			control->scrollOut();
+		if (event->scenePos().x() < 20) {
+			emit scrollInControl();
+		} else if (event->scenePos().x() >
+				 controlItem->boundingRect().right() + 10) {
+			emit scrollOutControl();
+		}
 	}
+
+	if (needTextureUpdate) {
+		// calls update()
+		updateTextures(RM_SKIP, limiterMode ? RM_STEP : RM_FULL);
+	} else if (needUpdate) {
+		update();
+	}
+
 	event->accept();
 }
 
 void Viewport::mousePressEvent(QGraphicsSceneMouseEvent *event)
 {
+	activate(); // give ourselves active role if we don't have it yet
+
+	// check for scene elements first (we are technically the background)
 	QGraphicsScene::mousePressEvent(event);
 	if (event->isAccepted())
 		return;
 
-	activate(); // give ourselves active role if we don't have it yet
 	startNoHQ();
 
 	if (event->button() == Qt::RightButton) {
@@ -882,11 +1081,13 @@ void Viewport::mousePressEvent(QGraphicsSceneMouseEvent *event)
 
 void Viewport::mouseReleaseEvent(QGraphicsSceneMouseEvent *event)
 {
+	// check for scene elements first (we are technically the background)
 	QGraphicsScene::mouseReleaseEvent(event);
 	if (event->isAccepted())
 		return;
 
-	// in limiterMode, holdSelect+act.Limiter is set on first mouse action
+	/* in limiterMode, holdSelect+act.Limiter is set on first mouse action,
+	 * so we reset them now as mouse actions are finished */
 	holdSelection = false;
 	activeLimiter = 0;
 
@@ -896,17 +1097,21 @@ void Viewport::mouseReleaseEvent(QGraphicsSceneMouseEvent *event)
 	}
 
 	if (endNoHQ()) {
-		updateTextures((event->button() == Qt::RightButton) ? RM_STEP : RM_SKIP, RM_STEP);
+		updateTextures((event->button() == Qt::RightButton)
+					   ? RM_STEP : RM_SKIP, RM_STEP);
 	}
+
 	event->accept();
 }
 
 void Viewport::wheelEvent(QGraphicsSceneWheelEvent *event)
 {
+	// check for scene elements first (we are technically the background)
 	QGraphicsScene::wheelEvent(event);
 	if (event->isAccepted())
 		 return;
 
+	// zoom in or out
 	qreal oldzoom = zoom;
 	if (event->delta() > 0)
 		zoom *= 1.25;
@@ -926,7 +1131,6 @@ void Viewport::wheelEvent(QGraphicsSceneWheelEvent *event)
 void Viewport::keyPressEvent(QKeyEvent *event)
 {
 	bool highlightAltered = false;
-	bool hoverdirt = false;
 
 	switch (event->key()) {
 	case Qt::Key_S:
@@ -934,10 +1138,10 @@ void Viewport::keyPressEvent(QKeyEvent *event)
 		break;
 
 	case Qt::Key_Plus:
-		emit addSelection();
+		emit addSelectionRequested();
 		break;
 	case Qt::Key_Minus:
-		emit remSelection();
+		emit remSelectionRequested();
 		break;
 
 	case Qt::Key_Up:
@@ -945,7 +1149,7 @@ void Viewport::keyPressEvent(QKeyEvent *event)
 			SharedDataLock ctxlock(ctx->mutex);
 			if (!limiterMode && hover < (*ctx)->nbins-2) {
 				hover++;
-				hoverdirt = true;
+				requestOverlay(selection, hover);
 				highlightAltered = true;
 			}
 		}
@@ -953,7 +1157,7 @@ void Viewport::keyPressEvent(QKeyEvent *event)
 	case Qt::Key_Down:
 		if (!limiterMode && hover > 0) {
 			hover--;
-			hoverdirt = true;
+			requestOverlay(selection, hover);
 			highlightAltered = true;
 		}
 		break;
@@ -962,7 +1166,9 @@ void Viewport::keyPressEvent(QKeyEvent *event)
 			SharedDataLock ctxlock(ctx->mutex);
 			if (selection > 0) {
 				selection--;
-				emit bandSelected((*ctx)->type, selection);
+				emit bandSelected(selection);
+				if (!limiterMode) // we do not touch the limiters
+					emit requestOverlay(selection, hover);
 				highlightAltered = true;
 			}
 		}
@@ -972,7 +1178,9 @@ void Viewport::keyPressEvent(QKeyEvent *event)
 			SharedDataLock ctxlock(ctx->mutex);
 			if (selection < (*ctx)->dimensionality-1) {
 				selection++;
-				emit bandSelected((*ctx)->type, selection);
+				emit bandSelected(selection);
+				if (!limiterMode) // we do not touch the limiters
+					emit requestOverlay(selection, hover);
 				highlightAltered = true;
 			}
 		}
@@ -995,81 +1203,6 @@ void Viewport::keyPressEvent(QKeyEvent *event)
 
 	if (highlightAltered) {
 		updateTextures(RM_SKIP, RM_FULL);
-		emit newOverlay(hoverdirt ? selection : -1);
 	}
 	event->accept();
-}
-
-void Viewport::killHover()
-{
-	clearView = true;
-
-	if (!implicitClearView)
-		// make sure the drawing happens before next overlay cache update
-		// TODO: still relevant?
-		target->repaint();
-}
-
-void Viewport::highlight(short index)
-{
-	highlightLabel = index;
-	updateTextures();
-	target->repaint();
-}
-
-void Viewport::startNoHQ(bool resize)
-{
-	if (resize)
-		drawingState = RESIZE;
-	else
-		drawingState = (drawingState == HIGH_QUALITY ? HIGH_QUALITY_QUICK : QUICK);
-}
-
-bool Viewport::endNoHQ()
-{
-	bool dirty = true;
-	if (drawingState == HIGH_QUALITY || drawingState == HIGH_QUALITY_QUICK)
-		dirty = false;
-	if (!drawHQ && drawingState == QUICK)
-		dirty = false;
-
-	drawingState = (drawHQ ? HIGH_QUALITY : QUICK);
-	return dirty;
-}
-
-bool Viewport::updateLimiter(int dim, int bin)
-{
-	std::pair<int, int> &l = limiters[dim];
-	int *target; // TODO: rename
-	if (l.first == l.second) {
-		target = (bin > l.first ? &l.second : &l.first);
-	} else if (activeLimiter) {
-		target = activeLimiter;
-	} else {
-		target = (std::abs(l.first-bin) < std::abs(l.second-bin) ?
-				  &l.first : &l.second);
-	}
-	if (*target == bin)
-		return false;
-
-	*target = bin;
-	activeLimiter = target;
-	return true;
-}
-
-void Viewport::screenshot()
-{
-	drawingState = SCREENSHOT;
-	updateTextures(RM_FULL, RM_FULL);
-	target->repaint();
-	cacheImg = target->grabFrameBuffer(); // TODO: more elegant with fbo/qgv
-
-	// write out
-	cv::Mat output = vole::QImage2Mat(cacheImg);
-	IOGui io("Screenshot File", "screenshot", target);
-	io.writeFile(QString(), output);
-
-	// reset drawingState and draw again nicely
-	if (endNoHQ())
-		updateTextures();
 }

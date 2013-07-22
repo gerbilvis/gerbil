@@ -343,13 +343,13 @@ void BandView::cursorAction(QMouseEvent *ev, bool click)
 			curMask = cv::Mat1b(labels.rows, labels.cols, (uchar)0);
 			curMask.setTo(1, (labels == curLabel));
 			drawOverlay(curMask);
-			emit newSingleLabel(curLabel); // vp redraw
+			emit singleLabelSelected(curLabel); // dist view redraw
 		} else {
 			if (overlay != &curMask)
 				drawOverlay(curMask);
 			emit killHover();
 		}
-		emit pixelOverlay(x, y);
+		emit pixelOverlay(y, x);
 		return;
 	}
 
@@ -358,7 +358,7 @@ void BandView::cursorAction(QMouseEvent *ev, bool click)
 
 	// overlay in spectral views
 	emit killHover(); // vp redraw
-	emit pixelOverlay(x, y);
+	emit pixelOverlay(y, x);
 
 	if (!(ev->buttons() & Qt::NoButton)) {
 		/* alter all pixels on the line between previous and current position.
@@ -494,8 +494,6 @@ void BandView::toggleSingleLabel(bool enabled)
 	if (singleLabel != enabled) {	// i.e. not the state we want
 		singleLabel = !singleLabel;
 		refresh();
-		// also (de)activate in viewports
-		emit newSingleLabel(singleLabel ? curLabel : -1);
 	}
 }
 

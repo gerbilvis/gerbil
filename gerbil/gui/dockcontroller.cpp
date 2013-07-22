@@ -48,9 +48,6 @@ void DockController::init()
 	chief->mainWindow()->tabifyDockWidget(labelingDock, normDock);
 
 	chief->imageModel()->computeFullRgb();
-
-	connect(chief, SIGNAL(requestEnableDocks(bool,TaskType)),
-			this, SLOT(enableDocks(bool,TaskType)));
 }
 
 void DockController::createDocks()
@@ -90,13 +87,13 @@ void DockController::setupDocks()
 			chief->labelingModel(), SLOT(setLabels(cv::Mat1s)));
 
 	connect(bandDock->bandView(), SIGNAL(killHover()),
-			chief->mainWindow()->getViewerContainer(), SIGNAL(viewportsKillHover()));
+			chief, SIGNAL(requestKillHover()));
 	connect(bandDock->bandView(), SIGNAL(pixelOverlay(int,int)),
-			chief->mainWindow()->getViewerContainer(), SIGNAL(viewersOverlay(int,int)));
-	connect(bandDock->bandView(), SIGNAL(newSingleLabel(short)),
-			chief->mainWindow()->getViewerContainer(), SIGNAL(viewersHighlight(short)));
+			chief, SIGNAL(requestPixelOverlay(int,int)));
+	connect(bandDock->bandView(), SIGNAL(singleLabelSelected(int)),
+			chief, SIGNAL(singleLabelSelected(int)));
 	connect(bandDock, SIGNAL(currentLabelChanged(int)),
-			chief->mainWindow(), SLOT(setCurrentLabel(int)));
+			chief, SIGNAL(currentLabelChanged(int)));
 	// alterLabel(short) -> clear label
 	connect(bandDock, SIGNAL(clearLabelRequested(short)),
 			chief->labelingModel(), SLOT(alterLabel(short)));
@@ -134,11 +131,12 @@ void DockController::setupDocks()
 	connect(chief->graphSegmentationModel(), SIGNAL(seedingDone()),
 			bandDock, SLOT(processSeedingDone()));
 
-	connect(chief->mainWindow()->getViewerContainer(), SIGNAL(drawOverlay(const cv::Mat1b&)),
-		bandDock->bandView(), SLOT(drawOverlay(const cv::Mat1b&)));
-	connect(chief->mainWindow(), SIGNAL(ignoreLabelsRequested(bool)),
+	connect(chief, SIGNAL(requestOverlay(cv::Mat1b)),
+			bandDock->bandView(), SLOT(drawOverlay(const cv::Mat1b&)));
+
+	connect(chief, SIGNAL(toggleIgnoreLabels(bool)),
 			bandDock->bandView(), SLOT(toggleShowLabels(bool)));
-	connect(chief->mainWindow(), SIGNAL(singleLabelRequested(bool)),
+	connect(chief, SIGNAL(toggleSingleLabel(bool)),
 			bandDock->bandView(), SLOT(toggleSingleLabel(bool)));
 
 	/* RGB Dock */
@@ -178,9 +176,9 @@ void DockController::setupDocks()
 	connect(illumDock, SIGNAL(showIlluminationCurveChanged(bool)),
 			chief->illumModel(), SLOT(setIlluminationCurveShown(bool)));
 
-	// connections between illumDock and viewer container
+	// connections between illumDock and dist viewers
 	connect(illumDock, SIGNAL(showIlluminationCurveChanged(bool)),
-			chief->mainWindow()->getViewerContainer(), SLOT(showIlluminationCurve(bool)));
+			chief, SIGNAL(showIlluminationCurve(bool)));
 
 	/* Unsupervised Segmentation Dock */
 #ifdef WITH_SEG_MEANSHIFT
@@ -221,7 +219,7 @@ void DockController::setupDocks()
 
 }
 
-void DockController::enableDocks(bool enable, TaskType tt)
+void DockController::setGUIEnabled(bool enable, TaskType tt)
 {
 	bandDock->setEnabled(enable);
 	bandDock->bandView()->setEnabled(enable);

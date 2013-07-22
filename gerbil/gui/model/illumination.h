@@ -50,10 +50,10 @@ protected:
 	void submitAddNewIllumTask();
 private:
 	// pointer to BackgroundTaskQueue
-	BackgroundTaskQueue* queue;						// FIXME MODEL
+	BackgroundTaskQueue* queue;
 
 	// pointer to shared pointer to multi_img
-	SharedMultiImgPtr image;						// FIXME MODEL
+	SharedMultiImgPtr image;
 
 	// current region of interest
 	cv::Rect roi;

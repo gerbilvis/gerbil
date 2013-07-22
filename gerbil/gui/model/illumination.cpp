@@ -34,7 +34,7 @@ void IllumModel::finishTask(bool success)
 	}
 }
 
-
+// TODO: part of controller!
 void IllumModel::applyIllum()
 {
 	queue->cancelTasks();
@@ -85,7 +85,7 @@ void IllumModel::setIlluminationCurveShown(bool shown)
 	// FIXME: this is a HACK. viewport has no flag to decide wether it should
 	// draw the curve, but decides on the length of the coefficient array.
 	// Not changing this now because of big rewrite of viewport in progress.
-	if(shown) {
+	if (shown) {
 		cv::Mat1f il = getIllumCoeff(i1);
 		emit newIlluminant(il);
 	}

@@ -43,24 +43,21 @@ class RgbDock;
 //class LabelDock;
 class UsSegmentationDock;
 class Controller;
+class DistViewController;
 
 class MainWindow : public QMainWindow, private Ui::MainWindow {
     Q_OBJECT
 public:
 	MainWindow(bool limitedMode = false);
-	void initUI(size_t size);
-	void initSignals(Controller *chief);
+	void initUI(std::string filename, size_t size);
+	void initSignals(Controller *chief, DistViewController *chief2);
 
-	// TODO: used by Controller; hack until we have a resp. vc-controller
-	ViewerContainer* getViewerContainer() { return viewerContainer; }
+	// add distribution view widget to the appropr. container
+	void addDistView(QWidget *frame);
 
-	// setGUIEnabled() slot is now in Controller class
 	void setGUIEnabled(bool enable, TaskType tt = TT_NONE);
-public slots:
-	void setCurrentLabel(int cl) { currentLabel = cl;}
 
-	void addToLabel();
-	void remFromLabel();
+public slots:
 
 	// TODO -> segmentationDock
 //	void segmentationFinished();
@@ -75,43 +72,21 @@ public slots:
 	void applyNormUserRange();
 	void clampNormUserRange();
 
-	void loadSeeds();
-
 	void openContextMenu();
 
 	void screenshot();
 
 signals:
-	void ignoreLabelsRequested(bool);
-	void singleLabelRequested(bool);
 	void specRescaleRequested(int bands);
-	void clearLabelRequested(short index);
-	void alterLabelRequested(short index, const cv::Mat1b &mask, bool negative);
-
-	// will be part of banddock
-	void alterLabelingRequested(const cv::Mat1s &labels, const cv::Mat1b &mask);
-	void newLabelingRequested(const cv::Mat1s &labels);
-
-	void rgbRequested();
-
-	void seedingDone(bool yeah = false);
-
-	void setGUIEnabledRequested(bool enable, TaskType tt);
-
-	void graphSegDockVisibleRequested(bool visible);
 
 protected:
 	void changeEvent(QEvent *e);
 
 private:
-	void initNormalizationUI();
-
-
 	QMenu *contextMenu;
 
+	// only limited full_image available
 	bool limitedMode;
-	// the index of the label currently being edited
-	int currentLabel;
 };
 
 #endif // MAINWINDOW_H

@@ -7,6 +7,7 @@ vole_add_required_modules("gerbil_common" "rgb" "seg_graphs")
 vole_add_optional_modules("seg_meanshift" "seg_medianshift" "seg_probshift")
 
 vole_compile_library(
+	autohidewidget
 	mainwindow
 	scaledview
 	bandview
@@ -18,19 +19,19 @@ vole_compile_library(
 	dockcontroller
 
 	dist_view/compute
-	dist_view/viewercontainer
-	dist_view/multi_img_viewer
+	dist_view/distviewcontroller
+	dist_view/distviewmodel
 	dist_view/viewer_tasks
 	dist_view/foldingbar
 	dist_view/viewport
-	dist_view/viewportcontrol
+	dist_view/distviewgui
 
 	model/representation
 	model/image
 	model/labeling
-        model/falsecolor
-        model/illumination
-        model/graphsegmentation
+	model/falsecolor
+	model/illumination
+	model/graphsegmentation
 	model/ussegmentationmodel
 
 	tasks/distviewbinstbb
@@ -54,6 +55,7 @@ vole_compile_library(
 
 vole_moc_library(
 	mainwindow.h
+	autohidewidget.h
 	scaledview.h
 	bandview.h
 	roiview.h
@@ -62,11 +64,11 @@ vole_moc_library(
 	controller.h
 	dockcontroller.h
 
-	dist_view/viewercontainer.h
-	dist_view/multi_img_viewer.h
+	dist_view/distviewmodel.h
+	dist_view/distviewcontroller.h
+	dist_view/distviewgui.h
 	dist_view/foldingbar.h
 	dist_view/viewport.h
-	dist_view/viewportcontrol.h
 
 	docks/banddock.h
 	docks/labelingdock.h
@@ -88,7 +90,7 @@ vole_moc_library(
 
 vole_ui_library(
 	mainwindow.ui
-	dist_view/multi_img_viewer.ui
+	dist_view/distviewgui.ui
 	dist_view/foldingbar.ui
 	dist_view/viewportcontrol.ui
 	docks/roidock.ui

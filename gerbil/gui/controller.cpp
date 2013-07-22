@@ -1,10 +1,10 @@
 #include "controller.h"
 #include "dockcontroller.h"
+#include "dist_view/distviewcontroller.h"
 #include <imginput.h>
 
 #include "gerbil_gui_debug.h"
 
-#include <QFileInfo>
 #include <cstdlib> // for exit()
 
 // for DEBUG
@@ -17,7 +17,8 @@ std::ostream &operator<<(std::ostream& os, const cv::Rect& r)
 Controller::Controller(const std::string &filename, bool limited_mode,
 	const QString &labelfile)
 	: im(queue, limited_mode), fm(this, &queue), illumm(this),
-	  gsm(this, &queue), queuethread(0)
+	  gsm(this, &queue), queuethread(0),
+	  dc(0), dvc(0) // so we don't access them too early
 {
 	// load image
 	cv::Rect dimensions = im.loadImage(filename);
@@ -30,34 +31,52 @@ Controller::Controller(const std::string &filename, bool limited_mode,
 
 	// create gui (perform initUI before connecting signals!)
 	window = new MainWindow(limited_mode);
-	window->initUI(im.getNumBandsFull());
-
-	// connect slots/signals
-	window->initSignals(this);
-	connect(window, SIGNAL(setGUIEnabledRequested(bool,TaskType)),
-			this, SLOT(setGUIEnabled(bool, TaskType)));
+	window->initUI(filename, im.getNumBandsFull());
 
 	// initialize models
 	initImage();
 	initFalseColor(); // depends on ImageModel / initImage()
 	initIlluminant();
 	initGraphSegmentation(); // depends on ImageModel / initImage()
-	initLabeling(dimensions, labelfile);
+	initLabeling(dimensions);
 
 #ifdef WITH_SEG_MEANSHIFT
 	um.setMultiImage(im.getImage(representation::IMG));
 #endif /* WITH_SEG_MEANSHIFT */
 
-	// initialize docks (after initializing the models...)
+	// initialize sub-controllers (after initializing the models...)
 	dc = new DockController(this);
 	dc->init();
+	dvc = new DistViewController(this, &queue);
+	dvc->init();
 
-	// MODEL To be removed when refactored
-	// into model classes.
-	window->getViewerContainer()->setTaskQueue(&queue);
+	// connect slots/signals
+	window->initSignals(this, dvc);
 
-	// start with initial label (do this after signals, and before spawnROI())!
-	lm.addLabel();
+	/* TODO: better place. Do not use init model functions, dvc is created later
+	 */
+	connect(dvc, SIGNAL(bandSelected(representation::t, int)),
+			&im, SLOT(computeBand(representation::t, int)));
+	connect(&lm,
+			SIGNAL(newLabeling(const cv::Mat1s&, const QVector<QColor>&, bool)),
+			dvc, SLOT(updateLabels(cv::Mat1s,QVector<QColor>,bool)));
+	connect(&lm, SIGNAL(partialLabelUpdate(const cv::Mat1s&,const cv::Mat1b&)),
+			dvc, SLOT(updateLabelsPartially(const cv::Mat1s&,const cv::Mat1b&)));
+	connect(dvc, SIGNAL(alterLabelRequested(short,cv::Mat1b,bool)),
+			&lm, SLOT(alterLabel(short,cv::Mat1b,bool)));
+	connect(&illumm, SIGNAL(newIlluminant(cv::Mat1f)),
+			dvc, SIGNAL(newIlluminant(cv::Mat1f)));
+	connect(&illumm, SIGNAL(illuminantIsApplied(bool)),
+			dvc, SIGNAL(toggleIlluminantApplied(bool)));
+
+	/* start with initial label or provided labeling
+	 * Do this after all signals are connected, and before initial ROI spawn!
+	 */
+	if (labelfile.isEmpty()) {
+		lm.addLabel();
+	} else {
+		lm.loadLabeling(labelfile);
+	}
 
 	/* Initial ROI images spawning. Do it before showing the window but after
 	 * all signals were connected! */
@@ -72,15 +91,17 @@ Controller::Controller(const std::string &filename, bool limited_mode,
 	//GGDBGM("roi " << roi << endl);
 	spawnROI(roi);
 
-	// set title and show window
-	QFileInfo fi(QString::fromStdString(filename));
-	window->setWindowTitle(QString("Gerbil - %1").arg(fi.completeBaseName()));
+	// we're done! show window
 	window->show();
 }
 
 Controller::~Controller()
 {
 	delete window;
+
+	delete dc;
+	delete dvc;
+
 	// background task queue thread
 	stopQueue();
 }
@@ -91,10 +112,6 @@ Controller::~Controller()
 // connect all signals between model and other parties
 void Controller::initImage()
 {
-	/* gui requests */
-	connect(window->getViewerContainer(),
-			SIGNAL(bandSelected(representation::t, int)),
-			&im, SLOT(computeBand(representation::t, int)));
 }
 
 // depends on ImageModel
@@ -111,15 +128,12 @@ void Controller::initIlluminant()
 	illumm.setTaskQueue(&queue);
 	illumm.setMultiImage(im.getFullImage());
 
-	// signals illumm <-> viewer container
-	connect(&illumm, SIGNAL(newIlluminant(cv::Mat1f)),
-			window->getViewerContainer(), SLOT(newIlluminant(cv::Mat1f)));
-	connect(&illumm, SIGNAL(illuminantIsApplied(bool)),
-			window->getViewerContainer(), SLOT(setIlluminantApplied(bool)));
-
 	connect(&illumm, SIGNAL(requestInvalidateROI(cv::Rect)),
 			this, SLOT(invalidateROI(cv::Rect)));
 
+	/* TODO: models should not request this! the controller of the model has
+	 * to guard its operations!
+	 */
 	connect(&illumm, SIGNAL(setGUIEnabledRequested(bool,TaskType)),
 			this, SLOT(setGUIEnabled(bool, TaskType)), Qt::DirectConnection);
 }
@@ -141,29 +155,10 @@ void Controller::initGraphSegmentation()
 /** Labeling management **/
 
 // connect all signals between model and other parties
-void Controller::initLabeling(cv::Rect dimensions, const QString &labelfile)
+void Controller::initLabeling(cv::Rect dimensions)
 {
 	// initialize label model
 	lm.setDimensions(dimensions.height, dimensions.width);
-
-	if (!labelfile.isEmpty()) {
-		lm.loadLabeling(labelfile);
-	}
-
-	/* gui requests */
-	connect(window, SIGNAL(clearLabelRequested(short)),
-			&lm, SLOT(alterLabel(short)));
-	connect(window, SIGNAL(alterLabelRequested(short,cv::Mat1b,bool)),
-			&lm, SLOT(alterLabel(short,cv::Mat1b,bool)));
-
-	/* lm -> others */
-	connect(&lm,
-			SIGNAL(newLabeling(const cv::Mat1s&, const QVector<QColor>&, bool)),
-			this, SLOT(propagateLabelingChange(
-					 const cv::Mat1s&, const QVector<QColor> &, bool)));
-	connect(&lm, SIGNAL(partialLabelUpdate(const cv::Mat1s&,const cv::Mat1b&)),
-			window->getViewerContainer(),
-			SLOT(updateLabelsPartially(const cv::Mat1s&,const cv::Mat1b&)));
 }
 
 void Controller::spawnROI(cv::Rect roi)
@@ -182,9 +177,6 @@ void Controller::rescaleSpectrum(int bands)
 {
 	queue.cancelTasks(im.getROI());
 	disableGUI(TT_BAND_COUNT);
-	// TODO: check
-    // 2013-06-19 altmann: seems to work without disconnect as well.
-	window->getViewerContainer()->disconnectAllViewers();
 
 	updateROI(false, cv::Rect(), bands);
 
@@ -211,9 +203,6 @@ void Controller::doSpawnROI(bool reuse, const cv::Rect &roi)
 	fm.reset();
 
 	disableGUI(TT_SELECT_ROI);
-	// TODO: check
-	// 2013-06-19 altmann: seems to work without disconnect as well.
-	window->getViewerContainer()->disconnectAllViewers();
 
 	updateROI(reuse, roi);
 
@@ -245,7 +234,7 @@ void Controller::updateROI(bool reuse, cv::Rect roi, int bands)
 	QMap<representation::t, sets_ptr> sets;
 	if (reuse) {
 		foreach (representation::t i, representation::all()) {
-			sets[i] = window->getViewerContainer()->subImage(i, sub, roi);
+			sets[i] = dvc->subImage(i, sub, roi);
 		}
 	}
 
@@ -267,9 +256,9 @@ void Controller::updateROI(bool reuse, cv::Rect roi, int bands)
 
 		/* tasks to (incrementally) update distribution view */
 		if (reuse) {
-			window->getViewerContainer()->addImage(i, sets[i], add, roi);
+			dvc->addImage(i, sets[i], add, roi);
 		} else {
-			window->getViewerContainer()->setImage(i, im.getImage(i), roi);
+			dvc->setImage(i, im.getImage(i), roi);
 		}
 	}
 
@@ -281,25 +270,6 @@ void Controller::updateROI(bool reuse, cv::Rect roi, int bands)
 	}*/
 }
 
-void Controller::propagateLabelingChange(const cv::Mat1s& labels,
-										 const QVector<QColor> &colors,
-										 bool colorsChanged)
-{
-	// -> now a slot in bandDock (lm -> banddock)
-	//window->processLabelingChange(labels, colors, colorsChanged);
-
-	bool grandUpdate = !labels.empty() || colorsChanged;
-
-	if (grandUpdate)
-		disableGUI();
-
-	// TODO: we will talk to ViewerController directly
-	window->getViewerContainer()->updateLabels(labels, colors, colorsChanged);
-
-	if (grandUpdate)
-		enableGUILater();
-}
-
 void Controller::setGUIEnabled(bool enable, TaskType tt)
 {
 	/** for enable, this just re-enables everything
@@ -309,22 +279,12 @@ void Controller::setGUIEnabled(bool enable, TaskType tt)
 	 */
 	window->setGUIEnabled(enable, tt);
 
-	// tell dock controller
-	emit requestEnableDocks(enable, tt);
+	// tell other controllers
+	dc->setGUIEnabled(enable, tt);
+	dvc->setGUIEnabled(enable, tt);
 }
+
 /** Tasks and queue thread management */
-void Controller::toggleLabels(bool toggle)
-{
-	// TODO: is this really legit? I doubt.
-	// This is only to apply changes instantly,
-	// instead of waiting for queue.
-	queue.cancelTasks();
-	disableGUI(TT_TOGGLE_LABELS);
-
-	window->getViewerContainer()->toggleLabels(toggle);
-
-	enableGUILater(false);
-}
 
 void Controller::enableGUILater(bool withROI)
 {

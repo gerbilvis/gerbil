@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <ui version="4.0">
- <class>multi_img_viewer</class>
- <widget class="QWidget" name="multi_img_viewer">
+ <class>DistViewGUI</class>
+ <widget class="QWidget" name="DistViewGUI">
   <property name="geometry">
    <rect>
     <x>0</x>
@@ -34,7 +34,7 @@
     </widget>
    </item>
    <item>
-    <widget class="ViewportGV" name="viewportGV">
+    <widget class="GraphicsView" name="gv">
      <property name="sizePolicy">
       <sizepolicy hsizetype="MinimumExpanding" vsizetype="Preferred">
        <horstretch>0</horstretch>
@@ -62,9 +62,9 @@
    <container>1</container>
   </customwidget>
   <customwidget>
-   <class>ViewportGV</class>
+   <class>GraphicsView</class>
    <extends>QGraphicsView</extends>
-   <header>dist_view/viewport.h</header>
+   <header>autohidewidget.h</header>
   </customwidget>
  </customwidgets>
  <resources/>

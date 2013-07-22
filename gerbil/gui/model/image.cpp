@@ -134,7 +134,7 @@ void ImageModel::spawn(representation::t type, const cv::Rect &newROI, int bands
 	SharedMultiImgPtr image = map[representation::IMG]->image,
 			gradient = map[representation::GRAD]->image,
 			imagepca = map[representation::IMGPCA]->image,
-			gradpca = map[representation::IMGPCA]->image;
+			gradpca = map[representation::GRADPCA]->image;
 
 	// scoping and spectral rescaling done for IMG
 	if (type == representation::IMG) {
