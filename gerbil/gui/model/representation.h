@@ -21,6 +21,21 @@ struct representation {
 		return r.map;
 	}
 
+	// user-readable string representation (for debug output, see operator<<)
+	static const char* str(t r)
+	{
+		if (r < 0 || r >= representation::REPSIZE) {
+			return "None";
+		}
+		const char * const str[] = {
+			"Image Spectrum",
+			"Spectral Gradient Spectrum",
+			"Image PCA",
+			"Spectral Gradient PCA"
+		};
+		return str[r];
+	}
+
 private:
 	representation() {
 		for (int i = 0; i < REPSIZE; ++i)

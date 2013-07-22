@@ -20,9 +20,6 @@ DistViewGUI::DistViewGUI(representation::t type)
 
 	// connect and initialize topBar
 	initTop();
-
-	// limiter menu needs a parent outside the graphicsscene
-//	TODO	limiterMenu.setParent(frame);
 }
 
 QGraphicsProxyWidget* DistViewGUI::initVP()
@@ -52,6 +49,11 @@ void DistViewGUI::initVC(QGraphicsProxyWidget *proxy, representation::t type)
 	vc->initProxy(proxy);
 
 	/* we are ready to connect signals/slots */
+	connect(vp, SIGNAL(scrollInControl()),
+			vc, SLOT(scrollIn()));
+	connect(vp, SIGNAL(scrollOutControl()),
+			vc, SLOT(scrollOut()));
+
 	connect(uivc->binSlider, SIGNAL(valueChanged(int)),
 			this, SLOT(setBinCount(int)));
 	connect(uivc->alphaSlider, SIGNAL(valueChanged(int)),
@@ -86,7 +88,7 @@ void DistViewGUI::initTop()
 			this, SLOT(toggleFold()));
 
 	// setup title in topBar
-	setTitle(type, 0.0, 0.0);
+	setTitle(type);
 }
 
 void DistViewGUI::initSignals(DistViewController *chief)
@@ -161,7 +163,7 @@ void DistViewGUI::toggleFold()
 		frame->setSizePolicy(QSizePolicy::Preferred, QSizePolicy::Maximum);
 
 		// reset title
-		setTitle(type, 0.0, 0.0);
+		setTitle(type);
 
 		// TODO: send signals that will destroy unused data!
 
@@ -183,20 +185,19 @@ void DistViewGUI::toggleFold()
 	}
 }
 
+void DistViewGUI::setTitle(representation::t type)
+{
+	QString title = QString("<b>%1</b>").arg(representation::str(type));
+	ui->topBar->setTitle(title);
+}
+
 void DistViewGUI::setTitle(representation::t type,
 						   multi_img::Value min, multi_img::Value max)
 {
-	QString title;
-	if (type == representation::IMG)
-		title = QString("<b>Image Spectrum</b> [%1..%2]");
-	if (type == representation::GRAD)
-		title = QString("<b>Spectral Gradient Spectrum</b> [%1..%2]");
-	if (type == representation::IMGPCA)
-		title = QString("<b>Image PCA</b> [%1..%2]");
-	if (type == representation::GRADPCA)
-		title = QString("<b>Spectral Gradient PCA</b> [%1..%2]");
-
-	ui->topBar->setTitle(title.arg(min).arg(max));
+	QString title = QString("<b>%1</b>").arg(representation::str(type));
+	title = title.append(" [%1..%2]")
+			.arg(min, 0, 'f', 2).arg(max, 0, 'f', 2);
+	ui->topBar->setTitle(title);
 }
 
 void DistViewGUI::setAlpha(int alpha)

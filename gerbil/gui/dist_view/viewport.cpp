@@ -371,13 +371,13 @@ void Viewport::updateModelview()
 	// if gradient, we discard one unit space intentionally for centering
 	int d = (*ctx)->dimensionality - ((*ctx)->type == representation::GRAD ? 0 : 1);
 	qreal w = (wwidth  - 2*hp - htp)/(qreal)(d); // width of one unit
-	qreal h = (wheight - 2*vp - vtp)/(qreal)((*ctx)->nbins - 1); // height of one unit
+	qreal h = (wheight - 2*vp - vtp)/(qreal)((*ctx)->nbins); // height of one unit
 	int t = ((*ctx)->type == representation::GRAD ? w/2 : 0); // moving half a unit for centering
 
 	modelview.reset();
 	modelview.translate(hp + htp + t, vp + vshift);
 	modelview.scale(w, -1*h); // -1 low values at bottom
-	modelview.translate(0, -((*ctx)->nbins -1)); // shift for low values at bottom
+	modelview.translate(0, -((*ctx)->nbins)); // shift for low values at bottom
 
 	// set inverse
 	modelviewI = modelview.inverted();
@@ -561,7 +561,7 @@ void Viewport::drawAxesFg(QPainter *painter)
 		painter->setPen(Qt::red);
 	else
 		painter->setPen(Qt::gray);
-	qreal top = ((*ctx)->nbins-1);
+	qreal top = ((*ctx)->nbins);
 	if (!illuminant.empty())
 		top *= illuminant.at(selection);
 	painter->drawLine(QPointF(selection, 0.), QPointF(selection, top));
@@ -570,7 +570,7 @@ void Viewport::drawAxesFg(QPainter *painter)
 	if (limiterMode) {
 		painter->setPen(Qt::red);
 		for (int i = 0; i < (*ctx)->dimensionality; ++i) {
-			qreal y1 = limiters[i].first, y2 = limiters[i].second;
+			qreal y1 = limiters[i].first, y2 = limiters[i].second + 1;
 			if (!illuminant.empty()) {
 				y1 *= illuminant.at(selection);
 				y2 *= illuminant.at(selection);
@@ -610,7 +610,7 @@ void Viewport::drawAxesBg(QPainter *painter)
 		poly << QPointF(0, (*ctx)->nbins-1);
 	} else {
 		for (int i = 0; i < (*ctx)->dimensionality; ++i)
-			painter->drawLine(i, 0, i, (*ctx)->nbins-1);
+			painter->drawLine(i, 0, i, (*ctx)->nbins);
 	}
 
 	// visualize illuminant
@@ -961,7 +961,7 @@ bool Viewport::updateXY(int sel, int bin)
 {
 	SharedDataLock ctxlock(ctx->mutex);
 
-	if (sel <= 0 || sel >= (*ctx)->dimensionality)
+	if (sel < 0 || sel >= (*ctx)->dimensionality)
 		return false;
 
 	bool highlightChanged = false;
@@ -1022,7 +1022,8 @@ void Viewport::mouseMoveEvent(QGraphicsSceneMouseEvent *event)
 		/* cursor control */
 
 		QPointF pos = modelviewI.map(event->scenePos());
-		needTextureUpdate = updateXY(pos.x(), pos.y());
+		// add .5 to x for rounding
+		needTextureUpdate = updateXY(pos.x() + 0.5f, pos.y());
 
 	} else if (event->buttons() & Qt::RightButton) {
 		/* panning movement */
@@ -1205,4 +1206,15 @@ void Viewport::keyPressEvent(QKeyEvent *event)
 		updateTextures(RM_SKIP, RM_FULL);
 	}
 	event->accept();
+}
+
+bool Viewport::event(QEvent *event)
+{
+	// we only deal with leaveEvent
+	if (event->type() == QEvent::Leave) {
+		emit scrollOutControl();
+		return true;
+	}
+
+	return QGraphicsScene::event(event);
 }

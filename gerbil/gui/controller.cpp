@@ -57,6 +57,8 @@ Controller::Controller(const std::string &filename, bool limited_mode,
 	 */
 	connect(dvc, SIGNAL(bandSelected(representation::t, int)),
 			&im, SLOT(computeBand(representation::t, int)));
+	connect(dvc, SIGNAL(requestOverlay(cv::Mat1b)),
+			this, SIGNAL(requestOverlay(cv::Mat1b)));
 	connect(&lm,
 			SIGNAL(newLabeling(const cv::Mat1s&, const QVector<QColor>&, bool)),
 			dvc, SLOT(updateLabels(cv::Mat1s,QVector<QColor>,bool)));

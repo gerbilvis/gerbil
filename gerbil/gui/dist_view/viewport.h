@@ -122,6 +122,9 @@ protected:
 	void wheelEvent(QGraphicsSceneWheelEvent *);
 	void keyPressEvent(QKeyEvent *);
 
+	// to intercept leaveEvent
+	bool event(QEvent *event);
+
 	// helper function that updates Y-axis labels
 	void updateYAxis();
 

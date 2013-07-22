@@ -23,6 +23,7 @@ public:
 
 	int getBinCount() { return uivc->binSlider->value(); }
 
+	void setTitle(representation::t type);
 	void setTitle(representation::t type,
 				  multi_img::Value min, multi_img::Value max);
 
