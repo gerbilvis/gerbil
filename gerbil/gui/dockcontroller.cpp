@@ -12,6 +12,7 @@
 #include "docks/illumdock.h"
 #include "docks/graphsegwidget.h"
 #include "docks/ussegmentationdock.h"
+#include "docks/labeldock.h"
 
 #include "model/ussegmentationmodel.h"
 
@@ -36,6 +37,7 @@ void DockController::init()
 	chief->mainWindow()->addDockWidget(Qt::RightDockWidgetArea, rgbDock);
 	chief->mainWindow()->addDockWidget(Qt::RightDockWidgetArea, roiDock);
 	chief->mainWindow()->addDockWidget(Qt::RightDockWidgetArea, illumDock);
+	chief->mainWindow()->addDockWidget(Qt::RightDockWidgetArea, labelDock);
 
 	// dock arrangement
 	chief->mainWindow()->tabifyDockWidget(roiDock, rgbDock);
@@ -46,6 +48,7 @@ void DockController::init()
 
 	chief->mainWindow()->tabifyDockWidget(labelingDock, illumDock);
 	chief->mainWindow()->tabifyDockWidget(labelingDock, normDock);
+	chief->mainWindow()->tabifyDockWidget(labelingDock, labelDock);
 
 	chief->imageModel()->computeFullRgb();
 }
@@ -64,6 +67,7 @@ void DockController::createDocks()
 #ifdef WITH_SEG_MEANSHIFT
 	usSegDock = new UsSegmentationDock(chief->mainWindow());
 #endif
+	labelDock = new LabelDock(chief->mainWindow());
 }
 
 void DockController::setupDocks()
@@ -217,6 +221,11 @@ void DockController::setupDocks()
 			chief,
 			SLOT(invalidateROI()));
 
+	/* Label Dock */
+	connect(chief->labelingModel(),
+			SIGNAL(newLabeling(cv::Mat1s,QVector<QColor>,bool)),
+			labelDock, SLOT(setLabeling(cv::Mat1s,QVector<QColor>,bool)));
+
 }
 
 void DockController::setGUIEnabled(bool enable, TaskType tt)
@@ -242,6 +251,7 @@ void DockController::setGUIEnabled(bool enable, TaskType tt)
 	usSegDock->setEnabled(enable && !chief->imageModel()->isLimitedMode());
 #endif
 	roiDock->setEnabled(enable || tt == TT_SELECT_ROI);
+	labelDock->setEnabled(enable);
 }
 
 void DockController::requestGraphseg(representation::t repr,

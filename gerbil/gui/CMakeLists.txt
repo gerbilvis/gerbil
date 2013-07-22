@@ -49,6 +49,7 @@ vole_compile_library(
 	docks/rgbdock
 	docks/graphsegwidget
 	docks/ussegmentationdock
+	docks/labeldock
 
 	gerbil_gui_debug
 )
@@ -79,6 +80,7 @@ vole_moc_library(
 	docks/rgbdock.h
 	docks/graphsegwidget.h
 	docks/ussegmentationdock.h
+	docks/labeldock.h
 
 	model/image.h
 	model/labeling.h
@@ -101,6 +103,7 @@ vole_ui_library(
 	docks/labelingdock.ui
 	docks/normdock.ui
 	docks/rgbdock.ui
+	docks/labeldock.ui
 )
 
 vole_add_resources(

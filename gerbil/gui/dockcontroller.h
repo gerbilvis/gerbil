@@ -26,6 +26,7 @@ class RgbDock;
 class IllumDock;
 class GraphSegWidget;
 class UsSegmentationDock;
+class LabelDock;
 
 namespace vole
 {
@@ -78,6 +79,7 @@ protected:
 	RgbDock *rgbDock;
 	IllumDock *illumDock;
 	UsSegmentationDock *usSegDock;
+	LabelDock *labelDock;
 };
 
 #endif // DOCKCONTROLLER_H

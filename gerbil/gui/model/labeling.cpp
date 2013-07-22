@@ -27,7 +27,7 @@ void LabelingModel::updateROI(const cv::Rect &roi)
 	labels = cv::Mat1s(full_labels, roi);
 
 	// signal new matrix
-	emit newLabeling(labels);
+	emit newLabeling(labels, colors);
 }
 
 void LabelingModel::setLabels(const vole::Labeling &labeling, bool full)
@@ -73,7 +73,9 @@ void LabelingModel::setLabelColors(const std::vector<cv::Vec3b> &newColors,
 		return;
 
 	/* when changed == false, only new colors were added
-	 * and most parts of the software do not care about new, unused colors */
+	 * and most parts of the software do not care about new, unused colors.
+	 * 2013-07-22 altmann: Now the LabelDock does. Not changing current behaviour.
+	 */
 	bool changed = false;
 	for (int i = 1; i < colors.size() && i < col.size(); ++i) {
 		if (col.at(i) != colors.at(i))

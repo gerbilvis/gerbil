@@ -34,11 +34,14 @@ public slots:
 	void loadSeeds();
 
 signals:
-	/** entirely new label matrix, or different label colors, or both
-	 * @arg changedColors true if previously existing colors changed
+	/** The Labeling has changed.
+	 *
+	 * If labels == cv::Mat1s(), then only the color vector changed.
+	 * @param colorsChanged True only if a color in the previous color vector
+	 * changed. If a label is added, colorsChanged is false.
 	 */
 	void newLabeling(const cv::Mat1s &labels,
-					 const QVector<QColor>& colors = QVector<QColor>(),
+					 const QVector<QColor>& colors,
 					 bool colorsChanged = false);
 	/** new label matrix, but only specific pixels (in mask) changed label
 	 */
