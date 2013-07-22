@@ -30,7 +30,7 @@ public slots:
 
 signals:
 	/** The user has selected labels and want's them to be merged. */
-	void mergeLabelsRequested(const QList<int>& labels);
+	void mergeLabelsRequested(const QVector<int>& labels);
 
 private slots:
 	void processSelectionChanged(const QItemSelection & selected,

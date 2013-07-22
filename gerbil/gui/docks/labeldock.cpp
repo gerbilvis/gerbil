@@ -95,12 +95,12 @@ void LabelDock::mergeSelected()
 	}
 
 	// Extract label ids from QModelIndex s.
-	QList<int> selectedLabels;
+	QVector<int> selectedLabels;
 	QStringList idxsString; // debug
 
 	foreach(QModelIndex idx, modelIdxs) {
 		int id = idx.data(LabelIndexRole).value<int>();
-		selectedLabels.append(id);
+		selectedLabels.push_back(id);
 		idxsString.append(QString::number(id));
 	}
 

@@ -225,6 +225,8 @@ void DockController::setupDocks()
 	connect(chief->labelingModel(),
 			SIGNAL(newLabeling(cv::Mat1s,QVector<QColor>,bool)),
 			labelDock, SLOT(setLabeling(cv::Mat1s,QVector<QColor>,bool)));
+	connect(labelDock, SIGNAL(mergeLabelsRequested(QVector<int>)),
+			chief->labelingModel(), SLOT(mergeLabels(QVector<int>)));
 
 }
 
