@@ -169,3 +169,51 @@ void LabelingModel::loadSeeds()
 		graphsegButton->toggle();
 	}*/
 }
+
+void LabelingModel::mergeLabels(const QVector<int> &mlabels)
+{
+	if(mlabels.size() < 2)
+		return;
+	QVector<int> xmlabels = mlabels;
+
+	// sort the labels to merge by id
+	qSort(xmlabels);
+
+	// target: the label to merge into
+	short target = xmlabels[0];
+
+	// mask: all pixels which are to be merged into the target label
+	cv::Mat1s mask = cv::Mat1b::zeros(full_labels.rows, full_labels.cols);
+
+	// new color array
+	QVector<QColor> newColors = colors;
+
+	// build mask and new color array
+	int j=0;
+	for(int i=1; i<xmlabels.size(); i++) {
+		short label = xmlabels.at(i);
+		mask = mask | (full_labels == label);
+		for(; j<xmlabels[i]; j++) {
+			newColors.push_back(colors[j]);
+		}
+		j++; // skip the color of the merged label
+	}
+	// copy the rest of the colors
+	for(; j<colors.size(); j++) {
+		newColors.push_back(colors[j]);
+	}
+
+
+//	for(int i=0, j=0; i<colors.size(); i++) {
+//		for(;xmlabels[j]<i && j < xmlabels.size(); j++)
+//		{}
+//		if(xmlabels[j] != i) {
+//			newColors.push_back(colors[i]);
+//		}
+//	}
+
+	full_labels.setTo(target, mask);
+	colors = newColors;
+
+	emit newLabeling(labels, colors, true);
+}
