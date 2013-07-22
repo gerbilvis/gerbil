@@ -27,6 +27,8 @@ namespace vole {
 
 cv::Mat3b QImage2Mat(const QImage &src);
 QImage Mat2QImage(const cv::Mat3b &src);
+// untested: return ARGB32 image with black background and provided color as foreground
+QImage Mask2QImage(const cv::Mat1b &src, const QColor &color);
 QImage Mat2QImage(const cv::Mat_<double> &src);
 QImage Band2QImage(const multi_img::Band src, multi_img::Value minval, multi_img::Value maxval);
 

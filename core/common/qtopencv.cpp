@@ -40,6 +40,23 @@ QImage Mat2QImage(const cv::Mat3b &src) {
 	return dest;
 }
 
+QImage Mask2QImage(const cv::Mat1b &src, const QColor &color) {
+	// this code is untested, prepare for bugs and remove the assert
+	assert(false);
+	QImage dest(src.cols, src.rows, QImage::Format_ARGB32);
+	for (int y = 0; y < src.rows; ++y) {
+		const uchar *srcrow = src[y];
+		QRgb *destrow = (QRgb*)dest.scanLine(y);
+		for (int x = 0; x < src.cols; ++x) {
+			if(srcrow[x] > 0) {
+				destrow[x] = color.rgba();
+			} else {
+				destrow[x] = QColor(Qt::black).rgba();
+			}
+		}
+	}
+	return dest;
+}
 
 QImage Mat2QImage(const cv::Mat_<double> &src)
 {

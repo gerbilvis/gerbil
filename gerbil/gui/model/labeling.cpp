@@ -185,10 +185,10 @@ void LabelingModel::mergeLabels(const QVector<int> &mlabels)
 	// mask: all pixels which are to be merged into the target label
 	cv::Mat1b mask = cv::Mat1b::zeros(full_labels.rows, full_labels.cols);
 
-	GGDBGM("old colors " << colors.size() << endl);
+//	GGDBGM("old colors " << colors.size() << endl);
 
 	// new color array
-	QVector<QColor> newColors;
+//	QVector<QColor> newColors;
 
 
 	// build mask and new color array
@@ -198,27 +198,25 @@ void LabelingModel::mergeLabels(const QVector<int> &mlabels)
 		mask = mask | dmask;
 	}
 
-	int j = 0;
+//  code to remove color -> removing colors not compatible with rest of gerbil
+//	int j = 0;
+//	for(int i=0; i<xmlabels.size(); i++) {
+//		short curlabel = xmlabels[i];
+//		GGDBGM("curlabel " << curlabel << endl);
+//		for(; j<curlabel;j++) {
+//			newColors.push_back(colors[j]);
+//			GGDBGM("copy color of label " << j << endl);
+//		}
+//		j++; // drop the color of the label that is to be merged
+//	}
+//	for(; j<colors.size();j++) {
+//		GGDBGM("copy color of label " << j << endl);
+//		newColors.push_back(colors[j]);
+//	}
 
-	for(int i=0; i<xmlabels.size(); i++) {
-		short curlabel = xmlabels[i];
-		GGDBGM("curlabel " << curlabel << endl);
-		for(; j<curlabel;j++) {
-			newColors.push_back(colors[j]);
-			GGDBGM("copy color of label " << j << endl);
-		}
-		j++; // drop the color of the label that is to be merged
-	}
-	for(; j<colors.size();j++) {
-		GGDBGM("copy color of label " << j << endl);
-		newColors.push_back(colors[j]);
-	}
-
-	GGDBGM("new colors " << newColors.size() << endl);
+//	GGDBGM("new colors " << newColors.size() << endl);
 	full_labels.setTo(target, mask);
-	colors = newColors;
-	// FIXME necessary??
-	labels = cv::Mat1s(full_labels, roi);
+//	colors = newColors;
 
-	emit newLabeling(labels, colors, true);
+	emit newLabeling(labels, colors, false);
 }
