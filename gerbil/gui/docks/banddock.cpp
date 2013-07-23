@@ -13,7 +13,8 @@ static QIcon colorIcon(const QColor &color)
 }
 
 BandDock::BandDock(cv::Rect fullImgSize, QWidget *parent)
-	: QDockWidget(parent), fullImgSize(fullImgSize)
+	: QDockWidget(parent), fullImgSize(fullImgSize),
+	  curRepr(representation::IMG), curBandId(0)
 {
 	setupUi(this);
 	initUi();
@@ -70,6 +71,14 @@ void BandDock::changeBand(representation::t repr, int bandId,
 	bv->setEnabled(true);
 	bv->setPixmap(band);
 	setWindowTitle(desc);
+}
+
+void BandDock::processImageUpdate(representation::t type)
+{
+	if (type == curRepr) {
+		// our view became invalid. fetch new one.
+		emit bandRequested(curRepr, curBandId);
+	}
 }
 
 void BandDock::processSeedingDone()

@@ -208,11 +208,6 @@ void Viewport::rebuild()
 	if (selection > (*ctx)->dimensionality)
 		selection = 0;
 
-	// make sure band view is on track
-	if (active) {
-		emit bandSelected(selection);
-	}
-
 	prepareLines();
 	updateTextures();
 }

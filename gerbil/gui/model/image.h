@@ -46,7 +46,7 @@ public slots:
 
 signals:
 	// newImageData() and dataRangeUpdate are availabe to ImageModel clients
-	// as ImageModel::imageUpdate() and ImageModel::dataRangeUdpate().
+	// as ImageModel::imageUpdate() and ImageModel::dataRangeUpdate().
 	void newImageData(representation::t type, SharedMultiImgPtr image);
 	void dataRangeUpdate(representation::t type, ImageDataRange range);
 };

@@ -37,6 +37,7 @@ public:
 	short getCurLabel() { return curLabel; }
 	void setSeedMap(cv::Mat1s seeding);
 	cv::Mat1s getSeedMap() { return seedMap; }
+
 public slots:
 	void refresh();
 	void changeCurrentLabel(int label);

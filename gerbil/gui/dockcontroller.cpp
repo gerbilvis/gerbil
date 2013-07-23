@@ -84,9 +84,13 @@ void DockController::setupDocks()
 	/* Band Dock */
 	connect(chief->labelingModel(), SIGNAL(partialLabelUpdate(const cv::Mat1s&,const cv::Mat1b&)),
 			bandDock, SLOT(processLabelingChange(cv::Mat1s,cv::Mat1b)));
+	connect(chief->imageModel(), SIGNAL(imageUpdate(representation::t,SharedMultiImgPtr)),
+			bandDock, SLOT(processImageUpdate(representation::t)));
 	connect(chief->labelingModel(), SIGNAL(newLabeling(cv::Mat1s,QVector<QColor>,bool)),
 			bandDock, SLOT(processLabelingChange(cv::Mat1s,QVector<QColor>,bool)));
 
+	connect(bandDock, SIGNAL(bandRequested(representation::t, int)),
+			chief->imageModel(), SLOT(computeBand(representation::t, int)));
 	connect(bandDock->bandView(), SIGNAL(alteredLabels(cv::Mat1s,cv::Mat1b)),
 			chief->labelingModel(), SLOT(alterPixels(cv::Mat1s,cv::Mat1b)));
 	connect(bandDock->bandView(), SIGNAL(newLabeling(cv::Mat1s)),

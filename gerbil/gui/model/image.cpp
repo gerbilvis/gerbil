@@ -127,9 +127,6 @@ void ImageModel::spawn(representation::t type, const cv::Rect &newROI, int bands
 	// one ROI for all, effectively
 	roi = newROI;
 
-	// invalidate band caches
-	map[type]->bands.clear();
-
 	// shortcuts for convenience
 	SharedMultiImgPtr image = map[representation::IMG]->image,
 			gradient = map[representation::GRAD]->image,
@@ -224,6 +221,15 @@ void ImageModel::computeBand(representation::t type, int dim)
 {
 	QMap<int, QPixmap> &m = map[type]->bands;
 
+	SharedMultiImgPtr src = map[type]->image;
+	// ensure sane input
+	SharedDataLock hlock(src->mutex);
+	int size = (*src)->size();
+	hlock.unlock();
+
+	if (dim >= size)
+		dim = 0;
+
 	if (!m.contains(dim)) {
 		SharedMultiImgPtr src = map[type]->image;
 		qimage_ptr dest(new SharedData<QImage>(new QImage()));
@@ -238,8 +244,7 @@ void ImageModel::computeBand(representation::t type, int dim)
 	}
 
 	// retrieve wavelength information
-	SharedMultiImgPtr src = map[type]->image;
-	SharedDataLock hlock(src->mutex);
+	hlock.lock();
 	std::string banddesc = (*src)->meta[dim].str();
 	hlock.unlock();
 	QString desc;
@@ -281,14 +286,17 @@ void ImageModel::setNormalizationParameters(
 
 void ImageModel::processNewImageData(representation::t type, SharedMultiImgPtr image)
 {
-	if(representation::IMG == type) {
+	// invalidate band caches
+	map[type]->bands.clear();
+
+	if (representation::IMG == type) {
 		SharedDataLock lock(image->mutex);
 		nBands = (*image)->size();
 	}
-	if(nBandsOld != nBands) {
+	if (nBandsOld != nBands) {
 		emit numBandsROIChanged(nBands);
 	}
-	if(representation::IMG == type && oldRoi != roi) {
+	if (representation::IMG == type && oldRoi != roi) {
 		//GGDBGM("oldRoi "<< oldRoi << " cur roi " << roi << endl);
 		emit roiRectChanged(roi);
 	}

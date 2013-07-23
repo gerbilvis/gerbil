@@ -27,7 +27,9 @@ public:
 	int getCurBandId() {return curBandId;}
 
 signals:
-	/** The label being edited by the user has changed. */
+	// request pixmap update as our current data became invalid
+	void bandRequested(representation::t, int);
+	/* The label being edited by the user has changed. */
 	void currentLabelChanged(int);
 	// FIXME short -> int (affects LabelModel)
 	// GUI elements should use int consistently. Convert from int to short for
@@ -39,11 +41,12 @@ signals:
 public slots:
 	void loadSeeds();
 	void graphSegModeToggled(bool enable);
+	void processSeedingDone();
 
 	void changeBand(representation::t repr, int bandId,
 					QPixmap band, QString desc);
 
-	void processSeedingDone();
+	void processImageUpdate(representation::t);
 	void processLabelingChange(const cv::Mat1s &labels,
 							   const QVector<QColor> &colors,
 							   bool colorsChanged);
