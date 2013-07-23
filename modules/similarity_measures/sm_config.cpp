@@ -24,6 +24,9 @@ ENUM_MAGIC(similarity_fun)
 SMConfig::SMConfig(const std::string& prefix)
 	: Config(prefix) {
 
+	// default parameters
+	measure = EUCLIDEAN;
+
 #ifdef WITH_BOOST
 	initBoostOptions();
 #endif
@@ -49,7 +52,7 @@ void SMConfig::initBoostOptions() {
 		measuredesc += ", "; measuredesc += similarity_funStr[i];
 	}
 	options.add_options()
-	    (key("measure"), value(&measure)->default_value(EUCLIDEAN),
+	    (key("measure"), value(&measure)->default_value(measure),
 	     measuredesc.c_str())
 	;
 

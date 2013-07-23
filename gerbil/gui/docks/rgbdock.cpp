@@ -48,7 +48,7 @@ void RgbDock::initUi()
 
 	sourceBox->addItem("Color Matching Functions", CMF);
 	sourceBox->addItem("Principle Component Analysis", PCA);
-#ifndef WITH_EDGE_DETECT
+#ifdef WITH_EDGE_DETECT
 	sourceBox->addItem("Self-organizing Map", SOM);
 #endif // WITH_EDGE_DETECT
 	sourceBox->setCurrentIndex(0);

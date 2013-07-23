@@ -136,9 +136,14 @@ void FalseColorModel::createRunner(coloring type)
 	case PCA:
 		cmd->config.algo = gerbil::COLOR_PCA;
 		break;
-#ifndef WITH_EDGE_DETECT
+#ifdef WITH_EDGE_DETECT
 	case SOM:
 		cmd->config.algo = gerbil::COLOR_SOM;
+		// default parameters for false coloring (different to regular defaults)
+		cmd->config.som.width       = 10;
+		cmd->config.som.radiusStart = 3.1622777;
+		cmd->config.som.radiusEnd   = 0.31622777;
+		cmd->config.som.maxIter     = 100000;
 		break;
 #endif
 	default:
