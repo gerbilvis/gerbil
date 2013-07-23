@@ -1,9 +1,9 @@
 #ifndef DOCKCONTROLLER_H
 #define DOCKCONTROLLER_H
 
-#include "../common/background_task.h"
 #include "model/representation.h"
-#include "../common/shared_data.h"
+#include <background_task.h>
+#include <shared_data.h>
 
 #include <QObject>
 #include <QPixmap>

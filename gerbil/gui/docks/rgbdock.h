@@ -2,7 +2,7 @@
 #define RGBDOCK_H
 
 #include <QDockWidget>
-#include "../../common/shared_data.h"
+#include <shared_data.h>
 #include "../model/representation.h"
 #include "../model/falsecolor.h"
 #include "ui_rgbdock.h"
