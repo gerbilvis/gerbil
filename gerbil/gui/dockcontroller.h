@@ -63,6 +63,7 @@ protected slots:
 						 bool resetLabel);
 	void requestGraphsegCurBand(const vole::GraphSegConfig &config,
 								bool resetLabel);
+	void highlightSingleLabel(short label, bool highlight);
 protected:
 	/* Create dock widget objects. */
 	void createDocks();

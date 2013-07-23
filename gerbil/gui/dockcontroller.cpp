@@ -16,6 +16,8 @@
 
 #include "model/ussegmentationmodel.h"
 
+#include "gerbil_gui_debug.h"
+
 DockController::DockController(Controller *chief) :
 	QObject(chief), chief(chief)
 {
@@ -227,6 +229,8 @@ void DockController::setupDocks()
 			labelDock, SLOT(setLabeling(cv::Mat1s,QVector<QColor>,bool)));
 	connect(labelDock, SIGNAL(mergeLabelsRequested(QVector<int>)),
 			chief->labelingModel(), SLOT(mergeLabels(QVector<int>)));
+	connect(labelDock, SIGNAL(highlightLabelRequested(short,bool)),
+			this, SLOT(highlightSingleLabel(short,bool)));
 
 }
 
@@ -271,4 +275,14 @@ void DockController::requestGraphsegCurBand(const vole::GraphSegConfig &config,
 	int bandId = bandDock->getCurBandId();
 	cv::Mat1s seedMap = bandDock->bandView()->getSeedMap();
 	emit requestGraphsegBand(repr, bandId, seedMap, config, resetLabel);
+}
+
+void DockController::highlightSingleLabel(short label, bool highlight)
+{
+	GGDBGM(" label=" << label << " highlight=" << (highlight ? "true":"false") << endl);
+	// FIXME EVIL HACK
+//	bandDock->bandView()->toggleSingleLabel(true);
+//	bandDock->bandView()->changeCurrentLabel(label);
+//	bandDock->bandView()->refresh();
+//	bandDock->bandView()->update();
 }

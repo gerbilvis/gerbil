@@ -8,10 +8,13 @@
 #include <iostream>
 #include "../gerbil_gui_debug.h"
 
+
 LabelDock::LabelDock(QWidget *parent) :
     QDockWidget(parent),
 	ui(new Ui::LabelDock),
-	labelModel(new QStandardItemModel)
+	labelModel(new QStandardItemModel),
+	hovering(false),
+	hoverLabel(-1)
 {
 	ui->setupUi(this);
 	init();
@@ -28,11 +31,21 @@ void LabelDock::init()
 	ui->labelView->setSelectionRectVisible(true);
 	// prevent editing of items
 	ui->labelView->setEditTriggers(QAbstractItemView::NoEditTriggers);
+	ui->labelView->setMouseTracking(true);
+
+	LeaveEventFilter *leaveFilter = new LeaveEventFilter(this);
+	ui->labelView->installEventFilter(leaveFilter);
+
 
 	connect(ui->labelView->selectionModel(),
 			SIGNAL(selectionChanged(QItemSelection,QItemSelection)),
 			this,
 			SLOT(processSelectionChanged(QItemSelection,QItemSelection)));
+
+	connect(ui->labelView, SIGNAL(entered(QModelIndex)),
+			this, SLOT(processLabelItemEntered(QModelIndex)));
+	connect(ui->labelView, SIGNAL(viewportEntered()),
+			this, SLOT(processLabelItemLeft()));
 
 
 	connect(ui->mergeBtn, SIGNAL(clicked()),
@@ -119,4 +132,32 @@ void LabelDock::processSelectionChanged(const QItemSelection &,
 	//GGDBGM("nSelected " << nSelected << endl);
 	// more than one label selected
 	ui->mergeBtn->setEnabled(nSelected > 1);
+}
+
+void LabelDock::processLabelItemEntered(QModelIndex midx)
+{
+	short label = midx.data(LabelIndexRole).value<int>();
+	//GGDBGM("hovering over " << label << endl);
+	hovering = true;
+	hoverLabel = label;
+	emit highlightLabelRequested(label, true);
+}
+
+void LabelDock::processLabelItemLeft()
+{
+	if(hovering) {
+		//GGDBGM("hovering left" << endl);
+		hovering = false;
+		emit highlightLabelRequested(hoverLabel, false);
+	}
+}
+
+bool LeaveEventFilter::eventFilter(QObject *obj, QEvent *event)
+{
+	if(event->type() == QEvent::Leave) {
+		//GGDBGM("sending leave event" << endl);
+		LabelDock *labelDock = static_cast<LabelDock*>(parent());
+		labelDock->processLabelItemLeft();
+	}
+	return false; // continue normal processing of this event
 }
