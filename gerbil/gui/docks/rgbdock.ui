@@ -34,7 +34,16 @@
     <item>
      <widget class="QWidget" name="widget" native="true">
       <layout class="QHBoxLayout" name="horizontalLayout_2">
-       <property name="margin">
+       <property name="leftMargin">
+        <number>0</number>
+       </property>
+       <property name="topMargin">
+        <number>0</number>
+       </property>
+       <property name="rightMargin">
+        <number>0</number>
+       </property>
+       <property name="bottomMargin">
         <number>0</number>
        </property>
        <item>
@@ -63,7 +72,7 @@
        <item>
         <widget class="QPushButton" name="applyButton">
          <property name="text">
-          <string>Apply</string>
+          <string>Calculate</string>
          </property>
         </widget>
        </item>

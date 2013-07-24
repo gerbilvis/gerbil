@@ -237,6 +237,17 @@ void FalseColorModel::computeBackground(coloring type)
 	}
 }
 
+void FalseColorModel::returnIfCached(coloring type)
+{
+	payload *p = map.value(type);
+	assert(p != NULL);
+
+	// img is calculated already
+	if (!p->img.isNull()) {
+		emit calculationComplete(type, p->img);
+	}
+}
+
 void FalseColorModelPayload::propagateFinishedQueueTask(bool success)
 {
 	calcInProgress = false;

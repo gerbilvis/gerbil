@@ -59,6 +59,8 @@ public slots:
 	// Img could be calculated in background, if the background task was started before!
 	void computeForeground(coloring type);
 	void computeBackground(coloring type);
+	// If image is already computed, send it back. Otherwise just leave it.
+	void returnIfCached(coloring type);
 
 signals:
 	// Possibly check Image.cacheKey() to determine if the update is really neccessary

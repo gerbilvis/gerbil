@@ -33,19 +33,6 @@ void RgbDock::updatePixmap(coloring type, QPixmap p)
 
 void RgbDock::initUi()
 {
-//	setWindowTitle("RGB View");
-//	QWidget *child = new QWidget(this);
-//	QVBoxLayout *layout = new QVBoxLayout();
-//	view = new ScaledView();
-//	view->setMinimumSize(150,150);
-//	layout->addWidget(view);
-//	child->setLayout(layout);
-//	child->setSizePolicy(
-//				QSizePolicy::MinimumExpanding,
-//				QSizePolicy::MinimumExpanding);
-//	setWidget(child);
-//	view->setEnabled(false);
-
 	sourceBox->addItem("Color Matching Functions", CMF);
 	sourceBox->addItem("Principle Component Analysis", PCA);
 #ifdef WITH_EDGE_DETECT
@@ -53,8 +40,11 @@ void RgbDock::initUi()
 #endif // WITH_EDGE_DETECT
 	sourceBox->setCurrentIndex(0);
 
+	connect(sourceBox, SIGNAL(currentIndexChanged(int)),
+			this, SLOT(selectColorRepresentation()));
+
 	connect(applyButton, SIGNAL(clicked()),
-			this, SLOT(changeColorRepresentation()));
+			this, SLOT(calculateColorRepresentation()));
 
 	connect(this, SIGNAL(visibilityChanged(bool)),
 			this, SLOT(processVisibilityChanged(bool)));
@@ -82,14 +72,24 @@ void RgbDock::processImageUpdate(representation::t, SharedMultiImgPtr)
 	}
 }
 
-void RgbDock::changeColorRepresentation()
+void RgbDock::selectColorRepresentation()
 {
-	// apply selected state
 	QVariant boxData = sourceBox->itemData(sourceBox->currentIndex());
 	displayType = (FalseColorModel::coloring)boxData.toInt();
+	// we do not need rest of state to ask for lazy update
+
+	/* kindly ask if we could have the image without effort right now:
+	 * no re-calculation
+	 */
+	emit rgbLazyRequested(displayType);
+}
+
+void RgbDock::calculateColorRepresentation()
+{
+	// apply selected state (display type update was triggered by combobox)
 	displayGradient = gradientCheck->isChecked();
 
 	rgbValid = false;
 	view->setEnabled(false);
-	emit rgbRequested(displayType);
+	emit rgbRequested(displayType); // TODO: gradient
 }

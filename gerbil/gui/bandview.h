@@ -55,6 +55,7 @@ public slots:
 	void toggleSingleLabel(bool enabled);
 	void toggleSeedMode(bool enabled);
 	void clearSeeds();
+	void highlightSingleLabel(short label, bool highlight);
 
 signals:
 	void pixelOverlay(int y, int x);

@@ -314,7 +314,7 @@ void BandView::cursorAction(QMouseEvent *ev, bool click)
 	//GGDBGM(boost::format("lastcursor %1%, cursor %2%, clicked %3%")%lastcursor%cursor%click << endl);
 
 	// invalidate lastcursor
-	if(click) {
+	if (click) {
 		lastcursor = QPoint(-1, -1);
 	}
 
@@ -494,6 +494,18 @@ void BandView::toggleSingleLabel(bool enabled)
 	if (singleLabel != enabled) {	// i.e. not the state we want
 		singleLabel = !singleLabel;
 		refresh();
+	}
+}
+
+void BandView::highlightSingleLabel(short label, bool highlight)
+{
+	if (highlight) {
+		curMask = cv::Mat1b(labels.rows, labels.cols, (uchar)0);
+		curMask.setTo(1, (labels == label));
+		drawOverlay(curMask);
+	} else {
+		overlay = NULL;
+		update();
 	}
 }
 

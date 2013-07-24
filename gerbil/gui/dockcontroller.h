@@ -53,6 +53,9 @@ signals:
 							 cv::Mat1s seedMap,
 							 const vole::GraphSegConfig &config,
 							 bool resetLabel);
+	void toggleSingleLabel(bool);
+	void singleLabelSelected(int);
+
 public slots:
 	void setGUIEnabled(bool enable, TaskType tt);
 
@@ -64,6 +67,7 @@ protected slots:
 	void requestGraphsegCurBand(const vole::GraphSegConfig &config,
 								bool resetLabel);
 	void highlightSingleLabel(short label, bool highlight);
+
 protected:
 	/* Create dock widget objects. */
 	void createDocks();

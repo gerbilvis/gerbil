@@ -53,8 +53,12 @@ Controller::Controller(const std::string &filename, bool limited_mode,
 	// connect slots/signals
 	window->initSignals(this, dvc);
 
-	/* TODO: better place. Do not use init model functions, dvc is created later
+	/* TODO: better place. Do not use init model functions: dc, dvc created later
 	 */
+	connect(dc, SIGNAL(toggleSingleLabel(bool)),
+			this, SIGNAL(toggleSingleLabel(bool)));
+	connect(dc, SIGNAL(singleLabelSelected(int)),
+			this, SIGNAL(singleLabelSelected(int)));
 	connect(dvc, SIGNAL(bandSelected(representation::t, int)),
 			&im, SLOT(computeBand(representation::t, int)));
 	connect(dvc, SIGNAL(requestOverlay(cv::Mat1b)),

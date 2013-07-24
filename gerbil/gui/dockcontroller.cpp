@@ -153,6 +153,8 @@ void DockController::setupDocks()
 	connect(chief->imageModel(), SIGNAL(imageUpdate(representation::t,SharedMultiImgPtr)),
 			rgbDock, SLOT(processImageUpdate(representation::t,SharedMultiImgPtr)));
 
+	connect(rgbDock, SIGNAL(rgbLazyRequested(coloring)),
+			chief->falseColorModel(), SLOT(returnIfCached(coloring)));
 	connect(rgbDock, SIGNAL(rgbRequested(coloring)),
 			chief->falseColorModel(), SLOT(computeBackground(coloring)));
 
@@ -235,6 +237,8 @@ void DockController::setupDocks()
 			chief->labelingModel(), SLOT(mergeLabels(QVector<int>)));
 	connect(labelDock, SIGNAL(highlightLabelRequested(short,bool)),
 			this, SLOT(highlightSingleLabel(short,bool)));
+	connect(labelDock, SIGNAL(highlightLabelRequested(short,bool)),
+			bandDock->bandView(), SLOT(highlightSingleLabel(short,bool)));
 
 }
 
@@ -283,10 +287,12 @@ void DockController::requestGraphsegCurBand(const vole::GraphSegConfig &config,
 
 void DockController::highlightSingleLabel(short label, bool highlight)
 {
-	GGDBGM(" label=" << label << " highlight=" << (highlight ? "true":"false") << endl);
-	// FIXME EVIL HACK
-//	bandDock->bandView()->toggleSingleLabel(true);
-//	bandDock->bandView()->changeCurrentLabel(label);
-//	bandDock->bandView()->refresh();
-//	bandDock->bandView()->update();
+	/* currently we only support a single label highlight. a negative signal
+	 * will therefore deactivate all highlights. */
+	if (highlight) {
+		emit toggleSingleLabel(true);
+		emit singleLabelSelected(label);
+	} else {
+		emit toggleSingleLabel(false);
+	}
 }

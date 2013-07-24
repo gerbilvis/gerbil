@@ -23,15 +23,6 @@ LabelDock::LabelDock(QWidget *parent) :
 void LabelDock::init()
 {
 	ui->labelView->setModel(labelModel);
-	ui->labelView->setFlow(QListView::LeftToRight);
-	ui->labelView->setMovement(QListView::Static);
-	ui->labelView->setResizeMode(QListView::Adjust);
-	ui->labelView->setViewMode(QListView::IconMode);
-	ui->labelView->setSelectionMode(QAbstractItemView::ExtendedSelection);
-	ui->labelView->setSelectionRectVisible(true);
-	// prevent editing of items
-	ui->labelView->setEditTriggers(QAbstractItemView::NoEditTriggers);
-	ui->labelView->setMouseTracking(true);
 
 	LeaveEventFilter *leaveFilter = new LeaveEventFilter(this);
 	ui->labelView->installEventFilter(leaveFilter);
@@ -76,9 +67,6 @@ void LabelDock::setLabeling(const cv::Mat1s & labels,
 							const QVector<QColor> &colors,
 							bool colorsChanged)
 {
-
-	GGDBGM("received new labeling" <<endl);
-
 	// selection will be gone -> disable merge button
 	ui->mergeBtn->setDisabled(true);
 	labelModel->clear();
@@ -86,13 +74,15 @@ void LabelDock::setLabeling(const cv::Mat1s & labels,
 	// FIXME not handling colorsChanged here!
 	// If only the colors changed, we could keep the current selection.
 
-	GGDBGM(colors.size() <<" colors"<<endl);
 	if(colors.size() < 1) {
 		// only background, no "real" labels
 		return;
 	}
 
-	for(int i=1; i<colors.size(); i++) {
+	// background is added as well so we can merge to background
+	addLabel(0, QColor(Qt::black));
+
+	for (int i=1; i<colors.size(); i++) {
 		addLabel(i, colors.at(i));
 	}
 }
@@ -111,7 +101,7 @@ void LabelDock::mergeSelected()
 	QVector<int> selectedLabels;
 	QStringList idxsString; // debug
 
-	foreach(QModelIndex idx, modelIdxs) {
+	foreach (QModelIndex idx, modelIdxs) {
 		int id = idx.data(LabelIndexRole).value<int>();
 		selectedLabels.push_back(id);
 		idxsString.append(QString::number(id));
@@ -145,7 +135,7 @@ void LabelDock::processLabelItemEntered(QModelIndex midx)
 
 void LabelDock::processLabelItemLeft()
 {
-	if(hovering) {
+	if (hovering) {
 		//GGDBGM("hovering left" << endl);
 		hovering = false;
 		emit highlightLabelRequested(hoverLabel, false);
@@ -154,7 +144,7 @@ void LabelDock::processLabelItemLeft()
 
 bool LeaveEventFilter::eventFilter(QObject *obj, QEvent *event)
 {
-	if(event->type() == QEvent::Leave) {
+	if (event->type() == QEvent::Leave) {
 		//GGDBGM("sending leave event" << endl);
 		LabelDock *labelDock = static_cast<LabelDock*>(parent());
 		labelDock->processLabelItemLeft();

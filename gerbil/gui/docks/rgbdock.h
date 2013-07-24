@@ -16,12 +16,16 @@ public:
 	
 signals:
 	void rgbRequested(coloring type); // TODO: rename to falseColorRequested
+	void rgbLazyRequested(coloring type); // TODO: rename to falseColorRequested
+
 public slots:
 	void processImageUpdate(representation::t type, SharedMultiImgPtr image);
 	void processVisibilityChanged(bool visible);
 	void updatePixmap(coloring type, QPixmap p); // TODO: add bool gradient
 protected slots:
-	void changeColorRepresentation();
+	void selectColorRepresentation();
+	void calculateColorRepresentation();
+
 protected:
 	void initUi();
 //	ScaledView *view;
