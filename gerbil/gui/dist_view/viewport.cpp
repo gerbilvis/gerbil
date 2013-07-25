@@ -225,8 +225,7 @@ void Viewport::killHover()
 void Viewport::highlightSingleLabel(int index)
 {
 	highlightLabel = index;
-	// only update highlight
-	updateTextures(RM_SKIP, limiterMode ? RM_STEP : RM_FULL);
+	updateTextures();
 }
 
 void Viewport::setAlpha(float alpha)
@@ -444,13 +443,10 @@ void Viewport::drawBins(QPainter &painter, QTimer &renderTimer,
 	/* check if we implicitely have a clear view */
 	implicitClearView = (clearView || !active || drawingState == SCREENSHOT ||
 						 (hover < 0 && !limiterMode));
-	// TODO: clean this mess up. implicit whatever... no clue! WE HAVE FBOs NOW!
 	/* make sure that viewport shows "unlabeled" in the ignore label case */
 	int start = ((showUnlabeled || (*ctx)->ignoreLabels == 1) ? 0 : 1);
 	int end = (showLabeled ? (*sets)->size() : 1);
 	int single = ((*ctx)->ignoreLabels ? -1 : highlightLabel);
-	if (single)
-		implicitClearView = false;
 
 	unsigned int total = shuffleIdx.size();
 	unsigned int first = renderedLines;
@@ -468,10 +464,7 @@ void Viewport::drawBins(QPainter &painter, QTimer &renderTimer,
 
 		bool highlighted = false;
 		if (!implicitClearView && onlyHighlight) {
-			// in single label mode, always draw as highlight
-			if (single == idx.first) {
-				highlighted = true;
-			} else if (limiterMode) {
+			if (limiterMode) {
 				highlighted = true;
 				for (int i = 0; i < (*ctx)->dimensionality; ++i) {
 					unsigned char k = K[i];
@@ -483,7 +476,6 @@ void Viewport::drawBins(QPainter &painter, QTimer &renderTimer,
 		}
 
 		if (!highlighted && onlyHighlight) {
-			// skip relevant portion of vertex buffer
 			currind += (*ctx)->dimensionality;
 			if (last < total)
 				++last; // increase loop count
