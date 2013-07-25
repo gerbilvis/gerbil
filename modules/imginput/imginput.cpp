@@ -79,38 +79,6 @@ multi_img::ptr ImgInput::execute()
 	return img_ptr;
 }
 
-#ifdef WITH_GERBIL_COMMON
-std::pair<multi_img::ptr, multi_img::ptr> ImgInput::both()
-{
-	// TODO: make this a function that just fails with a nasty message. -> see TODO
-	std::cerr << "This function is currently not implemented." << std::endl;
-	return std::make_pair(multi_img::ptr(new multi_img()), multi_img::ptr(new multi_img()));
-
-	/*multi_img::ptr img_ptr = execute();
-
-	// return empty image on failure
-	if (img_ptr->empty())
-		// returns 2 (different) empty image objects, do not use (img, img)
-		// (changes to one are not expected to change the other one...)
-		return std::make_pair(img_ptr, multi_img::ptr(new multi_img()));
-
-	// compute gradient
-	multi_img::ptr proc_ptr = multi_img::ptr(new multi_img(*img_ptr));
-	if (config.gradient) {
-		proc_ptr->apply_logarithm();
-		*proc_ptr = proc_ptr->spec_gradient();
-	}
-
-	// TODO: das passiert jetzt vor der Berechnung des Gradienten. Problem?
-	// reduce number of bands
-	if (config.bands > 0 && config.bands < (int)proc_ptr->size()) {
-		*proc_ptr = proc_ptr->spec_rescale(config.bands);
-	}
-
-	return std::make_pair(proc_ptr, img_ptr);*/
-}
-#endif
-
 bool ImgInput::parseROIString(const std::string &str, std::vector<int> &vals)
 {
 	int ctr = 0;

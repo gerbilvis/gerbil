@@ -41,8 +41,8 @@ public:
 	// superpixel configuration for SUPERPIXEL sampling
 	gerbil::FelzenszwalbConfig superpixel;
 
-	// compute superpixels on original image instead of processed image
-	bool sp_original;
+	// compute superpixels on original image, mean shift on spectral gradient
+	bool sp_withGrad;
 	// how to weight superpixel sizes: 0 do not weight, 1 fixed bandwidths, 2 alter weightdp2
 	int sp_weight;
 #endif

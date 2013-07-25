@@ -1,11 +1,11 @@
 #include "ussegmentationdock.h"
 
+#include "../commandrunner.h"
+#include "../gerbil_gui_debug.h"
+
 // vole modules
 #include <meanshift.h>
 #include <meanshift_shell.h>
-
-#include "../commandrunner.h"
-#include "../gerbil_gui_debug.h"
 
 UsSegmentationDock::UsSegmentationDock(QWidget *parent) :
 	QDockWidget(parent),
@@ -19,7 +19,10 @@ UsSegmentationDock::UsSegmentationDock(QWidget *parent) :
 #ifdef WITH_SEG_MEANSHIFT
 void UsSegmentationDock::initUi()
 {
-	usMethodBox->addItem("Meanshift", 0);
+	usMethodBox->addItem("FAMS", 0);
+	usMethodBox->addItem("PSPMS", 3);
+	usMethodBox->addItem("FSPMS", 4);
+
 //#ifdef WITH_SEG_MEDIANSHIFT
 //	usMethodBox->addItem("Medianshift", 1);
 //#endif
@@ -149,28 +152,42 @@ void UsSegmentationDock::startUnsupervisedSeg(bool findKL)
 		config.Kmin = usFindKLKMinBox->value();
 		config.Kjump = usFindKLKStepBox->value();
 		config.epsilon = usFindKLEpsilonBox->value();
-	} else if (method == 0) { // Meanshift
+	} else if (method == 0 || method == 3) { // Meanshift
 		cmd = new vole::MeanShiftShell();
 		vole::MeanShiftConfig &config =
 				static_cast<vole::MeanShiftShell*>(cmd)->config;
 
 		// fixed settings
 		config.batch = true;
+		if (method == 3) {
+			/* if combination of gradient and PSPMS requested, we assume that
+			   the user wants our best-working method in paper (sp_withGrad)
+			   TODO: most of this is better done in model, as it is internals
+			 */
+			config.sp_withGrad = usGradientCheckBox->isChecked();
+
+			config.starting = vole::SUPERPIXEL;
+
+			config.superpixel.eqhist=1;
+			config.superpixel.c=0.05;
+			config.superpixel.min_size=5;
+			config.superpixel.similarity.measure=vole::SPEC_INF_DIV;
+		}
 
 		config.use_LSH = usLshCheckBox->isChecked();
-		config.K = usKSpinBox->value();
-		config.L = usLSpinBox->value();
+		//config.K = usKSpinBox->value();
+		//config.L = usLSpinBox->value();
 
-		config.starting = (vole::ms_sampling) usInitMethodBox->itemData(usInitMethodBox->currentIndex()).value<int>();
-		config.percent = usInitPercentBox->value();
-		config.jump = usInitJumpBox->value();
-		config.k = usPilotKSpinBox->value();
+		//config.starting = (vole::ms_sampling) usInitMethodBox->itemData(usInitMethodBox->currentIndex()).value<int>();
+		//config.percent = usInitPercentBox->value();
+		//config.jump = usInitJumpBox->value();
+		//config.k = usPilotKSpinBox->value();
 
-		if (usBandwidthBox->currentText() == "fixed") {
-			config.bandwidth = usFixedBWSpinBox->value();
-		} else {
-			config.bandwidth = 0;
-		}
+		//if (usBandwidthBox->currentText() == "fixed") {
+		//	config.bandwidth = usFixedBWSpinBox->value();
+		//} else {
+		//	config.bandwidth = 0;
+		//}
 
 // old: medianshift and probshift removed from GUI
 //#ifdef WITH_SEG_MEDIANSHIFT
@@ -199,6 +216,28 @@ void UsSegmentationDock::startUnsupervisedSeg(bool findKL)
 //		config.useMeanShift = usProbShiftMSPPCheckBox->isChecked();
 //		config.msBwFactor = usProbShiftMSPPAlphaSpinBox->value();
 //#endif
+	} else if (method == 4) { // FSPMS
+		cmd = new vole::MeanShiftShell();
+		vole::MeanShiftConfig &config =
+				static_cast<vole::MeanShiftShell*>(cmd)->config;
+
+		// fixed settings
+		config.batch = true;
+
+		config.use_LSH = usLshCheckBox->isChecked();
+		config.K = usKSpinBox->value();
+		config.L = usLSpinBox->value();
+
+		config.starting = (vole::ms_sampling) usInitMethodBox->itemData(usInitMethodBox->currentIndex()).value<int>();
+		config.percent = usInitPercentBox->value();
+		config.jump = usInitJumpBox->value();
+		config.k = usPilotKSpinBox->value();
+
+		if (usBandwidthBox->currentText() == "fixed") {
+			config.bandwidth = usFixedBWSpinBox->value();
+		} else {
+			config.bandwidth = 0;
+		}
 	}
 
 	connect(usCancelButton, SIGNAL(clicked()),

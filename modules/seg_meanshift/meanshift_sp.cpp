@@ -39,19 +39,22 @@ MeanShiftSP::~MeanShiftSP() {}
 int MeanShiftSP::execute() {
 #ifdef WITH_SEG_FELZENSZWALB2
 
-	std::pair<multi_img::ptr, multi_img::ptr> input;
-	if (config.sp_original) {
-		input = ImgInput(config.input).both();
+	multi_img::ptr input, input_grad;
+	if (config.sp_withGrad) {
+		input = ImgInput(config.input).execute();
+		input_grad = multi_img::ptr(new multi_img(*input));
+		input_grad->apply_logarithm();
+		*input_grad = input_grad->spec_gradient();
 	} else {
-		input.first = ImgInput(config.input).execute();
+		input = ImgInput(config.input).execute();
 	}
-	if (input.first->empty())
+	if (input->empty())
 		return -1;
 
 	// rebuild before stopwatch for fair comparison
-	input.first->rebuildPixels(false);
-	if (config.sp_original) {
-		input.second->rebuildPixels(false);
+	input->rebuildPixels(false);
+	if (config.sp_withGrad) {
+		input_grad->rebuildPixels(false);
 	}
 
 	std::string output_name;
@@ -64,9 +67,7 @@ int MeanShiftSP::execute() {
 
 		// run superpixel pre-segmentation
 		std::pair<cv::Mat1i, gerbil::felzenszwalb::segmap> result =
-			 gerbil::felzenszwalb::segment_image(
-					 (config.sp_original ? *input.second : *input.first),
-					 config.superpixel);
+			 gerbil::felzenszwalb::segment_image(*input, config.superpixel);
 		sp_translate = result.first;
 		std::swap(sp_map, result.second);
 
@@ -81,11 +82,13 @@ int MeanShiftSP::execute() {
 		cv::imwrite(output_name, output.bgr());
 
 		// create meanshift input
-		int D = input.first->size();
+		multi_img::ptr in = (config.sp_withGrad ? input_grad : input);
+
+		int D = in->size();
 		multi_img msinput(sp_map.size(), 1, D);
-		msinput.minval = input.first->minval;
-		msinput.maxval = input.first->maxval;
-		msinput.meta = input.first->meta;
+		msinput.minval = in->minval;
+		msinput.maxval = in->maxval;
+		msinput.meta = in->meta;
 		vector<double> weights(sp_map.size());
 		std::vector<int> spsizes; // HACK
 		gerbil::felzenszwalb::segmap::const_iterator mit = sp_map.begin();
@@ -97,7 +100,7 @@ int MeanShiftSP::execute() {
 
 			// sum up all superpixel members
 			for (int i = 0; i < N; ++i) {
-				const multi_img::Pixel &s = input.first->atIndex((*mit)[i]);
+				const multi_img::Pixel &s = in->atIndex((*mit)[i]);
 				for (int d = 0; d < D; ++d)
 					p[d] += s[d];
 			}
@@ -143,7 +146,7 @@ int MeanShiftSP::execute() {
 			return 0;
 
 		// translate results back to original image domain
-		cv::Mat1s labels_mask(input.first->height, input.first->width);
+		cv::Mat1s labels_mask(in->height, in->width);
 		cv::Mat1s::iterator itr = labels_mask.begin();
 		cv::Mat1i::const_iterator itl = sp_translate.begin();
 		for (; itr != labels_mask.end(); ++itl, ++itr) {

@@ -16,10 +16,6 @@ public:
 
 	static bool parseROIString(const std::string &str, std::vector<int> &vals);
 
-	// provide both processed and original image (on same ROI)
-	// first: processed, second: original
-	std::pair<multi_img::ptr, multi_img::ptr> both();
-
 private:
 	const ImgInputConfig &config;
 
