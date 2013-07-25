@@ -198,7 +198,8 @@ cv::Mat3b Labeling::bgr() const
 
 void Labeling::consolidate()
 {
-	int idx = 1, maxlabel;
+	int idx = 1, // consolidation starts at 1
+		maxlabel = 0; // if all labels are empty
 	std::vector<int> index(labelcount);
 	for (int i = 1; i < labelcount; ++i) {
 		if (cv::sum(labels == i)[0] == 0) {
@@ -214,7 +215,7 @@ void Labeling::consolidate()
 			labels.setTo(index[i], (labels == i));
 		}
 	}
-	labelcount = maxlabel;
+	labelcount = maxlabel + 1;
 	buildColors();
 }
 
