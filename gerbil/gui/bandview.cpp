@@ -304,6 +304,11 @@ void BandView::drawOverlay(const cv::Mat1b &mask)
 
 void BandView::cursorAction(QMouseEvent *ev, bool click)
 {
+	bool consistent = ((pixmap.width() == labels.cols) &&
+						   (pixmap.height() == labels.rows));
+	if (!consistent) // not properly initialized
+		return;
+
 	// kill overlay to free the view
 	bool grandupdate = (overlay != NULL);
 
@@ -323,12 +328,13 @@ void BandView::cursorAction(QMouseEvent *ev, bool click)
 		return;
 
 	// lastcursor invalid -> begin drawing at cursor
-	if(QPoint(-1, -1) == lastcursor) {
+	if (QPoint(-1, -1) == lastcursor) {
 		lastcursor = cursor;
 	}
 
 	int x = cursor.x(), y = cursor.y();
 
+	// test for dimension match
 	if (!pixmap.rect().contains(x, y)) {
 		lastcursor = QPoint(-1,-1);
 		return;

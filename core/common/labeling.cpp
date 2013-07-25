@@ -196,6 +196,28 @@ cv::Mat3b Labeling::bgr() const
 	return ret;
 }
 
+void Labeling::consolidate()
+{
+	int idx = 1, maxlabel;
+	std::vector<int> index(labelcount);
+	for (int i = 1; i < labelcount; ++i) {
+		if (cv::sum(labels == i)[0] == 0) {
+			// label is empty
+			index[i] = -1;
+		} else {
+			index[i] = idx++;
+			maxlabel = index[i];
+		}
+	}
+	for (int i = 1; i < labelcount; ++i) {
+		if (index[i] != -1) {
+			labels.setTo(index[i], (labels == i));
+		}
+	}
+	labelcount = maxlabel;
+	buildColors();
+}
+
 void Labeling::buildColors() const
 {
 	labelColors = colors(labelcount, yellowcursor, shuffleV);

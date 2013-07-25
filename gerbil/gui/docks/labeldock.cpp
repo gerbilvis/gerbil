@@ -40,7 +40,11 @@ void LabelDock::init()
 
 
 	connect(ui->mergeBtn, SIGNAL(clicked()),
-			this, SLOT(mergeSelected()));
+			this, SLOT(mergeOrDeleteSelected()));
+	connect(ui->delBtn, SIGNAL(clicked()),
+			this, SLOT(mergeOrDeleteSelected()));
+	connect(ui->consolidateBtn, SIGNAL(clicked()),
+			this, SIGNAL(consolidateLabelsRequested()));
 }
 
 void LabelDock::addLabel(int idx, const QColor &color)
@@ -67,8 +71,9 @@ void LabelDock::setLabeling(const cv::Mat1s & labels,
 							const QVector<QColor> &colors,
 							bool colorsChanged)
 {
-	// selection will be gone -> disable merge button
+	// selection will be gone -> disable merge and del button
 	ui->mergeBtn->setDisabled(true);
+	ui->delBtn->setDisabled(true);
 	labelModel->clear();
 
 	// FIXME not handling colorsChanged here!
@@ -87,7 +92,7 @@ void LabelDock::setLabeling(const cv::Mat1s & labels,
 	}
 }
 
-void LabelDock::mergeSelected()
+void LabelDock::mergeOrDeleteSelected()
 {
 	QItemSelection selection = ui->labelView->selectionModel()->selection();
 	QModelIndexList modelIdxs = selection.indexes();
@@ -99,21 +104,17 @@ void LabelDock::mergeSelected()
 
 	// Extract label ids from QModelIndex s.
 	QVector<int> selectedLabels;
-	QStringList idxsString; // debug
-
 	foreach (QModelIndex idx, modelIdxs) {
 		int id = idx.data(LabelIndexRole).value<int>();
 		selectedLabels.push_back(id);
-		idxsString.append(QString::number(id));
 	}
 
-	std::string mergedlabels = idxsString.join(", ").toStdString();
-	GGDBGM("merging labels " <<  mergedlabels << endl);
-
-	// Tell the LabelingModel to merge the selected labels.
-	emit mergeLabelsRequested(selectedLabels);
+	// Tell the LabelingModel:
+	if (sender() == ui->delBtn)
+		emit deleteLabelsRequested(selectedLabels);
+	else
+		emit mergeLabelsRequested(selectedLabels);
 }
-
 
 void LabelDock::processSelectionChanged(const QItemSelection &,
 		const QItemSelection &)
@@ -122,6 +123,8 @@ void LabelDock::processSelectionChanged(const QItemSelection &,
 	//GGDBGM("nSelected " << nSelected << endl);
 	// more than one label selected
 	ui->mergeBtn->setEnabled(nSelected > 1);
+	// any label selected
+	ui->delBtn->setEnabled(nSelected > 0);
 }
 
 void LabelDock::processLabelItemEntered(QModelIndex midx)

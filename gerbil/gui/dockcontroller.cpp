@@ -235,6 +235,10 @@ void DockController::setupDocks()
 			labelDock, SLOT(setLabeling(cv::Mat1s,QVector<QColor>,bool)));
 	connect(labelDock, SIGNAL(mergeLabelsRequested(QVector<int>)),
 			chief->labelingModel(), SLOT(mergeLabels(QVector<int>)));
+	connect(labelDock, SIGNAL(deleteLabelsRequested(QVector<int>)),
+			chief->labelingModel(), SLOT(deleteLabels(QVector<int>)));
+	connect(labelDock, SIGNAL(consolidateLabelsRequested()),
+			chief->labelingModel(), SLOT(consolidate()));
 	connect(labelDock, SIGNAL(highlightLabelRequested(short,bool)),
 			this, SLOT(highlightSingleLabel(short,bool)));
 	connect(labelDock, SIGNAL(highlightLabelRequested(short,bool)),

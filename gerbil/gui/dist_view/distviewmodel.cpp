@@ -347,7 +347,10 @@ QPolygonF DistViewModel::getPixelOverlay(int y, int x)
 {
 	SharedDataLock imagelock(image->mutex);
 	SharedDataLock ctxlock(context->mutex);
-	assert(image);
+	if (y >= (*image)->height ||
+		x >= (*image)->width)
+		return QPolygonF();
+
 	const multi_img::Pixel &pixel = (**image)(y, x);
 	QPolygonF points((*image)->size());
 

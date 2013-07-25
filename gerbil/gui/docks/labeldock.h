@@ -27,12 +27,18 @@ public slots:
 	void setLabeling(const cv::Mat1s &labels,
 					 const QVector<QColor>& colors,
 					 bool colorsChanged);
-	/** Merge currently selected labels. */
-	void mergeSelected();
+	/** Merge/delete currently selected labels depending on sender. */
+	void mergeOrDeleteSelected();
 
 signals:
 	/** The user has selected labels and want's them to be merged. */
 	void mergeLabelsRequested(const QVector<int>& labels);
+
+	/** The user has selected labels and want's them to be deleted. */
+	void deleteLabelsRequested(const QVector<int>& labels);
+
+	/** The user pressed the clean-up button */
+	void consolidateLabelsRequested();
 
 	/** Request to highlight the given label exclusively.
 	 *

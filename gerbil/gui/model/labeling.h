@@ -37,6 +37,12 @@ public slots:
 	 * @param labels Ids of the labels in the label matix which sould be merged.
 	 */
 	void mergeLabels(const QVector<int>& labels);
+	/** Empty all labels in list (the labels stay, but pixel become background)
+	 */
+	void deleteLabels(const QVector<int>& labels);
+
+	/** Remove all empty labels, recolor all labels. */
+	void consolidate();
 
 signals:
 	/** The Labeling has changed.
