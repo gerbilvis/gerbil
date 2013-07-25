@@ -534,9 +534,9 @@ QColor Viewport::determineColor(const QColor &basecolor,
 		color.setAlphaF(1.);
 	}
 
-	// recolor singleLabel
-	if (!highlighted && implicitClearView && single) {
-		color.setRgbF(1., 1., 0., color.alphaF());
+	// recolor singleLabel (and make 100% opaque)
+	if (single) {
+		color.setRgbF(1., 1., 0., 1.);
 	}
 	return color;
 }
