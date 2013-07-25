@@ -113,7 +113,7 @@ private:
 	int labelAlpha;
 	/// labelColors with user-selected alpha
 	QVector<QColor> labelColorsA;
-	std::pair<QColor, QColor> seedColorsA;
+	std::pair<QColor, QColor> seedColors;
 
 	QTimer labelTimer;
 	cv::Mat1s seedMap; // mat1s to be consistent with labels matrix

@@ -31,8 +31,8 @@ BandView::BandView(QWidget *parent)
 	  overlay(0), showLabels(true), singleLabel(false), holdLabel(false),
 	  ignoreUpdates(false),
 	  seedMode(false), labelAlpha(63),
-	  seedColorsA(std::make_pair(
-            QColor(255, 0, 0, labelAlpha), QColor(255, 255, 0, labelAlpha)))
+	  seedColors(std::make_pair(
+			QColor(255, 0, 0, 255), QColor(255, 255, 0, 255)))
 {
 	// the timer automatically sends an accumulated update request
 	labelTimer.setSingleShot(true);
@@ -197,12 +197,12 @@ struct updateCacheBody {
 	const cv::Mat1s &labels;
 	const cv::Mat1s &seedMap;
 	const QVector<QColor> &labelColorsA;
-	const std::pair<QColor, QColor> &seedColorsA;
+	const std::pair<QColor, QColor> &seedColors;
 
 	updateCacheBody(QImage &dest, bool seedMode, const cv::Mat1s &labels, const cv::Mat1s &seedMap,
-		const QVector<QColor> &labelColorsA, const std::pair<QColor, QColor> &seedColorsA)
+		const QVector<QColor> &labelColorsA, const std::pair<QColor, QColor> &seedColors)
 		: dest(dest), seedMode(seedMode), labels(labels), seedMap(seedMap),
-		labelColorsA(labelColorsA), seedColorsA(seedColorsA) {}
+		labelColorsA(labelColorsA), seedColors(seedColors) {}
 
 	void operator()(const tbb::blocked_range2d<size_t> &r) const {
 		for (int y = r.rows().begin(); y != r.rows().end(); ++y) {
@@ -213,9 +213,9 @@ struct updateCacheBody {
 				destrow[x] = qRgba(0, 0, 0, 0);
 				if (seedMode) {
 					if (val == 255)
-						destrow[x] = seedColorsA.first.rgba();
+						destrow[x] = seedColors.first.rgba();
 					else if (val == 0)
-						destrow[x] = seedColorsA.second.rgba();
+						destrow[x] = seedColors.second.rgba();
 				} else if (val > 0) {
 					destrow[x] = labelColorsA[val].rgba();
 				}
@@ -235,7 +235,7 @@ void BandView::updateCache()
 //	painter.setCompositionMode(QPainter::CompositionMode_Darken);
 
 	QImage dest(pixmap.width(), pixmap.height(), QImage::Format_ARGB32);
-	updateCacheBody body(dest, seedMode, labels, seedMap, labelColorsA, seedColorsA);
+	updateCacheBody body(dest, seedMode, labels, seedMap, labelColorsA, seedColors);
 	tbb::parallel_for(tbb::blocked_range2d<size_t>(
 		0, pixmap.height(), 0, pixmap.width()), body);
 
@@ -257,7 +257,7 @@ void BandView::markCachePixelS(QPainter &p, int x, int y)
 {
 	short l = seedMap(y, x);
 	if (l < 64 || l > 192) {
-		p.setPen(l < 64 ? seedColorsA.first : seedColorsA.second);
+		p.setPen(l < 64 ? seedColors.first : seedColors.second);
 		p.drawPoint(x, y);
 	}
 }
@@ -282,9 +282,9 @@ void BandView::updateCache(int y, int x, short label)
 	short val = (seedMode ? seedMap(y, x) : label);
 	if (seedMode) {
 		if (val == 255)
-			col = &seedColorsA.first;
+			col = &seedColors.first;
 		else if (val == 0)
-			col = &seedColorsA.second;
+			col = &seedColors.second;
 	} else if (val > 0) {
 		col = &labelColorsA.at(val);
 	}
@@ -523,8 +523,6 @@ void BandView::applyLabelAlpha(int alpha)
 	labelAlpha = alpha;
 	for (int i = 1; i < labelColorsA.size(); ++i)
 		labelColorsA[i].setAlpha(labelAlpha);
-	seedColorsA.first.setAlpha(labelAlpha);
-	seedColorsA.second.setAlpha(labelAlpha);
 
 	refresh();
 }
