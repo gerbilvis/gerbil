@@ -44,7 +44,7 @@ IF (DOXYGEN_FOUND)
 	ENDIF (NOT DVIPS_CONVERTER)
 	
 # IF	 (EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/doxy.config.in")
-	set(vole_doxy_paths_list "${VOLE_UNIT_DIRECTORIES}")
+	set(vole_doxy_paths_list "${VOLE_MODULE_DIRECTORIES}")
 	string(REPLACE ";" " " "vole_doxy_paths" "${vole_doxy_paths_list}")
 	string(REPLACE ";" " " "vole_doxy_defines" "${VOLE_DOXY_DEFINES_LIST}")
 	IF (EXISTS "${DOXY_CONFIG_IN}")
