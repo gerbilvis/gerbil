@@ -86,6 +86,7 @@ public:
 	/// value type (use float to save memory, double for higher precision)
 	typedef float Value;
 	struct Range {
+		Range() : min(), max() {}
 		Range(Value min, Value max) : min(min), max(max) {}
 		Value min, max;
 	};

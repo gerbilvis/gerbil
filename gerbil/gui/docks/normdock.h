@@ -37,7 +37,7 @@ public slots:
 	// TODO connect
 	void setGuiEnabled(bool enable, TaskType tt);
 
-	void setNormRange(representation::t type, const ImageDataRange& range);
+	void setNormRange(representation::t type, const multi_img::Range& range);
 
 	// setNormMode, setNormTarget unused and untested.
 	void setNormMode(representation::t type, MultiImg::NormMode mode);
@@ -56,7 +56,7 @@ signals:
 	void normalizationParametersChanged(
 			representation::t type,
 			MultiImg::NormMode normMode,
-			ImageDataRange targetRange
+			multi_img::Range targetRange
 			);
 	void applyNormalizationRequested();
 	void applyClampDataRequested();
@@ -67,7 +67,7 @@ protected:
 	bool limitedMode;
 
 	// store current range for each representation
-	QMap<representation::t, ImageDataRange> ranges;
+	QMap<representation::t, multi_img::Range> ranges;
 
 	// store currently selected normaliztation mode for each representation
 	QMap<representation::t, MultiImg::NormMode> modes;

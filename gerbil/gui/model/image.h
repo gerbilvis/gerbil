@@ -3,7 +3,6 @@
 
 #include "representation.h"
 #include <shared_data.h>
-#include <multi_img_util.h>
 #include <multi_img_tasks.h>
 #include <background_task_queue.h>
 
@@ -22,8 +21,8 @@ public:
 	ImageModelPayload(representation::t type)
 		: type(type), image(new SharedMultiImgBase(new multi_img())),
 		  normMode(MultiImg::NORM_OBSERVED), normRange(
-			new SharedData<ImageDataRange> (
-			  new ImageDataRange(0, 0)))
+			new SharedData<multi_img::Range> (
+			  new multi_img::Range()))
 	{}
 
 	// the type we have
@@ -34,7 +33,7 @@ public:
 
 	// normalization mode and range
 	MultiImg::NormMode normMode;
-	SharedDataRangePtr normRange;
+	SharedMultiImgRangePtr normRange;
 
 	// cached single bands
 	QMap<int, QPixmap> bands;
@@ -48,7 +47,7 @@ signals:
 	// newImageData() and dataRangeUpdate are availabe to ImageModel clients
 	// as ImageModel::imageUpdate() and ImageModel::dataRangeUpdate().
 	void newImageData(representation::t type, SharedMultiImgPtr image);
-	void dataRangeUpdate(representation::t type, ImageDataRange range);
+	void dataRangeUpdate(representation::t type, multi_img::Range range);
 };
 
 class ImageModel : public QObject
@@ -124,7 +123,7 @@ public slots:
 	void setNormalizationParameters(
 			representation::t type,
 			MultiImg::NormMode normMode,
-			ImageDataRange targetRange);
+			multi_img::Range targetRange);
 
 signals:
 	/** The data of the currently selected band has changed. */
@@ -144,7 +143,7 @@ signals:
 	void imageUpdate(representation::t type, SharedMultiImgPtr image);
 
 	/** The data range for representation type has changed. */
-	void dataRangeUdpate(representation::t type, const ImageDataRange& range);
+	void dataRangeUdpate(representation::t type, const multi_img::Range& range);
 
 	/** The number of spectral bands of the ROI image has changed to nBands. 
 	 * 

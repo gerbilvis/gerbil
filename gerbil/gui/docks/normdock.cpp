@@ -22,8 +22,8 @@ NormDock::NormDock(QWidget *parent) :
 	QDockWidget(parent)
 {
 	// init with zero ranges
-	ranges.insert(representation::IMG, ImageDataRange());
-	ranges.insert(representation::GRAD, ImageDataRange());
+	ranges.insert(representation::IMG, multi_img::Range());
+	ranges.insert(representation::GRAD, multi_img::Range());
 
 	modes.insert(representation::IMG, MultiImg::NORM_OBSERVED);
 	modes.insert(representation::GRAD, MultiImg::NORM_OBSERVED);
@@ -91,7 +91,7 @@ void NormDock::setGuiEnabled(bool enable, TaskType tt)
 								tt == TT_CLAMP_RANGE_IMG || tt == TT_CLAMP_RANGE_GRAD);
 }
 
-void NormDock::setNormRange(representation::t type, const ImageDataRange &range)
+void NormDock::setNormRange(representation::t type, const multi_img::Range& range)
 {
 	//GGDBGM(type << " " << range << endl);
 	if(!(representation::IMG == type || representation::GRAD == type ))

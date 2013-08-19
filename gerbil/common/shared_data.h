@@ -11,7 +11,6 @@
 
 #ifdef WITH_BOOST_THREAD
 #include <multi_img.h>
-#include "multi_img_util.h"
 #include <boost/shared_ptr.hpp>
 #include <boost/thread/recursive_mutex.hpp>
 #include <boost/thread/locks.hpp>
@@ -175,7 +174,7 @@ typedef boost::lock_guard<SharedData<multi_img_base> > SharedMultiImgBaseGuard;
 typedef boost::shared_ptr<SharedMultiImgBase> SharedMultiImgPtr;
 
 typedef boost::shared_ptr<SharedData<cv::Mat3f> > mat3f_ptr;
-typedef boost::shared_ptr<SharedData<ImageDataRange> > SharedDataRangePtr;
+typedef boost::shared_ptr<SharedData<multi_img::Range> > SharedMultiImgRangePtr;
 
 // BUG
 // There is no reasonable way to actually get the pointer to the multi_img

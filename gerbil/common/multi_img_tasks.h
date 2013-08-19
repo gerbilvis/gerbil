@@ -306,7 +306,7 @@ protected:
 
 class DataRangeTbb : public BackgroundTask {
 public:
-	DataRangeTbb(SharedMultiImgPtr multi, SharedDataRangePtr range,
+	DataRangeTbb(SharedMultiImgPtr multi, SharedMultiImgRangePtr range,
 		cv::Rect targetRoi = cv::Rect()) 
 		: BackgroundTask(targetRoi), multi(multi), range(range) {}
 	virtual ~DataRangeTbb() {}
@@ -316,12 +316,12 @@ protected:
 	tbb::task_group_context stopper;
 
 	SharedMultiImgPtr multi;
-	SharedDataRangePtr range;
+	SharedMultiImgRangePtr range;
 };
 
 class DataRangeCuda : public BackgroundTask {
 public:
-	DataRangeCuda(SharedMultiImgPtr multi, SharedDataRangePtr range,
+	DataRangeCuda(SharedMultiImgPtr multi, SharedMultiImgRangePtr range,
 		cv::Rect targetRoi = cv::Rect()) 
 		: BackgroundTask(targetRoi), multi(multi), range(range) {}
 	virtual ~DataRangeCuda() {}
@@ -331,7 +331,7 @@ protected:
 	tbb::task_group_context stopper;
 
 	SharedMultiImgPtr multi;
-	SharedDataRangePtr range;
+	SharedMultiImgRangePtr range;
 };
 
 class ClampTbb : public BackgroundTask {

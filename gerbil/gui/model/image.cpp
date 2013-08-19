@@ -32,8 +32,8 @@ ImageModel::ImageModel(BackgroundTaskQueue &queue, bool lm)
 	foreach (payload *p, map) {
 		connect(p, SIGNAL(newImageData(representation::t,SharedMultiImgPtr)),
 				this, SLOT(processNewImageData(representation::t,SharedMultiImgPtr)));
-		connect(p, SIGNAL(dataRangeUpdate(representation::t,ImageDataRange)),
-				this, SIGNAL(dataRangeUdpate(representation::t,ImageDataRange)));
+		connect(p, SIGNAL(dataRangeUpdate(representation::t,multi_img::Range)),
+				this, SIGNAL(dataRangeUdpate(representation::t,multi_img::Range)));
 	}
 }
 
@@ -176,7 +176,7 @@ void ImageModel::spawn(representation::t type, const cv::Rect &newROI, int bands
 	if (type == representation::IMG || type == representation::GRAD)
 	{
 		SharedMultiImgPtr target = map[type]->image;
-		SharedDataRangePtr range = map[type]->normRange;
+		SharedMultiImgRangePtr range = map[type]->normRange;
 		MultiImg::NormMode mode =  map[type]->normMode;
 		// TODO: a small hack in NormRangeTBB to determine theoretical range
 		int isGRAD = (type == representation::GRAD ? 1 : 0);
@@ -272,10 +272,9 @@ void ImageModel::computeFullRgb()
 	emit fullRgbUpdate(p);
 }
 
-void ImageModel::setNormalizationParameters(
-		representation::t type,
+void ImageModel::setNormalizationParameters(representation::t type,
 		MultiImg::NormMode normMode,
-		ImageDataRange targetRange)
+		multi_img_base::Range targetRange)
 {
 	//GGDBGM(type << " " << targetRange << endl);
 	map[type]->normMode = normMode;
