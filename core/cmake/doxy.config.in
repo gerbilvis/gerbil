@@ -106,7 +106,7 @@ INLINE_INHERITED_MEMB  = YES
 # path before files name in the file list and in the header files. If set 
 # to NO the shortest path that makes the file name unique will be used.
 
-FULL_PATH_NAMES        = YES
+FULL_PATH_NAMES        = NO
 
 # If the FULL_PATH_NAMES tag is set to YES then the STRIP_FROM_PATH tag 
 # can be used to strip a user-defined part of the path. Stripping is 
@@ -508,6 +508,8 @@ EXCLUDE_PATTERNS       = ui_*.h
 # The EXAMPLE_PATH tag can be used to specify one or more files or 
 # directories that contain example code fragments that are included (see 
 # the \include command).
+
+# FIXME altmann: this seems to be a leftover from copy-paste -- remove?
 
 EXAMPLE_PATH           = @CMAKE_CURRENT_SOURCE_DIR@/Base/Common/Examples \
                          @CMAKE_CURRENT_SOURCE_DIR@/Base/Debug/Examples \
