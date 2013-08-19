@@ -9,6 +9,7 @@ vole_compile_library(
 	multi_img/multi_img_ext
 	multi_img/multi_img_io_ext
     multi_img/multi_img_offloaded
+    multi_img/multi_img_tbb
 	multi_img/illuminant
     background_task/background_task
     background_task/background_task_queue

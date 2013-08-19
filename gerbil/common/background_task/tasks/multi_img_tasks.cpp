@@ -17,6 +17,7 @@
 
 
 #include <rectangles.h>
+#include <multi_img/multi_img_tbb.h>
 
 //#define STOPWATCH_PRINT(stopwatch, message) stopwatch.print_reset(message);
 #define STOPWATCH_PRINT(stopwatch, message)
@@ -28,49 +29,6 @@ namespace CIEObserver {
 }
 
 namespace MultiImg {
-
-
-namespace CommonTbb {
-
-void CommonTbb::RebuildPixels::operator()(const tbb::blocked_range<size_t> &r) const
-{
-	for (size_t d = r.begin(); d != r.end(); ++d) {
-		multi_img::Band &src = multi.bands[d];
-		multi_img::Band::const_iterator it; size_t i;
-		for (it = src.begin(), i = 0; it != src.end(); ++it, ++i)
-			multi.pixels[i][d] = *it;
-	}
-}
-
-void CommonTbb::ApplyCache::operator()(const tbb::blocked_range<size_t> &r) const
-{
-	for (size_t d = r.begin(); d != r.end(); ++d) {
-		multi_img::Band &dst = multi.bands[d];
-		multi_img::Band::iterator it; size_t i;
-		for (it = dst.begin(), i = 0; it != dst.end(); ++it, ++i)
-			*it = multi.pixels[i][d];
-	}
-}
-
-void CommonTbb::DetermineRange::operator()(const tbb::blocked_range<size_t> &r)
-{
-	double tmp1, tmp2;
-	for (size_t d = r.begin(); d != r.end(); ++d) {
-		cv::minMaxLoc(multi.bands[d], &tmp1, &tmp2);
-		min = std::min<multi_img::Value>(min, (multi_img::Value)tmp1);
-		max = std::max<multi_img::Value>(max, (multi_img::Value)tmp2);
-	}
-}
-
-void CommonTbb::DetermineRange::join(DetermineRange &toJoin)
-{
-	if (toJoin.min < min)
-		min = toJoin.min;
-	if (toJoin.max > max)
-		max = toJoin.max;
-}
-
-}
 
 bool ScopeImage::run() 
 {
@@ -221,7 +179,7 @@ bool RescaleTbb::run()
 	multi_img *temp = new multi_img(**source, 
 		cv::Rect(0, 0, (*source)->width, (*source)->height));
 	temp->roi = (*source)->roi;
-	CommonTbb::RebuildPixels rebuildPixels(*temp);
+	RebuildPixels rebuildPixels(*temp);
 	tbb::parallel_for(tbb::blocked_range<size_t>(0, temp->size()), 
 		rebuildPixels, tbb::auto_partitioner(), stopper);
 	temp->dirty.setTo(0);
@@ -238,7 +196,7 @@ bool RescaleTbb::run()
 		tbb::parallel_for(tbb::blocked_range2d<int>(0, temp->height, 0, temp->width), 
 			computeResize, tbb::auto_partitioner(), stopper);
 
-		CommonTbb::ApplyCache applyCache(*target);
+		ApplyCache applyCache(*target);
 		tbb::parallel_for(tbb::blocked_range<size_t>(0, target->size()), 
 			applyCache, tbb::auto_partitioner(), stopper);
 		target->dirty.setTo(0);
@@ -359,7 +317,7 @@ bool GradientTbb::run()
 	STOPWATCH_PRINT(s, "Gradient TBB")
 
 	if (includecache) {
-		CommonTbb::RebuildPixels rebuildPixels(*target);
+		RebuildPixels rebuildPixels(*target);
 		tbb::parallel_for(tbb::blocked_range<size_t>(0, target->size()), 
 			rebuildPixels, tbb::auto_partitioner(), stopper);
 		target->dirty.setTo(0);
@@ -466,7 +424,7 @@ bool GradientCuda::run()
 	STOPWATCH_PRINT(s, "Gradient CUDA")
 
 	if (includecache) {
-		CommonTbb::RebuildPixels rebuildPixels(*target);
+		RebuildPixels rebuildPixels(*target);
 		tbb::parallel_for(tbb::blocked_range<size_t>(0, target->size()), 
 			rebuildPixels, tbb::auto_partitioner(), stopper);
 		target->dirty.setTo(0);
@@ -501,11 +459,11 @@ bool PcaTbb::run()
 	tbb::parallel_for(tbb::blocked_range<size_t>(0, target->pixels.size()), 
 		computeProjection, tbb::auto_partitioner(), stopper);
 
-	CommonTbb::ApplyCache applyCache(*target);
+	ApplyCache applyCache(*target);
 	tbb::parallel_for(tbb::blocked_range<size_t>(0, target->size()), 
 		applyCache, tbb::auto_partitioner(), stopper);
 
-	CommonTbb::DetermineRange determineRange(*target);
+	DetermineRange determineRange(*target);
 	tbb::parallel_reduce(tbb::blocked_range<size_t>(0, target->size()), 
 		determineRange, tbb::auto_partitioner(), stopper);
 
@@ -553,7 +511,7 @@ bool DataRangeTbb::run()
 {
 	vole::Stopwatch s;
 
-	CommonTbb::DetermineRange determineRange(**multi);
+	DetermineRange determineRange(**multi);
 	tbb::parallel_reduce(tbb::blocked_range<size_t>(0, (*multi)->size()), 
 		determineRange, tbb::auto_partitioner(), stopper);
 
@@ -616,7 +574,7 @@ bool ClampTbb::run()
 	STOPWATCH_PRINT(s, "Clamp TBB")
 
 	if (includecache) {
-		CommonTbb::RebuildPixels rebuildPixels(*target);
+		RebuildPixels rebuildPixels(*target);
 		tbb::parallel_for(tbb::blocked_range<size_t>(0, target->size()), 
 			rebuildPixels, tbb::auto_partitioner(), stopper);
 		target->dirty.setTo(0);
@@ -669,7 +627,7 @@ bool ClampCuda::run()
 	STOPWATCH_PRINT(s, "Clamp CUDA")
 
 	if (includecache) {
-		CommonTbb::RebuildPixels rebuildPixels(*target);
+		RebuildPixels rebuildPixels(*target);
 		tbb::parallel_for(tbb::blocked_range<size_t>(0, target->size()), 
 			rebuildPixels, tbb::auto_partitioner(), stopper);
 		target->dirty.setTo(0);
@@ -707,7 +665,7 @@ bool IlluminantTbb::run()
 	STOPWATCH_PRINT(s, "Illuminant TBB")
 
 	if (includecache) {
-		CommonTbb::RebuildPixels rebuildPixels(*target);
+		RebuildPixels rebuildPixels(*target);
 		tbb::parallel_for(tbb::blocked_range<size_t>(0, target->size()), 
 			rebuildPixels, tbb::auto_partitioner(), stopper);
 		target->dirty.setTo(0);
@@ -773,7 +731,7 @@ bool IlluminantCuda::run()
 	STOPWATCH_PRINT(s, "Illuminant CUDA")
 
 	if (includecache) {
-		CommonTbb::RebuildPixels rebuildPixels(*target);
+		RebuildPixels rebuildPixels(*target);
 		tbb::parallel_for(tbb::blocked_range<size_t>(0, target->size()), 
 			rebuildPixels, tbb::auto_partitioner(), stopper);
 		target->dirty.setTo(0);

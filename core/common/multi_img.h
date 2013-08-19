@@ -32,6 +32,8 @@
 	class Illuminant;
 #endif
 
+
+// FIXME what a mess
 #ifdef WITH_GERBIL_COMMON
 namespace MultiImg {
 	namespace CommonTbb {
@@ -53,9 +55,9 @@ namespace MultiImg {
 	class IlluminantCuda;
 }
 #define MULTI_IMG_FRIENDS \
-	friend class MultiImg::CommonTbb::RebuildPixels;\
-	friend class MultiImg::CommonTbb::ApplyCache;\
-	friend class MultiImg::CommonTbb::DetermineRange;\
+	friend class RebuildPixels;\
+	friend class ApplyCache;\
+	friend class DetermineRange;\
 	friend class MultiImg::BgrTbb;\
 	friend class MultiImg::Band2QImageTbb;\
 	friend class MultiImg::RescaleTbb;\
