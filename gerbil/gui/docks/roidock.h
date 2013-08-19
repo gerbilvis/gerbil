@@ -2,20 +2,17 @@
 #define ROIDOCK_H
 
 #include <ui_roidock.h>
-#include "dockwidget.h"
 
 #include <opencv2/core/core.hpp> // for cv::Rect
 #include <QRect>
 #include <QAbstractButton>
 
-// FIXME: rename ROIDockUI -> RoiDock
-// FIXME: rename ROIDock -> RoiDock
-class ROIDock : public DockWidget, private Ui::ROIDockUI
+class RoiDock : public QDockWidget, private Ui::RoiDockUI
 {
 	Q_OBJECT
 public:
-	explicit ROIDock(QWidget *parent = 0);
-	virtual ~ROIDock() {}
+	explicit RoiDock(QWidget *parent = 0);
+	virtual ~RoiDock() {}
 	
 	const QRect &getRoi() const;
 

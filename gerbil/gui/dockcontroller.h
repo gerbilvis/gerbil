@@ -21,7 +21,7 @@ class MainWindow;
 class BandDock;
 class LabelingDock;
 class NormDock;
-class ROIDock;
+class RoiDock;
 class RgbDock;
 class IllumDock;
 class GraphSegWidget;
@@ -80,7 +80,7 @@ protected:
 	BandDock *bandDock;
 	LabelingDock *labelingDock;
 	NormDock *normDock;
-	ROIDock *roiDock;
+	RoiDock *roiDock;
 	RgbDock *rgbDock;
 	IllumDock *illumDock;
 	UsSegmentationDock *usSegDock;

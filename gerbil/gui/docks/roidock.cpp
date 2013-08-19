@@ -11,19 +11,19 @@ static QRect CVRect2QRect(const cv::Rect &r) {
 	return QRect(r.x, r.y, r.width, r.height);
 }
 
-ROIDock::ROIDock(QWidget *parent) :
-	DockWidget(parent)
+RoiDock::RoiDock(QWidget *parent) :
+	QDockWidget(parent)
 {
 	setupUi(this);
 	initUi();
 }
 
-const QRect& ROIDock::getRoi() const
+const QRect& RoiDock::getRoi() const
 {
 	return roiView->roi;
 }
 
-void ROIDock::setRoi(const cv::Rect &roi)
+void RoiDock::setRoi(const cv::Rect &roi)
 {
 	if(roi == QRect2CVRect(curRoi)) {
 		// GUI already up-to-date, prevent loop
@@ -37,7 +37,7 @@ void ROIDock::setRoi(const cv::Rect &roi)
 	processNewSelection(CVRect2QRect(roi));
 }
 
-void ROIDock::initUi()
+void RoiDock::initUi()
 {
 	connect(roiButtons, SIGNAL(clicked(QAbstractButton*)),
 			 this, SLOT(processRoiButtonsClicked(QAbstractButton*)));
@@ -46,7 +46,7 @@ void ROIDock::initUi()
 }
 
 
-void ROIDock::processRoiButtonsClicked(QAbstractButton *sender)
+void RoiDock::processRoiButtonsClicked(QAbstractButton *sender)
 {
 	QDialogButtonBox::ButtonRole role = roiButtons->buttonRole(sender);
 	roiButtons->setDisabled(true);
@@ -57,7 +57,7 @@ void ROIDock::processRoiButtonsClicked(QAbstractButton *sender)
 	}
 }
 
-void ROIDock::processNewSelection(const QRect &roi)
+void RoiDock::processNewSelection(const QRect &roi)
 {
 	curRoi = roi;
 	roiButtons->setEnabled(true);
@@ -68,7 +68,7 @@ void ROIDock::processNewSelection(const QRect &roi)
 	roiTitle->setText(title);
 }
 
-void ROIDock::applyRoi()
+void RoiDock::applyRoi()
 {
 	cv::Rect roi = QRect2CVRect(curRoi);
 	emit roiRequested(roi);
@@ -77,7 +77,7 @@ void ROIDock::applyRoi()
 	oldRoi = curRoi;
 }
 
-void ROIDock::resetRoi()
+void RoiDock::resetRoi()
 {
 	curRoi = oldRoi;
 	roiView->roi = curRoi;
@@ -86,7 +86,7 @@ void ROIDock::resetRoi()
 }
 
 
-void ROIDock::updatePixmap(const QPixmap image)
+void RoiDock::updatePixmap(const QPixmap image)
 {
 	roiView->setPixmap(image);
 	//GGDBGM(format("pixmap size %1%x%2%")%image.width() %image.height()<<endl);

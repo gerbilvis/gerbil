@@ -63,7 +63,7 @@ void DockController::createDocks()
 							chief->mainWindow());
 	labelingDock = new LabelingDock(chief->mainWindow());
 	normDock = new NormDock(chief->mainWindow());
-	roiDock = new ROIDock(chief->mainWindow());
+	roiDock = new RoiDock(chief->mainWindow());
 	illumDock = new IllumDock(chief->mainWindow());
 	rgbDock = new RgbDock(chief->mainWindow());
 #ifdef WITH_SEG_MEANSHIFT
@@ -162,7 +162,7 @@ void DockController::setupDocks()
 			rgbDock, SLOT(updatePixmap(coloring, QPixmap)));
 
 	/* ROI Dock */
-	// signals for ROI (reset handled in ROIDock)
+	// signals for ROI (reset handled in RoiDock)
 	connect(chief->imageModel(), SIGNAL(fullRgbUpdate(QPixmap)),
 			roiDock, SLOT(updatePixmap(QPixmap)));
 

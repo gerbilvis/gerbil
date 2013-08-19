@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <ui version="4.0">
- <class>ROIDockUI</class>
- <widget class="QDockWidget" name="ROIDockUI">
+ <class>RoiDockUI</class>
+ <widget class="QDockWidget" name="RoiDockUI">
   <property name="geometry">
    <rect>
     <x>0</x>

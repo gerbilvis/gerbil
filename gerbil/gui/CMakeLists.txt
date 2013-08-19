@@ -42,7 +42,6 @@ vole_compile_library(
 	docks/banddock
 	docks/labelingdock
 	docks/normdock
-	docks/dockwidget
 	docks/roidock
 	docks/illumdock
 	docks/rgbdock
@@ -73,7 +72,6 @@ vole_moc_library(
 	docks/banddock.h
 	docks/labelingdock.h
 	docks/normdock.h
-	docks/dockwidget.h
 	docks/roidock.h
 	docks/illumdock.h
 	docks/rgbdock.h
