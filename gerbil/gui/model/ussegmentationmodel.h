@@ -4,11 +4,9 @@
 #include <QObject>
 #include <QMetaClassInfo>
 #include <map>
+#include <boost/any.hpp>
 
 #include <shared_data.h>
-
-// vole modules
-#include <meanshift.h>
 
 class CommandRunner;
 namespace vole {
