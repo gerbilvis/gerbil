@@ -14,7 +14,6 @@
 #include "commandrunner.h"
 #include "multi_img_tasks.h"
 /*#include "tasks/rgbtbb.h"
-#include "tasks/rgbserial.h"
 #include "tasks/normrangecuda.h"
 #include "tasks/normrangetbb.h"
 #include <background_task_queue.h>

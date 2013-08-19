@@ -36,7 +36,6 @@ vole_compile_library(
 
 	tasks/distviewbinstbb
 	tasks/rgbtbb
-	tasks/rgbserial
 	tasks/normrangetbb
 	tasks/normrangecuda
 

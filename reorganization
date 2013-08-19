@@ -85,9 +85,9 @@ similarity_measures
 
 
 Remove:
-	gerbil/common/multi_img_util
-	gui/tasks/rgbserial
-	gui/oldroidock
+	gerbil/common/multi_img_util		[DONE]
+	gui/tasks/rgbserial					[DONE]
+	gui/oldroidock						[DONE]
 	gui/docks/dockwidget
 
 Legend:
