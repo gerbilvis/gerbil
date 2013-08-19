@@ -36,129 +36,23 @@ enum NormMode {
 };
 
 
-class ScopeImage : public BackgroundTask {
-public:
-	ScopeImage(SharedMultiImgPtr full, SharedMultiImgPtr scoped, cv::Rect roi)
-		: BackgroundTask(roi), full(full), scoped(scoped) {}
-	virtual ~ScopeImage() {}
-	virtual bool run();
-	virtual void cancel() {}
-protected:
-	SharedMultiImgPtr full;
-	SharedMultiImgPtr scoped;
-};
-
-class BgrSerial : public BackgroundTask {
-public:
-	BgrSerial(SharedMultiImgPtr multi, mat3f_ptr bgr,
-		cv::Rect targetRoi = cv::Rect()) 
-		: BackgroundTask(targetRoi), multi(multi), bgr(bgr) {}
-	virtual ~BgrSerial() {}
-	virtual bool run();
-	virtual void cancel() {}
-protected:
-	SharedMultiImgPtr multi;
-	mat3f_ptr bgr;
-};
-
-class BgrTbb : public BackgroundTask {
-public:
-	BgrTbb(SharedMultiImgPtr multi, mat3f_ptr bgr,
-		cv::Rect targetRoi = cv::Rect()) 
-		: BackgroundTask(targetRoi), multi(multi), bgr(bgr) {}
-	virtual ~BgrTbb() {}
-	virtual bool run();
-	virtual void cancel() { stopper.cancel_group_execution(); }
-protected:
-	tbb::task_group_context stopper;
-
-	class Xyz {
-	public:
-		Xyz(multi_img_base &multi, cv::Mat_<cv::Vec3f> &xyz, multi_img::Band &band, int cie) 
-			: multi(multi), xyz(xyz), band(band), cie(cie) {}
-		void operator()(const tbb::blocked_range2d<int> &r) const;
-	private:
-		multi_img_base &multi;
-		cv::Mat_<cv::Vec3f> &xyz;
-		multi_img::Band &band;
-		int cie;
-	};
-
-	class Bgr {
-	public:
-		Bgr(multi_img_base &multi, cv::Mat_<cv::Vec3f> &xyz, cv::Mat_<cv::Vec3f> &bgr, float greensum) 
-			: multi(multi), xyz(xyz), bgr(bgr), greensum(greensum) {}
-		void operator()(const tbb::blocked_range2d<int> &r) const;
-	private:
-		multi_img_base &multi;
-		cv::Mat_<cv::Vec3f> &xyz;
-		cv::Mat_<cv::Vec3f> &bgr;
-		float greensum;
-	};
-
-	SharedMultiImgPtr multi;
-	mat3f_ptr bgr;
-};
+//class BgrSerial : public BackgroundTask {
+//public:
+//	BgrSerial(SharedMultiImgPtr multi, mat3f_ptr bgr,
+//		cv::Rect targetRoi = cv::Rect())
+//		: BackgroundTask(targetRoi), multi(multi), bgr(bgr) {}
+//	virtual ~BgrSerial() {}
+//	virtual bool run();
+//	virtual void cancel() {}
+//protected:
+//	SharedMultiImgPtr multi;
+//	mat3f_ptr bgr;
+//};
 
 #ifdef WITH_QT
-class Band2QImageTbb : public BackgroundTask {
-public:
-	Band2QImageTbb(SharedMultiImgPtr multi, qimage_ptr image, size_t band,
-		cv::Rect targetRoi = cv::Rect())
-		: BackgroundTask(targetRoi), multi(multi), image(image), band(band) {}
-	virtual ~Band2QImageTbb() {}
-	virtual bool run();
-	virtual void cancel() { stopper.cancel_group_execution(); }
-protected:
-	tbb::task_group_context stopper;
 
-	class Conversion {
-	public:
-		Conversion(multi_img::Band &band, QImage &image,
-			multi_img::Value minval, multi_img::Value maxval)
-			: band(band), image(image), minval(minval), maxval(maxval) {}
-		void operator()(const tbb::blocked_range2d<int> &r) const;
-	private:
-		multi_img::Band &band;
-		QImage &image;
-		multi_img::Value minval;
-		multi_img::Value maxval;
-	};
-
-	SharedMultiImgPtr multi;
-	qimage_ptr image;
-	size_t band;
-};
 #endif
 
-class RescaleTbb : public BackgroundTask {
-public:
-	RescaleTbb(SharedMultiImgPtr source, SharedMultiImgPtr current, size_t newsize,
-		cv::Rect targetRoi = cv::Rect(), bool includecache = true) 
-		: BackgroundTask(targetRoi), source(source), current(current), 
-		newsize(newsize), includecache(includecache) {}
-	virtual ~RescaleTbb() {}
-	virtual bool run();
-	virtual void cancel() { stopper.cancel_group_execution(); }
-protected:
-	tbb::task_group_context stopper;
-
-	class Resize {
-	public:
-		Resize(multi_img &source, multi_img &target, size_t newsize) 
-			: source(source), target(target), newsize(newsize) {}
-		void operator()(const tbb::blocked_range2d<int> &r) const;
-	private:
-		multi_img &source;
-		multi_img &target;
-		size_t newsize;
-	};
-
-	SharedMultiImgPtr source;
-	SharedMultiImgPtr current;
-	size_t newsize;
-	bool includecache;
-};
 
 class GradientTbb : public BackgroundTask {
 public:

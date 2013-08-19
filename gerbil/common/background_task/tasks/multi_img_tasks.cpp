@@ -18,233 +18,31 @@
 
 #include <rectangles.h>
 #include <multi_img/multi_img_tbb.h>
+#include <multi_img/cieobserver.h>
 
 //#define STOPWATCH_PRINT(stopwatch, message) stopwatch.print_reset(message);
 #define STOPWATCH_PRINT(stopwatch, message)
 
-namespace CIEObserver {
-	extern float x[];
-	extern float y[];
-	extern float z[];
-}
 
 namespace MultiImg {
 
-bool ScopeImage::run() 
-{
-	// using SharedData<multi_img_base>::getBase() to get multi_img_base object
-	multi_img *target =  new multi_img(full->getBase(), targetRoi);
-	SharedDataSwapLock lock(scoped->mutex);
-	delete scoped->swap(target);
-	return true;
-}
 
-bool BgrSerial::run() 
-{
-	cv::Mat_<cv::Vec3f> *newBgr = new cv::Mat_<cv::Vec3f>();
-	*newBgr = (*multi)->bgr(); 
-	SharedDataSwapLock lock(bgr->mutex);
-	delete bgr->swap(newBgr);
-	return true;
-}
+//bool BgrSerial::run()
+//{
+//	cv::Mat_<cv::Vec3f> *newBgr = new cv::Mat_<cv::Vec3f>();
+//	*newBgr = (*multi)->bgr();
+//	SharedDataSwapLock lock(bgr->mutex);
+//	delete bgr->swap(newBgr);
+//	return true;
+//}
 
-bool BgrTbb::run() 
-{
-	multi_img_base& source = multi->getBase();
-	cv::Mat_<cv::Vec3f> xyz(source.height, source.width, 0.);
-	float greensum = 0.f;
-	for (size_t i = 0; i < source.size(); ++i) {
-		int idx = ((int)(source.meta[i].center + 0.5f) - 360) / 5;
-		if (idx < 0 || idx > 94)
-			continue;
-
-		multi_img::Band band;
-		source.getBand(i, band);
-		Xyz computeXyz(source, xyz, band, idx);
-		tbb::parallel_for(tbb::blocked_range2d<int>(0, xyz.rows, 0, xyz.cols), 
-			computeXyz, tbb::auto_partitioner(), stopper);
-
-		greensum += CIEObserver::y[idx];
-
-		if (stopper.is_group_execution_cancelled())
-			break;
-	}
-
-	if (greensum == 0.f)
-		greensum = 1.f;
-
-	cv::Mat_<cv::Vec3f> *newBgr = new cv::Mat_<cv::Vec3f>(source.height, source.width);
-	Bgr computeBgr(source, xyz, *newBgr, greensum);
-	tbb::parallel_for(tbb::blocked_range2d<int>(0, newBgr->rows, 0, newBgr->cols), 
-		computeBgr, tbb::auto_partitioner(), stopper);
-
-	if (stopper.is_group_execution_cancelled()) {
-		delete newBgr;
-		return false;
-	} else {
-		SharedDataSwapLock lock(bgr->mutex);
-		delete bgr->swap(newBgr);
-		return true;
-	}
-}
-
-void BgrTbb::Xyz::operator()(const tbb::blocked_range2d<int> &r) const
-{
-	float intensity;
-	float factor = 1.f / multi.maxval;
-	__m128 cie_reg = _mm_setr_ps(CIEObserver::x[cie], 0.f, CIEObserver::y[cie], CIEObserver::z[cie]);
-
-	for (int i = r.rows().begin(); i != r.rows().end(); ++i) {
-		for (int j = r.cols().begin(); j != r.cols().end(); ++j) {
-			/*
-			cv::Vec3f &v = xyz(i, j);
-			float intensity = band(i, j) * 1.f / multi.maxval;
-			v[0] += CIEObserver::x[cie] * intensity;
-			v[1] += CIEObserver::y[cie] * intensity;
-			v[2] += CIEObserver::z[cie] * intensity;
-			*/
-			
-			cv::Vec3f &v = xyz(i, j);
-			intensity = band(i, j) * factor;
-			__m128 v_reg = _mm_loadh_pi(_mm_load_ss(&v[0]), (__m64*)&v[1]);
-			__m128 res_reg = _mm_add_ps(v_reg, _mm_mul_ps(cie_reg, _mm_load1_ps(&intensity)));
-			_mm_storeh_pi((__m64*)&v[1], res_reg);
-			_mm_store_ss(&v[0], res_reg);
-		}
-	}
-}
-
-void BgrTbb::Bgr::operator()(const tbb::blocked_range2d<int> &r) const
-{
-	for (int i = r.rows().begin(); i != r.rows().end(); ++i) {
-		for (int j = r.cols().begin(); j != r.cols().end(); ++j) {
-			/*
-			cv::Vec3f &vs = xyz(i, j);
-			cv::Vec3f &vd = bgr(i, j);
-			for (unsigned int j = 0; j < 3; ++j)
-				vs[j] /= greensum;
-			multi.xyz2bgr(vs, vd);
-			*/
-
-			cv::Vec3f &vs = xyz(i, j);
-			cv::Vec3f &vd = bgr(i, j);
-			__m128 vs_reg = _mm_loadh_pi(_mm_load_ss(&vs[0]), (__m64*)&vs[1]);
-			__m128 res_reg = _mm_div_ps(vs_reg, _mm_load1_ps(&greensum));
-			_mm_storeh_pi((__m64*)&vs[1], res_reg);
-			_mm_store_ss(&vs[0], res_reg);
-			multi_img::xyz2bgr(vs, vd);
-		}
-	}
-}
 
 #ifdef WITH_QT
-bool Band2QImageTbb::run() 
-{
-	if (band >= (*multi)->size()) {
-		return false;
-	}
 
-	multi_img::Band &source = (*multi)->bands[band];
-	QImage *target = new QImage(source.cols, source.rows, QImage::Format_ARGB32);
-	Conversion computeConversion(source, *target, (*multi)->minval, (*multi)->maxval);
-	tbb::parallel_for(tbb::blocked_range2d<int>(0, source.rows, 0, source.cols), 
-		computeConversion, tbb::auto_partitioner(), stopper);
-
-	if (stopper.is_group_execution_cancelled()) {
-		delete target;
-		return false;
-	} else {
-		SharedDataSwapLock lock(image->mutex);
-		delete image->swap(target);
-		return true;
-	}
-}
-
-void Band2QImageTbb::Conversion::operator()(const tbb::blocked_range2d<int> &r) const
-{
-	multi_img::Value scale = 255.0 / (maxval - minval);
-	for (int y = r.rows().begin(); y != r.rows().end(); ++y) {
-		const multi_img::Value *srcrow = band[y];
-		QRgb *destrow = (QRgb*)image.scanLine(y);
-		for (int x = r.cols().begin(); x != r.cols().end(); ++x) {
-			unsigned int color = (srcrow[x] - minval) * scale;
-			destrow[x] = qRgba(color, color, color, 255);
-		}
-	}
-}
 #endif
 
-bool RescaleTbb::run() 
-{
-	multi_img *temp = new multi_img(**source, 
-		cv::Rect(0, 0, (*source)->width, (*source)->height));
-	temp->roi = (*source)->roi;
-	RebuildPixels rebuildPixels(*temp);
-	tbb::parallel_for(tbb::blocked_range<size_t>(0, temp->size()), 
-		rebuildPixels, tbb::auto_partitioner(), stopper);
-	temp->dirty.setTo(0);
-	temp->anydirt = false;
 
-	multi_img *target = NULL;
-	if (newsize != temp->size()) {
 
-		target = new multi_img((*source)->height, (*source)->width, newsize);
-		target->minval = temp->minval;
-		target->maxval = temp->maxval;
-		target->roi = temp->roi;
-		Resize computeResize(*temp, *target, newsize);
-		tbb::parallel_for(tbb::blocked_range2d<int>(0, temp->height, 0, temp->width), 
-			computeResize, tbb::auto_partitioner(), stopper);
-
-		ApplyCache applyCache(*target);
-		tbb::parallel_for(tbb::blocked_range<size_t>(0, target->size()), 
-			applyCache, tbb::auto_partitioner(), stopper);
-		target->dirty.setTo(0);
-		target->anydirt = false;
-
-		if (!stopper.is_group_execution_cancelled()) {
-			cv::Mat_<float> tmpmeta1(cv::Size(temp->meta.size(), 1)), tmpmeta2;
-			std::vector<multi_img::BandDesc>::const_iterator it;
-			unsigned int i;
-			for (it = temp->meta.begin(), i = 0; it != temp->meta.end(); it++, i++) {
-				tmpmeta1(0, i) = it->center;
-			}
-			cv::resize(tmpmeta1, tmpmeta2, cv::Size(newsize, 1));
-			for (size_t b = 0; b < newsize; b++) {
-				target->meta[b] = multi_img::BandDesc(tmpmeta2(0, b));
-			}
-		}
-
-		delete temp;
-		temp = NULL;
-	
-	} else {
-		target = temp;
-	}
-
-	if (!includecache)
-		target->resetPixels();
-
-	if (stopper.is_group_execution_cancelled()) {
-		delete target;
-		return false;
-	} else {
-		SharedDataSwapLock lock(current->mutex);
-		delete current->swap(target);
-		return true;
-	}
-}
-
-void RescaleTbb::Resize::operator()(const tbb::blocked_range2d<int> &r) const
-{
-	for (int row = r.rows().begin(); row != r.rows().end(); ++row) {
-		for (int col = r.cols().begin(); col != r.cols().end(); ++col) {
-			cv::Mat_<multi_img::Value> src(source.pixels[row * source.width + col], false);
-			cv::Mat_<multi_img::Value> dst(target.pixels[row * source.width + col], false);
-			cv::resize(src, dst, cv::Size(1, newsize));
-		}
-	}
-}
 
 bool GradientTbb::run() 
 {

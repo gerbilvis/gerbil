@@ -2,6 +2,9 @@
 #include "tasks/normrangecuda.h"
 #include "tasks/normrangetbb.h"
 #include "tasks/rgbtbb.h"
+#include <background_task/tasks/scopeimage.h>
+#include <background_task/tasks/band2qimagetbb.h>
+#include <background_task/tasks/rescaletbb.h>
 
 #include "../gerbil_gui_debug.h"
 
@@ -137,7 +140,7 @@ void ImageModel::spawn(representation::t type, const cv::Rect &newROI, int bands
 	if (type == representation::IMG) {
 		// scope image to new ROI
 		SharedMultiImgPtr scoped_image(new SharedMultiImgBase(NULL));
-		BackgroundTaskPtr taskScope(new MultiImg::ScopeImage(
+		BackgroundTaskPtr taskScope(new ScopeImage(
 			image_lim, scoped_image, roi));
 		queue.push(taskScope);
 
@@ -155,7 +158,7 @@ void ImageModel::spawn(representation::t type, const cv::Rect &newROI, int bands
 		assert(-1 != bands);
 
 		// perform spectral rescaling
-		BackgroundTaskPtr taskRescale(new MultiImg::RescaleTbb(
+		BackgroundTaskPtr taskRescale(new RescaleTbb(
 			scoped_image, image, bands, roi));
 		queue.push(taskRescale);
 	}
@@ -236,7 +239,7 @@ void ImageModel::computeBand(representation::t type, int dim)
 
 		SharedDataLock hlock(src->mutex);
 		BackgroundTaskPtr taskConvert(
-					new MultiImg::Band2QImageTbb(src, dest, dim));
+					new Band2QImageTbb(src, dest, dim));
 		taskConvert->run();
 		hlock.unlock();
 

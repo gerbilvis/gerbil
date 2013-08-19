@@ -59,8 +59,9 @@ namespace MultiImg {
 	friend class ApplyCache;\
 	friend class DetermineRange;\
 	friend class MultiImg::BgrTbb;\
-	friend class MultiImg::Band2QImageTbb;\
-	friend class MultiImg::RescaleTbb;\
+	friend class Band2QImageTbb;\
+	friend class RescaleTbb;\
+	friend class Resize; \
 	friend class MultiImg::GradientTbb;\
 	friend class MultiImg::GradientCuda;\
 	friend class MultiImg::PcaTbb;\

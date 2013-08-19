@@ -24,7 +24,7 @@ private:
 
 bool RgbTbb::run()
 {
-	if (!MultiImg::BgrTbb::run())
+	if (!BgrTbb::run())
 		return false;
 	if (stopper.is_group_execution_cancelled())
 		return false;

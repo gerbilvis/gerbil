@@ -11,9 +11,12 @@ vole_compile_library(
     multi_img/multi_img_offloaded
     multi_img/multi_img_tbb
 	multi_img/illuminant
+	multi_img/cieobserver
     background_task/background_task
     background_task/background_task_queue
     background_task/tasks/multi_img_tasks
+    background_task/tasks/band2qimagetbb
+    background_task/tasks/rescaletbb
     shared_data
 	rectangles
 )

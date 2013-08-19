@@ -1,6 +1,7 @@
 #ifndef MULTI_IMG_TBB_H
 #define MULTI_IMG_TBB_H
 
+
 class RebuildPixels {
 public:
 	RebuildPixels(multi_img &multi) : multi(multi) {}
@@ -31,6 +32,30 @@ private:
 	multi_img &multi;
 	multi_img::Value min;
 	multi_img::Value max;
+};
+
+class Xyz {
+public:
+	Xyz(multi_img_base &multi, cv::Mat_<cv::Vec3f> &xyz, multi_img::Band &band, int cie)
+		: multi(multi), xyz(xyz), band(band), cie(cie) {}
+	void operator()(const tbb::blocked_range2d<int> &r) const;
+private:
+	multi_img_base &multi;
+	cv::Mat_<cv::Vec3f> &xyz;
+	multi_img::Band &band;
+	int cie;
+};
+
+class Bgr {
+public:
+	Bgr(multi_img_base &multi, cv::Mat_<cv::Vec3f> &xyz, cv::Mat_<cv::Vec3f> &bgr, float greensum)
+		: multi(multi), xyz(xyz), bgr(bgr), greensum(greensum) {}
+	void operator()(const tbb::blocked_range2d<int> &r) const;
+private:
+	multi_img_base &multi;
+	cv::Mat_<cv::Vec3f> &xyz;
+	cv::Mat_<cv::Vec3f> &bgr;
+	float greensum;
 };
 
 #endif // MULTI_IMG_TBB_H
