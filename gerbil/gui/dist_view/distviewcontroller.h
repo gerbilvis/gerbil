@@ -4,8 +4,8 @@
 #include "controller.h"
 #include "distviewmodel.h"
 #include "distviewgui.h"
-#include <illuminant.h>
-#include <background_task_queue.h>
+#include <multi_img/illuminant.h>
+#include <background_task/background_task_queue.h>
 
 #include <QObject>
 // TODO

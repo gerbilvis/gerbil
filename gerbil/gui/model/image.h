@@ -3,8 +3,8 @@
 
 #include "representation.h"
 #include <shared_data.h>
-#include <multi_img_tasks.h>
-#include <background_task_queue.h>
+#include <background_task/tasks/multi_img_tasks.h>
+#include <background_task/background_task_queue.h>
 
 #include <QObject>
 #include <QMap>

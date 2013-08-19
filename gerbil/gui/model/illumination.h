@@ -6,13 +6,13 @@
 #include <boost/shared_ptr.hpp>
 #include <vector>
 
-#include <background_task_queue.h>
+#include <background_task/background_task_queue.h>
 #include <multi_img.h>
 #include <shared_data.h>
 // for representation
 #include <model/image.h>
 
-#include "illuminant.h"
+#include "multi_img/illuminant.h"
 
 
 class IllumModel : public QObject

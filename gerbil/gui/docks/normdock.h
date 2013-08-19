@@ -9,9 +9,9 @@
 
 #include "model/representation.h"
 
-// FIXME: need to include multi_img_tasks.h just for MultiImg::NormMode.
-// This is bad dependency mangagement: multi_img_tasks.h is huge.
-#include <multi_img_tasks.h>
+// FIXME: need to include background_task/tasks/multi_img_tasks.h just for MultiImg::NormMode.
+// This is bad dependency mangagement: background_task/tasks/multi_img_tasks.h is huge.
+#include <background_task/tasks/multi_img_tasks.h>
 
 
 // FIXME normalization functionality

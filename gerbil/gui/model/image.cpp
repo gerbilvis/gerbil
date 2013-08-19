@@ -5,8 +5,8 @@
 
 #include "../gerbil_gui_debug.h"
 
-#include <multi_img_offloaded.h>
-#include <multi_img_tasks.h>
+#include <multi_img/multi_img_offloaded.h>
+#include <background_task/tasks/multi_img_tasks.h>
 #include <imginput.h>
 #include <boost/make_shared.hpp>
 

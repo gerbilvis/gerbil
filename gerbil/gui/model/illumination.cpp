@@ -1,6 +1,6 @@
 #include "illumination.h"
 
-#include "multi_img_tasks.h"
+#include "background_task/tasks/multi_img_tasks.h"
 
 #include <opencv2/gpu/gpu.hpp>
 

@@ -11,7 +11,7 @@
 #include "../tasks/distviewbinstbb.h"
 #include "viewer_tasks.h"
 
-#include <background_task_queue.h>
+#include <background_task/background_task_queue.h>
 #include <stopwatch.h>
 
 #include <opencv2/core/core.hpp>

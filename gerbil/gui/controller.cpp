@@ -2,6 +2,7 @@
 #include "dockcontroller.h"
 #include "dist_view/distviewcontroller.h"
 #include <imginput.h>
+#include <rectangles.h>
 
 #include "gerbil_gui_debug.h"
 
@@ -227,8 +228,7 @@ void Controller::updateROI(bool reuse, cv::Rect roi, int bands)
 		/* compute if it is profitable to add/sub pixels given old and new ROI,
 		 * instead of full recomputation, and retrieve corresponding regions
 		 */
-		bool profitable = MultiImg::Auxiliary::rectTransform(im.getROI(), roi,
-															 sub, add);
+		bool profitable = rectTransform(im.getROI(), roi, sub, add);
 		if (!profitable)
 			reuse = false;
 	} else {

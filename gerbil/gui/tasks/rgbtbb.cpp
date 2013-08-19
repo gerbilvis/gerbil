@@ -1,4 +1,4 @@
-#include <multi_img_tasks.h>
+#include <background_task/tasks/multi_img_tasks.h>
 #include "rgbtbb.h"
 
 class Rgb {

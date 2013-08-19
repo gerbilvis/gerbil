@@ -3,7 +3,7 @@
 #include <graphseg_config.h>
 #include "../tasks/graphsegbackground.h"
 
-#include <background_task_queue.h>
+#include <background_task/background_task_queue.h>
 #include <opencv2/core/core.hpp>
 #include <qtopencv.h>
 

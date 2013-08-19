@@ -1,5 +1,5 @@
 
-#include <multi_img_tasks.h>
+#include <background_task/tasks/multi_img_tasks.h>
 #include "normrangecuda.h"
 
 bool NormRangeCuda::run()

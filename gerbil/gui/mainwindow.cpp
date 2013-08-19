@@ -12,11 +12,11 @@
 #include "dist_view/distviewcontroller.h"
 #include "iogui.h"
 #include "commandrunner.h"
-#include "multi_img_tasks.h"
+#include "background_task/tasks/multi_img_tasks.h"
 /*#include "tasks/rgbtbb.h"
 #include "tasks/normrangecuda.h"
 #include "tasks/normrangetbb.h"
-#include <background_task_queue.h>
+#include <background_task/background_task_queue.h>
 */
 
 #include "docks/illumdock.h"

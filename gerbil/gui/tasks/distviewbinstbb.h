@@ -3,7 +3,7 @@
 
 #include "../dist_view/compute.h"
 
-#include <background_task.h>
+#include <background_task/background_task.h>
 #include <shared_data.h>
 
 #include <QImage>

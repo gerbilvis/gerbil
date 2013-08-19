@@ -4,7 +4,7 @@
 #include "representation.h"
 
 #include <shared_data.h>
-#include <background_task_queue.h>
+#include <background_task/background_task_queue.h>
 #include <opencv2/core/core.hpp>
 
 #include <QObject>

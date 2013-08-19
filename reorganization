@@ -23,7 +23,7 @@ common/		(merge from gerbil_common)
 	labeling
 	progress_observer
 	qtopencv
-	rectangles *
+	rectangles *	[DONE]
 	stopwatch
 	vole_config
 	shared_data +

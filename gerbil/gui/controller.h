@@ -10,8 +10,8 @@
 
 #include "mainwindow.h"
 
-#include <background_task.h>
-#include <background_task_queue.h>
+#include <background_task/background_task.h>
+#include <background_task/background_task_queue.h>
 
 #include <QObject>
 #include <QMap>

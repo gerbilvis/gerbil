@@ -2,7 +2,7 @@
 #define DOCKCONTROLLER_H
 
 #include "model/representation.h"
-#include <background_task.h>
+#include <background_task/background_task.h>
 #include <shared_data.h>
 
 #include <QObject>
