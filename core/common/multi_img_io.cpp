@@ -23,19 +23,19 @@ unsigned short* multi_img::export_interleaved(bool useDataRange) const
 {
 	rebuildPixels();
 
-	pair<Value, Value> minmax(minval, maxval);
+	Range range(minval, maxval);
 	if (useDataRange) {
 		// determine actual minval/maxval
-		minmax = data_range();
+		range = data_range();
 	}
 
-	Value scale = 65535.0/(minmax.second - minmax.first);
+	Value scale = 65535.0/(range.max - range.min);
 	int length = size(), i = 0, d;
 	unsigned short *ret = new unsigned short[length*width*height];
 
 	for (vector<Pixel>::const_iterator it = pixels.begin(); it != pixels.end(); ++it)
 		for (d = 0; d < length; ++d)
-			ret[i++] = ((*it)[d] - minmax.first) * scale;
+			ret[i++] = ((*it)[d] - range.min) * scale;
 
 	return ret;
 }

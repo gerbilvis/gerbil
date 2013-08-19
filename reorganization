@@ -1,0 +1,96 @@
+New Tree:
+
+cmake
+common/		(merge from gerbil_common)
+	multi_img/
+		multi_img
+		multi_img_ext +
+		multi_img_io
+		multi_img_io_ext +
+		multi_img_offloaded +
+		multi_img_tbb *
+		illuminant +
+
+	background_task/
+		background_task +
+		background_task_queue +
+		tasks/
+			(from multi_img_tasks)
+			rgbqttbb % (was "rgbtbb", WITH_QT)
+			normrange* %
+
+	hashes
+	labeling
+	progress_observer
+	qtopencv
+	rectangles *
+	stopwatch
+	vole_config
+	shared_data +
+
+csparse
+edge_detect
+gui/
+	controller/
+		controller
+		dockcontroller
+		distviewcontroller
+	dist_view/
+		distviewbinstbb %
+		(keep rest intact for now)
+	docks/
+		banddock
+		illumdock
+		labeldock (will be merged to)
+		labelingdock
+		normdock
+		rgbdock
+		roidock
+		ussegmentationdock (rename to clusteringdock)
+	model/
+		falsecolormodel
+		graphsegmodel
+		illummodel
+		imagemodel
+		labelingmodel
+		representation
+		ussegmentationmodel (rename to clusteringmodel)
+	ressources/
+		logo/ (move one down)
+	widgets/
+		autohidewidget
+		bandview
+		graphsegwidget
+		roiview
+		mainwindow
+		scaledview
+	
+	commandrunner
+	gerbil.qrc
+	gerbil_gui_debug
+	iogui
+	main
+
+imginput
+lsh
+rgb
+seg_felzenszwalb
+seg_graphs/
+	...
+	graphseg_task %
+
+seg_meanshift
+shell
+similarity_measures
+
+
+Remove:
+	gerbil/common/multi_img_util
+	gui/tasks/rgbserial
+	gui/oldroidock
+	gui/docks/dockwidget
+
+Legend:
++	from gerbil/common
+*	from gerbil/common/multi_img_tasks
+%	from gui/tasks

@@ -312,19 +312,18 @@ void multi_img::applyCache()
 	anydirt = false;
 }
 
-std::pair<multi_img::Value, multi_img::Value>
-multi_img::data_range(double fraction) const
+multi_img::Range multi_img::data_range(double fraction) const
 {
 	assert(!empty());
 	assert(fraction < .5);
 
 	/*  find overall data range */
-	std::pair<Value, Value> ret = make_pair(bands[0](0,0), bands[0](0,0));
+	Range ret(bands[0](0,0), bands[0](0,0));
 	double tmp1, tmp2;
 	for (unsigned int d = 0; d < size(); ++d) {
 		cv::minMaxLoc(bands[d], &tmp1, &tmp2);
-		ret.first = std::min<Value>(ret.first, (Value)tmp1);
-		ret.second = std::max<Value>(ret.second, (Value)tmp2);
+		ret.min = std::min<Value>(ret.min, (Value)tmp1);
+		ret.max = std::max<Value>(ret.max, (Value)tmp2);
 	}
 
 	if (fraction == 0.) {
@@ -336,7 +335,7 @@ multi_img::data_range(double fraction) const
 	// todo: argument of the function?
 	int bins = 100;
 	int histSize[] = { bins };
-	float range1[] = { ret.first, ret.second };
+	float range1[] = { ret.min, ret.max };
 	const float *ranges[] = { range1 };
 	int channels[] = { 0 };
 
@@ -345,7 +344,7 @@ multi_img::data_range(double fraction) const
 					 1, histSize, ranges, true, d>0);
 
 	/* we defensively choose bin borders as new range approx. */
-	double binsize = (ret.second - ret.first)/(double)bins;
+	double binsize = (ret.max - ret.min)/(double)bins;
 	int needed = (int)std::ceil((double)(width*height*size())*fraction);
 	int found, index;
 
@@ -357,7 +356,7 @@ multi_img::data_range(double fraction) const
 		index++;
 	}
 	// set to lower boundary of last outlier bin
-	ret.first = ret.first + (Value)(binsize*(index - 1));
+	ret.min = ret.min + (Value)(binsize*(index - 1));
 
 	/* second: large values */
 	found = 0;
@@ -367,7 +366,7 @@ multi_img::data_range(double fraction) const
 		index--;
 	}
 	// set to upper boundary of last outlier bin
-	ret.second = ret.second - (Value)(binsize*(hist.rows - index - 2));
+	ret.max = ret.max - (Value)(binsize*(hist.rows - index - 2));
 
 	return ret;
 }
@@ -410,9 +409,9 @@ multi_img multi_img::project(const cv::PCA &pca) const
 	ret.applyCache();
 
 	// set min/max as observed
-	std::pair<Value, Value> range = ret.data_range();
-	ret.minval = range.first;
-	ret.maxval = range.second;
+	Range range = ret.data_range();
+	ret.minval = range.min;
+	ret.maxval = range.max;
 
 	return ret;
 }
@@ -477,10 +476,10 @@ void multi_img::data_stretch()
 	Value newmin = minval, newmax = maxval;
 
 	// find actual data range
-	std::pair<Value, Value> current = data_range();
+	Range current = data_range();
 
 	// correct the current range information (used by data_rescale())
-	minval = current.first; maxval = current.second;
+	minval = current.min; maxval = current.max;
 
 	// perform rescaling
 	data_rescale(newmin, newmax);

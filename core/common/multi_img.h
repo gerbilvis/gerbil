@@ -85,6 +85,10 @@ public:
 
 	/// value type (use float to save memory, double for higher precision)
 	typedef float Value;
+	struct Range {
+		Range(Value min, Value max) : min(min), max(max) {}
+		Value min, max;
+	};
 	static const float ValueMin;
 	static const float ValueMax;
 	static const int ValueType = CV_32F;
@@ -448,7 +452,7 @@ public:
 	           outside the range. This is useful to ignore outliers that
 	           would inordinately stretch the range.
 	**/
-	std::pair<Value, Value> data_range(double fraction = 0.) const;
+	Range data_range(double fraction = 0.) const;
 
 	/// compute PCA of the image
 	/**

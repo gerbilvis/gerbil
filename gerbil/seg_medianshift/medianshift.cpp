@@ -158,8 +158,8 @@ cv::Mat1s MedianShift::execute(const multi_img& input, ProgressObserver *progres
 	/// input properties
 	unsigned int npoints = inputp->width * inputp->height;
 	unsigned int dims = inputp->size();
-	pair<multi_img::Value, multi_img::Value> minmax = input.data_range();
-	double maxL1 = (minmax.second - minmax.first) * dims;
+	multi_img::Range range = input.data_range();
+	double maxL1 = (range.max - range.min) * dims;
 
 	/// TODO: make LSH feed on multi_img directly?
 	data = inputp->export_interleaved(true);
