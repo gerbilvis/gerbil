@@ -13,6 +13,8 @@
 #include <QPaintEvent>
 #include <iostream>
 
+/* TODO: do we really want sample buffers for these views? configurable?
+ */
 ScaledView::ScaledView(QWidget *parent)
 	: QGLWidget(QGLFormat(QGL::SampleBuffers), parent)
 {}
@@ -69,13 +71,11 @@ void ScaledView::paintEvent(QPaintEvent *ev)
 
 void ScaledView::mouseMoveEvent(QMouseEvent *ev)
 {
-	QGLWidget::mouseMoveEvent(ev);
 	cursorAction(ev);
 }
 
 void ScaledView::mousePressEvent(QMouseEvent *ev)
 {
-	QGLWidget::mousePressEvent(ev);
 	cursorAction(ev, true);
 }
 

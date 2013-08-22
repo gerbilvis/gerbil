@@ -14,6 +14,7 @@ public:
 	void mouseMoveEvent(QMouseEvent *ev);
 	void mousePressEvent(QMouseEvent *ev);
 	virtual void setPixmap(QPixmap p);
+
 protected:
 	virtual void cursorAction(QMouseEvent *ev, bool click = false);
 	void drawWaitMessage(QPainter &painter);

@@ -917,7 +917,10 @@ void Viewport::resizeScene()
 
 	QGLFramebufferObjectFormat format;
 	format.setAttachment(QGLFramebufferObject::NoAttachment);
-	format.setSamples(1); // TODO: configurable? test with other GPUs.
+
+	/* multisampling. 0 deactivates. 2 or 4 should be reasonable values.
+	 * TODO: make this configurable and/or test with cheap GPUs */
+	format.setSamples(0);
 
 	// use floating point for better alpha accuracy!
 	// TODO: We don't need this for highlights. do we care?
