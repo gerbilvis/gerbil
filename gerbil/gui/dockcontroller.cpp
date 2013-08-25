@@ -139,7 +139,7 @@ void DockController::setupDocks()
 	connect(chief->graphSegmentationModel(), SIGNAL(seedingDone()),
 			bandDock, SLOT(processSeedingDone()));
 
-	connect(chief, SIGNAL(requestOverlay(cv::Mat1b)),
+	connect(chief, SIGNAL(requestOverlay(const cv::Mat1b&)),
 			bandDock->bandView(), SLOT(drawOverlay(const cv::Mat1b&)));
 
 	connect(chief, SIGNAL(toggleIgnoreLabels(bool)),
