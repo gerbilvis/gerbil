@@ -79,7 +79,7 @@ protected:
 	BackgroundTaskQueue *queue;
 
 	QVector<QColor> labelColors;
-	cv::Mat1f illuminant;
+	std::vector<multi_img::Value> illuminant;
 	bool ignoreLabels;
 	cv::Mat1b highlightMask;
 };
