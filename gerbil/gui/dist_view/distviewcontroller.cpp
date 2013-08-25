@@ -62,8 +62,6 @@ void DistViewController::init()
 	/* connect pass-throughs / signals we process */
 	connect(chief, SIGNAL(currentLabelChanged(int)),
 			this, SLOT(setCurrentLabel(int)));
-	connect(chief, SIGNAL(requestKillHover()),
-			this, SIGNAL(killHover()));
 	connect(chief, SIGNAL(requestPixelOverlay(int,int)),
 			this, SLOT(pixelOverlay(int,int)));
 	connect(chief, SIGNAL(singleLabelSelected(int)),

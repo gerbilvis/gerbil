@@ -96,8 +96,6 @@ void DockController::setupDocks()
 	connect(bandDock->bandView(), SIGNAL(newLabeling(cv::Mat1s)),
 			chief->labelingModel(), SLOT(setLabels(cv::Mat1s)));
 
-	connect(bandDock->bandView(), SIGNAL(killHover()),
-			chief, SIGNAL(requestKillHover()));
 	connect(bandDock->bandView(), SIGNAL(pixelOverlay(int,int)),
 			chief, SIGNAL(requestPixelOverlay(int,int)));
 	connect(bandDock->bandView(), SIGNAL(singleLabelSelected(int)),

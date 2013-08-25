@@ -67,8 +67,6 @@ public slots:
 	void pixelOverlay(int y, int x);
 
 signals:
-	// pass through signals to viewers/viewports
-	void killHover();
 	void toggleLabeled(bool);
 	void toggleUnlabeled(bool);
 	void toggleSingleLabel(bool toggle);

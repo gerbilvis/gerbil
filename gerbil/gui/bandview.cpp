@@ -353,7 +353,6 @@ void BandView::cursorAction(QMouseEvent *ev, bool click)
 		} else {
 			if (overlay != &curMask)
 				drawOverlay(curMask);
-			emit killHover();
 		}
 		emit pixelOverlay(y, x);
 		return;
@@ -363,7 +362,6 @@ void BandView::cursorAction(QMouseEvent *ev, bool click)
 	/// destroying overlay etc.
 
 	// overlay in spectral views
-	emit killHover(); // vp redraw
 	emit pixelOverlay(y, x);
 
 	if (!(ev->buttons() & Qt::NoButton)) {

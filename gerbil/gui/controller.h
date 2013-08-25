@@ -47,7 +47,6 @@ signals:
 
 	void showIlluminationCurve(bool);
 
-	void requestKillHover();
 	void requestPixelOverlay(int y, int x);
 
 	/* pass-through from our other controller friends */

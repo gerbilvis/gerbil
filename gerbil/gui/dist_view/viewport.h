@@ -22,7 +22,7 @@ class Viewport : public QGraphicsScene
 {
 	Q_OBJECT
 public:
-	Viewport(QGLWidget *target);
+	Viewport(representation::t type, QGLWidget *target);
 	~Viewport();
 
 	QGraphicsProxyWidget* createControlProxy();
@@ -44,12 +44,8 @@ public:
 	bool active;
 
 public slots:
-	void killHover();
 
 	void highlightSingleLabel(int index);
-
-	// TODO: do we actually draw during fold? We don't get resizeevents anymore!
-	void setFoldingState() { drawingState = FOLDING; resizeTimer.start(50); }
 
 	void toggleRGB(bool enabled) { drawRGB = enabled; updateTextures(); }
 
@@ -59,15 +55,12 @@ public slots:
 	void activate();
 
 	// entry and exit point of user interaction with quick drawing
-	void startNoHQ(bool resize = false);
+	void startNoHQ();
 	bool endNoHQ();
-	void resizeEpilog();
 
 	void screenshot();
 
 	void rebuild();
-	// why a slot?
-	void updateTextures(RenderMode spectrum = RM_STEP, RenderMode highlight = RM_STEP);
 
 	// toggle which sets are shown
 	void toggleLabeled(bool enabled);
@@ -84,8 +77,15 @@ public slots:
 
 
 protected slots:
-	void continueDrawingSpectrum();
-	void continueDrawingHighlight();
+
+	// triggered by renderTimers
+	void continueDrawing(int buffer);
+
+	// triggered by resizeTimer
+	void resizeScene();
+
+	// triggered by scrollTimer and manually
+	void updateTextures(RenderMode spectrum = RM_STEP, RenderMode highlight = RM_STEP);
 
 signals:
 	// we are the active viewer
@@ -108,13 +108,12 @@ signals:
 
 protected:
 	void initTimers();
+	// called on resize
+	void initBuffers();
 
 	void reset();
 	// handles both resize and drawing
 	void drawBackground(QPainter *painter, const QRectF &rect);
-
-	// helper to drawBackground
-	void resizeScene();
 
 	void mouseMoveEvent(QGraphicsSceneMouseEvent*);
 	void mousePressEvent(QGraphicsSceneMouseEvent*);
@@ -134,7 +133,11 @@ protected:
 	// helper functions called by mouseMoveEvent
 	bool updateXY(int sel, int bin);
 
-	// helper functions called by drawBackground
+	// draw the full scene (returns false if not everything could be drawn)
+	bool drawScene(QPainter*, bool withDynamics = true);
+
+	/* helper functions called by drawScene/updateTextures */
+
 	void drawBins(QPainter &painter, QTimer &renderTimer,
 		unsigned int &renderedLines, unsigned int renderStep,
 				  bool onlyHighlight);
@@ -144,7 +147,8 @@ protected:
 
 	void drawAxesBg(QPainter*);
 	void drawAxesFg(QPainter*);
-	void drawLegend(QPainter*);
+	// parameter selection for highlighted band (in red), omit if not desired
+	void drawLegend(QPainter*, int selection = -1);
 	void drawOverlay(QPainter*);
 	void drawWaitMessage(QPainter*);
 
@@ -152,10 +156,23 @@ protected:
 	bool updateLimiter(int dim, int bin);
 
 private:
+	representation::t type;
 	int width, height;
-	QGLFramebufferObject *fboSpectrum;
-	QGLFramebufferObject *fboHighlight;
-	QGLFramebufferObject *fboMultisamplingBlit;
+
+	struct renderbuffer {
+		renderbuffer() : fbo(0), dirty(true),
+			renderStep(10000), renderedLines(0) {}
+
+		QGLFramebufferObject *fbo;
+		// fbo is not initialized, or was not drawn-to yet.
+		bool dirty;
+		const unsigned int renderStep;
+		QTimer renderTimer;
+		unsigned int renderedLines;
+	};
+
+	renderbuffer buffers[2];
+	QGLFramebufferObject *multisampleBlit;
 
 	bool illuminant_correction;
 	std::vector<multi_img::Value> illuminant;
@@ -190,14 +207,6 @@ private:
 	bool holdSelection;
 	int *activeLimiter;
 
-	// cache for efficient overlay
-	bool cacheValid;
-	QImage cacheImg;
-
-	// draw without highlight
-	bool clearView;
-	bool implicitClearView;
-
 	// drawing mode mean vs. bin center
 	bool drawMeans;
 	// drawing mode labelcolor vs. sRGB color
@@ -209,23 +218,12 @@ private:
 		HIGH_QUALITY,        // drawing HQ as usual
 		HIGH_QUALITY_QUICK,  // last update was HQ, quick updates requested
 		QUICK,               // last update not HQ, quick updates requested
-		RESIZE,              // resize updates requested (last update invalid)
-		SCREENSHOT,          // screenshot update requested (special drawing)
-		FOLDING              // only draw blank during folding resize ops
 	} drawingState;
-	// this timer will re-enable regular drawing after resize/folding
+
+	// this timer will resize the scene after resize/folding
 	QTimer resizeTimer;
+	// this timer will update buffers after scrolling
 	QTimer scrollTimer;
-
-	static const unsigned int renderAtOnceStep;
-
-	static const unsigned int spectrumRenderStep;
-	QTimer spectrumRenderTimer;
-	unsigned int spectrumRenderedLines;
-
-	static const unsigned int highlightRenderStep;
-	QTimer  highlightRenderTimer;
-	unsigned int  highlightRenderedLines;
 
 	std::vector<QString> yaxis;
 	int yaxisWidth;

@@ -24,6 +24,8 @@ vole_compile_library(
 	dist_view/viewer_tasks
 	dist_view/foldingbar
 	dist_view/viewport
+	dist_view/viewport_drawing
+	dist_view/viewport_input
 	dist_view/distviewgui
 
 	model/representation

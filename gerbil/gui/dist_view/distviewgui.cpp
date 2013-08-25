@@ -28,7 +28,7 @@ QGraphicsProxyWidget* DistViewGUI::initVP()
 	target = new QGLWidget(QGLFormat(QGL::SampleBuffers));
 
 	// create viewport. The viewport is a GraphicsScene
-	vp = new Viewport(target);
+	vp = new Viewport(type, target);
 	QGraphicsProxyWidget *proxy = vp->createControlProxy();
 
 	// attach everything to our member widget == QGraphicsView
@@ -104,9 +104,6 @@ void DistViewGUI::initSignals(DistViewController *chief)
 	connect(chief, SIGNAL(singleLabelSelected(int)),
 			vp, SLOT(highlightSingleLabel(int)));
 
-	connect(chief, SIGNAL(killHover()),
-			vp, SLOT(killHover()));
-
 	// signals to controller
 	connect(this, SIGNAL(requestBinCount(representation::t, int)),
 			chief, SLOT(changeBinCount(representation::t, int)));
@@ -115,8 +112,6 @@ void DistViewGUI::initSignals(DistViewController *chief)
 	 * including us (back-connection) */
 	connect(this, SIGNAL(folding()),
 			chief, SIGNAL(folding()));
-	connect(chief, SIGNAL(folding()),
-			vp, SLOT(setFoldingState()));
 
 	// viewport action
 	connect(vp, SIGNAL(activated(representation::t)),
