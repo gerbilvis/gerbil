@@ -15,8 +15,8 @@ public:
 	explicit RgbDock(QWidget *parent = 0);
 	
 signals:
-	void rgbRequested(coloring type, bool); // TODO: rename to falseColorRequested
-	void rgbLazyRequested(coloring type, bool); // TODO: rename to falseColorRequested
+	void rgbRequested(coloring type, bool gradient, bool forceRecalculate); // TODO: rename to falseColorRequested
+	void rgbLazyRequested(coloring type, bool gradient); // TODO: rename to falseColorRequested
 
 public slots:
 	void processImageUpdate(representation::t type, SharedMultiImgPtr image);
@@ -27,6 +27,9 @@ protected slots:
 	void calculateColorRepresentation();
 
 protected:
+	// if CMF is selected, displayGradient is always signaled as false
+	bool currGradient() { return displayGradient && (displayType != CMF); }
+
 	void initUi();
 //	ScaledView *view;
 

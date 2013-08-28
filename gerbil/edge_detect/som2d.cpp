@@ -2,8 +2,9 @@
 
 #include <sstream>
 
-SOM2d::SOM2d(const vole::EdgeDetectionConfig &conf, int dimension)
-	: SOM(conf, dimension), width(conf.sidelength),
+SOM2d::SOM2d(const vole::EdgeDetectionConfig &conf, int dimension,
+			 std::vector<multi_img_base::BandDesc> meta)
+	: SOM(conf, dimension, meta), width(conf.sidelength),
 	  height(conf.type == 1 ? conf.sidelength : 1), // case 1d SOM
 	  neurons(Field(conf.sidelength, Row(conf.sidelength, Neuron(dimension))))
 {
@@ -17,8 +18,9 @@ SOM2d::SOM2d(const vole::EdgeDetectionConfig &conf, int dimension)
 	}
 }
 
-SOM2d::SOM2d(const vole::EdgeDetectionConfig &conf, const multi_img &data)
-	: SOM(conf, data.size()), width(conf.sidelength),
+SOM2d::SOM2d(const vole::EdgeDetectionConfig &conf, const multi_img &data,
+			 std::vector<multi_img_base::BandDesc> meta)
+	: SOM(conf, data.size(), meta), width(conf.sidelength),
 	  height(conf.type == 1 ? conf.sidelength : 1), // case 1d SOM
 	  neurons(Field(conf.sidelength, Row(conf.sidelength, Neuron(data.size()))))
 {
@@ -198,7 +200,7 @@ double SOM2d::getDistanceBetweenWinners(const multi_img::Pixel &v1,
 	getDistance(p1->getId(), p2->getId());
 }
 
-std::string SOM2d::toString()
+std::string SOM2d::description()
 {
 	std::stringstream s;
 	if (height == 1)
@@ -206,6 +208,7 @@ std::string SOM2d::toString()
 	else
 		s << "SOM of type square, size " << width << "x" << height;
 	s << ", with" << size() << " neurons of dimension " << dim;
+	s << ", seed=" << config.seed;
 	return s.str();
 }
 

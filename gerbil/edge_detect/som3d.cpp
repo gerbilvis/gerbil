@@ -2,8 +2,9 @@
 
 #include <sstream>
 
-SOM3d::SOM3d(const vole::EdgeDetectionConfig &conf, int dimension)
-	: SOM(conf, dimension), width(conf.sidelength), height(conf.sidelength),
+SOM3d::SOM3d(const vole::EdgeDetectionConfig &conf, int dimension,
+			 std::vector<multi_img_base::BandDesc> meta)
+	: SOM(conf, dimension, meta), width(conf.sidelength), height(conf.sidelength),
 	  depth(conf.sidelength), neurons(Cube(conf.sidelength,
 										   Field(conf.sidelength,
 												 Row(conf.sidelength,
@@ -19,8 +20,9 @@ SOM3d::SOM3d(const vole::EdgeDetectionConfig &conf, int dimension)
 	}
 }
 
-SOM3d::SOM3d(const vole::EdgeDetectionConfig &conf, const multi_img &data)
-	: SOM(conf, data.size()), width(conf.sidelength), height(conf.sidelength),
+SOM3d::SOM3d(const vole::EdgeDetectionConfig &conf, const multi_img &data,
+			 std::vector<multi_img_base::BandDesc> meta)
+	: SOM(conf, data.size(), meta), width(conf.sidelength), height(conf.sidelength),
 	  depth(conf.sidelength), neurons(Cube(conf.sidelength,
 										   Field(conf.sidelength,
 												 Row(conf.sidelength,
@@ -274,11 +276,12 @@ double SOM3d::getDistanceBetweenWinners(const multi_img::Pixel &v1,
 	getDistance(p1->getId(), p2->getId());
 }
 
-std::string SOM3d::toString()
+std::string SOM3d::description()
 {
 	std::stringstream s;
 	s << "SOM of type cube, size " << width << "x" << height << "x" << depth;
 	s << ", with" << size() << " neurons of dimension " << dim;
+	s << ", seed=" << config.seed;
 	return s.str();
 }
 

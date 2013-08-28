@@ -7,8 +7,9 @@
 
 #include <sm_factory.h>
 
-SOM::SOM(const vole::EdgeDetectionConfig &conf, int dimension)
-	: config(conf), dim(dimension)
+SOM::SOM(const vole::EdgeDetectionConfig &conf, int dimension,
+		 std::vector<multi_img_base::BandDesc> meta)
+	: config(conf), dim(dimension), origImgMeta(meta)
 {
 	/// Create similarity measure
 	distfun = vole::SMFactory<multi_img::Value>::spawn(config.similarity);
@@ -21,36 +22,38 @@ SOM::~SOM()
 }
 
 SOM* SOM::createSOM(const vole::EdgeDetectionConfig &conf,
-					  int dimensions)
+					int dimensions,
+					std::vector<multi_img_base::BandDesc> meta)
 {
 	switch (conf.type)
 	{
 	case 0:
 		// (will be a 1d-SOM, SOM2d constructor handles that)
-		return new SOM2d(conf, dimensions);
+		return new SOM2d(conf, dimensions, meta);
 	case 1:
-		return new SOM2d(conf, dimensions);
+		return new SOM2d(conf, dimensions, meta);
 	case 2:
-		return new SOM3d(conf, dimensions);;
+		return new SOM3d(conf, dimensions, meta);
 	case 3:
-		return new SOMCone(conf, dimensions);
+		return new SOMCone(conf, dimensions, meta);
 	}
 }
 
 SOM* SOM::createSOM(const vole::EdgeDetectionConfig &conf,
-					  const multi_img &data)
+					const multi_img &data,
+					std::vector<multi_img_base::BandDesc> meta)
 {
 	switch (conf.type)
 	{
 	case 0:
 		// (will be a 1d-SOM, SOM2d constructor handles that)
-		return new SOM2d(conf, data);
+		return new SOM2d(conf, data, meta);
 	case 1:
-		return new SOM2d(conf, data);
+		return new SOM2d(conf, data, meta);
 	case 2:
-		return new SOM3d(conf, data);
+		return new SOM3d(conf, data, meta);
 	case 3:
-		return new SOMCone(conf, data);
+		return new SOMCone(conf, data, meta);
 	}
 }
 
@@ -58,10 +61,15 @@ multi_img SOM::export_2d()
 {
 	multi_img ret = multi_img(get2dHeight(), get2dWidth(), dim);
 
-	//ret.meta = // TODO: copy from original image?
+	if (!origImgMeta.empty())
+		ret.meta = origImgMeta;
 
-	ret.maxval = 255.; // TODO: should depend on original image
-	for (SOM::iterator n = begin(); n != end(); ++n)
+	multi_img::Range r = ret.data_range();
+	ret.maxval = r.max;
+	ret.minval = r.min;
+
+	const SOM::iterator theEnd = end();
+	for (SOM::iterator n = begin(); n != theEnd; ++n)
 	{
 		cv::Point p = n.get2dCoordinates();
 		ret.setPixel(p.y, p.x, *n);

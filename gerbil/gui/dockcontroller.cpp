@@ -153,8 +153,8 @@ void DockController::setupDocks()
 
 	connect(rgbDock, SIGNAL(rgbLazyRequested(coloring, bool)),
 			chief->falseColorModel(), SLOT(returnIfCached(coloring, bool)));
-	connect(rgbDock, SIGNAL(rgbRequested(coloring, bool)),
-			chief->falseColorModel(), SLOT(computeBackground(coloring, bool)));
+	connect(rgbDock, SIGNAL(rgbRequested(coloring, bool, bool)),
+			chief->falseColorModel(), SLOT(computeBackground(coloring, bool, bool)));
 
 	connect(chief->falseColorModel(), SIGNAL(calculationComplete(coloring, bool, QPixmap)),
 			rgbDock, SLOT(updatePixmap(coloring, bool, QPixmap)));

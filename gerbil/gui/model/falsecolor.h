@@ -70,8 +70,10 @@ public slots:
 	void processImageUpdate(representation::t type, SharedMultiImgPtr img);
 
 	// Img could be calculated in background, if the background task was started before!
-	void computeForeground(coloring type, bool gradient);
-	void computeBackground(coloring type, bool gradient);
+	void computeForeground(coloring type, bool gradient,
+						   bool forceRecalculate = false);
+	void computeBackground(coloring type, bool gradient,
+						   bool forceRecalculate = false);
 	// If image is already computed, send it back. Otherwise just leave it.
 	void returnIfCached(coloring type, bool gradient);
 
@@ -91,6 +93,10 @@ private:
 	// terminates all (queue and commandrunner) tasks and waits until the terminate is complete
 	void cancel();
 
+	// terminates and resets a specific commandrunner and the specific cache data
+	// this does NOT terminate queue tasks, but CMF calculation is quite fast anyways
+	void reset(payload *p);
+
 	SharedMultiImgPtr shared_img, shared_grad;
 	PayloadMap map;
 	BackgroundTaskQueue *const queue;
@@ -106,6 +112,9 @@ public:
 
 	virtual ~FalseColorModelPayload() {}
 
+	// signals cannot be public
+	void sendTerminateRunner() { emit terminateRunner(); }
+
 	representation::t repr;
 	FalseColorModel::coloring type;
 	bool gradient;
@@ -120,6 +129,7 @@ public slots:
 	void propagateRunnerSuccess(std::map<std::string, boost::any> output);
 
 signals:
+	void terminateRunner();
 	void calculationComplete(coloring type, bool gradient, QPixmap img);
 };
 #endif // MODEL_FALSECOLOR_H

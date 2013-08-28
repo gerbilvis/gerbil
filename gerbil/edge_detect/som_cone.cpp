@@ -2,8 +2,9 @@
 
 #include <sstream>
 
-SOMCone::SOMCone(const vole::EdgeDetectionConfig &conf, int dimension)
-	: SOM(conf, dimension), coordinates(std::vector<cv::Point3d>()),
+SOMCone::SOMCone(const vole::EdgeDetectionConfig &conf, int dimension,
+				 std::vector<multi_img_base::BandDesc> meta)
+	: SOM(conf, dimension, meta), coordinates(std::vector<cv::Point3d>()),
 	  slicePtr(std::vector<int>()), sliceZ(std::vector<double>()),
 	  granularity(conf.granularity)
 {
@@ -19,8 +20,9 @@ SOMCone::SOMCone(const vole::EdgeDetectionConfig &conf, int dimension)
 	}
 }
 
-SOMCone::SOMCone(const vole::EdgeDetectionConfig &conf, const multi_img &data)
-	: SOM(conf, data.size()), coordinates(std::vector<cv::Point3d>()),
+SOMCone::SOMCone(const vole::EdgeDetectionConfig &conf, const multi_img &data,
+				 std::vector<multi_img_base::BandDesc> meta)
+	: SOM(conf, data.size(), meta), coordinates(std::vector<cv::Point3d>()),
 	  slicePtr(std::vector<int>()), sliceZ(std::vector<double>()),
 	  granularity(conf.granularity)
 {
@@ -174,11 +176,12 @@ double SOMCone::getDistanceBetweenWinners(const multi_img::Pixel &v1,
 	getDistance(p1, p2);
 }
 
-std::string SOMCone::toString()
+std::string SOMCone::description()
 {
 	std::stringstream s;
 	s << "SOM of type cone, granularity " << granularity;
 	s << ", with " << size() << " neurons of dimension " << dim;
+	s << ", seed=" << config.seed;
 	return s.str();
 }
 

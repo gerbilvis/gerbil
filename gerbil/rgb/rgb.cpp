@@ -126,7 +126,7 @@ cv::Mat3f RGB::executePCA(const multi_img& src, vole::ProgressObserver *po)
 struct SOMTBB {
 
 	SOMTBB (const multi_img& src, SOM *som, const std::vector<double>& w,
-			cv::Mat3f &dst, vole::somtype somtype, cv::Mat1f *stddevs = NULL)
+			cv::Mat3f &dst, vole::somtype somtype, cv::Mat1f &stddevs)
 		: src(src), som(som), weight(w), dst(dst), somtype(somtype), stddevs(stddevs) { }
 
 	void operator()(const tbb::blocked_range<int>& r) const
@@ -136,7 +136,7 @@ struct SOMTBB {
 					som->closestN(src.atIndex(i), weight.size());
 
 			// Calculate stdandard deviation between positions of the BMUs
-			if (stddevs != NULL)
+			if (!stddevs.empty())
 			{
 				// calculate mean
 				cv::Point3d mean(0.0, 0.0, 0.0);
@@ -153,7 +153,7 @@ struct SOMTBB {
 				}
 				stddev = std::sqrt(stddev / coords.size());
 
-				(*stddevs)[i / stddevs->cols][i % stddevs->cols] = (float)stddev;
+				stddevs[i / stddevs.cols][i % stddevs.cols] = (float)stddev;
 			}
 
 			// set color values
@@ -228,7 +228,7 @@ struct SOMTBB {
 	SOM *const som;
 	const std::vector<double> &weight;
 	cv::Mat3f &dst;
-	cv::Mat1f *stddevs;
+	cv::Mat1f &stddevs;
 	vole::somtype somtype;
 };
 
@@ -272,14 +272,14 @@ cv::Mat3f RGB::executeSOM(const multi_img& img, vole::ProgressObserver *po)
 			weights[i] /= config.som.sidelength;
 
 	// set RGB pixels
-	cv::Mat1f *stddevs = NULL;
+	cv::Mat1f stddevs;
 	if (config.som.verbosity >= 3)
-		stddevs = new cv::Mat1f(bgr.rows, bgr.cols);
+		stddevs = cv::Mat1f(bgr.rows, bgr.cols);
 
 	tbb::parallel_for(tbb::blocked_range<int>(0, img.height*img.width),
 					  SOMTBB(img, som, weights, bgr, config.som.type, stddevs));
 
-	if (stddevs != NULL)
+	if (!stddevs.empty())
 	{
 		std::ofstream file("bmu_stddev.data");
 		if (!file.is_open())
@@ -288,11 +288,11 @@ cv::Mat3f RGB::executeSOM(const multi_img& img, vole::ProgressObserver *po)
 		{
 			float min_stddev = std::numeric_limits<float>::max(), max_stddev = 0;
 			double mean_stddev = 0;
-			for (int y = 0; y < stddevs->rows; ++y)
+			for (int y = 0; y < stddevs.rows; ++y)
 			{
-				for (int x = 0; x < stddevs->cols; ++x)
+				for (int x = 0; x < stddevs.cols; ++x)
 				{
-					float val = (*stddevs)[y][x];
+					float val = stddevs[y][x];
 					file << val << std::endl;
 
 					min_stddev = std::min(min_stddev, val);
@@ -300,7 +300,7 @@ cv::Mat3f RGB::executeSOM(const multi_img& img, vole::ProgressObserver *po)
 					max_stddev = std::max(max_stddev, val);
 				}
 			}
-			mean_stddev /= stddevs->rows * stddevs->cols;
+			mean_stddev /= stddevs.rows * stddevs.cols;
 			file.close();
 			std::cout << "Stats about stddev of distance between BMU positions in the SOM:" << std::endl;
 			std::cout << "Min:  " << min_stddev  << std::endl;
@@ -309,8 +309,8 @@ cv::Mat3f RGB::executeSOM(const multi_img& img, vole::ProgressObserver *po)
 		}
 
 		double min, max;
-		cv::minMaxLoc(*stddevs, &min, &max);
-		cv::imwrite("stddev.png", (*stddevs) * (255.0 / max));
+		cv::minMaxLoc(stddevs, &min, &max);
+		cv::imwrite("stddev.png", stddevs * (255.0 / max));
 	}
 
 	if (config.verbosity & 4) {

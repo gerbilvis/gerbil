@@ -13,6 +13,11 @@
 
 // === Major TODOs ===
 
+// wenn rgb.cpp beim berechnen der som nicht prueft, ob der task abgebrochen wird,
+// dann wartet qgerbil evtl 5min bis die som berechnet ist und haengt sich in dieser zeit auf
+
+// somtrainer: beim laden von SOMs wird klassenunabhaengig geprueft, ob das format zu 2d oder 3d passt!
+
 // remove fixed seed and verbosity in falsecolor.cpp
 
 // updateNeighbourhood of SOMCone
@@ -213,16 +218,21 @@ public:
 	};
 
 protected:
-	SOM(const vole::EdgeDetectionConfig &conf, int dimension);
+	SOM(const vole::EdgeDetectionConfig &conf, int dimension,
+		std::vector<multi_img_base::BandDesc> meta);
 
 public:
 	virtual ~SOM();
 
 	// Factories
 	static SOM *createSOM(const vole::EdgeDetectionConfig &conf,
-						  int dimensions);
+						  int dimensions,
+						  std::vector<multi_img_base::BandDesc> meta
+						  = std::vector<multi_img_base::BandDesc>());
 	static SOM *createSOM(const vole::EdgeDetectionConfig &conf,
-						  const multi_img &data);
+						  const multi_img &data,
+						  std::vector<multi_img_base::BandDesc> meta
+						  = std::vector<multi_img_base::BandDesc>());
 
 	/**
 	  @arg img_height height of the pixel cache (image size, not som size)
@@ -253,7 +263,7 @@ public:
 											 const multi_img::Pixel &v2) = 0;
 
 	// short info about type, shape and #neurons of the SOM
-	virtual std::string toString() = 0;
+	virtual std::string description() = 0;
 
 	// Iterators for iterating over all neurons of the SOM
 	virtual iterator begin() = 0;
@@ -268,6 +278,7 @@ public:
 
 protected:
 	const vole::EdgeDetectionConfig &config;
+	const std::vector<multi_img_base::BandDesc> origImgMeta;
 	const int dim;		///< Dimension of each neuron / the SOM
 
 private:

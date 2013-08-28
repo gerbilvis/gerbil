@@ -81,6 +81,7 @@ void FalseColorModel::processImageUpdate(representation::t type,
 		reset();
 }
 
+// cancel current calculations & delete old data
 void FalseColorModel::reset()
 {
 	// in case we have some computation going on
@@ -119,6 +120,23 @@ void FalseColorModel::cancel()
 	}
 }
 
+void FalseColorModel::reset(payload *p)
+{
+	// cancel current task, if it exists
+	if (p->runner != NULL)
+	{
+		p->sendTerminateRunner();
+		p->runner->wait();
+		delete p->runner;
+		p->runner = NULL;
+	}
+
+	// reset data cache
+	p->img = QPixmap();
+	p->calcImg = qimage_ptr(new SharedData<QImage>(new QImage()));
+	p->calcInProgress = false;
+}
+
 void FalseColorModel::createRunner(coloringWithGrad mapId)
 {
 	payload *p = map.value(mapId);
@@ -148,9 +166,10 @@ void FalseColorModel::createRunner(coloringWithGrad mapId)
 		break;
 #ifdef WITH_EDGE_DETECT
 	case SOM:
-		cmd->config.algo = gerbil::COLOR_SOM;
-
 		// default parameters for false coloring (different to regular defaults)
+		cmd->config.algo = gerbil::COLOR_SOM;
+		cmd->config.som.maxIter = 100000;
+		cmd->config.som.seed = time(NULL);
 
 		// CONE parameters
 //		cmd->config.som.type		= vole::SOM_CONE;
@@ -168,10 +187,6 @@ void FalseColorModel::createRunner(coloringWithGrad mapId)
 		cmd->config.som.learnStart  = 0.75;
 		cmd->config.som.learnEnd    = 0.01;
 
-		cmd->config.som.maxIter     = 100000;
-		// TODO: should som really have its own verbosity setting?
-		cmd->config.som.verbosity = 3; // TODO: delete
-		cmd->config.som.seed = 0; // TODO: delete
 		break;
 #endif
 	default:
@@ -183,13 +198,17 @@ void FalseColorModel::createRunner(coloringWithGrad mapId)
 		this, SIGNAL(terminateRunners()),
 		p->runner, SLOT(terminate()), Qt::QueuedConnection);
 	QObject::connect(
+		p, SIGNAL(terminateRunner()),
+		p->runner, SLOT(terminate()), Qt::QueuedConnection);
+	QObject::connect(
 		p->runner, SIGNAL(success(std::map<std::string, boost::any>)),
 		p, SLOT(propagateRunnerSuccess(std::map<std::string, boost::any>)),
 		Qt::QueuedConnection);
 }
 
 
-void FalseColorModel::computeForeground(coloring type, bool gradient)
+void FalseColorModel::computeForeground(coloring type, bool gradient,
+										bool forceRecalculate)
 {
 	coloringWithGrad mapId;
 	mapId.col = type;
@@ -198,14 +217,17 @@ void FalseColorModel::computeForeground(coloring type, bool gradient)
 	payload *p = map.value(mapId);
 	assert(p != NULL);
 
+	if (forceRecalculate)
+	{
+		reset(p);
+	}
 	// img is calculated already
-	if (!p->img.isNull()) {
+	else if (!p->img.isNull()) {
 		emit calculationComplete(type, gradient, p->img);
 		return;
 	}
-
 	// img is currently in calculation, loadComplete will be emitted as soon as its finished
-	if (p->calcInProgress)
+	else if (p->calcInProgress)
 		return;
 
 	// we can't get around doing some real calculations
@@ -231,7 +253,8 @@ void FalseColorModel::computeForeground(coloring type, bool gradient)
 	emit calculationComplete(type, gradient, p->img);
 }
 
-void FalseColorModel::computeBackground(coloring type, bool gradient)
+void FalseColorModel::computeBackground(coloring type, bool gradient,
+										bool forceRecalculate)
 {
 	coloringWithGrad mapId;
 	mapId.col = type;
@@ -240,15 +263,18 @@ void FalseColorModel::computeBackground(coloring type, bool gradient)
 	payload *p = map.value(mapId);
 	assert(p != NULL);
 
+	if (forceRecalculate)
+	{
+		reset(p);
+	}
 	// img is calculated already
-	if (!p->img.isNull()) {
+	else if (!p->img.isNull()) {
 		emit calculationComplete(type, gradient, p->img);
 		return;
 	}
-
 	// img is currently in calculation, loadComplete will
 	// be emitted as soon as its finished
-	if (p->calcInProgress)
+	else if (p->calcInProgress)
 		return;
 
 	// we can't get around doing some real calculations

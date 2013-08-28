@@ -36,7 +36,6 @@ public:
 	*/
 	int feedSample(const multi_img::Pixel &input);
 
-	// TODO: wo sind die naechsten 4 methoden definiert???
 	/**
 	* Calculates vector norm of 2 vectors
 	*

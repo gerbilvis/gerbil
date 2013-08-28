@@ -7,17 +7,19 @@
 #include "../model/falsecolor.h"
 
 RgbDock::RgbDock(QWidget *parent) :
-	QDockWidget(parent), displayType(CMF)
+	QDockWidget(parent), displayType(CMF), displayGradient(0)
 {
 	setupUi(this);
 	initUi();
+
+	gradientCheck->setEnabled(displayType != CMF); // CMF does not work on gradient
 }
 
 void RgbDock::updatePixmap(coloring type, bool gradient, QPixmap p)
 {
 	//GGDBG_CALL();
 	// only use selected (false-)coloring
-	if (type != displayType || gradient != displayGradient)
+	if (type != displayType || gradient != currGradient())
 		return;
 
 	view->setEnabled(true);
@@ -43,6 +45,9 @@ void RgbDock::initUi()
 	connect(sourceBox, SIGNAL(currentIndexChanged(int)),
 			this, SLOT(selectColorRepresentation()));
 
+	connect(gradientCheck, SIGNAL(stateChanged(int)),
+			this, SLOT(selectColorRepresentation()));
+
 	connect(applyButton, SIGNAL(clicked()),
 			this, SLOT(calculateColorRepresentation()));
 
@@ -57,7 +62,7 @@ void RgbDock::processVisibilityChanged(bool visible)
 	if(dockVisible && !rgbValid) {
 		//GGDBGM("requesting rgb"<<endl);
 		view->setEnabled(false);
-		emit rgbRequested(displayType, displayGradient);
+		emit rgbRequested(displayType, currGradient(), false);
 	}
 }
 
@@ -68,7 +73,7 @@ void RgbDock::processImageUpdate(representation::t, SharedMultiImgPtr)
 	view->setEnabled(false);
 	if (dockVisible) {
 		//GGDBGM("requesting rgb"<<endl);
-		emit rgbRequested(displayType, displayGradient);
+		emit rgbRequested(displayType, currGradient(), false);
 	}
 }
 
@@ -76,12 +81,14 @@ void RgbDock::selectColorRepresentation()
 {
 	QVariant boxData = sourceBox->itemData(sourceBox->currentIndex());
 	displayType = (FalseColorModel::coloring)boxData.toInt();
-	// we do not need rest of state to ask for lazy update
+	displayGradient = gradientCheck->isChecked();
+
+	gradientCheck->setEnabled(displayType != CMF); // CMF does not work on gradient
 
 	/* kindly ask if we could have the image without effort right now:
 	 * no re-calculation
 	 */
-	emit rgbLazyRequested(displayType, displayGradient);
+	emit rgbLazyRequested(displayType, currGradient());
 }
 
 void RgbDock::calculateColorRepresentation()
@@ -91,5 +98,5 @@ void RgbDock::calculateColorRepresentation()
 
 	rgbValid = false;
 	view->setEnabled(false);
-	emit rgbRequested(displayType, displayGradient);
+	emit rgbRequested(displayType, currGradient(), true);
 }

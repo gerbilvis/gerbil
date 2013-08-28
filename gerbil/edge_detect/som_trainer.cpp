@@ -27,8 +27,8 @@ SOM *SOMTrainer::train(const vole::EdgeDetectionConfig &config,
 {
 	if (config.som_file.empty()) {
 		vole::Stopwatch running_time("Total running time");
-		SOM *som = SOM::createSOM(config, img.size());
-		std::cout << "# Generated " << som->toString() << std::endl;
+		SOM *som = SOM::createSOM(config, img.size(), img.meta);
+		std::cout << "# Generated " << som->description() << std::endl;
 
 		SOMTrainer trainer(som, img, config);
 
@@ -54,7 +54,7 @@ SOM *SOMTrainer::train(const vole::EdgeDetectionConfig &config,
 			return NULL;
 		}
 		somimg.rebuildPixels(false);
-		return SOM::createSOM(config, somimg);
+		return SOM::createSOM(config, somimg, img.meta);
 	}
 }
 

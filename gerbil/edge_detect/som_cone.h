@@ -97,8 +97,10 @@ protected:
 	};
 
 public:
-	SOMCone(const vole::EdgeDetectionConfig &conf, int dimension);
-	SOMCone(const vole::EdgeDetectionConfig &conf, const multi_img &data);
+	SOMCone(const vole::EdgeDetectionConfig &conf, int dimension,
+			std::vector<multi_img_base::BandDesc> meta);
+	SOMCone(const vole::EdgeDetectionConfig &conf, const multi_img &data,
+			std::vector<multi_img_base::BandDesc> meta);
 
 	void initCoordinates(int dimension);
 
@@ -122,7 +124,7 @@ public:
 	double getDistanceBetweenWinners(const multi_img::Pixel &v1,
 									 const multi_img::Pixel &v2);
 
-	std::string toString();
+	std::string description();
 
 	iterator begin();
 	iterator end();

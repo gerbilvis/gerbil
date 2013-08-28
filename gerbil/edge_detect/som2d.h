@@ -98,8 +98,10 @@ public:
 	typedef std::vector<Neuron> Row;
 	typedef std::vector<Row> Field;
 
-	SOM2d(const vole::EdgeDetectionConfig &conf, int dimension);
-	SOM2d(const vole::EdgeDetectionConfig &conf, const multi_img &data);
+	SOM2d(const vole::EdgeDetectionConfig &conf, int dimension,
+		  std::vector<multi_img_base::BandDesc> meta);
+	SOM2d(const vole::EdgeDetectionConfig &conf, const multi_img &data,
+		  std::vector<multi_img_base::BandDesc> meta);
 
 	/**
 	  @arg img_height height of the pixel cache (image size, not som size)
@@ -121,7 +123,7 @@ public:
 	double getDistanceBetweenWinners(const multi_img::Pixel &v1,
 									 const multi_img::Pixel &v2);
 
-	std::string toString();
+	std::string description();
 
 	iterator begin();
 	iterator end();

@@ -51,8 +51,8 @@ int MeanShiftSOM::execute() {
 	Stopwatch watch("Total time");
 
 	// SOM setup
-	SOM *som = SOM::createSOM(config.som, input->size());
-	std::cout << "# Generated " << som->toString() << std::endl;
+	SOM *som = SOM::createSOM(config.som, input->size(), input->meta);
+	std::cout << "# Generated " << som->description() << std::endl;
 
 	{
 		SOMTrainer trainer(som, *input, config.som);
