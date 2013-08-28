@@ -15,13 +15,13 @@ public:
 	explicit RgbDock(QWidget *parent = 0);
 	
 signals:
-	void rgbRequested(coloring type); // TODO: rename to falseColorRequested
-	void rgbLazyRequested(coloring type); // TODO: rename to falseColorRequested
+	void rgbRequested(coloring type, bool); // TODO: rename to falseColorRequested
+	void rgbLazyRequested(coloring type, bool); // TODO: rename to falseColorRequested
 
 public slots:
 	void processImageUpdate(representation::t type, SharedMultiImgPtr image);
 	void processVisibilityChanged(bool visible);
-	void updatePixmap(coloring type, QPixmap p); // TODO: add bool gradient
+	void updatePixmap(coloring type, bool gradient, QPixmap p);
 protected slots:
 	void selectColorRepresentation();
 	void calculateColorRepresentation();

@@ -1,4 +1,4 @@
-/*	
+/*
 	Copyright(c) 2012 Ralph Muessig	and Johannes Jordan
 	<johannes.jordan@cs.fau.de>.
 
@@ -21,13 +21,12 @@
 
 //som includes
 #include "edge_detection.h"
-#include "self_organizing_map.h"
 #include "som_trainer.h"
 #include "som_tester.h"
 
-EdgeDetection::EdgeDetection() 
+EdgeDetection::EdgeDetection()
   : vole::Command("edge_detect", // command name
-          config,
+		  config,
 		  "Johannes Jordan, Ralph Muessig", // author names
 		  "johannes.jordan@cs.fau.de" ) // email
 {}
@@ -37,7 +36,7 @@ EdgeDetection::EdgeDetection(const vole::EdgeDetectionConfig &cfg)
 		  config,
 		  "Johannes Jordan, Ralph Muessig", // author names
 		  "johannes.jordan@cs.fau.de" ), // email
- 		  config(cfg)
+		  config(cfg)
 {}
 
 int EdgeDetection::execute()
@@ -53,11 +52,6 @@ int EdgeDetection::execute()
 
 	img.rebuildPixels(false);
 
-	if (config.hack3d) {
-		assert(config.height == 1);
-		config.height = config.width * config.width;
-	}
-
 	SOM *som = SOMTrainer::train(config, img);
 	if (som == NULL)
 		return -1;
@@ -70,10 +64,9 @@ int EdgeDetection::execute()
 
 	std::cout << "# Generating 2D image using the SOM and the multispectral image..." << std::endl;
 	vole::Stopwatch watch("Edge Image Generation");
-	SOMTester tester(*som, img, config);
 
 	cv::Mat1d dX, dY;
-	tester.getEdge(dX, dY);
+	som->getEdge(img, dX, dY);
 	cv::Mat sobelXShow, sobelYShow;
 
 	dX.convertTo(sobelXShow, CV_8UC1, 255.);
@@ -81,22 +74,23 @@ int EdgeDetection::execute()
 
 	dY.convertTo(sobelYShow, CV_8UC1, 255.);
 	cv::imwrite(config.output_dir + "/dy.png", sobelYShow);
-    
+
 	delete som;
 	return 0;
 }
 
 
-void EdgeDetection::printShortHelp() const 
+void EdgeDetection::printShortHelp() const
 {
 	std::cout << "Edge detection in multispectral images using SOM." << std::endl;
 }
 
-void EdgeDetection::printHelp() const 
+void EdgeDetection::printHelp() const
 {
 	std::cout << "Edge detection in multispectral images using SOM." << std::endl;
 	std::cout << std::endl;
 	std::cout << "Please read \"Jordan, J., Angelopoulou E.: Edge Detection in Multispectral\n"
-	             "Images Using the N-Dimensional Self-Organizing Map.\" (ICIP 2011)"
-	          << std::endl;
+				 "Images Using the N-Dimensional Self-Organizing Map.\" (ICIP 2011)"
+			  << std::endl;
 }
+

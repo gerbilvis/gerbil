@@ -1,0 +1,198 @@
+#include "som.h"
+
+// for factory methods
+#include "som2d.h"
+#include "som3d.h"
+#include "som_cone.h"
+
+#include <sm_factory.h>
+
+SOM::SOM(const vole::EdgeDetectionConfig &conf, int dimension)
+	: config(conf), dim(dimension)
+{
+	/// Create similarity measure
+	distfun = vole::SMFactory<multi_img::Value>::spawn(config.similarity);
+	assert(distfun);
+}
+
+SOM::~SOM()
+{
+	delete distfun;
+}
+
+SOM* SOM::createSOM(const vole::EdgeDetectionConfig &conf,
+					  int dimensions)
+{
+	switch (conf.type)
+	{
+	case 0:
+		// (will be a 1d-SOM, SOM2d constructor handles that)
+		return new SOM2d(conf, dimensions);
+	case 1:
+		return new SOM2d(conf, dimensions);
+	case 2:
+		return new SOM3d(conf, dimensions);;
+	case 3:
+		return new SOMCone(conf, dimensions);
+	}
+}
+
+SOM* SOM::createSOM(const vole::EdgeDetectionConfig &conf,
+					  const multi_img &data)
+{
+	switch (conf.type)
+	{
+	case 0:
+		// (will be a 1d-SOM, SOM2d constructor handles that)
+		return new SOM2d(conf, data);
+	case 1:
+		return new SOM2d(conf, data);
+	case 2:
+		return new SOM3d(conf, data);
+	case 3:
+		return new SOMCone(conf, data);
+	}
+}
+
+multi_img SOM::export_2d()
+{
+	multi_img ret = multi_img(get2dHeight(), get2dWidth(), dim);
+
+	//ret.meta = // TODO: copy from original image?
+
+	ret.maxval = 255.; // TODO: should depend on original image
+	for (SOM::iterator n = begin(); n != end(); ++n)
+	{
+		cv::Point p = n.get2dCoordinates();
+		ret.setPixel(p.y, p.x, *n);
+	}
+	return ret;
+}
+
+SOM::iterator SOM::identifyWinnerNeuron(const multi_img::Pixel &inputVec)
+{
+	// initialize with maximum value
+	double closestDistance = std::numeric_limits<double>::max();
+
+	// init winner with non existent value
+	SOM::iterator winner = end();
+
+	// find closest Neuron to inputVec in the SOM
+	// -> iterate over all neurons in grid
+	// end() needs to be called only once, so do this before the loop
+	const SOM::iterator theEnd = end();
+	for (SOM::iterator neuron = begin(); neuron != theEnd; ++neuron) {
+		double dist = getSimilarity(*neuron, inputVec);
+
+		// compare current distance with minimal found distance
+		if (dist < closestDistance) {
+			// set new minimal distance and winner position
+			closestDistance = dist;
+			winner = neuron;
+		}
+	}
+	assert(winner != end());
+	return winner;
+}
+
+// comparer for heap in closestN()
+static bool sortpair(std::pair<double, SOM::iterator> i,
+					 std::pair<double, SOM::iterator> j) {
+	return (i.first < j.first);
+}
+
+std::vector<std::pair<double, SOM::iterator> >
+SOM::closestN(const multi_img::Pixel &inputVec, unsigned int N)
+{
+	const SOM::iterator theEnd = end();
+
+	// initialize with maximum values
+	std::vector<std::pair<double, SOM::iterator> > heap(N,
+		std::make_pair(std::numeric_limits<double>::max(), theEnd));
+
+	// find closest Neurons to inputVec in the SOM
+	// iterate over all neurons in grid
+	for (SOM::iterator neuron = begin(); neuron != theEnd; ++neuron) {
+		double dist = distfun->getSimilarity(*neuron, inputVec);
+		// compare current distance with the maximum of the shortest found distances
+		if (dist < heap[0].first) {
+			// remove max. value in heap
+			std::pop_heap(heap.begin(), heap.end(), sortpair);
+			heap.pop_back();
+			// add new value
+			heap.push_back(std::make_pair(dist, neuron));
+			std::push_heap(heap.begin(), heap.end(), sortpair);
+		}
+	}
+
+	assert(heap[0].second != end()); // maximum (double::max()) != end()
+	std::sort_heap(heap.begin(), heap.end(), sortpair); // sort ascending
+	return heap;
+}
+
+// fallback method that should be overwritten, but can be used as reference
+// calculates the exp function for all neurons -> slow
+int SOM::updateNeighborhood(SOM::iterator &neuron,
+							 const multi_img::Pixel &input,
+							 double sigma, double learnRate)
+{
+	const double INF = std::numeric_limits<double>::infinity();
+	SOM::neighbourIterator theEnd = neuron.neighboursEnd(INF);
+
+	// Generic method that calculates the weight for all neurons
+	int updates = 0;
+	for (SOM::neighbourIterator neighbour = neuron.neighboursBegin(INF);
+		 neighbour != theEnd; ++neighbour)
+	{
+		double weight = learnRate * neighbour.getFakeGaussianWeight(sigma);
+		if (weight >= 0.01) // for consistency, doesn't save us much here
+		{
+			(*neighbour).update(input, weight);
+			++updates;
+		}
+	}
+	return updates;
+}
+
+void SOM::getEdge(const multi_img &image, cv::Mat1d &dx, cv::Mat1d &dy)
+{
+	std::cout << "Calculating derivatives (dx, dy)" << std::endl;
+
+	Cache *cache = createCache(image.height, image.width);
+	cache->preload(image);
+
+	dx = cv::Mat::zeros(image.height, image.width, CV_64F);
+	dy = cv::Mat::zeros(image.height, image.width, CV_64F);
+
+	double maxIntensity = 0.0;
+
+	for (int y = 1; y < image.height-1; y++) {
+		double valx, valy, valxAbs, valyAbs;
+
+		for (int x = 1; x < image.width-1; x++) {
+			// x-direction
+			valx = cache->getSobelX(x, y);
+			valxAbs = std::fabs(valx);
+			if (valxAbs > maxIntensity)
+				maxIntensity = valx;
+			dx[y][x] = valx;
+
+			// y-direction
+			valy = cache->getSobelY(x, y);
+			valyAbs = std::fabs(valy);
+			if (valyAbs > maxIntensity)
+				maxIntensity = valyAbs;
+			dy[y][x] = valy;
+		}
+	}
+
+	delete cache;
+
+	// normalization
+	cv::MatIterator_<double> ix, iy;
+	for (ix = dx.begin(), iy = dy.begin(); ix != dx.end(); ++ix, ++iy) {
+		// [-X .. X] --( /2X )--> [-0.5 .. 0.5] --( +0.5 )--> [0 .. 1]
+		*ix = (*ix / (2*maxIntensity)) + 0.5;
+		*iy = (*iy / (2*maxIntensity)) + 0.5;
+	}
+}

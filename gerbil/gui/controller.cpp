@@ -125,6 +125,7 @@ void Controller::initImage()
 void Controller::initFalseColor()
 {
 	fm.setMultiImg(representation::IMG, im.getImage(representation::IMG));
+	fm.setMultiImg(representation::GRAD, im.getImage(representation::GRAD));
 
 	connect(&im, SIGNAL(imageUpdate(representation::t,SharedMultiImgPtr)),
 			&fm, SLOT(processImageUpdate(representation::t,SharedMultiImgPtr)));

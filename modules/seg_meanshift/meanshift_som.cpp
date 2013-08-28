@@ -10,7 +10,8 @@
 #include "meanshift.h"
 
 #ifdef WITH_EDGE_DETECT
-#include <self_organizing_map.h>
+#include <edge_detection_config.h>
+#include <som.h>
 #include <som_trainer.h>
 #include <labeling.h>
 #endif
@@ -50,15 +51,8 @@ int MeanShiftSOM::execute() {
 	Stopwatch watch("Total time");
 
 	// SOM setup
-	if (config.som.hack3d) {
-		assert(config.som.height == 1);
-		config.som.height = config.som.width * config.som.width;
-	}
-
-	SOM som(config.som, input->size());
-	std::cout << "# Generated SOM " << config.som.width
-			  << "x" << config.som.height << " with dimension "
-			  << input->size() << std::endl;
+	SOM *som = SOM::createSOM(config.som, input->size());
+	std::cout << "# Generated " << som->toString() << std::endl;
 
 	{
 		SOMTrainer trainer(som, *input, config.som);
@@ -70,7 +64,7 @@ int MeanShiftSOM::execute() {
 	}
 
 	// create meanshift input
-	multi_img msinput = som.export_2d();
+	multi_img msinput = som->export_2d();
 
 	// execute mean shift
 	config.pruneMinN = 1;
@@ -98,8 +92,9 @@ int MeanShiftSOM::execute() {
 	cv::Mat1s labels_mask(input->height, input->width);
 	cv::Mat1s::iterator it = labels_mask.begin();
 	for (unsigned int i = 0; it != labels_mask.end(); ++i, ++it) {
-		cv::Point n = som.identifyWinnerNeuron(input->atIndex(i));
-		*it = labels_ms(n);
+		SOM::iterator n = som->identifyWinnerNeuron(input->atIndex(i));
+		cv::Point pos = n.get2dCoordinates();
+		*it = labels_ms(pos);
 	}
 
 	// DBG: write out input to FAMS
@@ -115,6 +110,7 @@ int MeanShiftSOM::execute() {
 				  + config.output_prefix + "segmentation_rgb_som.png";
 	cv::imwrite(output_name, labels.bgr());
 
+	delete som;
 	return 0;
 #else
 	std::cerr << "FATAL: Edge detection (SOM provider) was not built-in!"

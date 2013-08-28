@@ -151,13 +151,13 @@ void DockController::setupDocks()
 	connect(chief->imageModel(), SIGNAL(imageUpdate(representation::t,SharedMultiImgPtr)),
 			rgbDock, SLOT(processImageUpdate(representation::t,SharedMultiImgPtr)));
 
-	connect(rgbDock, SIGNAL(rgbLazyRequested(coloring)),
-			chief->falseColorModel(), SLOT(returnIfCached(coloring)));
-	connect(rgbDock, SIGNAL(rgbRequested(coloring)),
-			chief->falseColorModel(), SLOT(computeBackground(coloring)));
+	connect(rgbDock, SIGNAL(rgbLazyRequested(coloring, bool)),
+			chief->falseColorModel(), SLOT(returnIfCached(coloring, bool)));
+	connect(rgbDock, SIGNAL(rgbRequested(coloring, bool)),
+			chief->falseColorModel(), SLOT(computeBackground(coloring, bool)));
 
-	connect(chief->falseColorModel(), SIGNAL(calculationComplete(coloring, QPixmap)),
-			rgbDock, SLOT(updatePixmap(coloring, QPixmap)));
+	connect(chief->falseColorModel(), SIGNAL(calculationComplete(coloring, bool, QPixmap)),
+			rgbDock, SLOT(updatePixmap(coloring, bool, QPixmap)));
 
 	/* ROI Dock */
 	// signals for ROI (reset handled in RoiDock)

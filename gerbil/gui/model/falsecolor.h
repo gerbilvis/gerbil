@@ -11,7 +11,9 @@
 #include <QMetaType>
 #include <QObject>
 
-// All representation parameters are currently ignored or expected to be IMG
+// TODO: if gradient image is changed, we do not need to delete img false color results and vice versa
+
+// SOM-generation is not canceled when the program is terminated
 
 // QImages have implicit data sharing, so the returned objects act as a pointer, the data is not copied
 // If the QImage is changed in the Model, this change is calculated on a copy,
@@ -30,6 +32,17 @@ enum coloring {
 	COLSIZE = 3
 };
 Q_DECLARE_METATYPE(::coloring)
+
+// struct to identify entries in the map
+struct coloringWithGrad {
+	coloring col;
+	bool grad;
+
+	// map needs this operator
+	bool operator<(const coloringWithGrad &other) const {
+		return col < other.col || (col == other.col && grad < other.grad);
+	}
+};
 
 class FalseColorModel : public QObject
 {
@@ -57,28 +70,28 @@ public slots:
 	void processImageUpdate(representation::t type, SharedMultiImgPtr img);
 
 	// Img could be calculated in background, if the background task was started before!
-	void computeForeground(coloring type);
-	void computeBackground(coloring type);
+	void computeForeground(coloring type, bool gradient);
+	void computeBackground(coloring type, bool gradient);
 	// If image is already computed, send it back. Otherwise just leave it.
-	void returnIfCached(coloring type);
+	void returnIfCached(coloring type, bool gradient);
 
 signals:
 	// Possibly check Image.cacheKey() to determine if the update is really neccessary
-	void calculationComplete(coloring type, QPixmap img);
+	void calculationComplete(coloring type, bool gradient, QPixmap img);
 	void terminateRunners();
 
 private:
 	typedef QList<payload*> PayloadList;
-	typedef QMap<coloring, payload*> PayloadMap;
+	typedef QMap<coloringWithGrad, payload*> PayloadMap;
 
 	// creates the runner that is neccessary for calculating the false color representation of type
 	// runners are deleted in terminatedTasksDeleteRunners (and therefore in reset() & ~FalseColor())
-	void createRunner(coloring type);
+	void createRunner(coloringWithGrad mapId);
 
 	// terminates all (queue and commandrunner) tasks and waits until the terminate is complete
 	void cancel();
 
-	SharedMultiImgPtr shared_img;
+	SharedMultiImgPtr shared_img, shared_grad;
 	PayloadMap map;
 	BackgroundTaskQueue *const queue;
 };
@@ -87,14 +100,15 @@ class FalseColorModelPayload : public QObject {
 	Q_OBJECT
 
 public:
-	FalseColorModelPayload(representation::t repr, FalseColorModel::coloring type)
-		: repr(repr), type(type), runner(0)
+	FalseColorModelPayload(representation::t repr, FalseColorModel::coloring type, bool gradient)
+		: repr(repr), type(type), gradient(gradient), runner(0)
 	{}
 
 	virtual ~FalseColorModelPayload() {}
 
 	representation::t repr;
 	FalseColorModel::coloring type;
+	bool gradient;
 	CommandRunner *runner;
 	QPixmap img;
 	qimage_ptr calcImg;  // the background task swaps its result in this variable, in taskComplete, it is copied to img & cleared
@@ -106,6 +120,6 @@ public slots:
 	void propagateRunnerSuccess(std::map<std::string, boost::any> output);
 
 signals:
-	void calculationComplete(coloring type, QPixmap img);
+	void calculationComplete(coloring type, bool gradient, QPixmap img);
 };
 #endif // MODEL_FALSECOLOR_H

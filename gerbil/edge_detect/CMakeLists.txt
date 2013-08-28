@@ -8,18 +8,22 @@ vole_add_required_modules("similarity_measures")
 vole_add_optional_modules("gerbil_common")
 
 vole_compile_library(
-	"edge_detection"
+        "edge_detection"
 )
 
 vole_add_command("edge_detect" "edge_detection.h" "EdgeDetection")
 
 vole_compile_library(
-	"edge_detection_config"
-	"self_organizing_map"
-	"neuron"
-	"som_trainer"
-	"som_tester"
-	"som_distance"
+        "edge_detection"
+        "edge_detection_config"
+        "neuron"
+        "som"
+        "som2d"
+        "som3d"
+        "som_cone"
+        "som_distance"
+        "som_tester"
+        "som_trainer"
 )
 
 vole_add_module()

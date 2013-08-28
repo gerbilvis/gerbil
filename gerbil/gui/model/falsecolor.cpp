@@ -18,9 +18,6 @@
 //  progressUpdate() in SOM einbauen,
 //      SOM *som = SOMTrainer::train(config.som, img);
 
-// Long term TODOs:
-// "init rgb.configs, if non default setup is neccessary"
-
 FalseColorModel::FalseColorModel(QObject *parent, BackgroundTaskQueue *queue)
 	: QObject(parent), queue(queue)
 {
@@ -33,18 +30,27 @@ FalseColorModel::FalseColorModel(QObject *parent, BackgroundTaskQueue *queue)
 		qRegisterMetaType< std::map<std::string, boost::any> >(
 					"std::map<std::string, boost::any>");
 
-	for (int i = 0; i < COLSIZE; ++i) {
-#ifndef WITH_EDGE_DETECT
-		if (i == SOM)
-			continue;
-#endif
-		payload *p = new payload(representation::IMG, (coloring)i);
-		map.insert((coloring)i, p);
+	for (int gradient = 0; gradient < 2; ++gradient)
+	{
+		bool grad = gradient == 1; // true in first iteration, false in second
 
-		QObject::connect(
-			p,    SIGNAL(calculationComplete(coloring, QPixmap)),
-			this, SIGNAL(calculationComplete(coloring, QPixmap)),
-			Qt::QueuedConnection);
+		for (int i = 0; i < COLSIZE; ++i) {
+#ifndef WITH_EDGE_DETECT
+			if (i == SOM)
+				continue;
+#endif
+			coloringWithGrad mapId;
+			mapId.col = (coloring)i;
+			mapId.grad = grad;
+
+			payload *p = new payload(representation::IMG, (coloring)i, grad);
+			map.insert(mapId, p);
+
+			QObject::connect(
+				p,    SIGNAL(calculationComplete(coloring, bool, QPixmap)),
+				this, SIGNAL(calculationComplete(coloring, bool, QPixmap)),
+				Qt::QueuedConnection);
+		}
 	}
 }
 
@@ -58,16 +64,20 @@ void FalseColorModel::setMultiImg(representation::t type,
 {
 	// in the future, we might be interested in the other ones as well.
 	// currently, we don't process other types, so "warn" the caller
-	assert(type == representation::IMG); // TODO: add gradient
+	assert(type == representation::IMG || type == representation::GRAD);
 
-	this->shared_img = shared_img;
+	if (type == representation::IMG)
+		this->shared_img = shared_img;
+	else if (type == representation::GRAD)
+		this->shared_grad = shared_img;
+
 	reset();
 }
 
 void FalseColorModel::processImageUpdate(representation::t type,
 										 SharedMultiImgPtr img)
 {
-	if (type == representation::IMG) // TODO: add gradient
+	if (type == representation::IMG || type == representation::GRAD)
 		reset();
 }
 
@@ -109,9 +119,9 @@ void FalseColorModel::cancel()
 	}
 }
 
-void FalseColorModel::createRunner(coloring type)
+void FalseColorModel::createRunner(coloringWithGrad mapId)
 {
-	payload *p = map.value(type);
+	payload *p = map.value(mapId);
 	assert(p != NULL && p->runner == NULL);
 	// runners are only deleted in reset(). if reset() was not called and the
 	// runner exists, the image has been calculated already, so there is no
@@ -120,7 +130,7 @@ void FalseColorModel::createRunner(coloring type)
 	// init runner & command
 	p->runner = new CommandRunner();
 	std::map<std::string, boost::any> input;
-	input["multi_img"] = shared_img; // direct pointer to multi image
+	input["multi_img"] = mapId.grad ? shared_grad : shared_img;
 	p->runner->input = input;
 	p->runner->cmd = new gerbil::RGB(); // deleted in ~CommandRunner()
 
@@ -128,7 +138,7 @@ void FalseColorModel::createRunner(coloring type)
 	// a copy of the initialized RGB object, as the obj in the runner is
 	// deleted in its destructor
 	gerbil::RGB *cmd = (gerbil::RGB *)p->runner->cmd;
-	switch (type)
+	switch (mapId.col)
 	{
 	case CMF:
 		cmd->config.algo = gerbil::COLOR_XYZ;
@@ -139,11 +149,29 @@ void FalseColorModel::createRunner(coloring type)
 #ifdef WITH_EDGE_DETECT
 	case SOM:
 		cmd->config.algo = gerbil::COLOR_SOM;
+
 		// default parameters for false coloring (different to regular defaults)
-		cmd->config.som.width       = 10;
-		cmd->config.som.radiusStart = 3.1622777;
-		cmd->config.som.radiusEnd   = 0.31622777;
+
+		// CONE parameters
+//		cmd->config.som.type		= vole::SOM_CONE;
+//		cmd->config.som.granularity	= 0.06; // 1081 neurons
+//		cmd->config.som.sigmaStart  = 0.12;
+//		cmd->config.som.sigmaEnd    = 0.03;
+//		cmd->config.som.learnStart  = 0.75;
+//		cmd->config.som.learnEnd    = 0.01;
+
+		// CUBE parameters
+		cmd->config.som.type        = vole::SOM_CUBE;
+		cmd->config.som.sidelength  = 10;
+		cmd->config.som.sigmaStart  = 4;
+		cmd->config.som.sigmaEnd    = 1;
+		cmd->config.som.learnStart  = 0.75;
+		cmd->config.som.learnEnd    = 0.01;
+
 		cmd->config.som.maxIter     = 100000;
+		// TODO: should som really have its own verbosity setting?
+		cmd->config.som.verbosity = 3; // TODO: delete
+		cmd->config.som.seed = 0; // TODO: delete
 		break;
 #endif
 	default:
@@ -161,14 +189,18 @@ void FalseColorModel::createRunner(coloring type)
 }
 
 
-void FalseColorModel::computeForeground(coloring type)
+void FalseColorModel::computeForeground(coloring type, bool gradient)
 {
-	payload *p = map.value(type);
+	coloringWithGrad mapId;
+	mapId.col = type;
+	mapId.grad = gradient;
+
+	payload *p = map.value(mapId);
 	assert(p != NULL);
 
 	// img is calculated already
 	if (!p->img.isNull()) {
-		emit calculationComplete(type, p->img);
+		emit calculationComplete(type, gradient, p->img);
 		return;
 	}
 
@@ -180,33 +212,37 @@ void FalseColorModel::computeForeground(coloring type)
 	p->calcInProgress = true;
 	if (type == CMF) {
 		BackgroundTaskPtr taskRgb(new RgbTbb(
-			shared_img,
+			gradient ? shared_grad : shared_img,
 			mat3f_ptr(new SharedData<cv::Mat3f>(new cv::Mat3f)),
 			p->calcImg));
 		taskRgb.get()->run();
 	}
 	else {
-		createRunner(type);
+		createRunner(mapId);
 		cv::Mat3b result;
 		{
-			SharedMultiImgBaseGuard guard(*shared_img);
+			SharedMultiImgBaseGuard guard(gradient ? *shared_grad : *shared_img);
 			gerbil::RGB *cmd = (gerbil::RGB *)p->runner->cmd;
 			result = (cv::Mat3b)(cmd->execute(**shared_img) * 255.0f);
 		}
 		p->img.convertFromImage(vole::Mat2QImage(result));
 	}
 	p->calcInProgress = false;
-	emit calculationComplete(type, p->img);
+	emit calculationComplete(type, gradient, p->img);
 }
 
-void FalseColorModel::computeBackground(coloring type)
+void FalseColorModel::computeBackground(coloring type, bool gradient)
 {
-	payload *p = map.value(type);
+	coloringWithGrad mapId;
+	mapId.col = type;
+	mapId.grad = gradient;
+
+	payload *p = map.value(mapId);
 	assert(p != NULL);
 
 	// img is calculated already
 	if (!p->img.isNull()) {
-		emit calculationComplete(type, p->img);
+		emit calculationComplete(type, gradient, p->img);
 		return;
 	}
 
@@ -219,7 +255,7 @@ void FalseColorModel::computeBackground(coloring type)
 	p->calcInProgress = true;
 	if (type == CMF) {
 		BackgroundTaskPtr taskRgb(new RgbTbb(
-			shared_img,
+			gradient ? shared_grad : shared_img,
 			mat3f_ptr(new SharedData<cv::Mat3f>(new cv::Mat3f)),
 			p->calcImg));
 		QObject::connect(taskRgb.get(), SIGNAL(finished(bool)),
@@ -228,7 +264,7 @@ void FalseColorModel::computeBackground(coloring type)
 		queue->push(taskRgb);
 	}
 	else {
-		createRunner(type);
+		createRunner(mapId);
 		/* note that this is an operation that cannot run concurrently with
 		 * other tasks that would invalidate (swap) the image data.
 		 * Make sure to cancel this before enqueueing tasks that invalidate
@@ -237,14 +273,18 @@ void FalseColorModel::computeBackground(coloring type)
 	}
 }
 
-void FalseColorModel::returnIfCached(coloring type)
+void FalseColorModel::returnIfCached(coloring type, bool gradient)
 {
-	payload *p = map.value(type);
+	coloringWithGrad mapId;
+	mapId.col = type;
+	mapId.grad = gradient;
+
+	payload *p = map.value(mapId);
 	assert(p != NULL);
 
 	// img is calculated already
 	if (!p->img.isNull()) {
-		emit calculationComplete(type, p->img);
+		emit calculationComplete(type, gradient, p->img);
 	}
 }
 
@@ -257,7 +297,7 @@ void FalseColorModelPayload::propagateFinishedQueueTask(bool success)
 
 	img.convertFromImage(**calcImg);
 
-	emit calculationComplete(type, img);
+	emit calculationComplete(type, gradient, img);
 }
 
 void FalseColorModelPayload::propagateRunnerSuccess(std::map<std::string, boost::any> output)
@@ -270,5 +310,5 @@ void FalseColorModelPayload::propagateRunnerSuccess(std::map<std::string, boost:
 	img.convertFromImage(vole::Mat2QImage((cv::Mat3b)mat));
 
 	calcInProgress = false;
-	emit calculationComplete(type, img);
+	emit calculationComplete(type, gradient, img);
 }

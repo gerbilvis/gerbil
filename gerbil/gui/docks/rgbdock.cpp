@@ -13,11 +13,11 @@ RgbDock::RgbDock(QWidget *parent) :
 	initUi();
 }
 
-void RgbDock::updatePixmap(coloring type, QPixmap p)
+void RgbDock::updatePixmap(coloring type, bool gradient, QPixmap p)
 {
 	//GGDBG_CALL();
 	// only use selected (false-)coloring
-	if (type != displayType)
+	if (type != displayType || gradient != displayGradient)
 		return;
 
 	view->setEnabled(true);
@@ -57,7 +57,7 @@ void RgbDock::processVisibilityChanged(bool visible)
 	if(dockVisible && !rgbValid) {
 		//GGDBGM("requesting rgb"<<endl);
 		view->setEnabled(false);
-		emit rgbRequested(displayType);
+		emit rgbRequested(displayType, displayGradient);
 	}
 }
 
@@ -68,7 +68,7 @@ void RgbDock::processImageUpdate(representation::t, SharedMultiImgPtr)
 	view->setEnabled(false);
 	if (dockVisible) {
 		//GGDBGM("requesting rgb"<<endl);
-		emit rgbRequested(displayType);
+		emit rgbRequested(displayType, displayGradient);
 	}
 }
 
@@ -81,7 +81,7 @@ void RgbDock::selectColorRepresentation()
 	/* kindly ask if we could have the image without effort right now:
 	 * no re-calculation
 	 */
-	emit rgbLazyRequested(displayType);
+	emit rgbLazyRequested(displayType, displayGradient);
 }
 
 void RgbDock::calculateColorRepresentation()
@@ -91,5 +91,5 @@ void RgbDock::calculateColorRepresentation()
 
 	rgbValid = false;
 	view->setEnabled(false);
-	emit rgbRequested(displayType); // TODO: gradient
+	emit rgbRequested(displayType, displayGradient);
 }

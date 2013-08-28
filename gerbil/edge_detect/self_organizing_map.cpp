@@ -1,3 +1,4 @@
+#if false
 /*	
 	Copyright(c) 2012 Ralph Muessig	and Johannes Jordan
 	<johannes.jordan@cs.fau.de>.
@@ -276,3 +277,4 @@ double SOM::getDistance3(const cv::Point3d &p1, const cv::Point3d &p2) const
 	double dz = (p1.z - p2.z);
 	return std::sqrt(dx * dx + dy * dy + dz * dz);
 }
+#endif

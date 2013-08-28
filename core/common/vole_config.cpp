@@ -21,7 +21,8 @@ namespace vole {
 
 Config::Config(const std::string& p) :
 	prefix_enabled(!p.empty()),
-	prefix(prefix_enabled ? p + "." : p)
+	prefix(prefix_enabled ? p + "." : p),
+	verbosity(0)
 {
 #ifdef WITH_BOOST_PROGRAM_OPTIONS
 	initMandatoryBoostOptions();

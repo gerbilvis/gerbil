@@ -18,6 +18,7 @@
 #include <opencv2/highgui/highgui.hpp>
 #include <tbb/parallel_for.h>
 #include <iostream>
+#include <fstream>
 #include <vector>
 #include <algorithm>
 
@@ -120,50 +121,121 @@ cv::Mat3f RGB::executePCA(const multi_img& src, vole::ProgressObserver *po)
 	return bgr;
 }
 
-static bool sortpair(std::pair<double, cv::Point> i,
-					 std::pair<double, cv::Point> j) {
-	return (i.first < j.first);
-}
-
+#ifdef WITH_EDGE_DETECT
+// TODO: schlechte lastverteilung
 struct SOMTBB {
 
-	SOMTBB (const multi_img& src, const SOM *som, const std::vector<double>& w,
-			cv::Mat3f &dst)
-	: src(src), som(som), w(w), dst(dst) {}
+	SOMTBB (const multi_img& src, SOM *som, const std::vector<double>& w,
+			cv::Mat3f &dst, vole::somtype somtype, cv::Mat1f *stddevs = NULL)
+		: src(src), som(som), weight(w), dst(dst), somtype(somtype), stddevs(stddevs) { }
 
 	void operator()(const tbb::blocked_range<int>& r) const
 	{
 		for (int i = r.begin(); i != r.end(); ++i) {
-			std::vector<std::pair<double, cv::Point> > coords =
-					som->closestN(src.atIndex(i), w.size());
-			std::sort(coords.begin(), coords.end(), sortpair);
+			std::vector<std::pair<double, SOM::iterator> > coords =
+					som->closestN(src.atIndex(i), weight.size());
+
+			// Calculate stdandard deviation between positions of the BMUs
+			if (stddevs != NULL)
+			{
+				// calculate mean
+				cv::Point3d mean(0.0, 0.0, 0.0);
+				for (int j = 0; j < coords.size(); ++j) {
+					mean += coords[j].second.get3dPos();
+				}
+				mean *= 1.0 / (double)coords.size();
+
+				// calculate stddev
+				double stddev = 0;
+				for (int j = 0; j < coords.size(); ++j) {
+					cv::Point3d sampleDev = coords[j].second.get3dPos() - mean;
+					stddev += sampleDev.dot(sampleDev);
+				}
+				stddev = std::sqrt(stddev / coords.size());
+
+				(*stddevs)[i / stddevs->cols][i % stddevs->cols] = (float)stddev;
+			}
+
+			// set color values
 			cv::Point3d avg(0., 0., 0.);
 			for (int j = 0; j < coords.size(); ++j) {
-				cv::Point3d c(coords[j].second.x,
-							  coords[j].second.y / som->getWidth(),
-							  coords[j].second.y % som->getWidth());
-				avg += w[j] * c;
+				cv::Point3d pos = coords[j].second.get3dPos();
+				avg += weight[j] * pos;
 			}
 			cv::Vec3f &pixel = dst(i / dst.cols, i % dst.cols);
-			pixel[0] = (float)(avg.x);
-			pixel[1] = (float)(avg.y);
-			pixel[2] = (float)(avg.z);
+			if (somtype == vole::SOM_CUBE)
+			{
+				// rgb
+				pixel[0] = (float)(avg.x);
+				pixel[1] = (float)(avg.y);
+				pixel[2] = (float)(avg.z);
+			}
+			else
+			{
+				// hsv
+				const double PI = 3.141592653589793;
+
+				// calculate hsv values
+				double h, s, v;
+				h = std::atan2(avg.y, avg.x) + PI; // only x and y affect hue, h has range 0 - 2*PI
+				s = std::sqrt(avg.x * avg.x + avg.y * avg.y); // only x and y affect saturation
+				if (avg.z > 0) s /= 0.5 * avg.z; // normalize by radius at height avg.z of the cone
+				else s = 0;
+				v = avg.z; // the cone has a height of 1
+
+				// convert hsv2rgb - see german wikipedia article
+				double f, p, q, t;
+				int h_i = (int)(h / (PI / 3));
+				f = (h / (PI / 3)) - h_i;
+				p = v * (1 - s);
+				q = v * (1 - s * f);
+				t = v * (1 - s * (1-f));
+
+				switch (h_i)
+				{
+				case 0:
+				case 6:
+					pixel = cv::Vec3f(v, t, p);
+					break;
+				case 1:
+					pixel = cv::Vec3f(q, v, p);
+					break;
+				case 2:
+					pixel = cv::Vec3f(p, v, t);
+					break;
+				case 3:
+					pixel = cv::Vec3f(p, q, v);
+					break;
+				case 4:
+					pixel = cv::Vec3f(t, p, v);
+					break;
+				case 5:
+					pixel = cv::Vec3f(v, p, q);
+					break;
+				}
+
+				if (pixel[0] < 0) pixel[0] = 0;
+				if (pixel[1] < 0) pixel[1] = 0;
+				if (pixel[2] < 0) pixel[2] = 0;
+				if (pixel[0] > 1) pixel[0] = 1;
+				if (pixel[1] > 1) pixel[1] = 1;
+				if (pixel[2] > 1) pixel[2] = 1;
+			}
 		}
 	}
-	
+
 	const multi_img& src;
-	const SOM *som;
-	const std::vector<double> &w;
+	SOM *const som;
+	const std::vector<double> &weight;
 	cv::Mat3f &dst;
+	cv::Mat1f *stddevs;
+	vole::somtype somtype;
 };
 
-#ifdef WITH_EDGE_DETECT
 // TODO: call progressUpdate
 cv::Mat3f RGB::executeSOM(const multi_img& img, vole::ProgressObserver *po)
 {
 	img.rebuildPixels(false);
-	config.som.hack3d = true;
-	config.som.height = config.som.width * config.som.width;
 
 	SOM *som = SOMTrainer::train(config.som, img);
 	if (som == NULL)
@@ -178,35 +250,69 @@ cv::Mat3f RGB::executeSOM(const multi_img& img, vole::ProgressObserver *po)
 
 	cv::Mat3f bgr(img.height, img.width);
 	cv::Mat3f::iterator it = bgr.begin();
-	if (config.som_depth < 2) {
-		for (unsigned int i = 0; it != bgr.end(); ++i, ++it) {
-			cv::Point n = som->identifyWinnerNeuron(img.atIndex(i));
-			(*it)[0] = n.x;
-			(*it)[1] = n.y / som->getWidth();
-			(*it)[2] = n.y % som->getWidth();
-		}
-		bgr /= config.som.width;
+
+	int N = config.som_depth;
+
+	// calculate weights including normalization (RGB space width)
+	std::vector<double> weights;
+	if (config.som_linear) {
+		for (int i = 0; i < N; ++i)
+			weights.push_back(1./(double)N);
 	} else {
-		int N = config.som_depth;
+		/* each weight is half of the preceeding weight in the ranking
+		   examples; N=2: 0.667, 0.333; N=4: 0.533, 0.267, 0.133, 0.067 */
+		double normalization = (double)((1 << N) - 1); // 2^N - 1
+		for (int i = 0; i < N; ++i)
+			weights.push_back((double)(1 << (N - i - 1)) / normalization); // (2^[N-1..0]) / normalization
+	}
 
-		// calculate weights including normalization (RGB space width)
-		std::vector<double> weights;
-		if (config.som_linear) {
-			for (int i = 0; i < N; ++i)
-				weights.push_back(1./(double)(N * config.som.width));
-		} else {
-			/* each weight is half of the preceeding weight in the ranking
-			   examples; N=2: 0.667, 0.333; N=4: 0.533, 0.267, 0.133, 0.067 */
-			double normalization = (double)((1 << (N)) - 1)
-				                   * (double)config.som.width;
-			for (int i = 0; i < N; ++i)
-				weights.push_back((double)(1 << (N - i - 1)) / normalization);
+	// keep the rgb values in the range of 0..1
+	if (config.som.type == vole::SOM_CUBE)
+		for (int i = 0; i < N; ++i)
+			weights[i] /= config.som.sidelength;
+
+	// set RGB pixels
+	cv::Mat1f *stddevs = NULL;
+	if (config.som.verbosity >= 3)
+		stddevs = new cv::Mat1f(bgr.rows, bgr.cols);
+
+	tbb::parallel_for(tbb::blocked_range<int>(0, img.height*img.width),
+					  SOMTBB(img, som, weights, bgr, config.som.type, stddevs));
+
+	if (stddevs != NULL)
+	{
+		std::ofstream file("bmu_stddev.data");
+		if (!file.is_open())
+			std::cerr << "Could not open stddev data file" << std::endl;
+		else
+		{
+			float min_stddev = std::numeric_limits<float>::max(), max_stddev = 0;
+			double mean_stddev = 0;
+			for (int y = 0; y < stddevs->rows; ++y)
+			{
+				for (int x = 0; x < stddevs->cols; ++x)
+				{
+					float val = (*stddevs)[y][x];
+					file << val << std::endl;
+
+					min_stddev = std::min(min_stddev, val);
+					mean_stddev += val;
+					max_stddev = std::max(max_stddev, val);
+				}
+			}
+			mean_stddev /= stddevs->rows * stddevs->cols;
+			file.close();
+			std::cout << "Stats about stddev of distance between BMU positions in the SOM:" << std::endl;
+			std::cout << "Min:  " << min_stddev  << std::endl;
+			std::cout << "Mean: " << mean_stddev << std::endl;
+			std::cout << "Max:  " << max_stddev  << std::endl;
 		}
 
-		// set RGB pixels
-		tbb::parallel_for(tbb::blocked_range<int>(0, img.height*img.width),
-						  SOMTBB(img, som, weights, bgr));
+		double min, max;
+		cv::minMaxLoc(*stddevs, &min, &max);
+		cv::imwrite("stddev.png", (*stddevs) * (255.0 / max));
 	}
+
 	if (config.verbosity & 4) {
 		multi_img somimg = som->export_2d();
 		

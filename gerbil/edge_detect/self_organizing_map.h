@@ -1,3 +1,4 @@
+#if false
 #ifndef SELF_ORGANIZING_MAP_H
 #define SELF_ORGANIZING_MAP_H
 
@@ -10,14 +11,16 @@
 class SOM {
 
 public:
-	typedef std::vector<Neuron> Row;
-	typedef std::vector<Row> Field;
+	typedef std::vector<Neuron> Row; // === copied to SOM ===
+	typedef std::vector<Row> Field; // === copied to SOM ===
 
-	SOM(const vole::EdgeDetectionConfig &conf, int dimension);
-	SOM(const vole::EdgeDetectionConfig &conf, const multi_img &data);
+	SOM(const vole::EdgeDetectionConfig &conf, int dimension); // === copied to SOM / SOM2d / SOM3d ===
+	SOM(const vole::EdgeDetectionConfig &conf, const multi_img &data); // === copied to SOM / SOM2d / 3d with changes ===
 
-	virtual ~SOM();
+	virtual ~SOM(); // === copied to SOM ===
 
+	// === These will be implementation details and should not be visible outside the class ===
+	// === (width and height doesn't even exist in cone) ===
 	/**
 	* Returns a pointer to the neuron at the given grid position
 	*
@@ -29,7 +32,7 @@ public:
 	{ return &neurons[y][x]; }
 
 	//! export as multi_img
-	multi_img export_2d();
+	multi_img export_2d(); // === definition copied to SOM ===
 
 	//! Returns the width of the SOM grid
 	inline int getWidth() const
@@ -50,36 +53,45 @@ public:
 	* @param	input Neuron to which closest neuron in SOM will be determined
 	* @return	Position of the neuron in x,y coordinates
 	*/
-	virtual cv::Point identifyWinnerNeuron(const multi_img::Pixel &input) const;
+	virtual cv::Point identifyWinnerNeuron(const multi_img::Pixel &input) const; // === copied to SOM ===
 	virtual std::vector<std::pair<double, cv::Point> >
-	closestN(const multi_img::Pixel &inputVec, unsigned int N) const;
+	closestN(const multi_img::Pixel &inputVec, unsigned int N) const; // === copied to SOM ===
 
+	// === TODO ===
 	virtual void updateNeighborhood(const cv::Point &pos,
 	                                const multi_img::Pixel &input,
 	                                double radius, double learnRate);
 
+	// === copied to SOM / SOM3d ===
+	// (these should cv::Point == cv::Point2i and cv::Point3i, not double!)
+	// there is one exception, though
 	virtual double getDistance(const cv::Point2d &p1, const cv::Point2d &p2) const;
 	virtual double getDistance3(const cv::Point3d &p1, const cv::Point3d &p2) const;
 
+	// === we don't need this one anymore :) ===
 	bool ishack3d() const { return config.hack3d; }
 
 protected:
+	// === TODO, used in updateNeighbourhood ===
 	virtual void updateSingle3(const cv::Point3i &pos, const multi_img::Pixel &input, double weight);
+	// === TODO, but integrate into updateNeighbourhood ===
 	virtual void updateNeighborhood3(const cv::Point &pos,
 	                                 const multi_img::Pixel &input,
 	                                 double radius, double learnRate);
 
+	// === copied to SOM2d / -3d ===
 	int dim;		///< Dimension of each neuron / the SOM
 	int width;		  	///< Width of SOM grid
 	int height;		  	///< Height of SOM grid
 
-	Field neurons;	///< Neurons in the SOM grid
+	Field neurons;	///< Neurons in the SOM grid // === copied to SOM2d / 3d ===
 
-	const vole::EdgeDetectionConfig &config;
+	const vole::EdgeDetectionConfig &config; // === copied to SOM ===
 
 public:
-	vole::SimilarityMeasure<multi_img::Value> *distfun;
+	vole::SimilarityMeasure<multi_img::Value> *distfun; // === copied to SOM ===
 };
 
 
 #endif // SELF_ORGANIZING_MAP_H
+#endif
