@@ -5,7 +5,7 @@
 SOM2d::SOM2d(const vole::EdgeDetectionConfig &conf, int dimension,
 			 std::vector<multi_img_base::BandDesc> meta)
 	: SOM(conf, dimension, meta), width(conf.sidelength),
-	  height(conf.type == 1 ? conf.sidelength : 1), // case 1d SOM
+	  height(conf.type == vole::SOM_SQUARE ? conf.sidelength : 1), // case 1d SOM
 	  neurons(Field(conf.sidelength, Row(conf.sidelength, Neuron(dimension))))
 {
 	/// Uniformly randomizes each neuron
@@ -21,9 +21,16 @@ SOM2d::SOM2d(const vole::EdgeDetectionConfig &conf, int dimension,
 SOM2d::SOM2d(const vole::EdgeDetectionConfig &conf, const multi_img &data,
 			 std::vector<multi_img_base::BandDesc> meta)
 	: SOM(conf, data.size(), meta), width(conf.sidelength),
-	  height(conf.type == 1 ? conf.sidelength : 1), // case 1d SOM
+	  height(conf.type == vole::SOM_SQUARE ? conf.sidelength : 1), // case 1d SOM
 	  neurons(Field(conf.sidelength, Row(conf.sidelength, Neuron(data.size()))))
 {
+	// check format
+	if (data.width != width || data.height != height) {
+		std::cerr << "SOM image has wrong dimensions!" << std::endl;
+		assert(false);
+		return; // somdata will be empty
+	}
+
 	/// Read SOM from multi_img
 	SOM::iterator theEnd = end(); // only needs to be called once
 	for (SOM::iterator n = begin(); n != theEnd; ++n) {
@@ -200,6 +207,25 @@ double SOM2d::getDistanceBetweenWinners(const multi_img::Pixel &v1,
 	getDistance(p1->getId(), p2->getId());
 }
 
+cv::Vec3f SOM2d::getColor(cv::Point3d pos)
+{
+	cv::Vec3f pixel;
+	pixel[0] = (float)(pos.x);
+	if (height > 1)
+	{
+		pixel[1] = (float)(pos.y);
+		pixel[2] = (float)(pos.z);
+	}
+	else
+	{
+		pixel[1] = (float)(pos.x);
+		pixel[2] = (float)(pos.x);
+	}
+
+	// normalize color by sidelength
+	return pixel / config.sidelength;
+}
+
 std::string SOM2d::description()
 {
 	std::stringstream s;
@@ -207,7 +233,7 @@ std::string SOM2d::description()
 		s << "SOM of type line, size " << width;
 	else
 		s << "SOM of type square, size " << width << "x" << height;
-	s << ", with" << size() << " neurons of dimension " << dim;
+	s << ", with " << size() << " neurons of dimension " << dim;
 	s << ", seed=" << config.seed;
 	return s.str();
 }

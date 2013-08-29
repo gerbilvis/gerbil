@@ -123,6 +123,8 @@ public:
 	double getDistanceBetweenWinners(const multi_img::Pixel &v1,
 									 const multi_img::Pixel &v2);
 
+	cv::Vec3f getColor(cv::Point3d pos);
+
 	std::string description();
 
 	iterator begin();

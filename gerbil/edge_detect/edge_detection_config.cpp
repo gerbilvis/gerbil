@@ -15,15 +15,16 @@ EdgeDetectionConfig::EdgeDetectionConfig(const std::string& p)
 	: Config(p), similarity(prefix + "similarity")
 {
 	som_file = "";
-	sidelength = 32;
+	sidelength = 32; // 1024 neurons
 	granularity = 0.06; // 1081 neurons
 	type = SOM_SQUARE;
 	maxIter = 40000;
-	learnStart = 0.1;
-	learnEnd = 0.001; // TODO: we stop updating, when weight is < 0.01 !!!
-	sigmaStart = 4.; // ratio sigmaStart : sigmaEnd should be about 4 : 1
-	sigmaEnd = 1.;
+	learnStart = 0.75;
+	learnEnd = 0.01; // TODO: we stop updating, when weight is < 0.01 !!!
+	sigmaStart = 12.; // ratio sigmaStart : sigmaEnd should be about 4 : 1
+	sigmaEnd = 2.;
 	seed = time(NULL);
+	output_som = false;
 
 	#ifdef WITH_BOOST
 		initBoostOptions();
@@ -36,12 +37,12 @@ void EdgeDetectionConfig::initBoostOptions() {
 		(key("som_input"), value(&som_file)->default_value(som_file),
 			 "When set, read given multispectral image file to initialize SOM"
 			 " instead of training")
+		(key("type"), value(&type)->default_value(type),
+			"Layout of the neurons in the SOM: line, square, cube, cone")
 		(key("sidelength"), value(&sidelength)->default_value(sidelength),
 			"Sidelength of line / square / cube of the SOM")
 		(key("granularity"), value(&granularity)->default_value(granularity),
 			"Distance between neurons inside the cone")
-		(key("type"), value(&type)->default_value(type),
-			"Layout of the neurons in the SOM: line, square, cube, cone")
 		(key("maxIter"), value(&maxIter)->default_value(maxIter),
 			"Number of training iterations for the SOM")
 		(key("learnStart"), value(&learnStart)->default_value(learnStart),
@@ -81,9 +82,9 @@ std::string EdgeDetectionConfig::getString() const {
 		;
 	}
 	s	<< "som_input=" << som_file << " # SOM image file instead of training" << std::endl
+		<< "type=" << type << " # Layout of the neurons in the SOM" << std::endl
 		<< "sidelength=" << sidelength << " # Sidelength of line / square / cube of the SOM" << std::endl
 		<< "granularity=" << granularity << " # Distance between neurons inside the cone" << std::endl
-		<< "type=" << type << " # Layout of the neurons in the SOM" << std::endl
 		<< "maxIter=" << maxIter << " # Number of training iterations for the SOM" << std::endl
 		<< "learnStart=" << learnStart << " # Start value for the learning rate in SOM" << std::endl
 		<< "learnEnd=" << learnEnd << " # End value for the learning rate in SOM" << std::endl

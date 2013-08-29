@@ -9,6 +9,8 @@
 #include "rgb.h"
 
 #ifdef WITH_EDGE_DETECT
+#include <sm_config.h>
+#include <sm_factory.h>
 #include <som_trainer.h>
 #endif
 
@@ -163,64 +165,7 @@ struct SOMTBB {
 				avg += weight[j] * pos;
 			}
 			cv::Vec3f &pixel = dst(i / dst.cols, i % dst.cols);
-			if (somtype == vole::SOM_CUBE)
-			{
-				// rgb
-				pixel[0] = (float)(avg.x);
-				pixel[1] = (float)(avg.y);
-				pixel[2] = (float)(avg.z);
-			}
-			else
-			{
-				// hsv
-				const double PI = 3.141592653589793;
-
-				// calculate hsv values
-				double h, s, v;
-				h = std::atan2(avg.y, avg.x) + PI; // only x and y affect hue, h has range 0 - 2*PI
-				s = std::sqrt(avg.x * avg.x + avg.y * avg.y); // only x and y affect saturation
-				if (avg.z > 0) s /= 0.5 * avg.z; // normalize by radius at height avg.z of the cone
-				else s = 0;
-				v = avg.z; // the cone has a height of 1
-
-				// convert hsv2rgb - see german wikipedia article
-				double f, p, q, t;
-				int h_i = (int)(h / (PI / 3));
-				f = (h / (PI / 3)) - h_i;
-				p = v * (1 - s);
-				q = v * (1 - s * f);
-				t = v * (1 - s * (1-f));
-
-				switch (h_i)
-				{
-				case 0:
-				case 6:
-					pixel = cv::Vec3f(v, t, p);
-					break;
-				case 1:
-					pixel = cv::Vec3f(q, v, p);
-					break;
-				case 2:
-					pixel = cv::Vec3f(p, v, t);
-					break;
-				case 3:
-					pixel = cv::Vec3f(p, q, v);
-					break;
-				case 4:
-					pixel = cv::Vec3f(t, p, v);
-					break;
-				case 5:
-					pixel = cv::Vec3f(v, p, q);
-					break;
-				}
-
-				if (pixel[0] < 0) pixel[0] = 0;
-				if (pixel[1] < 0) pixel[1] = 0;
-				if (pixel[2] < 0) pixel[2] = 0;
-				if (pixel[0] > 1) pixel[0] = 1;
-				if (pixel[1] > 1) pixel[1] = 1;
-				if (pixel[2] > 1) pixel[2] = 1;
-			}
+			pixel = som->getColor(avg);
 		}
 	}
 
@@ -253,9 +198,10 @@ cv::Mat3f RGB::executeSOM(const multi_img& img, vole::ProgressObserver *po)
 
 	int N = config.som_depth;
 
-	// calculate weights including normalization (RGB space width)
+	// calculate weights
 	std::vector<double> weights;
-	if (config.som_linear) {
+	// (for N == 1, the lower weight calculation would divide by zero)
+	if (config.som_linear || N == 1) {
 		for (int i = 0; i < N; ++i)
 			weights.push_back(1./(double)N);
 	} else {
@@ -266,24 +212,19 @@ cv::Mat3f RGB::executeSOM(const multi_img& img, vole::ProgressObserver *po)
 			weights.push_back((double)(1 << (N - i - 1)) / normalization); // (2^[N-1..0]) / normalization
 	}
 
-	// keep the rgb values in the range of 0..1
-	if (config.som.type == vole::SOM_CUBE)
-		for (int i = 0; i < N; ++i)
-			weights[i] /= config.som.sidelength;
-
 	// set RGB pixels
 	cv::Mat1f stddevs;
-	if (config.som.verbosity >= 3)
+	if (config.som.verbosity >= 3 && N > 1) // (there is no variance for N = 1!)
 		stddevs = cv::Mat1f(bgr.rows, bgr.cols);
 
 	tbb::parallel_for(tbb::blocked_range<int>(0, img.height*img.width),
 					  SOMTBB(img, som, weights, bgr, config.som.type, stddevs));
 
-	if (!stddevs.empty())
+	if (config.som.verbosity >= 3 && N > 1)
 	{
 		std::ofstream file("bmu_stddev.data");
 		if (!file.is_open())
-			std::cerr << "Could not open stddev data file" << std::endl;
+			std::cerr << "Could not open stddev data file." << std::endl;
 		else
 		{
 			float min_stddev = std::numeric_limits<float>::max(), max_stddev = 0;
@@ -313,15 +254,24 @@ cv::Mat3f RGB::executeSOM(const multi_img& img, vole::ProgressObserver *po)
 		cv::imwrite("stddev.png", stddevs * (255.0 / max));
 	}
 
-	if (config.verbosity & 4) {
-		multi_img somimg = som->export_2d();
-		
-		// SOM code assumes and sets [0..1], need to correct
-		somimg.minval = img.minval;
-		somimg.maxval = img.maxval;
-		somimg.write_out(config.output_file + "-som");
+	if (config.som.verbosity >= 3)
+	{
+		vole::SMConfig smconf;
+		vole::SimilarityMeasure<multi_img::Value> *distMetric;
+
+		// L2 / euclidean
+		smconf.measure = vole::EUCLIDEAN;
+		distMetric = vole::SMFactory<multi_img::Value>::spawn(smconf);
+		som->writeDistancePlot("euclidean_euclidean.data", distMetric);
+		delete distMetric;
+
+		// spectral angle
+		smconf.measure = vole::MOD_SPEC_ANGLE;
+		distMetric = vole::SMFactory<multi_img::Value>::spawn(smconf);
+		som->writeDistancePlot("euclidean_specAngle.data", distMetric);
+		delete distMetric;
 	}
-	
+
 	delete som;
 	return bgr;
 }

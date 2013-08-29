@@ -7,6 +7,8 @@
 
 #include <sm_factory.h>
 
+#include <fstream>
+
 SOM::SOM(const vole::EdgeDetectionConfig &conf, int dimension,
 		 std::vector<multi_img_base::BandDesc> meta)
 	: config(conf), dim(dimension), origImgMeta(meta)
@@ -122,7 +124,7 @@ SOM::closestN(const multi_img::Pixel &inputVec, unsigned int N)
 	// iterate over all neurons in grid
 	for (SOM::iterator neuron = begin(); neuron != theEnd; ++neuron) {
 		double dist = distfun->getSimilarity(*neuron, inputVec);
-		// compare current distance with the maximum of the shortest found distances
+		// compare current distance with the maximum of the N shortest found distances
 		if (dist < heap[0].first) {
 			// remove max. value in heap
 			std::pop_heap(heap.begin(), heap.end(), sortpair);
@@ -133,7 +135,7 @@ SOM::closestN(const multi_img::Pixel &inputVec, unsigned int N)
 		}
 	}
 
-	assert(heap[0].second != end()); // maximum (double::max()) != end()
+	assert(heap[0].second != theEnd);
 	std::sort_heap(heap.begin(), heap.end(), sortpair); // sort ascending
 	return heap;
 }
@@ -203,4 +205,35 @@ void SOM::getEdge(const multi_img &image, cv::Mat1d &dx, cv::Mat1d &dy)
 		*ix = (*ix / (2*maxIntensity)) + 0.5;
 		*iy = (*iy / (2*maxIntensity)) + 0.5;
 	}
+}
+
+void SOM::writeDistancePlot(const char *filename,
+		vole::SimilarityMeasure<multi_img_base::Value> *distMetric)
+{
+	std::ofstream file(filename);
+	if (!file.is_open())
+	{
+		std::cerr << "Could not open distance-plot data file." << std::endl;
+		return;
+	}
+
+	SOM::iterator theEnd = end();
+	for (SOM::iterator i = begin(); i != theEnd; ++i)
+	{
+		for (SOM::iterator j = begin(); j != theEnd; ++j)
+		{
+			if (i != j)
+			{
+				// distance between the neurons in the SOM
+				cv::Point3d d = i.get3dPos() - j.get3dPos();
+				double positionDistance = std::sqrt(d.dot(d));
+
+				// distance between the neuron vectors
+				double valueDistance = distMetric->getSimilarity(*i, *j);
+
+				file << positionDistance << " " << valueDistance << std::endl;
+			}
+		}
+	}
+	file.close();
 }

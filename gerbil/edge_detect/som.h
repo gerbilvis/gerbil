@@ -16,29 +16,19 @@
 // wenn rgb.cpp beim berechnen der som nicht prueft, ob der task abgebrochen wird,
 // dann wartet qgerbil evtl 5min bis die som berechnet ist und haengt sich in dieser zeit auf
 
-// somtrainer: beim laden von SOMs wird klassenunabhaengig geprueft, ob das format zu 2d oder 3d passt!
-
-// remove fixed seed and verbosity in falsecolor.cpp
-
-// updateNeighbourhood of SOMCone
+// the specialized version of updateNeighbourhood in SOMCone is buggy and
+// therefore currently not used. getting this function wokring could speed up
+// the training process significantly
 
 // somcone: force granularity to be <= 0.25, test small cone sizes
 
 // meanshift shell testen
 
-// copy meta information from orig image?
-// also min and max value would be interesting for initialization and export_2d
 
 // === Minor TODOs / code structure ===
 
-// SOM3d -> SOMCube, SOM2d -> SOM...
+// SOM3d -> SOMCube, SOM2d -> SOMSquare...
 // dito iteratoren
-
-// end() methods in iterators are not constant. this means one malloc per iteration
-//  \-> call it before the loop
-
-// for all som-subclasses, constructor with data-multi_img:
-// provide some checks, if the provided multi_img has the correct form
 
 class SOM
 {
@@ -114,6 +104,9 @@ public:
 
 		iterator &operator=(const iterator &other)
 		{
+			// catch assignment to self (would segfault on itr->clone after itr was deleted)
+			if (itr == other.itr) return *this;
+
 			delete itr;
 			itr = other.itr->clone();
 			return *this;
@@ -166,6 +159,9 @@ public:
 
 		neighbourIterator &operator=(const neighbourIterator &other)
 		{
+			// catch assignment to self (would segfault itr->clone after itr was deleted)
+			if (itr == other.itr) return *this;
+
 			delete itr;
 			itr = other.itr->clone();
 			return *this;
@@ -262,11 +258,16 @@ public:
 	virtual double getDistanceBetweenWinners(const multi_img::Pixel &v1,
 											 const multi_img::Pixel &v2) = 0;
 
+	virtual cv::Vec3f getColor(cv::Point3d pos) = 0;
+
 	// short info about type, shape and #neurons of the SOM
 	virtual std::string description() = 0;
 
 	// Iterators for iterating over all neurons of the SOM
 	virtual iterator begin() = 0;
+	// when using end(), you should call end() before the loop and store it
+	// to a (const) variable (e.g. theEnd), because this call needs to
+	// dynamically allocate the proper iterator instance in each call
 	virtual iterator end() = 0;
 
 	inline double getSimilarity(const Neuron &n1, const Neuron &n2) {
@@ -275,6 +276,9 @@ public:
 
 	void getEdge(const multi_img &image,
 				 cv::Mat1d &dx, cv::Mat1d &dy);
+
+	void writeDistancePlot(const char *filename,
+						 vole::SimilarityMeasure<multi_img::Value> *distMetric);
 
 protected:
 	const vole::EdgeDetectionConfig &config;

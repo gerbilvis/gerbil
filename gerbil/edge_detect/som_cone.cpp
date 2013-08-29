@@ -28,6 +28,13 @@ SOMCone::SOMCone(const vole::EdgeDetectionConfig &conf, const multi_img &data,
 {
 	initCoordinates(data.size());
 
+	// check format
+	if (data.width != size() || data.height != 1) {
+		std::cerr << "SOM image has wrong dimensions!" << std::endl;
+		assert(false);
+		return; // somdata will be empty
+	}
+
 	/// Read SOM from multi_img
 	SOM::iterator theEnd = end(); // only needs to be called once
 	for (SOM::iterator n = begin(); n != theEnd; ++n) {
@@ -174,6 +181,62 @@ double SOMCone::getDistanceBetweenWinners(const multi_img::Pixel &v1,
 	cv::Point3d &p2 = coordinates[it2->getIdx()];
 
 	getDistance(p1, p2);
+}
+
+cv::Vec3f SOMCone::getColor(cv::Point3d pos)
+{
+	const double PI = 3.141592653589793;
+
+	// calculate hsv values
+	double h, s, v;
+	h = std::atan2(pos.y, pos.x) + PI; // only x and y affect hue, h has range 0 - 2*PI
+	s = std::sqrt(pos.x * pos.x + pos.y * pos.y); // only x and y affect saturation
+	if (pos.z > 0) s /= 0.5 * pos.z; // normalize by radius at height avg.z of the cone
+	else s = 0;
+	v = pos.z; // the cone has a height of 1
+
+	// convert hsv2rgb - see german wikipedia article
+	double f, p, q, t;
+	int h_i = (int)(h / (PI / 3));
+	f = (h / (PI / 3)) - h_i;
+	p = v * (1 - s);
+	q = v * (1 - s * f);
+	t = v * (1 - s * (1-f));
+
+	cv::Vec3f pixel;
+	switch (h_i)
+	{
+	case 0:
+	case 6:
+		pixel = cv::Vec3f(v, t, p);
+		break;
+	case 1:
+		pixel = cv::Vec3f(q, v, p);
+		break;
+	case 2:
+		pixel = cv::Vec3f(p, v, t);
+		break;
+	case 3:
+		pixel = cv::Vec3f(p, q, v);
+		break;
+	case 4:
+		pixel = cv::Vec3f(t, p, v);
+		break;
+	case 5:
+		pixel = cv::Vec3f(v, p, q);
+		break;
+	}
+
+	if (pixel[0] < 0) pixel[0] = 0;
+	else if (pixel[0] > 1) pixel[0] = 1;
+
+	if (pixel[1] < 0) pixel[1] = 0;
+	else if (pixel[1] > 1) pixel[1] = 1;
+
+	if (pixel[2] < 0) pixel[2] = 0;
+	else if (pixel[2] > 1) pixel[2] = 1;
+
+	return pixel;
 }
 
 std::string SOMCone::description()

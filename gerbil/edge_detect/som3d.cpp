@@ -28,6 +28,13 @@ SOM3d::SOM3d(const vole::EdgeDetectionConfig &conf, const multi_img &data,
 												 Row(conf.sidelength,
 													 Neuron(data.size())))))
 {
+	// check format
+	if (data.width != width * height || data.height != depth) {
+		std::cerr << "SOM image has wrong dimensions!" << std::endl;
+		assert(false);
+		return; // somdata will be empty
+	}
+
 	/// Read SOM from multi_img
 	SOM::iterator theEnd = end(); // only needs to be called once
 	for (SOM::iterator n = begin(); n != theEnd; ++n) {
@@ -276,11 +283,22 @@ double SOM3d::getDistanceBetweenWinners(const multi_img::Pixel &v1,
 	getDistance(p1->getId(), p2->getId());
 }
 
+cv::Vec3f SOM3d::getColor(cv::Point3d pos)
+{
+	cv::Vec3f pixel;
+	pixel[0] = (float)(pos.x);
+	pixel[1] = (float)(pos.y);
+	pixel[2] = (float)(pos.z);
+
+	// normalize color by sidelength
+	return pixel / config.sidelength;
+}
+
 std::string SOM3d::description()
 {
 	std::stringstream s;
 	s << "SOM of type cube, size " << width << "x" << height << "x" << depth;
-	s << ", with" << size() << " neurons of dimension " << dim;
+	s << ", with " << size() << " neurons of dimension " << dim;
 	s << ", seed=" << config.seed;
 	return s.str();
 }

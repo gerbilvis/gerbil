@@ -48,9 +48,8 @@ SOM *SOMTrainer::train(const vole::EdgeDetectionConfig &config,
 			std::cerr << "Could not read image containing the SOM!" << std::endl;
 			return NULL;
 		}
-		if (somimg.width != config.sidelength || somimg.height != config.sidelength
-			|| somimg.size() != img.size()) {
-			std::cerr << "SOM image has wrong dimensions!" << std::endl;
+		if (somimg.size() != img.size()) {
+			std::cerr << "Somimg and input have a different amount of bands!" << std::endl;
 			return NULL;
 		}
 		somimg.rebuildPixels(false);
@@ -95,16 +94,20 @@ void SOMTrainer::feedNetwork()
 			round++;
 		}
 		++ctr;
-		if (config.verbosity >= 2 && ctr % 1000 == 0)
+		// print update statistic each 1%
+		if (config.verbosity >= 2 && ctr % (config.maxIter / 100) == 0)
 		{
-			std::cout << " Feed #" << ctr << ", mean of neuron-updates in the last 1000 iterations: " << ((double)sumOfUpdates / 1000.0) << std::endl;
+			std::cout << " Feed #" << ctr << ", mean of neuron-updates in the last "
+					  << (config.maxIter / 100) << " iterations: "
+					  << ((double)sumOfUpdates / (config.maxIter / 100)) << std::endl;
 			sumOfUpdates = 0;
 		}
-		if (config.verbosity >= 3 && ctr % 10000 == 0)
+		// print som each 20%
+		if (config.verbosity >= 3 && ctr % (config.maxIter / 5) == 0)
 		{
 			multi_img somimg = som->export_2d();
 			std::ostringstream filename;
-			filename << "debug_som_" << (ctr / 10000);
+			filename << "debug_som_" << (ctr / (config.maxIter / 5));
 			somimg.write_out(filename.str());
 		}
 	}
@@ -453,7 +456,8 @@ double SOMTrainer::generateBWSom() {
 
 	double totalDiff = 0.;
 
-	for (SOM::iterator n = som->begin(); n != som->end(); ++n) {
+	const SOM::iterator theEnd = som->end();
+	for (SOM::iterator n = som->begin(); n != theEnd; ++n) {
 		double difference = 0.;
 		int count = 0;
 
