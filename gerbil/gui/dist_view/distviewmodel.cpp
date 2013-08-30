@@ -8,7 +8,7 @@
 */
 
 #include "distviewmodel.h"
-#include "../tasks/distviewbinstbb.h"
+#include "distviewbinstbb.h"
 #include "viewer_tasks.h"
 
 #include <background_task/background_task_queue.h>

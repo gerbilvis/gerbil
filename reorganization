@@ -4,20 +4,20 @@ cmake
 common/		(merge from gerbil_common)
 	multi_img/
 		multi_img
-		multi_img_ext +
+		multi_img_ext + [DONE]
 		multi_img_io
-		multi_img_io_ext +
-		multi_img_offloaded +
-		multi_img_tbb *
-		illuminant +
+		multi_img_io_ext + [DONE]
+		multi_img_offloaded + [DONE]
+		multi_img_tbb * [DONE]
+		illuminant +  [DONE]
 
 	background_task/
-		background_task +
-		background_task_queue +
-		tasks/
-			(from multi_img_tasks)
-			rgbqttbb % (was "rgbtbb", WITH_QT)
-			normrange* %
+		background_task + [DONE]
+		background_task_queue + [DONE]
+		tasks/	[DONE]
+			(from multi_img_tasks) [DONE]
+			rgbqttbb % (was "rgbtbb", WITH_QT) [DONE]
+			normrange* % [DONE]
 
 	hashes
 	labeling

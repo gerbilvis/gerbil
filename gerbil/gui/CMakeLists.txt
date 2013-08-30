@@ -27,6 +27,7 @@ vole_compile_library(
 	dist_view/viewport_drawing
 	dist_view/viewport_input
 	dist_view/distviewgui
+	dist_view/distviewbinstbb
 
 	model/representation
 	model/image
@@ -36,7 +37,6 @@ vole_compile_library(
 	model/graphsegmentation
 	model/ussegmentationmodel
 
-	tasks/distviewbinstbb
 
 	docks/banddock
 	docks/labelingdock
