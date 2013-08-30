@@ -14,9 +14,21 @@ vole_compile_library(
 	multi_img/cieobserver
     background_task/background_task
     background_task/background_task_queue
-    background_task/tasks/multi_img_tasks
-    background_task/tasks/band2qimagetbb
-    background_task/tasks/rescaletbb
+	background_task/tasks/cuda/gradientcuda
+	background_task/tasks/cuda/clampcuda
+	background_task/tasks/cuda/datarangecuda
+	background_task/tasks/cuda/illuminantcuda
+	background_task/tasks/cuda/normrangecuda
+	background_task/tasks/tbb/gradienttbb
+	background_task/tasks/tbb/clamptbb
+	background_task/tasks/tbb/datarangetbb
+	background_task/tasks/tbb/illuminanttbb
+    background_task/tasks/tbb/rescaletbb
+    background_task/tasks/tbb/normrangetbb
+    background_task/tasks/tbb/pcatbb
+    background_task/tasks/tbb/band2qimagetbb
+    background_task/tasks/tbb/rgbqttbb
+    background_task/tasks/tbb/bgrtbb
     shared_data
 	rectangles
 )

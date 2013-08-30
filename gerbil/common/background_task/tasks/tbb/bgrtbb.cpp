@@ -1,16 +1,18 @@
-#ifndef BGRTBB_H
-#define BGRTBB_H
+#include "shared_data.h"
 
-#include <multi_img/multi_img_tbb.h>
-#include <multi_img/cieobserver.h>
+#include <tbb/blocked_range.h>
+#include <tbb/blocked_range2d.h>
+#include <tbb/parallel_for.h>
 
-class BgrTbb : public BackgroundTask {
-public:
-	BgrTbb(SharedMultiImgPtr multi, mat3f_ptr bgr,
-		cv::Rect targetRoi = cv::Rect())
-		: BackgroundTask(targetRoi), multi(multi), bgr(bgr) {}
-	virtual ~BgrTbb() {}
-	virtual bool run() {
+#include <stopwatch.h>
+
+#include "multi_img/multi_img_tbb.h"
+#include "multi_img/cieobserver.h"
+
+#include "bgrtbb.h"
+
+bool BgrTbb::run()
+{
 		multi_img_base& source = multi->getBase();
 		cv::Mat_<cv::Vec3f> xyz(source.height, source.width, 0.);
 		float greensum = 0.f;
@@ -48,12 +50,3 @@ public:
 			return true;
 		}
 	}
-
-	virtual void cancel() { stopper.cancel_group_execution(); }
-protected:
-	tbb::task_group_context stopper;
-	SharedMultiImgPtr multi;
-	mat3f_ptr bgr;
-};
-
-#endif // BGRTBB_H

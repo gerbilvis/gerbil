@@ -12,7 +12,6 @@
 #include "dist_view/distviewcontroller.h"
 #include "iogui.h"
 #include "commandrunner.h"
-#include "background_task/tasks/multi_img_tasks.h"
 /*#include "tasks/rgbtbb.h"
 #include "tasks/normrangecuda.h"
 #include "tasks/normrangetbb.h"
@@ -147,7 +146,7 @@ void MainWindow::normTargetChanged(bool usecurrent)
 /*
 	// reset gui to current settings
 	int target = (normIButton->isChecked() ? 0 : 1);
-	MultiImg::NormMode m = (target == 0 ? normIMG : normGRAD);
+	multi_img::NormMode m = (target == 0 ? normIMG : normGRAD);
 
 	// update normModeBox
 	normModeBox->setCurrentIndex(m);
@@ -161,8 +160,8 @@ void MainWindow::normTargetChanged(bool usecurrent)
 void MainWindow::normModeSelected(int mode, bool targetchange, bool usecurrent)
 {
 	/*
-	MultiImg::NormMode nm = static_cast<MultiImg::NormMode>(mode);
-	if (nm == MultiImg::NORM_FIXED && !targetchange) // user edits from currenty viewed values
+	multi_img::NormMode nm = static_cast<multi_img::NormMode>(mode);
+	if (nm == multi_img::NORM_FIXED && !targetchange) // user edits from currenty viewed values
 		return;
 
 	int target = (normIButton->isChecked() ? 0 : 1);
@@ -232,8 +231,8 @@ void MainWindow::applyNormUserRange()
 							representation::IMG : representation::GRAD);
 
 	// set internal norm mode
-	MultiImg::NormMode &nm = (target == 0 ? normIMG : normGRAD);
-	nm = static_cast<MultiImg::NormMode>(normModeBox->currentIndex());
+	multi_img::NormMode &nm = (target == 0 ? normIMG : normGRAD);
+	nm = static_cast<multi_img::NormMode>(normModeBox->currentIndex());
 
 	queue.cancelTasks();
 	setGUIEnabled(false, TT_NORM_RANGE);
@@ -286,8 +285,8 @@ void MainWindow::clampNormUserRange()
 	int target = (normIButton->isChecked() ? 0 : 1);
 
 	// set internal norm mode
-	MultiImg::NormMode &nm = (target == 0 ? normIMG : normGRAD);
-	nm = static_cast<MultiImg::NormMode>(normModeBox->currentIndex());
+	multi_img::NormMode &nm = (target == 0 ? normIMG : normGRAD);
+	nm = static_cast<multi_img::NormMode>(normModeBox->currentIndex());
 
 	/// if image is changed, change full image. for gradient, we cannot preserve
 	///	the gradient over ROI or illuminant changes, so it remains a local change
@@ -311,11 +310,11 @@ void MainWindow::clampNormUserRange()
 		}
 
 		if (cv::gpu::getCudaEnabledDeviceCount() > 0 && USE_CUDA_CLAMP) {
-			BackgroundTaskPtr taskClamp(new MultiImg::ClampCuda(
+			BackgroundTaskPtr taskClamp(new ClampCuda(
 				image_lim, image, roi, false));
 			queue.push(taskClamp);
 		} else {
-			BackgroundTaskPtr taskClamp(new MultiImg::ClampTbb(
+			BackgroundTaskPtr taskClamp(new ClampTbb(
 				image_lim, image, roi, false));
 			queue.push(taskClamp);
 		}
@@ -356,10 +355,10 @@ void MainWindow::clampNormUserRange()
 		}
 
 		if (cv::gpu::getCudaEnabledDeviceCount() > 0 && USE_CUDA_CLAMP) {
-			BackgroundTaskPtr taskClamp(new MultiImg::ClampCuda(gradient, gradient));
+			BackgroundTaskPtr taskClamp(new ClampCuda(gradient, gradient));
 			queue.push(taskClamp);
 		} else {
-			BackgroundTaskPtr taskClamp(new MultiImg::ClampTbb(gradient, gradient));
+			BackgroundTaskPtr taskClamp(new ClampTbb(gradient, gradient));
 			queue.push(taskClamp);
 		}
 

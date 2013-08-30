@@ -3,7 +3,6 @@
 
 #include "representation.h"
 #include <shared_data.h>
-#include <background_task/tasks/multi_img_tasks.h>
 #include <background_task/background_task_queue.h>
 
 #include <QObject>
@@ -20,7 +19,7 @@ public:
 	 * first time. */
 	ImageModelPayload(representation::t type)
 		: type(type), image(new SharedMultiImgBase(new multi_img())),
-		  normMode(MultiImg::NORM_OBSERVED), normRange(
+		  normMode(multi_img::NORM_OBSERVED), normRange(
 			new SharedData<multi_img::Range> (
 			  new multi_img::Range()))
 	{}
@@ -32,7 +31,7 @@ public:
 	SharedMultiImgPtr image;
 
 	// normalization mode and range
-	MultiImg::NormMode normMode;
+	multi_img::NormMode normMode;
 	SharedMultiImgRangePtr normRange;
 
 	// cached single bands
@@ -122,7 +121,7 @@ public slots:
 
 	void setNormalizationParameters(
 			representation::t type,
-			MultiImg::NormMode normMode,
+			multi_img::NormMode normMode,
 			multi_img::Range targetRange);
 
 signals:

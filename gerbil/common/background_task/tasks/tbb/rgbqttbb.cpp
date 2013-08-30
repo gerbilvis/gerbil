@@ -1,5 +1,13 @@
-#include <background_task/tasks/multi_img_tasks.h>
-#include "rgbtbb.h"
+#include <shared_data.h>
+
+#include <tbb/blocked_range.h>
+#include <tbb/blocked_range2d.h>
+#include <tbb/parallel_for.h>
+
+#include <stopwatch.h>
+
+
+#include "rgbqttbb.h"
 
 class Rgb {
 public:

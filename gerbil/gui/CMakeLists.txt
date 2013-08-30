@@ -37,9 +37,6 @@ vole_compile_library(
 	model/ussegmentationmodel
 
 	tasks/distviewbinstbb
-	tasks/rgbtbb
-	tasks/normrangetbb
-	tasks/normrangecuda
 
 	docks/banddock
 	docks/labelingdock

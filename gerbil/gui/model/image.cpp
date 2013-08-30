@@ -1,15 +1,19 @@
 #include "model/image.h"
-#include "tasks/normrangecuda.h"
-#include "tasks/normrangetbb.h"
-#include "tasks/rgbtbb.h"
 #include <background_task/tasks/scopeimage.h>
-#include <background_task/tasks/band2qimagetbb.h>
-#include <background_task/tasks/rescaletbb.h>
+#include <background_task/tasks/cuda/datarangecuda.h>
+#include <background_task/tasks/cuda/gradientcuda.h>
+#include <background_task/tasks/cuda/normrangecuda.h>
+#include <background_task/tasks/tbb/band2qimagetbb.h>
+#include <background_task/tasks/tbb/datarangetbb.h>
+#include <background_task/tasks/tbb/gradienttbb.h>
+#include <background_task/tasks/tbb/normrangetbb.h>
+#include <background_task/tasks/tbb/pcatbb.h>
+#include <background_task/tasks/tbb/rescaletbb.h>
+#include <background_task/tasks/tbb/rgbqttbb.h>
 
 #include "../gerbil_gui_debug.h"
 
 #include <multi_img/multi_img_offloaded.h>
-#include <background_task/tasks/multi_img_tasks.h>
 #include <imginput.h>
 #include <boost/make_shared.hpp>
 
@@ -165,11 +169,11 @@ void ImageModel::spawn(representation::t type, const cv::Rect &newROI, int bands
 
 	if (type == representation::GRAD) {
 		if (cv::gpu::getCudaEnabledDeviceCount() > 0 && USE_CUDA_GRADIENT) {
-			BackgroundTaskPtr taskGradient(new MultiImg::GradientCuda(
+			BackgroundTaskPtr taskGradient(new GradientCuda(
 				image, gradient, roi));
 			queue.push(taskGradient);
 		} else {
-			BackgroundTaskPtr taskGradient(new MultiImg::GradientTbb(
+			BackgroundTaskPtr taskGradient(new GradientTbb(
 				image, gradient, roi));
 			queue.push(taskGradient);
 		}
@@ -180,7 +184,7 @@ void ImageModel::spawn(representation::t type, const cv::Rect &newROI, int bands
 	{
 		SharedMultiImgPtr target = map[type]->image;
 		SharedMultiImgRangePtr range = map[type]->normRange;
-		MultiImg::NormMode mode =  map[type]->normMode;
+		multi_img::NormMode mode =  map[type]->normMode;
 		// TODO: a small hack in NormRangeTBB to determine theoretical range
 		int isGRAD = (type == representation::GRAD ? 1 : 0);
 
@@ -202,13 +206,13 @@ void ImageModel::spawn(representation::t type, const cv::Rect &newROI, int bands
 	}
 
 	if (type == representation::IMGPCA && imagepca.get()) {
-		BackgroundTaskPtr taskPca(new MultiImg::PcaTbb(
+		BackgroundTaskPtr taskPca(new PcaTbb(
 			image, imagepca, 0, roi));
 		queue.push(taskPca);
 	}
 
 	if (type == representation::GRADPCA && gradpca.get()) {
-		BackgroundTaskPtr taskPca(new MultiImg::PcaTbb(
+		BackgroundTaskPtr taskPca(new PcaTbb(
 			gradient, gradpca, 0, roi));
 		queue.push(taskPca);
 	}
@@ -276,7 +280,7 @@ void ImageModel::computeFullRgb()
 }
 
 void ImageModel::setNormalizationParameters(representation::t type,
-		MultiImg::NormMode normMode,
+		multi_img::NormMode normMode,
 		multi_img_base::Range targetRange)
 {
 	//GGDBGM(type << " " << targetRange << endl);

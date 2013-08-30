@@ -1,15 +1,14 @@
 
-#include <background_task/tasks/multi_img_tasks.h>
 #include "normrangecuda.h"
 
 bool NormRangeCuda::run()
 {
 	switch (mode) {
-	case MultiImg::NORM_OBSERVED:
-		if (!MultiImg::DataRangeCuda::run())
+	case multi_img::NORM_OBSERVED:
+		if (!DataRangeCuda::run())
 			return false;
 		break;
-	case MultiImg::NORM_THEORETICAL:
+	case multi_img::NORM_THEORETICAL:
 		if (!stopper.is_group_execution_cancelled()) {
 			SharedDataSwapLock lock(range->mutex);
 			// hack!

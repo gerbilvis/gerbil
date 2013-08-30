@@ -1,7 +1,7 @@
 #ifndef RGBTBB_H
 #define RGBTBB_H
 
-#include <background_task/tasks/bgrtbb.h>
+#include "bgrtbb.h"
 
 class RgbTbb : public BgrTbb {
 public:

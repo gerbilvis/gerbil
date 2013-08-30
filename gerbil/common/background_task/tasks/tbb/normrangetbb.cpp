@@ -1,14 +1,20 @@
-#include <background_task/tasks/multi_img_tasks.h>
+#include <shared_data.h>
+
+#include <tbb/blocked_range.h>
+#include <tbb/blocked_range2d.h>
+#include <tbb/parallel_for.h>
+
+#include <background_task/background_task.h>
 #include "normrangetbb.h"
 
 bool NormRangeTbb::run()
 {
 	switch (mode) {
-	case MultiImg::NORM_OBSERVED:
-		if (!MultiImg::DataRangeTbb::run())
+	case multi_img::NORM_OBSERVED:
+		if (!DataRangeTbb::run())
 			return false;
 		break;
-	case MultiImg::NORM_THEORETICAL:
+	case multi_img::NORM_THEORETICAL:
 		if (!stopper.is_group_execution_cancelled()) {
 			SharedDataSwapLock lock(range->mutex);
 			// hack!

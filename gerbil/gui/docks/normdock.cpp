@@ -25,8 +25,8 @@ NormDock::NormDock(QWidget *parent) :
 	ranges.insert(representation::IMG, multi_img::Range());
 	ranges.insert(representation::GRAD, multi_img::Range());
 
-	modes.insert(representation::IMG, MultiImg::NORM_OBSERVED);
-	modes.insert(representation::GRAD, MultiImg::NORM_OBSERVED);
+	modes.insert(representation::IMG, multi_img::NORM_OBSERVED);
+	modes.insert(representation::GRAD, multi_img::NORM_OBSERVED);
 
 	setupUi(this);
 	initUi();
@@ -101,7 +101,7 @@ void NormDock::setNormRange(representation::t type, const multi_img::Range& rang
 	updateGUI();
 }
 
-void NormDock::setNormMode(representation::t type,MultiImg::NormMode mode)
+void NormDock::setNormMode(representation::t type,multi_img::NormMode mode)
 {
 	if(!(representation::IMG == type || representation::GRAD == type ))
 		return;
@@ -152,10 +152,10 @@ void NormDock::updateGUI()
 	// the actual observed values will not be displayed.
 	normMinBox->setValue(ranges[normTarget].min);
 	normMaxBox->setValue(ranges[normTarget].max);
-	if(modes[normTarget] == MultiImg::NORM_FIXED) {
+	if(modes[normTarget] == multi_img::NORM_FIXED) {
 		normMinBox->setEnabled(true);
 		normMaxBox->setEnabled(true);
-	} else if (modes[normTarget] == MultiImg::NORM_THEORETICAL) {
+	} else if (modes[normTarget] == multi_img::NORM_THEORETICAL) {
 		// FIXME assuming image depth is 8-bit always.
 		normMinBox->setValue(0.);
 		normMaxBox->setValue(255.);
@@ -168,7 +168,7 @@ void NormDock::updateGUI()
 
 void NormDock::processNormModeSelected(int idx)
 {
-	modes[normTarget] = static_cast<MultiImg::NormMode>(idx);
+	modes[normTarget] = static_cast<multi_img::NormMode>(idx);
 	updateGUI();
 }
 

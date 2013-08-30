@@ -35,42 +35,45 @@
 
 // FIXME what a mess
 #ifdef WITH_GERBIL_COMMON
-namespace MultiImg {
-	namespace CommonTbb {
-		class RebuildPixels;
-		class ApplyCache;
-		class DetermineRange;
-	}
-	class BgrTbb;
-	class Band2QImageTbb;
-	class RescaleTbb;
-	class GradientTbb;
-	class GradientCuda;
-	class PcaTbb;
-	class DataRangeTbb;
-	class DataRangeCuda;
-	class ClampTbb;
-	class ClampCuda;
-	class IlluminantTbb;
-	class IlluminantCuda;
-}
+class Grad;
+class Log;
+class Clamp;
+class Illumination;
+class PcaProjection;
+class MultiImg2BandMat;
+class GradientCuda;
+class GradientTbb;
+class ClampTbb;
+class ClampCuda;
+class IlluminantTbb;
+class IlluminantCuda;
+class DataRangeTbb;
+class DataRangeCuda;
+class PcaTbb;
+
 #define MULTI_IMG_FRIENDS \
 	friend class RebuildPixels;\
 	friend class ApplyCache;\
 	friend class DetermineRange;\
-	friend class MultiImg::BgrTbb;\
 	friend class Band2QImageTbb;\
 	friend class RescaleTbb;\
 	friend class Resize; \
-	friend class MultiImg::GradientTbb;\
-	friend class MultiImg::GradientCuda;\
-	friend class MultiImg::PcaTbb;\
-	friend class MultiImg::DataRangeTbb;\
-	friend class MultiImg::DataRangeCuda;\
-	friend class MultiImg::ClampTbb;\
-	friend class MultiImg::ClampCuda;\
-	friend class MultiImg::IlluminantTbb;\
-	friend class MultiImg::IlluminantCuda;
+	friend class Grad;\
+	friend class Log;\
+	friend class Clamp;\
+	friend class Illumination;\
+	friend class PcaProjection;\
+	friend class MultiImg2BandMat;\
+	friend class GradientCuda;\
+	friend class GradientTbb;\
+	friend class ClampTbb;\
+	friend class ClampCuda;\
+	friend class IlluminantTbb;\
+	friend class IlluminantCuda;\
+	friend class DataRangeTbb;\
+	friend class DataRangeCuda;\
+	friend class PcaTbb;
+
 #else
 #define MULTI_IMG_FRIENDS
 #endif
@@ -210,6 +213,13 @@ public:
 	typedef std::vector<Value> Pixel;
 
 //@}
+
+	enum NormMode {
+		NORM_OBSERVED = 0,
+		NORM_THEORETICAL = 1,
+		NORM_FIXED = 2
+	};
+
 
 /** @name Constructors & Copy/Assignment **/
 //@{

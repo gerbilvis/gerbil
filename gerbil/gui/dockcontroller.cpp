@@ -219,10 +219,10 @@ void DockController::setupDocks()
 			SLOT(setNormRange(representation::t,multi_img::Range)));
 	connect(normDock,
 			SIGNAL(normalizationParametersChanged(
-					   representation::t,MultiImg::NormMode,multi_img::Range)),
+					   representation::t,multi_img::NormMode,multi_img::Range)),
 			chief->imageModel(),
 			SLOT(setNormalizationParameters(
-					 representation::t,MultiImg::NormMode,multi_img::Range)));
+					 representation::t,multi_img::NormMode,multi_img::Range)));
 	connect(normDock, SIGNAL(applyNormalizationRequested()),
 			chief,
 			SLOT(invalidateROI()));

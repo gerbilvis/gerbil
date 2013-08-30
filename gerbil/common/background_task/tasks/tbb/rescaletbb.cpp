@@ -1,3 +1,4 @@
+#include <shared_data.h>
 #include <background_task/background_task.h>
 #include <shared_data.h>
 #include <multi_img.h>
@@ -6,18 +7,9 @@
 #include <tbb/parallel_for.h>
 
 #include <multi_img/multi_img_tbb.h>
+
 #include "rescaletbb.h"
 
-class Resize {
-public:
-	Resize(multi_img &source, multi_img &target, size_t newsize)
-		: source(source), target(target), newsize(newsize) {}
-	void operator()(const tbb::blocked_range2d<int> &r) const;
-private:
-	multi_img &source;
-	multi_img &target;
-	size_t newsize;
-};
 
 bool RescaleTbb::run()
 {
@@ -81,14 +73,3 @@ bool RescaleTbb::run()
 }
 
 
-
-void Resize::operator()(const tbb::blocked_range2d<int> &r) const
-{
-	for (int row = r.rows().begin(); row != r.rows().end(); ++row) {
-		for (int col = r.cols().begin(); col != r.cols().end(); ++col) {
-			cv::Mat_<multi_img::Value> src(source.pixels[row * source.width + col], false);
-			cv::Mat_<multi_img::Value> dst(target.pixels[row * source.width + col], false);
-			cv::resize(src, dst, cv::Size(1, newsize));
-		}
-	}
-}

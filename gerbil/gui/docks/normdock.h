@@ -9,9 +9,8 @@
 
 #include "model/representation.h"
 
-// FIXME: need to include background_task/tasks/multi_img_tasks.h just for MultiImg::NormMode.
-// This is bad dependency mangagement: background_task/tasks/multi_img_tasks.h is huge.
-#include <background_task/tasks/multi_img_tasks.h>
+#include <multi_img.h>
+#include <background_task/background_task.h>
 
 
 // FIXME normalization functionality
@@ -40,7 +39,7 @@ public slots:
 	void setNormRange(representation::t type, const multi_img::Range& range);
 
 	// setNormMode, setNormTarget unused and untested.
-	void setNormMode(representation::t type, MultiImg::NormMode mode);
+	void setNormMode(representation::t type, multi_img::NormMode mode);
 	void setNormTarget(representation::t type);
 
 protected slots:
@@ -55,7 +54,7 @@ signals:
 	void computeDataRangeRequested(representation::t type);
 	void normalizationParametersChanged(
 			representation::t type,
-			MultiImg::NormMode normMode,
+			multi_img::NormMode normMode,
 			multi_img::Range targetRange
 			);
 	void applyNormalizationRequested();
@@ -70,7 +69,7 @@ protected:
 	QMap<representation::t, multi_img::Range> ranges;
 
 	// store currently selected normaliztation mode for each representation
-	QMap<representation::t, MultiImg::NormMode> modes;
+	QMap<representation::t, multi_img::NormMode> modes;
 
 	// user edits norm parameters for IMG or GRAD?
 	representation::t normTarget;

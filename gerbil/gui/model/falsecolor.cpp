@@ -1,18 +1,18 @@
-#include "falsecolor.h"
-
-#include "representation.h"
-#include "../commandrunner.h"
-#include "../tasks/rgbtbb.h"
+#include <QImage>
+#include <QPixmap>
+#include <opencv2/core/core.hpp>
 
 #include <shared_data.h>
 #include <background_task/background_task_queue.h>
+#include <background_task/tasks/tbb/rgbqttbb.h>
 #include <rgb.h>
 #include <multi_img.h>
 #include <qtopencv.h>
 
-#include <QImage>
-#include <QPixmap>
-#include <opencv2/core/core.hpp>
+#include "representation.h"
+#include "../commandrunner.h"
+
+#include "falsecolor.h"
 
 // TODO RGB:
 //  progressUpdate() in SOM einbauen,

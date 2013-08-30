@@ -1,6 +1,9 @@
 #include "illumination.h"
 
-#include "background_task/tasks/multi_img_tasks.h"
+#include <tbb/task_group.h>
+
+#include "background_task/tasks/tbb/illuminanttbb.h"
+#include "background_task/tasks/cuda/illuminantcuda.h"
 
 #include <opencv2/gpu/gpu.hpp>
 
@@ -140,11 +143,11 @@ void IllumModel::submitRemoveOldIllumTask()
 		const Illuminant &il = getIlluminant(i1);
 
 		if (cv::gpu::getCudaEnabledDeviceCount() > 0 && USE_CUDA_ILLUMINANT) {
-			BackgroundTaskPtr taskIllum(new MultiImg::IlluminantCuda(
+			BackgroundTaskPtr taskIllum(new IlluminantCuda(
 				image, il, true, roi, false));
 			queue->push(taskIllum);
 		} else {
-			BackgroundTaskPtr taskIllum(new MultiImg::IlluminantTbb(
+			BackgroundTaskPtr taskIllum(new IlluminantTbb(
 				image, il, true, roi, false));
 			queue->push(taskIllum);
 		}
@@ -158,11 +161,11 @@ void IllumModel::submitAddNewIllumTask()
 		const Illuminant &il = getIlluminant(i2);
 
 		if (cv::gpu::getCudaEnabledDeviceCount() > 0 && USE_CUDA_ILLUMINANT) {
-			BackgroundTaskPtr taskIllum(new MultiImg::IlluminantCuda(
+			BackgroundTaskPtr taskIllum(new IlluminantCuda(
 				image, il, false, roi, false));
 			queue->push(taskIllum);
 		} else {
-			BackgroundTaskPtr taskIllum(new MultiImg::IlluminantTbb(
+			BackgroundTaskPtr taskIllum(new IlluminantTbb(
 				image, il, false, roi, false));
 			queue->push(taskIllum);
 		}
