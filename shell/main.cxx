@@ -16,19 +16,6 @@ void printVoleOnce() {
 		return;
 	already_printed = true;
 
-#ifndef WITH_GERBIL_COMMON
-	cout << "\n"
-	        "          =x= vole image forensics toolkit =x=  \n"
-	        "\n"
-	        "                _.---._..-\"\"\"\"\"\"-.        \n"
-	        "             .-\" o   -.           `.           \n"
-	        "             `._     -'             \\          \n"
-	        "               _`\";`                 |         \n"
-	        "              '-'__\\  \\     _.-'     /__      \n"
-	        "                '-'---'--'``\\__, _.-'--\"\"-.  \n"
-	        "           jgs               (.-'        ,-`    \n"
-	        "\n" << endl;
-#else
 	cout << "\n"
 			"            .s_,  ._ssaoXXXZqaa,.              \n"
 			"           _mmZmaoZXSnooooXXZmWWma.            \n"
@@ -45,7 +32,6 @@ void printVoleOnce() {
 			"  G E R B I L        -{I;_asssas%IY!!^         \n"
 #endif
 			"\n" << endl;
-#endif
 }
 
 void printGeneralHelp(const char *program_name, bool withLogo, bool single) {

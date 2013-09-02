@@ -159,7 +159,7 @@ macro(vole_add_module)
 				target_link_libraries(${vole_module_library} "${module}${VOLE_LIBRARY_SUFFIX}")
 			endforeach()
 
-			target_link_libraries(${vole_module_library} "common${VOLE_LIBRARY_SUFFIX}")
+			target_link_libraries(${vole_module_library} "core${VOLE_LIBRARY_SUFFIX}")
 
 			if(vole_module_optional_modules)
 				target_link_libraries(${vole_module_library} "${vole_module_name}${VOLE_OPTIONAL_LIBRARY_SUFFIX}")
@@ -203,7 +203,7 @@ macro(vole_add_module)
 					endif()
 
 					add_executable(${executable_name} ${executable_sources} ${rcc_sources})
-					target_link_libraries(${executable_name} "common${VOLE_LIBRARY_SUFFIX}")
+					target_link_libraries(${executable_name} "core${VOLE_LIBRARY_SUFFIX}")
 					target_link_libraries(${executable_name} ${vole_module_library})
 				endif()
 			endforeach()

@@ -22,7 +22,6 @@ namespace vole {
 
 /**
 	Helper functions for interoperation between Qt and OpenCV.
-	Used in other parts of vole/common.
 **/
 
 cv::Mat3b QImage2Mat(const QImage &src);

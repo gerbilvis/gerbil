@@ -1,14 +1,9 @@
 vole_module_name("similarity_measures")
 vole_module_description("Distance measures for grayscale images")
-vole_module_variable("Vole_Similarity_Measures")
+vole_module_variable("Gerbil_Similarity_Measures")
 
-vole_add_required_dependencies("OPENCV" "BOOST" "BOOST_PROGRAM_OPTIONS")
-
-vole_compile_library(
-	"command_similarity_measure"
-)
-
-vole_add_command("dist" "command_similarity_measure.h" "vole::CommandSimilarityMeasure")
+vole_add_required_dependencies("OPENCV")
+vole_add_optional_dependencies("BOOST" "BOOST_PROGRAM_OPTIONS")
 
 vole_compile_library(
 	"correlation_coefficient_histogram"
@@ -28,8 +23,6 @@ vole_compile_library(
 	"normalized_l2"
 
 	"sm_config" "sm_factory"
-	"similarity_measure_core"
-	"similarity_measure_config"
 )
 
 vole_add_module()

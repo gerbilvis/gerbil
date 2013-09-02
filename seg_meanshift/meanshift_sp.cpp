@@ -9,7 +9,7 @@
 #include "meanshift_sp.h"
 #include "meanshift.h"
 
-#ifdef WITH_SEG_FELZENSZWALB2
+#ifdef WITH_SEG_FELZENSZWALB
 #include <felzenszwalb.h>
 #include <labeling.h>
 #endif
@@ -37,7 +37,7 @@ MeanShiftSP::~MeanShiftSP() {}
 
 
 int MeanShiftSP::execute() {
-#ifdef WITH_SEG_FELZENSZWALB2
+#ifdef WITH_SEG_FELZENSZWALB
 
 	multi_img::ptr input, input_grad;
 	if (config.sp_withGrad) {

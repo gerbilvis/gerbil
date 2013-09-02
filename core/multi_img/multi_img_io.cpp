@@ -163,11 +163,4 @@ void multi_img::read_image(const vector<string> &files, const vector<BandDesc> &
 			 << "   (" << size()*width*height*sizeof(Value)/1048576. << " MB)" << endl;
 }
 
-#ifndef WITH_GERBIL_COMMON // more complex implementation in gerbil/common!
-void multi_img::read_image(const string& filename)
-{
-	read_image(vector<string>(1, filename));
-}
-#endif
-
 #endif // opencv

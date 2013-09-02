@@ -5,7 +5,6 @@ vole_module_variable("Gerbil_Edge_Detect")
 vole_add_required_dependencies("OPENCV")
 vole_add_optional_dependencies("BOOST" "BOOST_PROGRAM_OPTIONS" "BOOST_FILESYSTEM")
 vole_add_required_modules("similarity_measures")
-vole_add_optional_modules("gerbil_common")
 
 vole_compile_library(
         "edge_detection"

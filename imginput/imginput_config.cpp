@@ -20,12 +20,10 @@ namespace vole {
 ImgInputConfig::ImgInputConfig(const std::string& prefix)
 	: Config(prefix) {
 	// set default values
-#ifdef WITH_GERBIL_COMMON
 	gradient = false;
 	bands = 0;
 	bandlow=0;
 	bandhigh=0;
-#endif
 
 	initBoostOptions();
 }
@@ -41,12 +39,10 @@ std::string ImgInputConfig::getString() const {
 
 	s << "file=" << file << "\t# Image to process" << std::endl
 	  << "roi=" << roi << std::endl
-#ifdef WITH_GERBIL_COMMON
 	  << "gradient=" << (gradient ? "true" : "false") << std::endl
 	  << "bands=" << bands << std::endl
 	  << "bandlow=" << bandlow << std::endl
 	  << "bandhigh=" << bandhigh << std::endl
-#endif
 		 ;
 
 	return s.str();
@@ -59,7 +55,6 @@ void ImgInputConfig::initBoostOptions() {
 		 "Image to process")
 		(key("roi"), value(&roi)->default_value(roi),
 		 "apply ROI (x:y:w:h)")
-#ifdef WITH_GERBIL_COMMON
 		(key("gradient"), bool_switch(&gradient)->default_value(gradient),
 		 "compute spectral gradient")
 		(key("bands"), value(&bands)->default_value(bands),
@@ -68,7 +63,6 @@ void ImgInputConfig::initBoostOptions() {
 		 "apply lower bound of band ROI")
    		(key("bandhigh"), value(&bandhigh)->default_value(bandhigh),
 		 "apply upper bound of band ROI")
-#endif
 	;
 
 }

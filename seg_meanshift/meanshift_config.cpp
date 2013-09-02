@@ -20,7 +20,7 @@ ENUM_MAGIC(ms_sampling)
 
 MeanShiftConfig::MeanShiftConfig(const std::string& prefix)
 	: Config(prefix), input("input")
-#ifdef WITH_SEG_FELZENSZWALB2
+#ifdef WITH_SEG_FELZENSZWALB
 	, superpixel("superpixel"),
 	sp_withGrad(false), sp_weight(0)
 #endif
@@ -67,7 +67,7 @@ std::string MeanShiftConfig::getString() const {
 		  << "epsilon=" << epsilon << std::endl
 			;
 	}
-#ifdef WITH_SEG_FELZENSZWALB2
+#ifdef WITH_SEG_FELZENSZWALB
 	s << superpixel.getString();
 	s << "sp_withGrad=" << (sp_withGrad ? "true" : "false") << std::endl;
 	s << "sp_weight=" << sp_weight << std::endl;
@@ -103,12 +103,12 @@ void MeanShiftConfig::initBoostOptions() {
 			 "number of neighbors used in the construction of the pilot density")
 			("initmethod", value(&starting)->default_value(starting),
 			 "start mean shift from ALL points, every Xth point (JUMP), "
-#ifdef WITH_SEG_FELZENSZWALB2
+#ifdef WITH_SEG_FELZENSZWALB
 			 "a random selection of points (PERCENT), or SUPERPIXEL segmentation")
 #else
 			 "or a random selection of points (PERCENT)")
 #endif
-#ifdef WITH_SEG_FELZENSZWALB2
+#ifdef WITH_SEG_FELZENSZWALB
 			("sp_withGrad", bool_switch(&sp_withGrad)->default_value
 																  (sp_withGrad),
 			 "compute gradient as input to mean shift step (after superpixels)")
@@ -124,7 +124,7 @@ void MeanShiftConfig::initBoostOptions() {
 			 "use fixed bandwidth*dimensionality for mean shift window (else: adaptive)")
 
 	;
-#ifdef WITH_SEG_FELZENSZWALB2
+#ifdef WITH_SEG_FELZENSZWALB
 	options.add(superpixel.options);
 #endif
 #ifdef WITH_EDGE_DETECT

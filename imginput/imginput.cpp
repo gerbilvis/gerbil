@@ -63,7 +63,6 @@ multi_img::ptr ImgInput::execute()
 	if (img_ptr->empty())
 		return img_ptr;
 
-	#ifdef WITH_GERBIL_COMMON
 	// compute gradient
 	if (config.gradient) {
 		img_ptr->apply_logarithm();
@@ -74,7 +73,6 @@ multi_img::ptr ImgInput::execute()
 	if (config.bands > 0 && config.bands < (int)img_ptr->size()) {
 		*img_ptr = img_ptr->spec_rescale(config.bands);
 	}
-	#endif
 
 	return img_ptr;
 }

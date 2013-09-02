@@ -897,9 +897,12 @@ bool FAMS::PrepareFAMS(vector<double> *bandwidths) {
 	//Compute pilot if necessary
 	bgLog(" Run pilot ");
 	bool cont = true;
+#ifdef WITH_SEG_FELZENSZWALB
 	bool adaptive = (config.bandwidth <= 0. ||
 					 bandwidths == NULL || config.sp_weight == 2);
-
+#else
+	bool adaptive = (config.bandwidth <= 0. || bandwidths == NULL);
+#endif
 	if (adaptive) {  // adaptive bandwidths
 		bgLog("adaptive...");
 		cont = ComputePilot(bandwidths);

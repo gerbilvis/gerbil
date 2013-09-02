@@ -216,7 +216,7 @@ void LabelingModel::consolidate()
 {
 	/* create new labeling that will search for all set labels
 	 * it only does this if it gets rgb input
-	 * TODO: write a real consolidate function in common/labeling class!
+	 * TODO: write a real consolidate function in core/labeling class!
 	 */
 	vole::Labeling newfull(full_labels);
 	newfull.consolidate();

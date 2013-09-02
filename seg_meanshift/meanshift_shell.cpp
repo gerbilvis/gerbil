@@ -65,7 +65,7 @@ int MeanShiftShell::execute() {
 			return 0;
 		}
 
-	#ifdef WITH_SEG_FELZENSZWALB2
+	#ifdef WITH_SEG_FELZENSZWALB
 		// HACK
 		//if (config.starting == SUPERPIXEL)
 		//	config.pruneMinN = 1;

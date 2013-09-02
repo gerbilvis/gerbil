@@ -2,7 +2,7 @@
 #define MEANSHIFT_CONFIG_H
 
 #include "vole_config.h"
-#ifdef WITH_SEG_FELZENSZWALB2
+#ifdef WITH_SEG_FELZENSZWALB
 #include <felzenszwalb2_config.h>
 #endif
 #ifdef WITH_EDGE_DETECT
@@ -16,11 +16,11 @@ enum ms_sampling {
 	ALL,
 	JUMP,
 	PERCENT,
-#ifdef WITH_SEG_FELZENSZWALB2
+#ifdef WITH_SEG_FELZENSZWALB
 	SUPERPIXEL,
 #endif
 };
-#ifdef WITH_SEG_FELZENSZWALB2
+#ifdef WITH_SEG_FELZENSZWALB
 #define ms_samplingString {"ALL", "JUMP", "PERCENT", "SUPERPIXEL"}
 #else
 #define ms_samplingString {"ALL", "JUMP", "PERCENT"}
@@ -37,7 +37,7 @@ public:
 	// input configuration
 	ImgInputConfig input;
 
-#ifdef WITH_SEG_FELZENSZWALB2
+#ifdef WITH_SEG_FELZENSZWALB
 	// superpixel configuration for SUPERPIXEL sampling
 	gerbil::FelzenszwalbConfig superpixel;
 

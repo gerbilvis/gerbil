@@ -28,13 +28,9 @@
 	class QImage;
 #endif
 
-#ifdef WITH_GERBIL_COMMON
-	class Illuminant;
-#endif
-
+class Illuminant;
 
 // FIXME what a mess
-#ifdef WITH_GERBIL_COMMON
 class Grad;
 class Log;
 class Clamp;
@@ -73,10 +69,6 @@ class PcaTbb;
 	friend class DataRangeTbb;\
 	friend class DataRangeCuda;\
 	friend class PcaTbb;
-
-#else
-#define MULTI_IMG_FRIENDS
-#endif
 
 class multi_img_base {
 public:
@@ -186,7 +178,7 @@ protected:
 	OpenCV Matrix. A caching mechanism is employed that also allows access to data
 	on a per-pixel level (interleaved storage).
 
-	@note There is extended functionality implemented in gerbil/common/multi_img_ext.cpp.
+	@note There is extended functionality implemented in multi_img_{io,ext,io_ext}.cpp.
 	These are functions of sole interest for true multispectral images,
 	while all functionality implemented inside Vole may also be useful for ordinary RGB images.
 
@@ -390,7 +382,6 @@ public:
 	QImage export_qt(unsigned int band) const;
 #endif
 
-#ifdef WITH_GERBIL_COMMON
 	/// return sRGB color space representation of the image
 	cv::Mat_<cv::Vec3f> bgr() const;
 
@@ -398,7 +389,6 @@ public:
 	cv::Vec3f bgr(const Pixel &p) const;
 	static cv::Vec3f bgr(const Pixel &p,
 		size_t dim, const std::vector<BandDesc> &meta, Value maxval);
-#endif
 
 //@}
 
@@ -430,7 +420,6 @@ public:
 	void read_image(const std::vector<std::string> &files,
 					const std::vector<BandDesc> &descs = std::vector<BandDesc>());
 
-#ifdef WITH_GERBIL_COMMON
 	/// fill image with raw data from file stream, used by read_image_lan
 	/** @note Part of Gerbil. **/
 	void fill_bil(std::ifstream &in, unsigned short depth);
@@ -438,13 +427,11 @@ public:
 	/// helper for read_image for LAN images, returns true on success
 	/** @note Part of Gerbil. **/
 	bool read_image_lan(const std::string& filename);
-#endif
 
 	/// read grayscale, RGB, LAN or filelist image
 	/** @note Without gerbil, only grayscale and RGB is supported. **/
 	void read_image(const std::string& filename);
 
-#ifdef WITH_GERBIL_COMMON
 	/// write the whole image with base name base (may include directories)
 	/** Output is 8 bit or 16 bit grayscale PNG image.
 	    @param normalize If set (default), output is scaled/shifted for better conversion.
@@ -453,7 +440,6 @@ public:
 		      class in Vole for RGB data, use Mat() and then imwrite().
 	**/
 	void write_out(const std::string& base, bool normalize = true, bool in16bit = true) const;
-#endif
 
 //@}
 
@@ -530,20 +516,17 @@ public:
 	void blur(cv::Size ksize, double sigmaX, double sigmaY = 0,
 			  int borderType = cv::BORDER_DEFAULT);
 
-#ifdef WITH_GERBIL_COMMON
 	/// return spectral gradient of log. image
 	/** @note: Apply the logarithm first! **/
 	multi_img spec_gradient() const;
 
 	/// return a copy with fewer bands (linear interpolation)
 	multi_img spec_rescale(size_t newsize) const;
-#endif
 //@}
 
 /** @name Helper functions **/
 //@{
 
-#ifdef WITH_GERBIL_COMMON
 	/// reads a file list for multispectral image
 	/** file format:
 		number_of_files(int)	common_path(string)
@@ -563,18 +546,15 @@ public:
 
 	/// helper function to do conversion from xyz to sRGB color space
 	static void xyz2bgr(const cv::Vec3f &xyz, cv::Vec3f &rgb);
-#endif
 //@}
 
 /** @name Illumination **/
 //@{
-#ifdef WITH_GERBIL_COMMON
 	/// apply illuminant to the image (or remove)
 	void apply_illuminant(const Illuminant&, bool remove = false);
 
 	/// returns all illuminant coefficients relevant for this image
 	std::vector<Value> getIllumCoeff(const Illuminant&) const;
-#endif
 //@}
 
 	/// ROI associated with image data

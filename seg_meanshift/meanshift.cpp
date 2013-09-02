@@ -10,7 +10,7 @@
 #include "mfams.h"
 #include <multi_img.h>
 
-#ifdef WITH_SEG_FELZENSZWALB2
+#ifdef WITH_SEG_FELZENSZWALB
 #include <felzenszwalb.h>
 #include <labeling.h>
 #endif
@@ -51,7 +51,7 @@ cv::Mat1s MeanShift::execute(const multi_img& input, ProgressObserver *progress,
 
 	cfams.ImportPoints(input);
 
-#ifdef WITH_SEG_FELZENSZWALB2
+#ifdef WITH_SEG_FELZENSZWALB
 	// superpixel setup
 	cv::Mat1i sp_translate;
 	gerbil::felzenszwalb::segmap sp_map;
@@ -88,7 +88,7 @@ cv::Mat1s MeanShift::execute(const multi_img& input, ProgressObserver *progress,
 	case PERCENT:
 		cfams.SelectMsPoints(config.percent, 1);
 		break;
-#ifdef WITH_SEG_FELZENSZWALB2
+#ifdef WITH_SEG_FELZENSZWALB
 	case SUPERPIXEL:
 		sp_points = prepare_sp_points(cfams, sp_map);
 		cfams.ImportMsPoints(sp_points);
@@ -100,7 +100,7 @@ cv::Mat1s MeanShift::execute(const multi_img& input, ProgressObserver *progress,
 
 	// perform mean shift
 	success = cfams.FinishFAMS();
-#ifdef WITH_SEG_FELZENSZWALB2
+#ifdef WITH_SEG_FELZENSZWALB
 /*	if (config.starting == SUPERPIXEL) {
 		cfams.DbgSavePoints(config.output_directory + "/sp-points-img",
 							sp_points, input.meta);
@@ -128,7 +128,7 @@ cv::Mat1s MeanShift::execute(const multi_img& input, ProgressObserver *progress,
 	// return image which holds segment indices of each pixel
 	if (config.starting == ALL) {
 		return cfams.segmentImage();
-#ifdef WITH_SEG_FELZENSZWALB2
+#ifdef WITH_SEG_FELZENSZWALB
 	} else if (config.starting == SUPERPIXEL) {
 		return segmentImage(cfams, sp_translate);
 #endif
@@ -139,7 +139,7 @@ cv::Mat1s MeanShift::execute(const multi_img& input, ProgressObserver *progress,
 	}
 }
 
-#ifdef WITH_SEG_FELZENSZWALB2
+#ifdef WITH_SEG_FELZENSZWALB
 std::vector<fams_point> MeanShift::prepare_sp_points(const FAMS &fams,
 								  const gerbil::felzenszwalb::segmap &map)
 {

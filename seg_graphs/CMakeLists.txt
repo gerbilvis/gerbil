@@ -1,11 +1,11 @@
 vole_module_name("seg_graphs")
 vole_module_description("Graph Cut Segmentation by Grady et al.")
-vole_module_variable("Vole_Seg_Graphs")
+vole_module_variable("Gerbil_Seg_Graphs")
 
 vole_add_required_dependencies("OPENCV")
 vole_add_optional_dependencies("BOOST" "BOOST_PROGRAM_OPTIONS" "BOOST_FILESYSTEM")
 vole_add_required_modules("csparse" "similarity_measures")
-vole_add_optional_modules("gerbil_common" "edge_detect")
+vole_add_optional_modules("edge_detect")
 
 vole_compile_library(
 	"graphseg_shell"

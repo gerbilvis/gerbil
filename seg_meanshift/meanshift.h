@@ -5,7 +5,7 @@
 #include "mfams.h"
 #include "progress_observer.h"
 #include <multi_img.h>
-#ifdef WITH_SEG_FELZENSZWALB2
+#ifdef WITH_SEG_FELZENSZWALB
 #include <felzenszwalb.h>
 #endif
 
@@ -22,7 +22,7 @@ public:
 					  vector<double> *bandwidths = NULL,
 					  const multi_img& spinput = multi_img());
 
-#ifdef WITH_SEG_FELZENSZWALB2
+#ifdef WITH_SEG_FELZENSZWALB
 	static std::vector<fams_point> prepare_sp_points(const FAMS &fams,
 									  const gerbil::felzenszwalb::segmap &map);
 	static void cleanup_sp_points(std::vector<fams_point> &points);

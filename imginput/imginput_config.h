@@ -19,13 +19,11 @@ public:
 	// region of interest
 	std::string roi;
 
-#ifdef WITH_GERBIL_COMMON
 	// compute spectral gradient
 	bool gradient;
 
 	// reduce number of bands (0 means disabled)
 	int bands;
-#endif
 
 	// Band low for cropping
 	int bandlow;

@@ -1,6 +1,6 @@
 vole_module_name("csparse")
 vole_module_description("A Concise Sparse Matrix Package in C (sc.fsu.edu)")
-vole_module_variable("Vole_CSparse")
+vole_module_variable("Gerbil_CSparse")
 
 vole_compile_library(
 	"cs_add.c"       "cs_fkeep.c"   "cs_multiply.c"  "cs_tdfs.c"

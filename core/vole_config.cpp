@@ -34,7 +34,7 @@ bool Config::readConfig(const char *filename) {
 	return parseOptionsDescription(filename);
 #endif // WITH_BOOST_PROGRAM_OPTIONS
 
-	std::cerr << "No options reader implemented - big mayhem in common/config.cpp" << std::endl;
+	std::cerr << "No options reader implemented - big mayhem in core/vole_config.cpp" << std::endl;
 	return false; 
 }
 
