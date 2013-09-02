@@ -54,9 +54,10 @@ public slots:
 	void setLimitersMode(bool enabled);
 	void activate();
 
-	// entry and exit point of user interaction with quick drawing
+	// entry point of user interaction with temporary quick drawing
 	void startNoHQ();
-	bool endNoHQ();
+	// exit point of temporary quick drawing. returns true if redraw performed
+	bool endNoHQ(RenderMode spectrum = RM_STEP, RenderMode highlight = RM_STEP);
 
 	void screenshot();
 

@@ -343,15 +343,19 @@ void Viewport::startNoHQ()
 	drawingState = (drawingState == HIGH_QUALITY ? HIGH_QUALITY_QUICK : QUICK);
 }
 
-bool Viewport::endNoHQ()
+bool Viewport::endNoHQ(RenderMode spectrum, RenderMode highlight)
 {
-	bool dirty = true;
+	/* we enter this function after the display was in temporary low quality
+	 * state. it may be "dirty", i.e. need to be redrawn in high quality now
+	 * that is, if the global setting is not low quality anyways
+	 */
+	bool dirty = drawHQ;
 	if (drawingState == HIGH_QUALITY || drawingState == HIGH_QUALITY_QUICK)
-		dirty = false;
-	if (!drawHQ && drawingState == QUICK)
 		dirty = false;
 
 	drawingState = (drawHQ ? HIGH_QUALITY : QUICK);
+	if (dirty)
+		updateTextures(spectrum, highlight);
 	return dirty;
 }
 

@@ -144,12 +144,7 @@ void Viewport::mouseReleaseEvent(QGraphicsSceneMouseEvent *event)
 		lasty = -1;
 	}
 
-	if (endNoHQ()) {
-		updateTextures((event->button() == Qt::RightButton)
-					   ? RM_STEP : RM_SKIP, RM_STEP);
-	}
-
-	event->accept();
+	endNoHQ((event->button() == Qt::RightButton) ? RM_STEP : RM_SKIP, RM_STEP);
 }
 
 void Viewport::wheelEvent(QGraphicsSceneWheelEvent *event)
@@ -173,11 +168,15 @@ void Viewport::wheelEvent(QGraphicsSceneWheelEvent *event)
 
 	updateModelview();
 	updateTextures();
-	event->accept();
 }
 
 void Viewport::keyPressEvent(QKeyEvent *event)
 {
+	// check for scene elements first (we are technically the background)
+	QGraphicsScene::keyPressEvent(event);
+	if (event->isAccepted())
+		 return;
+
 	bool highlightAltered = false;
 
 	switch (event->key()) {
@@ -237,12 +236,13 @@ void Viewport::keyPressEvent(QKeyEvent *event)
 	case Qt::Key_Space:
 		drawHQ = !drawHQ;
 		if (drawHQ) {
-			if (endNoHQ())
-				updateTextures();
+			// triggers drawing update
+			endNoHQ();
 		} else {
 			startNoHQ();
+			// deliberately make display worse for user to see effect
+			updateTextures();
 		}
-		updateTextures();
 		break;
 	case Qt::Key_M:
 		drawMeans = !drawMeans;
@@ -252,5 +252,4 @@ void Viewport::keyPressEvent(QKeyEvent *event)
 	if (highlightAltered) {
 		updateTextures(RM_SKIP, RM_FULL);
 	}
-	event->accept();
 }
