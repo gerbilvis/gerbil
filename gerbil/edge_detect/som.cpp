@@ -10,8 +10,9 @@
 #include <fstream>
 
 SOM::SOM(const vole::EdgeDetectionConfig &conf, int dimension,
-		 std::vector<multi_img_base::BandDesc> meta)
-	: config(conf), dim(dimension), origImgMeta(meta)
+         std::vector<multi_img_base::BandDesc> meta)
+	: config(conf), dim(dimension), origImgMeta(meta),
+	theEnd(SOM::iterator(NULL)) // shall be overwritten in child constructors
 {
 	/// Create similarity measure
 	distfun = vole::SMFactory<multi_img::Value>::spawn(config.similarity);
@@ -70,8 +71,7 @@ multi_img SOM::export_2d()
 	ret.maxval = r.max;
 	ret.minval = r.min;
 
-	const SOM::iterator theEnd = end();
-	for (SOM::iterator n = begin(); n != theEnd; ++n)
+	for (SOM::iterator n = begin(); n != end(); ++n)
 	{
 		cv::Point p = n.get2dCoordinates();
 		ret.setPixel(p.y, p.x, *n);
@@ -89,9 +89,7 @@ SOM::iterator SOM::identifyWinnerNeuron(const multi_img::Pixel &inputVec)
 
 	// find closest Neuron to inputVec in the SOM
 	// -> iterate over all neurons in grid
-	// end() needs to be called only once, so do this before the loop
-	const SOM::iterator theEnd = end();
-	for (SOM::iterator neuron = begin(); neuron != theEnd; ++neuron) {
+	for (SOM::iterator neuron = begin(); neuron != end(); ++neuron) {
 		double dist = getSimilarity(*neuron, inputVec);
 
 		// compare current distance with minimal found distance
@@ -111,33 +109,34 @@ static bool sortpair(std::pair<double, SOM::iterator> i,
 	return (i.first < j.first);
 }
 
-std::vector<std::pair<double, SOM::iterator> >
-SOM::closestN(const multi_img::Pixel &inputVec, unsigned int N)
+void SOM::closestN(const multi_img::Pixel &inputVec,
+	std::vector<std::pair<double, SOM::iterator> > &heap)
 {
-	const SOM::iterator theEnd = end();
-
 	// initialize with maximum values
-	std::vector<std::pair<double, SOM::iterator> > heap(N,
-		std::make_pair(std::numeric_limits<double>::max(), theEnd));
+	for (int i = 0; i < heap.size(); ++i)
+		heap[i].first = std::numeric_limits<double>::max();
 
 	// find closest Neurons to inputVec in the SOM
 	// iterate over all neurons in grid
-	for (SOM::iterator neuron = begin(); neuron != theEnd; ++neuron) {
+	for (SOM::iterator neuron = begin(); neuron != end(); ++neuron) {
 		double dist = distfun->getSimilarity(*neuron, inputVec);
 		// compare current distance with the maximum of the N shortest found distances
 		if (dist < heap[0].first) {
 			// remove max. value in heap
 			std::pop_heap(heap.begin(), heap.end(), sortpair);
-			heap.pop_back();
-			// add new value
-			heap.push_back(std::make_pair(dist, neuron));
+
+			// max element is now on position "back" and should be popped
+			// we overrite it directly with the new element
+			std::pair<double, SOM::iterator> &back = heap.back();
+			back.first = dist;
+			back.second = neuron;
+
 			std::push_heap(heap.begin(), heap.end(), sortpair);
 		}
 	}
 
-	assert(heap[0].second != theEnd);
+	assert(heap[0].first != std::numeric_limits<double>::max());
 	std::sort_heap(heap.begin(), heap.end(), sortpair); // sort ascending
-	return heap;
 }
 
 // fallback method that should be overwritten, but can be used as reference

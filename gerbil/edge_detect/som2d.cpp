@@ -12,8 +12,9 @@ SOM2d::SOM2d(const vole::EdgeDetectionConfig &conf, int dimension,
 	// TODO: given interval [0..1] sure? purpose? it will not fit anyway
 	cv::RNG rng(config.seed);
 
-	SOM::iterator theEnd = end(); // only needs to be called once
-	for (SOM::iterator n = begin(); n != theEnd; ++n) {
+	theEnd = SOM::iterator(new Iterator2d(this, 0, height));
+
+	for (SOM::iterator n = begin(); n != end(); ++n) {
 		(*n).randomize(rng, 0., 1.);
 	}
 }
@@ -31,9 +32,10 @@ SOM2d::SOM2d(const vole::EdgeDetectionConfig &conf, const multi_img &data,
 		return; // somdata will be empty
 	}
 
+	theEnd = SOM::iterator(new Iterator2d(this, 0, height));
+
 	/// Read SOM from multi_img
-	SOM::iterator theEnd = end(); // only needs to be called once
-	for (SOM::iterator n = begin(); n != theEnd; ++n) {
+	for (SOM::iterator n = begin(); n != end(); ++n) {
 		cv::Point pos = n.get2dCoordinates();
 		*n = data(pos.y, pos.x);
 	}
@@ -243,11 +245,6 @@ std::string SOM2d::description()
 SOM::iterator SOM2d::begin()
 {
 	return SOM::iterator(new Iterator2d(this, 0, 0));
-}
-
-SOM::iterator SOM2d::end()
-{
-	return SOM::iterator(new Iterator2d(this, 0, height));
 }
 
 double SOM2d::getDistance(const cv::Point &p1, const cv::Point &p2)

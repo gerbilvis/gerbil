@@ -221,14 +221,17 @@ void writeDensityMap(std::string filename, cv::Point res,
 struct SOMTBB {
 
 	SOMTBB (const multi_img& src, SOM *som, const std::vector<double>& w,
-			cv::Mat3f &dst, vole::somtype somtype, cv::Mat1f &stddevs)
-		: src(src), som(som), weight(w), dst(dst), somtype(somtype), stddevs(stddevs) { }
+			cv::Mat3f &dst, cv::Mat1f &stddevs, cv::Mat3d &avg_coords)
+		: src(src), som(som), weight(w), dst(dst), stddevs(stddevs), avg_coords(avg_coords) { }
 
 	void operator()(const tbb::blocked_range<int>& r) const
 	{
+		// (we just need the correct length,
+		// values will be overwritten in closestN)
+		std::vector<std::pair<double, SOM::iterator> > coords(
+			weight.size(), std::make_pair(0.0, som->end()));
 		for (int i = r.begin(); i != r.end(); ++i) {
-			std::vector<std::pair<double, SOM::iterator> > coords =
-					som->closestN(src.atIndex(i), weight.size());
+			som->closestN(src.atIndex(i), coords);
 
 			// Calculate stdandard deviation between positions of the BMUs
 			if (!stddevs.empty())
@@ -259,6 +262,15 @@ struct SOMTBB {
 			}
 			cv::Vec3f &pixel = dst(i / dst.cols, i % dst.cols);
 			pixel = som->getColor(avg);
+
+			// save avg for statistic calculation
+			if (!avg_coords.empty())
+			{
+				cv::Vec3d &pixel = avg_coords(i / dst.cols, i % dst.cols);
+				pixel[0] = avg.x;
+				pixel[1] = avg.y;
+				pixel[2] = avg.z;
+			}
 		}
 	}
 
@@ -267,7 +279,7 @@ struct SOMTBB {
 	const std::vector<double> &weight;
 	cv::Mat3f &dst;
 	cv::Mat1f &stddevs;
-	vole::somtype somtype;
+	cv::Mat3d &avg_coords;
 };
 
 // TODO: call progressUpdate
@@ -349,14 +361,18 @@ cv::Mat3f RGB::executeSOM(const multi_img &input_img, vole::ProgressObserver *po
 	}
 
 	cv::Mat1f stddevs;
+	cv::Mat3d avg_coords;
 	if (config.som.verbosity >= 3 && N > 1) // (there is no variance for N = 1!)
+	{
 		stddevs = cv::Mat1f(bgr.rows, bgr.cols);
+		avg_coords = cv::Mat3d(bgr.rows, bgr.cols);
+	}
 
 	// set RGB pixels
 	{
 		vole::Stopwatch watch("False Color Image Generation");
 		tbb::parallel_for(tbb::blocked_range<int>(0, img.height*img.width),
-		                  SOMTBB(img, som, weights, bgr, config.som.type, stddevs));
+		                  SOMTBB(img, som, weights, bgr, stddevs, avg_coords));
 	}
 
 	if (config.som.verbosity >= 3 && N > 1)
@@ -398,7 +414,7 @@ cv::Mat3f RGB::executeSOM(const multi_img &input_img, vole::ProgressObserver *po
 	{
 		std::cout << "Creating inter-neuron distance plots." << std::endl;
 
-		cv::Point plotResolution(100, 500);
+		cv::Point plotResolution(500, 500);
 		std::vector<double> xValsEucl, yValsEucl, xValsSpec, yValsSpec;
 
 		vole::SMConfig smconf_euclidean;
@@ -445,15 +461,16 @@ cv::Mat3f RGB::executeSOM(const multi_img &input_img, vole::ProgressObserver *po
 		cv::MatConstIterator_<int> itY = shuffledY.begin();
 		cv::MatConstIterator_<int> itX = shuffledX.begin();
 
-		std::cout << "Creating winner-neuron cache. This may take a while..." << std::endl;
+		// Old version calculated inter-neuron distance only on the winner neuron
+		//std::cout << "Creating winner-neuron cache. This may take a while..." << std::endl;
 
 		// to avoid the long preload calculation, one could save
 		// the BMU-iterators in the SOMTBB task (only the best one)
-		SOM::Cache *cache = som->createCache(img.height, img.width);
-		{
-			vole::Stopwatch watch("Runtime for Preloading the Cache");
-			cache->preload(img);
-		}
+		//SOM::Cache *cache = som->createCache(img.height, img.width);
+		//{
+		//	vole::Stopwatch watch("Runtime for Preloading the Cache");
+		//	cache->preload(img);
+		//}
 
 		std::cout << "Calculating distances to " << diffVals << " random neighbours per pixel..." << std::endl;
 
@@ -461,8 +478,10 @@ cv::Mat3f RGB::executeSOM(const multi_img &input_img, vole::ProgressObserver *po
 		for (int x = 0; x < img.width;  ++x)
 		{
 			cv::Point p(x, y);
-			SOM::iterator iter = cache->getWinnerNeuron(p);
-			cv::Point3d pos = iter.get3dPos();
+			//SOM::iterator iter = cache->getWinnerNeuron(p);
+			//cv::Point3d pos = iter.get3dPos();
+			const cv::Vec3d &vecPos = avg_coords(p);
+			cv::Point3d pos(vecPos[0], vecPos[1], vecPos[2]);
 
 			for (int i = 0; i < diffVals; ++i)
 			{
@@ -471,8 +490,10 @@ cv::Mat3f RGB::executeSOM(const multi_img &input_img, vole::ProgressObserver *po
 				while (p == p2) {
 					p2 = cv::Point(rng(img.width), rng(img.height));
 				}
-				SOM::iterator iter2 = cache->getWinnerNeuron(p2);
-				cv::Point3d pos2 = iter2.get3dPos();
+				//SOM::iterator iter2 = cache->getWinnerNeuron(p2);
+				//cv::Point3d pos2 = iter2.get3dPos();
+				const cv::Vec3d &vecPos2 = avg_coords(p2);
+				cv::Point3d pos2(vecPos2[0], vecPos2[1], vecPos2[2]);
 
 				cv::Point3d d = pos - pos2;
 				double neuronPositionDistance = std::sqrt(d.dot(d));

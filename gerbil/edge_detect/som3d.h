@@ -19,6 +19,12 @@ public:
 		Neuron &operator*() { return base->neurons[z][y][x]; }
 		Iterator3d *clone() { return new Iterator3d(*this); }
 
+                void assignWith(const IteratorBase *source) {
+                        // types have been checked by caller
+                        const Iterator3d *s = static_cast<const Iterator3d *>(source);
+                        *this = *s;
+                }
+
 		// returns the coordinates of the neurons in the multi_img
 		// that is created by export_2d
 		cv::Point get2dCoordinates() { return cv::Point(x + y * base->width, z); }
@@ -148,7 +154,6 @@ public:
 	std::string description();
 
 	iterator begin();
-	iterator end();
 
 protected:
 	static double getDistance(const cv::Point3i &p1, const cv::Point3i &p2);
