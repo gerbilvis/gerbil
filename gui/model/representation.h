@@ -3,15 +3,21 @@
 
 #include <QMap>
 
+#define WITH_IMGPCA
+#define WITH_GRADPCA
+#define REPSIZE 4 // depends on the variables above
 struct representation {
 
 	enum t {
 		IMG = 0,
 		GRAD = 1,
+#ifdef WITH_IMGPCA
 		IMGPCA = 2,
-		GRADPCA = 3,
-		REPSIZE = 4
-		// if you add something, also change operator<< and private constructor!
+#endif
+#ifdef WITH_GRADPCA
+		GRADPCA = 3
+#endif
+		// if you add a repres., also change operator<< and private constructor!
 	};
 
 	// map of all representations for easy looping
@@ -24,7 +30,7 @@ struct representation {
 	// user-readable string representation (for debug output, see operator<<)
 	static const char* str(t r)
 	{
-		if (r < 0 || r >= representation::REPSIZE) {
+		if (r < 0 || r >= REPSIZE) {
 			return "None";
 		}
 		const char * const str[] = {

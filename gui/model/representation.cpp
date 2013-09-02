@@ -2,7 +2,7 @@
 
 std::ostream &operator<<(std::ostream& os, const representation::t& r)
 {
-	if (r < 0 || r >= representation::REPSIZE) {
+	if (r < 0 || r >= REPSIZE) {
 		os << "INVALID";
 		return os;
 	}
