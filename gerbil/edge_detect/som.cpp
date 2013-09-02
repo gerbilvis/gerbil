@@ -207,16 +207,12 @@ void SOM::getEdge(const multi_img &image, cv::Mat1d &dx, cv::Mat1d &dy)
 	}
 }
 
-void SOM::writeDistancePlot(const char *filename,
-		vole::SimilarityMeasure<multi_img_base::Value> *distMetric)
+void SOM::getNeuronDistancePlot(vole::SimilarityMeasure<multi_img_base::Value> *distMetric,
+                            std::vector<double> &xVals,
+                            std::vector<double> &yVals)
 {
-	std::ofstream file(filename);
-	if (!file.is_open())
-	{
-		std::cerr << "Could not open distance-plot data file." << std::endl;
-		return;
-	}
-
+	xVals.reserve(size() * size());
+	yVals.reserve(size() * size());
 	SOM::iterator theEnd = end();
 	for (SOM::iterator i = begin(); i != theEnd; ++i)
 	{
@@ -227,13 +223,12 @@ void SOM::writeDistancePlot(const char *filename,
 				// distance between the neurons in the SOM
 				cv::Point3d d = i.get3dPos() - j.get3dPos();
 				double positionDistance = std::sqrt(d.dot(d));
+				xVals.push_back(positionDistance);
 
 				// distance between the neuron vectors
 				double valueDistance = distMetric->getSimilarity(*i, *j);
-
-				file << positionDistance << " " << valueDistance << std::endl;
+				yVals.push_back(valueDistance);
 			}
 		}
 	}
-	file.close();
 }

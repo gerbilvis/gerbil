@@ -12,6 +12,8 @@
 #include <sm_config.h>
 #include <sm_factory.h>
 #include <som_trainer.h>
+
+// #define PREPROCESSING
 #endif
 
 #include <stopwatch.h>
@@ -43,7 +45,20 @@ int RGB::execute()
 	multi_img::ptr src = vole::ImgInput(config.input).execute();
 	if (src->empty())
 		return 1;
-	
+
+#ifdef PREPROCESSING
+	// (preprocessing always changes the input)
+	if (config.som.verbosity >= 3)
+#else
+	if (config.som.verbosity && config.input.gradient)
+#endif
+	{
+		vole::ImgInputConfig inputConf = config.input;
+		inputConf.gradient = false;		
+		orig_img = vole::ImgInput(inputConf).execute();
+		orig_img->rebuildPixels(false);
+	}
+
 	cv::Mat3f bgr = execute(*src);
 	if (bgr.empty())
 		return 1;
@@ -124,6 +139,84 @@ cv::Mat3f RGB::executePCA(const multi_img& src, vole::ProgressObserver *po)
 }
 
 #ifdef WITH_EDGE_DETECT
+template<typename T>
+void writeDensityMap(std::string filename, cv::Point res,
+	const std::vector<T> &x, const std::vector<T> &y)
+{
+	assert(x.size() == y.size());
+
+	typename std::vector<T>::const_iterator itX, itY;
+	cv::Point_<T> min(std::numeric_limits<T>::max(),
+	                  std::numeric_limits<T>::max());
+	cv::Point_<T> max(std::numeric_limits<T>::min(),
+	                  std::numeric_limits<T>::min());
+
+	for (itX = x.begin(); itX != x.end(); ++itX)
+	{
+		min.x = std::min(min.x, *itX);
+		max.x = std::max(max.x, *itX);
+	}
+	for (itY = y.begin(); itY != y.end(); ++itY)
+	{
+		min.y = std::min(min.y, *itY);
+		max.y = std::max(max.y, *itY);
+	}
+
+	int maxHistVal = 0;
+	cv::Mat_<int> hist = cv::Mat_<int>::zeros(res.y, res.x);
+	for (itX = x.begin(), itY = y.begin(); itX != x.end(); ++itX, ++itY)
+	{
+		cv::Point2d pos(*itX, *itY); // min - max
+		pos -= min;                  //   0 - (max-min)
+		pos.x /= max.x - min.x;      //   0 - 1
+		pos.y /= max.y - min.y;
+		pos.x *= res.x;              //   0 - res
+		pos.y *= res.y;
+		cv::Point idx = pos;
+
+		// clamp to [0 - res[
+		if (idx.x < 0) idx.x = 0;
+		else if (idx.x >= res.x) idx.x = res.x - 1;
+		if (idx.y < 0) idx.y = 0;
+		else if (idx.y >= res.y) idx.y = res.y - 1;
+
+		int cnt = ++hist(idx);
+		if (cnt > maxHistVal) maxHistVal = cnt;
+	}
+
+	std::ofstream metafile((filename + ".meta").c_str());
+	if (!metafile.is_open())
+	{
+		std::cerr << "Could not open meta file " << filename << "." << std::endl;
+		return;
+	}
+	metafile << "set xrange [" << min.x << ":" << max.x << "]" << std::endl;
+	metafile << "set yrange [" << min.y << ":" << max.y << "]" << std::endl;
+	metafile << "set size ratio 1" << std::endl;
+	metafile << "set cbrange [0:" << maxHistVal << "]" << std::endl;
+	metafile.close();
+	
+	std::ofstream file((filename + ".data").c_str());
+	if (!file.is_open())
+	{
+		std::cerr << "Could not open data file " << filename << "." << std::endl;
+		return;
+	}
+
+	// outer loop has to be x because of gnuplot format!
+	for (int idxX = 0; idxX < res.x; ++idxX)
+	{
+		for (int idxY = 0; idxY < res.y; ++idxY)
+		{
+			double xLoc = min.x + (double)idxX / (double)res.x * (double)(max.x - min.x);
+			double yLoc = min.y + (double)idxY / (double)res.y * (double)(max.y - min.y);
+			file << xLoc << "\t" << yLoc << "\t" << hist(idxY, idxX) << std::endl;
+		}
+		file << std::endl;
+	}
+	file.close();
+}
+
 // TODO: schlechte lastverteilung
 struct SOMTBB {
 
@@ -178,8 +271,48 @@ struct SOMTBB {
 };
 
 // TODO: call progressUpdate
-cv::Mat3f RGB::executeSOM(const multi_img& img, vole::ProgressObserver *po)
+cv::Mat3f RGB::executeSOM(const multi_img &input_img, vole::ProgressObserver *po)
 {
+	vole::Stopwatch total("Total runtime of SOM generation");
+
+#ifdef PREPROCESSING
+	// This is an experiment to ignore / reduce the impact of the length of pixel vectors
+	// to use it, change the img parameter to input_img and outcomment the following
+	// IMPORTANT for statistics: also outcommend && config.input.gradient) in the constructor!
+	// the parameter config.similarity.measure = MOD_SPEC_ANGLE should also be added
+	// we need a non-const instance
+	multi_img imgCopy = input_img;
+
+	//const multi_img::Value max_len = std::sqrt(img.size() * (5 * 5));
+	for (int y = 0; y < imgCopy.height; ++y)
+	for (int x = 0; x < imgCopy.width;  ++x)
+	{
+		multi_img::Pixel p = imgCopy(y, x);
+		multi_img::Value sumOfSquares = 0;
+		for (multi_img::Pixel::const_iterator pit = p.begin(); pit != p.end(); ++pit)
+		{
+			multi_img::Value val = *pit;
+			sumOfSquares += val * val;
+		}
+		multi_img::Value len = std::sqrt(sumOfSquares);
+
+		//multi_img::Value factor = len > 0 ? max_len / len : std::numeric_limits<double>::infinity();
+		//if (factor < 1) // do not scale up short vectors, because they are very noisy anyways
+		multi_img::Value factor = len > 0 ? log(len + 1) / len : std::numeric_limits<double>::infinity();
+		if (factor < std::numeric_limits<double>::infinity())
+		{
+			for (multi_img::Pixel::iterator pit = p.begin(); pit != p.end(); ++pit)
+			{
+				*pit *= factor;
+			}
+			imgCopy.setPixel(y, x, p);
+		}
+	}
+	const multi_img &img = imgCopy;
+#else
+	const multi_img &img = input_img;
+#endif
+
 	img.rebuildPixels(false);
 
 	SOM *som = SOMTrainer::train(config.som, img);
@@ -190,8 +323,11 @@ cv::Mat3f RGB::executeSOM(const multi_img& img, vole::ProgressObserver *po)
 		multi_img somimg = som->export_2d();
 		somimg.write_out(config.output_file + "_som");
 	}
+	else if (config.som.verbosity >= 3) {
+		multi_img somimg = som->export_2d();
+		somimg.write_out(config.output_file + "_som");
+	}
 
-	vole::Stopwatch watch("False Color Image Generation");
 
 	cv::Mat3f bgr(img.height, img.width);
 	cv::Mat3f::iterator it = bgr.begin();
@@ -212,16 +348,20 @@ cv::Mat3f RGB::executeSOM(const multi_img& img, vole::ProgressObserver *po)
 			weights.push_back((double)(1 << (N - i - 1)) / normalization); // (2^[N-1..0]) / normalization
 	}
 
-	// set RGB pixels
 	cv::Mat1f stddevs;
 	if (config.som.verbosity >= 3 && N > 1) // (there is no variance for N = 1!)
 		stddevs = cv::Mat1f(bgr.rows, bgr.cols);
 
-	tbb::parallel_for(tbb::blocked_range<int>(0, img.height*img.width),
-					  SOMTBB(img, som, weights, bgr, config.som.type, stddevs));
+	// set RGB pixels
+	{
+		vole::Stopwatch watch("False Color Image Generation");
+		tbb::parallel_for(tbb::blocked_range<int>(0, img.height*img.width),
+		                  SOMTBB(img, som, weights, bgr, config.som.type, stddevs));
+	}
 
 	if (config.som.verbosity >= 3 && N > 1)
 	{
+		vole::Stopwatch watch("Stddev Data Generation");
 		std::ofstream file("bmu_stddev.data");
 		if (!file.is_open())
 			std::cerr << "Could not open stddev data file." << std::endl;
@@ -256,20 +396,110 @@ cv::Mat3f RGB::executeSOM(const multi_img& img, vole::ProgressObserver *po)
 
 	if (config.som.verbosity >= 3)
 	{
-		vole::SMConfig smconf;
-		vole::SimilarityMeasure<multi_img::Value> *distMetric;
+		std::cout << "Creating inter-neuron distance plots." << std::endl;
 
-		// L2 / euclidean
-		smconf.measure = vole::EUCLIDEAN;
-		distMetric = vole::SMFactory<multi_img::Value>::spawn(smconf);
-		som->writeDistancePlot("euclidean_euclidean.data", distMetric);
-		delete distMetric;
+		cv::Point plotResolution(100, 500);
+		std::vector<double> xValsEucl, yValsEucl, xValsSpec, yValsSpec;
 
-		// spectral angle
-		smconf.measure = vole::MOD_SPEC_ANGLE;
-		distMetric = vole::SMFactory<multi_img::Value>::spawn(smconf);
-		som->writeDistancePlot("euclidean_specAngle.data", distMetric);
-		delete distMetric;
+		vole::SMConfig smconf_euclidean;
+		smconf_euclidean.measure = vole::EUCLIDEAN;
+		vole::SimilarityMeasure<multi_img::Value> *euclidean;
+		euclidean = vole::SMFactory<multi_img::Value>::spawn(smconf_euclidean);
+
+		vole::SMConfig smconf_specAngle;
+		smconf_specAngle.measure = vole::MOD_SPEC_ANGLE;
+		vole::SimilarityMeasure<multi_img::Value> *specAngle;
+		specAngle = vole::SMFactory<multi_img::Value>::spawn(smconf_specAngle);
+
+		// L2 / euclidean between neurons
+		som->getNeuronDistancePlot(euclidean, xValsEucl, yValsEucl);
+		writeDensityMap("euclidean_euclidean", plotResolution,
+		                xValsEucl, yValsEucl);
+
+		// spectral angle between neurons
+		som->getNeuronDistancePlot(specAngle, xValsSpec, yValsSpec);
+		writeDensityMap("euclidean_specAngle", plotResolution,
+		                xValsSpec, yValsSpec);
+
+		// clear arrays
+		xValsEucl.clear();
+		yValsEucl.clear();
+		xValsSpec.clear();
+		yValsSpec.clear();
+		std::cout << "Creating inter-pixel distance plots." << std::endl;
+
+		// comparison between position distance in SOM with orig image pixels
+		const int diffVals = 40;
+		xValsEucl.reserve(img.width * img.height * diffVals);
+		yValsEucl.reserve(img.width * img.height * diffVals);
+		xValsSpec.reserve(img.width * img.height * diffVals);
+		yValsSpec.reserve(img.width * img.height * diffVals);
+		cv::Mat_<int> shuffledY(1, img.width * img.height * diffVals);
+		cv::Mat_<int> shuffledX(1, img.width * img.height * diffVals);
+		cv::RNG rng(config.som.seed);
+
+		// generate random sequence of the input x,y range
+		rng.fill(shuffledY, cv::RNG::UNIFORM, cv::Scalar(0), cv::Scalar(img.height));
+		rng.fill(shuffledX, cv::RNG::UNIFORM, cv::Scalar(0), cv::Scalar(img.width));
+
+		cv::MatConstIterator_<int> itY = shuffledY.begin();
+		cv::MatConstIterator_<int> itX = shuffledX.begin();
+
+		std::cout << "Creating winner-neuron cache. This may take a while..." << std::endl;
+
+		// to avoid the long preload calculation, one could save
+		// the BMU-iterators in the SOMTBB task (only the best one)
+		SOM::Cache *cache = som->createCache(img.height, img.width);
+		{
+			vole::Stopwatch watch("Runtime for Preloading the Cache");
+			cache->preload(img);
+		}
+
+		std::cout << "Calculating distances to " << diffVals << " random neighbours per pixel..." << std::endl;
+
+		for (int y = 0; y < img.height; ++y)
+		for (int x = 0; x < img.width;  ++x)
+		{
+			cv::Point p(x, y);
+			SOM::iterator iter = cache->getWinnerNeuron(p);
+			cv::Point3d pos = iter.get3dPos();
+
+			for (int i = 0; i < diffVals; ++i)
+			{
+				cv::Point p2(*itX++, *itY++);
+				// make sure that the points are different
+				while (p == p2) {
+					p2 = cv::Point(rng(img.width), rng(img.height));
+				}
+				SOM::iterator iter2 = cache->getWinnerNeuron(p2);
+				cv::Point3d pos2 = iter2.get3dPos();
+
+				cv::Point3d d = pos - pos2;
+				double neuronPositionDistance = std::sqrt(d.dot(d));
+				xValsEucl.push_back(neuronPositionDistance);
+				xValsSpec.push_back(neuronPositionDistance);
+
+				const multi_img &no_grad_img = orig_img ? *orig_img : img;
+				double origValueDistEucl = euclidean->getSimilarity(
+					no_grad_img(p.y, p.x),
+					no_grad_img(p2.y, p2.x));
+				yValsEucl.push_back(origValueDistEucl);
+				double origValueDistSpec = specAngle->getSimilarity(
+					no_grad_img(p.y, p.x),
+					no_grad_img(p2.y, p2.x));
+				yValsSpec.push_back(origValueDistSpec);
+			}
+		}
+
+		std::cout << "Writing data to files..." << std::endl;
+
+		writeDensityMap("euclidean_origEuclidean", plotResolution,
+		                xValsEucl, yValsEucl);
+		writeDensityMap("euclidean_origSpecAngle", plotResolution,
+		                xValsSpec, yValsSpec);
+
+		delete euclidean;
+		delete specAngle;
 	}
 
 	delete som;

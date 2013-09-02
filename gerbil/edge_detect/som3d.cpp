@@ -435,24 +435,31 @@ bool SOM3d::NeighbourIterator3d::equal(const NeighbourIteratorBase &other) const
 			//&& this->base == o.base && this->radiusSquared == o.radiusSquared;
 }
 
+void SOM3d::Cache3d::PreloadTBB::operator()(const tbb::blocked_range<int>& r) const
+{
+	for (int i = r.begin(); i != r.end(); ++i)
+	{
+		int x = i % image.width;
+		int y = i / image.width;
+
+		SOM::iterator iter = som->identifyWinnerNeuron(image(y, x));
+		SOM3d::Iterator3d *it = static_cast<SOM3d::Iterator3d *>(iter.getBase());
+		data[y][x] = it->getId();
+	}
+}
+
 void SOM3d::Cache3d::preload(const multi_img &image)
 {
-	for (int y = 0; y < image.height; y++)
-	{
-		for (int x = 0; x < image.width; x++)
-		{
-			SOM::iterator iter = som->identifyWinnerNeuron(image(y, x));
-			Iterator3d *it = static_cast<Iterator3d *>(iter.getBase());
-			data[y][x] = it->getId();
-		}
-	}
-	preloaded = true;
+        tbb::parallel_for(tbb::blocked_range<int>(0, image.height*image.width),
+                          PreloadTBB(image, som, data));
+
+        preloaded = true;
 }
 
 double SOM3d::Cache3d::getDistance(const multi_img::Pixel &v1,
-								   const multi_img::Pixel &v2,
-								   const cv::Point &c1,
-								   const cv::Point &c2)
+                                   const multi_img::Pixel &v2,
+                                   const cv::Point &c1,
+                                   const cv::Point &c2)
 {
 	cv::Point3i &p1 = data[c1.y][c1.x];
 	cv::Point3i &p2 = data[c2.y][c2.x];
@@ -475,6 +482,37 @@ double SOM3d::Cache3d::getDistance(const multi_img::Pixel &v1,
 	}
 
 	return som->getDistance(p1, p2);
+}
+
+SOM::iterator SOM3d::Cache3d::getWinnerNeuron(cv::Point c)
+{
+	if (!preloaded)
+	{
+		assert(preloaded);
+		return som->end();
+	}
+
+	const cv::Point3i &p = data[c.y][c.x];
+	return SOM::iterator(new Iterator3d(som, p.x, p.y, p.z));
+}
+
+double SOM3d::Cache3d::getSimilarity(vole::SimilarityMeasure<multi_img::Value> *distfun,
+                                     const cv::Point &c1,
+                                     const cv::Point &c2)
+{
+	if (!preloaded)
+	{
+		assert(preloaded);
+		return 0.0; // in case that assertions are disabled
+	}
+
+	const cv::Point3i &p1 = data[c1.y][c1.x];
+	const cv::Point3i &p2 = data[c2.y][c2.x];
+
+	const Neuron &n1 = som->neurons[p1.z][p1.y][p1.x];
+	const Neuron &n2 = som->neurons[p2.z][p2.y][p2.x];
+
+	return distfun->getSimilarity(n1, n2);
 }
 
 double SOM3d::Cache3d::getSobelX(int x, int y)
