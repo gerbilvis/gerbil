@@ -19,8 +19,8 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307 USA
 #ifndef FELZENSZWALB_H
 #define FELZENSZWALB_H
 
+#include "felzenszwalb2_config.h"
 #include <multi_img.h>
-#include <similarity_measure.h>
 
 namespace gerbil {
   namespace felzenszwalb {
@@ -60,8 +60,7 @@ namespace gerbil {
 
 	universe* segment_graph(int n_vertices, int n_edges, edge *edges, float c);
 	std::pair<cv::Mat1i, segmap> segment_image(const multi_img &im,
-						   vole::SimilarityMeasure<multi_img::Value> *distfun,
-						   float c, int min_size);
+	                                          const FelzenszwalbConfig &config);
   }
 }
 

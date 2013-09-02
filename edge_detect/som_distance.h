@@ -9,7 +9,7 @@
 #ifndef SOM_DISTANCE
 #define SOM_DISTANCE
 
-#include "self_organizing_map.h"
+#include "som.h"
 #include <similarity_measure.h>
 
 /**
@@ -25,65 +25,45 @@ public:
 
 	/**
 	  @arg som Already trained Self-Organizing map
-	  @arg h height of the pixel cache (image size, not som size)
-	  @arg w width of the pixel cache
+	  @arg img_height height of the pixel cache (image size, not som size)
+	  @arg img_width width of the pixel cache
 	  */
-	SOMDistance(const SOM* som, int h, int w) : som(som), hack3d(som->ishack3d()),
-		cache(std::vector<std::vector<cv::Point> >(h,
-			  std::vector<cv::Point>(w, cv::Point(-1, -1))))
+	SOMDistance(SOM* som, int img_height, int img_width) : som(som),
+		cache(som->createCache(img_height, img_width))
 	{}
+	~SOMDistance() { delete cache; }
 
 	double getSimilarity(const cv::Mat_<T> &img1, const cv::Mat_<T> &img2);
 	double getSimilarity(const std::vector<T> &v1, const std::vector<T> &v2);
 	double getSimilarity(const std::vector<T> &v1, const std::vector<T> &v2,
-						 const cv::Point& c1, const cv::Point& c2);
+						 const cv::Point &c1, const cv::Point &c2);
 
-	const SOM *som;
-	const bool hack3d;
-	std::vector<std::vector<cv::Point> > cache;
+	SOM *const som;
+	SOM::Cache *const cache;
 };
 
 template<typename T>
-inline double SOMDistance<T>::getSimilarity(const cv::Mat_<T> &img1, const cv::Mat_<T> &img2)
+inline double SOMDistance<T>::getSimilarity(const cv::Mat_<T> &img1,
+											const cv::Mat_<T> &img2)
 {
 	assert("use std::vector, this here would involve a copy" == 0);
 	return getSimilarity(std::vector<T>(img1), std::vector<T>(img2));
 }
 
 template<typename T>
-inline double SOMDistance<T>::getSimilarity(const std::vector<T> &v1, const std::vector<T> &v2)
+inline double SOMDistance<T>::getSimilarity(const std::vector<T> &v1,
+											const std::vector<T> &v2)
 {
-	cv::Point p1 = som->identifyWinnerNeuron(v1);
-	cv::Point p2 = som->identifyWinnerNeuron(v2);
-
-	if (hack3d) {
-		cv::Point3d p1_3(p1.x, p1.y / som->getWidth(), p1.y % som->getWidth());
-		cv::Point3d p2_3(p2.x, p2.y / som->getWidth(), p2.y % som->getWidth());
-		return som->getDistance3(p1_3, p2_3);
-	} else {
-		return som->getDistance(p1, p2);
-	}
+	return som->getDistanceBetweenWinners(v1, v2);
 }
 
 template<typename T>
-inline double SOMDistance<T>::getSimilarity(const std::vector<T> &v1, const std::vector<T> &v2,
-											const cv::Point& c1, const cv::Point& c2)
+inline double SOMDistance<T>::getSimilarity(const std::vector<T> &v1,
+											const std::vector<T> &v2,
+											const cv::Point &c1,
+											const cv::Point &c2)
 {
-	cv::Point &p1 = cache[c1.y][c1.x];
-	cv::Point &p2 = cache[c2.y][c2.x];
-	if (p1 == cv::Point(-1, -1))
-		p1 = som->identifyWinnerNeuron(v1);
-
-	if (p2 == cv::Point(-1, -1))
-		p2 = som->identifyWinnerNeuron(v2);
-
-	if (hack3d) {
-		cv::Point3d p1_3(p1.x, p1.y / som->getWidth(), p1.y % som->getWidth());
-		cv::Point3d p2_3(p2.x, p2.y / som->getWidth(), p2.y % som->getWidth());
-		return som->getDistance3(p1_3, p2_3);
-	} else {
-		return som->getDistance(p1, p2);
-	}
+	return cache->getDistance(v1, v2, c1, c2);
 }
 
 #endif

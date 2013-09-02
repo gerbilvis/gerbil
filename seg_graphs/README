@@ -1,0 +1,12 @@
+The Power Watershed Algorithm, C/C++ Code, September 24, 2009
+
+Camille Couprie, Leo Grady, Laurent Najman and Hugues Talbot , "Power
+Watersheds: A New Image Segmentation Framework Extending Graph Cuts, Random
+Walker and Optimal Spanning Forest", ICCV'09, 2009
+	 
+Description: This software provides implementation of three algorithms for 2D
+and 3D image segmentation. The algorithms implemented are Prim, and Kruskal's
+algorithms for Maximum Spanning Forest computation, and the PowerWatershed
+algorithm (q=2) described in the above article.
+
+This version of the code was modified by Johannes Jordan in 2010-2012.

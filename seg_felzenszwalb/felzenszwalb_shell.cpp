@@ -29,15 +29,11 @@ int FelzenszwalbShell::execute() {
 	if (input.empty())
 		return -1;
 
-	vole::SimilarityMeasure<multi_img::Value> *distfun;
-	distfun = vole::SMFactory<multi_img::Value>::spawn(config.similarity);
-	assert(distfun);
-
 	/* TODO: optional smoothing, and/or using imginput */
 
 	input.rebuildPixels(false);
 	std::pair<cv::Mat1i, felzenszwalb::segmap> result =
-		 felzenszwalb::segment_image(input, distfun, config.c, config.min_size);
+		 felzenszwalb::segment_image(input, config);
 
 	if (config.verbosity > 0) {	// statistical output
 		const felzenszwalb::segmap &segmap = result.second;

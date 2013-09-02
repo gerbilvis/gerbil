@@ -1,60 +1,105 @@
+/*	
+	Copyright(c) 2010 Johannes Jordan <johannes.jordan@cs.fau.de>.
+	Copyright(c) 2012 Petr Koupy <petr.koupy@gmail.com>
+
+	This file may be licensed under the terms of of the GNU General Public
+	License, version 3, as published by the Free Software Foundation. You can
+	find it here: http://www.gnu.org/licenses/gpl.html
+*/
+
 #ifndef BANDVIEW_H
 #define BANDVIEW_H
 
 #include "scaledview.h"
 
 #include <multi_img.h>
+#include <map>
 #include <QPen>
+#include <QTimer>
 
 class BandView : public ScaledView
 {
 	Q_OBJECT
 public:
 	BandView(QWidget *parent = 0);
+
+	void initUi();
+
+	// FIXME make protected
 	void paintEvent(QPaintEvent *ev);
 	void leaveEvent(QEvent *ev);
 
-	void setPixmap(const QPixmap &pixmap);
+	void setPixmap(QPixmap pixmap);
+	void setLabelMatrix(const cv::Mat1b & matrix);
 
-	cv::Mat1s labels;
-	cv::Mat1s seedMap; // mat1s to be consistent with labels matrix
-	multi_img::Mask curMask; // in single label mode contains curlabel members
+	bool isSeedModeEnabled() { return seedMode; }
+
+	short getCurLabel() { return curLabel; }
+	void setSeedMap(cv::Mat1s seeding);
+	cv::Mat1s getSeedMap() { return seedMap; }
 
 public slots:
 	void refresh();
-	void changeLabel(int label);
-	void clearLabelPixels();
-	void clearAllLabels(); /// TODO: add a button for this
-	void alterLabel(const multi_img::Mask &mask, bool negative);
-	void setLabels(multi_img::Mask l);
-	void drawOverlay(const multi_img::Mask &mask);
+	void changeCurrentLabel(int label);
+	void commitLabels();
+	void commitLabelChanges();
+	void drawOverlay(const cv::Mat1b &mask);
 
-	void setLabelColors(const QVector<QColor> &labelColors, bool changed);
+	/* update either labeling colors, or both them and pixel labels */
+	void updateLabeling(const cv::Mat1s &labels,
+						const QVector<QColor> &colors = QVector<QColor>(),
+						bool colorsChanged = false);
+	void updateLabeling(const cv::Mat1s &labels, const cv::Mat1b &mask);
 	void applyLabelAlpha(int alpha);
 	void toggleShowLabels(bool disabled);
 	void toggleSingleLabel(bool enabled);
 	void toggleSeedMode(bool enabled);
+	void clearSeeds();
+	void highlightSingleLabel(short label, bool highlight);
 
 signals:
-	void pixelOverlay(int x, int y);
+	void pixelOverlay(int y, int x);
 	void killHover();
-	void newLabel(); // user requested another label
-	void newSingleLabel(short label); // single label mode, diff. label chosen
+
+	// single label mode, diff. label chosen
+	void singleLabelSelected(int label);
+
+	// user changed some labels
+	void alteredLabels(const cv::Mat1s &labels, const cv::Mat1b &mask);
+
+	// user wants full labeling update
+	void newLabeling(const cv::Mat1s &labels);
+
+	// user requested additional label
+	void newLabel();
+
+protected:
+	void enterEvent (QEvent *event);
 
 private:
 	void cursorAction(QMouseEvent *ev, bool click = false);
 	inline void markCachePixel(QPainter &p, int x, int y);
 	inline void markCachePixelS(QPainter &p, int x, int y);
 	void updateCache();
-	void updateCache(int x, int y);
+	void updateCache(int y, int x, short label = 0);
 	void updatePoint(const QPointF &p);
 
+	// local labeling matrix
+	cv::Mat1s labels;
+
+	// mask that contains pixel labels we did change, but not commit back yet
+	cv::Mat1b uncommitedLabels;
+
+	// ignore the signals when we were the originator
+	bool ignoreUpdates;
+
+	// the cachedPixmap is colored with label colors
 	QPixmap cachedPixmap;
 	bool cacheValid;
 
 	QPointF cursor, lastcursor;
 	short curLabel;
-	const multi_img::Mask *overlay;
+	const cv::Mat1b *overlay;
 
 	/// color view according to labels
 	bool showLabels, singleLabel, holdLabel;
@@ -62,10 +107,17 @@ private:
 	/// interpret input as segmentation seeds
 	bool seedMode;
 	
-	int labelAlpha;
+	// local copy of label colors
 	QVector<QColor> labelColors;
-	QVector<QColor> labelColorsA; /// labelColors with user-selected alpha
-	std::pair<QColor, QColor> seedColorsA;
+	/// user-selected alpha
+	int labelAlpha;
+	/// labelColors with user-selected alpha
+	QVector<QColor> labelColorsA;
+	std::pair<QColor, QColor> seedColors;
+
+	QTimer labelTimer;
+	cv::Mat1s seedMap; // mat1s to be consistent with labels matrix
+	cv::Mat1b curMask; // in single label mode contains curlabel members
 };
 
 #endif // BANDVIEW_H

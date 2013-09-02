@@ -7,6 +7,14 @@
 
 namespace vole {
 
+enum somtype {
+	SOM_LINE,
+	SOM_SQUARE,
+	SOM_CUBE,
+	SOM_CONE
+};
+#define somtypeString {"line", "square", "cube", "cone"}
+
 class EdgeDetectionConfig : public Config {
 
 public:
@@ -26,19 +34,19 @@ public:
 	uint64 seed;
 	
 	// SOM features
-	int width;
-	int height;
-	bool hack3d;
+	int sidelength;		// line, square, cube
+	double granularity;	// cone
+	somtype type;
 
 	// export SOM?
 	bool output_som;
 
 	// Training features 
 	int maxIter;								// number of iterations
-	double learnStart;							// start value for learning rate
-	double learnEnd;							// start value for learning rate
-	double radiusStart;							// start value for neighborhood radius
-	double radiusEnd;							// start value for neighborhood radius
+	double learnStart;							// start value for learning rate (fades off with sigma)
+	double learnEnd;							// start value for learning rate (fades off with sigma)
+	double sigmaStart;							// start value for neighborhood radius
+	double sigmaEnd;							// start value for neighborhood radius
 
 	/// similarity measure for model vector search in SOM
 	SMConfig similarity;

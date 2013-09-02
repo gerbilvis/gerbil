@@ -1,7 +1,7 @@
 #ifndef EDGE_DETECTION_H
 #define EDGE_DETECTION_H
 
-#include "self_organizing_map.h"
+#include "som.h"
 #include "edge_detection_config.h"
 #include <command.h>
 
@@ -14,7 +14,6 @@ class EdgeDetection : public vole::Command {
 		EdgeDetection(const vole::EdgeDetectionConfig &config);
 		int execute();
 
-		SOM *train(const multi_img& img);
 		void printShortHelp() const;
 		void printHelp() const;
 
@@ -22,7 +21,7 @@ class EdgeDetection : public vole::Command {
 		int executeSimple();
 
 		vole::EdgeDetectionConfig config;
-		
+
 };
 
 
