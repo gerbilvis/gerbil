@@ -26,7 +26,7 @@ common/		(merge from gerbil_common)
 	rectangles *	[DONE]
 	stopwatch
 	vole_config
-	shared_data +
+	shared_data +   [DONE]
 
 csparse
 edge_detect
