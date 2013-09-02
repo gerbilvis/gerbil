@@ -117,6 +117,9 @@ macro(vole_add_module)
 	# Add switch to turn build on/off
 	option(${vole_module_variable} ${vole_module_description} OFF)
 
+	# Enable sse2 (#FIXME evil hack for gerbil, requires EnableSSE2.cmake)
+	enable_sse2()
+
 	# Check required dependencies
 	set(required_dependencies_found TRUE)
 	foreach(dependency ${vole_module_required_dependencies})

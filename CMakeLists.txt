@@ -12,6 +12,8 @@ if(WIN32)
 	add_definitions(-DNOMINMAX) # prevents min- and max-macro brainf*ck in VS 2003
 endif(WIN32)
 
+include(EnableSSE2)
+
 # Global options
 option(VOLE_CMAKE_DEBUG_OUTPUT "Show additonal cmake debug output." OFF)
 mark_as_advanced(VOLE_CMAKE_DEBUG_OUTPUT)
@@ -55,7 +57,6 @@ add_subdirectory(shell shell)
 
 include(VoleCheckDependencies)
 include(VoleProcessOptionalDependencies)
-
 
 include("cmake/TargetDoc.cmake" OPTIONAL)
 
