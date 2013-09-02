@@ -1,0 +1,53 @@
+New Tree TODO:
+
+gui/
+	controller/
+		controller
+		dockcontroller
+		distviewcontroller
+	dist_view/
+		distviewbinstbb %
+		(keep rest intact for now)
+	docks/
+		banddock
+		illumdock
+		labeldock (will be merged to)
+		labelingdock
+		normdock
+		rgbdock
+		roidock
+		ussegmentationdock (rename to clusteringdock)
+	model/
+		falsecolormodel
+		graphsegmodel
+		illummodel
+		imagemodel
+		labelingmodel
+		representation
+		ussegmentationmodel (rename to clusteringmodel)
+	ressources/
+		logo/ (move one down)
+	widgets/
+		autohidewidget
+		bandview
+		graphsegwidget
+		roiview
+		mainwindow
+		scaledview
+	
+	commandrunner
+	gerbil.qrc
+	gerbil_gui_debug
+	iogui
+	main
+
+seg_graphs/
+	...
+	graphseg_task %
+
+
+Legend:
++	from gerbil/common
+*	from gerbil/common/multi_img_tasks
+%	from gui/tasks
+
