@@ -111,7 +111,9 @@ SOM::iterator SOMCone::identifyWinnerNeuron(const multi_img::Pixel &inputVec)
 	return SOM::iterator(new IteratorCone(this, winnerIdx));
 }
 
-// buggy
+// buggy, should improve calculation speed
+// the neurons are ordered by z-coordinate, so we only need to look at
+// a decreasing short range of z-slices, especially with low sigma/learning rate
 /*int SOMCone::updateNeighborhood(SOM::iterator &neuron,
 								 const multi_img::Pixel &input,
 								 double sigma, double learnRate)
@@ -376,7 +378,7 @@ double SOMCone::NeighbourIteratorCone::getDistanceSquared() const
 double SOMCone::NeighbourIteratorCone::getFakeGaussianWeight(double sigma) const
 {
 	double dist = getDistanceSquared();
-	return exp(-(dist)/(2.0*sigma));
+	return exp(-(dist)/(2.0*sigma*sigma));
 }
 
 bool SOMCone::NeighbourIteratorCone::equal(const NeighbourIteratorBase &other) const
@@ -393,18 +395,25 @@ bool SOMCone::NeighbourIteratorCone::equal(const NeighbourIteratorBase &other) c
 			//&& this->base == o.base && this->radiusSquared == o.radiusSquared;
 }
 
+void SOMCone::CacheCone::PreloadTBB::operator()(const tbb::blocked_range<int>& r) const
+{
+	for (int i = r.begin(); i != r.end(); ++i)
+	{
+		int x = i % image.width;
+		int y = i / image.width;
+
+		SOM::iterator iter = som->identifyWinnerNeuron(image(y, x));
+		SOMCone::IteratorCone *it = static_cast<SOMCone::IteratorCone *>(iter.getBase());
+		data[y][x] = it->getIdx();
+	}
+}
+
 void SOMCone::CacheCone::preload(const multi_img &image)
 {
-	for (int y = 0; y < image.height; y++)
-	{
-		for (int x = 0; x < image.width; x++)
-		{
-			SOM::iterator iter = som->identifyWinnerNeuron(image(y, x));
-			IteratorCone *it = static_cast<IteratorCone *>(iter.getBase());
-			data[y][x] = it->getIdx();
-		}
-	}
-	preloaded = true;
+        tbb::parallel_for(tbb::blocked_range<int>(0, image.height*image.width),
+                          PreloadTBB(image, som, data));
+
+        preloaded = true;
 }
 
 double SOMCone::CacheCone::getDistance(const multi_img::Pixel &v1,
@@ -436,6 +445,37 @@ double SOMCone::CacheCone::getDistance(const multi_img::Pixel &v1,
 	return som->getDistance(idx1, idx2);
 }
 
+SOM::iterator SOMCone::CacheCone::getWinnerNeuron(cv::Point c)
+{
+	if (!preloaded)
+	{
+		assert(preloaded);
+		return som->end();
+	}
+
+	int idx = data[c.y][c.x];
+	return SOM::iterator(new IteratorCone(som, idx));
+}
+
+double SOMCone::CacheCone::getSimilarity(vole::SimilarityMeasure<multi_img::Value> *distfun,
+                                         const cv::Point &c1,
+                                         const cv::Point &c2)
+{
+	if (!preloaded)
+	{
+		assert(false);
+		return 0.0; // in case that assertions are disabled
+	}
+
+	int idx1 = data[c1.y][c1.x];
+	int idx2 = data[c2.y][c2.x];
+
+	const Neuron &n1 = som->neurons[idx1];
+	const Neuron &n2 = som->neurons[idx2];
+
+	distfun->getSimilarity(n1, n2);
+}
+
 double SOMCone::CacheCone::getSobelX(int x, int y)
 {
 	if (!preloaded)
@@ -449,7 +489,7 @@ double SOMCone::CacheCone::getSobelX(int x, int y)
 
 	double valy = som->getDistance(u, d);
 
-	if (u.dot(u) < d.dot(d)) // TODO: hier war bisher kein .z drin. war das absicht?
+	if (u.dot(u) < d.dot(d))
 		valy = -valy;
 
 	return valy;
@@ -468,7 +508,7 @@ double SOMCone::CacheCone::getSobelY(int x, int y)
 
 	double valx = som->getDistance(u, d);
 
-	if (u.dot(u) < d.dot(d)) // TODO: hier war bisher kein .z drin. war das absicht?
+	if (u.dot(u) < d.dot(d))
 		valx = -valx;
 
 	return valx;

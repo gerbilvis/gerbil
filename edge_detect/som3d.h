@@ -2,6 +2,7 @@
 #define SOM3D_H
 
 #include "som.h"
+#include <tbb/parallel_for.h>
 
 class SOM3d : public SOM
 {
@@ -68,6 +69,20 @@ public:
 	class Cache3d : public Cache
 	{
 	public:
+                struct PreloadTBB
+                {
+                        PreloadTBB(const multi_img &image, SOM3d *som,
+                                   std::vector<std::vector<cv::Point3i> > &data)
+                                   : image(image), som(som), data(data) { }
+
+                        void operator()(const tbb::blocked_range<int>& r) const;
+
+                        const multi_img &image;
+                        SOM3d *const som;
+                        std::vector<std::vector<cv::Point3i> > &data;
+                };
+
+
 		/**
 		  @arg som Already trained Self-Organizing map
 		  @arg img_height height of the pixel cache (image size, not som size)
@@ -85,6 +100,10 @@ public:
 						   const cv::Point &c1,
 						   const cv::Point &c2);
 
+		SOM::iterator getWinnerNeuron(cv::Point p);
+		double getSimilarity(vole::SimilarityMeasure<multi_img::Value> *distfun,
+		                     const cv::Point &p1,
+		                     const cv::Point &p2);
 		double getSobelX(int x, int y);
 		double getSobelY(int x, int y);
 
@@ -97,6 +116,7 @@ public:
 	typedef std::vector<Neuron> Row;
 	typedef std::vector<Row> Field;
 	typedef std::vector<Field> Cube;
+	friend class Cache3d;
 
 	SOM3d(const vole::EdgeDetectionConfig &conf, int dimension,
 		  std::vector<multi_img_base::BandDesc> meta);

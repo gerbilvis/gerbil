@@ -100,6 +100,8 @@ public:
 	public:
 		iterator(IteratorBase *baseIterator) : itr(baseIterator) { }
 		iterator(const iterator &other) : itr(other.itr->clone()) { }
+		// TODO: uncomment, when c++11 is enabled, dito move assignment operator
+		// iterator(iterator &&other) : itr(other.itr) { other.itr = 0; }
 		~iterator() { delete itr; }
 
 		iterator &operator=(const iterator &other)
@@ -111,6 +113,18 @@ public:
 			itr = other.itr->clone();
 			return *this;
 		}
+
+		/*iterator &operator=(iterator &&other)
+		{
+			if (this == &other) return *this;
+
+			delete itr;
+			itr = other.itr;
+
+			other.itr = NULL;
+
+			return *this;
+		}*/
 
 		iterator &operator++()
 		{
@@ -196,16 +210,25 @@ public:
 	class Cache
 	{
 	public:
-		Cache() : preloaded(false) { }
+		Cache()	: preloaded(false) { }
 
 		virtual void preload(const multi_img &image) = 0;
 
+		// returns the distance between the positions of the winner
+		// neurons at the given image position
 		virtual double getDistance(const multi_img::Pixel &v1,
-								   const multi_img::Pixel &v2,
-								   const cv::Point &c1,
-								   const cv::Point &c2) = 0;
+		                           const multi_img::Pixel &v2,
+		                           const cv::Point &c1,
+		                           const cv::Point &c2) = 0;
 
-		// only useable when preload was called, fails otherwise
+		// the following functions are only useable when preload was called
+
+		// returns the similarity of the winner neurons of the given image positions
+		virtual SOM::iterator getWinnerNeuron(cv::Point p) = 0;
+		virtual double getSimilarity(
+			vole::SimilarityMeasure<multi_img::Value> *distfun,
+			const cv::Point &p1,
+			const cv::Point &p2) = 0;
 		virtual double getSobelX(int x, int y) = 0;
 		virtual double getSobelY(int x, int y) = 0;
 
@@ -277,8 +300,9 @@ public:
 	void getEdge(const multi_img &image,
 				 cv::Mat1d &dx, cv::Mat1d &dy);
 
-	void writeDistancePlot(const char *filename,
-						 vole::SimilarityMeasure<multi_img::Value> *distMetric);
+	void getNeuronDistancePlot(vole::SimilarityMeasure<multi_img::Value> *distMetric,
+	                       std::vector<double> &xVals,
+	                       std::vector<double> &yVals);
 
 protected:
 	const vole::EdgeDetectionConfig &config;

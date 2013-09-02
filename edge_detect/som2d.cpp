@@ -210,14 +210,16 @@ double SOM2d::getDistanceBetweenWinners(const multi_img::Pixel &v1,
 cv::Vec3f SOM2d::getColor(cv::Point3d pos)
 {
 	cv::Vec3f pixel;
-	pixel[0] = (float)(pos.x);
 	if (height > 1)
 	{
+		// don't use blue channel, because r and g should be more differentiable
+		pixel[0] = (float)(pos.z); // should always be 0
 		pixel[1] = (float)(pos.y);
-		pixel[2] = (float)(pos.z);
+		pixel[2] = (float)(pos.x);
 	}
 	else
 	{
+		pixel[0] = (float)(pos.x);
 		pixel[1] = (float)(pos.x);
 		pixel[2] = (float)(pos.x);
 	}
@@ -365,17 +367,24 @@ bool SOM2d::NeighbourIterator2d::equal(const NeighbourIteratorBase &other) const
 			//&& this->base == o.base && this->radiusSquared == o.radiusSquared;
 }
 
+void SOM2d::Cache2d::PreloadTBB::operator()(const tbb::blocked_range<int>& r) const
+{
+	for (int i = r.begin(); i != r.end(); ++i)
+	{
+		int x = i % image.width;
+		int y = i / image.width;
+
+		SOM::iterator iter = som->identifyWinnerNeuron(image(y, x));
+		SOM2d::Iterator2d *it = static_cast<SOM2d::Iterator2d *>(iter.getBase());
+		data[y][x] = it->getId();
+	}
+}
+
 void SOM2d::Cache2d::preload(const multi_img &image)
 {
-	for (int y = 0; y < image.height; y++)
-	{
-		for (int x = 0; x < image.width; x++)
-		{
-			SOM::iterator iter = som->identifyWinnerNeuron(image(y, x));
-			Iterator2d *it = static_cast<Iterator2d *>(iter.getBase());
-			data[y][x] = it->getId();
-		}
-	}
+	tbb::parallel_for(tbb::blocked_range<int>(0, image.height*image.width),
+	                  PreloadTBB(image, som, data));
+	
 	preloaded = true;
 }
 
@@ -405,6 +414,39 @@ double SOM2d::Cache2d::getDistance(const multi_img::Pixel &v1,
 	}
 
 	return som->getDistance(p1, p2);
+}
+
+SOM::iterator SOM2d::Cache2d::getWinnerNeuron(cv::Point c)
+{
+	if (!preloaded)
+	{
+		assert(preloaded);
+		return som->end();
+	}
+
+	const cv::Point &p = data[c.y][c.x];
+	return SOM::iterator(new Iterator2d(som, p.x, p.y));
+}
+
+double SOM2d::Cache2d::getSimilarity(vole::SimilarityMeasure<multi_img::Value> *distfun,
+                                     const cv::Point &c1,
+                                     const cv::Point &c2)
+{
+	if (!preloaded)
+	{
+		assert(preloaded);
+		return 0.0; // in case that assertions are disabled
+	}
+
+	// "transform" image coordinates to neuron coordinates
+	const cv::Point &p1 = data[c1.y][c1.x];
+	const cv::Point &p2 = data[c2.y][c2.x];
+
+	// "transform" neuron coordinates to neuron values
+	const Neuron &n1 = som->neurons[p1.y][p1.x];
+	const Neuron &n2 = som->neurons[p2.y][p2.x];
+
+	return distfun->getSimilarity(n1, n2);
 }
 
 double SOM2d::Cache2d::getSobelX(int x, int y)

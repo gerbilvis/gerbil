@@ -32,6 +32,11 @@ protected:
 
 public:
 	RGBConfig config;
+
+private:
+	// contains the non-gradient image, if the calculation is performed
+	// on the gradient (only loaded and used for statistical output)
+	multi_img::ptr orig_img;
 };
 
 }
