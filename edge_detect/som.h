@@ -48,6 +48,10 @@ protected:
 		virtual Neuron &operator*() = 0;
 		virtual IteratorBase *clone() = 0;
 
+		// only use this function, if you are sure, that the dynamic
+		// types of *this and *source are the same and source != NULL
+		virtual void assignWith(const IteratorBase *source) = 0;
+
 		bool operator==(const IteratorBase &other) const {
 			return typeid(*this) == typeid(other) && equal(other);
 		}
@@ -107,10 +111,21 @@ public:
 		iterator &operator=(const iterator &other)
 		{
 			// catch assignment to self (would segfault on itr->clone after itr was deleted)
-			if (itr == other.itr) return *this;
+			if (this == &other) return *this;
 
-			delete itr;
-			itr = other.itr->clone();
+			// if the types of the referenced iterators are equal, we do not
+			// need to delete and allocate a new iterator object
+			// we can just copy the content
+			if (itr != NULL && other.itr != NULL &&
+			    typeid(*itr) == typeid(*other.itr))
+			{
+				itr->assignWith(other.itr);
+			}
+			else
+			{
+				delete itr;
+				itr = other.itr->clone();
+			}
 			return *this;
 		}
 
@@ -269,9 +284,10 @@ public:
 
 	virtual iterator identifyWinnerNeuron(const multi_img::Pixel &inputVec);
 
-	// returns a list of (distance, iterator) tuples, that is sorted by distance
-	std::vector<std::pair<double, SOM::iterator> >
-	closestN(const multi_img::Pixel &inputVec, unsigned int N);
+	// writes a list of (distance, iterator) tuples to coords,
+	// that is sorted by distance, N = coords.size()
+	void closestN(const multi_img::Pixel &inputVec,
+		std::vector<std::pair<double, SOM::iterator> > &coords);
 
 	// returns the amount of updated neurons
 	virtual int updateNeighborhood(iterator &neuron,
@@ -279,7 +295,7 @@ public:
 							double sigma, double learnRate);
 
 	virtual double getDistanceBetweenWinners(const multi_img::Pixel &v1,
-											 const multi_img::Pixel &v2) = 0;
+	                                         const multi_img::Pixel &v2) = 0;
 
 	virtual cv::Vec3f getColor(cv::Point3d pos) = 0;
 
@@ -288,10 +304,7 @@ public:
 
 	// Iterators for iterating over all neurons of the SOM
 	virtual iterator begin() = 0;
-	// when using end(), you should call end() before the loop and store it
-	// to a (const) variable (e.g. theEnd), because this call needs to
-	// dynamically allocate the proper iterator instance in each call
-	virtual iterator end() = 0;
+	const iterator &end() const { return theEnd; }
 
 	inline double getSimilarity(const Neuron &n1, const Neuron &n2) {
 		distfun->getSimilarity(n1, n2);
@@ -308,6 +321,7 @@ protected:
 	const vole::EdgeDetectionConfig &config;
 	const std::vector<multi_img_base::BandDesc> origImgMeta;
 	const int dim;		///< Dimension of each neuron / the SOM
+	iterator theEnd;
 
 private:
 	vole::SimilarityMeasure<multi_img::Value> *distfun;

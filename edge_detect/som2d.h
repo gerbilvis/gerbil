@@ -19,6 +19,12 @@ protected:
 		Neuron &operator*() { return base->neurons[y][x]; }
 		Iterator2d *clone() { return new Iterator2d(*this); }
 
+		void assignWith(const IteratorBase *source) {
+			// types have been checked by caller
+			const Iterator2d *s = static_cast<const Iterator2d *>(source);
+			*this = *s;
+		}
+
 		// returns the coordinates of the neurons in the multi_img
 		// that is created by export_2d
 		cv::Point get2dCoordinates() { return cv::Point(x, y); }
@@ -35,7 +41,7 @@ protected:
 		bool equal(const SOM::IteratorBase &other) const;
 
 	private:
-		SOM2d *const base;
+		SOM2d *base;
 		int x, y;
 	};
 
@@ -147,7 +153,6 @@ public:
 	std::string description();
 
 	iterator begin();
-	iterator end();
 
 protected:
 	static double getDistance(const cv::Point &p1, const cv::Point &p2);
