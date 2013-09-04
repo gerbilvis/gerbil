@@ -1,4 +1,4 @@
-#include "stopwatchgui.h"
+#include "stopwatchgpu.h"
 #include "viewport.h"
 
 #include <QGraphicsProxyWidget>
