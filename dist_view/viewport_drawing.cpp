@@ -22,7 +22,8 @@ bool Viewport::drawScene(QPainter *painter, bool withDynamics)
 	}
 
 	target->makeCurrent();
-	StopwatchGPU watch(QString("%1\tdrawScene").arg(representation::str(type)));
+	// timing irrelevant (< 1ms)
+	//StopwatchGPU watch(QString("%1\tdrawScene").arg(representation::str(type)));
 
 	/* draw background */
 	QRect rect(0, 0, width, height);

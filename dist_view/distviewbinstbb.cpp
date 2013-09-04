@@ -3,6 +3,9 @@
 #include <background_task/background_task.h>
 #include <multi_img.h>
 
+#include <stopwatch.h>
+#include <QString>
+
 #include <algorithm>
 #include <tbb/partitioner.h>
 #include <tbb/parallel_for.h>
@@ -36,6 +39,8 @@ private:
 
 bool DistviewBinsTbb::run()
 {
+	vole::Stopwatch watch;
+
 	//cv::imwrite("/tmp/mask.png", mask);
 	bool reuse = ((!add.empty() || !sub.empty()) && !inplace);
 	bool keepOldContext = false;
@@ -133,6 +138,10 @@ bool DistviewBinsTbb::run()
 			tbb::blocked_range2d<int>(it->y, it->y + it->height, it->x, it->x + it->width),
 				add, tbb::auto_partitioner(), stopper);
 	}
+
+	watch.print(QString("%1\tDistviewBinsTbb %2")
+				.arg(representation::str(args.type))
+				.arg(args.nbins).toStdString());
 
 	if (stopper.is_group_execution_cancelled()) {
 		delete result;

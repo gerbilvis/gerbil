@@ -1,5 +1,8 @@
 #include "compute.h"
 
+#include <stopwatch.h>
+#include <QString>
+
 #include "../gerbil_gui_debug.h"
 
 #include <QGLBuffer>
@@ -70,6 +73,10 @@ void Compute::preparePolylines(const ViewportCtx &ctx,
 							   std::vector<BinSet> &sets, binindex &index)
 {
 	assertBinSetsKeyDim(sets, ctx);
+
+	vole::Stopwatch watch(QString("%1\tPreparePolylines %2")
+						   .arg(representation::str(ctx.type))
+						   .arg(ctx.nbins).toStdString());
 
 	assert(sets.size()>0);
 	index.clear();

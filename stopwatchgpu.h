@@ -24,10 +24,8 @@ public:
 	{
 		static bool glewInitialized = false;
 		if (!glewInitialized) {
-			if (glewInit() == GLEW_OK)
-				std::cerr << "there we have glew!" << std::endl;
-			else
-				std::cerr << "there we have no glew!" << std::endl;
+			if (glewInit() != GLEW_OK)
+				std::cerr << "GLEW initialization failed! Run!" << std::endl;
 			glewInitialized = true;
 		}
 	}
@@ -50,8 +48,23 @@ public:
 		GLuint64 timerStart, timerEnd;
 		glGetQueryObjectui64v(query[0], GL_QUERY_RESULT, &timerStart);
 		glGetQueryObjectui64v(query[1], GL_QUERY_RESULT, &timerEnd);
-		std::cerr << ident.toStdString() << "\t"
-				  << (timerEnd - timerStart) / 1000000.0 << std::endl;
+		double measure = (timerEnd - timerStart) / 1000000000.0;
+
+		// invalid measure (timing way too high, event was just too short)
+		if (measure > 600) {
+			// just print nothing
+			running = false;
+			return;
+		}
+
+		std::ios_base::fmtflags orig_flags = std::cerr.flags();
+		std::streamsize orig_precision = std::cerr.precision();
+		std::cerr.setf(std::ios_base::fixed);
+		std::cerr.precision(6);
+		std::cerr.width(10);
+		std::cerr << measure << " s: " << ident.toStdString() << std::endl;
+		std::cerr.flags(orig_flags); std::cerr.precision(orig_precision);
+
 		running = false;
 	}
 
