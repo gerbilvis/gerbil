@@ -58,6 +58,8 @@ SOM* SOM::createSOM(const vole::EdgeDetectionConfig &conf,
 		return new SOM3d(conf, data, meta);
 	case vole::SOM_CONE:
 		return new SOMCone(conf, data, meta);
+	default:
+		return 0;
 	}
 }
 
@@ -121,13 +123,14 @@ void SOM::closestN(const multi_img::Pixel &inputVec,
 	// iterate over all neurons in grid
 	for (SOM::iterator neuron = begin(); neuron != end(); ++neuron) {
 		double dist = distfun->getSimilarity(*neuron, inputVec);
-		// compare current distance with the maximum of the N shortest found distances
+		/* compare current distance with the maximum of the N shortest
+		 * found distances */
 		if (dist < heap[0].first) {
 			// remove max. value in heap
 			std::pop_heap(heap.begin(), heap.end(), sortpair);
 
-			// max element is now on position "back" and should be popped
-			// we overrite it directly with the new element
+			/* max element is now on position "back" and should be popped
+			 * instead we overwrite it directly with the new element */
 			std::pair<double, SOM::iterator> &back = heap.back();
 			back.first = dist;
 			back.second = neuron;
@@ -140,8 +143,8 @@ void SOM::closestN(const multi_img::Pixel &inputVec,
 	std::sort_heap(heap.begin(), heap.end(), sortpair); // sort ascending
 }
 
-// fallback method that should be overwritten, but can be used as reference
-// calculates the exp function for all neurons -> slow
+/* fallback method that should be overwritten, but can be used as reference
+ * calculates the exp function for all neurons -> slow */
 int SOM::updateNeighborhood(SOM::iterator &neuron,
 							 const multi_img::Pixel &input,
 							 double sigma, double learnRate)

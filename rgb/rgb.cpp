@@ -222,7 +222,7 @@ struct SOMTBB {
 
 	SOMTBB (const multi_img& src, SOM *som, const std::vector<double>& w,
 			cv::Mat3f &dst, cv::Mat1f &stddevs, cv::Mat3d &avg_coords)
-		: src(src), som(som), weight(w), dst(dst), stddevs(stddevs), avg_coords(avg_coords) { }
+		: src(src), som(som), weight(w), dst(dst), stddevs(stddevs), avg_coords(avg_coords) {}
 
 	void operator()(const tbb::blocked_range<int>& r) const
 	{
@@ -356,8 +356,10 @@ cv::Mat3f RGB::executeSOM(const multi_img &input_img, vole::ProgressObserver *po
 		/* each weight is half of the preceeding weight in the ranking
 		   examples; N=2: 0.667, 0.333; N=4: 0.533, 0.267, 0.133, 0.067 */
 		double normalization = (double)((1 << N) - 1); // 2^N - 1
-		for (int i = 0; i < N; ++i)
-			weights.push_back((double)(1 << (N - i - 1)) / normalization); // (2^[N-1..0]) / normalization
+		for (int i = 0; i < N; ++i) {
+			// (2^[N-1..0]) / normalization
+			weights.push_back((double)(1 << (N - i - 1)) / normalization);
+		}
 	}
 
 	cv::Mat1f stddevs;

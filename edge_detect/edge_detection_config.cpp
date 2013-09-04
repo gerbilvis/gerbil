@@ -7,9 +7,7 @@ using namespace boost::program_options;
 
 namespace vole {
 
-#ifdef WITH_BOOST
 ENUM_MAGIC(somtype)
-#endif
 
 EdgeDetectionConfig::EdgeDetectionConfig(const std::string& p)
 	: Config(p), similarity(prefix + "similarity")

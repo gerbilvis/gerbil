@@ -216,7 +216,8 @@ public:
 
 		double getDistance() const { return itr->getDistance(); }
 		double getDistanceSquared() const { return itr->getDistanceSquared(); }
-		double getFakeGaussianWeight(double sigma) const { return itr->getFakeGaussianWeight(sigma); }
+		double getFakeGaussianWeight(double sigma) const
+				{ return itr->getFakeGaussianWeight(sigma); }
 
 	protected:
 		NeighbourIteratorBase *itr;
