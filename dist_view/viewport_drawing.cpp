@@ -1,4 +1,4 @@
-#include "gputimer.h"
+#include "stopwatchgui.h"
 #include "viewport.h"
 
 #include <QGraphicsProxyWidget>
