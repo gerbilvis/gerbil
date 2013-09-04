@@ -44,6 +44,16 @@ vole_check_package(OPENGL
 	"${OpenGL_LIBRARIES}"
 )
 
+# GLEW
+find_package(GLEW)
+vole_check_package(GLEW
+	"GLEW"
+	"Please install GLEW."
+	GLEW_FOUND
+	"${GLEW_INCLUDE_PATH}"
+	"${GLEW_LIBRARIES}"
+)
+
 # QtGui
 find_package(Qt4 ${VOLE_MINIMUM_QT_VERSION} COMPONENTS QtCore QtGui)
 vole_check_package(QT
