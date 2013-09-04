@@ -1,0 +1,71 @@
+#ifndef BANDDOCK_H
+#define BANDDOCK_H
+
+#include <QDockWidget>
+#include "ui_banddock.h"
+
+
+// FIXME button icons
+
+class BandDock : public QDockWidget, private Ui::BandDock
+{
+	Q_OBJECT
+	
+public:
+	explicit BandDock(cv::Rect fullImgSize, QWidget *parent = 0);
+	~BandDock();
+	/** Returns the BandView. */
+	// It is OK for the controller to access BandView directly. It is a
+	// separate entity and not just a GUI element. This is cleaner than
+	// duplicating the entire BandView interface in BandDock.
+	BandView *bandView() {return bv;}
+	GraphSegWidget *graphSegWidget() {return gs;}
+
+	// get bandId of currently shown band
+	representation::t getCurRepresentation() {return curRepr;}
+	// get representation of currently shown band
+	int getCurBandId() {return curBandId;}
+
+signals:
+	// request pixmap update as our current data became invalid
+	void bandRequested(representation::t, int);
+	/* The label being edited by the user has changed. */
+	void currentLabelChanged(int);
+	// FIXME short -> int (affects LabelModel)
+	// GUI elements should use int consistently. Convert from int to short for
+	// storage if necessary.
+	void clearLabelRequested(short labelIdx);
+	/** User requested a new label (markerSelector) */
+	void newLabelRequested();
+
+public slots:
+	void loadSeeds();
+	void graphSegModeToggled(bool enable);
+	void processSeedingDone();
+
+	void changeBand(representation::t repr, int bandId,
+					QPixmap band, QString desc);
+
+	void processImageUpdate(representation::t);
+	void processLabelingChange(const cv::Mat1s &labels,
+							   const QVector<QColor> &colors,
+							   bool colorsChanged);
+	void processLabelingChange(const cv::Mat1s &labels,
+							   const cv::Mat1b &mask);
+
+protected slots:
+	void clearLabelOrSeeds();
+	void processMarkerSelectorIndexChanged(int idx);
+
+protected:
+	void initUi();
+	// local copy
+	QVector<QColor> labelColors;
+	cv::Rect fullImgSize;
+
+	// representation and bandId of currently shown band
+	representation::t curRepr;
+	int curBandId;
+};
+
+#endif // BANDDOCK_H
