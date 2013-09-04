@@ -14,7 +14,11 @@ foreach(dir ${VOLE_MODULE_DIRECTORIES})
 
 	if (found_cmake_lists_subdirs)
 		foreach (cmake_lists ${found_cmake_lists_subdirs})
-			get_filename_component(path_subdir ${cmake_lists} PATH)
+			# *first* make the path of filename absolute, then cut off the filename
+			# the other way round cmake fails with Windows network shares
+			get_filename_component(path_absolute ${cmake_lists} ABSOLUTE)
+			get_filename_component(path_subdir ${path_absolute} PATH)
+			#get_filename_component(path_subdir ${cmake_lists} PATH)
 			get_filename_component(path_name_subdir ${path_subdir} NAME)
 
 			if(NOT ${path_subdir} STREQUAL ${CMAKE_SOURCE_DIR})

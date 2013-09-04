@@ -59,18 +59,18 @@ multi_img & multi_img::operator=(const multi_img &a) {
 	return *this;
 }
 
-void multi_img::init(int h, int w, size_t d, Value minv, Value maxv) {
+void multi_img::init(int h, int w, unsigned int d, Value minv, Value maxv) {
 	minval = minv; maxval = maxv;
 	height = h; width = w;
 	roi = cv::Rect(0, 0, 0, 0);
 	meta.resize(d);
 	bands.resize(d);
-	for (size_t i = 0; i < d; i++)
+	for (unsigned int i = 0; i < d; i++)
 		bands[i] = Band(h, w); // each band has distinct data array
 	resetPixels();
 }
 
-multi_img::multi_img(int height, int width, size_t size)
+multi_img::multi_img(int height, int width, unsigned int size)
 {
 	init(height, width, size);
 }
@@ -559,9 +559,9 @@ void multi_img::blur(cv::Size ksize, double sigmaX, double sigmaY,
 	resetPixels();
 }
 
-size_t multi_img::size() const
+unsigned int multi_img::size() const
 {
-	return bands.size();
+	return (unsigned int)bands.size();
 }
 
 bool multi_img::empty() const

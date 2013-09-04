@@ -30,11 +30,8 @@ void IllumModel::setMultiImage(SharedMultiImgPtr image)
 
 void IllumModel::finishTask(bool success)
 {
-	if(success) {
+	if(success) // task was not cancelled
 		emit requestInvalidateROI(roi);
-	} else {
-		GGDBGM("failure"<<endl);
-	}
 }
 
 // TODO: part of controller!

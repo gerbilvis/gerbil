@@ -29,8 +29,8 @@ signals:
 								   bool gradient);
 public slots:
 	void setNumBands(int nBands);
-	int updateProgress(int percent);
-	int processResultKL(int k, int l);
+	void updateProgress(int percent);
+	void processResultKL(int k, int l);
 	void processSegmentationCompleted();
 protected slots:
 	void startUnsupervisedSeg(bool findKL=false);

@@ -10,7 +10,7 @@ vole_compile_library(
 	vole_config
 	qtopencv
 
-	multi_img
+	multi_img.h
 	multi_img/multi_img
 	multi_img/multi_img_io
 	multi_img/multi_img_ext

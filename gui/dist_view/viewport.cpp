@@ -99,7 +99,7 @@ void Viewport::initBuffers()
 
 	/* use floating point for better alpha accuracy in back buffer! */
 	// TODO RGBA32F yet looks better, make configurable!
-	format[0].setInternalTextureFormat(GL_RGBA16F);
+	format[0].setInternalTextureFormat(0x881A); // GL_RGBA16F
 
 	// initialize buffers
 	for (int i = 0; i < 2; ++i) {

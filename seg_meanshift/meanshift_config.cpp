@@ -39,7 +39,7 @@ MeanShiftConfig::MeanShiftConfig(const std::string& prefix)
 	bandwidth = 0;
 	Kmin = 1;
 	Kjump = 1;
-	epsilon = 0.05;
+	epsilon = 0.05f;
 	pruneMinN = 50;
 
 	output_directory = "/tmp";

@@ -23,6 +23,7 @@
 // for debugging
 std::ostream& operator<<(std::ostream& stream, const QPointF &p) {
 	stream << "(" << p.x() << "," << p.y() << ")";
+	return stream;
 }
 
 BandView::BandView(QWidget *parent)

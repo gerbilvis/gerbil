@@ -959,7 +959,7 @@ bool FAMS::progressUpdate(float percent, bool absolute)
 
 	if (progressObserver == NULL)
 		return true;
-	bool cont = progressObserver->update(progress);
+	bool cont = progressObserver->update((int)progress);
 	if (!cont)
 		progress = -1.f;
 	return cont;

@@ -19,7 +19,7 @@ class Neuron : public multi_img::Pixel {
 public:
 	Neuron() : multi_img::Pixel() {}
 
-	Neuron(int dimension) : multi_img::Pixel(dimension) {}
+	Neuron(size_t dimension) : multi_img::Pixel(dimension) {}
 
 	Neuron(const multi_img::Pixel &n) : multi_img::Pixel(n) {}
 

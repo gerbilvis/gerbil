@@ -16,7 +16,7 @@ bool BgrTbb::run()
 		multi_img_base& source = multi->getBase();
 		cv::Mat_<cv::Vec3f> xyz(source.height, source.width, 0.);
 		float greensum = 0.f;
-		for (size_t i = 0; i < source.size(); ++i) {
+		for (unsigned int i = 0; i < source.size(); ++i) {
 			int idx = ((int)(source.meta[i].center + 0.5f) - 360) / 5;
 			if (idx < 0 || idx > 94)
 				continue;

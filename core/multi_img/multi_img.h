@@ -126,7 +126,7 @@ public:
 		  width(0), height(0) {}
 
 	/// barebone constructor
-	multi_img_base(size_t size)
+	multi_img_base(unsigned int size)
 		: minval(MULTI_IMG_MIN_DEFAULT), maxval(MULTI_IMG_MAX_DEFAULT),
 		  width(0), height(0), meta(size) {}
 
@@ -137,7 +137,7 @@ public:
 	virtual ~multi_img_base() {}
 
 	/// returns number of bands
-	virtual size_t size() const = 0;
+	virtual unsigned int size() const = 0;
 
 	/// returns true if image is uninitialized
 	virtual bool empty() const = 0;	
@@ -220,11 +220,11 @@ public:
 	multi_img() : multi_img_base() {}
 
 	/// barebone constructor
-	multi_img(size_t size)
+	multi_img(unsigned int size)
 		: multi_img_base(size), roi(0, 0, 0, 0), bands(size) {}
 
 	/// empty image constructor (to create synthetic images)
-	multi_img(int height, int width, size_t size);
+	multi_img(int height, int width, unsigned int size);
 
 	/// copy constructor
 	multi_img(const multi_img &);
@@ -268,7 +268,7 @@ public:
 //@{
 
 	/// returns number of bands
-	virtual size_t size() const;
+	virtual unsigned int size() const;
 
 	/// returns true if image is uninitialized
 	virtual bool empty() const;
@@ -565,7 +565,7 @@ protected:
 	void applyCache();
 
 	/// simple data structure initialization
-	void init(int height, int width, size_t size,
+	void init(int height, int width, unsigned int size,
 			  Value minval = MULTI_IMG_MIN_DEFAULT,
 			  Value maxval = MULTI_IMG_MAX_DEFAULT);
 

@@ -85,7 +85,7 @@ int MeanShiftSP::execute() {
 		multi_img::ptr in = (config.sp_withGrad ? input_grad : input);
 
 		int D = in->size();
-		multi_img msinput(sp_map.size(), 1, D);
+		multi_img msinput((int)sp_map.size(), 1, D);
 		msinput.minval = in->minval;
 		msinput.maxval = in->maxval;
 		msinput.meta = in->meta;
@@ -115,7 +115,7 @@ int MeanShiftSP::execute() {
 			weights[ii] = (double)N; // TODO: sqrt?
 
 			// HACK superpixel sizes
-			spsizes.push_back(N);
+			spsizes.push_back((int)N);
 		}
 
 		// arrange weights around their mean

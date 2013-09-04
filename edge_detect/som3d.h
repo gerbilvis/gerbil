@@ -75,18 +75,18 @@ public:
 	class Cache3d : public Cache
 	{
 	public:
-                struct PreloadTBB
-                {
-                        PreloadTBB(const multi_img &image, SOM3d *som,
-                                   std::vector<std::vector<cv::Point3i> > &data)
-                                   : image(image), som(som), data(data) { }
+		struct PreloadTBB
+		{
+			PreloadTBB(const multi_img &image, SOM3d *som,
+					   std::vector<std::vector<cv::Point3i> > &data)
+					   : image(image), som(som), data(data) { }
 
-                        void operator()(const tbb::blocked_range<int>& r) const;
+			void operator()(const tbb::blocked_range<int>& r) const;
 
-                        const multi_img &image;
-                        SOM3d *const som;
-                        std::vector<std::vector<cv::Point3i> > &data;
-                };
+			const multi_img &image;
+			SOM3d *const som;
+			std::vector<std::vector<cv::Point3i> > &data;
+		};
 
 
 		/**

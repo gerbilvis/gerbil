@@ -216,7 +216,7 @@ public:
 
 		double getDistance() const { return itr->getDistance(); }
 		double getDistanceSquared() const { return itr->getDistanceSquared(); }
-		double getFakeGaussianWeight(double sigma) const { itr->getFakeGaussianWeight(sigma); }
+		double getFakeGaussianWeight(double sigma) const { return itr->getFakeGaussianWeight(sigma); }
 
 	protected:
 		NeighbourIteratorBase *itr;
@@ -307,7 +307,7 @@ public:
 	const iterator &end() const { return theEnd; }
 
 	inline double getSimilarity(const Neuron &n1, const Neuron &n2) {
-		distfun->getSimilarity(n1, n2);
+		return distfun->getSimilarity(n1, n2);
 	}
 
 	void getEdge(const multi_img &image,

@@ -75,9 +75,9 @@ multi_img_offloaded::multi_img_offloaded(const vector<string> &files, const vect
 			 << "   (" << bands.size()*width*height*sizeof(Value)/1048576. << " MB)" << endl;
 }
 
-size_t multi_img_offloaded::size() const
+unsigned int multi_img_offloaded::size() const
 {
-	return bands.size();
+	return (unsigned int)bands.size();
 }
 
 bool multi_img_offloaded::empty() const

@@ -282,7 +282,7 @@ double SOM3d::getDistanceBetweenWinners(const multi_img::Pixel &v1,
 	SOM::iterator iter2 = identifyWinnerNeuron(v2);
 	Iterator3d *p2 = static_cast<Iterator3d *>(iter2.getBase());
 
-	getDistance(p1->getId(), p2->getId());
+	return getDistance(p1->getId(), p2->getId());
 }
 
 cv::Vec3f SOM3d::getColor(cv::Point3d pos)

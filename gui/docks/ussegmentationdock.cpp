@@ -169,7 +169,7 @@ void UsSegmentationDock::startUnsupervisedSeg(bool findKL)
 			config.starting = vole::SUPERPIXEL;
 
 			config.superpixel.eqhist=1;
-			config.superpixel.c=0.05;
+			config.superpixel.c=0.05f;
 			config.superpixel.min_size=5;
 			config.superpixel.similarity.measure=vole::SPEC_INF_DIV;
 		}
@@ -288,12 +288,12 @@ void UsSegmentationDock::usInitMethodChanged(int idx)
 		usInitPercentWidget->hide();
 	}
 }
-int UsSegmentationDock::updateProgress(int percent)
+void UsSegmentationDock::updateProgress(int percent)
 {
 	usProgressBar->setValue(percent);
 }
 
-int UsSegmentationDock::processResultKL(int k, int l)
+void UsSegmentationDock::processResultKL(int k, int l)
 {
 	usFoundKLLabel->setText(QString("Found values: K=%1 L=%2").arg(k).arg(l));
 	usFoundKLWidget->show();

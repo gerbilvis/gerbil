@@ -159,7 +159,7 @@ void equalizeHist(cv::Mat_<float> &target, int bins)
 	for (int y = 0; y < target.rows; ++y) {
 		float *row = target[y];
 		for (int x = 0; x < target.cols; ++x) {
-			int coord = std::ceil(row[x] * (binsf / ma) + 0.5f);
+			int coord = (int)std::ceil(row[x] * (binsf / ma) + 0.5f);
 			if (coord < 0 || coord > bins) {
 				std::cerr << "(" << x << ", " << y << "): " << coord << std::endl;
 				row[x] = 0.f;

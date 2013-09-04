@@ -184,7 +184,7 @@ double SOMCone::getDistanceBetweenWinners(const multi_img::Pixel &v1,
 	IteratorCone *it2 = static_cast<IteratorCone *>(iter2.getBase());
 	cv::Point3d &p2 = coordinates[it2->getIdx()];
 
-	getDistance(p1, p2);
+	return getDistance(p1, p2);
 }
 
 cv::Vec3f SOMCone::getColor(cv::Point3d pos)
@@ -470,7 +470,7 @@ double SOMCone::CacheCone::getSimilarity(vole::SimilarityMeasure<multi_img::Valu
 	const Neuron &n1 = som->neurons[idx1];
 	const Neuron &n2 = som->neurons[idx2];
 
-	distfun->getSimilarity(n1, n2);
+	return distfun->getSimilarity(n1, n2);
 }
 
 double SOMCone::CacheCone::getSobelX(int x, int y)

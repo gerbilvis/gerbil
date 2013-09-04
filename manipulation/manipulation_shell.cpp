@@ -38,7 +38,7 @@ int ManipulationShell::execute() {
 			// median of current band in image 2
 			std::vector<multi_img::Value> v((*input)[i].begin(), (*input)[i].end());
 			std::sort(v.begin(), v.end());
-			multi_img::Value median = v[v.size()*0.5];
+			multi_img::Value median = v[v.size() / 2];
 			std::cout << i << ": " << median << std::endl;
 
 			multi_img::Band b(output[i]);

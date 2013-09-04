@@ -105,8 +105,8 @@ public:
 		FAMS& fams;
 	};
 
-	friend class ComputePilotPoint;
-	friend class MeanShiftPoint;
+	friend struct ComputePilotPoint;
+	friend struct MeanShiftPoint;
 
 	FAMS(const vole::MeanShiftConfig& config, vole::ProgressObserver* po=NULL);
 	~FAMS();

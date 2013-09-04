@@ -30,15 +30,17 @@ SOM* SOM::createSOM(const vole::EdgeDetectionConfig &conf,
 {
 	switch (conf.type)
 	{
-	case 0:
-		// (will be a 1d-SOM, SOM2d constructor handles that)
+	case vole::SOM_LINE:
+		// SOM2d constructor will create 1d SOM
+	case vole::SOM_SQUARE:
 		return new SOM2d(conf, dimensions, meta);
-	case 1:
 		return new SOM2d(conf, dimensions, meta);
-	case 2:
+	case vole::SOM_CUBE:
 		return new SOM3d(conf, dimensions, meta);
-	case 3:
+	case vole::SOM_CONE:
 		return new SOMCone(conf, dimensions, meta);
+	default:
+		return 0;
 	}
 }
 
@@ -48,14 +50,13 @@ SOM* SOM::createSOM(const vole::EdgeDetectionConfig &conf,
 {
 	switch (conf.type)
 	{
-	case 0:
-		// (will be a 1d-SOM, SOM2d constructor handles that)
+	case vole::SOM_LINE:
+		// SOM2d constructor will create 1d SOM
+	case vole::SOM_SQUARE:
 		return new SOM2d(conf, data, meta);
-	case 1:
-		return new SOM2d(conf, data, meta);
-	case 2:
+	case vole::SOM_CUBE:
 		return new SOM3d(conf, data, meta);
-	case 3:
+	case vole::SOM_CONE:
 		return new SOMCone(conf, data, meta);
 	}
 }

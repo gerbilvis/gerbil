@@ -104,7 +104,7 @@ bool FAMS::ImportPoints(const multi_img& img) {
 	// w_ and h_ are only used for result output (i.e. in io.cpp)
 	w_ = img.width; h_ = img.height;
 	n_ = w_ * h_;
-	d_ = img.size(); // dimensionality
+	d_ = (int)img.size(); // dimensionality
 
 	minVal_ = img.minval; // TODO: get rid of!
 	maxVal_ = img.maxval;
@@ -214,7 +214,7 @@ void FAMS::SaveModeImg(const std::string& filebase,
 			multi_img::Pixel px(d_);
 			for (int d = 0; d < d_; ++d)
 				px[d] = (multi_img::Value)modes_[idx++] * (maxVal_ - minVal_)
-						/ 65535.0 + minVal_;
+						/ 65535.0f + minVal_;
 			dest.setPixel(y, x, px);
 		}
 	}
@@ -236,7 +236,7 @@ void FAMS::DbgSavePoints(const std::string& filebase,
 		multi_img::Pixel px(d_);
 		for (int d = 0; d < d_; ++d)
 			px[d] = (multi_img::Value)points[x].data_[d] * (maxVal_ - minVal_)
-					/ 65535.0 + minVal_;
+					/ 65535.0f + minVal_;
 		dest.setPixel(x, 0, px);
 	}
 
@@ -279,7 +279,7 @@ void FAMS::SavePrunedModeImg(const std::string& filebase,
 			multi_img::Pixel px(d_);
 			for (int d = 0; d < d_; ++d)
 				px[d] = (multi_img::Value)prunedmodes_[idx++] * (maxVal_ - minVal_)
-						/ 65535.0 + minVal_;
+						/ 65535.0f + minVal_;
 			dest.setPixel(y, x, px);
 		}
 	}

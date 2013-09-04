@@ -121,6 +121,7 @@ int Compute::storeVertices(const ViewportCtx &ctx,
 
 	vb.unmap();
 	vb.release();
+	return 0;
 }
 
 void Compute::GenerateVertices::operator()(const tbb::blocked_range<size_t> &r) const
