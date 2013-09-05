@@ -118,11 +118,12 @@ __kernel void find_global_min(__global const int* min_indexes,
                                   __local float* reduction_buff,
                                   int vector_size)
 {
-
     int global_id_x = get_global_id(0);
 
     if(global_id_x < vector_size)
         reduction_buff[global_id_x] = min_values[global_id_x];
+
+    barrier(CLK_LOCAL_MEM_FENCE);
 
     for (unsigned int s = vector_size/2; s > 0; s >>= 1)
     {
@@ -150,7 +151,7 @@ __kernel void generic_update(__global float* som_data,
                              __global const float* input_vectors,
                              __global const int* winner_idx,
                              #ifdef TEST_OUTPUT
-                             __global uchar* test_output, // to check neighbourhood detection
+                             __global float* test_output, // to check neighbourhood detection
                              #endif
                              int som_size_x,
                              int som_size_y,
@@ -171,7 +172,6 @@ __kernel void generic_update(__global float* som_data,
     int global_id_z = get_global_id(2);
 
     int group_size_x = get_local_size(0);
-    int group_size_y = get_local_size(1);
 
     int group_id_x = get_group_id(0);
     int group_id_y = get_group_id(1);
@@ -197,7 +197,7 @@ __kernel void generic_update(__global float* som_data,
 
         #ifdef TEST_OUTPUT
         int global_idx = som_size_x * global_id_y + global_id_x;
-        test_output[global_idx] = neighbourhood[local_idx];
+        test_output[global_idx] = neighbourhood[local_idx] ? weight : 0;
         #endif
     }
 

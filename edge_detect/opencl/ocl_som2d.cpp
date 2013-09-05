@@ -51,8 +51,6 @@ void init_som(som_data& som)
 
 void ocl_som2d_test_impl()
 {
-
-
     std::cout << "ocl som2d hello world!" << std::endl;
     std::string source = read_source("kernels/som2d.cl");
 
@@ -76,7 +74,7 @@ void ocl_som2d_test_impl()
 
         init_som(som);
 
-        som.data[32*32-1] = 0.6;
+        som.data[32*32 + 32 * 30 + 30] = 0.6;
 //        som.data[128] = 4;
 //        som.data[133] = 0.9;
 
@@ -201,7 +199,7 @@ void ocl_som2d_test_impl()
                                                              * neuron_size);
 
         cl::Buffer neighbourhood_verify(context, CL_MEM_READ_WRITE,
-                                        sizeof(unsigned char) * som_size_x * som_size_y);
+                                        sizeof(float) * som_size_x * som_size_y);
 
         update_kernel.setArg(0, som_data_buff);
         update_kernel.setArg(1, input_vectors);
@@ -222,19 +220,19 @@ void ocl_som2d_test_impl()
 
         queue.enqueueNDRangeKernel(update_kernel, cl::NullRange, global, local);
 
-        unsigned char nighbour_verify_host[som_size_x * som_size_y];
+        float nighbour_verify_host[som_size_x * som_size_y];
 
         queue.enqueueReadBuffer(neighbourhood_verify, CL_TRUE, 0,
-                                sizeof(unsigned char) * som_size_x * som_size_y,
+                                sizeof(float) * som_size_x * som_size_y,
                                 nighbour_verify_host);
 
         for(int j = 0; j < som_size_y; ++j)
         {
-            unsigned char* line_ptr = nighbour_verify_host + som_size_x * j;
+            float* line_ptr = nighbour_verify_host + som_size_x * j;
 
             for(int i = 0; i < som_size_x; ++i)
             {
-                std::cout << (int)line_ptr[i];
+                std::cout << line_ptr[i] << " ";
             }
 
             std::cout << std::endl;
