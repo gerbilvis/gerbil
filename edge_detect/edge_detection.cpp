@@ -24,6 +24,8 @@
 #include "som_trainer.h"
 #include "som_tester.h"
 
+#include "opencl/ocl_som2d.h"
+
 EdgeDetection::EdgeDetection()
   : vole::Command("edge_detect", // command name
 		  config,
@@ -41,6 +43,13 @@ EdgeDetection::EdgeDetection(const vole::EdgeDetectionConfig &cfg)
 
 int EdgeDetection::execute()
 {
+    if(config.use_opencl) // for testing purposes only!
+    {
+        ocl_som2d_test();
+        return 0;
+    }
+
+
 	assert(!config.prefix_enabled); // input, output file variables set
 
 	multi_img img;

@@ -40,6 +40,7 @@ public:
 
 	// export SOM?
 	bool output_som;
+    bool use_opencl;
 
 	// Training features 
 	int maxIter;								// number of iterations

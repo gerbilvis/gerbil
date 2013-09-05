@@ -236,3 +236,17 @@ vole_check_package(GDAL
         "${GDAL_INCLUDE_DIR}"
         "${GDAL_LIBRARIES}"
 )
+
+#OpenCL
+find_package(OpenCL)
+vole_check_package(OpenCL
+        "OpenCL"
+        "Please install OpenCL"
+        OPENCL_FOUND
+        "${OPENCL_INCLUDE_DIR}"
+        "${OPENCL_LIBRARIES}"
+)
+
+if(OpenCL_FOUND)
+    add_definitions(-D__CL_ENABLE_EXCEPTIONS)
+endif (OpenCL_FOUND)

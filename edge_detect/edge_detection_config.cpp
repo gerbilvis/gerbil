@@ -23,6 +23,7 @@ EdgeDetectionConfig::EdgeDetectionConfig(const std::string& p)
 	sigmaEnd = 2.;
 	seed = time(NULL);
 	output_som = false;
+    use_opencl = false;
 
 	#ifdef WITH_BOOST
 		initBoostOptions();
@@ -53,6 +54,8 @@ void EdgeDetectionConfig::initBoostOptions() {
 			"Neighborhood radius at the end of the training process")
 		(key("seed"), value(&seed)->default_value(seed),
 			"Seed value of random number generators")
+        (key("use_opencl"), bool_switch(&use_opencl)->default_value(false),
+            "Use OpenCL to accelerate computations")
 		;
 	options.add(similarity.options);
 
