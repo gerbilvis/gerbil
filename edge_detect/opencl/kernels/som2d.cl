@@ -145,12 +145,11 @@ __kernel void find_global_min(__global const int* min_indexes,
     }
 }
 
-#define TEST_OUTPUT
 
 __kernel void generic_update(__global float* som_data,
                              __global const float* input_vectors,
                              __global const int* winner_idx,
-                             #ifdef TEST_OUTPUT
+                             #ifdef DEBUG_MODE
                              __global float* test_output, // to check neighbourhood detection
                              #endif
                              int som_size_x,
@@ -195,10 +194,10 @@ __kernel void generic_update(__global float* som_data,
 
         neighbourhood[local_idx] = (weight >= 0.01f);
 
-        #ifdef TEST_OUTPUT
+#ifdef DEBUG_MODE
         int global_idx = som_size_x * global_id_y + global_id_x;
         test_output[global_idx] = neighbourhood[local_idx] ? weight : 0;
-        #endif
+#endif
     }
 
     if(global_id_z == 1 && local_idx < input_vector_size)

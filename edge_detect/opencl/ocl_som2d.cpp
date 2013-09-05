@@ -8,8 +8,13 @@
 #include <fstream>
 #include <string>
 #include <vector>
+#include <iomanip>
 
 #include "ocl_utils.h"
+
+#define DEBUG_MODE
+
+
 som_data::som_data(int x, int y, int z)
     : x(x), y(y), z(z)
 {
@@ -49,43 +54,45 @@ void init_som(som_data& som)
 }
 
 
-void ocl_som2d_test_impl()
+//#define DEBUG_MODE
+
+void ocl_som2d_training(som_data& som, float* train_vectors,
+                        int train_vectors_num)
 {
     std::cout << "ocl som2d hello world!" << std::endl;
     std::string source = read_source("kernels/som2d.cl");
 
-//    std::cout << source << std::endl;
+    const int neuron_size = som.z;
+    const int som_size_x = som.x;
+    const int som_size_y = som.y;
+    const int train_vect_size = neuron_size;
+
+    int som_size = som.size;
+    int input_vectors_size = train_vect_size * train_vectors_num;
+
+    const int kernel_size_x = 8;
+    const int kernel_size_y = 8;
+
+    float sigma_square = 2.f;
+    float learning_rate = 1.f;
 
     try {
-
         cl::Context context;
         cl::CommandQueue queue;
 
         init_opencl(context, queue);
+
+#ifdef DEBUG_MODE
+        cl::Program program = build_cl_program(context, source, "-DDEBUG_MODE");
+#else
         cl::Program program = build_cl_program(context, source);
+#endif
 
-        // Make kernel
-        cl::Kernel kernel(program, "find_nearest_neuron");
+        // Make kernels
+        cl::Kernel find_nearest_kernel(program, "find_nearest_neuron");
+        cl::Kernel global_min_kernel(program, "find_global_min");
+        cl::Kernel update_kernel(program, "generic_update");
 
-        const int neuron_size = 8;
-        const int som_size_x = 32;
-        const int som_size_y = 32;
-        som_data som(som_size_x, som_size_y, neuron_size);
-
-        init_som(som);
-
-        som.data[32*32 + 32 * 30 + 30] = 0.6;
-//        som.data[128] = 4;
-//        som.data[133] = 0.9;
-
-        int som_size = som.size;
-
-        const int input_vectors_size = neuron_size * 100;
-        float input_vectors_host[input_vectors_size];
-
-        for(int i = 0; i < input_vectors_size; ++i){
-            input_vectors_host[i] = 0.f;
-        }
 
         // Create memory buffers
         cl::Buffer som_data_buff(context, CL_MEM_READ_WRITE,
@@ -97,16 +104,23 @@ void ocl_som2d_test_impl()
         cl::Buffer out_min_indexes(context, CL_MEM_READ_WRITE, 16 * sizeof(int));
         cl::Buffer out_min_values(context, CL_MEM_READ_WRITE, 16 * sizeof(float));
 
+        cl::Buffer global_min_idx(context, CL_MEM_READ_WRITE, sizeof(int));
+
+#ifdef DEBUG_MODE
+        cl::Buffer neighbourhood_verify(context, CL_MEM_READ_WRITE,
+                                        sizeof(float) * som_size_x * som_size_y);
+#endif
+
         // Copy lists A and B to the memory buffers
         queue.enqueueWriteBuffer(som_data_buff, CL_TRUE, 0,
                                  som_size * sizeof(float), som.data);
         queue.enqueueWriteBuffer(input_vectors, CL_TRUE, 0,
                                  input_vectors_size * sizeof(float),
-                                 input_vectors_host);
+                                 train_vectors);
 
-        const int kernel_size_x = 8;
-        const int kernel_size_y = 8;
+        // Defining local memory
 
+        // for find_nearest_kernel
         cl::LocalSpaceArg local_mem_subsom = cl::__local(sizeof(float)
                                                              * kernel_size_x
                                                              * kernel_size_y
@@ -116,126 +130,156 @@ void ocl_som2d_test_impl()
                                                              * kernel_size_x
                                                              * kernel_size_y);
 
-        // Run the kernel on specific ND range
-        cl::NDRange global(som_size_x, som_size_y, neuron_size);
-        cl::NDRange local(8, 8, neuron_size);
+        // for global_min_kernel
+        cl::LocalSpaceArg local_mem_reduction_global = cl::__local(sizeof(int)
+                                                                 * 16);
 
-        // Set arguments to kernel
-        kernel.setArg(0, som_data_buff);
-        kernel.setArg(1, input_vectors);
-        kernel.setArg(2, out_min_indexes);
-        kernel.setArg(3, out_min_values);
-        kernel.setArg(4, som.x);
-        kernel.setArg(5, som.y);
-        kernel.setArg(6, som.z);
-        kernel.setArg(7, 0);
-        kernel.setArg(8, neuron_size);
-        kernel.setArg(9, local_mem_subsom);
-        kernel.setArg(10, local_mem_reduction);
+        // for update kernel
+        cl::LocalSpaceArg local_mem_neighbourhood = cl::__local(
+                                                    sizeof(unsigned char)
+                                                    * kernel_size_x
+                                                    * kernel_size_y);
 
-        queue.enqueueNDRangeKernel(kernel, cl::NullRange, global, local);
-
-        int host_out_min_indexes[16];
-        float host_out_min_values[16];
-
-        queue.enqueueReadBuffer(out_min_indexes, CL_TRUE, 0,
-                                16 * sizeof(int), host_out_min_indexes);
-
-        queue.enqueueReadBuffer(out_min_values, CL_TRUE, 0,
-                                16 * sizeof(float), host_out_min_values);
-
-        for(int i = 0; i < 16; ++i)
-        {
-            int x = host_out_min_indexes[i] >> 16;
-            int y = host_out_min_indexes[i] & 0xFFFF;
-
-            int idx = y * 32 + x;
-
-            std::cout << i << ": (" << x << ", " << y << ")"
-                      << " = " << host_out_min_values[i] << std::endl;
-        }
-
-        // FINIDNG GLOBAL MINIMUM
-
-        cl::Kernel find_global_min_kernel(program, "find_global_min");
-
-        cl::Buffer global_min_idx(context, CL_MEM_READ_WRITE, sizeof(int));
-
-        local_mem_reduction = cl::__local(sizeof(int) * 16);
-
-        find_global_min_kernel.setArg(0, out_min_indexes);
-        find_global_min_kernel.setArg(1, out_min_values);
-        find_global_min_kernel.setArg(2, global_min_idx);
-        find_global_min_kernel.setArg(3, local_mem_reduction);
-        find_global_min_kernel.setArg(4, 16);
-
-        global = cl::NDRange(16);
-        local = cl::NDRange(16);
-
-        queue.enqueueNDRangeKernel(find_global_min_kernel,
-                                   cl::NullRange,global, local);
-
-        int global_min;
-
-        queue.enqueueReadBuffer(global_min_idx, CL_TRUE, 0,
-                                sizeof(int), &global_min);
-
-        int global_min_x = global_min >> 16;
-        int global_min_y = global_min & 0xFFFF;
-
-        std::cout << "global min index: (" << global_min_x
-                  << ", " << global_min_y << ")" << std::endl;
-
-        // UPDATING SOM
-        cl::Kernel update_kernel(program, "generic_update");
-
-        float sigma_square = 2.f;
-        float learning_rate = 1.f;
-
-        cl::LocalSpaceArg local_mem_neighbourhood = cl::__local(sizeof(unsigned char)
-                                                             * kernel_size_x
-                                                             * kernel_size_y);
         cl::LocalSpaceArg local_mem_input_vec = cl::__local(sizeof(float)
                                                              * neuron_size);
 
-        cl::Buffer neighbourhood_verify(context, CL_MEM_READ_WRITE,
-                                        sizeof(float) * som_size_x * som_size_y);
+        // Cacluating kernel ranges
+        cl::NDRange find_nearest_global(som_size_x, som_size_y, neuron_size);
+        cl::NDRange find_nearest_local(8, 8, neuron_size);
+
+        cl::NDRange global_min_global(16);
+        cl::NDRange global_min_local(16);
+
+        cl::NDRange update_global(som_size_x, som_size_y, neuron_size);
+        cl::NDRange update_local(8, 8, neuron_size);
+
+
+        // SETTING KERNEL PARAMETERS
+
+        // Set arguments to kernel
+        find_nearest_kernel.setArg(0, som_data_buff);
+        find_nearest_kernel.setArg(1, input_vectors);
+        find_nearest_kernel.setArg(2, out_min_indexes);
+        find_nearest_kernel.setArg(3, out_min_values);
+        find_nearest_kernel.setArg(4, som.x);
+        find_nearest_kernel.setArg(5, som.y);
+        find_nearest_kernel.setArg(6, som.z);
+        //find_nearest_kernel.setArg(7, 0);
+        find_nearest_kernel.setArg(8, neuron_size);
+        find_nearest_kernel.setArg(9, local_mem_subsom);
+        find_nearest_kernel.setArg(10, local_mem_reduction);
+
+        global_min_kernel.setArg(0, out_min_indexes);
+        global_min_kernel.setArg(1, out_min_values);
+        global_min_kernel.setArg(2, global_min_idx);
+        global_min_kernel.setArg(3, local_mem_reduction_global);
+        global_min_kernel.setArg(4, 16);
 
         update_kernel.setArg(0, som_data_buff);
         update_kernel.setArg(1, input_vectors);
         update_kernel.setArg(2, global_min_idx);
+#ifdef DEBUG_MODE
         update_kernel.setArg(3, neighbourhood_verify);
         update_kernel.setArg(4, som.x);
         update_kernel.setArg(5, som.y);
         update_kernel.setArg(6, som.z);
-        update_kernel.setArg(7, 0);
+        //update_kernel.setArg(7, 0);
         update_kernel.setArg(8, neuron_size);
         update_kernel.setArg(9, sigma_square);
         update_kernel.setArg(10, learning_rate);
         update_kernel.setArg(11, local_mem_neighbourhood);
         update_kernel.setArg(12, local_mem_input_vec);
+#else
+        update_kernel.setArg(3, som.x);
+        update_kernel.setArg(4, som.y);
+        update_kernel.setArg(5, som.z);
+        //update_kernel.setArg(7, 0);
+        update_kernel.setArg(7, neuron_size);
+        update_kernel.setArg(8, sigma_square);
+        update_kernel.setArg(9, learning_rate);
+        update_kernel.setArg(10, local_mem_neighbourhood);
+        update_kernel.setArg(11, local_mem_input_vec);
+#endif
 
-        global = cl::NDRange(som_size_x, som_size_y, neuron_size);
-        local = cl::NDRange(8, 8, neuron_size);
-
-        queue.enqueueNDRangeKernel(update_kernel, cl::NullRange, global, local);
-
-        float nighbour_verify_host[som_size_x * som_size_y];
-
-        queue.enqueueReadBuffer(neighbourhood_verify, CL_TRUE, 0,
-                                sizeof(float) * som_size_x * som_size_y,
-                                nighbour_verify_host);
-
-        for(int j = 0; j < som_size_y; ++j)
+        for(int vec_idx = 0; vec_idx < train_vectors_num; ++vec_idx)
         {
-            float* line_ptr = nighbour_verify_host + som_size_x * j;
+            find_nearest_kernel.setArg(7, vec_idx);
 
-            for(int i = 0; i < som_size_x; ++i)
+            queue.enqueueNDRangeKernel(find_nearest_kernel, cl::NullRange,
+                                       find_nearest_global, find_nearest_local);
+
+            queue.enqueueNDRangeKernel(global_min_kernel, cl::NullRange,
+                                       global_min_global, global_min_local);
+#ifdef DEBUG_MODE
+            update_kernel.setArg(7, vec_idx);
+#else
+            update_kernel.setArg(6, vec_idx);
+#endif
+
+            queue.enqueueNDRangeKernel(update_kernel, cl::NullRange,
+                                       update_global, update_local);
+
+#ifdef DEBUG_MODE
+
+            // checking partial minimum values
+
+            int host_out_min_indexes[16];
+            float host_out_min_values[16];
+
+            queue.enqueueReadBuffer(out_min_indexes, CL_TRUE, 0,
+                                    16 * sizeof(int), host_out_min_indexes);
+
+            queue.enqueueReadBuffer(out_min_values, CL_TRUE, 0,
+                                    16 * sizeof(float), host_out_min_values);
+
+            for(int i = 0; i < 16; ++i)
             {
-                std::cout << line_ptr[i] << " ";
+                int x = host_out_min_indexes[i] >> 16;
+                int y = host_out_min_indexes[i] & 0xFFFF;
+
+                int idx = y * 32 + x;
+
+                std::cout << i << ": (" << x << ", " << y << ")"
+                          << " = " << host_out_min_values[i] << std::endl;
             }
 
-            std::cout << std::endl;
+            // checking global winner
+
+            int global_min;
+
+            queue.enqueueReadBuffer(global_min_idx, CL_TRUE, 0,
+                                    sizeof(int), &global_min);
+
+            int global_min_x = global_min >> 16;
+            int global_min_y = global_min & 0xFFFF;
+
+            std::cout << "global min index: (" << global_min_x
+                      << ", " << global_min_y << ")" << std::endl;
+
+
+            // checking neighbour selection
+
+            float neighbour_verify_host[som_size_x * som_size_y];
+
+            queue.enqueueReadBuffer(neighbourhood_verify, CL_TRUE, 0,
+                                    sizeof(float) * som_size_x * som_size_y,
+                                    neighbour_verify_host);
+
+            for(int j = 0; j < som_size_y; ++j)
+            {
+                float* line_ptr = neighbour_verify_host + som_size_x * j;
+
+                for(int i = 0; i < som_size_x; ++i)
+                {
+
+                    std::cout << std::setiosflags(std::ios::fixed)
+                              << std::setprecision(2)
+                              << std::setw(4) << line_ptr[i] << " ";
+                }
+
+                std::cout << std::endl;
+            }
+#endif
         }
 
 
@@ -248,7 +292,29 @@ void ocl_som2d_test_impl()
 
 void ocl_som2d_test()
 {
-    for(int i = 0; i < 1; ++i)
-        ocl_som2d_test_impl();
+    const int neuron_size = 8;
+    const int som_size_x = 32;
+    const int som_size_y = 32;
+    som_data som(som_size_x, som_size_y, neuron_size);
+
+    init_som(som);
+
+    som.data[32*32 + 32 * 30 + 30] = 0.6;
+//        som.data[128] = 4;
+//        som.data[133] = 0.9;
+
+    const int input_vectors_num = 2;
+    const int input_vectors_size = neuron_size * input_vectors_num;
+    float input_vectors_host[input_vectors_size];
+
+    for(int i = 0; i < input_vectors_size; ++i){
+        input_vectors_host[i] = 0.f;
+    }
+
+    ocl_som2d_training(som, input_vectors_host, input_vectors_num);
+
+    std::cout << "finished!" << std::endl;
+//    for(int i = 0; i < 1; ++i)
+//        ocl_som2d_test_impl();
 }
 

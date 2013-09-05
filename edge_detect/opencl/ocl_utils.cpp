@@ -30,7 +30,8 @@ void init_opencl(cl::Context& context, cl::CommandQueue& queue)
 }
 
 cl::Program build_cl_program(cl::Context& context,
-                             const std::string& source_code)
+                             const std::string& source_code,
+                             const std::string& params)
 {
     cl::Program::Sources source(1, std::make_pair(source_code.c_str(),
                                                   source_code.length()+1));
@@ -44,7 +45,7 @@ cl::Program build_cl_program(cl::Context& context,
     // Build program for these specific devices
     try
     {
-        program.build(devices);
+        program.build(devices, params.c_str());
     }
     catch(cl::Error ex)
     {
