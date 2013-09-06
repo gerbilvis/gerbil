@@ -163,6 +163,8 @@ typedef boost::shared_ptr<SharedData<ViewportCtx> > vpctx_ptr;
 class Compute
 {
 public:
+	static void binTester(const multi_img &image, const BinSet &set,
+						  const ViewportCtx &ctx);
 
 	/* translate image value to value in binning coordinate system */
 	static multi_img::Value curpos(const multi_img::Value &val, int dim,

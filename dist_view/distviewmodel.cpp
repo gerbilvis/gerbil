@@ -289,6 +289,14 @@ void DistViewModel::propagateBinning(bool updated)
 {
 	if (!updated || !image.get())
 		return;
+
+	if (type == representation::IMG){
+		SharedDataLock imagelock(image->mutex);
+		SharedDataLock ctxlock(context->mutex);
+		SharedDataLock binsetslock(binsets->mutex);
+		Compute::binTester(**image, (**binsets)[0], **context);
+	}
+
 	emit newBinning(type);
 }
 

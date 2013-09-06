@@ -1,5 +1,6 @@
 #include "compute.h"
 
+#include <sm_factory.h>
 #include <stopwatch.h>
 #include <QString>
 
@@ -22,6 +23,76 @@ void assertBinSetsKeyDim(const std::vector<BinSet> &v, const ViewportCtx &ctx) {
 				assert(ctx.dimensionality == key.size());
 			}
 		}
+	}
+}
+
+/* spit out some accuracy measures */
+void Compute::binTester(const multi_img &image, const BinSet &set,
+						const ViewportCtx &ctx)
+{
+	// hack: don't use this with enabled illuminant
+	std::vector<multi_img::Value> illuminant;
+
+	vole::SMConfig distconfig;
+	distconfig.measure = vole::EUCLIDEAN;
+	vole::SimilarityMeasure<multi_img::Value> *distfun;
+	distfun = vole::SMFactory<multi_img::Value>::spawn(distconfig);
+
+	double accum_mad[2] = {}, accum_rmse[2] = {};
+	for (int y = 0; y < image.height; ++y) {
+		for (int x = 0; x < image.width; ++x) {
+			const multi_img::Pixel &p = image(y, x);
+
+			/* calculate hashkey */
+			BinSet::HashKey hashkey(boost::extents[image.size()]);
+			for (int d = 0; d < image.size(); ++d) {
+				int pos = floor(Compute::curpos(
+								p[d], d, ctx.minval, ctx.binsize, illuminant));
+				pos = std::max(pos, 0); pos = std::min(pos, ctx.nbins-1);
+				hashkey[d] = (unsigned char)pos;
+			}
+
+			/* align surrogate pixel */
+			multi_img::Pixel p2 = p;
+			for (int d = 0; d < image.size(); ++d) {
+				p2[d] = (p2[d] - ctx.minval) / ctx.binsize;
+			}
+
+			/* now find in binset */
+			BinSet::HashMap::accessor ac;
+			if (set.bins.find(ac, hashkey)) {
+				const Bin &b = ac->second;
+				multi_img::Pixel response[2] = {
+					multi_img::Pixel(image.size()),
+					multi_img::Pixel(image.size()) };
+				for (int d = 0; d < image.size(); ++d) {
+					response[0][d] = ((b.means[d] / b.weight) - ctx.minval)
+									  / ctx.binsize;
+					response[1][d] = (unsigned char)hashkey[d] + 0.5;
+				}
+				for (int i = 0; i < 2; ++i) {
+					double dist = distfun->getSimilarity(p2, response[i]);
+					accum_mad[i] = std::max(accum_mad[i], dist);
+					accum_rmse[i] += dist;
+				}
+			} else {
+				std::cerr << "Pixel " << x << "." << y << " not found!"
+						  << std::endl;
+			}
+			ac.release();
+		}
+	}
+	for (int i = 0; i < 2; ++i) {
+		accum_rmse[i] /= (double)(image.width*image.height);
+
+		// normalize with theoretical bounds -- NRMSE, AAD
+		double factor = 1./((image.maxval - image.minval) / ctx.binsize);
+		accum_mad[i] *= factor;
+		accum_rmse[i] *= factor;
+		std::cerr << "Accumulated MAD(" << i <<"):  " << accum_mad[i]*100.
+				  << " %" << std::endl;
+		std::cerr << "Accumulated RMSE(" << i <<"): " << accum_rmse[i]*100.
+				  << " %" << std::endl;
 	}
 }
 
