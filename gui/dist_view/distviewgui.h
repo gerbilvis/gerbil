@@ -47,6 +47,7 @@ public slots:
 
 	// from our GUI
 	void setAlpha(int alpha);
+	void setBinLabel(int n);
 	void setBinCount(int n);
 	void showLimiterMenu();
 

@@ -54,6 +54,9 @@ void DistViewGUI::initVC(QGraphicsProxyWidget *proxy, representation::t type)
 	connect(vp, SIGNAL(scrollOutControl()),
 			vc, SLOT(scrollOut()));
 
+	// let user see how many bins he will end up with
+	connect(uivc->binSlider, SIGNAL(sliderMoved(int)),
+			this, SLOT(setBinLabel(int)));
 	connect(uivc->binSlider, SIGNAL(valueChanged(int)),
 			this, SLOT(setBinCount(int)));
 	connect(uivc->alphaSlider, SIGNAL(valueChanged(int)),
@@ -204,9 +207,14 @@ void DistViewGUI::setAlpha(int alpha)
 	vp->setAlpha(realalpha);
 }
 
-void DistViewGUI::setBinCount(int n)
+void DistViewGUI::setBinLabel(int n)
 {
 	uivc->binLabel->setText(QString("%1 bins").arg(n));
+}
+
+void DistViewGUI::setBinCount(int n)
+{
+	setBinLabel(n);
 	emit requestBinCount(type, n);
 }
 
