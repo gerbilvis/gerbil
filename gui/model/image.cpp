@@ -58,7 +58,7 @@ ImageModel::~ImageModel()
 int ImageModel::getNumBandsFull()
 {
 	SharedMultiImgBaseGuard guard(*image_lim);
-	return (*image_lim)->size();
+	return image_lim->getBase().size();
 }
 
 int ImageModel::getNumBandsROI()
@@ -69,7 +69,8 @@ int ImageModel::getNumBandsROI()
 cv::Rect ImageModel::getFullImageRect()
 {
 	SharedDataLock lock(image_lim->mutex);
-	cv::Rect dims(0, 0, (*image_lim)->width, (*image_lim)->height);
+	cv::Rect dims(0, 0,
+				  image_lim->getBase().width, image_lim->getBase().height);
 	return dims;
 }
 
@@ -89,10 +90,11 @@ cv::Rect ImageModel::loadImage(const std::string &filename)
 		image_lim = boost::make_shared<SharedMultiImgBase>(imgHolder.get());
 	}
 
-	if ((*image_lim)->empty()) {
+	multi_img_base &i = image_lim->getBase();
+	if (i.empty()) {
 		return cv::Rect();
 	} else {
-		return cv::Rect(0, 0, (*image_lim)->width, (*image_lim)->height);
+		return cv::Rect(0, 0, i.width, i.height);
 	}
 }
 
@@ -124,7 +126,7 @@ void ImageModel::spawn(representation::t type, const cv::Rect &newROI, int bands
 	// store previous states
 	// FIXME altmann: this a bit of a HACK. However there is no possibility to spawn a
 	// ROI without spawning it for IMG, is there?
-	if(representation::IMG == type) {
+	if (representation::IMG == type) {
 		nBandsOld = nBands;
 		oldRoi = roi;
 	}
@@ -297,7 +299,7 @@ void ImageModel::processNewImageData(representation::t type, SharedMultiImgPtr i
 
 	if (representation::IMG == type) {
 		SharedDataLock lock(image->mutex);
-		nBands = (*image)->size();
+		nBands = image_lim->getBase().size();
 	}
 	if (nBandsOld != nBands) {
 		emit numBandsROIChanged(nBands);
