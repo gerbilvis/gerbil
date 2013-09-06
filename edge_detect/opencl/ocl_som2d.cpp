@@ -54,8 +54,6 @@ void init_som(som_data& som)
 }
 
 
-//#define DEBUG_MODE
-
 void ocl_som2d_training(som_data& som, float* train_vectors,
                         int train_vectors_num)
 {
@@ -70,8 +68,48 @@ void ocl_som2d_training(som_data& som, float* train_vectors,
     int som_size = som.size;
     int input_vectors_size = train_vect_size * train_vectors_num;
 
-    const int kernel_size_x = 8;
-    const int kernel_size_y = 8;
+    const int preferred_max_block_size = 512;
+    const int possible_xy_sizes[] = {1, 2, 4, 8, 16};
+
+    int kernel_xy_dim = 1;
+
+    for(int i = 0; i < 5; ++i)
+    {
+        int xy_squared = possible_xy_sizes[i] * possible_xy_sizes[i];
+
+        if(preferred_max_block_size >= xy_squared * neuron_size)
+        {
+            kernel_xy_dim = possible_xy_sizes[i];
+        }
+        else
+        {
+            break;
+        }
+    }
+
+    const int kernel_size_x = kernel_xy_dim;
+    const int kernel_size_y = kernel_xy_dim;
+
+    const int reduction_kernel_global_x = (som_size_x + kernel_size_x - 1)
+                                    / kernel_size_x;
+    const int reduction_kernel_global_y = (som_size_y + kernel_size_y - 1)
+                                    / kernel_size_y;
+
+    const int reduction_kernel_total = reduction_kernel_global_x
+                                 * reduction_kernel_global_y;
+
+    const int kernel_global_x = reduction_kernel_global_x * kernel_size_x;
+    const int kernel_global_y = reduction_kernel_global_y * kernel_size_y;
+
+#ifdef DEBUG_MODE
+
+    std::cout << "kernel_xy_dim: " << kernel_xy_dim << std::endl;
+    std::cout << "reduction_kernel_total: " << reduction_kernel_total
+              << std::endl;
+    std::cout << "kernel_global_x: " << kernel_global_x << std::endl;
+    std::cout << "kernel_global_y: " << kernel_global_y << std::endl;
+
+#endif
 
     float sigma_square = 2.f;
     float learning_rate = 1.f;
@@ -101,8 +139,10 @@ void ocl_som2d_training(som_data& som, float* train_vectors,
         cl::Buffer input_vectors(context, CL_MEM_READ_WRITE,
                                  input_vectors_size * sizeof(float));
 
-        cl::Buffer out_min_indexes(context, CL_MEM_READ_WRITE, 16 * sizeof(int));
-        cl::Buffer out_min_values(context, CL_MEM_READ_WRITE, 16 * sizeof(float));
+        cl::Buffer out_min_indexes(context, CL_MEM_READ_WRITE,
+                                   reduction_kernel_total * sizeof(int));
+        cl::Buffer out_min_values(context, CL_MEM_READ_WRITE,
+                                  reduction_kernel_total * sizeof(float));
 
         cl::Buffer global_min_idx(context, CL_MEM_READ_WRITE, sizeof(int));
 
@@ -132,7 +172,7 @@ void ocl_som2d_training(som_data& som, float* train_vectors,
 
         // for global_min_kernel
         cl::LocalSpaceArg local_mem_reduction_global = cl::__local(sizeof(int)
-                                                                 * 16);
+                                                     * reduction_kernel_total);
 
         // for update kernel
         cl::LocalSpaceArg local_mem_neighbourhood = cl::__local(
@@ -143,15 +183,21 @@ void ocl_som2d_training(som_data& som, float* train_vectors,
         cl::LocalSpaceArg local_mem_input_vec = cl::__local(sizeof(float)
                                                              * neuron_size);
 
-        // Cacluating kernel ranges
-        cl::NDRange find_nearest_global(som_size_x, som_size_y, neuron_size);
-        cl::NDRange find_nearest_local(8, 8, neuron_size);
+        // Cacluating setting ranges
 
-        cl::NDRange global_min_global(16);
-        cl::NDRange global_min_local(16);
+        cl::NDRange find_nearest_global(kernel_global_x,
+                                        kernel_global_y, neuron_size);
+        cl::NDRange find_nearest_local(kernel_size_x, kernel_size_y,
+                                       neuron_size);
 
-        cl::NDRange update_global(som_size_x, som_size_y, neuron_size);
-        cl::NDRange update_local(8, 8, neuron_size);
+        // assumption that reduction_kernel_total is not very big...
+        cl::NDRange global_min_global(reduction_kernel_total);
+        cl::NDRange global_min_local(reduction_kernel_total);
+
+        cl::NDRange update_global(kernel_global_x, kernel_global_y,
+                                  neuron_size);
+
+        cl::NDRange update_local(kernel_size_x, kernel_size_y, neuron_size);
 
 
         // SETTING KERNEL PARAMETERS
@@ -173,7 +219,7 @@ void ocl_som2d_training(som_data& som, float* train_vectors,
         global_min_kernel.setArg(1, out_min_values);
         global_min_kernel.setArg(2, global_min_idx);
         global_min_kernel.setArg(3, local_mem_reduction_global);
-        global_min_kernel.setArg(4, 16);
+        global_min_kernel.setArg(4, reduction_kernel_total);
 
         update_kernel.setArg(0, som_data_buff);
         update_kernel.setArg(1, input_vectors);
@@ -223,21 +269,23 @@ void ocl_som2d_training(som_data& som, float* train_vectors,
 
             // checking partial minimum values
 
-            int host_out_min_indexes[16];
-            float host_out_min_values[16];
+            int host_out_min_indexes[reduction_kernel_total];
+            float host_out_min_values[reduction_kernel_total];
 
             queue.enqueueReadBuffer(out_min_indexes, CL_TRUE, 0,
-                                    16 * sizeof(int), host_out_min_indexes);
+                                    reduction_kernel_total * sizeof(int),
+                                    host_out_min_indexes);
 
             queue.enqueueReadBuffer(out_min_values, CL_TRUE, 0,
-                                    16 * sizeof(float), host_out_min_values);
+                                    reduction_kernel_total * sizeof(float),
+                                    host_out_min_values);
 
-            for(int i = 0; i < 16; ++i)
+            for(int i = 0; i < reduction_kernel_total; ++i)
             {
                 int x = host_out_min_indexes[i] >> 16;
                 int y = host_out_min_indexes[i] & 0xFFFF;
 
-                int idx = y * 32 + x;
+                int idx = y * som_size_x + x;
 
                 std::cout << i << ": (" << x << ", " << y << ")"
                           << " = " << host_out_min_values[i] << std::endl;
@@ -303,7 +351,7 @@ void ocl_som2d_test()
 //        som.data[128] = 4;
 //        som.data[133] = 0.9;
 
-    const int input_vectors_num = 2;
+    const int input_vectors_num = 1;
     const int input_vectors_size = neuron_size * input_vectors_num;
     float input_vectors_host[input_vectors_size];
 
