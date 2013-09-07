@@ -82,6 +82,9 @@ void SOMTrainer::feedNetwork()
 		std::cout  << "  0 %"; std::cout.flush();
 	long sumOfUpdates = 0;
 	int ctr = 0;
+
+    som->notifyTrainingStart();
+
 	for (; itX != shuffledX.end(); itX++, itY++)
 	{
 		// extract random pixel vector from the multispectral image
@@ -113,6 +116,8 @@ void SOMTrainer::feedNetwork()
 	}
 	if(config.verbosity > 0)
 		std::cout << "\r100 %" <<std::endl;
+
+    som->notifyTrainingEnd();
 
 	std::cout <<"# Feeding done" <<std::endl;
 

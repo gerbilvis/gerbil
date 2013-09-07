@@ -295,6 +295,9 @@ public:
 							const multi_img::Pixel &input,
 							double sigma, double learnRate);
 
+    virtual void notifyTrainingStart(){}
+    virtual void notifyTrainingEnd(){}
+
 	virtual double getDistanceBetweenWinners(const multi_img::Pixel &v1,
 	                                         const multi_img::Pixel &v2) = 0;
 

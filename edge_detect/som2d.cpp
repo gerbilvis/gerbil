@@ -2,9 +2,11 @@
 
 #include <sstream>
 
+//#define DEBUG_MODE
+
 SOM2d::SOM2d(const vole::EdgeDetectionConfig &conf, int dimension,
 			 std::vector<multi_img_base::BandDesc> meta)
-	: SOM(conf, dimension, meta), width(conf.sidelength),
+    : SOM(conf, dimension, meta), width(conf.sidelength),
 	  height(conf.type == vole::SOM_SQUARE ? conf.sidelength : 1), // case 1d SOM
 	  neurons(Field(conf.sidelength, Row(conf.sidelength, Neuron(dimension))))
 {
@@ -17,6 +19,9 @@ SOM2d::SOM2d(const vole::EdgeDetectionConfig &conf, int dimension,
 	for (SOM::iterator n = begin(); n != end(); ++n) {
 		(*n).randomize(rng, 0., 1.);
 	}
+#ifdef DEBUG_MODE
+    std::cout << "randomization finished!" << std::endl;
+#endif
 }
 
 SOM2d::SOM2d(const vole::EdgeDetectionConfig &conf, const multi_img &data,
@@ -49,6 +54,16 @@ SOM2d::Cache2d *SOM2d::createCache(int img_height, int img_width)
 // no virtual function call overhead inside the loop(s)
 SOM::iterator SOM2d::identifyWinnerNeuron(const multi_img::Pixel &inputVec)
 {
+#ifdef DEBUG_MODE
+    std::cout << "input vector: ";
+
+    for(int i = 0; i < dim; ++i)
+    {
+        std::cout << "[" << i << "]=" << inputVec[i] << " | ";
+    }
+    std::cout << std::endl;
+#endif
+
 	// initialize with maximum / invalid value
 	double closestDistance = std::numeric_limits<double>::max();
 	cv::Point winner(-1, -1);
@@ -57,17 +72,33 @@ SOM::iterator SOM2d::identifyWinnerNeuron(const multi_img::Pixel &inputVec)
 	// -> iterate over all neurons in grid
 	for (int y = 0; y < height; ++y) {
 		for (int x = 0; x < width; ++x) {
-			double dist = getSimilarity(neurons[y][x], inputVec);
+			double dist = getSimilarity(neurons[y][x], inputVec);              
 
 			// compare current distance with minimal found distance
 			if (dist < closestDistance) {
 				// set new minimal distance and winner position
 				closestDistance = dist;
 				winner = cv::Point(x, y);
-			}
+            }
 		}
 	}
 	assert(closestDistance < std::numeric_limits<double>::max());
+
+#ifdef DEBUG_MODE
+    std::cout << "global min index: (" << winner.x
+              << ", " << winner.y << "): " << closestDistance << std::endl;
+
+    std::cout << "winner: ";
+
+    for(int i = 0; i < dim; ++i)
+    {
+        std::cout << neurons[winner.y][winner.x][i] << " ";
+    }
+
+    std::cout << std::endl;
+
+#endif
+
 	return SOM::iterator(new Iterator2d(this, winner.x, winner.y));
 }
 
@@ -92,7 +123,12 @@ int SOM2d::updateNeighborhood(SOM::iterator &neuron,
 			neurons[pos.y + 0][pos.x + 0].update(input, weight);
 			++updates;
 		}
-	}
+
+#ifdef DEBUG_MODE
+        std::cout << "winner weight: " << weight << std::endl;
+#endif
+	}    
+
 
 	int maxDist; // maximum distance of updates _along one axis_
 
@@ -191,6 +227,22 @@ int SOM2d::updateNeighborhood(SOM::iterator &neuron,
 			if (negYX && posXY) { ++updates; neurons[pos.y - x][pos.x + y].update(input, weight); } // fourth quadrant
 		}
 	}
+
+#ifdef DEBUG_MODE
+
+    int w_x = pos.x;
+    int w_y = pos.y;
+
+    std::cout << "winner after update: " << std::endl;
+
+    for(int i = 0; i < dim; ++i)
+    {
+        std::cout << neurons[w_y][w_x][i] << " ";
+    }
+
+    std::cout << std::endl;
+
+#endif
 
 	return updates;
 }

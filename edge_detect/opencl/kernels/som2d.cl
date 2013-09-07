@@ -52,10 +52,13 @@ __kernel void find_nearest_neuron(__global const float* som_data,
 
     barrier(CLK_LOCAL_MEM_FENCE);
 
+//    if(global_id_x == 10 && global_id_y == 17)
+//        printf("(10, 17): [%d] = %f\n", global_id_z, som_part[local_idx]);
+
     /* calculating sum by reduction */
 
-    int idx2d = group_size_x * local_id_y + local_id_x;
     int step = group_size_x * group_size_y;
+    int idx2d = local_id_z * step + group_size_x * local_id_y + local_id_x;
 
     for (unsigned int s = input_vector_size/2; s > 0; s >>= 1)
     {
@@ -66,6 +69,9 @@ __kernel void find_nearest_neuron(__global const float* som_data,
 
         barrier(CLK_LOCAL_MEM_FENCE);
     }
+
+//    if(global_id_x == 10 && global_id_y == 17 && global_id_z == 0)
+//        printf("(10, 17): %f\n", som_part[idx2d]);
 
     if(local_id_z == 0)
     {
@@ -159,7 +165,7 @@ __kernel void generic_update(__global float* som_data,
                              int input_vector_size,
                              float sigma_square,
                              float learning_rate,
-                             __local uchar* neighbourhood,
+                             __local float* neighbourhood,
                              __local float* input_vector)
 {
     int local_id_x = get_local_id(0);
@@ -179,9 +185,14 @@ __kernel void generic_update(__global float* som_data,
     int winner_y = winner_x & 0xFFFF;
     winner_x >>= 16;
 
-    int local_idx = local_id_y * group_size_x + local_id_x;
+#ifdef DEBUG_MODE
+    if(global_id_x == 0 && global_id_y == 0 && global_id_z == 0)
+    {
+        printf("kernel winner_x: %d, winner_y: %d\n", winner_x, winner_y);
+    }
+#endif
 
-    float weight;
+    int local_idx = local_id_y * group_size_x + local_id_x;
 
     if(global_id_z == 0)
     {
@@ -190,11 +201,14 @@ __kernel void generic_update(__global float* som_data,
 
         float distance_squared = diff_x * diff_x + diff_y * diff_y;
         float fake_gauss = exp(-(distance_squared)/ (2.f * sigma_square));
-        weight = learning_rate * fake_gauss;
+        float weight = learning_rate * fake_gauss;
 
-        neighbourhood[local_idx] = (weight >= 0.01f);
+        neighbourhood[local_idx] = weight;//(weight >= 0.01f);
 
 #ifdef DEBUG_MODE
+        if(distance_squared == 0.f)
+            printf("winner weight: %f\n", weight);
+
         int global_idx = som_size_x * global_id_y + global_id_x;
         test_output[global_idx] = neighbourhood[local_idx] ? weight : 0;
 #endif
@@ -208,14 +222,16 @@ __kernel void generic_update(__global float* som_data,
 
     barrier(CLK_LOCAL_MEM_FENCE);
 
-    uchar do_update = neighbourhood[local_idx];
+    //uchar do_update = neighbourhood[local_idx];
+    float weight = neighbourhood[local_idx];
 
-    if(do_update)
+    //if(do_update)
+    if(weight >= 0.01f)
     {
         int global_idx = som_size_x * som_size_y * global_id_z
                          + som_size_x * global_id_y + global_id_x;
 
-        som_data[global_idx] += (som_data[global_idx]
-                                    - input_vector[local_id_x]) * weight;
+        som_data[global_idx] += (input_vector[local_id_z]
+                                - som_data[global_idx]) * weight;
     }
 }
