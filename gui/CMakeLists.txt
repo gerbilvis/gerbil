@@ -15,11 +15,11 @@ vole_compile_library(
 	commandrunner
 	iogui
 	
-	controller
-	dockcontroller
+	controller/controller
+	controller/dockcontroller
+	controller/distviewcontroller
 
 	dist_view/compute
-	dist_view/distviewcontroller
 	dist_view/distviewmodel
 	dist_view/viewer_tasks
 	dist_view/foldingbar
@@ -59,11 +59,11 @@ vole_moc_library(
 	roiview.h
 	commandrunner.h
 
-	controller.h
-	dockcontroller.h
+	controller/controller.h
+	controller/dockcontroller.h
+	controller/distviewcontroller.h
 
 	dist_view/distviewmodel.h
-	dist_view/distviewcontroller.h
 	dist_view/distviewgui.h
 	dist_view/foldingbar.h
 	dist_view/viewport.h

@@ -1,5 +1,5 @@
 #include "distviewcontroller.h"
-#include "viewport.h"
+#include "dist_view/viewport.h"
 
 #include <QSignalMapper>
 

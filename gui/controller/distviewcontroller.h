@@ -1,9 +1,9 @@
 #ifndef DISTVIEWCONTROLLER_H
 #define DISTVIEWCONTROLLER_H
 
-#include "controller.h"
-#include "distviewmodel.h"
-#include "distviewgui.h"
+#include "controller/controller.h"
+#include "dist_view/distviewmodel.h"
+#include "dist_view/distviewgui.h"
 #include <multi_img/illuminant.h>
 #include <background_task/background_task_queue.h>
 

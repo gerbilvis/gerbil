@@ -1,7 +1,7 @@
 New Tree TODO:
 
 gui/
-	controller/
+	controller/ [DONE]
 		controller
 		dockcontroller
 		distviewcontroller

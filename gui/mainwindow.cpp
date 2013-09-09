@@ -8,8 +8,8 @@
 */
 
 #include "mainwindow.h"
-#include "controller.h"
-#include "dist_view/distviewcontroller.h"
+#include "controller/controller.h"
+#include "controller/distviewcontroller.h"
 #include "iogui.h"
 #include "commandrunner.h"
 /*#include "tasks/rgbtbb.h"

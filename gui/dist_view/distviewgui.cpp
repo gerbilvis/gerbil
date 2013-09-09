@@ -1,5 +1,5 @@
 #include "distviewgui.h"
-#include "distviewcontroller.h"
+#include "controller/distviewcontroller.h"
 #include "autohidewidget.h"
 
 DistViewGUI::DistViewGUI(representation::t type)

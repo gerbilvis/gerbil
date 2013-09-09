@@ -1,6 +1,6 @@
 #include "controller.h"
 #include "dockcontroller.h"
-#include "dist_view/distviewcontroller.h"
+#include "controller/distviewcontroller.h"
 #include <imginput.h>
 #include <rectangles.h>
 
