@@ -32,8 +32,14 @@ void DistViewController::init()
 	 */
 	activeView = representation::IMG;
 	map[activeView]->gui.setActive();
+#ifdef WITH_IMGPCA
 	map[representation::IMGPCA]->gui.toggleFold();
+#endif /* WITH_IMGPCA */
+#ifdef WITH_GRADPCA
 	map[representation::GRADPCA]->gui.toggleFold();
+#endif /* WITH_GRADPCA */
+
+
 	foreach (payload *p, map) {
 		// fill GUI with distribution view
 		chief->mainWindow()->addDistView(p->gui.getFrame());

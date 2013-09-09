@@ -137,10 +137,15 @@ void ImageModel::spawn(representation::t type, const cv::Rect &newROI, int bands
 	roi = newROI;
 
 	// shortcuts for convenience
-	SharedMultiImgPtr image = map[representation::IMG]->image,
-			gradient = map[representation::GRAD]->image,
-			imagepca = map[representation::IMGPCA]->image,
-			gradpca = map[representation::GRADPCA]->image;
+	SharedMultiImgPtr image = map[representation::IMG]->image;
+	SharedMultiImgPtr gradient = map[representation::GRAD]->image;
+// for macro defs see representation.h
+#ifdef WITH_IMGPCA
+	SharedMultiImgPtr imagepca = map[representation::IMGPCA]->image;
+#endif /* WITH_IMGPCA */
+#ifdef WITH_GRADPCA
+	SharedMultiImgPtr gradpca = map[representation::GRADPCA]->image;
+#endif /* WITH_GRADPCA */
 
 	// scoping and spectral rescaling done for IMG
 	if (type == representation::IMG) {
@@ -207,17 +212,21 @@ void ImageModel::spawn(representation::t type, const cv::Rect &newROI, int bands
 		}
 	}
 
+#ifdef WITH_IMGPCA
 	if (type == representation::IMGPCA && imagepca.get()) {
 		BackgroundTaskPtr taskPca(new PcaTbb(
 			image, imagepca, 0, roi));
 		queue.push(taskPca);
 	}
+#endif /* WITH_IMGPCA */
 
+#ifdef WITH_GRADPCA
 	if (type == representation::GRADPCA && gradpca.get()) {
 		BackgroundTaskPtr taskPca(new PcaTbb(
 			gradient, gradpca, 0, roi));
 		queue.push(taskPca);
 	}
+#endif /* WITH_GRADPCA */
 
 	// emit signal after all tasks are finished and fully updated data available
 	BackgroundTaskPtr taskEpilog(new BackgroundTask(roi));

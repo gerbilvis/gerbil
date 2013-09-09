@@ -3,19 +3,21 @@
 
 #include <QMap>
 
-#define WITH_IMGPCA
-#define WITH_GRADPCA
-#define REPSIZE 4 // depends on the variables above
+// FIXME These macro defs are a temporary workaround to get the upcoming relase
+// functioning. We need to get task processing more efficient in the future.
+//#define WITH_IMGPCA
+//#define WITH_GRADPCA
+#define REPSIZE 2 // depends on the variables above
 struct representation {
 
 	enum t {
 		IMG = 0,
-		GRAD = 1,
+		GRAD = 1
 #ifdef WITH_IMGPCA
-		IMGPCA = 2,
+		,IMGPCA = 2
 #endif
 #ifdef WITH_GRADPCA
-		GRADPCA = 3
+		,GRADPCA = 3
 #endif
 		// if you add a repres., also change operator<< and private constructor!
 	};
