@@ -5,10 +5,10 @@ gui/
 		controller
 		dockcontroller
 		distviewcontroller
-	dist_view/
+	dist_view/ [DONE]
 		distviewbinstbb %
 		(keep rest intact for now)
-	docks/
+	docks/  
 		banddock
 		illumdock
 		labeldock (will be merged to)
@@ -16,15 +16,15 @@ gui/
 		normdock
 		rgbdock
 		roidock
-		ussegmentationdock (rename to clusteringdock)
-	model/
+		ussegmentationdock (rename to clusteringdock) [DONE]
+	model/ 
 		falsecolormodel
 		graphsegmodel
 		illummodel
 		imagemodel
 		labelingmodel
 		representation
-		ussegmentationmodel (rename to clusteringmodel)
+		ussegmentationmodel (rename to clusteringmodel) [DONE]
 	ressources/
 		logo/ (move one down)
 	widgets/

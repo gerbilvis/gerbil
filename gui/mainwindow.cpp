@@ -20,7 +20,7 @@
 
 #include "docks/illumdock.h"
 #include "docks/rgbdock.h"
-#include "docks/ussegmentationdock.h"
+#include "docks/clusteringdock.h"
 
 #include <labeling.h>
 #include <qtopencv.h>

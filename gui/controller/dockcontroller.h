@@ -11,7 +11,7 @@
 class ImageModel;
 class IllumModel;
 class FalseColorModel;
-class UsSegmentationModel;
+class ClusteringModel;
 class LabelingModel;
 
 class Controller;
@@ -25,7 +25,7 @@ class RoiDock;
 class RgbDock;
 class IllumDock;
 class GraphSegWidget;
-class UsSegmentationDock;
+class ClusteringDock;
 class LabelDock;
 
 namespace vole
@@ -83,7 +83,7 @@ protected:
 	RoiDock *roiDock;
 	RgbDock *rgbDock;
 	IllumDock *illumDock;
-	UsSegmentationDock *usSegDock;
+	ClusteringDock *clusteringDock;
 	LabelDock *labelDock;
 };
 

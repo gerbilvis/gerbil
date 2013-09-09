@@ -1,4 +1,4 @@
-#include "ussegmentationmodel.h"
+#include "clusteringmodel.h"
 
 #include "../commandrunner.h"
 #include <meanshift_shell.h>
@@ -6,12 +6,12 @@
 #include <boost/any.hpp>
 
 
-UsSegmentationModel::UsSegmentationModel(QObject *parent) :
+ClusteringModel::ClusteringModel(QObject *parent) :
 	QObject(parent), cmdr(NULL)
 {
 }
 
-UsSegmentationModel::~UsSegmentationModel()
+ClusteringModel::~ClusteringModel()
 {
 	if(NULL != cmdr) {
 		cmdr->terminate();
@@ -20,12 +20,12 @@ UsSegmentationModel::~UsSegmentationModel()
 	}
 }
 
-void UsSegmentationModel::setMultiImage(SharedMultiImgPtr image)
+void ClusteringModel::setMultiImage(SharedMultiImgPtr image)
 {
 	this->image = image;
 }
 
-void UsSegmentationModel::startSegmentation(
+void ClusteringModel::startSegmentation(
 		vole::Command* cmd, int numbands, bool gradient)
 {
 	// wait for previous command runner to terminate
@@ -78,12 +78,12 @@ void UsSegmentationModel::startSegmentation(
 }
 
 
-void UsSegmentationModel::cancel()
+void ClusteringModel::cancel()
 {
 	cmdr->terminate();
 }
 
-void UsSegmentationModel::onSegmentationCompleted(
+void ClusteringModel::onSegmentationCompleted(
 		std::map<std::string, boost::any> output)
 {
 	if (output.count("labels")) {

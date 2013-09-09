@@ -1,4 +1,4 @@
-#include "ussegmentationdock.h"
+#include "clusteringdock.h"
 
 #include "../commandrunner.h"
 #include "../gerbil_gui_debug.h"
@@ -7,17 +7,17 @@
 #include <meanshift.h>
 #include <meanshift_shell.h>
 
-UsSegmentationDock::UsSegmentationDock(QWidget *parent) :
+ClusteringDock::ClusteringDock(QWidget *parent) :
 	QDockWidget(parent),
 	nBandsOld(-1)
 {
-	Ui::UsSegmentationDock::setupUi(this);
+	Ui::ClusteringDock::setupUi(this);
 
 	initUi();
 }
 
 #ifdef WITH_SEG_MEANSHIFT
-void UsSegmentationDock::initUi()
+void ClusteringDock::initUi()
 {
 	usMethodBox->addItem("FAMS", 0);
 	usMethodBox->addItem("PSPMS", 3);
@@ -112,7 +112,7 @@ void UsSegmentationDock::initUi()
 //#endif
 }
 
-void UsSegmentationDock::usBandwidthMethodChanged(const QString &current) {
+void ClusteringDock::usBandwidthMethodChanged(const QString &current) {
 	if (current == "fixed") {
 		usAdaptiveBWWidget->hide();
 		usFixedBWWidget->show();
@@ -124,18 +124,18 @@ void UsSegmentationDock::usBandwidthMethodChanged(const QString &current) {
 	}
 }
 
-void UsSegmentationDock::unsupervisedSegCancelled() {
+void ClusteringDock::unsupervisedSegCancelled() {
 	usCancelButton->setDisabled(true);
 	usCancelButton->setText("Please wait...");
 	/// runner->terminate() will be called by the Cancel button
 }
 
-void UsSegmentationDock::startFindKL()
+void ClusteringDock::startFindKL()
 {
 	startUnsupervisedSeg(true);
 }
 
-void UsSegmentationDock::startUnsupervisedSeg(bool findKL)
+void ClusteringDock::startUnsupervisedSeg(bool findKL)
 {
 	int method = usMethodBox->itemData(usMethodBox->currentIndex()).value<int>();
 	vole::Command *cmd;
@@ -252,19 +252,19 @@ void UsSegmentationDock::startUnsupervisedSeg(bool findKL)
 	emit segmentationRequested(cmd, numbands, gradient);
 }
 #else // method stubs as using define in header does not work (moc problem?)
-void UsSegmentationDock::startUnsupervisedSeg(bool findKL) {}
-void UsSegmentationDock::startFindKL() {}
-void UsSegmentationDock::segmentationApply(std::map<std::string, boost::any>) {}
-void UsSegmentationDock::usMethodChanged(int idx) {}
-void UsSegmentationDock::usInitMethodChanged(int idx) {}
-void UsSegmentationDock::usBandwidthMethodChanged(const QString &current) {}
-void UsSegmentationDock::unsupervisedSegCancelled() {}
+void ClusteringDock::startUnsupervisedSeg(bool findKL) {}
+void ClusteringDock::startFindKL() {}
+void ClusteringDock::segmentationApply(std::map<std::string, boost::any>) {}
+void ClusteringDock::usMethodChanged(int idx) {}
+void ClusteringDock::usInitMethodChanged(int idx) {}
+void ClusteringDock::usBandwidthMethodChanged(const QString &current) {}
+void ClusteringDock::unsupervisedSegCancelled() {}
 #endif // WITH_SEG_MEANSHIFT
 
 
 
 #ifdef WITH_SEG_MEANSHIFT
-void UsSegmentationDock::usMethodChanged(int idx)
+void ClusteringDock::usMethodChanged(int idx)
 {
 	// idx: 0 Meanshift, 1 Medianshift, 2 Probabilistic Shift
 	usSkipPropWidget->setEnabled(idx == 1);
@@ -272,7 +272,7 @@ void UsSegmentationDock::usMethodChanged(int idx)
 	usMSPPWidget->setEnabled(idx == 2);
 }
 
-void UsSegmentationDock::usInitMethodChanged(int idx)
+void ClusteringDock::usInitMethodChanged(int idx)
 {
 	switch (usInitMethodBox->itemData(idx).toInt()) {
 	case vole::JUMP:
@@ -288,18 +288,18 @@ void UsSegmentationDock::usInitMethodChanged(int idx)
 		usInitPercentWidget->hide();
 	}
 }
-void UsSegmentationDock::updateProgress(int percent)
+void ClusteringDock::updateProgress(int percent)
 {
 	usProgressBar->setValue(percent);
 }
 
-void UsSegmentationDock::processResultKL(int k, int l)
+void ClusteringDock::processResultKL(int k, int l)
 {
 	usFoundKLLabel->setText(QString("Found values: K=%1 L=%2").arg(k).arg(l));
 	usFoundKLWidget->show();
 }
 
-void UsSegmentationDock::processSegmentationCompleted()
+void ClusteringDock::processSegmentationCompleted()
 {
 	// hide progress, re-enable settings
 	usProgressWidget->hide();
@@ -307,7 +307,7 @@ void UsSegmentationDock::processSegmentationCompleted()
 
 }
 
-void UsSegmentationDock::cancel()
+void ClusteringDock::cancel()
 {
 	emit cancelSegmentationRequested();
 
@@ -321,7 +321,7 @@ void UsSegmentationDock::cancel()
 	usSettingsWidget->setEnabled(true);
 }
 
-void UsSegmentationDock::setNumBands(int nBands)
+void ClusteringDock::setNumBands(int nBands)
 {
 	int nBandsSpin = usBandsSpinBox->value();
 	//GGDBGM(nBandsSpin <<" " << nBands<<" " <<nBandsOld<<endl);

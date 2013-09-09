@@ -35,7 +35,7 @@ vole_compile_library(
 	model/falsecolor
 	model/illumination
 	model/graphsegmentation
-	model/ussegmentationmodel
+	model/clusteringmodel
 
 
 	docks/banddock
@@ -45,7 +45,7 @@ vole_compile_library(
 	docks/illumdock
 	docks/rgbdock
 	docks/graphsegwidget
-	docks/ussegmentationdock
+	docks/clusteringdock
 	docks/labeldock
 
 	gerbil_gui_debug
@@ -75,7 +75,7 @@ vole_moc_library(
 	docks/illumdock.h
 	docks/rgbdock.h
 	docks/graphsegwidget.h
-	docks/ussegmentationdock.h
+	docks/clusteringdock.h
 	docks/labeldock.h
 
 	model/image.h
@@ -83,7 +83,7 @@ vole_moc_library(
 	model/falsecolor.h
 	model/illumination.h
 	model/graphsegmentation.h
-	model/ussegmentationmodel.h
+	model/clusteringmodel.h
 )
 
 vole_ui_library(
@@ -94,7 +94,7 @@ vole_ui_library(
 	docks/roidock.ui
 	docks/illumdock.ui
 	docks/graphsegwidget.ui
-	docks/ussegmentationdock.ui
+	docks/clusteringdock.ui
 	docks/banddock.ui
 	docks/labelingdock.ui
 	docks/normdock.ui

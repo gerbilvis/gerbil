@@ -6,7 +6,7 @@
 #include "model/illumination.h"
 #include "model/falsecolor.h"
 #include "model/graphsegmentation.h"
-#include "model/ussegmentationmodel.h"
+#include "model/clusteringmodel.h"
 
 #include "mainwindow.h"
 
@@ -34,7 +34,7 @@ public:
 	FalseColorModel* falseColorModel() { return &fm; }
 	IllumModel* illumModel() { return &illumm; }
 	GraphSegmentationModel* graphSegmentationModel() { return &gsm; }
-	UsSegmentationModel* usSegmentationModel() { return &um; }
+	ClusteringModel* clusteringModel() { return &cm; }
 
 signals:
 
@@ -120,8 +120,8 @@ protected:
 	GraphSegmentationModel gsm;
 
 #ifdef WITH_SEG_MEANSHIFT
-	/* unsupervised segmentation model provides global clustering */
-	UsSegmentationModel um;
+	/* clustering model provides global clustering */
+	ClusteringModel cm;
 #endif /* WITH_SEG_MEANSHIFT */
 
 	// setup dock widgets and manage interaction with models

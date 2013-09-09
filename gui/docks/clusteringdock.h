@@ -1,8 +1,8 @@
-#ifndef USSEGMENTATIONDOCK_H
-#define USSEGMENTATIONDOCK_H
+#ifndef CLUSTERINGDOCK_H
+#define CLUSTERINGDOCK_H
 
 #include <QDockWidget>
-#include "ui_ussegmentationdock.h"
+#include "ui_clusteringdock.h"
 
 #include <map>
 #include <boost/any.hpp>
@@ -14,11 +14,11 @@ class CommandRunner;
 
 /** Unsupervised segmenation dock */
 
-class UsSegmentationDock : public QDockWidget, private Ui::UsSegmentationDock
+class ClusteringDock : public QDockWidget, private Ui::ClusteringDock
 {
 	Q_OBJECT
 public:
-	explicit UsSegmentationDock(QWidget *parent = 0);
+	explicit ClusteringDock(QWidget *parent = 0);
 	
 	void segmentationApply(std::map<std::string, boost::any> output);
 
@@ -47,4 +47,4 @@ protected:
 	int nBandsOld;
 };
 
-#endif // USSEGMENTATIONDOCK_H
+#endif // CLUSTERINGDOCK_H

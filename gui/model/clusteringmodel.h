@@ -1,5 +1,5 @@
-#ifndef USSEGMENTATIONMODEL_H
-#define USSEGMENTATIONMODEL_H
+#ifndef CLUSTERINGMODEL_H
+#define CLUSTERINGMODEL_H
 
 #include <QObject>
 #include <QMetaClassInfo>
@@ -17,12 +17,12 @@ namespace vole {
  *
  * @note: segmentation on gradient not implemented.
  */
-class UsSegmentationModel : public QObject
+class ClusteringModel : public QObject
 {
 	Q_OBJECT
 public:
-	explicit UsSegmentationModel(QObject *parent = 0);
-	~UsSegmentationModel();
+	explicit ClusteringModel(QObject *parent = 0);
+	~ClusteringModel();
 	void setMultiImage(SharedMultiImgPtr image);
 
 signals:
@@ -45,4 +45,4 @@ protected:
 	SharedMultiImgPtr image;
 };
 
-#endif // USSEGMENTATIONMODEL_H
+#endif // CLUSTERINGMODEL_H

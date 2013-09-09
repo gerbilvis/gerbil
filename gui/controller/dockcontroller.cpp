@@ -11,10 +11,10 @@
 #include "docks/roidock.h"
 #include "docks/illumdock.h"
 #include "docks/graphsegwidget.h"
-#include "docks/ussegmentationdock.h"
+#include "docks/clusteringdock.h"
 #include "docks/labeldock.h"
 
-#include "model/ussegmentationmodel.h"
+#include "model/clusteringmodel.h"
 
 #include "gerbil_gui_debug.h"
 
@@ -32,9 +32,9 @@ void DockController::init()
 	chief->mainWindow()->addDockWidget(Qt::RightDockWidgetArea, labelingDock);
 	chief->mainWindow()->addDockWidget(Qt::RightDockWidgetArea, normDock);
 #ifdef WITH_SEG_MEANSHIFT
-	chief->mainWindow()->addDockWidget(Qt::RightDockWidgetArea, usSegDock);
+	chief->mainWindow()->addDockWidget(Qt::RightDockWidgetArea, clusteringDock);
 	// FIXME set to false
-	usSegDock->setVisible(true);
+	clusteringDock->setVisible(true);
 #endif
 	chief->mainWindow()->addDockWidget(Qt::RightDockWidgetArea, rgbDock);
 	chief->mainWindow()->addDockWidget(Qt::RightDockWidgetArea, roiDock);
@@ -44,7 +44,7 @@ void DockController::init()
 	// dock arrangement
 	chief->mainWindow()->tabifyDockWidget(roiDock, rgbDock);
 #ifdef WITH_SEG_MEANSHIFT
-	chief->mainWindow()->tabifyDockWidget(roiDock, usSegDock);
+	chief->mainWindow()->tabifyDockWidget(roiDock, clusteringDock);
 #endif
 	roiDock->raise();
 
@@ -67,7 +67,7 @@ void DockController::createDocks()
 	illumDock = new IllumDock(chief->mainWindow());
 	rgbDock = new RgbDock(chief->mainWindow());
 #ifdef WITH_SEG_MEANSHIFT
-	usSegDock = new UsSegmentationDock(chief->mainWindow());
+	clusteringDock = new ClusteringDock(chief->mainWindow());
 #endif
 	labelDock = new LabelDock(chief->mainWindow());
 }
@@ -192,24 +192,24 @@ void DockController::setupDocks()
 
 	/* Unsupervised Segmentation Dock */
 #ifdef WITH_SEG_MEANSHIFT
-	UsSegmentationModel const*um = chief->usSegmentationModel();
+	ClusteringModel const*cm = chief->clusteringModel();
 	int nbands = chief->imageModel()->getNumBandsFull();
-	usSegDock->setNumBands(nbands);
+	clusteringDock->setNumBands(nbands);
 	connect(chief->imageModel(), SIGNAL(numBandsROIChanged(int)),
-			usSegDock, SLOT(setNumBands(int)));
-	connect(um, SIGNAL(progressChanged(int)),
-			usSegDock, SLOT(updateProgress(int)));
-	connect(um, SIGNAL(segmentationCompleted()),
-			usSegDock, SLOT(processSegmentationCompleted()));
-	connect(usSegDock, SIGNAL(segmentationRequested(vole::Command*,int,bool)),
-			um, SLOT(startSegmentation(vole::Command*,int,bool)));
-	connect(usSegDock, SIGNAL(cancelSegmentationRequested()),
-			um, SLOT(cancel()));
-	 connect(um, SIGNAL(setLabelsRequested(cv::Mat1s)),
+			clusteringDock, SLOT(setNumBands(int)));
+	connect(cm, SIGNAL(progressChanged(int)),
+			clusteringDock, SLOT(updateProgress(int)));
+	connect(cm, SIGNAL(segmentationCompleted()),
+			clusteringDock, SLOT(processSegmentationCompleted()));
+	connect(clusteringDock, SIGNAL(segmentationRequested(vole::Command*,int,bool)),
+			cm, SLOT(startSegmentation(vole::Command*,int,bool)));
+	connect(clusteringDock, SIGNAL(cancelSegmentationRequested()),
+			cm, SLOT(cancel()));
+	 connect(cm, SIGNAL(setLabelsRequested(cv::Mat1s)),
 				chief->labelingModel(), SLOT(setLabels(cv::Mat1s)));
 
 	// FIXME hide for release?
-	//usSegDock->hide();
+	//clusteringDock->hide();
 #endif /* WITH_SEG_MEANSHIFT */
 
 	/* Normalization Dock */
@@ -264,7 +264,7 @@ void DockController::setGUIEnabled(bool enable, TaskType tt)
 	illumDock->setEnabled((enable || tt == TT_APPLY_ILLUM));
 
 #ifdef WITH_SEG_MEANSHIFT
-	usSegDock->setEnabled(enable && !chief->imageModel()->isLimitedMode());
+	clusteringDock->setEnabled(enable && !chief->imageModel()->isLimitedMode());
 #endif
 	roiDock->setEnabled(enable || tt == TT_SELECT_ROI);
 	labelDock->setEnabled(enable);

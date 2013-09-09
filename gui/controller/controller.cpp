@@ -42,7 +42,7 @@ Controller::Controller(const std::string &filename, bool limited_mode,
 	initLabeling(dimensions);
 
 #ifdef WITH_SEG_MEANSHIFT
-	um.setMultiImage(im.getImage(representation::IMG));
+	cm.setMultiImage(im.getImage(representation::IMG));
 #endif /* WITH_SEG_MEANSHIFT */
 
 	// initialize sub-controllers (after initializing the models...)

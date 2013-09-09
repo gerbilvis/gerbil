@@ -41,7 +41,7 @@ class IllumDock;
 class RgbDock;
 //TODO create
 //class LabelDock;
-class UsSegmentationDock;
+class ClusteringDock;
 class Controller;
 class DistViewController;
 
