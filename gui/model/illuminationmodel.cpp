@@ -1,4 +1,4 @@
-#include "illumination.h"
+#include "illuminationmodel.h"
 
 #include <tbb/task_group.h>
 

@@ -1,4 +1,4 @@
-#include "model/image.h"
+#include "imagemodel.h"
 #include <background_task/tasks/scopeimage.h>
 #include <background_task/tasks/cuda/datarangecuda.h>
 #include <background_task/tasks/cuda/gradientcuda.h>

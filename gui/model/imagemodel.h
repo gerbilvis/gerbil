@@ -1,5 +1,5 @@
-#ifndef MODEL_IMAGE_H
-#define MODEL_IMAGE_H
+#ifndef IMAGE_MODEL_H
+#define IMAGE_MODEL_H
 
 #include "representation.h"
 #include <shared_data.h>
@@ -194,4 +194,4 @@ private:
 	multi_img::ptr imgHolder;
 };
 
-#endif // MODEL_IMAGE_H
+#endif // IMAGE_MODEL_H

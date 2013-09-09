@@ -12,7 +12,7 @@
 #include "representation.h"
 #include "../commandrunner.h"
 
-#include "falsecolor.h"
+#include "falsecolormodel.h"
 
 // TODO RGB:
 //  progressUpdate() in SOM einbauen,

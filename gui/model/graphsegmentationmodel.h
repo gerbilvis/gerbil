@@ -1,5 +1,5 @@
-#ifndef GRAPHSEGMENTATIONMODEL_H
-#define GRAPHSEGMENTATIONMODEL_H
+#ifndef GRAPH_SEGMENTATION_MODEL_H
+#define GRAPH_SEGMENTATION_MODEL_H
 
 #include "representation.h"
 
@@ -58,4 +58,4 @@ protected:
 	boost::shared_ptr<cv::Mat1s> graphsegResult;
 };
 
-#endif // GRAPHSEGMENTATIONMODEL_H
+#endif // GRAPH_SEGMENTATION_MODEL_H

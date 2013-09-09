@@ -1,5 +1,5 @@
-#ifndef MODEL_REPRESENTATION_H
-#define MODEL_REPRESENTATION_H
+#ifndef REPRESENTATION_H
+#define REPRESENTATION_H
 
 #include <QMap>
 
@@ -60,4 +60,4 @@ private:
 // representation in debug output
 std::ostream &operator<<(std::ostream& os, const representation::t& r);
 
-#endif // MODEL_REPRESENTATION_H
+#endif // REPRESENTATION_H

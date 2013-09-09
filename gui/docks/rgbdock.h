@@ -4,7 +4,7 @@
 #include <QDockWidget>
 #include <shared_data.h>
 #include "../model/representation.h"
-#include "../model/falsecolor.h"
+#include "../model/falsecolormodel.h"
 #include "ui_rgbdock.h"
 
 class ScaledView;

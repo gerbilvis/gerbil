@@ -1,5 +1,5 @@
-#ifndef CLUSTERINGMODEL_H
-#define CLUSTERINGMODEL_H
+#ifndef CLUSTERING_MODEL_H
+#define CLUSTERING_MODEL_H
 
 #include <QObject>
 #include <QMetaClassInfo>
@@ -45,4 +45,4 @@ protected:
 	SharedMultiImgPtr image;
 };
 
-#endif // CLUSTERINGMODEL_H
+#endif // CLUSTERING_MODEL_H

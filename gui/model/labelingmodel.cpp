@@ -1,4 +1,4 @@
-#include "model/labeling.h"
+#include "model/labelingmodel.h"
 #include "iogui.h"
 
 #include <qtopencv.h>

@@ -1,4 +1,4 @@
-#include "graphsegmentation.h"
+#include "graphsegmentationmodel.h"
 
 #include <graphseg_config.h>
 #include "../tasks/graphsegbackground.h"

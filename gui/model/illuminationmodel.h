@@ -1,5 +1,5 @@
-#ifndef MODEL_ILLUMINATION_H
-#define MODEL_ILLUMINATION_H
+#ifndef ILLUMINATION_MODEL_H
+#define ILLUMINATION_MODEL_H
 
 #include <QObject>
 
@@ -10,7 +10,7 @@
 #include <multi_img.h>
 #include <shared_data.h>
 // for representation
-#include <model/image.h>
+#include <model/imagemodel.h>
 
 #include "multi_img/illuminant.h"
 

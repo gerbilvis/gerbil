@@ -30,11 +30,11 @@ vole_compile_library(
 	dist_view/distviewbinstbb
 
 	model/representation
-	model/image
-	model/labeling
-	model/falsecolor
-	model/illumination
-	model/graphsegmentation
+	model/imagemodel
+	model/labelingmodel
+	model/falsecolormodel
+	model/illuminationmodel
+	model/graphsegmentationmodel
 	model/clusteringmodel
 
 
@@ -78,11 +78,11 @@ vole_moc_library(
 	docks/clusteringdock.h
 	docks/labeldock.h
 
-	model/image.h
-	model/labeling.h
-	model/falsecolor.h
-	model/illumination.h
-	model/graphsegmentation.h
+	model/imagemodel.h
+	model/labelingmodel.h
+	model/falsecolormodel.h
+	model/illuminationmodel.h
+	model/graphsegmentationmodel.h
 	model/clusteringmodel.h
 )
 

@@ -17,7 +17,7 @@ gui/
 		rgbdock
 		roidock
 		ussegmentationdock (rename to clusteringdock) [DONE]
-	model/ 
+	model/  [DONE]
 		falsecolormodel
 		graphsegmodel
 		illummodel

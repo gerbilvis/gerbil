@@ -4,7 +4,7 @@
 #include "gerbil_gui_debug.h"
 #include "../scaledview.h"
 #include "rgbdock.h"
-#include "../model/falsecolor.h"
+#include "../model/falsecolormodel.h"
 
 RgbDock::RgbDock(QWidget *parent) :
 	QDockWidget(parent), displayType(CMF), displayGradient(0)

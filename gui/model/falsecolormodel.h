@@ -1,14 +1,15 @@
-#ifndef MODEL_FALSECOLOR_H
-#define MODEL_FALSECOLOR_H
+#ifndef FALSECOLOR_MODEL_H
+#define FALSECOLOR_MODEL_H
 
 #include "representation.h"
-#include "../commandrunner.h"
 #include <shared_data.h>
 
 #include <QPixmap>
 #include <QMap>
 #include <QMetaType>
 #include <QObject>
+
+#include <boost/any.hpp>
 
 // TODO: if gradient image is changed, we do not need to delete img false color results and vice versa
 
@@ -21,6 +22,7 @@
 // Each request sends a loadComplete signal to ALL connected slots.
 // use QImage.cacheKey() to see if the image was changed
 
+class CommandRunner;
 class FalseColorModelPayload; // find declaration below FalseColorModel decl.
 class BackgroundTaskQueue;
 
@@ -131,4 +133,4 @@ signals:
 	void terminateRunner();
 	void calculationComplete(coloring type, bool gradient, QPixmap img);
 };
-#endif // MODEL_FALSECOLOR_H
+#endif // FALSECOLOR_MODEL_H

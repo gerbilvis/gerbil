@@ -16,7 +16,7 @@
 #include <multi_img.h>
 #include <labeling.h>
 // TODO: should belong to a controller
-#include <model/illumination.h>
+#include <model/illuminationmodel.h>
 #include <progress_observer.h>
 #include "commandrunner.h"
 #ifdef WITH_SEG_MEANSHIFT

@@ -1,5 +1,5 @@
-#ifndef MODEL_LABELING_H
-#define MODEL_LABELING_H
+#ifndef LABELING_MODEL_H
+#define LABELING_MODEL_H
 
 #include <labeling.h>
 #include <opencv2/core/core.hpp>
@@ -73,4 +73,4 @@ private:
 	QVector<QColor> colors;
 };
 
-#endif // MODEL_LABELING_H
+#endif // LABELING_MODEL_H

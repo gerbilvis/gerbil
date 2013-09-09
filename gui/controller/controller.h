@@ -1,11 +1,11 @@
 #ifndef CONTROLLER_H
 #define CONTROLLER_H
 
-#include "model/image.h"
-#include "model/labeling.h"
-#include "model/illumination.h"
-#include "model/falsecolor.h"
-#include "model/graphsegmentation.h"
+#include "model/imagemodel.h"
+#include "model/labelingmodel.h"
+#include "model/illuminationmodel.h"
+#include "model/falsecolormodel.h"
+#include "model/graphsegmentationmodel.h"
 #include "model/clusteringmodel.h"
 
 #include "mainwindow.h"
