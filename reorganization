@@ -25,7 +25,7 @@ gui/
 		labelingmodel
 		representation
 		ussegmentationmodel (rename to clusteringmodel) [DONE]
-	ressources/
+	ressources/ [DONE]
 		logo/ (move one down)
 	widgets/
 		autohidewidget
