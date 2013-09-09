@@ -133,13 +133,15 @@ void DistViewGUI::initSignals(DistViewController *chief)
 	connect(vp, SIGNAL(remSelectionRequested()),
 			chief, SLOT(remHighlightFromLabel()));
 
-	// illumination correction
-	connect(chief, SIGNAL(newIlluminant(cv::Mat1f)),
-			vp, SLOT(changeIlluminant(cv::Mat1f)));
-	connect(chief, SIGNAL(toggleIlluminantApplied(bool)),
-			vp, SLOT(setIlluminantIsApplied(bool)));
-	connect(chief, SIGNAL(toggleIlluminationShown(bool)),
-			vp, SLOT(setIlluminationCurveShown(bool)));
+	if(representation::IMG == type) {
+		// illumination correction
+		connect(chief, SIGNAL(newIlluminant(cv::Mat1f)),
+				vp, SLOT(changeIlluminant(cv::Mat1f)));
+		connect(chief, SIGNAL(toggleIlluminantApplied(bool)),
+				vp, SLOT(setIlluminantIsApplied(bool)));
+		connect(chief, SIGNAL(toggleIlluminationShown(bool)),
+				vp, SLOT(setIlluminationCurveShown(bool)));
+	}
 }
 
 void DistViewGUI::setEnabled(bool enabled)
