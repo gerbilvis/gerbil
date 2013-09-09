@@ -64,7 +64,7 @@
   <customwidget>
    <class>GraphicsView</class>
    <extends>QGraphicsView</extends>
-   <header>autohidewidget.h</header>
+   <header>widgets/autohidewidget.h</header>
   </customwidget>
  </customwidgets>
  <resources/>

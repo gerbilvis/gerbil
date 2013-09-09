@@ -7,7 +7,7 @@
 	find it here: http://www.gnu.org/licenses/gpl.html
 */
 
-#include "bandview.h"
+#include "widgets/bandview.h"
 
 #include <stopwatch.h>
 #include <QPainter>

@@ -7,7 +7,7 @@
 	find it here: http://www.gnu.org/licenses/gpl.html
 */
 
-#include "mainwindow.h"
+#include "widgets/mainwindow.h"
 #include "controller/controller.h"
 #include "controller/distviewcontroller.h"
 #include "iogui.h"

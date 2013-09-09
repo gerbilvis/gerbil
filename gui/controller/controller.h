@@ -8,7 +8,7 @@
 #include "model/graphsegmentationmodel.h"
 #include "model/clusteringmodel.h"
 
-#include "mainwindow.h"
+#include "widgets/mainwindow.h"
 
 #include <background_task/background_task.h>
 #include <background_task/background_task_queue.h>

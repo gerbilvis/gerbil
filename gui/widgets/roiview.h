@@ -1,7 +1,7 @@
 #ifndef ROIVIEW_H
 #define ROIVIEW_H
 
-#include "scaledview.h"
+#include "widgets/scaledview.h"
 
 
 class ROIView : public ScaledView

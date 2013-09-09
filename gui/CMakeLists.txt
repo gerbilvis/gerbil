@@ -7,13 +7,15 @@ vole_add_required_modules("rgb" "seg_graphs")
 vole_add_optional_modules("seg_meanshift" "seg_medianshift" "seg_probshift" "edge_detect")
 
 vole_compile_library(
-	autohidewidget
-	mainwindow
-	scaledview
-	bandview
-	roiview
-	commandrunner
 	iogui
+	commandrunner
+
+	widgets/autohidewidget
+	widgets/mainwindow
+	widgets/scaledview
+	widgets/bandview
+	widgets/roiview
+	widgets/graphsegwidget
 	
 	controller/controller
 	controller/dockcontroller
@@ -44,7 +46,6 @@ vole_compile_library(
 	docks/roidock
 	docks/illumdock
 	docks/rgbdock
-	docks/graphsegwidget
 	docks/clusteringdock
 	docks/labeldock
 
@@ -52,12 +53,14 @@ vole_compile_library(
 )
 
 vole_moc_library(
-	mainwindow.h
-	autohidewidget.h
-	scaledview.h
-	bandview.h
-	roiview.h
 	commandrunner.h
+
+	widgets/mainwindow.h
+	widgets/autohidewidget.h
+	widgets/scaledview.h
+	widgets/bandview.h
+	widgets/roiview.h
+        widgets/graphsegwidget.h
 
 	controller/controller.h
 	controller/dockcontroller.h
@@ -74,7 +77,6 @@ vole_moc_library(
 	docks/roidock.h
 	docks/illumdock.h
 	docks/rgbdock.h
-	docks/graphsegwidget.h
 	docks/clusteringdock.h
 	docks/labeldock.h
 
@@ -87,13 +89,13 @@ vole_moc_library(
 )
 
 vole_ui_library(
-	mainwindow.ui
+	widgets/mainwindow.ui
+	widgets/graphsegwidget.ui
 	dist_view/distviewgui.ui
 	dist_view/foldingbar.ui
 	dist_view/viewportcontrol.ui
 	docks/roidock.ui
 	docks/illumdock.ui
-	docks/graphsegwidget.ui
 	docks/clusteringdock.ui
 	docks/banddock.ui
 	docks/labelingdock.ui

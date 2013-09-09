@@ -1,5 +1,5 @@
-#include "graphsegwidget.h"
-#include "../model/representation.h"
+#include "widgets/graphsegwidget.h"
+#include "model/representation.h"
 
 GraphSegWidget::GraphSegWidget(QWidget *parent) :
 	QWidget(parent)

@@ -27,7 +27,7 @@ gui/
 		ussegmentationmodel (rename to clusteringmodel) [DONE]
 	ressources/ [DONE]
 		logo/ (move one down)
-	widgets/
+	widgets/ [DONE]
 		autohidewidget
 		bandview
 		graphsegwidget

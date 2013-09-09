@@ -1,8 +1,8 @@
-#ifndef GRAPHSEGMENTATIONDOCK_H
-#define GRAPHSEGMENTATIONDOCK_H
+#ifndef GRAPHSEG_WIDGET_H
+#define GRAPHSEG_WIDGET_H
 
 #include "ui_graphsegwidget.h"
-#include "../model/representation.h"
+#include "model/representation.h"
 
 #include <graphseg.h>
 #include <shared_data.h>
@@ -33,4 +33,4 @@ protected slots:
 	void startGraphseg();
 };
 
-#endif // GRAPHSEGMENTATIONDOCK_H
+#endif // GRAPHSEG_WIDGET_H

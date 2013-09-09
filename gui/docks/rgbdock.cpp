@@ -2,7 +2,7 @@
 
 #include <iostream>
 #include "gerbil_gui_debug.h"
-#include "../scaledview.h"
+#include "widgets/scaledview.h"
 #include "rgbdock.h"
 #include "../model/falsecolormodel.h"
 

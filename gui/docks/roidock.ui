@@ -79,7 +79,7 @@
   <customwidget>
    <class>ROIView</class>
    <extends>QWidget</extends>
-   <header>roiview.h</header>
+   <header>widgets/roiview.h</header>
   </customwidget>
  </customwidgets>
  <resources/>

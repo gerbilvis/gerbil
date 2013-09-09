@@ -86,7 +86,7 @@
   <customwidget>
    <class>ScaledView</class>
    <extends>QWidget</extends>
-   <header>scaledview.h</header>
+   <header>widgets/scaledview.h</header>
    <container>1</container>
   </customwidget>
  </customwidgets>

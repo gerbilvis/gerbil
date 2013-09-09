@@ -191,12 +191,12 @@
   <customwidget>
    <class>BandView</class>
    <extends>QWidget</extends>
-   <header>bandview.h</header>
+   <header>widgets/bandview.h</header>
   </customwidget>
   <customwidget>
    <class>GraphSegWidget</class>
    <extends>QWidget</extends>
-   <header>docks/graphsegwidget.h</header>
+   <header>widgets/graphsegwidget.h</header>
    <container>1</container>
   </customwidget>
  </customwidgets>

@@ -6,7 +6,7 @@
 	find it here: http://www.gnu.org/licenses/gpl.html
 */
 
-#include "roiview.h"
+#include "widgets/roiview.h"
 
 #include <stopwatch.h>
 #include <QPainter>

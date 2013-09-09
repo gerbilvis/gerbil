@@ -6,7 +6,7 @@
 	find it here: http://www.gnu.org/licenses/gpl.html
 */
 
-#include "scaledview.h"
+#include "widgets/scaledview.h"
 
 #include <stopwatch.h>
 #include <QPainter>

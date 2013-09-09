@@ -2,7 +2,8 @@
 
 #include "controller.h"
 
-#include "mainwindow.h"
+#include "widgets/mainwindow.h"
+#include "widgets/graphsegwidget.h"
 
 #include "docks/banddock.h"
 #include "docks/labelingdock.h"
@@ -10,7 +11,6 @@
 #include "docks/rgbdock.h"
 #include "docks/roidock.h"
 #include "docks/illumdock.h"
-#include "docks/graphsegwidget.h"
 #include "docks/clusteringdock.h"
 #include "docks/labeldock.h"
 

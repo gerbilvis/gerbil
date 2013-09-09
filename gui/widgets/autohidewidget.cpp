@@ -1,4 +1,4 @@
-#include "autohidewidget.h"
+#include "widgets/autohidewidget.h"
 
 AutohideWidget::AutohideWidget()
 	: state(STATE_OUT)

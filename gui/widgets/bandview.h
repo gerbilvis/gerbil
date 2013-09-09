@@ -10,7 +10,7 @@
 #ifndef BANDVIEW_H
 #define BANDVIEW_H
 
-#include "scaledview.h"
+#include "widgets/scaledview.h"
 
 #include <multi_img.h>
 #include <map>
