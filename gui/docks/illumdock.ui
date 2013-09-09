@@ -45,14 +45,14 @@
      </spacer>
     </item>
     <item row="1" column="1">
-     <widget class="QComboBox" name="i2Box">
+     <widget class="QComboBox" name="illum2Box">
       <property name="toolTip">
        <string>illuminant to apply</string>
       </property>
      </widget>
     </item>
     <item row="1" column="2">
-     <widget class="QPushButton" name="i2Button">
+     <widget class="QPushButton" name="applyButton">
       <property name="toolTip">
        <string>calculate new scene illumination</string>
       </property>
@@ -72,14 +72,14 @@
      </widget>
     </item>
     <item row="0" column="1">
-     <widget class="QComboBox" name="i1Box">
+     <widget class="QComboBox" name="illum1Box">
       <property name="toolTip">
        <string>current/original illuminant</string>
       </property>
      </widget>
     </item>
     <item row="0" column="2">
-     <widget class="QCheckBox" name="i1Check">
+     <widget class="QCheckBox" name="showCheck">
       <property name="enabled">
        <bool>false</bool>
       </property>
