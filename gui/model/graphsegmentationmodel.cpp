@@ -1,7 +1,7 @@
 #include "graphsegmentationmodel.h"
 
 #include <graphseg_config.h>
-#include "../tasks/graphsegbackground.h"
+#include "graphseg_task.h"
 
 #include <background_task/background_task_queue.h>
 #include <opencv2/core/core.hpp>
@@ -67,7 +67,7 @@ void GraphSegmentationModel::startGraphseg(SharedMultiImgPtr input,
 	}
 
 	// TODO: should this be a commandrunner instead? arguable..
-	BackgroundTaskPtr taskGraphseg(new GraphsegBackground(
+	BackgroundTaskPtr taskGraphseg(new GraphSegTask(
 		config, input, seedMap, graphsegResult));
 	QObject::connect(taskGraphseg.get(), SIGNAL(finished(bool)),
 		this, SLOT(finishGraphSeg(bool)), Qt::QueuedConnection);

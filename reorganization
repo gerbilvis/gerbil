@@ -8,7 +8,7 @@ gui/
 	dist_view/ [DONE]
 		distviewbinstbb %
 		(keep rest intact for now)
-	docks/  
+	docks/ [DONE]
 		banddock
 		illumdock
 		labeldock (will be merged to)
@@ -41,7 +41,7 @@ gui/
 	iogui
 	main
 
-seg_graphs/
+seg_graphs/ [DONE]
 	...
 	graphseg_task %
 

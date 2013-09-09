@@ -1,14 +1,14 @@
-#ifndef GRAPHSEGBACKGROUND_H
-#define GRAPHSEGBACKGROUND_H
+#ifndef GRAPH_SEG_TASK_H
+#define GRAPH_SEG_TASK_H
 
 #include <graphseg.h>
 
-class GraphsegBackground : public BackgroundTask {
+class GraphSegTask : public BackgroundTask {
 public:
-	GraphsegBackground(const vole::GraphSegConfig &config, SharedMultiImgPtr input,
+	GraphSegTask(const vole::GraphSegConfig &config, SharedMultiImgPtr input,
 		const cv::Mat1s &seedMap, boost::shared_ptr<cv::Mat1s> result)
 		: config(config), input(input), seedMap(seedMap), result(result) {}
-	virtual ~GraphsegBackground() {}
+	virtual ~GraphSegTask() {}
 	virtual bool run()	{
 		vole::GraphSeg seg(config);
 		*(result.get()) = seg.execute(**input, seedMap);
@@ -22,4 +22,4 @@ protected:
 	boost::shared_ptr<cv::Mat1s> result;
 };
 
-#endif // GRAPHSEGBACKGROUND_H
+#endif // GRAPH_SEG_TASK_H
