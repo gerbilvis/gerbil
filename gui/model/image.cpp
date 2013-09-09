@@ -299,7 +299,10 @@ void ImageModel::processNewImageData(representation::t type, SharedMultiImgPtr i
 
 	if (representation::IMG == type) {
 		SharedDataLock lock(image->mutex);
-		nBands = image_lim->getBase().size();
+		nBands = (*image)->size();
+	} else if (representation::GRAD == type) {
+		// check consistency of gradient
+		assert((*image)->size() == nBands-1);
 	}
 	if (nBandsOld != nBands) {
 		emit numBandsROIChanged(nBands);
