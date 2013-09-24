@@ -39,6 +39,8 @@ void BandDock::initUi()
 
 	connect(clearButton, SIGNAL(clicked()),
 			this, SLOT(clearLabelOrSeeds()));
+	connect(bv, SIGNAL(clearRequested()),
+			this, SLOT(clearLabelOrSeeds()));
 
 	// -> DockController
 	//	connect(bandView, SIGNAL(alteredLabels(const cv::Mat1s&, const cv::Mat1b&)),

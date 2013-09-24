@@ -29,7 +29,7 @@
          <string>Update</string>
         </property>
         <property name="icon">
-         <iconset resource="../gerbil.qrc">
+         <iconset>
           <normaloff>:/toolbar/left</normaloff>:/toolbar/left</iconset>
         </property>
         <property name="iconSize">
@@ -59,7 +59,7 @@
          <string>clear current label or seeds</string>
         </property>
         <property name="icon">
-         <iconset resource="../gerbil.qrc">
+         <iconset>
           <normaloff>:/toolbar/clear</normaloff>:/toolbar/clear</iconset>
         </property>
         <property name="iconSize">
@@ -149,7 +149,7 @@
          <string/>
         </property>
         <property name="icon">
-         <iconset resource="../gerbil.qrc">
+         <iconset>
           <normaloff>:/toolbar/cut</normaloff>:/toolbar/cut</iconset>
         </property>
         <property name="iconSize">
@@ -179,6 +179,9 @@
         <height>150</height>
        </size>
       </property>
+      <property name="focusPolicy">
+       <enum>Qt::StrongFocus</enum>
+      </property>
      </widget>
     </item>
     <item row="2" column="0">
@@ -200,8 +203,14 @@
    <container>1</container>
   </customwidget>
  </customwidgets>
- <resources>
-  <include location="../gerbil.qrc"/>
- </resources>
+ <tabstops>
+  <tabstop>bv</tabstop>
+  <tabstop>markerSelector</tabstop>
+  <tabstop>clearButton</tabstop>
+  <tabstop>alphaSlider</tabstop>
+  <tabstop>graphsegButton</tabstop>
+  <tabstop>applyButton</tabstop>
+ </tabstops>
+ <resources/>
  <connections/>
 </ui>

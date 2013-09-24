@@ -25,10 +25,6 @@ public:
 
 	void initUi();
 
-	// FIXME make protected
-	void paintEvent(QPaintEvent *ev);
-	void leaveEvent(QEvent *ev);
-
 	void setPixmap(QPixmap pixmap);
 	void setLabelMatrix(const cv::Mat1b & matrix);
 
@@ -73,8 +69,14 @@ signals:
 	// user requested additional label
 	void newLabel();
 
+	// user wants to clear a label
+	void clearRequested();
+
 protected:
-	void enterEvent (QEvent *event);
+	void paintEvent(QPaintEvent *ev);
+	void enterEvent(QEvent *event);
+	void leaveEvent(QEvent *ev);
+	void keyPressEvent(QKeyEvent *);
 
 private:
 	void cursorAction(QMouseEvent *ev, bool click = false);

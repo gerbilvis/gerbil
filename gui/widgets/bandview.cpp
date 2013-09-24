@@ -455,7 +455,12 @@ void BandView::clearSeeds()
 
 void BandView::enterEvent(QEvent *event)
 {
-//	GGDBGM("enterEvent" << endl);
+	/* as we have some action in the window that is only triggered by hovering,
+	 * we steal keyboard focus here. Otherwise the user would have to click
+	 * first just to get keyboard focus (unintuitive)
+	 */
+	setFocus(Qt::MouseFocusReason);
+
 	ScaledView::enterEvent(event);
 }
 
@@ -473,6 +478,17 @@ void BandView::leaveEvent(QEvent *ev)
 	ScaledView::leaveEvent(ev);
 
 	update();
+}
+
+void BandView::keyPressEvent(QKeyEvent *event)
+{
+	switch (event->key()) {
+	case Qt::Key_C:
+		emit clearRequested();
+		break;
+	default:
+		ScaledView::keyPressEvent(event);
+	}
 }
 
 void BandView::changeCurrentLabel(int label)
