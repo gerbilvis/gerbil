@@ -7,6 +7,7 @@ vole_add_required_modules("rgb" "seg_graphs")
 vole_add_optional_modules("seg_meanshift" "seg_medianshift" "seg_probshift" "edge_detect")
 
 vole_compile_library(
+	main
 	iogui
 	commandrunner
 
