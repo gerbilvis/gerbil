@@ -18,12 +18,11 @@ multi_img::ptr ImgInput::execute()
 
 	bool roiChanged = false;
 	bool bandsCropped = false;
-	multi_img::ptr img_ptr(new multi_img(config.file));
 
+    multi_img::ptr img_ptr;
 #ifdef WITH_GDAL
-	// if multi_img-constructor didn't work, try GDALReader
-	if (img_ptr->empty())
-	{
+    // try GDAL first as it is better for some formats OpenCV reads, too (e.g. TIFF)
+    {
 		img_ptr = GdalReader(config).readFile();
 
 		// GdalReader was used successfully
@@ -35,6 +34,9 @@ multi_img::ptr ImgInput::execute()
 		}
 	}
 #endif
+    if (img_ptr->empty()) {
+        img_ptr = multi_img::ptr(new multi_img(config.file));
+    }
 
 	// return empty image on failure
 	if (img_ptr->empty())
@@ -111,7 +113,7 @@ void ImgInput::cropSpectrum(multi_img::ptr &img_ptr)
 			return;
 		}
 
-		img_ptr = multi_img::ptr(new multi_img(*img_ptr, config.bandlow, bandhigh));
+        img_ptr = multi_img::ptr(new multi_img(*img_ptr, config.bandlow, bandhigh));
 	}
 }
 
