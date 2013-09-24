@@ -1,6 +1,6 @@
 # Library versions
 set(VOLE_MINIMUM_OPENCV_VERSION "2.4.0")
-set(VOLE_MINIMUM_QT_VERSION "4.6.0")
+set(VOLE_MINIMUM_QT_VERSION "4.7.0")
 set(VOLE_MINIMUM_BOOST_VERSION "1.35")
 set(VOLE_MINIMUM_EIGEN_VERSION "3.0")
 set(VOLE_MINIMUM_SLEPC_VERSION "3.1") # TODO: version check missing in FindSLEPc
@@ -54,35 +54,59 @@ vole_check_package(GLEW
 	"${GLEW_LIBRARIES}"
 )
 
-# QtGui
-find_package(Qt4 ${VOLE_MINIMUM_QT_VERSION} COMPONENTS QtCore QtGui)
+# QtWidgets 5
+find_package(Qt5Widgets)
 vole_check_package(QT
-	"Qt4"
-	"Please install Qt4 >=${VOLE_MINIMUM_QT_VERSION} or set QT_QMAKE_EXECUTABLE."
-	QT_FOUND
-	"${QT_INCLUDE_DIR};${QT_QTCORE_INCLUDE_DIR};${QT_QTGUI_INCLUDE_DIR}"
-	"${QT_QTCORE_LIBRARY};${QT_QTGUI_LIBRARY}"
+	"Qt5"
+	"Please install Qt5 OR Qt4 >=${VOLE_MINIMUM_QT_VERSION} or set QT_QMAKE_EXECUTABLE."
+	Qt5Widgets_FOUND
+	"${Qt5Widgets_INCLUDE_DIRS}"
+	"${Qt5Widgets_LIBRARIES}"
 )
 
-# QtOpenGL
-find_package(Qt4 ${VOLE_MINIMUM_QT_VERSION} COMPONENTS QtOpenGL)
+# QtOpenGL 5 (which is a backwards-compatibility module)
+find_package(Qt5OpenGL)
 vole_check_package(QT_OPENGL
-	"Qt4 OpenGL"
-	"Please install Qt4 >=${VOLE_MINIMUM_QT_VERSION} or set QT_QMAKE_EXECUTABLE."
-	QT_QTOPENGL_FOUND
-	"${QT_INCLUDE_DIR};${QT_QTOPENGL_INCLUDE_DIR}"
-	"${QT_QTOPENGL_LIBRARY}"
+	"Qt5 OpenGL"
+	"Please install Qt5 OR Qt4 >=${VOLE_MINIMUM_QT_VERSION} or set QT_QMAKE_EXECUTABLE."
+	Qt5OpenGL_FOUND
+	"${Qt5OpenGL_INCLUDE_DIRS}"
+	"${Qt5OpenGL_LIBRARIES}"
 )
 
-# QtXml
-find_package(Qt4 ${VOLE_MINIMUM_QT_VERSION} COMPONENTS QtXml)
-vole_check_package(QT_XML
-	"Qt4 XML"
-	"Please install Qt4 >=${VOLE_MINIMUM_QT_VERSION} or set QT_QMAKE_EXECUTABLE."
-	QT_QTXML_FOUND
-	"${QT_INCLUDE_DIR};${QT_QTXML_INCLUDE_DIR}"
-	"${QT_QTXML_LIBRARY}"
-)
+if(Qt5Widgets_FOUND)
+	set(WITH_QT5 TRUE)
+else()
+	# QtGui 4
+	find_package(Qt4 ${VOLE_MINIMUM_QT_VERSION} COMPONENTS QtCore QtGui)
+	vole_check_package(QT
+		"Qt4"
+		"Please install Qt5 OR Qt4 >=${VOLE_MINIMUM_QT_VERSION} or set QT_QMAKE_EXECUTABLE."
+		QT_FOUND
+		"${QT_INCLUDE_DIR};${QT_QTCORE_INCLUDE_DIR};${QT_QTGUI_INCLUDE_DIR}"
+		"${QT_QTCORE_LIBRARY};${QT_QTGUI_LIBRARY}"
+	)
+
+	# QtOpenGL 4
+	find_package(Qt4 ${VOLE_MINIMUM_QT_VERSION} COMPONENTS QtOpenGL)
+	vole_check_package(QT_OPENGL
+		"Qt4 OpenGL"
+		"Please install Qt5 OR Qt4 >=${VOLE_MINIMUM_QT_VERSION} or set QT_QMAKE_EXECUTABLE."
+		QT_QTOPENGL_FOUND
+		"${QT_INCLUDE_DIR};${QT_QTOPENGL_INCLUDE_DIR}"
+		"${QT_QTOPENGL_LIBRARY}"
+	)
+
+	# QtXml 4
+	find_package(Qt4 ${VOLE_MINIMUM_QT_VERSION} COMPONENTS QtXml)
+	vole_check_package(QT_XML
+		"Qt4 XML"
+		"Please install Qt5 OR Qt4 >=${VOLE_MINIMUM_QT_VERSION} or set QT_QMAKE_EXECUTABLE."
+		QT_QTXML_FOUND
+		"${QT_INCLUDE_DIR};${QT_QTXML_INCLUDE_DIR}"
+		"${QT_QTXML_LIBRARY}"
+	)
+endif()
 
 # ITK
 #find_package(ITK)
@@ -97,9 +121,9 @@ vole_check_package(QT_XML
 # Boost
 if(WIN32)
 	set(Boost_USE_STATIC_LIBS ON)
-	set(BOOST_ROOT "C:\\boost" CACHE STRING "Boost Root Directory.")
+	set(BOOST_ROOT "C:\\boost" CACHE PATH "Boost Root Directory.")
 else()
-	set(BOOST_ROOT "" CACHE STRING "Boost Root Directory.")
+	set(BOOST_ROOT "" CACHE PATH "Boost Root Directory.")
 endif()
 find_package(Boost ${VOLE_MINIMUM_BOOST_VERSION})
 # if you need the boost version in the code, #include <boost/version.hpp>
