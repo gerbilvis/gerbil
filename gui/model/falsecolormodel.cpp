@@ -168,7 +168,7 @@ void FalseColorModel::createRunner(coloringWithGrad mapId)
 	case SOM:
 		// default parameters for false coloring (different to regular defaults)
 		cmd->config.algo = gerbil::COLOR_SOM;
-		cmd->config.som.maxIter = 100000;
+		cmd->config.som.maxIter = 50000;
 		cmd->config.som.seed = time(NULL);
 
 		// CONE parameters
