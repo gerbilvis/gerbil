@@ -60,15 +60,39 @@ __kernel void find_nearest_neuron(__global const float* som_data,
     int step = group_size_x * group_size_y;
     int idx2d = local_id_z * step + group_size_x * local_id_y + local_id_x;
 
-    for (unsigned int s = input_vector_size/2; s > 0; s >>= 1)
-    {
-        if (local_id_z < s)
-        {
-            som_part[idx2d] += som_part[idx2d + s * step];
-        }
 
-        barrier(CLK_LOCAL_MEM_FENCE);
+    if(local_id_z == 0)
+    {
+        //int sum = 0;
+
+        for(int i = 1; i < input_vector_size; ++i)
+        {
+            som_part[idx2d] += som_part[idx2d + i * step];
+        }
     }
+
+    barrier(CLK_LOCAL_MEM_FENCE);
+
+//    int red_size = input_vector_size;
+
+//    // Round up to the next highest power of 2
+//    red_size--;
+//    red_size |= red_size >> 1;
+//    red_size |= red_size >> 2;
+//    red_size |= red_size >> 4;
+//    red_size |= red_size >> 8;
+//    red_size |= red_size >> 16;
+//    red_size++;
+
+//    for (unsigned int s = red_size/2; s > 0; s >>= 1)
+//    {
+//        if (local_id_z < s && local_id_z + s < input_vector_size)
+//        {
+//            som_part[idx2d] += som_part[idx2d + s * step];
+//        }
+
+//        barrier(CLK_LOCAL_MEM_FENCE);
+//    }
 
 //    if(global_id_x == 10 && global_id_y == 17 && global_id_z == 0)
 //        printf("(10, 17): %f\n", som_part[idx2d]);

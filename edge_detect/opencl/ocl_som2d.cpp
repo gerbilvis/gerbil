@@ -10,6 +10,10 @@
 #include <vector>
 #include <iomanip>
 
+#include "stopwatch.h"
+
+#define TIME_MEASURE
+
 #include "ocl_utils.h"
 
 som_data::som_data(int x, int y, int z)
@@ -312,6 +316,11 @@ void OCL_SOM2d::notifyTrainingEnd()
 
 SOM::iterator OCL_SOM2d::identifyWinnerNeuron(const multi_img::Pixel &inputVec)
 {
+
+#ifdef TIME_MEASURE
+    vole::Stopwatch running_time("Identify winner time");
+#endif
+
 //    return SOM2d::identifyWinnerNeuron(inputVec);
 
 //    input_vectors = cl::Buffer(d_context, CL_MEM_READ_WRITE,
@@ -413,7 +422,10 @@ int OCL_SOM2d::updateNeighborhood(iterator &neuron,
                                   const multi_img::Pixel &input,
                                   double sigma, double learnRate)
 {
-    //cv::Point pos = neuron.get2dCoordinates();
+
+#ifdef TIME_MEASURE
+    vole::Stopwatch running_time("Update time");
+#endif
 
     try
     {

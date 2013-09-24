@@ -46,6 +46,11 @@ SOM2d::SOM2d(const vole::EdgeDetectionConfig &conf, const multi_img &data,
 	}
 }
 
+SOM2d::~SOM2d()
+{
+
+}
+
 SOM2d::Cache2d *SOM2d::createCache(int img_height, int img_width)
 {
 	return new Cache2d(this, img_height, img_width);
@@ -85,6 +90,7 @@ SOM::iterator SOM2d::identifyWinnerNeuron(const multi_img::Pixel &inputVec)
 	assert(closestDistance < std::numeric_limits<double>::max());
 
 #ifdef DEBUG_MODE
+
     std::cout << "global min index: (" << winner.x
               << ", " << winner.y << "): " << closestDistance << std::endl;
 

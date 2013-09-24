@@ -128,6 +128,8 @@ public:
 	SOM2d(const vole::EdgeDetectionConfig &conf, const multi_img &data,
 		  std::vector<multi_img_base::BandDesc> meta);
 
+    virtual ~SOM2d();
+
 	/**
 	  @arg img_height height of the pixel cache (image size, not som size)
 	  @arg img_width width of the pixel cache

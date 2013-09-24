@@ -10,23 +10,44 @@ void print_ocl_err(cl::Error error)
 
 void init_opencl(cl::Context& context, cl::CommandQueue& queue)
 {
-    // Get available platforms
-    std::vector<cl::Platform> platforms;
-    cl::Platform::get(&platforms);
+    try
+    {
+        // Get available platforms
+        std::vector<cl::Platform> platforms;
+        cl::Platform::get(&platforms);
 
-    // Select the default platform and create a context using this platform and the GPU
-    cl_context_properties cps[3] = {
-        CL_CONTEXT_PLATFORM,
-        (cl_context_properties)(platforms[0])(),
-        0
-    };
-    context = cl::Context(CL_DEVICE_TYPE_ALL, cps);
+        if (!platforms.size())
+        {
+            std::cout << "Platform size 0" << std::endl;
+        }
+        else
+        {
+            std::cout << "Platforms size: " << platforms.size() << std::endl;
+            std::string platform_name = platforms[0].getInfo<CL_PLATFORM_NAME>();
 
-    // Get a list of devices on this platform
-    std::vector<cl::Device> devices = context.getInfo<CL_CONTEXT_DEVICES>();
+            std::cout << "Platform name: " << platform_name << std::endl;
+        }
 
-    // Create a command queue and use the first device
-    queue = cl::CommandQueue(context, devices[0]);
+        // Select the default platform and create a context using this platform and the GPU
+        cl_context_properties cps[3] = {
+            CL_CONTEXT_PLATFORM,
+            (cl_context_properties)(platforms[0])(),
+            0
+        };
+        context = cl::Context(CL_DEVICE_TYPE_ALL, cps);
+
+        // Get a list of devices on this platform
+        std::vector<cl::Device> devices = context.getInfo<CL_CONTEXT_DEVICES>();
+
+        // Create a command queue and use the first device
+        queue = cl::CommandQueue(context, devices[0]);
+
+    }
+    catch (cl::Error err)
+    {
+        print_ocl_err(err);
+    }
+
 }
 
 cl::Program build_cl_program(cl::Context& context,
