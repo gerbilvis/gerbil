@@ -175,7 +175,7 @@ void DistViewGUI::toggleFold()
 		/** SHOW **/
 
 		// unfold GUI and set size policy for proper arrangement
-		ui->gv->setShown(true);
+        ui->gv->setVisible(true);
 		ui->topBar->unfold();
 		QSizePolicy pol(QSizePolicy::Preferred, QSizePolicy::Expanding);
 		pol.setVerticalStretch(1);
