@@ -54,29 +54,30 @@ vole_check_package(GLEW
 	"${GLEW_LIBRARIES}"
 )
 
-# QtWidgets 5
-find_package(Qt5Widgets)
-vole_check_package(QT
-	"Qt5"
-	"Please install Qt5 OR Qt4 >=${VOLE_MINIMUM_QT_VERSION} or set QT_QMAKE_EXECUTABLE."
-	Qt5Widgets_FOUND
-	"${Qt5Widgets_INCLUDE_DIRS}"
-	"${Qt5Widgets_LIBRARIES}"
-)
+## We are not quite there yet to support Qt5 in the code (run-time problems)
+## QtWidgets 5
+#find_package(Qt5Widgets)
+#vole_check_package(QT
+#	"Qt5"
+#	"Please install Qt5 OR Qt4 >=${VOLE_MINIMUM_QT_VERSION} or set QT_QMAKE_EXECUTABLE."
+#	Qt5Widgets_FOUND
+#	"${Qt5Widgets_INCLUDE_DIRS}"
+#	"${Qt5Widgets_LIBRARIES}"
+#)
 
-# QtOpenGL 5 (which is a backwards-compatibility module)
-find_package(Qt5OpenGL)
-vole_check_package(QT_OPENGL
-	"Qt5 OpenGL"
-	"Please install Qt5 OR Qt4 >=${VOLE_MINIMUM_QT_VERSION} or set QT_QMAKE_EXECUTABLE."
-	Qt5OpenGL_FOUND
-	"${Qt5OpenGL_INCLUDE_DIRS}"
-	"${Qt5OpenGL_LIBRARIES}"
-)
-
-if(Qt5Widgets_FOUND)
-	set(WITH_QT5 TRUE)
-else()
+## QtOpenGL 5 (which is a backwards-compatibility module)
+#find_package(Qt5OpenGL)
+#vole_check_package(QT_OPENGL
+#	"Qt5 OpenGL"
+#	"Please install Qt5 OR Qt4 >=${VOLE_MINIMUM_QT_VERSION} or set QT_QMAKE_EXECUTABLE."
+#	Qt5OpenGL_FOUND
+#	"${Qt5OpenGL_INCLUDE_DIRS}"
+#	"${Qt5OpenGL_LIBRARIES}"
+#)
+#
+#if(Qt5Widgets_FOUND)
+#	set(WITH_QT5 TRUE)
+#else()
 	# QtGui 4
 	find_package(Qt4 ${VOLE_MINIMUM_QT_VERSION} COMPONENTS QtCore QtGui)
 	vole_check_package(QT
@@ -106,7 +107,7 @@ else()
 		"${QT_INCLUDE_DIR};${QT_QTXML_INCLUDE_DIR}"
 		"${QT_QTXML_LIBRARY}"
 	)
-endif()
+#endif()
 
 # ITK
 #find_package(ITK)
