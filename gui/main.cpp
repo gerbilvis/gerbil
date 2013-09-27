@@ -265,7 +265,7 @@ int main(int argc, char **argv)
 	init_cuda();
 	if (!test_compatibility()) {
 		// TODO: window?
-		std::cerr << "Unfortunately the machine does not meet minimal"
+		std::cerr << "Unfortunately the machine does not meet minimal "
 					 "requirements to launch Gerbil." << std::endl;
 		return 3;
 	}
@@ -297,6 +297,11 @@ int main(int argc, char **argv)
 
 	// create controller
 	Controller chief(filename, limited_mode, labelfile);
+
+	/* debug focus
+	app.connect(&app, SIGNAL(focusChanged(QWidget*, QWidget*)),
+			&chief, SLOT(focusChange(QWidget*, QWidget*)));
+	*/
 
 	// run Qt event loop
 	return app.exec();

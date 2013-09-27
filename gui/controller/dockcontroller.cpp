@@ -205,8 +205,8 @@ void DockController::setupDocks()
 			cm, SLOT(startSegmentation(vole::Command*,int,bool)));
 	connect(clusteringDock, SIGNAL(cancelSegmentationRequested()),
 			cm, SLOT(cancel()));
-	 connect(cm, SIGNAL(setLabelsRequested(cv::Mat1s)),
-				chief->labelingModel(), SLOT(setLabels(cv::Mat1s)));
+	connect(cm, SIGNAL(setLabelsRequested(cv::Mat1s)),
+			chief->labelingModel(), SLOT(setLabels(cv::Mat1s)));
 
 	// FIXME hide for release?
 	//clusteringDock->hide();
@@ -241,7 +241,6 @@ void DockController::setupDocks()
 			this, SLOT(highlightSingleLabel(short,bool)));
 	connect(labelDock, SIGNAL(highlightLabelRequested(short,bool)),
 			bandDock->bandView(), SLOT(highlightSingleLabel(short,bool)));
-
 }
 
 void DockController::setGUIEnabled(bool enable, TaskType tt)

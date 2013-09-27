@@ -54,6 +54,8 @@ bool Viewport::drawScene(QPainter *painter, bool withDynamics)
 	drawHighlight = drawHighlight && (hover > -1 || limiterMode);
 	// do not draw when in single pixel overlay mode
 	drawHighlight = drawHighlight && (!overlayMode);
+	// do not draw when in single label mode
+	drawHighlight = drawHighlight && (highlightLabel < 0);
 
 	for (int i = 0; i < (drawHighlight ? 2 : 1); ++i) {
 

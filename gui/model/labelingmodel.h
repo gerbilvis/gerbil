@@ -27,7 +27,7 @@ public slots:
 	// change label of pixels in mask
 	void alterPixels(const cv::Mat1s &newLabels, const cv::Mat1b &mask);
 	// increment number of available labels
-	int addLabel();
+	void addLabel();
 
 	void loadLabeling(const QString &filename = QString());
 	void saveLabeling(const QString &filename = QString());

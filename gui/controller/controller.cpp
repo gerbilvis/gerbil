@@ -341,3 +341,12 @@ void Controller::stopQueue()
 	delete queuethread;
 	queuethread = 0;
 }
+
+// method for debugging focus
+void Controller::focusChange(QWidget *old, QWidget *now)
+{
+	if (!old || !now)
+		return;
+	std::cerr << "Focus changed from " << old->objectName().toStdString()
+			  << " to " << now->objectName().toStdString() << std::endl;
+}

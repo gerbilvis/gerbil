@@ -53,6 +53,9 @@ signals:
 	void requestOverlay(const cv::Mat1b&);
 
 public slots:
+	// for debugging, activate by connecting it in main.cpp
+	void focusChange(QWidget * old, QWidget * now);
+
 	/** requests (from GUI) */
 	// change ROI, effectively spawning new image data, reusing cached ROI data
 	void spawnROI(cv::Rect roi = cv::Rect());

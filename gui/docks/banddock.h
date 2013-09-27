@@ -55,7 +55,7 @@ public slots:
 
 protected slots:
 	void clearLabelOrSeeds();
-	void processMarkerSelectorIndexChanged(int idx);
+	void processMarkerSelectorIndexChanged(int index);
 
 protected:
 	void initUi();

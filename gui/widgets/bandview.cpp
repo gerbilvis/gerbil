@@ -28,7 +28,8 @@ std::ostream& operator<<(std::ostream& stream, const QPointF &p) {
 
 BandView::BandView(QWidget *parent)
 	: ScaledView(parent),
-	  cacheValid(false), cursor(-1, -1), lastcursor(-1, -1), curLabel(1),
+	  // note: start with invalid curLabel to trigger proper initialization!
+	  cacheValid(false), cursor(-1, -1), lastcursor(-1, -1), curLabel(-1),
 	  overlay(0), showLabels(true), singleLabel(false), holdLabel(false),
 	  ignoreUpdates(false),
 	  seedMode(false), labelAlpha(63),
@@ -491,7 +492,7 @@ void BandView::keyPressEvent(QKeyEvent *event)
 	}
 }
 
-void BandView::changeCurrentLabel(int label)
+void BandView::setCurrentLabel(int label)
 {
 	curLabel = label;
 }

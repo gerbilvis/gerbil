@@ -30,8 +30,6 @@ void BandDock::initUi()
 			this, SLOT(loadSeeds()));
 
 	connect(markerSelector, SIGNAL(currentIndexChanged(int)),
-			bv, SLOT(changeCurrentLabel(int)));
-	connect(markerSelector, SIGNAL(currentIndexChanged(int)),
 			this, SLOT(processMarkerSelectorIndexChanged(int)));
 
 	connect(alphaSlider, SIGNAL(valueChanged(int)),
@@ -41,12 +39,6 @@ void BandDock::initUi()
 			this, SLOT(clearLabelOrSeeds()));
 	connect(bv, SIGNAL(clearRequested()),
 			this, SLOT(clearLabelOrSeeds()));
-
-	// -> DockController
-	//	connect(bandView, SIGNAL(alteredLabels(const cv::Mat1s&, const cv::Mat1b&)),
-	//			this, SIGNAL(alterLabelingRequested(cv::Mat1s,cv::Mat1b)));
-	//	connect(bandView, SIGNAL(newLabeling(const cv::Mat1s&)),
-	//			this, SIGNAL(newLabelingRequested(cv::Mat1s)));
 
 	/* when applybutton is pressed, bandView commits full label matrix */
 	connect(applyButton, SIGNAL(clicked()),
@@ -59,6 +51,9 @@ void BandDock::initUi()
 			this, SLOT(graphSegModeToggled(bool)));
 	connect(graphsegButton, SIGNAL(toggled(bool)),
 			bv, SLOT(toggleSeedMode(bool)));
+
+	connect(this, SIGNAL(currentLabelChanged(int)),
+			bv, SLOT(setCurrentLabel(int)));
 
 	bv->initUi();
 	gs->setVisible(false);
@@ -95,33 +90,31 @@ void BandDock::clearLabelOrSeeds()
 	if (bv->isSeedModeEnabled()) {
 		bv->clearSeeds();
 	} else {
-		emit clearLabelRequested(bv->getCurLabel());
+		emit clearLabelRequested(bv->getCurrentLabel());
 	}
 }
 
-void BandDock::processMarkerSelectorIndexChanged(int idx)
+void BandDock::processMarkerSelectorIndexChanged(int index)
 {
-	// notify other parties
-	emit currentLabelChanged(idx);
-
-	///GGDBGM(format("idx=%1%")%idx<<endl);
-	if (idx < 0)	// empty selection, during initialization
+	if (index < 0)	// empty selection, during initialization
 		return;
-	idx += 1; // we start with 1, combobox with 0
+
+	index += 1; // we start with 1, combobox with 0
 
 	int nlabels = labelColors.count();
 
-	if (nlabels && idx == nlabels) {
-		// new label requested
+	if (nlabels && index == nlabels) {	// new label requested
 
 		// commit uncommitted label changes in the bandview
 		bv->commitLabelChanges();
+		// issue creation of a new label
 		emit newLabelRequested();
 
-		// will not loop.
-		markerSelector->setCurrentIndex(idx-1);
+		// select that label, will return back here into the else() case
+		markerSelector->setCurrentIndex(index-1);
 	} else {
-		bv->changeCurrentLabel(idx);
+		// propagate label change
+		emit currentLabelChanged(index);
 	}
 }
 
@@ -130,16 +123,23 @@ void BandDock::processLabelingChange(const cv::Mat1s &labels,
 									   bool colorsChanged)
 {
 	if (!colors.empty()) {
-		//GGDBGM("colors.size()=" << colors.size() << endl);
 		// store a local copy of the color array
 		labelColors = colors;
-		// use colors for our awesome label menu (rebuild everything)
+		/* use colors for our awesome label menu (rebuild everything) */
+		// block signals to not fire spurious label changed events
+		markerSelector->blockSignals(true);
 		markerSelector->clear();
 		for (int i = 1; i < colors.size(); ++i) // 0 is index for unlabeled
 		{
 			markerSelector->addItem(colorIcon(colors.at(i)), "");
 		}
 		markerSelector->addItem(QIcon(":/toolbar/add"), "");
+		markerSelector->blockSignals(false);
+
+		/* make sure our current label fits -> this does not only affect bv! */
+		int oldindex = bv->getCurrentLabel();
+		if (oldindex < 1 || oldindex >= labelColors.count())
+			emit currentLabelChanged(1); // always valid default
 	}
 
 	// tell bandview about the update as well
@@ -149,7 +149,6 @@ void BandDock::processLabelingChange(const cv::Mat1s &labels,
 void BandDock::processLabelingChange(const cv::Mat1s &labels,
 									   const cv::Mat1b &mask)
 {
-	//GGDBG_CALL();
 	bv->updateLabeling(labels, mask);
 }
 

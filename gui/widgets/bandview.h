@@ -30,17 +30,17 @@ public:
 
 	bool isSeedModeEnabled() { return seedMode; }
 
-	short getCurLabel() { return curLabel; }
-	void setSeedMap(cv::Mat1s seeding);
+	int getCurrentLabel() { return curLabel; }
 	cv::Mat1s getSeedMap() { return seedMap; }
+	void setSeedMap(cv::Mat1s seeding);
 
 public slots:
 	void refresh();
-	void changeCurrentLabel(int label);
 	void commitLabels();
 	void commitLabelChanges();
 	void drawOverlay(const cv::Mat1b &mask);
 
+	void setCurrentLabel(int label);
 	/* update either labeling colors, or both them and pixel labels */
 	void updateLabeling(const cv::Mat1s &labels,
 						const QVector<QColor> &colors = QVector<QColor>(),

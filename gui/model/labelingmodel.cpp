@@ -92,7 +92,7 @@ void LabelingModel::setLabelColors(const std::vector<cv::Vec3b> &newColors,
 	emit newLabeling(cv::Mat1s(), colors, changed);
 }
 
-int LabelingModel::addLabel()
+void LabelingModel::addLabel()
 {
 	// we always have at least one background color
 	int labelcount = std::max(colors.count(), 1);
@@ -100,9 +100,6 @@ int LabelingModel::addLabel()
 	// increment colors by 1 (add label)
 	labelcount++;
 	setLabelColors(vole::Labeling::colors(labelcount, true));
-
-	// return index of new label (count - 1)
-	return labelcount -1;
 }
 
 void LabelingModel::alterLabel(short index, cv::Mat1b mask,

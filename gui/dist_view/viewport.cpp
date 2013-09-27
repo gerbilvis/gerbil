@@ -100,6 +100,7 @@ void Viewport::initBuffers()
 	/* use floating point for better alpha accuracy in back buffer! */
 	// TODO RGBA32F yet looks better, make configurable!
 	format[0].setInternalTextureFormat(0x881A); // GL_RGBA16F
+	// TODO https://bugs.freedesktop.org/show_bug.cgi?id=69689
 
 	// initialize buffers
 	for (int i = 0; i < 2; ++i) {
@@ -314,7 +315,8 @@ void Viewport::setLimiters(int label)
 void Viewport::highlightSingleLabel(int index)
 {
 	highlightLabel = index;
-	updateTextures();
+	updateTextures(Viewport::RM_STEP,
+				   (highlightLabel > -1 ? RM_SKIP : RM_STEP));
 }
 
 void Viewport::setAlpha(float alpha)

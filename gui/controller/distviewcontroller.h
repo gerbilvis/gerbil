@@ -62,7 +62,7 @@ public slots:
 	void addHighlightToLabel();
 	void remHighlightFromLabel();
 	// needed for the functions above
-	void setCurrentLabel(int index) { currentLabel = index;}
+	void setCurrentLabel(int index) { currentLabel = index; }
 
 	void pixelOverlay(int y, int x);
 
@@ -100,7 +100,7 @@ protected:
 	representation::t activeView;
 	Controller *chief;
 
-	// needed ford add/rem to/from label functionality
+	// needed for add/rem to/from label functionality
 	int currentLabel;
 };
 
