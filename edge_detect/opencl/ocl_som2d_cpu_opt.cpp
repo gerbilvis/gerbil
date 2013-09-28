@@ -146,7 +146,7 @@ void OCL_SOM2d_cpu_opt::initLocalMemDims()
 
 void OCL_SOM2d_cpu_opt::initRanges()
 {
-    calculate_distances_global = cl::NDRange(get2dWidth(), get2dHeight());
+    calculate_distances_global = cl::NDRange(get2dWidth() * get2dHeight());
     calculate_distances_local = cl::NullRange;
 
     global_min_global = cl::NDRange(reduction_kernel_global_x);
@@ -185,9 +185,9 @@ void OCL_SOM2d_cpu_opt::setKernelParams()
     calculate_distances_kernel.setArg(0, d_som);
     calculate_distances_kernel.setArg(1, input_vector);
     calculate_distances_kernel.setArg(2, distances);
-    calculate_distances_kernel.setArg(3, get2dWidth());
-    calculate_distances_kernel.setArg(4, get2dHeight());
-    calculate_distances_kernel.setArg(5, dim);
+//    calculate_distances_kernel.setArg(3, get2dWidth());
+//    calculate_distances_kernel.setArg(4, get2dHeight());
+    calculate_distances_kernel.setArg(3, dim >> 2);
 
     global_min_kernel.setArg(0, distances);
     global_min_kernel.setArg(1, out_min_values);
@@ -197,8 +197,8 @@ void OCL_SOM2d_cpu_opt::setKernelParams()
     update_kernel.setArg(0, d_som);
     update_kernel.setArg(1, input_vector);
     update_kernel.setArg(2, get2dWidth());
-    update_kernel.setArg(3, get2dHeight());
-    update_kernel.setArg(4, dim);
+  //  update_kernel.setArg(3, get2dHeight());
+    update_kernel.setArg(3, dim >> 2);
 }
 
 void OCL_SOM2d_cpu_opt::uploadDataToDevice()
@@ -376,16 +376,15 @@ int OCL_SOM2d_cpu_opt::updateNeighborhood(iterator &neuron,
     int update_area_width = right - left + 1;
     int update_area_height = bottom - top + 1;
 
+    int winner[] = {x, y};
+    int offset[] = {left, top};
+
     try
     {
-        update_kernel.setArg(5, x);
-        update_kernel.setArg(6, y);
-        update_kernel.setArg(7, left);
-        update_kernel.setArg(8, top);
-        update_kernel.setArg(9, update_area_width);
-        update_kernel.setArg(10, update_area_height);
-        update_kernel.setArg(11, (float)sigmaSquare);
-        update_kernel.setArg(12, (float)learnRate);
+        update_kernel.setArg(4, sizeof(winner), winner);
+        update_kernel.setArg(5, sizeof(offset), offset);
+        update_kernel.setArg(6, (float)sigmaSquare);
+        update_kernel.setArg(7, (float)learnRate);
 
         cl::NDRange update_global(update_area_width, update_area_height);
 
