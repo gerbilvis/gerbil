@@ -18,7 +18,7 @@
 
 inline int round_up(int value, int multiplicity)
 {
-    return ((value + multiplicity - 1)/multiplicity) * multiplicity;
+    return ((value + multiplicity - 1) / multiplicity) * multiplicity;
 }
 
 
@@ -34,6 +34,8 @@ som_data_cpu_opt::som_data_cpu_opt(int x, int y, int neuron_size)
     {
         size = x * y * neuron_size;
         data = new float[size];
+
+        std::fill_n(data, size, 0.f);
     }
 }
 
@@ -58,7 +60,7 @@ OCL_SOM2d_cpu_opt::OCL_SOM2d_cpu_opt(const vole::EdgeDetectionConfig &conf,
                      std::vector<multi_img_base::BandDesc> meta)
     : SOM2d(conf, dimension, meta),
       d_data(conf.sidelength,
-             conf.type == vole::SOM_SQUARE ? conf.sidelength : 1, dimension)
+             conf.type == vole::SOM_SQUARE ? conf.sidelength : 1, round_up(dimension, 4))
 {
     initOpenCL();
     initParamters();
@@ -80,11 +82,14 @@ void OCL_SOM2d_cpu_opt::initOpenCL()
     std::cout << "ocl som2d_new hello world!" << std::endl;
     std::string source = read_source("kernels/som2d_cpu_opt.cl");
 
+    std::stringstream stream;
+    stream << "-DVEC_SIZE=" << (round_up(dim, 4) >> 2);
+
 #ifdef DEBUG_MODE
-    program = build_cl_program(d_context, source, "-DDEBUG_MODE -Werror");
-#else
-    program = build_cl_program(d_context, source);
+    stream << " -DDEBUG_MODE -Werror"
 #endif
+
+    program = build_cl_program(d_context, source, stream.str());
 
     // Make kernels
     calculate_distances_kernel = cl::Kernel(program, "calculate_distances");
@@ -94,54 +99,15 @@ void OCL_SOM2d_cpu_opt::initOpenCL()
 
 void OCL_SOM2d_cpu_opt::initParamters()
 {
-    int som_size_x = get2dWidth();
-    int som_size_y = get2dHeight();
-
-    const int pow2[] = {1, 2, 4, 8, 16, 32, 64};
-
-    int k_size_x = 1;
-
-    for(int i = 0; i < 7; ++i)
-    {
-        k_size_x = pow2[i];
-
-        if(dim <= pow2[i])
-            break;
-    }
-
-    kernel_size_x = k_size_x;
-    kernel_size_y = 512 / k_size_x;
-
-    kernel_global_x = k_size_x * som_size_x;// * (( som_size_y + kernel_size_y - 1) / kernel_size_y);
-    kernel_global_y = round_up(som_size_y, kernel_size_y);
-
     reduction_kernel_local_x = 1;
     reduction_kernel_global_x = 2;
 
     reduced_elems_count = reduction_kernel_global_x;
-
-#ifdef DEBUG_MODE
-
-    std::cout << "kernel_size_x: " << kernel_size_x << std::endl;
-    std::cout << "kernel_size_y: " << kernel_size_y << std::endl;
-
-    std::cout << "reduced elems count: " << reduced_elems_count << std::endl;
-#endif
 }
 
 
 void OCL_SOM2d_cpu_opt::initLocalMemDims()
 {
-
-    local_mem_reduction = cl::__local(sizeof(int)
-                                      * kernel_size_x
-                                      * kernel_size_y);
-
-    local_mem_reduction_global = cl::__local(sizeof(int)
-                                             * reduction_kernel_local_x);
-
-    local_mem_weights = cl::__local(sizeof(float) * kernel_size_y);
-
 }
 
 void OCL_SOM2d_cpu_opt::initRanges()
@@ -164,7 +130,7 @@ void OCL_SOM2d_cpu_opt::initDeviceBuffers()
                        d_data.size * sizeof(float));
 
     input_vector = cl::Buffer(d_context, CL_MEM_READ_ONLY,
-                               dim * sizeof(float));
+                               round_up(dim, 4) * sizeof(float));
 
     distances = cl::Buffer(d_context, CL_MEM_READ_WRITE,
                                slice_size * sizeof(float));
@@ -187,7 +153,6 @@ void OCL_SOM2d_cpu_opt::setKernelParams()
     calculate_distances_kernel.setArg(2, distances);
 //    calculate_distances_kernel.setArg(3, get2dWidth());
 //    calculate_distances_kernel.setArg(4, get2dHeight());
-    calculate_distances_kernel.setArg(3, dim >> 2);
 
     global_min_kernel.setArg(0, distances);
     global_min_kernel.setArg(1, out_min_values);
@@ -198,7 +163,6 @@ void OCL_SOM2d_cpu_opt::setKernelParams()
     update_kernel.setArg(1, input_vector);
     update_kernel.setArg(2, get2dWidth());
   //  update_kernel.setArg(3, get2dHeight());
-    update_kernel.setArg(3, dim >> 2);
 }
 
 void OCL_SOM2d_cpu_opt::uploadDataToDevice()
@@ -219,6 +183,13 @@ void OCL_SOM2d_cpu_opt::uploadDataToDevice()
 
     d_queue.enqueueWriteBuffer(d_som, CL_TRUE, 0, d_data.size * sizeof(float),
                                d_data.data);
+
+    float* zero_vector = new float[d_data.neuron_size];
+    std::fill_n(zero_vector, d_data.neuron_size, 0.f);
+
+    d_queue.enqueueWriteBuffer(input_vector, CL_TRUE, 0, d_data.neuron_size * sizeof(float),
+                               zero_vector);
+    delete[] zero_vector;
 }
 
 void OCL_SOM2d_cpu_opt::downloadDataFromDevice()
@@ -381,10 +352,10 @@ int OCL_SOM2d_cpu_opt::updateNeighborhood(iterator &neuron,
 
     try
     {
-        update_kernel.setArg(4, sizeof(winner), winner);
-        update_kernel.setArg(5, sizeof(offset), offset);
-        update_kernel.setArg(6, (float)sigmaSquare);
-        update_kernel.setArg(7, (float)learnRate);
+        update_kernel.setArg(3, sizeof(winner), winner);
+        update_kernel.setArg(4, sizeof(offset), offset);
+        update_kernel.setArg(5, (float)sigmaSquare);
+        update_kernel.setArg(6, (float)learnRate);
 
         cl::NDRange update_global(update_area_width, update_area_height);
 

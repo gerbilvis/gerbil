@@ -1,4 +1,4 @@
-#define DEBUG
+//#define DEBUG
 
 #ifdef DEBUG
 #define assert(x) \
@@ -18,17 +18,16 @@ float sum(float4 in)
 
 __kernel void calculate_distances(__global const float4* som_data,
                                   __constant float4* input_vector,
-                                  __global float* output_distances,
-                                  const int neuron_vec_size)
+                                  __global float* output_distances)
 {
-    int global_id = get_global_id(0);
-    const int global_vector_idx = global_id * neuron_vec_size;
+    const int global_id = get_global_id(0);
+    const int global_vector_idx = mul24(global_id, VEC_SIZE);
 
     float4 distance = 0;
 
-    for(int i = 0; i < neuron_vec_size; ++i)
+    for(int i = 0; i < VEC_SIZE; ++i)
     {
-        float4 diff = som_data[global_vector_idx + i] - input_vector[i];
+        const float4 diff = som_data[global_vector_idx + i] - input_vector[i];
         distance += diff * diff;
     }
 
@@ -40,8 +39,8 @@ __kernel void find_global_min(__global const float* values,
                               __global int* min_indexes,
                               const int chunk_size)
 {
-    int global_id_x = get_global_id(0);
-    int offset = chunk_size * global_id_x;
+    const int global_id_x = get_global_id(0);
+    const int offset = chunk_size * global_id_x;
 
     __global const float* ptr = values + chunk_size * global_id_x;
 
@@ -50,7 +49,7 @@ __kernel void find_global_min(__global const float* values,
 
     for(int i = 0; i < chunk_size; ++i)
     {
-        float val = ptr[i];
+        const float val = ptr[i];
 
         if(val < min_val)
         {
@@ -64,44 +63,39 @@ __kernel void find_global_min(__global const float* values,
 }
 
 
-__kernel void update_network(__global float4* som_data,              /* 0 */
-                             __constant float4* winner_vector,       /* 1 */
-                             const int som_size_x,                  /* 2 */
-                             const int neuron_vec_size,                 /* 4 */
+__kernel void update_network(__global float4* som_data,
+                             __constant float4* winner_vector,
+                             const int som_size_x,
                              const int2 winner,
                              const int2 offset,
-                             const float sigma_square,              /* 11 */
-                             const float learning_rate)             /* 12 */
+                             const float sigma_square,
+                             const float learning_rate)
 {
-    int global_id_x = get_global_id(0);
-    int global_id_y = get_global_id(1);
+    const int global_id_x = get_global_id(0);
+    const int global_id_y = get_global_id(1);
 
-    //int neuron_vec_size = neuron_size >> 2;
-
-    int global_translated_x = global_id_x + offset.x;
-    int global_translated_y = global_id_y + offset.y;
+    const int global_translated_x = global_id_x + offset.x;
+    const int global_translated_y = global_id_y + offset.y;
 
     int2 pos = (int2)(global_translated_x, global_translated_y);
 
-    //printf("get_global_size(0): %d\n", get_global_size(0));
 
-    int global_vector_idx = (global_translated_y * som_size_x
-                            + global_translated_x) * neuron_vec_size;
+    const int global_vector_idx = (mul24(global_translated_y, som_size_x)
+                                  + global_translated_x) * VEC_SIZE;
 
+    const float2 diff = convert_float2(pos - winner);
+    const float2 tmp = diff * diff;
+    const float distance_squared = dot(tmp, (float2)(1.0f, 1.0f));
+    const float fake_gauss = native_exp(-(distance_squared)/ (2.f * sigma_square));
 
-    float2 diff = convert_float2(pos - winner);
-    float2 tmp = diff * diff;
-    float distance_squared = dot(tmp, (float2)(1.0f, 1.0f));
-    float fake_gauss = native_exp(-(distance_squared)/ (2.f * sigma_square));
-
-    float weight = learning_rate * fake_gauss;
+    const float weight = learning_rate * fake_gauss;
 
     if(weight >= 0.01f)
     {
-        for(int i = 0; i < neuron_vec_size; ++i)
+        for(int i = 0; i < VEC_SIZE; ++i)
         {
-            som_data[global_vector_idx + i] += (winner_vector[i]
-                               - som_data[global_vector_idx + i]) * weight;
+            const int idx = global_vector_idx + i;
+            som_data[idx] = mix(som_data[idx], winner_vector[i], weight);
         }
     }
 }
