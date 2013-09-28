@@ -26,6 +26,7 @@ vole_compile_library(
         "som_trainer"
         "opencl/ocl_som2d"
         "opencl/ocl_som2d_new"
+        "opencl/ocl_som2d_cpu_opt"
         "opencl/ocl_utils"
 )
 
@@ -43,3 +44,6 @@ configure_file(${CMAKE_CURRENT_SOURCE_DIR}/opencl/kernels/som2d.cl
 
 configure_file(${CMAKE_CURRENT_SOURCE_DIR}/opencl/kernels/som2d_new.cl
     ${PROJECT_BINARY_DIR}/bin/kernels/som2d_new.cl COPYONLY)
+
+configure_file(${CMAKE_CURRENT_SOURCE_DIR}/opencl/kernels/som2d_cpu_opt.cl
+    ${PROJECT_BINARY_DIR}/bin/kernels/som2d_cpu_opt.cl COPYONLY)

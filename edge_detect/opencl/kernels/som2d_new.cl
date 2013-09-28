@@ -1,3 +1,16 @@
+#define DEBUG
+
+#ifdef DEBUG
+#define assert(x) \
+            if (! (x)) \
+            { \
+                printf((__constant char*)"Assert(%s) failed in line: %d\n", \
+                       (__constant char*)#x, __LINE__); \
+            }
+#else
+        #define assert(X)
+#endif
+
 __kernel void calculate_distances(__global const float* som_data,
                                   __constant float* input_vector,
                                   __global float* output_distances,
@@ -15,8 +28,7 @@ __kernel void calculate_distances(__global const float* som_data,
     int group_id_x = get_group_id(0);
 
     const int local_vector_idx = local_id_y * group_size_x + local_id_x;
-    const int global_vector_idx = global_id_y * som_size_x * neuron_size
-                                  + group_id_x * neuron_size;
+    const int global_vector_idx = (global_id_y * som_size_x + group_id_x) * neuron_size;
 
     __local float* vec_reduction_buff = reduction_buff + local_id_y * group_size_x;
 
@@ -142,7 +154,6 @@ __kernel void update_network(__global float* som_data,              /* 0 */
     if(local_id_x < neuron_size && global_id_y < height && weight >= 0.01f)
     {
         int global_idx = global_vector_idx + local_id_x;
-
         som_data[global_idx] += (winner_vector[local_id_x] - som_data[global_idx]) * weight;
     }
 }

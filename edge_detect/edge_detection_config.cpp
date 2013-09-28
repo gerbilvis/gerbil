@@ -25,7 +25,7 @@ EdgeDetectionConfig::EdgeDetectionConfig(const std::string& p)
 	output_som = false;
     use_opencl = false;
     use_opencl_new = false;
-    opencl_test = false;
+    use_opencl_cpu_opt = false;
 
 	#ifdef WITH_BOOST
 		initBoostOptions();
@@ -60,8 +60,8 @@ void EdgeDetectionConfig::initBoostOptions() {
             "Use OpenCL to accelerate computations")
         (key("use_opencl_new"), bool_switch(&use_opencl_new)->default_value(false),
             "Use OpenCL to accelerate computations")
-        (key("opencl_test"), bool_switch(&opencl_test)->default_value(false),
-            "SOM with OpenCL, for testing only")
+        (key("use_opencl_cpu_opt"), bool_switch(&use_opencl_cpu_opt)->default_value(false),
+            "Use OpenCL to accelerate computations (CPU optimized version)")
 		;
 	options.add(similarity.options);
 

@@ -43,14 +43,7 @@ EdgeDetection::EdgeDetection(const vole::EdgeDetectionConfig &cfg)
 
 int EdgeDetection::execute()
 {
-    if(config.opencl_test) // for testing purposes only!
-    {
-        ocl_som2d_test();
-        return 0;
-    }
-
-
-	assert(!config.prefix_enabled); // input, output file variables set
+    assert(!config.prefix_enabled); // input, output file variables set
 
 	multi_img img;
 	img.minval = 0.;

@@ -42,7 +42,7 @@ public:
 	bool output_som;
     bool use_opencl;
     bool use_opencl_new;
-    bool opencl_test;
+    bool use_opencl_cpu_opt;
 
 	// Training features 
 	int maxIter;								// number of iterations

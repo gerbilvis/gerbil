@@ -63,17 +63,15 @@ __kernel void find_nearest_neuron(__global const float* som_data,
 
     if(local_id_z == 0)
     {
-        //int sum = 0;
-
         for(int i = 1; i < input_vector_size; ++i)
         {
             som_part[idx2d] += som_part[idx2d + i * step];
         }
     }
 
-    barrier(CLK_LOCAL_MEM_FENCE);
+//    barrier(CLK_LOCAL_MEM_FENCE);
 
-//    int red_size = input_vector_size;
+  //  int red_size = input_vector_size;
 
 //    // Round up to the next highest power of 2
 //    red_size--;
@@ -87,6 +85,16 @@ __kernel void find_nearest_neuron(__global const float* som_data,
 //    for (unsigned int s = red_size/2; s > 0; s >>= 1)
 //    {
 //        if (local_id_z < s && local_id_z + s < input_vector_size)
+//        {
+//            som_part[idx2d] += som_part[idx2d + s * step];
+//        }
+
+//        barrier(CLK_LOCAL_MEM_FENCE);
+//    }
+
+//    for (unsigned int s = input_vector_size/2; s > 0; s >>= 1)
+//    {
+//        if (local_id_z < s)
 //        {
 //            som_part[idx2d] += som_part[idx2d + s * step];
 //        }
@@ -110,16 +118,19 @@ __kernel void find_nearest_neuron(__global const float* som_data,
 
     for (unsigned int s = limit / 2; s>0; s >>= 1) {
 
-        int tid = limit * local_id_z + group_size_x * local_id_y + local_id_x;
-
-        if (tid < s)
+        if(local_id_z == 0)
         {
-            float old = som_part[tid];
-            som_part[tid] = fmin(old, som_part[tid + s]);
+            int tid = group_size_x * local_id_y + local_id_x;
 
-            if(som_part[tid] != old)
+            if (tid < s)
             {
-                reduction_buff[tid] = reduction_buff[tid + s];
+                float old = som_part[tid];
+                som_part[tid] = fmin(old, som_part[tid + s]);
+
+                if(som_part[tid] != old)
+                {
+                    reduction_buff[tid] = reduction_buff[tid + s];
+                }
             }
         }
 
@@ -128,10 +139,6 @@ __kernel void find_nearest_neuron(__global const float* som_data,
 
     if(local_id_x == 0 && local_id_y == 0 && local_id_z == 0)
     {
-//        printf("group id linear: %d, rb: %d, %d\n", group_id_linear, reduction_buff[0],
-//                                                som_size_x * global_id_y + global_id_x);
-//        printf("som_size_x: %d, global_id_y: %d, global_id_x: %d\n",
-//                                                som_size_x, global_id_y, global_id_x);
         output_min_indexes[group_id_linear] = reduction_buff[0];
     }
 
@@ -213,8 +220,10 @@ __kernel void generic_update(__global float* som_data,
     if(global_id_x == 0 && global_id_y == 0 && global_id_z == 0)
     {
         printf("kernel winner_x: %d, winner_y: %d\n", winner_x, winner_y);
+   //     printf("input vector idx: %d\n", input_vector_idx);
     }
 #endif
+
 
     int local_idx = local_id_y * group_size_x + local_id_x;
 
@@ -227,21 +236,13 @@ __kernel void generic_update(__global float* som_data,
         float fake_gauss = exp(-(distance_squared)/ (2.f * sigma_square));
         float weight = learning_rate * fake_gauss;
 
-        neighbourhood[local_idx] = weight;//(weight >= 0.01f);
-
-#ifdef DEBUG_MODE
-        if(distance_squared == 0.f)
-            printf("winner weight: %f\n", weight);
-
-        int global_idx = som_size_x * global_id_y + global_id_x;
-        test_output[global_idx] = neighbourhood[local_idx] ? weight : 0;
-#endif
+        neighbourhood[local_idx] = weight;
     }
 
-    if(global_id_z == 1 && local_idx < input_vector_size)
+    if(local_id_x == 0 && local_id_y == 0)
     {
-        input_vector[local_idx] = input_vectors[input_vector_idx
-                                        * input_vector_size + local_idx];
+        input_vector[local_id_z] = input_vectors[input_vector_idx
+                                        * input_vector_size + local_id_z];
     }
 
     barrier(CLK_LOCAL_MEM_FENCE);
@@ -249,7 +250,6 @@ __kernel void generic_update(__global float* som_data,
     //uchar do_update = neighbourhood[local_idx];
     float weight = neighbourhood[local_idx];
 
-    //if(do_update)
     if(weight >= 0.01f)
     {
         int global_idx = som_size_x * som_size_y * global_id_z

@@ -4,6 +4,7 @@
 #include "som2d.h"
 #include "opencl/ocl_som2d.h"
 #include "opencl/ocl_som2d_new.h"
+#include "opencl/ocl_som2d_cpu_opt.h"
 #include "som3d.h"
 #include "som_cone.h"
 
@@ -40,6 +41,8 @@ SOM* SOM::createSOM(const vole::EdgeDetectionConfig &conf,
             return new OCL_SOM2d(conf, dimensions, meta);
         else if(conf.use_opencl_new)
             return new OCL_SOM2d_new(conf, dimensions, meta);
+        else if(conf.use_opencl_cpu_opt)
+            return new OCL_SOM2d_cpu_opt(conf, dimensions, meta);
         else
             return new SOM2d(conf, dimensions, meta);
     }
