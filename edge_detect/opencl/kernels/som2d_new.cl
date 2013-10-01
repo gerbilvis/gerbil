@@ -85,7 +85,7 @@ __kernel void find_global_min(__global const float* values,
 
     barrier(CLK_LOCAL_MEM_FENCE);
 
-    for (unsigned int s = group_size_x/2; s > 0; s >>= 1)
+    for (int s = group_size_x/2; s > 0; s >>= 1)
     {
         if (local_id_x < s)
         {

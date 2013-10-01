@@ -380,8 +380,8 @@ SOM::iterator OCL_SOM2d::identifyWinnerNeuron(const multi_img::Pixel &inputVec)
                                      global_min_global, global_min_local);
 
 
-        d_queue.enqueueReadBuffer(global_min_idx, CL_TRUE, 0,
-                                  sizeof(int), &global_min);
+//        d_queue.enqueueReadBuffer(global_min_idx, CL_TRUE, 0,
+//                                  sizeof(int), &global_min);
     }
     catch(cl::Error error)
     {
