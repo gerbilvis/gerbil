@@ -21,7 +21,7 @@ class ClusteringModel : public QObject
 {
 	Q_OBJECT
 public:
-	explicit ClusteringModel(QObject *parent = 0);
+	explicit ClusteringModel();
 	~ClusteringModel();
 	void setMultiImage(SharedMultiImgPtr image);
 

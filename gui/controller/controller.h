@@ -29,12 +29,12 @@ public:
 	~Controller();
 
 	MainWindow* mainWindow() { return window; }
-	ImageModel* imageModel() { return &im; }
-	LabelingModel* labelingModel() {return &lm; }
-	FalseColorModel* falseColorModel() { return &fm; }
-	IllumModel* illumModel() { return &illumm; }
-	GraphSegmentationModel* graphSegmentationModel() { return &gsm; }
-	ClusteringModel* clusteringModel() { return &cm; }
+	ImageModel* imageModel() { return im; }
+	LabelingModel* labelingModel() {return lm; }
+	FalseColorModel* falseColorModel() { return fm; }
+	IllumModel* illumModel() { return illumm; }
+	GraphSegmentationModel* graphSegmentationModel() { return gsm; }
+	ClusteringModel* clusteringModel() { return cm; }
 
 signals:
 
@@ -106,26 +106,35 @@ protected:
 	// update ROI, or its contents
 	void updateROI(bool reuse, cv::Rect roi = cv::Rect(), int bands = -1);
 
+/// VIEWERS
+
+	// main window (or gui slave)
+	MainWindow *window;
+
+/// MODELS
+
 	// image model stores all multispectral image representations (IMG, GRAD, …)
-	ImageModel im;
+	ImageModel *im;
 
 	/* labeling model stores pixel/label associations and label color codes */
-	LabelingModel lm;
+	LabelingModel *lm;
 
 	/* false color model generates and stores RGB representations of
 	 * multispectral data */
-	FalseColorModel fm;
+	FalseColorModel *fm;
 
 	/* illumnation model performs illumination changes */
-	IllumModel illumm;
+	IllumModel *illumm;
 
 	/* graph segmentation model performs supervised segmentation */
-	GraphSegmentationModel gsm;
+	GraphSegmentationModel *gsm;
 
 #ifdef WITH_SEG_MEANSHIFT
 	/* clustering model provides global clustering */
-	ClusteringModel cm;
+	ClusteringModel *cm;
 #endif /* WITH_SEG_MEANSHIFT */
+
+/// OTHER CONTROLLERS
 
 	// setup dock widgets and manage interaction with models
 	DockController *dc;
@@ -133,8 +142,8 @@ protected:
 	// setup distribution views and manage them and their models
 	DistViewController *dvc;
 
-	// main window (or gui slave)
-	MainWindow *window;
+
+/// QUEUE
 
 	BackgroundTaskQueue queue;
 	std::thread *queuethread;

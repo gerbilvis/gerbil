@@ -11,15 +11,9 @@
 
 #define USE_CUDA_ILLUMINANT     0
 
-IllumModel::IllumModel(QObject *parent) :
-	QObject(parent),
-	i1(0), i2(0)
+IllumModel::IllumModel(BackgroundTaskQueue *queue)
+	: i1(0), i2(0), queue(queue)
 {
-}
-
-void IllumModel::setTaskQueue(BackgroundTaskQueue *queue)
-{
-	this->queue = queue;
 }
 
 void IllumModel::setMultiImage(SharedMultiImgPtr image)

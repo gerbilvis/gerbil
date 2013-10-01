@@ -19,9 +19,8 @@ class IllumModel : public QObject
 {
 	Q_OBJECT
 public:
-	explicit IllumModel(QObject *parent = 0);
+	explicit IllumModel(BackgroundTaskQueue *queue);
 
-	void setTaskQueue(BackgroundTaskQueue *queue);
 	void setMultiImage(SharedMultiImgPtr image);
 	void setRoi(cv::Rect roi);
 

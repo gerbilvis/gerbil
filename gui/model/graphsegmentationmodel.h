@@ -20,7 +20,7 @@ class GraphSegmentationModel : public QObject
 	Q_OBJECT
 
 public:
-	GraphSegmentationModel(QObject *parent, BackgroundTaskQueue *queue);
+	GraphSegmentationModel(BackgroundTaskQueue *queue);
 	~GraphSegmentationModel();
 
 	// always set required iamges before using the class

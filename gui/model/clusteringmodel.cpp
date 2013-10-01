@@ -6,8 +6,8 @@
 #include <boost/any.hpp>
 
 
-ClusteringModel::ClusteringModel(QObject *parent) :
-	QObject(parent), cmdr(NULL)
+ClusteringModel::ClusteringModel()
+	: cmdr(NULL)
 {
 }
 

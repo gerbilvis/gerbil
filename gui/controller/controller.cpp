@@ -17,32 +17,41 @@ std::ostream &operator<<(std::ostream& os, const cv::Rect& r)
 
 Controller::Controller(const std::string &filename, bool limited_mode,
 	const QString &labelfile)
-	: im(queue, limited_mode), fm(this, &queue), illumm(this),
-	  gsm(this, &queue), queuethread(0),
-	  dc(0), dvc(0) // so we don't access them too early
+	// initialize all pointers so we don't access them too early w/o notice
+	: im(0), lm(0), fm(0), illumm(0), gsm(0),
+#ifdef WITH_SEG_MEANSHIFT
+	  cm(0),
+#endif
+	  dc(0), dvc(0),
+	  queuethread(0)
 {
+	// start background task queue thread
+	startQueue();
+
+	im = new ImageModel(queue, limited_mode);
 	// load image
-	cv::Rect dimensions = im.loadImage(filename);
+	cv::Rect dimensions = im->loadImage(filename);
 	if (dimensions.width < 1) {
 		exit(4); // Qt's exit does not work before calling exec();
 	}
 
-	// background task queue thread
-	startQueue();
-
 	// create gui (perform initUI before connecting signals!)
 	window = new MainWindow(limited_mode);
-	window->initUI(filename, im.getNumBandsFull());
+	window->initUI(filename, im->getNumBandsFull());
 
 	// initialize models
 	initImage();
+	fm = new FalseColorModel(&queue);
 	initFalseColor(); // depends on ImageModel / initImage()
-	initIlluminant();
-	initGraphSegmentation(); // depends on ImageModel / initImage()
+	lm = new LabelingModel();
 	initLabeling(dimensions);
-
+	illumm = new IllumModel(&queue);
+	initIlluminant();
+	gsm = new GraphSegmentationModel(&queue);
+	initGraphSegmentation(); // depends on ImageModel / initImage()
 #ifdef WITH_SEG_MEANSHIFT
-	cm.setMultiImage(im.getImage(representation::IMG));
+	cm = new ClusteringModel();
+	cm->setMultiImage(im->getImage(representation::IMG));
 #endif /* WITH_SEG_MEANSHIFT */
 
 	// initialize sub-controllers (after initializing the models...)
@@ -61,28 +70,28 @@ Controller::Controller(const std::string &filename, bool limited_mode,
 	connect(dc, SIGNAL(singleLabelSelected(int)),
 			this, SIGNAL(singleLabelSelected(int)));
 	connect(dvc, SIGNAL(bandSelected(representation::t, int)),
-			&im, SLOT(computeBand(representation::t, int)));
+			im, SLOT(computeBand(representation::t, int)));
 	connect(dvc, SIGNAL(requestOverlay(cv::Mat1b)),
 			this, SIGNAL(requestOverlay(cv::Mat1b)));
-	connect(&lm,
+	connect(lm,
 			SIGNAL(newLabeling(const cv::Mat1s&, const QVector<QColor>&, bool)),
 			dvc, SLOT(updateLabels(cv::Mat1s,QVector<QColor>,bool)));
-	connect(&lm, SIGNAL(partialLabelUpdate(const cv::Mat1s&,const cv::Mat1b&)),
+	connect(lm, SIGNAL(partialLabelUpdate(const cv::Mat1s&,const cv::Mat1b&)),
 			dvc, SLOT(updateLabelsPartially(const cv::Mat1s&,const cv::Mat1b&)));
 	connect(dvc, SIGNAL(alterLabelRequested(short,cv::Mat1b,bool)),
-			&lm, SLOT(alterLabel(short,cv::Mat1b,bool)));
-	connect(&illumm, SIGNAL(newIlluminant(cv::Mat1f)),
+			lm, SLOT(alterLabel(short,cv::Mat1b,bool)));
+	connect(illumm, SIGNAL(newIlluminant(cv::Mat1f)),
 			dvc, SIGNAL(newIlluminant(cv::Mat1f)));
-	connect(&illumm, SIGNAL(illuminantIsApplied(bool)),
+	connect(illumm, SIGNAL(illuminantIsApplied(bool)),
 			dvc, SIGNAL(toggleIlluminantApplied(bool)));
 
 	/* start with initial label or provided labeling
 	 * Do this after all signals are connected, and before initial ROI spawn!
 	 */
 	if (labelfile.isEmpty()) {
-		lm.addLabel();
+		lm->addLabel();
 	} else {
-		lm.loadLabeling(labelfile);
+		lm->loadLabeling(labelfile);
 	}
 
 	/* Initial ROI images spawning. Do it before showing the window but after
@@ -109,7 +118,14 @@ Controller::~Controller()
 	delete dc;
 	delete dvc;
 
-	// background task queue thread
+	delete im;
+	delete lm;
+	delete fm;
+	delete illumm;
+	delete gsm;
+	delete cm;
+
+	// stop background task queue thread
 	stopQueue();
 }
 
@@ -124,37 +140,36 @@ void Controller::initImage()
 // depends on ImageModel
 void Controller::initFalseColor()
 {
-	fm.setMultiImg(representation::IMG, im.getImage(representation::IMG));
-	fm.setMultiImg(representation::GRAD, im.getImage(representation::GRAD));
+	fm->setMultiImg(representation::IMG, im->getImage(representation::IMG));
+	fm->setMultiImg(representation::GRAD, im->getImage(representation::GRAD));
 
-	connect(&im, SIGNAL(imageUpdate(representation::t,SharedMultiImgPtr)),
-			&fm, SLOT(processImageUpdate(representation::t,SharedMultiImgPtr)));
+	connect(im, SIGNAL(imageUpdate(representation::t,SharedMultiImgPtr)),
+			fm, SLOT(processImageUpdate(representation::t,SharedMultiImgPtr)));
 }
 
 void Controller::initIlluminant()
 {
-	illumm.setTaskQueue(&queue);
-	illumm.setMultiImage(im.getFullImage());
+	illumm->setMultiImage(im->getFullImage());
 
-	connect(&illumm, SIGNAL(requestInvalidateROI(cv::Rect)),
+	connect(illumm, SIGNAL(requestInvalidateROI(cv::Rect)),
 			this, SLOT(invalidateROI(cv::Rect)));
 
 	/* TODO: models should not request this! the controller of the model has
 	 * to guard its operations!
 	 */
-	connect(&illumm, SIGNAL(setGUIEnabledRequested(bool,TaskType)),
+	connect(illumm, SIGNAL(setGUIEnabledRequested(bool,TaskType)),
 			this, SLOT(setGUIEnabled(bool, TaskType)), Qt::DirectConnection);
 }
 
 void Controller::initGraphSegmentation()
 {
-	gsm.setMultiImage(representation::IMG, im.getImage(representation::IMG));
-	gsm.setMultiImage(representation::GRAD, im.getImage(representation::GRAD));
+	gsm->setMultiImage(representation::IMG, im->getImage(representation::IMG));
+	gsm->setMultiImage(representation::GRAD, im->getImage(representation::GRAD));
 
-	connect(&gsm, SIGNAL(alterLabelRequested(short,cv::Mat1b,bool)),
-			&lm, SLOT(alterLabel(short,cv::Mat1b,bool)));
+	connect(gsm, SIGNAL(alterLabelRequested(short,cv::Mat1b,bool)),
+			lm, SLOT(alterLabel(short,cv::Mat1b,bool)));
 
-	connect(&gsm, SIGNAL(setGUIEnabledRequested(bool,TaskType)),
+	connect(gsm, SIGNAL(setGUIEnabledRequested(bool,TaskType)),
 			this, SLOT(setGUIEnabled(bool, TaskType)));
 
 	// (gsm seedingDone <-> bandDock seedingDone connection in initDocks)
@@ -166,7 +181,7 @@ void Controller::initGraphSegmentation()
 void Controller::initLabeling(cv::Rect dimensions)
 {
 	// initialize label model
-	lm.setDimensions(dimensions.height, dimensions.width);
+	lm->setDimensions(dimensions.height, dimensions.width);
 }
 
 void Controller::spawnROI(cv::Rect roi)
@@ -183,7 +198,7 @@ void Controller::invalidateROI(cv::Rect roi)
 
 void Controller::rescaleSpectrum(int bands)
 {
-	queue.cancelTasks(im.getROI());
+	queue.cancelTasks(im->getROI());
 	disableGUI(TT_BAND_COUNT);
 
 	updateROI(false, cv::Rect(), bands);
@@ -202,13 +217,13 @@ void Controller::doSpawnROI(bool reuse, const cv::Rect &roi)
 	 * in use for this cancel and nothing else?
 	 */
 	if (!queue.isIdle()) {
-		queue.cancelTasks(im.getROI());
+		queue.cancelTasks(im->getROI());
 		/* as we cancelled any tasks, we expect the image data not to reflect
 		 * desired configuration, so we will recompute from scratch */
 		reuse = false;
 	}
 	// also cancel CommandRunners
-	fm.reset();
+	fm->reset();
 
 	disableGUI(TT_SELECT_ROI);
 
@@ -221,7 +236,7 @@ void Controller::updateROI(bool reuse, cv::Rect roi, int bands)
 {
 	// no new ROI provided
 	if (roi == cv::Rect())
-		roi = im.getROI();
+		roi = im->getROI();
 
 	// prepare incremental update and test worthiness
 	std::vector<cv::Rect> sub, add;
@@ -229,12 +244,12 @@ void Controller::updateROI(bool reuse, cv::Rect roi, int bands)
 		/* compute if it is profitable to add/sub pixels given old and new ROI,
 		 * instead of full recomputation, and retrieve corresponding regions
 		 */
-		bool profitable = rectTransform(im.getROI(), roi, sub, add);
+		bool profitable = rectTransform(im->getROI(), roi, sub, add);
 		if (!profitable)
 			reuse = false;
 	} else {
 		// invalidate existing ROI information (to not re-use data)
-		im.invalidateROI();
+		im->invalidateROI();
 	}
 
 	/** FIRST STEP: recycle existing payload **/
@@ -247,8 +262,8 @@ void Controller::updateROI(bool reuse, cv::Rect roi, int bands)
 
 	/** SECOND STEP: update metadata */
 
-	lm.updateROI(roi);
-	illumm.setRoi(roi);
+	lm->updateROI(roi);
+	illumm->setRoi(roi);
 
 	/** THIRD STEP: update payload */
 	/* this has to be done in the right order!
@@ -259,13 +274,13 @@ void Controller::updateROI(bool reuse, cv::Rect roi, int bands)
 	foreach (representation::t i, representation::all()) {
 
 		/* tasks to (incrementally) re-calculate image data */
-		im.spawn(i, roi, bands);
+		im->spawn(i, roi, bands);
 
 		/* tasks to (incrementally) update distribution view */
 		if (reuse) {
 			dvc->addImage(i, sets[i], add, roi);
 		} else {
-			dvc->setImage(i, im.getImage(i), roi);
+			dvc->setImage(i, im->getImage(i), roi);
 		}
 	}
 
@@ -295,7 +310,7 @@ void Controller::setGUIEnabled(bool enable, TaskType tt)
 
 void Controller::enableGUILater(bool withROI)
 {
-	BackgroundTask *t = (withROI ? new BackgroundTask(im.getROI())
+	BackgroundTask *t = (withROI ? new BackgroundTask(im->getROI())
 								 : new BackgroundTask());
 	BackgroundTaskPtr taskEpilog(t);
 	QObject::connect(taskEpilog.get(), SIGNAL(finished(bool)),

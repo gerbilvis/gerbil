@@ -56,7 +56,7 @@ public:
 	/* construct model without image data. Make sure to call setMultiImg()
 	 * before doing any other operations with this object.
 	 */
-	FalseColorModel(QObject *parent, BackgroundTaskQueue *queue);
+	FalseColorModel(BackgroundTaskQueue *queue);
 	~FalseColorModel();
 
 	// calls reset()

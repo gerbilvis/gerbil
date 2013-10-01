@@ -18,8 +18,8 @@
 //  progressUpdate() in SOM einbauen,
 //      SOM *som = SOMTrainer::train(config.som, img);
 
-FalseColorModel::FalseColorModel(QObject *parent, BackgroundTaskQueue *queue)
-	: QObject(parent), queue(queue)
+FalseColorModel::FalseColorModel(BackgroundTaskQueue *queue)
+	: queue(queue)
 {
 	int type = QMetaType::type("coloring");
 	if (type == 0 || !QMetaType::isRegistered(type))
