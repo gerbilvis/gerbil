@@ -68,6 +68,8 @@ private:
 
     /* OCL RUNTIME PARAMETERS */
 
+    int compute_units;
+
     int kernel_size_x;
     int kernel_size_y;
 

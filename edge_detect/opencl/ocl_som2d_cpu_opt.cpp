@@ -77,9 +77,16 @@ OCL_SOM2d_cpu_opt::~OCL_SOM2d_cpu_opt()
 
 void OCL_SOM2d_cpu_opt::initOpenCL()
 {
-    init_opencl(d_context, d_queue);
+    init_opencl(d_context, d_queue);    
 
     std::cout << "ocl som2d_new hello world!" << std::endl;
+
+    cl::Device queue_device = d_queue.getInfo<CL_QUEUE_DEVICE>();
+
+    compute_units = queue_device.getInfo<CL_DEVICE_MAX_COMPUTE_UNITS>();
+
+    std::cout << "compute units: " << compute_units << std::endl;
+
     std::string source = read_source("kernels/som2d_cpu_opt.cl");
 
     std::stringstream stream;
@@ -100,7 +107,7 @@ void OCL_SOM2d_cpu_opt::initOpenCL()
 void OCL_SOM2d_cpu_opt::initParamters()
 {
     reduction_kernel_local_x = 1;
-    reduction_kernel_global_x = 2;
+    reduction_kernel_global_x = compute_units;
 
     reduced_elems_count = reduction_kernel_global_x;
 }
