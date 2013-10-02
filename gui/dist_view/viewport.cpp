@@ -182,11 +182,7 @@ void Viewport::rebuild()
 	SharedDataLock ctxlock(ctx->mutex);
 	SharedDataLock setslock(sets->mutex);
 
-	// TODO: is this the right place?
-	if (selection > (*ctx)->dimensionality)
-		selection = 0;
-
-	prepareLines();
+	prepareLines(); // will also call reset() if indicated by ctx
 	updateTextures();
 }
 

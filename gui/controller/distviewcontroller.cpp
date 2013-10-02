@@ -72,6 +72,8 @@ void DistViewController::init()
 			this, SLOT(pixelOverlay(int,int)));
 	connect(chief, SIGNAL(singleLabelSelected(int)),
 			this, SIGNAL(singleLabelSelected(int)));
+	connect(chief, SIGNAL(toggleIgnoreLabels(bool)),
+			this, SLOT(toggleIgnoreLabels(bool)));
 
 	/* connect illuminant correction stuff only to IMG distview */
 	DistViewGUI *g = &map[representation::IMG]->gui;

@@ -9,7 +9,7 @@
 
 
 GraphSegmentationModel::GraphSegmentationModel(BackgroundTaskQueue *queue)
-	: queue(queue), graphsegResult(new cv::Mat1s()) { }
+	: queue(queue), graphsegResult(new cv::Mat1s()), curLabel(1) {}
 
 GraphSegmentationModel::~GraphSegmentationModel() { }
 
@@ -60,7 +60,7 @@ void GraphSegmentationModel::startGraphseg(SharedMultiImgPtr input,
 	// clear current label
 	if (resetLabel) {
 		cv::Mat1b emptyMat;
-		emit alterLabelRequested((short)curLabel + 1,
+		emit alterLabelRequested(curLabel,
 								 emptyMat,
 								 false);
 	}
@@ -77,7 +77,7 @@ void GraphSegmentationModel::finishGraphSeg(bool success)
 {
 	if (success) {
 		// add segmentation to current labeling
-		emit alterLabelRequested((short)curLabel + 1,
+		emit alterLabelRequested(curLabel,
 								 *(graphsegResult.get()),
 								 false);
 		// leave seeding mode for convenience

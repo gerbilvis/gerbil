@@ -53,7 +53,7 @@ protected:
 	BackgroundTaskQueue *const queue;
 	ImageMap map;
 
-	int curLabel; // keep in mind that 0 is no label, the first index is 1!
+	int curLabel;
 
 	boost::shared_ptr<cv::Mat1s> graphsegResult;
 };
