@@ -13,6 +13,17 @@ vole_compile_library(
 
 vole_add_command("edge_detect" "edge_detection.h" "EdgeDetection")
 
+# loading kernels
+file(GLOB cl_kernels "opencl/kernels/*.cl")
+
+set(ocl_kernels_file opencl/kernels.cpp)
+
+add_custom_command(
+    OUTPUT "${CMAKE_CURRENT_BINARY_DIR}/${ocl_kernels_file}"
+    COMMAND ${CMAKE_COMMAND} -DCL_DIR="${CMAKE_CURRENT_SOURCE_DIR}/opencl/kernels" -DOUTPUT="${CMAKE_CURRENT_BINARY_DIR}/${ocl_kernels_file}" -P "${CMAKE_SOURCE_DIR}/cmake/cl2cpp.cmake"
+    DEPENDS ${cl_kernels} "${CMAKE_SOURCE_DIR}/cmake/cl2cpp.cmake")
+
+
 vole_compile_library(
         "edge_detection"
         "edge_detection_config"
@@ -28,6 +39,8 @@ vole_compile_library(
         "opencl/ocl_som2d_new"
         "opencl/ocl_som2d_cpu_opt"
         "opencl/ocl_utils"
+        "opencl/ocl_som_types"
+        "opencl/kernels" #generated
 )
 
 vole_add_module()

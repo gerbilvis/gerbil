@@ -11,40 +11,11 @@
 #include <iomanip>
 
 #include "stopwatch.h"
-
 #include "ocl_utils.h"
 
 //#define TIME_MEASURE
 
-inline int round_up(int value, int multiplicity)
-{
-    return ((value + multiplicity - 1) / multiplicity) * multiplicity;
-}
-
-
-som_data_cpu_opt::som_data_cpu_opt(int x, int y, int neuron_size)
-    : x(x), y(y), neuron_size(neuron_size)
-{
-    if(x == 0 || y == 0 || neuron_size == 0)
-    {
-        size = 0;
-        data = 0;
-    }
-    else
-    {
-        size = x * y * neuron_size;
-        data = new float[size];
-
-        std::fill_n(data, size, 0.f);
-    }
-}
-
-som_data_cpu_opt::~som_data_cpu_opt()
-{
-    if(data)
-        delete[] data;
-}
-
+extern const char* som2d_cpu_opt;
 
 OCL_SOM2d_cpu_opt::OCL_SOM2d_cpu_opt(const vole::EdgeDetectionConfig &conf,
                      const multi_img &data,
@@ -84,10 +55,14 @@ void OCL_SOM2d_cpu_opt::initOpenCL()
     cl::Device queue_device = d_queue.getInfo<CL_QUEUE_DEVICE>();
 
     compute_units = queue_device.getInfo<CL_DEVICE_MAX_COMPUTE_UNITS>();
+    int vector_size = queue_device.getInfo<CL_DEVICE_PREFERRED_VECTOR_WIDTH_FLOAT>();
+
+    std::cout << "preferred float vector size: " << vector_size << std::endl;
 
     std::cout << "compute units: " << compute_units << std::endl;
 
-    std::string source = read_source("kernels/som2d_cpu_opt.cl");
+    //std::string source = read_source("kernels/som2d_cpu_opt.cl");
+    std::string source(som2d_cpu_opt);
 
     std::stringstream stream;
     stream << "-DVEC_SIZE=" << (round_up(dim, 4) >> 2);

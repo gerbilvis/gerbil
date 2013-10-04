@@ -25,6 +25,7 @@ __kernel void calculate_distances(__global const float4* som_data,
 
     float4 distance = 0;
 
+    #pragma unroll
     for(int i = 0; i < VEC_SIZE; ++i)
     {
         const float4 diff = som_data[global_vector_idx + i] - input_vector[i];

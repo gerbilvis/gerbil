@@ -2,23 +2,14 @@
 #define OCLSOM2D_CPU_OPT_H
 
 #include <cstdlib>
+#include <CL/cl.hpp>
 #include "som2d.h"
-#include "ocl_utils.h"
+#include "ocl_som_types.h"
+//#include "ocl_utils.h"
 
 void ocl_som2d_test();
 
 //#define DEBUG_MODE
-
-class som_data_cpu_opt
-{
-public:
-    som_data_cpu_opt(int x, int y, int neuron_size);
-    ~som_data_cpu_opt();
-
-    int x, y, neuron_size;
-    int size;
-    float* data;
-};
 
 class OCL_SOM2d_cpu_opt : public SOM2d
 {
@@ -48,7 +39,7 @@ private:
     void uploadDataToDevice();
     void downloadDataFromDevice();
 
-    som_data_cpu_opt d_data;
+    ocl_som_data d_data;
     int total_size;
     cl::Context d_context;
     cl::CommandQueue d_queue;

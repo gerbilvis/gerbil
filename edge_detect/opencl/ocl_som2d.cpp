@@ -16,27 +16,6 @@
 
 #include "ocl_utils.h"
 
-som_data::som_data(int x, int y, int z)
-    : x(x), y(y), z(z)
-{
-    if(x == 0 || y == 0 || z == 0)
-    {
-        size = 0;
-        data = 0;
-    }
-    else
-    {
-        size = x * y * z;
-        data = new float[size];
-    }
-}
-
-som_data::~som_data()
-{
-    if(data)
-        delete[] data;
-}
-
 
 OCL_SOM2d::OCL_SOM2d(const vole::EdgeDetectionConfig &conf,
                      const multi_img &data,

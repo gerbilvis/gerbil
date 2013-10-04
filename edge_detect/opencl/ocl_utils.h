@@ -13,4 +13,23 @@ cl::Program build_cl_program(cl::Context& context,
 
 std::string read_source(const std::string& path);
 
+inline int round_up(const int value, const int multiplicity)
+{
+    return ((value + multiplicity - 1)/multiplicity) * multiplicity;
+}
+
+inline int round_up_power2(int v)
+{
+    v--;
+    v |= v >> 1;
+    v |= v >> 2;
+    v |= v >> 4;
+    v |= v >> 8;
+    v |= v >> 16;
+    v++;
+    return v;
+}
+
+
+
 #endif

@@ -3,22 +3,12 @@
 
 #include <cstdlib>
 #include "som2d.h"
+#include "ocl_som_types.h"
 #include "ocl_utils.h"
 
 void ocl_som2d_test();
 
 //#define DEBUG_MODE
-
-class som_data_new
-{
-public:
-    som_data_new(int x, int y, int neuron_size);
-    ~som_data_new();
-
-    int x, y, neuron_size;
-    int size;
-    float* data;
-};
 
 class OCL_SOM2d_new : public SOM2d
 {
@@ -48,13 +38,14 @@ private:
     void uploadDataToDevice();
     void downloadDataFromDevice();
 
-    som_data_new d_data;
+    ocl_som_data d_data;
     int total_size;
     cl::Context d_context;
     cl::CommandQueue d_queue;
     cl::Program program;
 
     cl::Kernel calculate_distances_kernel;
+    cl::Kernel global_min_first_kernel;
     cl::Kernel global_min_kernel;
     cl::Kernel update_kernel;
 

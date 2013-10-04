@@ -5,21 +5,11 @@
 #include "som2d.h"
 #include "ocl_utils.h"
 
+#include "ocl_som_types.h"
+
 void ocl_som2d_test();
 
 //#define DEBUG_MODE
-
-class som_data
-{
-public:
-    som_data(int x, int y, int z);
-    ~som_data();
-
-    int x, y, z;
-    int size;
-    float* data;
-};
-
 
 class OCL_SOM2d : public SOM2d
 {
@@ -47,7 +37,7 @@ private:
     void uploadDataToDevice();
     void downloadDataFromDevice();
 
-    som_data d_data;
+    ocl_som_data d_data;
     int total_size;
     cl::Context d_context;
     cl::CommandQueue d_queue;
