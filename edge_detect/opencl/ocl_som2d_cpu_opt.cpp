@@ -13,7 +13,7 @@
 #include "stopwatch.h"
 #include "ocl_utils.h"
 
-//#define TIME_MEASURE
+#define TIME_MEASURE
 
 extern const char* som2d_cpu_opt;
 

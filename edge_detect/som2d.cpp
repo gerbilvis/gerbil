@@ -1,7 +1,9 @@
 #include "som2d.h"
 
 #include <sstream>
+#include "stopwatch.h"
 
+//#define TIME_MEASURE
 //#define DEBUG_MODE
 
 SOM2d::SOM2d(const vole::EdgeDetectionConfig &conf, int dimension,
@@ -59,6 +61,12 @@ SOM2d::Cache2d *SOM2d::createCache(int img_height, int img_width)
 // no virtual function call overhead inside the loop(s)
 SOM::iterator SOM2d::identifyWinnerNeuron(const multi_img::Pixel &inputVec)
 {
+
+#ifdef TIME_MEASURE
+    vole::Stopwatch running_time("Identify winner time");
+#endif
+
+
 #ifdef DEBUG_MODE
     std::cout << "input vector: ";
 
@@ -112,6 +120,11 @@ int SOM2d::updateNeighborhood(SOM::iterator &neuron,
 							   const multi_img::Pixel &input,
 							   double sigma, double learnRate)
 {
+#ifdef TIME_MEASURE
+    vole::Stopwatch running_time("Update time");
+#endif
+
+
 	// Get position of winner neuron in the 2d grid
 	Iterator2d *it = static_cast<Iterator2d *>(neuron.getBase());
 	cv::Point pos = it->getId();

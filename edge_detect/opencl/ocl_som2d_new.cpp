@@ -74,22 +74,10 @@ void OCL_SOM2d_new::initParamters()
     int som_size_x = get2dWidth();
     int som_size_y = get2dHeight();
 
-    const int pow2[] = {1, 2, 4, 8, 16, 32, 64};
+    kernel_size_x = round_up_power2(dim);
+    kernel_size_y = 512 / kernel_size_x;
 
-    int k_size_x = 1;
-
-    for(int i = 0; i < 7; ++i)
-    {
-        k_size_x = pow2[i];
-
-        if(dim <= pow2[i])
-            break;
-    }
-
-    kernel_size_x = k_size_x;
-    kernel_size_y = 512 / k_size_x;
-
-    kernel_global_x = k_size_x * som_size_x;// * (( som_size_y + kernel_size_y - 1) / kernel_size_y);
+    kernel_global_x = kernel_size_x * som_size_x;// * (( som_size_y + kernel_size_y - 1) / kernel_size_y);
     kernel_global_y = round_up(som_size_y, kernel_size_y);
 
     reduction_kernel_local_x = 512;
@@ -125,8 +113,8 @@ void OCL_SOM2d_new::initLocalMemDims()
 
 void OCL_SOM2d_new::initRanges()
 {
-    calculate_distances_global = cl::NDRange(kernel_global_x, kernel_global_y);
-    calculate_distances_local = cl::NDRange(kernel_size_x, kernel_size_y);
+    calculate_distances_global = cl::NDRange(kernel_global_x/2, kernel_global_y);
+    calculate_distances_local = cl::NDRange(kernel_size_x/2, kernel_size_y);
 
     global_min_global = cl::NDRange(reduction_kernel_global_x);
     global_min_local = cl::NDRange(reduction_kernel_local_x);
@@ -246,7 +234,7 @@ void OCL_SOM2d_new::notifyTrainingStart()
 {
     uploadDataToDevice();
 
-    update_radius = std::max(get2dWidth(), get2dHeight());
+    update_radius = std::max(get2dWidth() / 2, get2dHeight() / 2);
 
     final_min_vals = new float[reduced_elems_count];
     final_min_indexes = new int[reduced_elems_count];
@@ -338,6 +326,10 @@ SOM::iterator OCL_SOM2d_new::identifyWinnerNeuron(const multi_img::Pixel &inputV
     int winner_x = global_min[0];
     int winner_y = global_min[1];
 
+#ifdef TIME_MEASURE
+    d_queue.finish();
+#endif
+
     //std::cout << "winner x: " << winner_x << " winner y: " << winner_y << std::endl;
 
 #ifdef DEBUG_MODE
@@ -374,6 +366,8 @@ int OCL_SOM2d_new::updateNeighborhood(iterator &neuron,
                                   const multi_img::Pixel &input,
                                   double sigma, double learnRate)
 {
+    //return 1;
+
 #ifdef TIME_MEASURE
     vole::Stopwatch running_time("Update time");
 #endif
@@ -395,8 +389,7 @@ int OCL_SOM2d_new::updateNeighborhood(iterator &neuron,
 
     while(update_radius > 0)
     {
-        double dist = getDistanceSquared(pos,
-                                         pos + cv::Point(update_radius, 0));
+        double dist = getDistanceSquared(cv::Point(0, 0), cv::Point(update_radius, 0));
         double fakeGaussian = exp(-(dist)/(2.0*sigmaSquare));
         double weight = learnRate * fakeGaussian;
 
@@ -487,6 +480,8 @@ int OCL_SOM2d_new::updateNeighborhood(iterator &neuron,
         if(update_radius <= 4)
             k_size_y = 8;
 
+        k_size_y = std::min(k_size_y, kernel_size_y);
+
         int global_x = kernel_size_x * update_area_width;
                 //* ((update_area_height + k_size_y - 1) / k_size_y);
         //int global_y = ((update_area_height + k_size_y - 1) / k_size_y)
@@ -527,6 +522,10 @@ int OCL_SOM2d_new::updateNeighborhood(iterator &neuron,
     }
 
     std::cout << std::endl;
+#endif
+
+#ifdef TIME_MEASURE
+    d_queue.finish();
 #endif
 
     return 42;

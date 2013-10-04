@@ -12,7 +12,7 @@
 
 #include "stopwatch.h"
 
-//#define TIME_MEASURE
+#define TIME_MEASURE
 
 #include "ocl_utils.h"
 
@@ -394,6 +394,10 @@ SOM::iterator OCL_SOM2d::identifyWinnerNeuron(const multi_img::Pixel &inputVec)
 #endif
 
 
+#ifdef TIME_MEASURE
+    d_queue.finish();
+#endif
+
     return SOM::iterator(new Iterator2d(this, winner_x, winner_y));
 }
 
@@ -447,6 +451,10 @@ int OCL_SOM2d::updateNeighborhood(iterator &neuron,
     }
 
     std::cout << std::endl;
+#endif
+
+#ifdef TIME_MEASURE
+    d_queue.finish();
 #endif
 
     return 42;
