@@ -39,7 +39,6 @@ private:
     void downloadDataFromDevice();
 
     ocl_som_data d_data;
-    int total_size;
     cl::Context d_context;
     cl::CommandQueue d_queue;
     cl::Program program;
@@ -59,32 +58,39 @@ private:
 
     /* OCL RUNTIME PARAMETERS */
 
-    int kernel_size_x;
-    int kernel_size_y;
+    int neuron_size_rounded;
+    int total_size;
+    int total_size_rounded;
+    int group_size;
 
-    int reduction_kernel_global_x;
-    int reduction_kernel_local_x;
+    int preffered_group_size;
+    int max_group_size;
+
+    int dist_find_local_x;
+    int dist_find_local_y;
+
+    int dist_find_global_x;
+    int dist_find_global_y;
+
+    int reduction_global;
+    int reduction_local;
     int reduced_elems_count;
 
-    int kernel_global_x;
-    int kernel_global_y;
-
-    int update_radius;
+    unsigned int update_radius;
 
     /* LOCAL MEMORY OCCUPANCY */
 
     // for find_nearest_kernel
-    cl::LocalSpaceArg local_mem_reduction;
-    cl::LocalSpaceArg local_mem_reduction_global;
-    cl::LocalSpaceArg local_mem_weights;
+    cl::LocalSpaceArg dist_find_reduct_buff_local;
+    cl::LocalSpaceArg reduct_buff_local;
 
     /* RANGES */
 
-    cl::NDRange calculate_distances_global;
-    cl::NDRange calculate_distances_local;
+    cl::NDRange calc_dist_range_local;
+    cl::NDRange calc_dist_range_global;
 
-    cl::NDRange global_min_global;
-    cl::NDRange global_min_local;
+    cl::NDRange reduction_range_local;
+    cl::NDRange reduction_range_global;
 
     float* final_min_vals;
     int* final_min_indexes;

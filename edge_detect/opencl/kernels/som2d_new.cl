@@ -1,4 +1,5 @@
 #define DEBUG
+#define CPU
 
 #ifdef DEBUG
 #define assert(x) \
@@ -11,52 +12,67 @@
         #define assert(X)
 #endif
 
-#define X_DIM 32
-#define SOM_SIZE 1024
+#ifdef CPU
+    #define FORCE_BARRIER_ON_CPU (barrier(CLK_LOCAL_MEM_FENCE));
+#elif
+    #define FORCE_BARRIER_ON_CPU
+#endif
+
+
+//#define X_DIM 32 <-- should be passed as a compile-time parameter
+
+#define NEURON_SIZE_ROUNDED (X_DIM * 2)
+
 
 __kernel void calculate_distances(__global const float* som_data,
                                   __global const float* input_vector,
                                   __global float* output_distances,
                                   const int som_size_x,
                                   const int som_size_y,
-                                  const int neuron_size,
-                                  __local float* reduction_buff)
+                                  __local float* rbuff)
 {
-    size_t local_id_x = get_local_id(0);
-    size_t local_id_y = get_local_id(1);
+    const size_t local_id_x = get_local_id(0);
+    const size_t local_id_y = get_local_id(1);
 
-    int global_id_y = get_global_id(1);
-    int group_size_x = get_local_size(0);
+    const size_t global_id_y = get_global_id(1);
+    const size_t group_id_x = get_group_id(0);
 
-    int group_id_x = get_group_id(0);
+    const int global_vector_idx = (global_id_y * som_size_x
+                                    + group_id_x) * NEURON_SIZE_ROUNDED;
 
-    const int global_vector_idx = (global_id_y * som_size_x + group_id_x) * neuron_size;
+    __local volatile float* rbuff_local = rbuff
+                                            + local_id_y * NEURON_SIZE_ROUNDED;
 
-    __local volatile float* vec_reduction_buff = reduction_buff + local_id_y * X_DIM * 2;
+    if(global_id_y < som_size_y)
+    {
+        const size_t global_idx = global_vector_idx + local_id_x;
 
-//    if(local_id_x < neuron_size)
-//    {
-        int global_idx = global_vector_idx + local_id_x;
+        /* loading data to local memory in two phases
+         * with first step of reduction */
         float diff = som_data[global_idx] - input_vector[local_id_x];
-        vec_reduction_buff[local_id_x] = diff * diff;
+        rbuff_local[local_id_x] = diff * diff;
 
         diff = som_data[global_idx + X_DIM] - input_vector[local_id_x + X_DIM];
-        vec_reduction_buff[local_id_x] += diff * diff;
-
-//    }
-//    else
-//    {
-//        vec_reduction_buff[local_id_x] = 0.f;
-//    }
+        rbuff_local[local_id_x] += diff * diff;
+    }
 
     barrier(CLK_LOCAL_MEM_FENCE);
 
-
+#ifdef CPU
+    for (uint s = X_DIM / 2; s > 0; s >>= 1)
+    {
+        if (local_id_x < s)
+        {
+            rbuff_local[local_id_x] += rbuff_local[local_id_x + s];
+        }
+        barrier(CLK_LOCAL_MEM_FENCE);
+    }
+#elif
     if(X_DIM >= 512)
     {
         if (local_id_x < 256)
         {
-            vec_reduction_buff[local_id_x] += vec_reduction_buff[local_id_x + 256];
+            rbuff_local[local_id_x] += rbuff_local[local_id_x + 256];
         }
         barrier(CLK_LOCAL_MEM_FENCE);
     }
@@ -65,7 +81,7 @@ __kernel void calculate_distances(__global const float* som_data,
     {
         if (local_id_x < 128)
         {
-            vec_reduction_buff[local_id_x] += vec_reduction_buff[local_id_x + 128];
+            rbuff_local[local_id_x] += rbuff_local[local_id_x + 128];
         }
         barrier(CLK_LOCAL_MEM_FENCE);
     }
@@ -74,7 +90,7 @@ __kernel void calculate_distances(__global const float* som_data,
     {
         if (local_id_x < 64)
         {
-            vec_reduction_buff[local_id_x] += vec_reduction_buff[local_id_x + 64];
+            rbuff_local[local_id_x] += rbuff_local[local_id_x + 64];
         }
         barrier(CLK_LOCAL_MEM_FENCE);
     }
@@ -83,23 +99,23 @@ __kernel void calculate_distances(__global const float* som_data,
     if (local_id_x < 32)
     {
         if(X_DIM >= 64)
-            vec_reduction_buff[local_id_x] += vec_reduction_buff[local_id_x + 32];
+            rbuff_local[local_id_x] += rbuff_local[local_id_x + 32];
         if(X_DIM >= 32)
-            vec_reduction_buff[local_id_x] += vec_reduction_buff[local_id_x + 16];
+            rbuff_local[local_id_x] += rbuff_local[local_id_x + 16];
         if(X_DIM >= 16)
-            vec_reduction_buff[local_id_x] += vec_reduction_buff[local_id_x + 8];
+            rbuff_local[local_id_x] += rbuff_local[local_id_x + 8];
         if(X_DIM >= 8)
-            vec_reduction_buff[local_id_x] += vec_reduction_buff[local_id_x + 4];
+            rbuff_local[local_id_x] += rbuff_local[local_id_x + 4];
         if(X_DIM >= 4)
-            vec_reduction_buff[local_id_x] += vec_reduction_buff[local_id_x + 2];
+            rbuff_local[local_id_x] += rbuff_local[local_id_x + 2];
         if(X_DIM >= 2)
-            vec_reduction_buff[local_id_x] += vec_reduction_buff[local_id_x + 1];
+            rbuff_local[local_id_x] += rbuff_local[local_id_x + 1];
     }
-
-    if(local_id_x == 0)
+#endif
+    if(local_id_x == 0 && global_id_y < som_size_y)
     {
         int global_idx = global_id_y  * som_size_x + group_id_x;
-        output_distances[global_idx] = vec_reduction_buff[0];
+        output_distances[global_idx] = rbuff_local[0];
     }
 }
 
@@ -122,6 +138,17 @@ __kernel void find_global_first_pass(__global const float* values,
 
     barrier(CLK_LOCAL_MEM_FENCE);
 
+#ifdef CPU
+    for (uint s = group_size / 2; s > 0; s >>= 1)
+    {
+        if (local_id < s)
+        {
+            rbuff[local_id] = fmin(rbuff[local_id],
+                                   rbuff[local_id + s]);
+        }
+        barrier(CLK_LOCAL_MEM_FENCE);
+    }
+#elif
     if(group_size >= 512)
     {
         if(local_id < 256)
@@ -159,6 +186,7 @@ __kernel void find_global_first_pass(__global const float* values,
         rbuff[local_id] = fmin(rbuff[local_id], rbuff[local_id + 2]);
         rbuff[local_id] = fmin(rbuff[local_id], rbuff[local_id + 1]);
     }
+#endif
 
     barrier(CLK_LOCAL_MEM_FENCE);
 
@@ -173,7 +201,6 @@ __kernel void find_global_first_pass(__global const float* values,
         }
     }
 }
-
 
 __kernel void find_global_min(__global float* min_values,
                               __global uint* min_indexes,
@@ -229,62 +256,48 @@ __kernel void find_global_min(__global float* min_values,
 }
 
 
-
-
-
-__kernel void update_network(__global float* som_data,              /* 0 */
-                             __global const float* input_vector,       /* 1 */
+__kernel void update_network(__global float* som_data,
+                             __global const float* input_vector,
                              __global const uint* winner_idx,
-                             const int som_size_x,                  /* 2 */
-                             const int som_size_y,                  /* 3 */
-                             const int neuron_size,                 /* 4 */
-                       //      const int winner_x,                    /* 5 */
-                         //    const int winner_y,                    /* 6 */
-                             const int offset_x,                    /* 7 */
-                             const int offset_y,                    /* 8 */
-                             const int width,                       /* 9 */
-                             const int height,                      /* 10 */
-                             const float sigma_square,              /* 11 */
-                             const float learning_rate,             /* 12 */
-                             __local float* weights)                /* 13 */
+                             const uint som_size_x,
+                             const uint som_size_y,
+                             const uint radius,
+                             const float sigma_square,
+                             const float learning_rate,
+                             __local float* weights)
 {
+    uint local_id_x = get_local_id(0);
+    uint local_id_y = get_local_id(1);
 
-    int local_id_x = get_local_id(0);
-    int local_id_y = get_local_id(1);
+    uint global_id_x = get_global_id(0);
+    uint global_id_y = get_global_id(1);
 
-    int global_id_x = get_global_id(0);
-    int global_id_y = get_global_id(1);
-
-    int group_id_x = get_group_id(0);
-    int group_id_y = get_group_id(1);
+    uint group_id_x = get_group_id(0);
 
     uint winner_x = winner_idx[0];
     uint winner_y = winner_idx[1];
 
-    int offset_x = max(0, winner_x - radius);
-    int offset_y = max(0, winner_y - radius);
+    uint offset_x = (uint)max(0, (int)winner_x - (int)radius);
+    uint offset_y = (uint)max(0, (int)winner_y - (int)radius);
 
-    int width = min(offset_x + 2 * radius + 1, som_size_x) - ofset_x;
-    int height = min(offset_y + 2 * radius + 1, som_size_y) - ofset_y;
+    uint width = min(offset_x + 2 * radius + 1, som_size_x) - offset_x;
+    uint height = min(offset_y + 2 * radius + 1, som_size_y) - offset_y;
 
     int global_translated_x = group_id_x + offset_x;
     int global_translated_y = global_id_y + offset_y;
 
-    int global_vector_idx = global_translated_y * som_size_x * neuron_size
-                            + global_translated_x * neuron_size;
+    int global_vector_idx = global_translated_y * som_size_x * NEURON_SIZE_ROUNDED
+                            + global_translated_x * NEURON_SIZE_ROUNDED;
 
 
-
-
-
-
-    if(local_id_x == 0)
+    if(local_id_x == 0 && group_id_x < width && global_id_y < height)
     {
         int diff_x = global_translated_x - winner_x;
         int diff_y = global_translated_y - winner_y;
 
         float distance_squared = diff_x * diff_x + diff_y * diff_y;
-        float fake_gauss = exp(-(distance_squared)/ (2.f * sigma_square));
+        float fake_gauss = native_exp(-(distance_squared)
+                                      / (2.f * sigma_square));
 
         weights[local_id_y] = learning_rate * fake_gauss;
     }
@@ -293,9 +306,11 @@ __kernel void update_network(__global float* som_data,              /* 0 */
 
     float weight = weights[local_id_y];
 
-    if(local_id_x < neuron_size && global_id_y < height && weight >= 0.01f)
+    if(group_id_x < width && global_id_y < height
+        && local_id_x < (X_DIM * 2) && weight >= 0.01f)
     {
         int global_idx = global_vector_idx + local_id_x;
-        som_data[global_idx] += (input_vector[local_id_x] - som_data[global_idx]) * weight;
+        som_data[global_idx] += (input_vector[local_id_x]
+                                - som_data[global_idx]) * weight;
     }
 }

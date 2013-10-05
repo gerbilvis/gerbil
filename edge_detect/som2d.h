@@ -164,7 +164,6 @@ protected:
 
 	Field neurons;				///< Neurons in the SOM grid
 
-private:
 	const int width;			///< Width  of SOM grid
 	const int height;			///< Height of SOM grid
 };

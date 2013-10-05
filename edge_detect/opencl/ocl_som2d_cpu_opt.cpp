@@ -268,6 +268,8 @@ SOM::iterator OCL_SOM2d_cpu_opt::identifyWinnerNeuron(const multi_img::Pixel &in
     int winner_x = global_min % get2dWidth();
     int winner_y = global_min / get2dWidth();
 
+    d_queue.finish();
+
     return SOM::iterator(new Iterator2d(this, winner_x, winner_y));
 }
 
@@ -348,6 +350,8 @@ int OCL_SOM2d_cpu_opt::updateNeighborhood(iterator &neuron,
     {
         std::cout << error.what() << "(" << error.err() << ")" << std::endl;
     }
+
+    d_queue.finish();
 
     return 42;
 }
