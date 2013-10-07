@@ -118,27 +118,10 @@ typedef boost::shared_ptr<SharedData<std::vector<BinSet> > > sets_ptr;
 typedef tbb::concurrent_vector<std::pair<int, BinSet::HashKey> > binindex;
 
 struct ViewportCtx {
-	ViewportCtx &operator=(const ViewportCtx &other) {
-		wait = other.wait;
-		reset = other.reset;
-		dimensionality = other.dimensionality;
-		dimensionalityValid = other.dimensionalityValid;
-		type = other.type;
-		meta = other.meta;
-		metaValid = other.metaValid;
-		labels = other.labels;
-		labelsValid = other.labelsValid;
-		ignoreLabels = other.ignoreLabels;
-		nbins = other.nbins;
-		binsize = other.binsize;
-		binsizeValid = other.binsizeValid;
-		minval = other.minval;
-		minvalValid = other.minvalValid;
-		maxval = other.maxval;
-		maxvalValid = other.maxvalValid;
-		return *this;
-	}
 
+	// default constructors
+
+	// FIXME: document members
 	tbb::atomic<int> wait;
 	tbb::atomic<int> reset;
 	size_t dimensionality;
