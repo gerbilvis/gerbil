@@ -40,8 +40,10 @@ protected:
 	const cv::Mat1b mask;
 	QVector<QColor> colors;
 	std::vector<multi_img::Value> illuminant;
+	// source context
 	ViewportCtx args;
 
+	// target context
 	vpctx_ptr context;
 	sets_ptr current;
 	sets_ptr temp;

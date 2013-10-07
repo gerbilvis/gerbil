@@ -7,6 +7,8 @@
 #include <tbb/partitioner.h>
 #include <tbb/parallel_for.h>
 
+#include <gerbil_gui_debug.h>
+
 #define REUSE_THRESHOLD 0.1
 
 
@@ -92,10 +94,13 @@ bool DistviewBinsTbb::run()
 
 	if (!args.labelsValid) {
 		if (!keepOldContext) {
-			args.labels.resize((*multi)->size());
+			args.xlabels.resize((*multi)->size());
 			for (unsigned int i = 0; i < (*multi)->size(); ++i) {
-				if (!(*multi)->meta[i].empty)
-					args.labels[i].setNum((*multi)->meta[i].center);
+				if (!(*multi)->meta[i].empty) {
+					args.xlabels[i].setNum((*multi)->meta[i].center);
+				} else {
+					//GGDBGM(i << " meta is empty. "<< args.type << endl);
+				}
 			}
 		}
 		args.labelsValid = true;

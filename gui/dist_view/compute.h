@@ -129,7 +129,9 @@ struct ViewportCtx {
 	representation::t type;
 	std::vector<multi_img::BandDesc> meta;
 	bool metaValid;
-	std::vector<QString> labels;
+
+	// x-axis labels
+	std::vector<QString> xlabels;
 	bool labelsValid;
 	bool ignoreLabels;
 	int nbins;

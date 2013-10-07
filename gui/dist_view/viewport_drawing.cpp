@@ -4,6 +4,8 @@
 #include <QMessageBox>
 #include <limits>
 
+#include <gerbil_gui_debug.h>
+
 bool Viewport::drawScene(QPainter *painter, bool withDynamics)
 {
 	/*
@@ -460,13 +462,17 @@ void Viewport::drawAxesBg(QPainter *painter)
 
 void Viewport::drawLegend(QPainter *painter, int sel)
 {
+//	GGDBGM("drawing legend, representation " << (*ctx)->type <<
+//		   ", nbins: " << (*ctx)->dimensionality << endl);
 	SharedDataLock ctxlock(ctx->mutex);
 
-	assert((*ctx)->labels.size() == (unsigned int)(*ctx)->dimensionality);
+	assert((*ctx)->xlabels.size() == (unsigned int)(*ctx)->dimensionality);
 
 	painter->setPen(Qt::white);
-	/// x-axis
+	// x-axis
 	for (int i = 0; i < (*ctx)->dimensionality; ++i) {
+//		GGDBGM((format("label %1%: '%2%'")
+//		 %i % ((*ctx)->labels[i].toStdString()))  << endl);
 		QPointF l = modelview.map(QPointF(i - 1.f, 0.f));
 		QPointF r = modelview.map(QPointF(i + 1.f, 0.f));
 		QRectF rect(l, r);
@@ -488,7 +494,7 @@ void Viewport::drawLegend(QPainter *painter, int sel)
 		bool highlight = (i == sel);
 		if (highlight)
 			painter->setPen(Qt::red);
-		painter->drawText(rect, Qt::AlignCenter, (*ctx)->labels[i]);
+		painter->drawText(rect, Qt::AlignCenter, (*ctx)->xlabels[i]);
 		if (highlight)	// revert back color
 			painter->setPen(Qt::white);
 	}

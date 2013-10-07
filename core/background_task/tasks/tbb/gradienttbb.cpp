@@ -87,6 +87,15 @@ bool GradientTbb::run()
 	target->maxval = temp.maxval;
 	target->roi = temp.roi;
 
+	// init multi_img::meta
+	for (unsigned int i = 0; i < (*source)->size()-1; ++i) {
+		if (!(*source)->meta[i].empty && !(*source)->meta[i+1].empty) {
+			target->meta[i] = multi_img::BandDesc(
+						(*source)->meta[i].center,
+						(*source)->meta[i+1].center);
+		}
+	}
+
 	STOPWATCH_PRINT(s, "Gradient TBB")
 
 	if (includecache) {
