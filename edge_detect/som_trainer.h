@@ -10,18 +10,25 @@
 #include <cmath>
 #include <limits.h>
 
+// forward declarations
+namespace vole {
+class ProgressObserver;
+}
+
 class SOMTrainer {
 
 public:
 
 	SOMTrainer(SOM *map, const multi_img &image,
-			   const vole::EdgeDetectionConfig &conf);
+			   const vole::EdgeDetectionConfig &conf,
+			   vole::ProgressObserver *po = NULL);
 
 	//! Destructor
 	~SOMTrainer() {}
 
 	static SOM *train(const vole::EdgeDetectionConfig &conf,
-					  const multi_img& img);
+					  const multi_img& img,
+					  vole::ProgressObserver *po = NULL);
 
 	/**
 	* Controls the training process using random vectors of the multispectral image
@@ -86,6 +93,7 @@ protected:
 	cv::Mat1d m_bmuMap; // warum eine double matrix?
 
 	int currIter;
+	vole::ProgressObserver *po;
 };
 
 #endif // SOM_TRAINER_H

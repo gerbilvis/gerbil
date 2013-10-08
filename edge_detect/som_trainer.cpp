@@ -9,6 +9,8 @@
 
 #include "som_trainer.h"
 
+#include <progress_observer.h>
+
 #include <stopwatch.h>
 #include <opencv2/core/core.hpp>
 
@@ -16,30 +18,34 @@
 #include <fstream>
 
 SOMTrainer::SOMTrainer(SOM *map, const multi_img &image,
-						 const vole::EdgeDetectionConfig &conf)
+						 const vole::EdgeDetectionConfig &conf,
+						vole::ProgressObserver *po)
 	: som(map), input(image), config(conf), currIter(0),
-	  m_bmuMap(cv::Mat::zeros(som->get2dHeight(), som->get2dWidth(), CV_64F))
+	  m_bmuMap(cv::Mat::zeros(som->get2dHeight(), som->get2dWidth(), CV_64F)),
+	  po(po)
 {
 }
 
 SOM *SOMTrainer::train(const vole::EdgeDetectionConfig &config,
-						 const multi_img &img)
+						 const multi_img &img,
+					   vole::ProgressObserver *po
+					   )
 {
 	if (config.som_file.empty()) {
 		vole::Stopwatch running_time("Total running time");
 		SOM *som = SOM::createSOM(config, img.size(), img.meta);
 		std::cout << "# Generated " << som->description() << std::endl;
 
-		SOMTrainer trainer(som, img, config);
+		SOMTrainer trainer(som, img, config, po);
 
 		std::cout << "# SOM Trainer starts to feed the network using "
 				  << config.maxIter << " iterations..." << std::endl;
 
 		vole::Stopwatch watch("Training");
 		trainer.feedNetwork();
-
 		return som;
 	} else {
+		// no progress info for po, probably doesn't hurt (?)
 		multi_img somimg;
 		somimg.minval = img.minval;
 		somimg.maxval = img.maxval;
@@ -95,12 +101,18 @@ void SOMTrainer::feedNetwork()
 		}
 		++ctr;
 		// print update statistic each 1%
-		if (config.verbosity >= 2 && ctr % (config.maxIter / 100) == 0)
+		if (ctr % (config.maxIter / 100) == 0)
 		{
-			std::cout << " Feed #" << ctr << ", mean of neuron-updates in the last "
-					  << (config.maxIter / 100) << " iterations: "
-					  << ((double)sumOfUpdates / (config.maxIter / 100)) << std::endl;
-			sumOfUpdates = 0;
+			// send progress updates if we have an observer
+			po && po->update(int(ctr/float(config.maxIter)*100));
+			if(config.verbosity >= 2) {
+				std::cout << " Feed #" << ctr
+						  << ", mean of neuron-updates in the last "
+						  << (config.maxIter / 100) << " iterations: "
+						  << ((double)sumOfUpdates / (config.maxIter / 100))
+						  << std::endl;
+				sumOfUpdates = 0;
+			}
 		}
 		// print som each 20%
 		if (config.verbosity >= 3 && ctr % (config.maxIter / 5) == 0)

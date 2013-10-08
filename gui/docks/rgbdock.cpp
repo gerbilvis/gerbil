@@ -74,7 +74,7 @@ void RgbDock::processVisibilityChanged(bool visible)
 
 void RgbDock::processCalculationProgressChanged(coloring type, int percent)
 {
-	GGDBGM(percent << "%"<< endl);
+	//GGDBGM(percent << "%"<< endl);
 	progressBar->setVisible(true);
 	progressBar->setValue(percent);
 }

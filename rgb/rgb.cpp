@@ -18,7 +18,6 @@
 
 #include <stopwatch.h>
 #include <multi_img.h>
-#include <progress_observer.h>
 #include <opencv2/highgui/highgui.hpp>
 #include <tbb/parallel_for.h>
 #include <iostream>
@@ -32,13 +31,30 @@
 
 namespace gerbil {
 
+
+/* Forward progress information from SOMTrainer to RGB command. */
+class SOMProgressObserver : public vole::ProgressObserver {
+public:
+	SOMProgressObserver(RGB *rgbCmd) : rgbCmd(rgbCmd) {}
+	virtual bool update(int percent) { rgbCmd->setSomProgress(percent); }
+private:
+	RGB *const rgbCmd;
+};
+
+
 RGB::RGB()
  : Command(
 		"rgb",
 		config,
 		"Johannes Jordan",
-		"johannes.jordan@informatik.uni-erlangen.de")
+		"johannes.jordan@informatik.uni-erlangen.de"),
+   calcPo(new SOMProgressObserver(this))
 {}
+
+RGB::~RGB()
+{
+	delete calcPo;
+}
 
 int RGB::execute()
 {
@@ -93,16 +109,18 @@ cv::Mat3f RGB::execute(const multi_img& src, vole::ProgressObserver *po)
 {
 	cv::Mat3f bgr;
 
+	this->po = po;
+
 	switch (config.algo) {
 	case COLOR_XYZ:
 		bgr = src.bgr(); // updateProgress is not called in XYZ calculation
 		break;
 	case COLOR_PCA:
-		bgr = executePCA(src, po);
+		bgr = executePCA(src);
 		break;
 	case COLOR_SOM:
 #ifdef WITH_EDGE_DETECT
-		bgr = executeSOM(src, po);
+		bgr = executeSOM(src);
 		break;
 #else
 		std::cerr << "FATAL: SOM functionality missing!" << std::endl;
@@ -111,10 +129,11 @@ cv::Mat3f RGB::execute(const multi_img& src, vole::ProgressObserver *po)
 		true;
 	}
 
+	this->po = NULL;
 	return bgr;
 }
 
-cv::Mat3f RGB::executePCA(const multi_img& src, vole::ProgressObserver *po)
+cv::Mat3f RGB::executePCA(const multi_img& src)
 {
 	multi_img pca3 = src.project(src.pca(3));
 
@@ -283,7 +302,7 @@ struct SOMTBB {
 };
 
 // TODO: call progressUpdate
-cv::Mat3f RGB::executeSOM(const multi_img &input_img, vole::ProgressObserver *po)
+cv::Mat3f RGB::executeSOM(const multi_img &input_img)
 {
 	vole::Stopwatch total("Total runtime of SOM generation");
 
@@ -327,7 +346,7 @@ cv::Mat3f RGB::executeSOM(const multi_img &input_img, vole::ProgressObserver *po
 
 	img.rebuildPixels(false);
 
-	SOM *som = SOMTrainer::train(config.som, img);
+	SOM *som = SOMTrainer::train(config.som, img, calcPo);
 	if (som == NULL)
 		return cv::Mat3f();
 
@@ -541,6 +560,13 @@ void RGB::printHelp() const {
 	std::cout << "XYZ does a true-color image creation using a standard white balancing.\n"
 	             "PCA and SOM do false-coloring.\"";
 	std::cout << std::endl;
+}
+
+void RGB::setSomProgress(int percent)
+{
+	// assuming som training done == our progress 100%,
+	// which appears to be a good estimate.
+	po && po->update(percent);
 }
 
 bool RGB::progressUpdate(float percent, vole::ProgressObserver *po)
