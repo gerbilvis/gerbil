@@ -43,7 +43,6 @@ public:
 	void init();
 
 signals:
-	void rgbRequested();
 	// these are send to the graphSegModel
 	void requestGraphseg(representation::t type,
 						 cv::Mat1s seedMap,

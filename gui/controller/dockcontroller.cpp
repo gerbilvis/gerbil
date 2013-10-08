@@ -151,9 +151,9 @@ void DockController::setupDocks()
 	connect(chief->imageModel(), SIGNAL(imageUpdate(representation::t,SharedMultiImgPtr)),
 			rgbDock, SLOT(processImageUpdate(representation::t,SharedMultiImgPtr)));
 
-	connect(rgbDock, SIGNAL(rgbLazyRequested(coloring, bool)),
+	connect(rgbDock, SIGNAL(falseColorLazyRequested(coloring, bool)),
 			chief->falseColorModel(), SLOT(returnIfCached(coloring, bool)));
-	connect(rgbDock, SIGNAL(rgbRequested(coloring, bool, bool)),
+	connect(rgbDock, SIGNAL(falseColorRequested(coloring, bool, bool)),
 			chief->falseColorModel(), SLOT(computeBackground(coloring, bool, bool)));
 
 	connect(chief->falseColorModel(), SIGNAL(calculationComplete(coloring, bool, QPixmap)),

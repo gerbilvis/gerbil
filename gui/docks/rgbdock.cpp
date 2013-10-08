@@ -35,9 +35,12 @@ void RgbDock::updatePixmap(coloring type, bool gradient, QPixmap p)
 
 void RgbDock::initUi()
 {
+	// TODO: add tooltip
 	sourceBox->addItem("Color Matching Functions", CMF);
+	// TODO: add tooltip
 	sourceBox->addItem("Principle Component Analysis", PCA);
 #ifdef WITH_EDGE_DETECT
+	// TODO: add tooltip
 	sourceBox->addItem("Self-organizing Map", SOM);
 #endif // WITH_EDGE_DETECT
 	sourceBox->setCurrentIndex(0);
@@ -62,7 +65,7 @@ void RgbDock::processVisibilityChanged(bool visible)
 	if(dockVisible && !rgbValid) {
 		//GGDBGM("requesting rgb"<<endl);
 		view->setEnabled(false);
-		emit rgbRequested(displayType, currGradient(), false);
+		emit falseColorRequested(displayType, currGradient(), false);
 	}
 }
 
@@ -73,7 +76,7 @@ void RgbDock::processImageUpdate(representation::t, SharedMultiImgPtr)
 	view->setEnabled(false);
 	if (dockVisible) {
 		//GGDBGM("requesting rgb"<<endl);
-		emit rgbRequested(displayType, currGradient(), false);
+		emit falseColorRequested(displayType, currGradient(), false);
 	}
 }
 
@@ -88,7 +91,7 @@ void RgbDock::selectColorRepresentation()
 	/* kindly ask if we could have the image without effort right now:
 	 * no re-calculation
 	 */
-	emit rgbLazyRequested(displayType, currGradient());
+	emit falseColorLazyRequested(displayType, currGradient());
 }
 
 void RgbDock::calculateColorRepresentation()
@@ -98,5 +101,5 @@ void RgbDock::calculateColorRepresentation()
 
 	rgbValid = false;
 	view->setEnabled(false);
-	emit rgbRequested(displayType, currGradient(), true);
+	emit falseColorRequested(displayType, currGradient(), true);
 }
