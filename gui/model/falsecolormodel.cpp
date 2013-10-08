@@ -125,7 +125,7 @@ void FalseColorModel::reset(payload *p)
 	// cancel current task, if it exists
 	if (p->runner != NULL)
 	{
-		p->sendTerminateRunner();
+		p->terminateRunner();
 		p->runner->wait();
 		delete p->runner;
 		p->runner = NULL;
@@ -198,7 +198,7 @@ void FalseColorModel::createRunner(coloringWithGrad mapId)
 		this, SIGNAL(terminateRunners()),
 		p->runner, SLOT(terminate()), Qt::QueuedConnection);
 	QObject::connect(
-		p, SIGNAL(terminateRunner()),
+		p, SIGNAL(requestRunnerTerminate()),
 		p->runner, SLOT(terminate()), Qt::QueuedConnection);
 	QObject::connect(
 		p->runner, SIGNAL(success(std::map<std::string, boost::any>)),
