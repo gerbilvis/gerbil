@@ -26,6 +26,7 @@ void RgbDock::updatePixmap(coloring type, bool gradient, QPixmap p)
 	view->setPixmap(p);
 	view->update();
 	rgbValid=true;
+	progressBar->setVisible(false);
 
 	/* TODO: old(from johannes, not sure what this is to mean):
 	 * We could think about data-sharing between image model
@@ -44,6 +45,8 @@ void RgbDock::initUi()
 	sourceBox->addItem("Self-organizing Map", SOM);
 #endif // WITH_EDGE_DETECT
 	sourceBox->setCurrentIndex(0);
+
+	progressBar->setVisible(false);
 
 	connect(sourceBox, SIGNAL(currentIndexChanged(int)),
 			this, SLOT(selectColorRepresentation()));
@@ -67,6 +70,13 @@ void RgbDock::processVisibilityChanged(bool visible)
 		view->setEnabled(false);
 		emit falseColorRequested(displayType, currGradient(), false);
 	}
+}
+
+void RgbDock::processCalculationProgressChanged(coloring type, int percent)
+{
+	GGDBGM(percent << "%"<< endl);
+	progressBar->setVisible(true);
+	progressBar->setValue(percent);
 }
 
 void RgbDock::processImageUpdate(representation::t, SharedMultiImgPtr)

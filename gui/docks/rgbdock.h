@@ -21,6 +21,7 @@ signals:
 public slots:
 	void processImageUpdate(representation::t type, SharedMultiImgPtr image);
 	void processVisibilityChanged(bool visible);
+	void processCalculationProgressChanged(coloring type, int percent);
 	void updatePixmap(coloring type, bool gradient, QPixmap p);
 protected slots:
 	void selectColorRepresentation();

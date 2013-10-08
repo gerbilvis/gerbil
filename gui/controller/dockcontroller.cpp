@@ -156,8 +156,11 @@ void DockController::setupDocks()
 	connect(rgbDock, SIGNAL(falseColorRequested(coloring, bool, bool)),
 			chief->falseColorModel(), SLOT(computeBackground(coloring, bool, bool)));
 
+	connect(chief->falseColorModel(), SIGNAL(progressChanged(coloring,int)),
+			rgbDock, SLOT(processCalculationProgressChanged(coloring,int)));
 	connect(chief->falseColorModel(), SIGNAL(calculationComplete(coloring, bool, QPixmap)),
 			rgbDock, SLOT(updatePixmap(coloring, bool, QPixmap)));
+
 
 	/* ROI Dock */
 	// signals for ROI (reset handled in RoiDock)

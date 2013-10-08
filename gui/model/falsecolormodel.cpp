@@ -194,12 +194,18 @@ void FalseColorModel::createRunner(coloringWithGrad mapId)
 		assert(false);
 	}
 
+	// FIXME remove unneccessary qualification QObject::
+
 	QObject::connect(
 		this, SIGNAL(terminateRunners()),
 		p->runner, SLOT(terminate()), Qt::QueuedConnection);
 	QObject::connect(
 		p, SIGNAL(requestRunnerTerminate()),
 		p->runner, SLOT(terminate()), Qt::QueuedConnection);
+	connect(p->runner, SIGNAL(progressChanged(int)),
+			p, SLOT(processRunnerProgessUpdate(int)));
+	connect(p, SIGNAL(progressChanged(coloring,int)),
+			this, SIGNAL(progressChanged(coloring,int)));
 	QObject::connect(
 		p->runner, SIGNAL(success(std::map<std::string, boost::any>)),
 		p, SLOT(propagateRunnerSuccess(std::map<std::string, boost::any>)),

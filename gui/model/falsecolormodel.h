@@ -85,14 +85,16 @@ signals:
 	// Possibly check Image.cacheKey() to determine if the update is really neccessary
 	void calculationComplete(coloring type, bool gradient, QPixmap img);
 	void terminateRunners();
+	void progressChanged(coloring type, int percent);
 
 private:
 	typedef QList<payload*> PayloadList;
 	typedef QMap<coloringWithGrad, payload*> PayloadMap;
 
+	// FXIME: This breaks encapsulation of FalseColorModelPayload.
 	// creates the runner that is neccessary for calculating the false color
 	// representation of type runners are deleted in
-	// terminatedTasksDeleteRunners (and therefore in reset() & ~FalseColor())
+	// terminatedTasksDeleteRunners (and therefore in reset() & ~FalseColor())	
 	void createRunner(coloringWithGrad mapId);
 
 	// terminates all (queue and commandrunner) tasks and waits until the
@@ -133,13 +135,17 @@ public:
 	bool calcInProgress; // if 2 widgets request the same coloring type 
 						 // before the calculation finished
 
+	// FIXME should be private
 public slots:
 	// connect the corresponding task's finishing with this slot
 	void propagateFinishedQueueTask(bool success);
 	void propagateRunnerSuccess(std::map<std::string, boost::any> output);
+	void processRunnerProgessUpdate(int percent)
+	{ emit progressChanged(type, percent); }
 
 signals:
 	void requestRunnerTerminate();
+	void progressChanged(coloring type, int percent);
 	void calculationComplete(coloring type, bool gradient, QPixmap img);
 };
 #endif // FALSECOLOR_MODEL_H
