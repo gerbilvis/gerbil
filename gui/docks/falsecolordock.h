@@ -1,24 +1,24 @@
-#ifndef RGBDOCK_H
-#define RGBDOCK_H
+#ifndef FALSECOLORDOCK_H
+#define FALSECOLORDOCK_H
 
 #include <QDockWidget>
 #include <shared_data.h>
 #include "../model/representation.h"
 #include "../model/falsecolormodel.h"
-#include "ui_rgbdock.h"
+#include "ui_falsecolordock.h"
 
 class ScaledView;
 
 
-struct RgbDockState {
+struct FalseColoringState {
 	enum Type {FINISHED=0, CALCULATING, ABORTING};
 };
-std::ostream &operator<<(std::ostream& os, const RgbDockState::Type& state);
+std::ostream &operator<<(std::ostream& os, const FalseColoringState::Type& state);
 
-class RgbDock : public QDockWidget, private Ui::RgbDock{
+class FalseColorDock : public QDockWidget, private Ui::FalseColorDock{
 	Q_OBJECT
 public:
-	explicit RgbDock(QWidget *parent = 0);
+	explicit FalseColorDock(QWidget *parent = 0);
 	
 signals:
 	/** Request a rendering for coloringType of the current image and ROI.
@@ -53,18 +53,18 @@ protected:
 	// update/show/hide apply/cancel button according to state
 	void updateTheButton();
 
-	void enterState(FalseColoring::Type coloringType, RgbDockState::Type state);
+	void enterState(FalseColoring::Type coloringType, FalseColoringState::Type state);
 
 	// True if the dock is visible (that is tab is selected or top level).
 	// Note: This is not the same as QWidget::isVisible()!
 	bool dockVisible;
 
 	// State of the FalseColorings
-	QMap<FalseColoring::Type, RgbDockState::Type> coloringState;
+	QMap<FalseColoring::Type, FalseColoringState::Type> coloringState;
 	// Calculation progress percentage for progressbar for each FalseColoring
 	QMap<FalseColoring::Type, int> coloringProgress;
 	QMap<FalseColoring::Type, bool> coloringUpToDate;
 	FalseColoring::Type lastShown;
 };
 
-#endif // RGBDOCK_H
+#endif // FALSECOLORDOCK_H

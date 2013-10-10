@@ -22,7 +22,7 @@ class BandDock;
 class LabelingDock;
 class NormDock;
 class RoiDock;
-class RgbDock;
+class FalseColorDock;
 class IllumDock;
 class GraphSegWidget;
 class ClusteringDock;
@@ -80,7 +80,7 @@ protected:
 	LabelingDock *labelingDock;
 	NormDock *normDock;
 	RoiDock *roiDock;
-	RgbDock *rgbDock;
+	FalseColorDock *falseColorDock;
 	IllumDock *illumDock;
 	ClusteringDock *clusteringDock;
 	LabelDock *labelDock;

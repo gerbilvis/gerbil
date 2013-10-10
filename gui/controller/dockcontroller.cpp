@@ -8,7 +8,7 @@
 #include "docks/banddock.h"
 #include "docks/labelingdock.h"
 #include "docks/normdock.h"
-#include "docks/rgbdock.h"
+#include "docks/falsecolordock.h"
 #include "docks/roidock.h"
 #include "docks/illumdock.h"
 #include "docks/clusteringdock.h"
@@ -36,13 +36,13 @@ void DockController::init()
 	// FIXME set to false
 	clusteringDock->setVisible(true);
 #endif
-	chief->mainWindow()->addDockWidget(Qt::RightDockWidgetArea, rgbDock);
+	chief->mainWindow()->addDockWidget(Qt::RightDockWidgetArea, falseColorDock);
 	chief->mainWindow()->addDockWidget(Qt::RightDockWidgetArea, roiDock);
 	chief->mainWindow()->addDockWidget(Qt::RightDockWidgetArea, illumDock);
 	chief->mainWindow()->addDockWidget(Qt::RightDockWidgetArea, labelDock);
 
 	// dock arrangement
-	chief->mainWindow()->tabifyDockWidget(roiDock, rgbDock);
+	chief->mainWindow()->tabifyDockWidget(roiDock, falseColorDock);
 #ifdef WITH_SEG_MEANSHIFT
 	chief->mainWindow()->tabifyDockWidget(roiDock, clusteringDock);
 #endif
@@ -65,7 +65,7 @@ void DockController::createDocks()
 	normDock = new NormDock(chief->mainWindow());
 	roiDock = new RoiDock(chief->mainWindow());
 	illumDock = new IllumDock(chief->mainWindow());
-	rgbDock = new RgbDock(chief->mainWindow());
+	falseColorDock = new FalseColorDock(chief->mainWindow());
 #ifdef WITH_SEG_MEANSHIFT
 	clusteringDock = new ClusteringDock(chief->mainWindow());
 #endif
@@ -147,20 +147,20 @@ void DockController::setupDocks()
 	connect(chief, SIGNAL(toggleSingleLabel(bool)),
 			bandDock->bandView(), SLOT(toggleSingleLabel(bool)));
 
-	/* RGB Dock */
-	connect(rgbDock, SIGNAL(falseColoringRequested(FalseColoring::Type,bool)),
+	/* FalseColor Dock */
+	connect(falseColorDock, SIGNAL(falseColoringRequested(FalseColoring::Type,bool)),
 			chief->falseColorModel(), SLOT(requestColoring(FalseColoring::Type,bool)));
-	connect(rgbDock, SIGNAL(cancelComputationRequested(FalseColoring::Type)),
+	connect(falseColorDock, SIGNAL(cancelComputationRequested(FalseColoring::Type)),
 			chief->falseColorModel(), SLOT(cancelComputation(FalseColoring::Type)));
 
 	connect(chief->falseColorModel(), SIGNAL(coloringOutOfDate(FalseColoring::Type)),
-			rgbDock, SLOT(processColoringOutOfDate(FalseColoring::Type)));
+			falseColorDock, SLOT(processColoringOutOfDate(FalseColoring::Type)));
 	connect(chief->falseColorModel(), SIGNAL(progressChanged(FalseColoring::Type,int)),
-			rgbDock, SLOT(processCalculationProgressChanged(FalseColoring::Type,int)));
+			falseColorDock, SLOT(processCalculationProgressChanged(FalseColoring::Type,int)));
 	connect(chief->falseColorModel(), SIGNAL(coloringComputed(FalseColoring::Type,QPixmap)),
-			rgbDock, SLOT(processColoringComputed(FalseColoring::Type,QPixmap)));
+			falseColorDock, SLOT(processColoringComputed(FalseColoring::Type,QPixmap)));
 	connect(chief->falseColorModel(), SIGNAL(computationCancelled(FalseColoring::Type)),
-			rgbDock, SLOT(processComputationCancelled(FalseColoring::Type)));
+			falseColorDock, SLOT(processComputationCancelled(FalseColoring::Type)));
 
 
 	/* ROI Dock */
@@ -260,7 +260,7 @@ void DockController::setGUIEnabled(bool enable, TaskType tt)
 
 	//TODO
 	//	labelDock->setEnabled(enable);
-	rgbDock->setEnabled(enable);
+	falseColorDock->setEnabled(enable);
 
 	// TODO limitedMode - availabe from Controller?
 	//illumDock->setEnabled((enable || tt == TT_APPLY_ILLUM) && !im->isLimitedMode());

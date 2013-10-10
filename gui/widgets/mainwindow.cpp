@@ -19,7 +19,6 @@
 */
 
 #include "docks/illumdock.h"
-#include "docks/rgbdock.h"
 #include "docks/clusteringdock.h"
 
 #include <labeling.h>
@@ -320,7 +319,7 @@ void MainWindow::clampNormUserRange()
 		}
 
 		applyROI(false);
-		rgbDock->setEnabled(false);
+		falseColorDock->setEnabled(false);
 
 		// create task to compute rgb image in parallel
 		BackgroundTaskPtr taskRgb(new RgbTbb(

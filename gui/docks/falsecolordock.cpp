@@ -4,11 +4,11 @@
 #include <iostream>
 #include "gerbil_gui_debug.h"
 #include "widgets/scaledview.h"
-#include "rgbdock.h"
+#include "falsecolordock.h"
 #include "../model/falsecolormodel.h"
 
 
-std::ostream &operator<<(std::ostream& os, const RgbDockState::Type& state)
+std::ostream &operator<<(std::ostream& os, const FalseColoringState::Type& state)
 {
 	if (state < 0 || state >= 3) {
 		os << "INVALID";
@@ -27,17 +27,17 @@ static QStringList prettyFalseColorNames = QStringList()
 		<< "Self-organizing Map"
 		<< "Self-organizing Map on gradient";
 
-RgbDock::RgbDock(QWidget *parent)
+FalseColorDock::FalseColorDock(QWidget *parent)
 	: QDockWidget(parent), lastShown(FalseColoring::CMF)
 {
 	setupUi(this);
 	initUi();
 }
 
-void RgbDock::processColoringComputed(FalseColoring::Type coloringType, QPixmap p)
+void FalseColorDock::processColoringComputed(FalseColoring::Type coloringType, QPixmap p)
 {
 //	GGDBGM("enterState():"<<endl);
-	enterState(coloringType, RgbDockState::FINISHED);
+	enterState(coloringType, FalseColoringState::FINISHED);
 	coloringUpToDate[coloringType] = true;
 	updateTheButton();
 	updateProgressBar();
@@ -50,21 +50,21 @@ void RgbDock::processColoringComputed(FalseColoring::Type coloringType, QPixmap 
 	}
 }
 
-void RgbDock::processComputationCancelled(FalseColoring::Type coloringType)
+void FalseColorDock::processComputationCancelled(FalseColoring::Type coloringType)
 {
-	if(coloringState[coloringType] == RgbDockState::ABORTING) {
+	if(coloringState[coloringType] == FalseColoringState::ABORTING) {
 		coloringProgress[coloringType] = 0;
 //		GGDBGM("enterState():"<<endl);
-		enterState(coloringType, RgbDockState::FINISHED);
+		enterState(coloringType, FalseColoringState::FINISHED);
 		updateTheButton();
 		updateProgressBar();
-	} else if(coloringState[coloringType] == RgbDockState::CALCULATING) {
+	} else if(coloringState[coloringType] == FalseColoringState::CALCULATING) {
 //		GGDBGM("restarting cancelled computation"<<endl);
 		requestColoring(coloringType);
 	}
 }
 
-void RgbDock::processSelectedColoring()
+void FalseColorDock::processSelectedColoring()
 {
 	//GGDBGM( "requesting false color image " << selectedColoring() << endl);
 	requestColoring(selectedColoring());
@@ -72,11 +72,11 @@ void RgbDock::processSelectedColoring()
 	updateProgressBar();
 }
 
-void RgbDock::processApplyClicked()
+void FalseColorDock::processApplyClicked()
 {
-	if(coloringState[selectedColoring()] == RgbDockState::CALCULATING) {
+	if(coloringState[selectedColoring()] == FalseColoringState::CALCULATING) {
 //		GGDBGM("enterState():"<<endl);
-		enterState(selectedColoring(), RgbDockState::ABORTING);
+		enterState(selectedColoring(), FalseColoringState::ABORTING);
 		emit cancelComputationRequested(selectedColoring());
 		// go back to last shown coloring
 		if(coloringUpToDate[lastShown]) {
@@ -86,12 +86,12 @@ void RgbDock::processApplyClicked()
 			sourceBox->setCurrentIndex(FalseColoring::CMF);
 			requestColoring(FalseColoring::CMF);
 		}
-	} else if(coloringState[selectedColoring()] == RgbDockState::FINISHED) {
+	} else if(coloringState[selectedColoring()] == FalseColoringState::FINISHED) {
 		requestColoring(selectedColoring(), /* recalc */ true);
 	}
 }
 
-void RgbDock::initUi()
+void FalseColorDock::initUi()
 {
 	sourceBox->addItem(prettyFalseColorNames[FalseColoring::CMF],
 					   FalseColoring::CMF);
@@ -124,24 +124,24 @@ void RgbDock::initUi()
 			this, SLOT(processVisibilityChanged(bool)));
 }
 
-FalseColoring::Type RgbDock::selectedColoring()
+FalseColoring::Type FalseColorDock::selectedColoring()
 {
 	QVariant boxData = sourceBox->itemData(sourceBox->currentIndex());
 	FalseColoring::Type coloringType = FalseColoring::Type(boxData.toInt());
 	return coloringType;
 }
 
-void RgbDock::requestColoring(FalseColoring::Type coloringType, bool recalc)
+void FalseColorDock::requestColoring(FalseColoring::Type coloringType, bool recalc)
 {
 //	GGDBGM("enterState():"<<endl);
-	enterState(coloringType, RgbDockState::CALCULATING);
+	enterState(coloringType, FalseColoringState::CALCULATING);
 	updateTheButton();
 	emit falseColoringRequested(coloringType, recalc);
 }
 
-void RgbDock::updateProgressBar()
+void FalseColorDock::updateProgressBar()
 {
-	if(coloringState[selectedColoring()] == RgbDockState::CALCULATING) {
+	if(coloringState[selectedColoring()] == FalseColoringState::CALCULATING) {
 		int percent = coloringProgress[selectedColoring()];
 		calcProgress->setVisible(true);
 		calcProgress->setValue(percent);
@@ -151,10 +151,10 @@ void RgbDock::updateProgressBar()
 	}
 }
 
-void RgbDock::updateTheButton()
+void FalseColorDock::updateTheButton()
 {
 	switch (coloringState[selectedColoring()]) {
-	case RgbDockState::FINISHED:
+	case FalseColoringState::FINISHED:
 		theButton->setText("Re-Calculate");
 		theButton->setVisible(false);
 		if( selectedColoring()==FalseColoring::SOM ||
@@ -163,11 +163,11 @@ void RgbDock::updateTheButton()
 			theButton->setVisible(true);
 		}
 		break;
-	case RgbDockState::CALCULATING:
+	case FalseColoringState::CALCULATING:
 		theButton->setText("Cancel Computation");
 		theButton->setVisible(true);
 		break;
-	case RgbDockState::ABORTING:
+	case FalseColoringState::ABORTING:
 		theButton->setVisible(true);
 		break;
 	default:
@@ -176,13 +176,13 @@ void RgbDock::updateTheButton()
 	}
 }
 
-void RgbDock::enterState(FalseColoring::Type coloringType, RgbDockState::Type state)
+void FalseColorDock::enterState(FalseColoring::Type coloringType, FalseColoringState::Type state)
 {
 //	GGDBGM(coloringType << " entering state " << state << endl);
 	coloringState[coloringType] = state;
 }
 
-void RgbDock::processVisibilityChanged(bool visible)
+void FalseColorDock::processVisibilityChanged(bool visible)
 {
 	// do we get this when first shown? -> Yes
 	dockVisible = visible;
@@ -192,7 +192,7 @@ void RgbDock::processVisibilityChanged(bool visible)
 	}
 }
 
-void RgbDock::processColoringOutOfDate(FalseColoring::Type coloringType)
+void FalseColorDock::processColoringOutOfDate(FalseColoring::Type coloringType)
 {
 	coloringUpToDate[coloringType] = false;
 	if(dockVisible) {
@@ -200,7 +200,7 @@ void RgbDock::processColoringOutOfDate(FalseColoring::Type coloringType)
 	}
 }
 
-void RgbDock::processCalculationProgressChanged(FalseColoring::Type coloringType, int percent)
+void FalseColorDock::processCalculationProgressChanged(FalseColoring::Type coloringType, int percent)
 {
 	coloringProgress[coloringType] = percent;
 	updateProgressBar();

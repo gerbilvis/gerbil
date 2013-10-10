@@ -38,7 +38,7 @@
 #include <opencv2/core/core.hpp>
 
 class IllumDock;
-class RgbDock;
+class FalseColorDock;
 //TODO create
 //class LabelDock;
 class ClusteringDock;
