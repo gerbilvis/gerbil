@@ -125,20 +125,11 @@ void RgbDock::requestCancelComputation(FalseColoring::Type coloringType)
 
 void RgbDock::updateProgressBar()
 {
-	//GGDBGM("thread" << QThread::currentThread () << endl);
 	if(coloringState[selectedColoring()] == RgbDockState::CALCULATING) {
 		int percent = coloringProgress[selectedColoring()];
-		// FIXME for some reason progressBar displays 100% even if we set 0% here...
-		// ?!?
-//		GGDBGM(percent << "%"<< endl);
-		if(!calcProgress->isVisible()) {
-			calcProgress->setVisible(true);
-		}
+		calcProgress->setVisible(true);
 		calcProgress->setValue(percent);
-		calcProgress->update();
-		update();
 	} else {
-		//GGDBGM("hiding"<<endl);
 		calcProgress->setVisible(false);
 	}
 }
