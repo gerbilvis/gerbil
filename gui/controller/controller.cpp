@@ -41,7 +41,7 @@ Controller::Controller(const std::string &filename, bool limited_mode,
 
 	// initialize models
 	initImage();
-	fm = new FalseColorModel(&queue);
+	fm = new FalseColorModel();
 	initFalseColor(); // depends on ImageModel / initImage()
 	lm = new LabelingModel();
 	initLabeling(dimensions);
@@ -222,9 +222,6 @@ void Controller::doSpawnROI(bool reuse, const cv::Rect &roi)
 		 * desired configuration, so we will recompute from scratch */
 		reuse = false;
 	}
-	// also cancel CommandRunners
-	fm->reset();
-
 	disableGUI(TT_SELECT_ROI);
 
 	updateROI(reuse, roi);

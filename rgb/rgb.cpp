@@ -48,12 +48,14 @@ RGB::RGB()
 		config,
 		"Johannes Jordan",
 		"johannes.jordan@informatik.uni-erlangen.de"),
-   calcPo(new SOMProgressObserver(this))
+   calcPo(new SOMProgressObserver(this)),
+   abortFlag(false)
 {}
 
 RGB::~RGB()
 {
 	delete calcPo;
+	delete srcimg;
 }
 
 int RGB::execute()
@@ -95,7 +97,15 @@ std::map<std::string, boost::any> RGB::execute(std::map<std::string, boost::any>
 	if ((**src).empty())
 		assert(false);
 
-	cv::Mat3f bgr = execute(**src, po);
+	// BUG BUG BUG
+	// we need to copy the source image, because the pointer stored in the
+	// shared data object may be deleted.
+	// FIXME TODO gerbil's SharedData concept is broken.
+
+	// copy
+	srcimg = new multi_img(**src);
+
+	cv::Mat3f bgr = execute(*srcimg, po);
 	if (bgr.empty())
 		assert(false);
 
@@ -346,7 +356,7 @@ cv::Mat3f RGB::executeSOM(const multi_img &input_img)
 
 	img.rebuildPixels(false);
 
-	SOM *som = SOMTrainer::train(config.som, img, calcPo);
+	SOM *som = SOMTrainer::train(config.som, img, abortFlag, calcPo);
 	if (som == NULL)
 		return cv::Mat3f();
 

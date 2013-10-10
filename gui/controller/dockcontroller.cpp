@@ -148,18 +148,19 @@ void DockController::setupDocks()
 			bandDock->bandView(), SLOT(toggleSingleLabel(bool)));
 
 	/* RGB Dock */
-	connect(chief->imageModel(), SIGNAL(imageUpdate(representation::t,SharedMultiImgPtr)),
-			rgbDock, SLOT(processImageUpdate(representation::t,SharedMultiImgPtr)));
+	connect(rgbDock, SIGNAL(falseColoringRequested(FalseColoring::Type,bool)),
+			chief->falseColorModel(), SLOT(requestColoring(FalseColoring::Type,bool)));
+	connect(rgbDock, SIGNAL(cancelComputationRequested(FalseColoring::Type)),
+			chief->falseColorModel(), SLOT(cancelComputation(FalseColoring::Type)));
 
-	connect(rgbDock, SIGNAL(falseColorLazyRequested(coloring, bool)),
-			chief->falseColorModel(), SLOT(returnIfCached(coloring, bool)));
-	connect(rgbDock, SIGNAL(falseColorRequested(coloring, bool, bool)),
-			chief->falseColorModel(), SLOT(computeBackground(coloring, bool, bool)));
-
-	connect(chief->falseColorModel(), SIGNAL(progressChanged(coloring,int)),
-			rgbDock, SLOT(processCalculationProgressChanged(coloring,int)));
-	connect(chief->falseColorModel(), SIGNAL(calculationComplete(coloring, bool, QPixmap)),
-			rgbDock, SLOT(updatePixmap(coloring, bool, QPixmap)));
+	connect(chief->falseColorModel(), SIGNAL(coloringOutOfDate(FalseColoring::Type)),
+			rgbDock, SLOT(processColoringOutOfDate(FalseColoring::Type)));
+	connect(chief->falseColorModel(), SIGNAL(progressChanged(FalseColoring::Type,int)),
+			rgbDock, SLOT(processCalculationProgressChanged(FalseColoring::Type,int)));
+	connect(chief->falseColorModel(), SIGNAL(coloringComputed(FalseColoring::Type,QPixmap)),
+			rgbDock, SLOT(processColoringComputed(FalseColoring::Type,QPixmap)));
+	connect(chief->falseColorModel(), SIGNAL(computationCancelled(FalseColoring::Type)),
+			rgbDock, SLOT(processComputationCancelled(FalseColoring::Type)));
 
 
 	/* ROI Dock */

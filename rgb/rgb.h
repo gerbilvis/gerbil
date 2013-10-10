@@ -24,6 +24,7 @@ public:
 	void printHelp() const;
 	// Receive progress updates from internal som calculation
 	void setSomProgress(int percent);
+	void abort() { abortFlag = true; }
 protected:
 	cv::Mat3f executePCA(const multi_img& src);
 #ifdef WITH_EDGE_DETECT
@@ -35,6 +36,8 @@ public:
 	RGBConfig config;
 
 private:
+	multi_img *srcimg;
+
 	// contains the non-gradient image, if the calculation is performed
 	// on the gradient (only loaded and used for statistical output)
 	multi_img::ptr orig_img;
@@ -44,6 +47,8 @@ private:
 
 	// internal observer: observe SOM training
 	vole::ProgressObserver *calcPo;
+
+	volatile bool abortFlag;
 };
 
 }

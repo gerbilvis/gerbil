@@ -18,16 +18,29 @@
 #include <fstream>
 
 SOMTrainer::SOMTrainer(SOM *map, const multi_img &image,
-						 const vole::EdgeDetectionConfig &conf,
+						 const vole::EdgeDetectionConfig &conf)
+	: som(map), input(image), config(conf), currIter(0),
+		   m_bmuMap(cv::Mat::zeros(som->get2dHeight(), som->get2dWidth(), CV_64F)),
+		   abort(NULL), po(NULL)
+{}
+
+SOMTrainer::SOMTrainer(SOM *map, const multi_img &image,
+						 const vole::EdgeDetectionConfig &conf, volatile bool &abort,
 						vole::ProgressObserver *po)
 	: som(map), input(image), config(conf), currIter(0),
 	  m_bmuMap(cv::Mat::zeros(som->get2dHeight(), som->get2dWidth(), CV_64F)),
-	  po(po)
+	  abort(&abort), po(po)
 {
 }
 
+SOM *SOMTrainer::train(const vole::EdgeDetectionConfig &conf, const multi_img &img)
+{
+	bool dummy;
+	return train(conf, img, dummy, NULL);
+}
+
 SOM *SOMTrainer::train(const vole::EdgeDetectionConfig &config,
-						 const multi_img &img,
+						 const multi_img &img, volatile bool &abort,
 					   vole::ProgressObserver *po
 					   )
 {
@@ -36,7 +49,7 @@ SOM *SOMTrainer::train(const vole::EdgeDetectionConfig &config,
 		SOM *som = SOM::createSOM(config, img.size(), img.meta);
 		std::cout << "# Generated " << som->description() << std::endl;
 
-		SOMTrainer trainer(som, img, config, po);
+		SOMTrainer trainer(som, img, config, abort, po);
 
 		std::cout << "# SOM Trainer starts to feed the network using "
 				  << config.maxIter << " iterations..." << std::endl;
@@ -65,7 +78,6 @@ SOM *SOMTrainer::train(const vole::EdgeDetectionConfig &config,
 
 void SOMTrainer::feedNetwork()
 {
-
 	// matrices that hold shuffled sequences of the input for number of iterations
 	std::cout << "Start feeding" << std::endl;
 	cv::Mat_<int> shuffledY(1, config.maxIter);
@@ -90,6 +102,10 @@ void SOMTrainer::feedNetwork()
 	int ctr = 0;
 	for (; itX != shuffledX.end(); itX++, itY++)
 	{
+		if(abort != NULL && *abort == true) {
+			std::cerr << "SOMTRainer aborting" << std::endl;
+			break;
+		}
 		// extract random pixel vector from the multispectral image
 		const multi_img::Pixel &vec = input(*itY, *itX);
 		sumOfUpdates += feedSample(vec);

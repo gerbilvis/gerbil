@@ -9,40 +9,57 @@
 
 class ScaledView;
 
+
+struct RgbDockState {
+	enum Type {FINISHED=0, CALCULATING};
+};
+
+
 class RgbDock : public QDockWidget, private Ui::RgbDock{
 	Q_OBJECT
 public:
 	explicit RgbDock(QWidget *parent = 0);
 	
 signals:
-	void falseColorRequested(coloring type, bool gradient, bool forceRecalculate);
-	void falseColorLazyRequested(coloring type, bool gradient);
-
+	/** Request a rendering for coloringType of the current image and ROI.
+	 *
+	 * @param recalc If set, the result shall be recalculated wether or not an
+	 *               up-to-date cached copy is available. Useful to request a
+	 *               new SOM.
+	 */
+	void falseColoringRequested(FalseColoring::Type coloringType, bool recalc = false);
+	/** Requests the model to cancel the previously requested calculation for
+	 * coloringType */
+	void cancelComputationRequested(FalseColoring::Type coloringType);
 public slots:
-	void processImageUpdate(representation::t type, SharedMultiImgPtr image);
 	void processVisibilityChanged(bool visible);
-	void processCalculationProgressChanged(coloring type, int percent);
-	void updatePixmap(coloring type, bool gradient, QPixmap p);
+	// from model: our displayed coloringType may be out of date
+	void processColoringOutOfDate(FalseColoring::Type coloringType);
+	void processCalculationProgressChanged(FalseColoring::Type coloringType, int percent);
+	void processColoringComputed(FalseColoring::Type coloringType, QPixmap p);
+	void processComputationCancelled(FalseColoring::Type coloringType);
 protected slots:
-	void selectColorRepresentation();
-	void calculateColorRepresentation();
-
+	void processSelectedColoring(); // the selection in the combo box changed
+	void processApplyClicked();
+	void debugProgressValue(int);
 protected:
-	// if CMF is selected, displayGradient is always signaled as false
-	bool currGradient() { return displayGradient && (displayType != CMF); }
-
 	void initUi();
 
-	// type and gradient that is currently displayed (not status of the input fields)
-	coloring displayType;
-	bool displayGradient;
+	// the coloringType currently selected in the comboBox
+	FalseColoring::Type selectedColoring();
 
-	// True if the current rgb image is up to date.
-	bool rgbValid;
+	void requestColoring(FalseColoring::Type coloringType, bool recalc = false);
+	void requestCancelComputation(FalseColoring::Type coloringType);
+	void updateProgressBar();
 
 	// True if the dock is visible (that is tab is selected or top level).
 	// Note: This is not the same as QWidget::isVisible()!
 	bool dockVisible;
+
+	// State of the FalseColorings
+	QMap<FalseColoring::Type, RgbDockState::Type> coloringState;
+	// Calculation progress percentage for progressbar for each FalseColoring
+	QMap<FalseColoring::Type, int> coloringProgress;
 };
 
 #endif // RGBDOCK_H
