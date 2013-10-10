@@ -7,6 +7,19 @@
 #include "rgbdock.h"
 #include "../model/falsecolormodel.h"
 
+
+std::ostream &operator<<(std::ostream& os, const RgbDockState::Type& state)
+{
+	if (state < 0 || state >= 3) {
+		os << "INVALID";
+		return os;
+	}
+	const char * const str[] = { "FINISHED", "CALCULATING", "ABORTING"};
+	os << str[state];
+	return os;
+}
+
+
 RgbDock::RgbDock(QWidget *parent)
 	: QDockWidget(parent)
 {
@@ -16,8 +29,8 @@ RgbDock::RgbDock(QWidget *parent)
 
 void RgbDock::processColoringComputed(FalseColoring::Type coloringType, QPixmap p)
 {
-	//GGDBG_CALL();
-	coloringState[coloringType] = RgbDockState::FINISHED;
+//	GGDBGM("enterState():"<<endl);
+	enterState(coloringType, RgbDockState::FINISHED);
 	updateProgressBar();
 	if (coloringType == selectedColoring()) {
 		theButton->setText("Re-Calculate");
@@ -29,12 +42,17 @@ void RgbDock::processColoringComputed(FalseColoring::Type coloringType, QPixmap 
 
 void RgbDock::processComputationCancelled(FalseColoring::Type coloringType)
 {
-	//GGDBG_CALL();
-	calcProgress->setVisible(false);
-	theButton->setText("Re-Calculate");
-	coloringProgress[coloringType] = 0;
-	coloringState[coloringType] = RgbDockState::FINISHED;
-	updateProgressBar();
+	if(coloringState[coloringType] == RgbDockState::ABORTING) {
+		calcProgress->setVisible(false);
+		theButton->setText("Re-Calculate");
+		coloringProgress[coloringType] = 0;
+//		GGDBGM("enterState():"<<endl);
+		enterState(coloringType, RgbDockState::FINISHED);
+		updateProgressBar();
+	} else if(coloringState[coloringType] == RgbDockState::CALCULATING) {
+//		GGDBGM("restarting cancelled computation"<<endl);
+		requestColoring(coloringType);
+	}
 }
 
 void RgbDock::processSelectedColoring()
@@ -54,15 +72,12 @@ void RgbDock::processSelectedColoring()
 void RgbDock::processApplyClicked()
 {
 	if(coloringState[selectedColoring()] == RgbDockState::CALCULATING) {
+//		GGDBGM("enterState():"<<endl);
+		enterState(selectedColoring(), RgbDockState::ABORTING);
 		emit cancelComputationRequested(selectedColoring());
 	} else if(coloringState[selectedColoring()] == RgbDockState::FINISHED) {
 		requestColoring(selectedColoring(), /* recalc */ true);
 	}
-}
-
-void RgbDock::debugProgressValue(int v)
-{
-	//GGDBGM("value " << v << endl);
 }
 
 void RgbDock::initUi()
@@ -85,13 +100,9 @@ void RgbDock::initUi()
 #endif // WITH_EDGE_DETECT
 	sourceBox->setCurrentIndex(0);
 
-	calcProgress->setValue(0);
-	calcProgress->setVisible(false);
+	updateProgressBar();
 
 	theButton->setVisible(false);
-
-	connect(calcProgress, SIGNAL(valueChanged(int)),
-			this, SLOT(debugProgressValue(int)));
 
 	connect(sourceBox, SIGNAL(currentIndexChanged(int)),
 			this, SLOT(processSelectedColoring()));
@@ -114,13 +125,9 @@ FalseColoring::Type RgbDock::selectedColoring()
 void RgbDock::requestColoring(FalseColoring::Type coloringType, bool recalc)
 {
 	theButton->setText("Cancel Computation");
-	coloringState[coloringType] = RgbDockState::CALCULATING;
+//	GGDBGM("enterState():"<<endl);
+	enterState(coloringType, RgbDockState::CALCULATING);
 	emit falseColoringRequested(coloringType, recalc);
-}
-
-void RgbDock::requestCancelComputation(FalseColoring::Type coloringType)
-{
-	emit cancelComputationRequested(coloringType);
 }
 
 void RgbDock::updateProgressBar()
@@ -130,8 +137,15 @@ void RgbDock::updateProgressBar()
 		calcProgress->setVisible(true);
 		calcProgress->setValue(percent);
 	} else {
+		calcProgress->setValue(0);
 		calcProgress->setVisible(false);
 	}
+}
+
+void RgbDock::enterState(FalseColoring::Type coloringType, RgbDockState::Type state)
+{
+//	GGDBGM(coloringType << " entering state " << state << endl);
+	coloringState[coloringType] = state;
 }
 
 void RgbDock::processVisibilityChanged(bool visible)

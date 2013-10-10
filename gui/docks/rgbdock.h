@@ -11,9 +11,9 @@ class ScaledView;
 
 
 struct RgbDockState {
-	enum Type {FINISHED=0, CALCULATING};
+	enum Type {FINISHED=0, CALCULATING, ABORTING};
 };
-
+std::ostream &operator<<(std::ostream& os, const RgbDockState::Type& state);
 
 class RgbDock : public QDockWidget, private Ui::RgbDock{
 	Q_OBJECT
@@ -41,7 +41,6 @@ public slots:
 protected slots:
 	void processSelectedColoring(); // the selection in the combo box changed
 	void processApplyClicked();
-	void debugProgressValue(int);
 protected:
 	void initUi();
 
@@ -49,8 +48,10 @@ protected:
 	FalseColoring::Type selectedColoring();
 
 	void requestColoring(FalseColoring::Type coloringType, bool recalc = false);
-	void requestCancelComputation(FalseColoring::Type coloringType);
+	// show/hide the progress bar depending on coloringState and update the value
 	void updateProgressBar();
+
+	void enterState(FalseColoring::Type coloringType, RgbDockState::Type state);
 
 	// True if the dock is visible (that is tab is selected or top level).
 	// Note: This is not the same as QWidget::isVisible()!

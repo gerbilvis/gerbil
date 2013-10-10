@@ -22,13 +22,14 @@ class BackgroundTaskQueue;
 struct FalseColoring {
 	// remember to update allList static member if this is changed!
 	enum Type {
-		CMF,
+		CMF=0,
 		CMFGRAD,
 		PCA,
 		PCAGRAD,
 		SOM,
 		SOMGRAD
 	};
+	enum {SIZE=6};
 	static bool isDeterministic(Type coloringTypet) {
 		return !(coloringTypet == SOM || coloringTypet == SOMGRAD);
 	}
@@ -53,11 +54,12 @@ struct FalseColoring {
 	}
 
 	static QList<Type> all() { return allList;	}
-	static size_t size() { return 6; }
+	static size_t size() { return SIZE; }
 private:
 	static QList<Type> allList;
 };
 Q_DECLARE_METATYPE(FalseColoring)
+std::ostream &operator<<(std::ostream& os, const FalseColoring::Type& coloringType);
 
 /** Cache item for computed false color images. */
 struct FalseColoringCacheItem {

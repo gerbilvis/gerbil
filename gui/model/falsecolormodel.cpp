@@ -22,6 +22,19 @@ QList<FalseColoring::Type> FalseColoring::allList = QList<FalseColoring::Type>()
 	<< FalseColoring::SOM
 	<< FalseColoring::SOMGRAD;
 
+std::ostream &operator<<(std::ostream& os, const FalseColoring::Type& coloringType)
+{
+	if (coloringType < 0 ||
+			coloringType >= FalseColoring::Type(FalseColoring::SIZE)) {
+		os << "INVALID";
+		return os;
+	}
+	const char * const str[] = { "CMF", "CMFGRAD", "PCA", "PCAGRAD", "SOM", "SOMGRAD" };
+	os << str[coloringType];
+	return os;
+}
+
+
 FalseColorModel::FalseColorModel()
 {
 	int type = QMetaType::type("FalseColoring");
