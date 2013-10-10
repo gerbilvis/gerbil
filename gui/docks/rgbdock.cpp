@@ -19,9 +19,16 @@ std::ostream &operator<<(std::ostream& os, const RgbDockState::Type& state)
 	return os;
 }
 
+static QStringList prettyFalseColorNames = QStringList()
+		<< "Color Matching Functions"
+		<< "Color Matching Functions on gradient"
+		<< "Principle Component Analysis"
+		<< "Principle Component Analysis on gradient"
+		<< "Self-organizing Map"
+		<< "Self-organizing Map on gradient";
 
 RgbDock::RgbDock(QWidget *parent)
-	: QDockWidget(parent)
+	: QDockWidget(parent), lastShown(FalseColoring::CMF)
 {
 	setupUi(this);
 	initUi();
@@ -31,12 +38,15 @@ void RgbDock::processColoringComputed(FalseColoring::Type coloringType, QPixmap 
 {
 //	GGDBGM("enterState():"<<endl);
 	enterState(coloringType, RgbDockState::FINISHED);
+	coloringUpToDate[coloringType] = true;
 	updateTheButton();
 	updateProgressBar();
 	if (coloringType == selectedColoring()) {
 		view->setEnabled(true);
 		view->setPixmap(p);
 		view->update();
+		view->setToolTip(prettyFalseColorNames[coloringType]);
+		lastShown = coloringType;
 	}
 }
 
@@ -68,6 +78,14 @@ void RgbDock::processApplyClicked()
 //		GGDBGM("enterState():"<<endl);
 		enterState(selectedColoring(), RgbDockState::ABORTING);
 		emit cancelComputationRequested(selectedColoring());
+		// go back to last shown coloring
+		if(coloringUpToDate[lastShown]) {
+			sourceBox->setCurrentIndex(int(lastShown));
+			requestColoring(lastShown);
+		} else { // or fall back to CMF, e.g. after ROI change
+			sourceBox->setCurrentIndex(FalseColoring::CMF);
+			requestColoring(FalseColoring::CMF);
+		}
 	} else if(coloringState[selectedColoring()] == RgbDockState::FINISHED) {
 		requestColoring(selectedColoring(), /* recalc */ true);
 	}
@@ -75,20 +93,18 @@ void RgbDock::processApplyClicked()
 
 void RgbDock::initUi()
 {
-	// TODO: add tooltip
-	sourceBox->addItem("Color Matching Functions",
+	sourceBox->addItem(prettyFalseColorNames[FalseColoring::CMF],
 					   FalseColoring::CMF);
-	sourceBox->addItem("Color Matching Functions on gradient",
+	sourceBox->addItem(prettyFalseColorNames[FalseColoring::CMFGRAD],
 					   FalseColoring::CMFGRAD);
-	sourceBox->addItem("Principle Component Analysis",
+	sourceBox->addItem(prettyFalseColorNames[FalseColoring::PCA],
 					   FalseColoring::PCA);
-	sourceBox->addItem("Principle Component Analysis on gradient",
+	sourceBox->addItem(prettyFalseColorNames[FalseColoring::PCAGRAD],
 					   FalseColoring::PCAGRAD);
 #ifdef WITH_EDGE_DETECT
-	// TODO: add tooltip
-	sourceBox->addItem("Self-organizing Map",
+	sourceBox->addItem(prettyFalseColorNames[FalseColoring::SOM],
 					   FalseColoring::SOM);
-	sourceBox->addItem("Self-organizing Map on gradient",
+	sourceBox->addItem(prettyFalseColorNames[FalseColoring::SOMGRAD],
 					   FalseColoring::SOMGRAD);
 #endif // WITH_EDGE_DETECT
 	sourceBox->setCurrentIndex(0);
@@ -178,6 +194,7 @@ void RgbDock::processVisibilityChanged(bool visible)
 
 void RgbDock::processColoringOutOfDate(FalseColoring::Type coloringType)
 {
+	coloringUpToDate[coloringType] = false;
 	if(dockVisible) {
 		requestColoring(selectedColoring());
 	}

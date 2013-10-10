@@ -63,6 +63,8 @@ protected:
 	QMap<FalseColoring::Type, RgbDockState::Type> coloringState;
 	// Calculation progress percentage for progressbar for each FalseColoring
 	QMap<FalseColoring::Type, int> coloringProgress;
+	QMap<FalseColoring::Type, bool> coloringUpToDate;
+	FalseColoring::Type lastShown;
 };
 
 #endif // RGBDOCK_H
