@@ -50,6 +50,8 @@ protected:
 	void requestColoring(FalseColoring::Type coloringType, bool recalc = false);
 	// show/hide the progress bar depending on coloringState and update the value
 	void updateProgressBar();
+	// update/show/hide apply/cancel button according to state
+	void updateTheButton();
 
 	void enterState(FalseColoring::Type coloringType, RgbDockState::Type state);
 
