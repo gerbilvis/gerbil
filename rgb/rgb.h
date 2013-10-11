@@ -38,10 +38,6 @@ public:
 private:
 	multi_img *srcimg;
 
-	// contains the non-gradient image, if the calculation is performed
-	// on the gradient (only loaded and used for statistical output)
-	multi_img::ptr orig_img;
-
 	// external observer from client : observes our progress
 	vole::ProgressObserver *po;
 

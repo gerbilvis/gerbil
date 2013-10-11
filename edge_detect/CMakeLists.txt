@@ -19,7 +19,6 @@ vole_compile_library(
         "som"
         "som2d"
         "som3d"
-        "som_cone"
         "som_distance"
         "som_tester"
         "som_trainer"

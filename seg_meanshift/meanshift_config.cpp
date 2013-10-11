@@ -24,9 +24,6 @@ MeanShiftConfig::MeanShiftConfig(const std::string& prefix)
 	, superpixel("superpixel"),
 	sp_withGrad(false), sp_weight(0)
 #endif
-#ifdef WITH_EDGE_DETECT
-	, som("som")
-#endif
 {
 	use_LSH = false;
 	K = 20;
@@ -71,9 +68,6 @@ std::string MeanShiftConfig::getString() const {
 	s << superpixel.getString();
 	s << "sp_withGrad=" << (sp_withGrad ? "true" : "false") << std::endl;
 	s << "sp_weight=" << sp_weight << std::endl;
-#endif
-#ifdef WITH_EDGE_DETECT
-	s << som.getString();
 #endif
 	s << "useLSH=" << (use_LSH ? "true" : "false") << std::endl
 	  << "K=" << K << std::endl
@@ -126,9 +120,6 @@ void MeanShiftConfig::initBoostOptions() {
 	;
 #ifdef WITH_SEG_FELZENSZWALB
 	options.add(superpixel.options);
-#endif
-#ifdef WITH_EDGE_DETECT
-	options.add(som.options);
 #endif
 
 	if (prefix_enabled)	// skip input/output options

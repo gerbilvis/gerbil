@@ -5,9 +5,6 @@
 #ifdef WITH_SEG_FELZENSZWALB
 #include <felzenszwalb2_config.h>
 #endif
-#ifdef WITH_EDGE_DETECT
-#include <edge_detection_config.h>
-#endif
 #include <imginput.h>
 
 namespace vole {
@@ -45,10 +42,6 @@ public:
 	bool sp_withGrad;
 	// how to weight superpixel sizes: 0 do not weight, 1 fixed bandwidths, 2 alter weightdp2
 	int sp_weight;
-#endif
-
-#ifdef WITH_EDGE_DETECT
-	EdgeDetectionConfig som;
 #endif
 
 	/// working directory

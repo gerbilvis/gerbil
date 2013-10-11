@@ -10,10 +10,9 @@ namespace vole {
 enum somtype {
 	SOM_LINE,
 	SOM_SQUARE,
-	SOM_CUBE,
-	SOM_CONE
+	SOM_CUBE
 };
-#define somtypeString {"line", "square", "cube", "cone"}
+#define somtypeString {"line", "square", "cube"}
 
 class EdgeDetectionConfig : public Config {
 
@@ -34,8 +33,7 @@ public:
 	uint64 seed;
 	
 	// SOM features
-	int sidelength;		// line, square, cube
-	double granularity;	// cone
+	int sidelength;
 	somtype type;
 
 	// export SOM?

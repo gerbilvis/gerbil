@@ -3,7 +3,6 @@
 // for factory methods
 #include "som2d.h"
 #include "som3d.h"
-#include "som_cone.h"
 
 #include <sm_factory.h>
 
@@ -37,8 +36,6 @@ SOM* SOM::createSOM(const vole::EdgeDetectionConfig &conf,
 		return new SOM2d(conf, dimensions, meta);
 	case vole::SOM_CUBE:
 		return new SOM3d(conf, dimensions, meta);
-	case vole::SOM_CONE:
-		return new SOMCone(conf, dimensions, meta);
 	default:
 		return 0;
 	}
@@ -56,8 +53,6 @@ SOM* SOM::createSOM(const vole::EdgeDetectionConfig &conf,
 		return new SOM2d(conf, data, meta);
 	case vole::SOM_CUBE:
 		return new SOM3d(conf, data, meta);
-	case vole::SOM_CONE:
-		return new SOMCone(conf, data, meta);
 	default:
 		return 0;
 	}

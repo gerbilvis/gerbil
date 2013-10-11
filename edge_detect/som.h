@@ -11,25 +11,6 @@
 #include <opencv2/core/core.hpp>
 #include <vector>
 
-// === Major TODOs ===
-
-// wenn rgb.cpp beim berechnen der som nicht prueft, ob der task abgebrochen wird,
-// dann wartet qgerbil evtl 5min bis die som berechnet ist und haengt sich in dieser zeit auf
-
-// the specialized version of updateNeighbourhood in SOMCone is buggy and
-// therefore currently not used. getting this function wokring could speed up
-// the training process significantly
-
-// somcone: force granularity to be <= 0.25, test small cone sizes
-
-// meanshift shell testen
-
-
-// === Minor TODOs / code structure ===
-
-// SOM3d -> SOMCube, SOM2d -> SOMSquare...
-// dito iteratoren
-
 class SOM
 {
 public:

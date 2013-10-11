@@ -201,14 +201,6 @@ void FalseColorModelPayload::run()
 		cmd->config.som.maxIter = 50000;
 		cmd->config.som.seed = time(NULL);
 
-		// CONE parameters
-		//		cmd->config.som.type		= vole::SOM_CONE;
-		//		cmd->config.som.granularity	= 0.06; // 1081 neurons
-		//		cmd->config.som.sigmaStart  = 0.12;
-		//		cmd->config.som.sigmaEnd    = 0.03;
-		//		cmd->config.som.learnStart  = 0.75;
-		//		cmd->config.som.learnEnd    = 0.01;
-
 		// CUBE parameters
 		cmd->config.som.type        = vole::SOM_CUBE;
 		cmd->config.som.sidelength  = 10;

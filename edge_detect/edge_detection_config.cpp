@@ -14,7 +14,6 @@ EdgeDetectionConfig::EdgeDetectionConfig(const std::string& p)
 {
 	som_file = "";
 	sidelength = 32; // 1024 neurons
-	granularity = 0.06; // 1081 neurons
 	type = SOM_SQUARE;
 	maxIter = 40000;
 	learnStart = 0.75;
@@ -36,11 +35,9 @@ void EdgeDetectionConfig::initBoostOptions() {
 			 "When set, read given multispectral image file to initialize SOM"
 			 " instead of training")
 		(key("type"), value(&type)->default_value(type),
-			"Layout of the neurons in the SOM: line, square, cube, cone")
+			"Layout of the neurons in the SOM: line, square, cube")
 		(key("sidelength"), value(&sidelength)->default_value(sidelength),
 			"Sidelength of line / square / cube of the SOM")
-		(key("granularity"), value(&granularity)->default_value(granularity),
-			"Distance between neurons inside the cone")
 		(key("maxIter"), value(&maxIter)->default_value(maxIter),
 			"Number of training iterations for the SOM")
 		(key("learnStart"), value(&learnStart)->default_value(learnStart),
@@ -82,7 +79,6 @@ std::string EdgeDetectionConfig::getString() const {
 	s	<< "som_input=" << som_file << " # SOM image file instead of training" << std::endl
 		<< "type=" << type << " # Layout of the neurons in the SOM" << std::endl
 		<< "sidelength=" << sidelength << " # Sidelength of line / square / cube of the SOM" << std::endl
-		<< "granularity=" << granularity << " # Distance between neurons inside the cone" << std::endl
 		<< "maxIter=" << maxIter << " # Number of training iterations for the SOM" << std::endl
 		<< "learnStart=" << learnStart << " # Start value for the learning rate in SOM" << std::endl
 		<< "learnEnd=" << learnEnd << " # End value for the learning rate in SOM" << std::endl
