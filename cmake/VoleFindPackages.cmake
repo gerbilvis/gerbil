@@ -2,8 +2,8 @@
 set(VOLE_MINIMUM_OPENCV_VERSION "2.4.0")
 set(VOLE_MINIMUM_QT_VERSION "4.7.0")
 set(VOLE_MINIMUM_BOOST_VERSION "1.35")
-set(VOLE_MINIMUM_EIGEN_VERSION "3.0")
-set(VOLE_MINIMUM_SLEPC_VERSION "3.1") # TODO: version check missing in FindSLEPc
+#set(VOLE_MINIMUM_EIGEN_VERSION "3.0")
+#set(VOLE_MINIMUM_SLEPC_VERSION "3.1") # TODO: version check missing in FindSLEPc
 
 # OpenCV
 find_package(OpenCV PATHS "/net/cv/lib/share/OpenCV" "/local/opencv/share/OpenCV")
@@ -45,14 +45,14 @@ vole_check_package(OPENGL
 )
 
 # GLEW
-find_package(GLEW)
-vole_check_package(GLEW
-	"GLEW"
-	"Please install GLEW."
-	GLEW_FOUND
-	"${GLEW_INCLUDE_PATH}"
-	"${GLEW_LIBRARIES}"
-)
+#find_package(GLEW)
+#vole_check_package(GLEW
+#	"GLEW"
+#	"Please install GLEW."
+#	GLEW_FOUND
+#	"${GLEW_INCLUDE_PATH}"
+#	"${GLEW_LIBRARIES}"
+#)
 
 ## We are not quite there yet to support Qt5 in the code (run-time problems)
 ## QtWidgets 5
@@ -82,7 +82,7 @@ vole_check_package(GLEW
 	find_package(Qt4 ${VOLE_MINIMUM_QT_VERSION} COMPONENTS QtCore QtGui)
 	vole_check_package(QT
 		"Qt4"
-		"Please install Qt5 OR Qt4 >=${VOLE_MINIMUM_QT_VERSION} or set QT_QMAKE_EXECUTABLE."
+		"Please install Qt4 >=${VOLE_MINIMUM_QT_VERSION} or set QT_QMAKE_EXECUTABLE."
 		QT_FOUND
 		"${QT_INCLUDE_DIR};${QT_QTCORE_INCLUDE_DIR};${QT_QTGUI_INCLUDE_DIR}"
 		"${QT_QTCORE_LIBRARY};${QT_QTGUI_LIBRARY}"
@@ -92,7 +92,7 @@ vole_check_package(GLEW
 	find_package(Qt4 ${VOLE_MINIMUM_QT_VERSION} COMPONENTS QtOpenGL)
 	vole_check_package(QT_OPENGL
 		"Qt4 OpenGL"
-		"Please install Qt5 OR Qt4 >=${VOLE_MINIMUM_QT_VERSION} or set QT_QMAKE_EXECUTABLE."
+	"Please install Qt4 >=${VOLE_MINIMUM_QT_VERSION} or set QT_QMAKE_EXECUTABLE."
 		QT_QTOPENGL_FOUND
 		"${QT_INCLUDE_DIR};${QT_QTOPENGL_INCLUDE_DIR}"
 		"${QT_QTOPENGL_LIBRARY}"
@@ -102,22 +102,11 @@ vole_check_package(GLEW
 	find_package(Qt4 ${VOLE_MINIMUM_QT_VERSION} COMPONENTS QtXml)
 	vole_check_package(QT_XML
 		"Qt4 XML"
-		"Please install Qt5 OR Qt4 >=${VOLE_MINIMUM_QT_VERSION} or set QT_QMAKE_EXECUTABLE."
+	"Please install Qt4 >=${VOLE_MINIMUM_QT_VERSION} or set QT_QMAKE_EXECUTABLE."
 		QT_QTXML_FOUND
 		"${QT_INCLUDE_DIR};${QT_QTXML_INCLUDE_DIR}"
 		"${QT_QTXML_LIBRARY}"
 	)
-#endif()
-
-# ITK
-#find_package(ITK)
-#vole_check_package(ITK
-#    "ITK"
-#    "Please install ITK."
-#    ITK_FOUND
-#    "${ITK_INCLUDE_DIRS}"
-#    "${ITK_LIBRARIES}"
-#)
 
 # Boost
 if(WIN32)
@@ -141,11 +130,6 @@ vole_check_package(BOOST
 
 # Boost system
 find_package(Boost ${VOLE_MINIMUM_BOOST_VERSION} COMPONENTS system)
-#if (Boost_FILESYSTEM_FOUND)
-#	if (${BOOST_VERSION} >= 104100)
-#		add_definitions(-DBOOST_FILESYSTEM_VERSION=3)
-#	endif (${BOOST_VERSION} >= 104100)
-#endif (Boost_FILESYSTEM_FOUND)
 vole_check_package(BOOST_SYSTEM
 	"Boost system"
 	"Please install Boost system >= ${VOLE_MINIMUM_BOOST_VERSION} or set Boost_ROOT."
@@ -215,14 +199,14 @@ vole_check_package(BOOST_CHRONO
 )
 
 # Boost python
-find_package(Boost ${VOLE_MINIMUM_BOOST_VERSION} COMPONENTS python)
-vole_check_package(BOOST_PYTHON
-	"Boost python"
-	"Please install Boost python >=${VOLE_MINIMUM_BOOST_VERSION} or set Boost_ROOT."
-	Boost_PYTHON_FOUND
-	"${Boost_INCLUDE_DIR}/include/;${Boost_INCLUDE_DIR}"
-	"${Boost_PYTHON_LIBRARY}"
-)
+#find_package(Boost ${VOLE_MINIMUM_BOOST_VERSION} COMPONENTS python)
+#vole_check_package(BOOST_PYTHON
+#	"Boost python"
+#	"Please install Boost python >=${VOLE_MINIMUM_BOOST_VERSION} or set Boost_ROOT."
+#	Boost_PYTHON_FOUND
+#	"${Boost_INCLUDE_DIR}/include/;${Boost_INCLUDE_DIR}"
+#	"${Boost_PYTHON_LIBRARY}"
+#)
 
 # PETSc && SLEPc
 #find_package(PETSc)
@@ -243,14 +227,14 @@ vole_check_package(BOOST_PYTHON
 #)
 
 # libEigen3
-find_package(Eigen3 ${VOLE_MINIMUM_EIGEN_VERSION})
-vole_check_package(EIGEN3
-	"Eigen"
-	"Please install libeigen3 >=${VOLE_MINIMUM_EIGEN_VERSION}"
-	EIGEN3_FOUND
-	"${EIGEN3_INCLUDE_DIR}"
-	""
-)
+#find_package(Eigen3 ${VOLE_MINIMUM_EIGEN_VERSION})
+#vole_check_package(EIGEN3
+#	"Eigen"
+#	"Please install libeigen3 >=${VOLE_MINIMUM_EIGEN_VERSION}"
+#	EIGEN3_FOUND
+#	"${EIGEN3_INCLUDE_DIR}"
+#	""
+#)
 
 # GDAL
 find_package(GDAL)
