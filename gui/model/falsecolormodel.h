@@ -20,18 +20,18 @@ class BackgroundTaskQueue;
 
 /** Encapsulated enum representing the different false coloring types. */
 struct FalseColoring {
-	// remember to update allList static member if this is changed!
+	/* if this is changed, also update static member FalseColoring::allList
+	 * and prettyFalseColorNames in falsecolordock.cpp */
 	enum Type {
 		CMF=0,
-		CMFGRAD,
 		PCA,
 		PCAGRAD,
 		SOM,
 		SOMGRAD
 	};
-	enum {SIZE=6};
-	static bool isDeterministic(Type coloringTypet) {
-		return !(coloringTypet == SOM || coloringTypet == SOMGRAD);
+	enum {SIZE=5};
+	static bool isDeterministic(Type coloringType) {
+		return !(coloringType == SOM || coloringType == SOMGRAD);
 	}
 	/** Returns true if the computation false coloring coloringType is based on
 	 * image represesentation type and false otherwise.	 */
@@ -42,7 +42,6 @@ struct FalseColoring {
 		case SOM:
 			return type == representation::IMG;
 			break;
-		case CMFGRAD:
 		case PCAGRAD:
 		case SOMGRAD:
 			return type == representation::GRAD;

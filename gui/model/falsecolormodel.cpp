@@ -16,7 +16,6 @@
 
 QList<FalseColoring::Type> FalseColoring::allList = QList<FalseColoring::Type>()
 	<< FalseColoring::CMF
-	<< FalseColoring::CMFGRAD
 	<< FalseColoring::PCA
 	<< FalseColoring::PCAGRAD
 	<< FalseColoring::SOM
@@ -29,7 +28,7 @@ std::ostream &operator<<(std::ostream& os, const FalseColoring::Type& coloringTy
 		os << "INVALID";
 		return os;
 	}
-	const char * const str[] = { "CMF", "CMFGRAD", "PCA", "PCAGRAD", "SOM", "SOMGRAD" };
+	const char * const str[] = { "CMF", "PCA", "PCAGRAD", "SOM", "SOMGRAD" };
 	os << str[coloringType];
 	return os;
 }
@@ -188,7 +187,6 @@ void FalseColorModelPayload::run()
 	switch (coloringType)
 	{
 	case FalseColoring::CMF:
-	case FalseColoring::CMFGRAD:
 		cmd->config.algo = gerbil::COLOR_XYZ;
 		break;
 	case FalseColoring::PCA:

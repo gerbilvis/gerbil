@@ -20,12 +20,11 @@ std::ostream &operator<<(std::ostream& os, const FalseColoringState::Type& state
 }
 
 static QStringList prettyFalseColorNames = QStringList()
-		<< "Color Matching Functions"
-		<< "Color Matching Functions on gradient"
-		<< "Principle Component Analysis"
-		<< "Principle Component Analysis on gradient"
-		<< "Self-organizing Map"
-		<< "Self-organizing Map on gradient";
+		<< "True Color (CIE XYZ)"
+		<< "Principle Component Analysis (PCA)"
+		<< "Spectral-gradient PCA"
+		<< "Self-organizing Map (SOM)"
+		<< "Spectral-gradient SOM";
 
 FalseColorDock::FalseColorDock(QWidget *parent)
 	: QDockWidget(parent), lastShown(FalseColoring::CMF)
@@ -95,8 +94,6 @@ void FalseColorDock::initUi()
 {
 	sourceBox->addItem(prettyFalseColorNames[FalseColoring::CMF],
 					   FalseColoring::CMF);
-	sourceBox->addItem(prettyFalseColorNames[FalseColoring::CMFGRAD],
-					   FalseColoring::CMFGRAD);
 	sourceBox->addItem(prettyFalseColorNames[FalseColoring::PCA],
 					   FalseColoring::PCA);
 	sourceBox->addItem(prettyFalseColorNames[FalseColoring::PCAGRAD],
