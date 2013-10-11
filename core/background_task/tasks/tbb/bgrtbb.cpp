@@ -46,7 +46,7 @@ bool BgrTbb::run()
 			return false;
 		} else {
 			SharedDataSwapLock lock(bgr->mutex);
-			delete bgr->swap(newBgr);
+			bgr->replace(newBgr);
 			return true;
 		}
 	}

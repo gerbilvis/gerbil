@@ -82,10 +82,8 @@ public:
 	SharedData(T *data) : data(data) {}
 	/** Destruct wrapper alongside with the internal data. */
 	virtual ~SharedData() { delete data; }
-	/** Yield ownership of current data and become owner of new data.
-		Raw pointer to old data is returned to caller which is responsible
-		for deallocation. */
-	T *swap(T *newData) { T *oldData = data; data = newData; return oldData; }
+	/** De-allocate data and replace with new data */
+	void replace(T *newData) { if (data != newData) delete data; data = newData; }
 	
 	T &operator*() { return *data; }
 	T *operator->() { return data; }
@@ -104,7 +102,7 @@ private:
 
 // Specialization of SharedData for multi_img_base / multi_img
 //
-// Most Tasks in gerbil need to operate on a multi_img object. For this reason
+// Most tasks in gerbil need to operate on a multi_img object. For this reason
 // SharedData<multi_img_base> casts to multi_img in most access functions. If
 // client code can restrict itself to multi_img_base functionality, it should
 // use getBase() and overloaded swap(multi_img_base*).
@@ -115,6 +113,10 @@ private:
 // SharedData<multi_img_base>. Client code has to be aware of the consequences
 // of the implicit casts.
 
+// Added functionality: The object can now also be initialized with a
+// multi_img::ptr. It will keep the shared_ptr as shared pointers never give
+// up ownership.
+
 // possible optimization: use an extra multi_img* member to store the result
 // of the cast.
 template<>
@@ -123,18 +125,17 @@ public:
 	SharedDataMutex mutex;
 
 	SharedData(multi_img_base *data) : data(data) {}
-	// returns NULL if the encapsulated pointer points to multi_img_base object
-	multi_img *swap(multi_img* newData) {
-		multi_img_base *tmp = data;
+	SharedData(multi_img::ptr ptr) : data(ptr.get()), owner(ptr) {}
+
+	void replace(multi_img_base *newData) {
+		if (data == newData)
+			return;
+
+		if (owner.get()) // data is owned by a shared pointer
+			owner.reset();
+		else
+			delete data;
 		data = newData;
-		multi_img *ret = dynamic_cast<multi_img*>(tmp);
-		return ret;
-	}
-	// overloaded swap for base class: returns encapsulated pointer
-	multi_img_base *swap(multi_img_base* newData) {
-		multi_img_base *tmp = data;
-		data = newData;
-		return tmp;
 	}
 	// throws bad_cast, if the encapsulated pointer points to multi_img_base
 	// object
@@ -158,6 +159,7 @@ public:
 
 protected:
 	multi_img_base *data;
+	multi_img::ptr owner;
 private:
 	// non-copyable
 	SharedData(const SharedData<multi_img_base> &other);

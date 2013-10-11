@@ -50,7 +50,7 @@ bool ClampCuda::run()
 		return false;
 	} else {
 		SharedDataSwapLock lock(image->mutex);
-		delete image->swap(target);
+		image->replace(target);
 		return true;
 	}
 }

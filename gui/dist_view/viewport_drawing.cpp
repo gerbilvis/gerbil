@@ -90,7 +90,7 @@ bool Viewport::drawScene(QPainter *painter, bool withDynamics)
 	return !disabled;
 }
 
-void Viewport::updateTextures(RenderMode spectrum, RenderMode highlight)
+void Viewport::updateBuffers(RenderMode spectrum, RenderMode highlight)
 {
 	if (!buffers[0].fbo || !buffers[1].fbo)
 		return;
@@ -392,7 +392,7 @@ void Viewport::drawAxesFg(QPainter *painter)
 	else
 		painter->setPen(Qt::gray);
 	qreal top = ((*ctx)->nbins);
-	if (!illuminant.empty())
+	if (!illuminant.empty() && illuminant_apply)
 		top *= illuminant.at(selection);
 	painter->drawLine(QPointF(selection, 0.), QPointF(selection, top));
 
@@ -401,7 +401,7 @@ void Viewport::drawAxesFg(QPainter *painter)
 		painter->setPen(Qt::red);
 		for (int i = 0; i < (*ctx)->dimensionality; ++i) {
 			qreal y1 = limiters[i].first, y2 = limiters[i].second + 1;
-			if (!illuminant.empty()) {
+			if (!illuminant.empty() && illuminant_apply) {
 				y1 *= illuminant.at(selection);
 				y2 *= illuminant.at(selection);
 			}
@@ -429,35 +429,39 @@ void Viewport::drawAxesBg(QPainter *painter)
 
 	// draw axes in background
 	painter->setPen(QColor(64, 64, 64));
-	QPolygonF poly;
-	if (!illuminant.empty()) {
-		for (int i = 0; i < (*ctx)->dimensionality; ++i) {
-			qreal top = ((*ctx)->nbins-1) * illuminant.at(i);
-			painter->drawLine(QPointF(i, 0.), QPointF(i, top));
-			poly << QPointF(i, top);
-		}
-		poly << QPointF((*ctx)->dimensionality-1, (*ctx)->nbins-1);
-		poly << QPointF(0, (*ctx)->nbins-1);
-	} else {
+
+	/* without illuminant */
+	if (!illuminant_show || illuminant.empty()) {
 		for (int i = 0; i < (*ctx)->dimensionality; ++i)
 			painter->drawLine(i, 0, i, (*ctx)->nbins);
+		return;
 	}
 
-	// visualize illuminant
-	if (!illuminant.empty()) {
-		QPolygonF poly2 = modelview.map(poly);
-		poly2.translate(0., -5.);
-		painter->restore();
-		QBrush brush(QColor(32, 32, 32), Qt::Dense3Pattern);
-		painter->setBrush(brush);
-		painter->setPen(Qt::NoPen);
-		painter->drawPolygon(poly2);
-		painter->setPen(Qt::white);
-		poly2.remove((*ctx)->dimensionality, 2);
-		painter->drawPolyline(poly2);
-		painter->save();
-		painter->setWorldTransform(modelview);
+	/* now instead with illuminant */
+
+	// polygon describing illuminant
+	QPolygonF poly;
+	for (int i = 0; i < (*ctx)->dimensionality; ++i) {
+		qreal top = ((*ctx)->nbins-1) * illuminant.at(i);
+		painter->drawLine(QPointF(i, 0.), QPointF(i, top));
+		poly << QPointF(i, top);
 	}
+	poly << QPointF((*ctx)->dimensionality-1, (*ctx)->nbins-1);
+	poly << QPointF(0, (*ctx)->nbins-1);
+
+	// visualize illuminant
+	QPolygonF poly2 = modelview.map(poly);
+	poly2.translate(0., -5.);
+	painter->restore();
+	QBrush brush(QColor(32, 32, 32), Qt::Dense3Pattern);
+	painter->setBrush(brush);
+	painter->setPen(Qt::NoPen);
+	painter->drawPolygon(poly2);
+	painter->setPen(Qt::white);
+	poly2.remove((*ctx)->dimensionality, 2);
+	painter->drawPolyline(poly2);
+	painter->save();
+	painter->setWorldTransform(modelview);
 }
 
 void Viewport::drawLegend(QPainter *painter, int sel)

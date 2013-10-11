@@ -11,24 +11,6 @@ IllumDock::~IllumDock()
 {
 }
 
-void IllumDock::onApplyClicked()
-{
-	int i1 = illum1Box->itemData(illum1Box->currentIndex()).value<int>();
-	int i2 = illum2Box->itemData(illum2Box->currentIndex()).value<int>();
-	if (i1 == i2)
-		return;
-
-	illum1Box->setDisabled(true);
-	showCheck->setVisible(true);
-	showCheck->setChecked(true);
-
-	emit applyIllum();
-
-	/* reflect change in our own gui (will propagate to IMG viewer) */
-	illum1Box->setCurrentIndex(illum2Box->currentIndex());
-}
-
-
 void IllumDock::initUi()
 {
 	for (int i = 0; i < 2; ++i) {
@@ -63,7 +45,6 @@ void IllumDock::onIllum1Selected(int idx)
 	showCheck->setEnabled(i1 > 0);
 	showCheck->setVisible(i1 > 0);
 	emit illum1Selected(i1);
-	emit showIlluminationCurveChanged(i1 > 0);
 }
 
 void IllumDock::onIllum2Selected(int idx)
@@ -71,12 +52,26 @@ void IllumDock::onIllum2Selected(int idx)
 	// i2: Temp. in Kelvin
 	int i2 = illum1Box->itemData(idx).value<int>();
 	emit illum2Selected(i2);
-	if(0==i2) {
-		emit showIlluminationCurveChanged(false);
-	}
 }
 
 void IllumDock::onShowToggled(bool show)
 {
 	emit showIlluminationCurveChanged(show);
+}
+
+void IllumDock::onApplyClicked()
+{
+	int i1 = illum1Box->itemData(illum1Box->currentIndex()).value<int>();
+	int i2 = illum2Box->itemData(illum2Box->currentIndex()).value<int>();
+	if (i1 == i2)
+		return;
+
+	illum1Box->setDisabled(true);
+	showCheck->setVisible(true);
+	showCheck->setChecked(true);
+
+	emit applyIllum();
+
+	/* reflect change in our own gui (will propagate to viewports) */
+	illum1Box->setCurrentIndex(illum2Box->currentIndex());
 }

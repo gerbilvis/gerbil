@@ -33,7 +33,7 @@ bool Viewport::updateXY(int sel, int bin)
 	/* second: handle bin -> intensity highlight */
 
 	/* correct y for illuminant */
-	if (!illuminant.empty() && illuminant_correction)
+	if (!illuminant.empty() && illuminant_apply)
 		bin = std::floor(bin / illuminant.at(sel) + 0.5f);
 
 	if (bin >= 0 && bin < (*ctx)->nbins) {
@@ -100,7 +100,7 @@ void Viewport::mouseMoveEvent(QGraphicsSceneMouseEvent *event)
 
 	if (needTextureUpdate) {
 		// calls update()
-		updateTextures(RM_SKIP, limiterMode ? RM_STEP : RM_FULL);
+		updateBuffers(RM_SKIP, limiterMode ? RM_STEP : RM_FULL);
 	} else if (needUpdate) {
 		update();
 	}
@@ -167,7 +167,7 @@ void Viewport::wheelEvent(QGraphicsSceneWheelEvent *event)
 	/* TODO: make sure that we use full space */
 
 	updateModelview();
-	updateTextures();
+	updateBuffers();
 }
 
 void Viewport::keyPressEvent(QKeyEvent *event)
@@ -241,7 +241,7 @@ void Viewport::keyPressEvent(QKeyEvent *event)
 		} else {
 			startNoHQ();
 			// deliberately make display worse for user to see effect
-			updateTextures();
+			updateBuffers();
 		}
 		break;
 	case Qt::Key_M:
@@ -250,6 +250,6 @@ void Viewport::keyPressEvent(QKeyEvent *event)
 	}
 
 	if (highlightAltered) {
-		updateTextures(RM_SKIP, RM_FULL);
+		updateBuffers(RM_SKIP, RM_FULL);
 	}
 }

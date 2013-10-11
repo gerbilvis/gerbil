@@ -36,6 +36,7 @@ vole_compile_library(
 	background_task/tasks/tbb/band2qimagetbb
 	background_task/tasks/tbb/rgbqttbb
 	background_task/tasks/tbb/bgrtbb
+	background_task/tasks/scopeimage
 
 	labeling
 	progress_observer

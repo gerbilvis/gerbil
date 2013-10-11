@@ -187,11 +187,6 @@ private:
 	int nBandsOld;
 
 	BackgroundTaskQueue &queue;
-
-	/* we need to keep this guy around as we cannot release ownership from a
-	 * shared_ptr.
-	 */
-	multi_img::ptr imgHolder;
 };
 
 #endif // IMAGE_MODEL_H

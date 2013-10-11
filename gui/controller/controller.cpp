@@ -63,7 +63,8 @@ Controller::Controller(const std::string &filename, bool limited_mode,
 	// connect slots/signals
 	window->initSignals(this, dvc);
 
-	/* TODO: better place. Do not use init model functions: dc, dvc created later
+	/* TODO: better place. But do not use init model functions:
+	 * dc, dvc are created after these are called
 	 */
 	connect(dc, SIGNAL(toggleSingleLabel(bool)),
 			this, SIGNAL(toggleSingleLabel(bool)));

@@ -18,6 +18,7 @@ protected slots:
 	void onIllum2Selected(int idx);
 	void onShowToggled(bool show);
 	void onApplyClicked();
+
 signals:
 	void applyIllum(); // TODO: rename
 	void illum1Selected(int idx);

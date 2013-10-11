@@ -73,7 +73,7 @@ void BackgroundTaskQueue::cancelTasks(const cv::Rect &roi)
 
 void BackgroundTaskQueue::operator()() 
 {
-	std::cout << "BackgroundTaskQueue started." << std::endl;
+	//std::cout << "BackgroundTaskQueue started." << std::endl;
 	while (true) {
 		if (!pop()) {
 			break; // Thread termination.
@@ -85,7 +85,7 @@ void BackgroundTaskQueue::operator()()
 			currentTask.reset();
 		}
 	}
-	std::cout << "BackgroundTaskQueue terminated." << std::endl;
+	//std::cout << "BackgroundTaskQueue terminated." << std::endl;
 }
 
 #endif

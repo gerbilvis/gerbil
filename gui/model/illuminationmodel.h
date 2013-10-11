@@ -33,13 +33,15 @@ signals:
 	void newIlluminant(cv::Mat1f illum);
 	/* if(applied): illuminant has been applied to image data. */
 	void illuminantIsApplied(bool applied);
+
 public slots:
 	void applyIllum();
 	void updateIllum1(int t);
 	void updateIllum2(int t);
-	void setIlluminationCurveShown(bool shown);
+
 protected slots:
 	void finishTask(bool success);
+
 protected:
 	// FIXME altmann: reference to member data... asking for trouble
 	const Illuminant & getIlluminant(int t);
@@ -64,8 +66,6 @@ private:
 
 	// Selected illuminant temp (K) in the combo boxes
 	int i1,i2;
-
-	bool illumCurveShown;
 };
 
 #endif // MODEL_ILLUMINATION

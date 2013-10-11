@@ -21,8 +21,8 @@ public:
 	inline void calcWeight(int wl1, int wl2) {
 		double maxv = 0.;
 		for (int i = wl1; i <= wl2; i+=10)
-			if (at(i) > maxv)
-				maxv = at(i);
+			maxv = std::max(at(i), maxv);
+
 		weight = 1./maxv;
 	}
 	

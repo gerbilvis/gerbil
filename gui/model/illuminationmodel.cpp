@@ -40,7 +40,7 @@ void IllumModel::applyIllum()
 	submitAddNewIllumTask();
 
 
-	if(i2>0) {
+	if (i2>0) {
 		cv::Mat1f il = getIllumCoeff(i2);
 		emit newIlluminant(il);
 		emit illuminantIsApplied(true);
@@ -57,32 +57,14 @@ void IllumModel::applyIllum()
 
 void IllumModel::updateIllum1(int t)
 {
-	//GGDBGM(idx << endl);
 	i1 = t;
-	if(!illumCurveShown) {
-		return;
-	}
 	cv::Mat1f il = getIllumCoeff(t);
 	emit newIlluminant(il);
 }
 
 void IllumModel::updateIllum2(int t)
 {
-	//GGDBGM(idx << endl);
 	i2 = t;
-}
-
-void IllumModel::setIlluminationCurveShown(bool shown)
-{
-	//GGDBG_CALL();
-	illumCurveShown = shown;
-	// FIXME: this is a HACK. viewport has no flag to decide wether it should
-	// draw the curve, but decides on the length of the coefficient array.
-	// Not changing this now because of big rewrite of viewport in progress.
-	if (shown) {
-		cv::Mat1f il = getIllumCoeff(i1);
-		emit newIlluminant(il);
-	}
 }
 
 void IllumModel::setRoi(cv::Rect roi)

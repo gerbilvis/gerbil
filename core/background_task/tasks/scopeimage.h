@@ -10,7 +10,7 @@ public:
 		// using SharedData<multi_img_base>::getBase() to get multi_img_base object
 		multi_img *target =  new multi_img(full->getBase(), targetRoi);
 		SharedDataSwapLock lock(scoped->mutex);
-		delete scoped->swap(target);
+		scoped->replace(target);
 		return true;
 	}
 	virtual void cancel() {}

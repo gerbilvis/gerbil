@@ -47,7 +47,7 @@ public slots:
 
 	void highlightSingleLabel(int index);
 
-	void toggleRGB(bool enabled) { drawRGB = enabled; updateTextures(); }
+	void toggleRGB(bool enabled) { drawRGB = enabled; updateBuffers(); }
 
 	void setAlpha(float alpha);
 
@@ -73,7 +73,7 @@ public slots:
 
 	// illuminant correction
 	void changeIlluminant(cv::Mat1f illum);
-	void setIlluminantIsApplied(bool applied);
+	void setIlluminantApply(bool applied);
 	void setIlluminationCurveShown(bool show);
 
 
@@ -86,7 +86,8 @@ protected slots:
 	void resizeScene();
 
 	// triggered by scrollTimer and manually
-	void updateTextures(RenderMode spectrum = RM_STEP, RenderMode highlight = RM_STEP);
+	void updateBuffers(RenderMode spectrum = RM_STEP,
+					   RenderMode highlight = RM_STEP);
 
 signals:
 	// we are the active viewer
@@ -175,8 +176,12 @@ private:
 	renderbuffer buffers[2];
 	QGLFramebufferObject *multisampleBlit;
 
-	bool illuminant_correction;
+	// normalized illuminant spectrum
 	std::vector<multi_img::Value> illuminant;
+	// draw the illuminant curve
+	bool illuminant_show;
+	// draw vectors skewed according to illuminant
+	bool illuminant_apply;
 
 	int selection, hover;
 	bool limiterMode;

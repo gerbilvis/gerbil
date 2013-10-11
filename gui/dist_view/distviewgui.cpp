@@ -138,7 +138,7 @@ void DistViewGUI::initSignals(DistViewController *chief)
 	connect(this, SIGNAL(newIlluminant(cv::Mat1f)),
 			vp, SLOT(changeIlluminant(cv::Mat1f)));
 	connect(this, SIGNAL(toggleIlluminantApplied(bool)),
-			vp, SLOT(setIlluminantIsApplied(bool)));
+			vp, SLOT(setIlluminantApply(bool)));
 	connect(this, SIGNAL(toggleIlluminationShown(bool)),
 			vp, SLOT(setIlluminationCurveShown(bool)));
 

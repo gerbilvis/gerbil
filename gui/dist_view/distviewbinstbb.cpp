@@ -54,9 +54,12 @@ bool DistviewBinsTbb::run()
 	std::vector<BinSet> *result;
 	SharedDataSwapLock current_lock(current->mutex, boost::defer_lock_t());
 	if (reuse) {
+		// TODO: we still operate on the data afterwards (we are the only ones
+		// that work on it), this needs to be done properly, maybe by just not
+		// using shared data for temp as it is not really shared
 		SharedDataSwapLock temp_wlock(temp->mutex);
 		assert(multi);
-		result = temp->swap(NULL);
+		result = &(**temp);
 		if (!result) {
 			result = new std::vector<BinSet>(**current);
 		} else {
@@ -145,14 +148,14 @@ bool DistviewBinsTbb::run()
 	} else {
 		if (reuse && !apply) {
 			SharedDataSwapLock temp_wlock(temp->mutex);
-			temp->swap(result);
+			temp->replace(result);
 		} else if (inplace) {
 			current_lock.unlock();
 		} else {
 			SharedDataSwapLock context_wlock(context->mutex);
 			SharedDataSwapLock current_wlock(current->mutex);
 			**context = args;
-			delete current->swap(result);
+			current->replace(result);
 		}
 		return true;
 	}

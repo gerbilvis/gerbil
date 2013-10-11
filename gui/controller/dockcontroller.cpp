@@ -187,8 +187,6 @@ void DockController::setupDocks()
 			chief->illumModel(), SLOT(updateIllum1(int))); //FIXME slot name
 	connect(illumDock, SIGNAL(illum2Selected(int)),
 			chief->illumModel(), SLOT(updateIllum2(int)));
-	connect(illumDock, SIGNAL(showIlluminationCurveChanged(bool)),
-			chief->illumModel(), SLOT(setIlluminationCurveShown(bool)));
 
 	// connections between illumDock and dist viewers
 	connect(illumDock, SIGNAL(showIlluminationCurveChanged(bool)),

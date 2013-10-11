@@ -30,7 +30,8 @@ Viewport::Viewport(representation::t type, QGLWidget *target)
 	  selection(0), hover(-1), limiterMode(false),
 	  active(false), useralpha(1.f),
 	  showLabeled(true), showUnlabeled(true),
-	  overlayMode(false), highlightLabel(-1), illuminant_correction(false),
+	  overlayMode(false), highlightLabel(-1),
+	  illuminant_show(true), illuminant_apply(false),
 	  zoom(1.), shift(0), lasty(-1), holdSelection(false), activeLimiter(0),
 	  drawMeans(true), drawRGB(false), drawHQ(true), drawingState(HIGH_QUALITY),
 	  yaxisWidth(0), vb(QGLBuffer::VertexBuffer),
@@ -68,7 +69,7 @@ void Viewport::initTimers()
 	connect(&resizeTimer, SIGNAL(timeout()), this, SLOT(resizeScene()));
 
 	scrollTimer.setSingleShot(true);
-	connect(&scrollTimer, SIGNAL(timeout()), this, SLOT(updateTextures()));
+	connect(&scrollTimer, SIGNAL(timeout()), this, SLOT(updateBuffers()));
 
 	QSignalMapper *mapper = new QSignalMapper();
 	for (int i = 0; i < 2; ++i) {
@@ -99,7 +100,7 @@ void Viewport::initBuffers()
 
 	/* use floating point for better alpha accuracy in back buffer! */
 	// TODO RGBA32F yet looks better, make configurable!
-	format[0].setInternalTextureFormat(0x881A); // GL_RGBA16F
+	//format[0].setInternalTextureFormat(0x881A); // GL_RGBA16F
 	// TODO https://bugs.freedesktop.org/show_bug.cgi?id=69689
 
 	// initialize buffers
@@ -157,7 +158,7 @@ void Viewport::resizeScene()
 	initBuffers();
 
 	// update buffers
-	updateTextures();
+	updateBuffers();
 }
 
 void Viewport::reset()
@@ -183,7 +184,7 @@ void Viewport::rebuild()
 	SharedDataLock setslock(sets->mutex);
 
 	prepareLines(); // will also call reset() if indicated by ctx
-	updateTextures();
+	updateBuffers();
 }
 
 void Viewport::prepareLines()
@@ -201,7 +202,7 @@ void Viewport::prepareLines()
 	// second step (cpu -> gpu)
 	target->makeCurrent();
 	int success = Compute::storeVertices(**ctx, **sets, shuffleIdx, vb,
-										 drawMeans, illuminant_correction,
+										 drawMeans, illuminant_apply,
 										 illuminant);
 
 	// gracefully fail if there is a problem with VBO support
@@ -256,33 +257,26 @@ void Viewport::changeIlluminant(cv::Mat1f illum)
 {
 	illuminant = illum;
 
-	if (!illuminant_correction) { // vertices need to change
-		// TODO: should this not call prepareLines() also?
-		updateTextures();
+	if (illuminant_apply) {
+		// vertices need to change
+		rebuild();
 	} else {
 		update();
 	}
 }
 
-void Viewport::setIlluminantIsApplied(bool applied)
-{
-	// only set it to true, never to false again (you cannot unapply)
-	if (applied) {
-		illuminant_correction = true;
-	}
-}
-
-
 void Viewport::setIlluminationCurveShown(bool show)
 {
-	if (show) {
-		// HACK
-		// nothing, illuminant is always drawn if coefficients viewport->illuminant
-		// non-empty. Should really be a bool in viewport.
-	} else {
-		cv::Mat1f empty;
-		changeIlluminant(empty);
-	}
+	illuminant_show = show;
+	update();
+}
+
+void Viewport::setIlluminantApply(bool applied)
+{
+	bool change = (applied != illuminant_apply);
+	illuminant_apply = applied;
+	if (change)
+		rebuild();
 }
 
 void Viewport::setLimiters(int label)
@@ -311,20 +305,20 @@ void Viewport::setLimiters(int label)
 void Viewport::highlightSingleLabel(int index)
 {
 	highlightLabel = index;
-	updateTextures(Viewport::RM_STEP,
+	updateBuffers(Viewport::RM_STEP,
 				   (highlightLabel > -1 ? RM_SKIP : RM_STEP));
 }
 
 void Viewport::setAlpha(float alpha)
 {
 	useralpha = alpha;
-	updateTextures(Viewport::RM_STEP, Viewport::RM_SKIP);
+	updateBuffers(Viewport::RM_STEP, Viewport::RM_SKIP);
 }
 
 void Viewport::setLimitersMode(bool enabled)
 {
 	limiterMode = enabled;
-	updateTextures(Viewport::RM_SKIP, Viewport::RM_STEP);
+	updateBuffers(Viewport::RM_SKIP, Viewport::RM_STEP);
 	if (!active) {
 		activate(); // will call requestOverlay()
 	} else {
@@ -353,7 +347,7 @@ bool Viewport::endNoHQ(RenderMode spectrum, RenderMode highlight)
 
 	drawingState = (drawHQ ? HIGH_QUALITY : QUICK);
 	if (dirty)
-		updateTextures(spectrum, highlight);
+		updateBuffers(spectrum, highlight);
 	return dirty;
 }
 
@@ -380,20 +374,20 @@ bool Viewport::updateLimiter(int dim, int bin)
 void Viewport::toggleLabeled(bool enabled)
 {
 	showLabeled = enabled;
-	updateTextures();
+	updateBuffers();
 }
 
 void Viewport::toggleUnlabeled(bool enabled)
 {
 	showUnlabeled = enabled;
-	updateTextures();
+	updateBuffers();
 }
 
 void Viewport::screenshot()
 {
 	// ensure high quality
 	drawingState = HIGH_QUALITY;
-	updateTextures(RM_FULL, RM_FULL);
+	updateBuffers(RM_FULL, RM_FULL);
 
 	// render into our buffer
 	QGLFramebufferObject b(width, height);

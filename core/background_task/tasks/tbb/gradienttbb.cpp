@@ -113,7 +113,7 @@ bool GradientTbb::run()
 		return false;
 	} else {
 		SharedDataSwapLock lock(current->mutex);
-		delete current->swap(target);
+		current->replace(target);
 		return true;
 	}
 }

@@ -60,7 +60,7 @@ bool IlluminantCuda::run()
 		return false;
 	} else {
 		SharedDataSwapLock lock(multi->mutex);
-		delete multi->swap(target);
+		multi->replace(target);
 		return true;
 	}
 }

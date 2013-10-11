@@ -48,11 +48,6 @@ ImageModel::~ImageModel()
 {
 	foreach (payload *p, map)
 		delete p;
-
-	if (!limitedMode) {
-		// release image_lim as imgHolder has still ownership and will delete
-		image_lim->swap((multi_img_base*)0);
-	}
 }
 
 int ImageModel::getNumBandsFull()
@@ -86,8 +81,8 @@ cv::Rect ImageModel::loadImage(const std::string &filename)
 		// create using ImgInput
 		vole::ImgInputConfig inputConfig;
 		inputConfig.file = filename;
-		imgHolder = vole::ImgInput(inputConfig).execute();
-		image_lim = boost::make_shared<SharedMultiImgBase>(imgHolder.get());
+		multi_img::ptr img = vole::ImgInput(inputConfig).execute();
+		image_lim = boost::make_shared<SharedMultiImgBase>(img);
 	}
 
 	multi_img_base &i = image_lim->getBase();
