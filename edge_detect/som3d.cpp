@@ -136,7 +136,7 @@ int SOM3d::updateSquare(const multi_img::Pixel &input,
 			// else two iterations, with values dZ and -dZ
 			int dZ = deltaZ;
 			int iterations = mirrorZ ? 2 : 1;
-			for (int i = 0; i < iterations; i++)
+			for (int j = 0; j < iterations; j++)
 			{
 				if (pos.z + dZ >= 0 && pos.z + dZ < depth)
 				{
@@ -173,7 +173,7 @@ int SOM3d::updateSquare(const multi_img::Pixel &input,
 			// else two iterations, with values dZ and -dZ
 			int dZ = deltaZ;
 			int iterations = mirrorZ ? 2 : 1;
-			for (int i = 0; i < iterations; i++)
+			for (int j = 0; j < iterations; j++)
 			{
 				if (pos.z + dZ >= 0 && pos.z + dZ < depth)
 				{
@@ -225,7 +225,7 @@ int SOM3d::updateSquare(const multi_img::Pixel &input,
 			// else two iterations, with values dZ and -dZ
 			int dZ = deltaZ;
 			int iterations = mirrorZ ? 2 : 1;
-			for (int i = 0; i < iterations; i++)
+			for (int j = 0; j < iterations; j++)
 			{
 				if (pos.z + dZ >= 0 && pos.z + dZ < depth)
 				{
