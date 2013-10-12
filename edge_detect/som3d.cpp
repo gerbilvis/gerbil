@@ -87,164 +87,164 @@ int SOM3d::updateSquare(const multi_img::Pixel &input,
 {
 	int updates = 0;
 	// update winner neuron (except deltaZ == 0, dist is greater than 0)
-	{
-		double dist = getDistanceSquared(pos, pos + cv::Point3i(0, 0, deltaZ));
-		double fakeGaussian = exp(-(dist)/(2.0*sigmaSquare));
-		double weight = learnRate * fakeGaussian;
+    {
+        double dist = getDistanceSquared(pos, pos + cv::Point3i(0, 0, deltaZ));
+        double fakeGaussian = exp(-(dist)/(2.0*sigmaSquare));
+        double weight = learnRate * fakeGaussian;
 
-		// this point (no delta in x and y direction) is the closest point
-		// to the winner neuron. if this one is not updated, no point will
-		// be updated at all and we are finished with all updates
-		if (weight < 0.01)
-			return updates;
+        // this point (no delta in x and y direction) is the closest point
+        // to the winner neuron. if this one is not updated, no point will
+        // be updated at all and we are finished with all updates
+        if (weight < 0.01)
+            return updates;
 
-		// if dZ is zero, only one iteration with dZ == 0
-		// else two iterations, with values dZ and -dZ
-		int dZ = deltaZ;
-		int iterations = mirrorZ ? 2 : 1;
-		for (int i = 0; i < iterations; i++)
-		{
-			if (pos.z + dZ >= 0 && pos.z + dZ < depth)
-			{
-				neurons[pos.z + dZ][pos.y + 0][pos.x + 0].update(input, weight);
-				++updates;
-			}
-			dZ = -dZ; // swap sign
-		}
-	}
+        // if dZ is zero, only one iteration with dZ == 0
+        // else two iterations, with values dZ and -dZ
+        int dZ = deltaZ;
+        int iterations = mirrorZ ? 2 : 1;
+        for (int i = 0; i < iterations; i++)
+        {
+            if (pos.z + dZ >= 0 && pos.z + dZ < depth)
+            {
+                neurons[pos.z + dZ][pos.y + 0][pos.x + 0].update(input, weight);
+                ++updates;
+            }
+            dZ = -dZ; // swap sign
+        }
+    }
 
-	int maxDist;
+    int maxDist;
 
-	// update neurons on horizontal and vertical axis with equal distance
-	// (mirror over the axis that is non-zero, swap the variables and mirror again => 2*2=4 updates)
-	{
-		int i;
-		for (i = 1;; i++)
-		{
-			bool posX = pos.x + i < width;
-			bool negX = pos.x - i >= 0;
-			bool posY = pos.y + i < height;
-			bool negY = pos.y - i >= 0;
-			if ( !(posX | negX | posY | negY) ) break; // we're done already
+    // update neurons on horizontal and vertical axis with equal distance
+    // (mirror over the axis that is non-zero, swap the variables and mirror again => 2*2=4 updates)
+    {
+        int i;
+        for (i = 1;; i++)
+        {
+            bool posX = pos.x + i < width;
+            bool negX = pos.x - i >= 0;
+            bool posY = pos.y + i < height;
+            bool negY = pos.y - i >= 0;
+            if ( !(posX | negX | posY | negY) ) break; // we're done already
 
-			double dist = getDistanceSquared(pos, pos + cv::Point3i(i, 0, deltaZ));
-			double fakeGaussian = exp(-(dist)/(2.0*sigmaSquare));
-			double weight = learnRate * fakeGaussian;
-			if (weight < 0.01) break;
+            double dist = getDistanceSquared(pos, pos + cv::Point3i(i, 0, deltaZ));
+            double fakeGaussian = exp(-(dist)/(2.0*sigmaSquare));
+            double weight = learnRate * fakeGaussian;
+            if (weight < 0.01) break;
 
-			// if dZ is zero, only one iteration with dZ == 0
-			// else two iterations, with values dZ and -dZ
-			int dZ = deltaZ;
-			int iterations = mirrorZ ? 2 : 1;
-			for (int i = 0; i < iterations; i++)
-			{
-				if (pos.z + dZ >= 0 && pos.z + dZ < depth)
-				{
-					// x axis
-					if (posX) { ++updates; neurons[pos.z + dZ][pos.y + 0][pos.x + i].update(input, weight); }
-					if (negX) { ++updates; neurons[pos.z + dZ][pos.y + 0][pos.x - i].update(input, weight); }
-					// y axis
-					if (negY) { ++updates; neurons[pos.z + dZ][pos.y - i][pos.x + 0].update(input, weight); }
-					if (posY) { ++updates; neurons[pos.z + dZ][pos.y + i][pos.x + 0].update(input, weight); }
-				}
-				dZ = -dZ; // swap sign
-			}
-		}
-		maxDist = i;
-	}
+            // if dZ is zero, only one iteration with dZ == 0
+            // else two iterations, with values dZ and -dZ
+            int dZ = deltaZ;
+            int iterations = mirrorZ ? 2 : 1;
+            for (int j = 0; j < iterations; j++)
+            {
+                if (pos.z + dZ >= 0 && pos.z + dZ < depth)
+                {
+                    // x axis
+                    if (posX) { ++updates; neurons[pos.z + dZ][pos.y + 0][pos.x + i].update(input, weight); }
+                    if (negX) { ++updates; neurons[pos.z + dZ][pos.y + 0][pos.x - i].update(input, weight); }
+                    // y axis
+                    if (negY) { ++updates; neurons[pos.z + dZ][pos.y - i][pos.x + 0].update(input, weight); }
+                    if (posY) { ++updates; neurons[pos.z + dZ][pos.y + i][pos.x + 0].update(input, weight); }
+                }
+                dZ = -dZ; // swap sign
+            }
+        }
+        maxDist = i;
+    }
 
-	// update neurons on diagonal directions with equal distance
-	// (mirror over all axis, swap has no effect here => 2*2=4 updates per weight)
-	{
-		for (int i = 1; i < maxDist; i++)
-		{
-			bool posX = pos.x + i < width;
-			bool negX = pos.x - i >= 0;
-			bool posY = pos.y + i < height;
-			bool negY = pos.y - i >= 0;
-			if (!((posX | negX) & (posY | negY))) break; // we're done already
+    // update neurons on diagonal directions with equal distance
+    // (mirror over all axis, swap has no effect here => 2*2=4 updates per weight)
+    {
+        for (int i = 1; i < maxDist; i++)
+        {
+            bool posX = pos.x + i < width;
+            bool negX = pos.x - i >= 0;
+            bool posY = pos.y + i < height;
+            bool negY = pos.y - i >= 0;
+            if (!((posX | negX) & (posY | negY))) break; // we're done already
 
-			double dist = getDistanceSquared(pos, pos + cv::Point3i(i, i, deltaZ));
-			double fakeGaussian = exp(-(dist)/(2.0*sigmaSquare));
-			double weight = learnRate * fakeGaussian;
-			if (weight < 0.01) break;
+            double dist = getDistanceSquared(pos, pos + cv::Point3i(i, i, deltaZ));
+            double fakeGaussian = exp(-(dist)/(2.0*sigmaSquare));
+            double weight = learnRate * fakeGaussian;
+            if (weight < 0.01) break;
 
-			// if dZ is zero, only one iteration with dZ == 0
-			// else two iterations, with values dZ and -dZ
-			int dZ = deltaZ;
-			int iterations = mirrorZ ? 2 : 1;
-			for (int i = 0; i < iterations; i++)
-			{
-				if (pos.z + dZ >= 0 && pos.z + dZ < depth)
-				{
-					if (posY)
-					{
-						if (posX) { ++updates; neurons[pos.z + dZ][pos.y + i][pos.x + i].update(input, weight); } //  first quadrant
-						if (negX) { ++updates; neurons[pos.z + dZ][pos.y + i][pos.x - i].update(input, weight); } // second quadrant
-					}
-					if (negY)
-					{
-						if (negX) { ++updates; neurons[pos.z + dZ][pos.y - i][pos.x - i].update(input, weight); } //  third quadrant
-						if (posX) { ++updates; neurons[pos.z + dZ][pos.y - i][pos.x + i].update(input, weight); } // fourth quadrant
-					}
-				}
-				dZ = -dZ; // swap sign
-			}
-		}
-	}
+            // if dZ is zero, only one iteration with dZ == 0
+            // else two iterations, with values dZ and -dZ
+            int dZ = deltaZ;
+            int iterations = mirrorZ ? 2 : 1;
+            for (int j = 0; j < iterations; j++)
+            {
+                if (pos.z + dZ >= 0 && pos.z + dZ < depth)
+                {
+                    if (posY)
+                    {
+                        if (posX) { ++updates; neurons[pos.z + dZ][pos.y + i][pos.x + i].update(input, weight); } //  first quadrant
+                        if (negX) { ++updates; neurons[pos.z + dZ][pos.y + i][pos.x - i].update(input, weight); } // second quadrant
+                    }
+                    if (negY)
+                    {
+                        if (negX) { ++updates; neurons[pos.z + dZ][pos.y - i][pos.x - i].update(input, weight); } //  third quadrant
+                        if (posX) { ++updates; neurons[pos.z + dZ][pos.y - i][pos.x + i].update(input, weight); } // fourth quadrant
+                    }
+                }
+                dZ = -dZ; // swap sign
+            }
+        }
+    }
 
-	// update remaining neurons
-	// (mirror over all axis and swap => 2*2*2=8 updates per weight)
-	// x is always greater then y. so if (y,y) was outside the L2-circle,
-	// (x,y) will be outside even further
-	for (int y = 1; y < maxDist; y++)
-	{
-		for (int x = y + 1; x < maxDist; x++)
-		{
-			bool posXX = pos.x + x < width;
-			bool negXX = pos.x - x >= 0;
-			bool posXY = pos.x + y < width;
-			bool negXY = pos.x - y >= 0;
-			bool posYX = pos.y + x < height;
-			bool negYX = pos.y - x >= 0;
-			bool posYY = pos.y + y < height;
-			bool negYY = pos.y - y >= 0;
+    // update remaining neurons
+    // (mirror over all axis and swap => 2*2*2=8 updates per weight)
+    // x is always greater then y. so if (y,y) was outside the L2-circle,
+    // (x,y) will be outside even further
+    for (int y = 1; y < maxDist; y++)
+    {
+        for (int x = y + 1; x < maxDist; x++)
+        {
+            bool posXX = pos.x + x < width;
+            bool negXX = pos.x - x >= 0;
+            bool posXY = pos.x + y < width;
+            bool negXY = pos.x - y >= 0;
+            bool posYX = pos.y + x < height;
+            bool negYX = pos.y - x >= 0;
+            bool posYY = pos.y + y < height;
+            bool negYY = pos.y - y >= 0;
 
-			if ( !(
-					((posYY | negYY) & (posXX | negXX)) // one of the first  four is updated
-				 || ((posYX | negYX) & (posXY | negXY)) // one of the second four is updated
-				 ) // nothing is updated
-			   ) break;
+            if ( !(
+                    ((posYY | negYY) & (posXX | negXX)) // one of the first  four is updated
+                 || ((posYX | negYX) & (posXY | negXY)) // one of the second four is updated
+                 ) // nothing is updated
+               ) break;
 
-			double dist = getDistanceSquared(pos, pos + cv::Point3i(x, y, deltaZ));
-			double fakeGaussian = exp(-(dist)/(2.0*sigmaSquare));
-			double weight = learnRate * fakeGaussian;
-			if (weight < 0.01) break;
+            double dist = getDistanceSquared(pos, pos + cv::Point3i(x, y, deltaZ));
+            double fakeGaussian = exp(-(dist)/(2.0*sigmaSquare));
+            double weight = learnRate * fakeGaussian;
+            if (weight < 0.01) break;
 
-			// if dZ is zero, only one iteration with dZ == 0
-			// else two iterations, with values dZ and -dZ
-			int dZ = deltaZ;
-			int iterations = mirrorZ ? 2 : 1;
-			for (int i = 0; i < iterations; i++)
-			{
-				if (pos.z + dZ >= 0 && pos.z + dZ < depth)
-				{
-					if (posYY && posXX) { ++updates; neurons[pos.z + dZ][pos.y + y][pos.x + x].update(input, weight); } //  first quadrant
-					if (posYY && negXX) { ++updates; neurons[pos.z + dZ][pos.y + y][pos.x - x].update(input, weight); } // second quadrant
-					if (negYY && negXX) { ++updates; neurons[pos.z + dZ][pos.y - y][pos.x - x].update(input, weight); } //  third quadrant
-					if (negYY && posXX) { ++updates; neurons[pos.z + dZ][pos.y - y][pos.x + x].update(input, weight); } // fourth quadrant
-					// the swap of x and y mirrors over the diagonal of the quadrant
-					if (posYX && posXY) { ++updates; neurons[pos.z + dZ][pos.y + x][pos.x + y].update(input, weight); } //  first quadrant
-					if (posYX && negXY) { ++updates; neurons[pos.z + dZ][pos.y + x][pos.x - y].update(input, weight); } // second quadrant
-					if (negYX && negXY) { ++updates; neurons[pos.z + dZ][pos.y - x][pos.x - y].update(input, weight); } //  third quadrant
-					if (negYX && posXY) { ++updates; neurons[pos.z + dZ][pos.y - x][pos.x + y].update(input, weight); } // fourth quadrant
-				}
-				dZ = -dZ; // swap sign
-			}
-		}
-	}
+            // if dZ is zero, only one iteration with dZ == 0
+            // else two iterations, with values dZ and -dZ
+            int dZ = deltaZ;
+            int iterations = mirrorZ ? 2 : 1;
+            for (int j = 0; j < iterations; j++)
+            {
+                if (pos.z + dZ >= 0 && pos.z + dZ < depth)
+                {
+                    if (posYY && posXX) { ++updates; neurons[pos.z + dZ][pos.y + y][pos.x + x].update(input, weight); } //  first quadrant
+                    if (posYY && negXX) { ++updates; neurons[pos.z + dZ][pos.y + y][pos.x - x].update(input, weight); } // second quadrant
+                    if (negYY && negXX) { ++updates; neurons[pos.z + dZ][pos.y - y][pos.x - x].update(input, weight); } //  third quadrant
+                    if (negYY && posXX) { ++updates; neurons[pos.z + dZ][pos.y - y][pos.x + x].update(input, weight); } // fourth quadrant
+                    // the swap of x and y mirrors over the diagonal of the quadrant
+                    if (posYX && posXY) { ++updates; neurons[pos.z + dZ][pos.y + x][pos.x + y].update(input, weight); } //  first quadrant
+                    if (posYX && negXY) { ++updates; neurons[pos.z + dZ][pos.y + x][pos.x - y].update(input, weight); } // second quadrant
+                    if (negYX && negXY) { ++updates; neurons[pos.z + dZ][pos.y - x][pos.x - y].update(input, weight); } //  third quadrant
+                    if (negYX && posXY) { ++updates; neurons[pos.z + dZ][pos.y - x][pos.x + y].update(input, weight); } // fourth quadrant
+                }
+                dZ = -dZ; // swap sign
+            }
+        }
+    }
 
-	return updates;
+    return updates;
 }
 
 int SOM3d::updateNeighborhood(SOM::iterator &neuron,
@@ -260,14 +260,14 @@ int SOM3d::updateNeighborhood(SOM::iterator &neuron,
 	// if deltaZ == 0, we only update one plane of the cube
 	totalUpdates = updates = updateSquare<false>(input, pos, 0, sigma * sigma, learnRate);
 
-	for (int deltaZ = 1; updates > 0; ++deltaZ)
-	{
-		// make sure we get updates in at least one z direction
-		if (pos.z - deltaZ < 0 && pos.z + deltaZ >= depth) break;
+    for (int deltaZ = 1; updates > 0; ++deltaZ)
+    {
+        // make sure we get updates in at least one z direction
+        if (pos.z - deltaZ < 0 && pos.z + deltaZ >= depth) break;
 
-		updates = updateSquare<true>(input, pos, deltaZ, sigma * sigma, learnRate);
-		totalUpdates += updates;
-	}
+        updates = updateSquare<true>(input, pos, deltaZ, sigma * sigma, learnRate);
+        totalUpdates += updates;
+    }
 	return totalUpdates;
 }
 

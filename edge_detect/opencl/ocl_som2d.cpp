@@ -7,31 +7,35 @@
 #include <iostream>
 #include <fstream>
 #include <string>
+#include <sstream>
 #include <vector>
 #include <iomanip>
 
 #include "stopwatch.h"
 
-#define TIME_MEASURE
-
 #include "ocl_utils.h"
 
+//#define TIME_MEASURE
 
-OCL_SOM2d::OCL_SOM2d(const vole::EdgeDetectionConfig &conf,
+extern const char* som2d;
+
+Ocl_SOM2d::Ocl_SOM2d(const vole::EdgeDetectionConfig &conf,
                      const multi_img &data,
                      std::vector<multi_img_base::BandDesc> meta)
     : SOM2d(conf, data, meta),
       d_data(conf.sidelength,
-             conf.type == vole::SOM_SQUARE ? conf.sidelength : 1, data.size())
-{    
+             conf.type == vole::SOM_SQUARE ? conf.sidelength : 1,
+             1, round_up_power2(data.size()))
+{
 }
 
-OCL_SOM2d::OCL_SOM2d(const vole::EdgeDetectionConfig &conf,
+Ocl_SOM2d::Ocl_SOM2d(const vole::EdgeDetectionConfig &conf,
                      int dimension,
                      std::vector<multi_img_base::BandDesc> meta)
     : SOM2d(conf, dimension, meta),
       d_data(conf.sidelength,
-             conf.type == vole::SOM_SQUARE ? conf.sidelength : 1, dimension)
+             conf.type == vole::SOM_SQUARE ? conf.sidelength : 1,
+             1, round_up_power2(dimension))
 {
     initOpenCL();
     initParamters();
@@ -42,240 +46,217 @@ OCL_SOM2d::OCL_SOM2d(const vole::EdgeDetectionConfig &conf,
     setKernelParams();
 }
 
-void OCL_SOM2d::initOpenCL()
+Ocl_SOM2d::~Ocl_SOM2d()
+{
+}
+
+
+void Ocl_SOM2d::initOpenCL()
 {
     init_opencl(d_context, d_queue);
 
-    std::cout << "ocl som2d hello world!" << std::endl;
-    std::string source = read_source("kernels/som2d.cl");
+    std::cout << "ocl som2d_new hello world!" << std::endl;
+    //std::string source = read_source("kernels/som2d_new.cl");
+    std::string source(som2d);
+
+    cl::Device device = d_queue.getInfo<CL_QUEUE_DEVICE>();
+
+    preffered_group_size = 512;
+    max_group_size = device.getInfo<CL_DEVICE_MAX_WORK_GROUP_SIZE>();
+
+    neuron_size_rounded = round_up_power2(dim);
 
 #ifdef DEBUG_MODE
-    program = build_cl_program(d_context, source, "-DDEBUG_MODE");
-#else
-    program = build_cl_program(d_context, source);
+    std::cout << "CL_DEVICE_MAX_WORK_GROUP_SIZE: "
+              << CL_DEVICE_MAX_WORK_GROUP_SIZE << std::endl;
+    std::cout << "CL_DEVICE_NAMEL: " << device.getInfo<CL_DEVICE_NAME>();
 #endif
 
+    std::stringstream stream;
+    stream << "-DX_DIM=" << (neuron_size_rounded / 2);
+    stream << " -DSOM_SIZE_X=" << width;
+    stream << " -DSOM_SIZE_Y=" << height;
+    stream << " -DSOM_SIZE_Z=" << 1;
+
+#ifdef DEBUG_MODE
+    stream << " -DDEBUG_MODE -Werror";
+#endif
+
+    program = build_cl_program(d_context, source, stream.str());
+
     // Make kernels
-    find_nearest_kernel = cl::Kernel(program, "find_nearest_neuron");
+    calculate_distances_kernel = cl::Kernel(program, "calculate_distances");
+    global_min_first_kernel = cl::Kernel(program, "find_global_first_pass");
     global_min_kernel = cl::Kernel(program, "find_global_min");
-    update_kernel = cl::Kernel(program, "generic_update");
+    update_kernel = cl::Kernel(program, "update_network");
 }
 
-void OCL_SOM2d::initParamters()
+void Ocl_SOM2d::initParamters()
 {
-    int som_size_x = get2dWidth();
-    int som_size_y = get2dHeight();
+    total_size = width * height;
+    total_size_rounded = round_up_power2(total_size);
 
-    preferred_max_block_size = 512;
+    group_size = std::min(preffered_group_size, max_group_size);
 
-    const int possible_xy_sizes[] = {1, 2, 4, 8, 16};
+    dist_find_local_x = neuron_size_rounded / 2;
+    dist_find_local_y = group_size / dist_find_local_x;
 
-    int kernel_xy_dim = 1;
+    dist_find_global_x = dist_find_local_x * width;
+    dist_find_global_y = round_up(height, dist_find_local_y);
 
-    for(int i = 0; i < 5; ++i)
-    {
-        int xy_squared = possible_xy_sizes[i] * possible_xy_sizes[i];
+    reduction_local = group_size;
+    //reduction_global = round_up_power2(total_size);
+    reduction_global = std::max(round_up_power2(total_size), reduction_local);
 
-        if(preferred_max_block_size >= xy_squared * dim)
-        {
-            kernel_xy_dim = possible_xy_sizes[i];
-        }
-        else
-        {
-            break;
-        }
-    }
-    // TODO: ONLY SQUARE SOM AT THIS MOMENT (NO SUPPORT FOR 1D)
-    kernel_size_x = kernel_xy_dim;
-    kernel_size_y = kernel_xy_dim;
+    assert(reduction_global % reduction_local == 0);
 
-    reduction_kernel_global_x = (som_size_x + kernel_size_x - 1)
-                                    / kernel_size_x;
-    reduction_kernel_global_y = (som_size_y + kernel_size_y - 1)
-                                    / kernel_size_y;
-
-    reduction_kernel_total = reduction_kernel_global_x
-                                 * reduction_kernel_global_y;
-
-    kernel_global_x = reduction_kernel_global_x * kernel_size_x;
-    kernel_global_y = reduction_kernel_global_y * kernel_size_y;
-
-//#ifdef DEBUG_MODE
-
-    std::cout << "kernel_xy_dim: " << kernel_xy_dim << std::endl;
-    std::cout << "reduction_kernel_total: " << reduction_kernel_total
-              << std::endl;
-    std::cout << "kernel_global_x: " << kernel_global_x << std::endl;
-    std::cout << "kernel_global_y: " << kernel_global_y << std::endl;
-    std::cout << "neuron_size: " << dim << std::endl;
-//#endif
+    reduced_elems_count = ((reduction_global + reduction_local - 1)
+                          / reduction_local);
 }
 
 
-void OCL_SOM2d::initLocalMemDims()
+void Ocl_SOM2d::initLocalMemDims()
 {
-    // for find_nearest_kernel
-    local_mem_subsom = cl::__local(sizeof(float)
-                                   * kernel_size_x
-                                   * kernel_size_y
-                                   * dim);
 
-    local_mem_reduction = cl::__local(sizeof(int)
-                                      * kernel_size_x
-                                      * kernel_size_y);
+    dist_find_reduct_buff_local = cl::__local(sizeof(float)
+                                   * dist_find_local_x
+                                   * dist_find_local_y);
 
-    // for global_min_kernel
-    local_mem_reduction_global = cl::__local(sizeof(int)
-                                             * reduction_kernel_total);
+    reduct_buff_local = cl::__local(sizeof(float) * reduction_local);
 
-    // for update kernel
-    local_mem_neighbourhood = cl::__local(sizeof(float)
-                                          * kernel_size_x
-                                          * kernel_size_y);
+    //update_weights_buff_local = cl::__local(sizeof(float) * kernel_size_y);
 
-    local_mem_input_vec = cl::__local(sizeof(float) * dim);
 }
 
-void OCL_SOM2d::initRanges()
+
+void Ocl_SOM2d::initRanges()
 {
-    find_nearest_global = cl::NDRange(kernel_global_x, kernel_global_y, dim);
-    find_nearest_local = cl::NDRange(kernel_size_x, kernel_size_y, dim);
+#ifdef DEBUG_MODE
+    std::cout << "dist_find_local_x: " << dist_find_local_x << std::endl;
+    std::cout << "dist_find_local_y: " << dist_find_local_y << std::endl;
 
-    // assumption that reduction_kernel_total is not very big...
-    global_min_global = cl::NDRange(reduction_kernel_total);
-    global_min_local = cl::NDRange(reduction_kernel_total);
+    std::cout << "dist_find_global_x: " << dist_find_global_x << std::endl;
+    std::cout << "dist_find_global_y: " << dist_find_global_y << std::endl;
+#endif
 
-    update_global = cl::NDRange(kernel_global_x, kernel_global_y, dim);
-    update_local = cl::NDRange(kernel_size_x, kernel_size_y, dim);
+    calc_dist_range_local = cl::NDRange(dist_find_local_x, dist_find_local_y);
+    calc_dist_range_global = cl::NDRange(dist_find_global_x, dist_find_global_y);
+
+
+    reduction_range_local = cl::NDRange(reduction_local);
+    reduction_range_global = cl::NDRange(reduction_global);
+
+//    update_global = cl::NDRange(kernel_global_x, kernel_global_y, dim);
+//    update_local = cl::NDRange(kernel_size_x, kernel_size_y, dim);
 }
 
-void OCL_SOM2d::initDeviceBuffers()
+void Ocl_SOM2d::initDeviceBuffers()
 {
-    int som_size_x = get2dWidth();
-    int som_size_y = get2dHeight();
-
     d_som = cl::Buffer(d_context, CL_MEM_READ_WRITE,
                        d_data.size * sizeof(float));
 
+    input_vector = cl::Buffer(d_context, CL_MEM_READ_ONLY,
+                              neuron_size_rounded * sizeof(float));
 
-    // DRAWBACK of current implementation - only 1 input vect allocated at once
-    input_vectors = cl::Buffer(d_context, CL_MEM_READ_WRITE,
-                               dim * sizeof(float));
+    distances = cl::Buffer(d_context, CL_MEM_READ_WRITE,
+                               total_size * sizeof(float));
 
+    //distances_host = new float[slice_size];
+
+    float* zero_vector = new float[neuron_size_rounded];
+    std::fill(zero_vector, zero_vector + neuron_size_rounded, 0.f);
+
+    d_queue.enqueueWriteBuffer(input_vector, CL_TRUE, 0,
+                               neuron_size_rounded * sizeof(float),
+                               zero_vector);
+
+    delete[] zero_vector;
+
+    /* at least two uint values are needed to
+     * store final winner x, y coordinates */
     out_min_indexes = cl::Buffer(d_context, CL_MEM_READ_WRITE,
-                                 reduction_kernel_total * sizeof(int));
+                                 std::max(2, reduced_elems_count)
+                                 * sizeof(int));
+
     out_min_values = cl::Buffer(d_context, CL_MEM_READ_WRITE,
-                                reduction_kernel_total * sizeof(float));
+                                reduced_elems_count * sizeof(float));
 
-    global_min_idx = cl::Buffer(d_context, CL_MEM_READ_WRITE, sizeof(int));
+//    float f_max[] = {FLT_MAX, FLT_MAX};
 
-#ifdef DEBUG_MODE
-    neighbourhood_verify = cl::Buffer(d_context, CL_MEM_READ_WRITE,
-                                      sizeof(float) * som_size_x * som_size_y);
-#endif
+//    d_queue.enqueueWriteBuffer(out_min_indexes, CL_TRUE, 0, sizeof(float) * 2,
+//                               &f_max);
 }
 
-void OCL_SOM2d::setKernelParams()
+void Ocl_SOM2d::setKernelParams()
 {
     // Set arguments to kernel
-    find_nearest_kernel.setArg(0, d_som);
-    find_nearest_kernel.setArg(1, input_vectors);
-    find_nearest_kernel.setArg(2, out_min_indexes);
-    find_nearest_kernel.setArg(3, out_min_values);
-    find_nearest_kernel.setArg(4, get2dWidth());
-    find_nearest_kernel.setArg(5, get2dHeight());
-    find_nearest_kernel.setArg(6, dim);
-    find_nearest_kernel.setArg(7, 0);
-    find_nearest_kernel.setArg(8, dim);
-    find_nearest_kernel.setArg(9, local_mem_subsom);
-    find_nearest_kernel.setArg(10, local_mem_reduction);
+    calculate_distances_kernel.setArg(0, d_som);
+    calculate_distances_kernel.setArg(1, input_vector);
+    calculate_distances_kernel.setArg(2, distances);
+//    calculate_distances_kernel.setArg(3, width);
+//    calculate_distances_kernel.setArg(4, height);
+    calculate_distances_kernel.setArg(3, dist_find_reduct_buff_local);
 
-    global_min_kernel.setArg(0, out_min_indexes);
-    global_min_kernel.setArg(1, out_min_values);
-    global_min_kernel.setArg(2, global_min_idx);
-    global_min_kernel.setArg(3, local_mem_reduction_global);
-    global_min_kernel.setArg(4, reduction_kernel_total);
+    global_min_first_kernel.setArg(0, distances);
+    global_min_first_kernel.setArg(1, out_min_values);
+    global_min_first_kernel.setArg(2, out_min_indexes);
+    global_min_first_kernel.setArg(3, reduct_buff_local);
+    global_min_first_kernel.setArg(4, total_size);
+
+    global_min_kernel.setArg(0, out_min_values);
+    global_min_kernel.setArg(1, out_min_indexes);
+//    global_min_kernel.setArg(2, width);
 
     update_kernel.setArg(0, d_som);
-    update_kernel.setArg(1, input_vectors);
-    update_kernel.setArg(2, global_min_idx);
-#ifdef DEBUG_MODE
-    update_kernel.setArg(3, neighbourhood_verify);
-    update_kernel.setArg(4, get2dWidth());
-    update_kernel.setArg(5, get2dHeight());
-    update_kernel.setArg(6, dim);
-    update_kernel.setArg(7, 0);
-    update_kernel.setArg(8, dim);
-    //update_kernel.setArg(9, sigma_square);
-    //update_kernel.setArg(10, learning_rate);
-    update_kernel.setArg(11, local_mem_neighbourhood);
-    update_kernel.setArg(12, local_mem_input_vec);
-#else
-    update_kernel.setArg(3, get2dWidth());
-    update_kernel.setArg(4, get2dHeight());
-    update_kernel.setArg(5, dim);
-    update_kernel.setArg(6, 0);
-    update_kernel.setArg(7, dim);
-    //update_kernel.setArg(8, sigma_square);
-    //update_kernel.setArg(9, learning_rate);
-    update_kernel.setArg(10, local_mem_neighbourhood);
-    update_kernel.setArg(11, local_mem_input_vec);
-#endif
+    update_kernel.setArg(1, input_vector);
+    update_kernel.setArg(2, out_min_indexes);
+//    update_kernel.setArg(3, width);
+//    update_kernel.setArg(4, height);
 }
 
-//it can be more efficient...
-void OCL_SOM2d::uploadDataToDevice()
+void Ocl_SOM2d::uploadDataToDevice()
 {
-    int width = get2dWidth();
-    int height = get2dHeight();
-
-    int slice_size = width * height;
-
-    std::cout << "slice_size: " << slice_size << std::endl;
+    std::fill(d_data.data, d_data.data + d_data.size, 0.f);
 
     for(int i = 0; i < neurons.size(); ++i)
     {
         Row& row = neurons[i];
+        float* row_ptr = d_data.data + d_data.x * d_data.neuron_size * i;
 
         for(int j = 0; j < row.size(); ++j)
         {
             Neuron& neuron = row[j];
+            float* neuron_ptr = row_ptr + d_data.neuron_size * j;
 
-            for(int k = 0; k < neuron.size(); ++k)
-            {
-                float* ptr = d_data.data + k * slice_size + i * width + j;
-                //*ptr = 0;//neuron[k];
-                float n_val = neuron[k];
-                *ptr = n_val;
-            }
+            std::copy(neuron.begin(), neuron.end(), neuron_ptr);
         }
     }
 
-    d_queue.enqueueWriteBuffer(d_som, CL_TRUE, 0, d_data.size * sizeof(float),
-                               d_data.data);
+    cl_int st = d_queue.enqueueWriteBuffer(d_som, CL_TRUE,
+                                           0, d_data.size * sizeof(float),
+                                           d_data.data);
+
+    std::cout << "upload status: " << st << std::endl;
 }
 
-void OCL_SOM2d::downloadDataFromDevice()
+void Ocl_SOM2d::downloadDataFromDevice()
 {
     d_queue.enqueueReadBuffer(d_som, CL_TRUE, 0, d_data.size * sizeof(float),
                               d_data.data);
 
-    int width = get2dWidth();
-    int height = get2dHeight();
-
-    int slice_size = width * height;
-
     for(int i = 0; i < neurons.size(); ++i)
     {
         Row& row = neurons[i];
+        float* row_ptr = d_data.data + d_data.x * d_data.neuron_size * i;
 
         for(int j = 0; j < row.size(); ++j)
         {
             Neuron& neuron = row[j];
+            float* neuron_ptr = row_ptr + d_data.neuron_size * j;
 
             for(int k = 0; k < neuron.size(); ++k)
             {
-                float* ptr = d_data.data + k * slice_size + i * width + j;
+                float* ptr = neuron_ptr + k;
                 neuron[k] = *ptr;
             }
         }
@@ -283,175 +264,198 @@ void OCL_SOM2d::downloadDataFromDevice()
 }
 
 
-void OCL_SOM2d::notifyTrainingStart()
+void Ocl_SOM2d::notifyTrainingStart()
 {
     uploadDataToDevice();
+
+    update_radius = std::max(get2dWidth() - 1, get2dHeight() - 1);
 }
 
-void OCL_SOM2d::notifyTrainingEnd()
+void Ocl_SOM2d::notifyTrainingEnd()
 {
     downloadDataFromDevice();
 }
 
-SOM::iterator OCL_SOM2d::identifyWinnerNeuron(const multi_img::Pixel &inputVec)
+SOM::iterator Ocl_SOM2d::identifyWinnerNeuron(const multi_img::Pixel &inputVec)
 {
-
 #ifdef TIME_MEASURE
     vole::Stopwatch running_time("Identify winner time");
 #endif
 
-//    return SOM2d::identifyWinnerNeuron(inputVec);
+    if(update_radius == 0)
+        return SOM::iterator(new Iterator2d(this, 0, 0));;
 
-//    input_vectors = cl::Buffer(d_context, CL_MEM_READ_WRITE,
-//                               dim * sizeof(float));
     float* vec_ptr = (float*)(&(inputVec[0]));
 
-#ifdef DEBUG_MODE
-    for(int i = 0; i < dim; ++i)
-    {
-        std::cout << "vec " << i << ": " << vec_ptr[i] << std::endl;
-        //vec_ptr[i] = 1;
-    }
-#endif
-
-    d_queue.enqueueWriteBuffer(input_vectors, CL_TRUE, 0, dim * sizeof(float),
-                               vec_ptr);
-
-    int global_min = 0;
+    unsigned int global_min[2] = {0, 0};
 
     try
     {
-        d_queue.enqueueNDRangeKernel(find_nearest_kernel, cl::NullRange,
-                                     find_nearest_global, find_nearest_local);
+        d_queue.enqueueWriteBuffer(input_vector, CL_TRUE, 0,
+                                   dim * sizeof(float), vec_ptr);
+
+//        float f_max[] = {FLT_MAX, FLT_MAX};
+//        d_queue.enqueueWriteBuffer(out_min_indexes, CL_TRUE, 0, sizeof(float) * 2,
+//                                   &f_max);
+
+        d_queue.enqueueNDRangeKernel(calculate_distances_kernel,
+                                     cl::NullRange,
+                                     calc_dist_range_global,
+                                     calc_dist_range_local);
 
 #ifdef DEBUG_MODE
-        int* host_out_min_indexes = new int[reduction_kernel_total];
-        float* host_out_min_values = new float[reduction_kernel_total];
 
-        d_queue.enqueueReadBuffer(out_min_indexes, CL_TRUE, 0,
-                                  reduction_kernel_total * sizeof(int),
-                                  host_out_min_indexes);
+        float* host_distances = new float[total_size];
 
-        d_queue.enqueueReadBuffer(out_min_values, CL_TRUE, 0,
-                                  reduction_kernel_total * sizeof(float),
-                                  host_out_min_values);
+        d_queue.enqueueReadBuffer(distances, CL_TRUE, 0,
+                                  sizeof(float) * total_size, host_distances);
 
-        int som_size_x = get2dWidth();
-        //int som_size_y = get2dHeight();
+        float f1 = host_distances[0];
+        float f2 = host_distances[1];
+        float f3 = host_distances[2];
+        float f4 = host_distances[3];
 
-        for(int i = 0; i < reduction_kernel_total; ++i)
-        {
-            int x = host_out_min_indexes[i] >> 16;
-            int y = host_out_min_indexes[i] & 0xFFFF;
-
-            int idx = y * som_size_x + x;
-
-            std::cout << i << ": (" << x << ", " << y << ")"
-                      << " = " << host_out_min_values[i] << std::endl;
-        }
-
-        delete[] host_out_min_indexes;
-        delete[] host_out_min_values;
+        delete[] host_distances;
 #endif
 
 
-        d_queue.enqueueNDRangeKernel(global_min_kernel, cl::NullRange,
-                                     global_min_global, global_min_local);
+        d_queue.enqueueNDRangeKernel(global_min_first_kernel,
+                                     cl::NullRange,
+                                     reduction_range_global,
+                                     reduction_range_local);
 
 
-//        d_queue.enqueueReadBuffer(global_min_idx, CL_TRUE, 0,
-//                                  sizeof(int), &global_min);
+        int second_reduct_local = std::min(max_group_size,
+                                           preffered_group_size);
+        int elems_to_reduce = reduced_elems_count;
+
+        /* second step of reduction, only for very large soms there
+         * will be more than one iteration performed*/
+        do {
+
+            if(elems_to_reduce < second_reduct_local)
+            {
+                second_reduct_local = round_up_power2(elems_to_reduce);
+            }
+
+            int second_reduct_global = round_up(elems_to_reduce,
+                                       second_reduct_local);
+
+            global_min_kernel.setArg(2, elems_to_reduce);
+
+            global_min_kernel.setArg(3, cl::__local(sizeof(int)
+                                                    * second_reduct_local));
+
+            cl::NDRange range_global(second_reduct_global);
+            cl::NDRange range_local(second_reduct_local);
+
+            d_queue.enqueueNDRangeKernel(global_min_kernel, cl::NullRange,
+                                         range_global, range_local);
+
+            elems_to_reduce = ((second_reduct_global + second_reduct_local - 1)
+                              / second_reduct_local);
+
+        }while(elems_to_reduce > 1);
+
+#ifdef DEBUG_MODE
+        d_queue.enqueueReadBuffer(out_min_indexes, CL_TRUE, 0,
+                                  sizeof(int) * 2, &global_min);
+#endif
+
     }
     catch(cl::Error error)
     {
         std::cout << error.what() << "(" << error.err() << ")" << std::endl;
     }
 
-    int winner_x = global_min >> 16;
-    int winner_y = global_min & 0xFFFF;
+//    int winner_x = global_min[0];
+//    int winner_y = global_min[1];
 
-#ifdef DEBUG_MODE
-    for(int i = 0; i < dim; ++i)
-    {
-        std::cout << neurons[winner_y][winner_x][i] << " ";
-    }
-
-    std::cout << std::endl;
-
-    int som_size_x = get2dWidth();
-    int som_size_y = get2dHeight();
-    int slice_size = som_size_x * som_size_y;
-
-    for(int i = 0; i < dim; ++i)
-    {
-        std::cout << d_data.data[slice_size * i + som_size_x * winner_y + winner_x] << " ";
-    }
-
-    std::cout << std::endl;
-
-    std::cout << "global min index: (" << winner_x
-              << ", " << winner_y << ")" << std::endl;
-#endif
-
+//    int winner_x_t = global_min[1] >> 16;
+//    int winner_y_t = global_min[1] & 0xFFFF;
 
 #ifdef TIME_MEASURE
     d_queue.finish();
 #endif
 
-    return SOM::iterator(new Iterator2d(this, winner_x, winner_y));
+    //return SOM::iterator(new Iterator2d(this, winner_x, winner_y));
+    return SOM::iterator(new Iterator2d(this, 0, 0));
 }
 
-int OCL_SOM2d::updateNeighborhood(iterator &neuron,
+int Ocl_SOM2d::updateNeighborhood(iterator &neuron,
                                   const multi_img::Pixel &input,
                                   double sigma, double learnRate)
 {
-
 #ifdef TIME_MEASURE
     vole::Stopwatch running_time("Update time");
 #endif
 
+    // Get position of winner neuron in the 2d grid
+    //Iterator2d *it = static_cast<Iterator2d *>(neuron.getBase());
+    //cv::Point pos = it->getId();
+
+    cv::Point pos = neuron.get2dCoordinates();
+    double sigmaSquare = sigma * sigma;
+
+    int x = pos.x;
+    int y = pos.y;
+
+    while(update_radius > 0)
+    {
+        double dist = getDistanceSquared(cv::Point(0, 0),
+                                         cv::Point(update_radius, 0));
+        double fakeGaussian = exp(-(dist)/(2.0*sigmaSquare));
+        double weight = learnRate * fakeGaussian;
+
+        if(weight < 0.01)
+        {
+            update_radius--;
+        }
+        else
+        {
+            break;
+        }
+    }
+
+    if(update_radius == 0)
+        return 42;
+
+    int update_area_width = std::min((int)update_radius * 2 + 1, width);
+    int update_area_height = std::min((int)update_radius * 2 + 1, height);
+
     try
     {
+        int local_x = neuron_size_rounded / 2;
+        int local_y = std::min(group_size / local_x,
+                               round_up_power2(update_radius * 2 + 1));
+
+        int global_x = local_x * update_area_width;
+        int global_y = round_up(update_area_height, local_y);
+
+        cl::LocalSpaceArg update_weights_buff_local
+                = cl::__local(sizeof(float) * local_y);
+
+        update_kernel.setArg(3, (int)update_radius);
+        update_kernel.setArg(4, (float)sigmaSquare);
+        update_kernel.setArg(5, (float)learnRate);
+        update_kernel.setArg(6, update_weights_buff_local);
 
 #ifdef DEBUG_MODE
-        //update_kernel.setArg(0, d_som);
-        update_kernel.setArg(9, (float)(sigma*sigma));
-        update_kernel.setArg(10, (float)learnRate);
-#else
-        update_kernel.setArg(8, (float)(sigma*sigma));
-        update_kernel.setArg(9, (float)learnRate);
+        std::cerr << "update | global_x: " << global_x
+                  << " global_y: " << global_y << std::endl;
+        std::cerr << "update | local_x: " << local_x
+                  << " local_y: " << local_y << std::endl;
 #endif
+        cl::NDRange update_global(global_x, global_y);
+        cl::NDRange update_local(local_x, local_y);
 
         d_queue.enqueueNDRangeKernel(update_kernel, cl::NullRange,
-                                   update_global, update_local);
+                                     update_global, update_local);
     }
     catch(cl::Error error)
     {
         std::cout << error.what() << "(" << error.err() << ")" << std::endl;
     }
-
- //   downloadDataFromDevice(); // SHOULD BE REMOVED FROM THIS PLACE, INEFFICIENT
-
-#ifdef DEBUG_MODE
-    int som_size_x = get2dWidth();
-    int som_size_y = get2dHeight();
-    int slice_size = som_size_x * som_size_y;
-
-    Iterator2d *it = static_cast<Iterator2d *>(neuron.getBase());
-    cv::Point pos = it->getId();
-
-    int winner_x = pos.x;
-    int winner_y = pos.y;
-
-    std::cout << "winner after update: " << std::endl;
-
-    for(int i = 0; i < dim; ++i)
-    {
-        std::cout << d_data.data[slice_size * i + som_size_x * winner_y + winner_x] << " ";
-    }
-
-    std::cout << std::endl;
-#endif
 
 #ifdef TIME_MEASURE
     d_queue.finish();

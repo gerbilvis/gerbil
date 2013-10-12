@@ -1,4 +1,4 @@
-#include "ocl_som2d_new.h"
+#include "ocl_som3d.h"
 
 #include "iostream"
 
@@ -17,24 +17,26 @@
 
 //#define TIME_MEASURE
 
-extern const char* som2d_new;
+extern const char* som2d;
 
-OCL_SOM2d_new::OCL_SOM2d_new(const vole::EdgeDetectionConfig &conf,
+Ocl_SOM3d::Ocl_SOM3d(const vole::EdgeDetectionConfig &conf,
                      const multi_img &data,
                      std::vector<multi_img_base::BandDesc> meta)
-    : SOM2d(conf, data, meta),
+    : SOM3d(conf, data, meta),
       d_data(conf.sidelength,
-             conf.type == vole::SOM_SQUARE ? conf.sidelength : 1,
+             (conf.type == vole::SOM_SQUARE || conf.type == vole::SOM_CUBE) ? conf.sidelength : 1,
+             conf.type == vole::SOM_CUBE ? conf.sidelength : 1,
              round_up_power2(data.size()))
 {    
 }
 
-OCL_SOM2d_new::OCL_SOM2d_new(const vole::EdgeDetectionConfig &conf,
+Ocl_SOM3d::Ocl_SOM3d(const vole::EdgeDetectionConfig &conf,
                      int dimension,
                      std::vector<multi_img_base::BandDesc> meta)
-    : SOM2d(conf, dimension, meta),
+    : SOM3d(conf, dimension, meta),
       d_data(conf.sidelength,
-             conf.type == vole::SOM_SQUARE ? conf.sidelength : 1,
+             (conf.type == vole::SOM_SQUARE  || conf.type == vole::SOM_CUBE) ? conf.sidelength : 1,
+             conf.type == vole::SOM_CUBE ? conf.sidelength : 1,
              round_up_power2(dimension))
 {
     initOpenCL();
@@ -46,18 +48,18 @@ OCL_SOM2d_new::OCL_SOM2d_new(const vole::EdgeDetectionConfig &conf,
     setKernelParams();
 }
 
-OCL_SOM2d_new::~OCL_SOM2d_new()
+Ocl_SOM3d::~Ocl_SOM3d()
 {
 }
 
 
-void OCL_SOM2d_new::initOpenCL()
+void Ocl_SOM3d::initOpenCL()
 {
     init_opencl(d_context, d_queue);
 
     std::cout << "ocl som2d_new hello world!" << std::endl;
     //std::string source = read_source("kernels/som2d_new.cl");
-    std::string source(som2d_new);
+    std::string source(som2d);
 
     cl::Device device = d_queue.getInfo<CL_QUEUE_DEVICE>();
 
@@ -73,7 +75,11 @@ void OCL_SOM2d_new::initOpenCL()
 #endif
 
     std::stringstream stream;
-    stream << "-DX_DIM=" << neuron_size_rounded / 2;
+    stream << "-DX_DIM=" << (neuron_size_rounded / 2);
+    stream << " -DSOM_SIZE_X=" << width;
+    stream << " -DSOM_SIZE_Y=" << height;
+    stream << " -DSOM_SIZE_Z=" << depth;
+    stream << " -DSOM_3D";
 
 #ifdef DEBUG_MODE
     stream << " -DDEBUG_MODE -Werror";
@@ -88,21 +94,23 @@ void OCL_SOM2d_new::initOpenCL()
     update_kernel = cl::Kernel(program, "update_network");
 }
 
-void OCL_SOM2d_new::initParamters()
+void Ocl_SOM3d::initParamters()
 {
-    total_size = width * height;
+    total_size = width * height * depth;
     total_size_rounded = round_up_power2(total_size);
 
     group_size = std::min(preffered_group_size, max_group_size);
 
     dist_find_local_x = neuron_size_rounded / 2;
     dist_find_local_y = group_size / dist_find_local_x;
+    dist_find_local_z = 1;
 
     dist_find_global_x = dist_find_local_x * width;
     dist_find_global_y = round_up(height, dist_find_local_y);
+    dist_find_global_z = depth;
 
     reduction_local = group_size;
-    reduction_global = round_up_power2(total_size);
+    reduction_global = std::max(round_up_power2(total_size), reduction_local);
 
     assert(reduction_global % reduction_local == 0);
 
@@ -111,7 +119,7 @@ void OCL_SOM2d_new::initParamters()
 }
 
 
-void OCL_SOM2d_new::initLocalMemDims()
+void Ocl_SOM3d::initLocalMemDims()
 {
 
     dist_find_reduct_buff_local = cl::__local(sizeof(float)
@@ -125,11 +133,25 @@ void OCL_SOM2d_new::initLocalMemDims()
 }
 
 
-void OCL_SOM2d_new::initRanges()
+void Ocl_SOM3d::initRanges()
 {
-    calc_dist_range_local = cl::NDRange(dist_find_local_x, dist_find_local_y);
-    calc_dist_range_global = cl::NDRange(dist_find_global_x, dist_find_global_y);
+//#ifdef DEBUG_MODE
+    std::cout << "dist_find_local_x: " << dist_find_local_x << std::endl;
+    std::cout << "dist_find_local_y: " << dist_find_local_y << std::endl;
+    std::cout << "dist_find_local_z: " << dist_find_local_z << std::endl;
 
+    std::cout << "dist_find_global_x: " << dist_find_global_x << std::endl;
+    std::cout << "dist_find_global_y: " << dist_find_global_y << std::endl;
+    std::cout << "dist_find_global_z: " << dist_find_global_z << std::endl;
+//#endif
+
+    calc_dist_range_local = cl::NDRange(dist_find_local_x,
+                                        dist_find_local_y,
+                                        dist_find_local_z);
+
+    calc_dist_range_global = cl::NDRange(dist_find_global_x,
+                                         dist_find_global_y,
+                                         dist_find_global_z);
 
     reduction_range_local = cl::NDRange(reduction_local);
     reduction_range_global = cl::NDRange(reduction_global);
@@ -138,7 +160,7 @@ void OCL_SOM2d_new::initRanges()
 //    update_local = cl::NDRange(kernel_size_x, kernel_size_y, dim);
 }
 
-void OCL_SOM2d_new::initDeviceBuffers()
+void Ocl_SOM3d::initDeviceBuffers()
 {
     d_som = cl::Buffer(d_context, CL_MEM_READ_WRITE,
                        d_data.size * sizeof(float));
@@ -163,23 +185,27 @@ void OCL_SOM2d_new::initDeviceBuffers()
     /* at least two uint values are needed to
      * store final winner x, y coordinates */
     out_min_indexes = cl::Buffer(d_context, CL_MEM_READ_WRITE,
-                                 std::max(2, reduced_elems_count)
-                                 * sizeof(unsigned int));
+                                 std::max(3, reduced_elems_count)
+                                 * sizeof(int));
 
     out_min_values = cl::Buffer(d_context, CL_MEM_READ_WRITE,
                                 reduced_elems_count * sizeof(float));
 
+//    float f_max[] = {FLT_MAX, FLT_MAX};
+
+//    d_queue.enqueueWriteBuffer(out_min_indexes, CL_TRUE, 0, sizeof(float) * 2,
+//                               &f_max);
 }
 
-void OCL_SOM2d_new::setKernelParams()
+void Ocl_SOM3d::setKernelParams()
 {
     // Set arguments to kernel
     calculate_distances_kernel.setArg(0, d_som);
     calculate_distances_kernel.setArg(1, input_vector);
     calculate_distances_kernel.setArg(2, distances);
-    calculate_distances_kernel.setArg(3, width);
-    calculate_distances_kernel.setArg(4, height);
-    calculate_distances_kernel.setArg(5, dist_find_reduct_buff_local);
+//    calculate_distances_kernel.setArg(3, width);
+//    calculate_distances_kernel.setArg(4, height);
+    calculate_distances_kernel.setArg(3, dist_find_reduct_buff_local);
 
     global_min_first_kernel.setArg(0, distances);
     global_min_first_kernel.setArg(1, out_min_values);
@@ -189,96 +215,140 @@ void OCL_SOM2d_new::setKernelParams()
 
     global_min_kernel.setArg(0, out_min_values);
     global_min_kernel.setArg(1, out_min_indexes);
-    global_min_kernel.setArg(2, width);
+//    global_min_kernel.setArg(2, width);
+//    global_min_kernel.setArg(3, height);
 
     update_kernel.setArg(0, d_som);
     update_kernel.setArg(1, input_vector);
     update_kernel.setArg(2, out_min_indexes);
-    update_kernel.setArg(3, (unsigned int)width);
-    update_kernel.setArg(4, (unsigned int)height);
+//    update_kernel.setArg(3, width);
+//    update_kernel.setArg(4, height);
+//    update_kernel.setArg(5, depth);
 }
 
-void OCL_SOM2d_new::uploadDataToDevice()
+void Ocl_SOM3d::uploadDataToDevice()
 {
-    std::fill(d_data.data, d_data.data + d_data.size, 0);
+    std::fill(d_data.data, d_data.data + d_data.size, 0.f);
+
+    int field_size = d_data.x * d_data.y * d_data.neuron_size;
 
     for(int i = 0; i < neurons.size(); ++i)
     {
-        Row& row = neurons[i];
-        float* row_ptr = d_data.data + d_data.x * d_data.neuron_size * i;
+        Field& field = neurons[i];
 
-        for(int j = 0; j < row.size(); ++j)
+        float* field_ptr = d_data.data + field_size * i;
+
+        for(int j = 0; j < field.size(); ++j)
         {
-            Neuron& neuron = row[j];
-            float* neuron_ptr = row_ptr + d_data.neuron_size * j;
+            Row& row = field[j];
+            float* row_ptr = field_ptr + d_data.x * d_data.neuron_size * j;
 
-            std::copy(neuron.begin(), neuron.end(), neuron_ptr);
+            for(int k = 0; k < row.size(); ++k)
+            {
+                Neuron& neuron = row[k];
+                float* neuron_ptr = row_ptr + d_data.neuron_size * k;
+                std::copy(neuron.begin(), neuron.end(), neuron_ptr);
+            }
         }
     }
 
-    d_queue.enqueueWriteBuffer(d_som, CL_TRUE, 0, d_data.size * sizeof(float),
-                               d_data.data);
+    cl_int st = d_queue.enqueueWriteBuffer(d_som, CL_TRUE,
+                                           0, d_data.size * sizeof(float),
+                                           d_data.data);
+
+    std::cout << "upload status: " << st << std::endl;
 }
 
-void OCL_SOM2d_new::downloadDataFromDevice()
+void Ocl_SOM3d::downloadDataFromDevice()
 {
     d_queue.enqueueReadBuffer(d_som, CL_TRUE, 0, d_data.size * sizeof(float),
                               d_data.data);
 
+    int field_size = d_data.x * d_data.y * d_data.neuron_size;
+
     for(int i = 0; i < neurons.size(); ++i)
     {
-        Row& row = neurons[i];
-        float* row_ptr = d_data.data + d_data.x * d_data.neuron_size * i;
+        Field& field = neurons[i];
 
-        for(int j = 0; j < row.size(); ++j)
+        float* field_ptr = d_data.data + field_size * i;
+
+        for(int j = 0; j < field.size(); ++j)
         {
-            Neuron& neuron = row[j];
-            float* neuron_ptr = row_ptr + d_data.neuron_size * j;
+            Row& row = field[j];
+            float* row_ptr = field_ptr + d_data.x * d_data.neuron_size * j;
 
-            for(int k = 0; k < neuron.size(); ++k)
+            for(int k = 0; k < row.size(); ++k)
             {
-                float* ptr = neuron_ptr + k;
-                neuron[k] = *ptr;
+                Neuron& neuron = row[k];
+                float* neuron_ptr = row_ptr + d_data.neuron_size * k;
+
+               // std::copy(neuron.begin(), neuron.end(), neuron_ptr);
+
+                for(int l = 0; l < neuron.size(); ++l)
+                {
+                    float* ptr = neuron_ptr + l;
+                    neuron[l] = *ptr;
+                }
             }
         }
     }
 }
 
 
-void OCL_SOM2d_new::notifyTrainingStart()
+void Ocl_SOM3d::notifyTrainingStart()
 {
     uploadDataToDevice();
 
     update_radius = std::max(get2dWidth() - 1, get2dHeight() - 1);
 }
 
-void OCL_SOM2d_new::notifyTrainingEnd()
+void Ocl_SOM3d::notifyTrainingEnd()
 {
     downloadDataFromDevice();
 }
 
-SOM::iterator OCL_SOM2d_new::identifyWinnerNeuron(const multi_img::Pixel &inputVec)
+SOM::iterator Ocl_SOM3d::identifyWinnerNeuron(const multi_img::Pixel &inputVec)
 {
+
 #ifdef TIME_MEASURE
     vole::Stopwatch running_time("Identify winner time");
 #endif
 
     if(update_radius == 0)
-        return SOM::iterator(new Iterator2d(this, 0, 0));;
+        return SOM::iterator(new Iterator3d(this, 0, 0, 0));
 
     float* vec_ptr = (float*)(&(inputVec[0]));
 
-    unsigned int global_min[2] = {0, 0};
+    unsigned int global_min[3] = {0, 0, 0};
 
     try
     {
         d_queue.enqueueWriteBuffer(input_vector, CL_TRUE, 0,
                                    dim * sizeof(float), vec_ptr);
 
+//        float f_max[] = {FLT_MAX, FLT_MAX};
+//        d_queue.enqueueWriteBuffer(out_min_indexes, CL_TRUE, 0, sizeof(float) * 2,
+//                                   &f_max);
+
         d_queue.enqueueNDRangeKernel(calculate_distances_kernel,
                                      cl::NullRange,
                                      calc_dist_range_global,
                                      calc_dist_range_local);
+
+#ifdef DEBUG_MODE
+
+        float* host_distances = new float[total_size];
+
+        d_queue.enqueueReadBuffer(distances, CL_TRUE, 0,
+                                  sizeof(float) * total_size, host_distances);
+
+        float f1 = host_distances[0];
+        float f2 = host_distances[1];
+        float f3 = host_distances[2];
+        float f4 = host_distances[3];
+
+        delete[] host_distances;
+#endif
 
 
         d_queue.enqueueNDRangeKernel(global_min_first_kernel,
@@ -303,9 +373,9 @@ SOM::iterator OCL_SOM2d_new::identifyWinnerNeuron(const multi_img::Pixel &inputV
             int second_reduct_global = round_up(elems_to_reduce,
                                        second_reduct_local);
 
-            global_min_kernel.setArg(3, elems_to_reduce);
+            global_min_kernel.setArg(2, elems_to_reduce);
 
-            global_min_kernel.setArg(4, cl::__local(sizeof(int)
+            global_min_kernel.setArg(3, cl::__local(sizeof(int)
                                                     * second_reduct_local));
 
             cl::NDRange range_global(second_reduct_global);
@@ -321,7 +391,7 @@ SOM::iterator OCL_SOM2d_new::identifyWinnerNeuron(const multi_img::Pixel &inputV
 
 //#ifdef DEBUG_MODE
         d_queue.enqueueReadBuffer(out_min_indexes, CL_TRUE, 0,
-                                  sizeof(unsigned int) * 2, &global_min);
+                                  sizeof(int) * 3, &global_min);
 //#endif
 
     }
@@ -330,22 +400,30 @@ SOM::iterator OCL_SOM2d_new::identifyWinnerNeuron(const multi_img::Pixel &inputV
         std::cout << error.what() << "(" << error.err() << ")" << std::endl;
     }
 
+//#ifdef DEBUG_MODE
     int winner_x = global_min[0];
     int winner_y = global_min[1];
+    int winner_z = global_min[2];
+
+    assert(winner_x >=0 && winner_x < width);
+    assert(winner_y >=0 && winner_y < height);
+    assert(winner_z >=0 && winner_z < depth);
+//#endif
+//    int winner_x_t = global_min[1] >> 16;
+//    int winner_y_t = global_min[1] & 0xFFFF;
 
 #ifdef TIME_MEASURE
     d_queue.finish();
 #endif
 
-    return SOM::iterator(new Iterator2d(this, winner_x, winner_y));
+    //return SOM::iterator(new Iterator2d(this, winner_x, winner_y));
+    return SOM::iterator(new Iterator3d(this, 0, 0, 0));
 }
 
-int OCL_SOM2d_new::updateNeighborhood(iterator &neuron,
+int Ocl_SOM3d::updateNeighborhood(iterator &neuron,
                                   const multi_img::Pixel &input,
                                   double sigma, double learnRate)
 {
-    //return 1;
-
 #ifdef TIME_MEASURE
     vole::Stopwatch running_time("Update time");
 #endif
@@ -362,8 +440,8 @@ int OCL_SOM2d_new::updateNeighborhood(iterator &neuron,
 
     while(update_radius > 0)
     {
-        double dist = getDistanceSquared(cv::Point(0, 0),
-                                         cv::Point(update_radius, 0));
+        double dist = getDistanceSquared(cv::Point3d(0, 0, 0),
+                                         cv::Point3d(update_radius, 0, 0));
         double fakeGaussian = exp(-(dist)/(2.0*sigmaSquare));
         double weight = learnRate * fakeGaussian;
 
@@ -377,33 +455,38 @@ int OCL_SOM2d_new::updateNeighborhood(iterator &neuron,
         }
     }
 
-    int update_area_width = update_radius * 2 + 1;
-    int update_area_height = update_radius * 2 + 1;
+    if(update_radius == 0)
+        return 42;
+
+    int update_area_width = std::min((int)update_radius * 2 + 1, width);
+    int update_area_height = std::min((int)update_radius * 2 + 1, height);
+    int update_area_depth = std::min((int)update_radius * 2 + 1, depth);
 
     try
     {
-        int local_x = neuron_size_rounded;
+        int local_x = neuron_size_rounded / 2;
         int local_y = std::min(group_size / local_x,
                                round_up_power2(update_radius * 2 + 1));
 
         int global_x = local_x * update_area_width;
         int global_y = round_up(update_area_height, local_y);
 
-        cl::LocalSpaceArg update_weights_buff_local = cl::__local(sizeof(float) * local_y);
+        cl::LocalSpaceArg update_weights_buff_local
+                = cl::__local(sizeof(float) * local_y);
 
-        update_kernel.setArg(5, update_radius);
-        update_kernel.setArg(6, (float)sigmaSquare);
-        update_kernel.setArg(7, (float)learnRate);
-        update_kernel.setArg(8, update_weights_buff_local);
+        update_kernel.setArg(3, (int)update_radius);
+        update_kernel.setArg(4, (float)sigmaSquare);
+        update_kernel.setArg(5, (float)learnRate);
+        update_kernel.setArg(6, update_weights_buff_local);
 
 #ifdef DEBUG_MODE
-        std::cout << "update | global_x: " << global_x
+        std::cerr << "update | global_x: " << global_x
                   << " global_y: " << global_y << std::endl;
-        std::cout << "update | local_x: " << local_x
+        std::cerr << "update | local_x: " << local_x
                   << " local_y: " << local_y << std::endl;
 #endif
-        cl::NDRange update_global(global_x, global_y);
-        cl::NDRange update_local(local_x, local_y);
+        cl::NDRange update_global(global_x, global_y, update_area_depth);
+        cl::NDRange update_local(local_x, local_y, 1);
 
         d_queue.enqueueNDRangeKernel(update_kernel, cl::NullRange,
                                      update_global, update_local);

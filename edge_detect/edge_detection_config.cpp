@@ -24,7 +24,6 @@ EdgeDetectionConfig::EdgeDetectionConfig(const std::string& p)
 	seed = time(NULL);
 	output_som = false;
     use_opencl = false;
-    use_opencl_new = false;
     use_opencl_cpu_opt = false;
 
 	#ifdef WITH_BOOST
@@ -57,8 +56,6 @@ void EdgeDetectionConfig::initBoostOptions() {
 		(key("seed"), value(&seed)->default_value(seed),
 			"Seed value of random number generators")
         (key("use_opencl"), bool_switch(&use_opencl)->default_value(false),
-            "Use OpenCL to accelerate computations")
-        (key("use_opencl_new"), bool_switch(&use_opencl_new)->default_value(false),
             "Use OpenCL to accelerate computations")
         (key("use_opencl_cpu_opt"), bool_switch(&use_opencl_cpu_opt)->default_value(false),
             "Use OpenCL to accelerate computations (CPU optimized version)")

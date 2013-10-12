@@ -4,10 +4,10 @@
 class ocl_som_data
 {
 public:
-    ocl_som_data(int x, int y, int neuron_size);
+    ocl_som_data(int x, int y, int z, int neuron_size);
     ~ocl_som_data();
 
-    int x, y, neuron_size;
+    int x, y, z, neuron_size;
     int size;
     float* data;
 };

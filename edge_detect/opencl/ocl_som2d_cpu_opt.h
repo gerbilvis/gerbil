@@ -7,19 +7,17 @@
 #include "ocl_som_types.h"
 //#include "ocl_utils.h"
 
-void ocl_som2d_test();
-
 //#define DEBUG_MODE
 
-class OCL_SOM2d_cpu_opt : public SOM2d
+class Ocl_SOM2d_cpu_opt : public SOM2d
 {
 public:
-    OCL_SOM2d_cpu_opt(const vole::EdgeDetectionConfig &conf, int dimension,
+    Ocl_SOM2d_cpu_opt(const vole::EdgeDetectionConfig &conf, int dimension,
               std::vector<multi_img_base::BandDesc> meta);
-    OCL_SOM2d_cpu_opt(const vole::EdgeDetectionConfig &conf, const multi_img &data,
+    Ocl_SOM2d_cpu_opt(const vole::EdgeDetectionConfig &conf, const multi_img &data,
               std::vector<multi_img_base::BandDesc> meta);
 
-    ~OCL_SOM2d_cpu_opt();
+    ~Ocl_SOM2d_cpu_opt();
 
     SOM::iterator identifyWinnerNeuron(const multi_img::Pixel &inputVec);
     int updateNeighborhood(iterator &neuron, const multi_img::Pixel &input,

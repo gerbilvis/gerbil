@@ -3,7 +3,7 @@
 // for factory methods
 #include "som2d.h"
 #include "opencl/ocl_som2d.h"
-#include "opencl/ocl_som2d_new.h"
+#include "opencl/ocl_som3d.h"
 #include "opencl/ocl_som2d_cpu_opt.h"
 #include "som3d.h"
 #include "som_cone.h"
@@ -38,16 +38,17 @@ SOM* SOM::createSOM(const vole::EdgeDetectionConfig &conf,
 	case vole::SOM_SQUARE:
     {
         if(conf.use_opencl)
-            return new OCL_SOM2d(conf, dimensions, meta);
-        else if(conf.use_opencl_new)
-            return new OCL_SOM2d_new(conf, dimensions, meta);
+            return new Ocl_SOM2d(conf, dimensions, meta);
         else if(conf.use_opencl_cpu_opt)
-            return new OCL_SOM2d_cpu_opt(conf, dimensions, meta);
+            return new Ocl_SOM2d_cpu_opt(conf, dimensions, meta);
         else
             return new SOM2d(conf, dimensions, meta);
     }
 	case vole::SOM_CUBE:
-		return new SOM3d(conf, dimensions, meta);
+        if(conf.use_opencl)
+            return new Ocl_SOM3d(conf, dimensions, meta);
+        else
+            return new SOM3d(conf, dimensions, meta);
 	case vole::SOM_CONE:
 		return new SOMCone(conf, dimensions, meta);
 	default:

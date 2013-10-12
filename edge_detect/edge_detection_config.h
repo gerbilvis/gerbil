@@ -41,7 +41,6 @@ public:
 	// export SOM?
 	bool output_som;
     bool use_opencl;
-    bool use_opencl_new;
     bool use_opencl_cpu_opt;
 
 	// Training features 

@@ -39,6 +39,11 @@ void init_opencl(cl::Context& context, cl::CommandQueue& queue)
         // Get a list of devices on this platform
         std::vector<cl::Device> devices = context.getInfo<CL_CONTEXT_DEVICES>();
 
+        std::cout << "num of devices: " << devices.size() << std::endl;
+
+        std::cout << "device name: " << devices[0].getInfo<CL_DEVICE_NAME>()
+                     << std::endl;
+
         // Create a command queue and use the first device
         queue = cl::CommandQueue(context, devices[0]);
 

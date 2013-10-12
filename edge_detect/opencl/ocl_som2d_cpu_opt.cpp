@@ -17,21 +17,23 @@
 
 extern const char* som2d_cpu_opt;
 
-OCL_SOM2d_cpu_opt::OCL_SOM2d_cpu_opt(const vole::EdgeDetectionConfig &conf,
+Ocl_SOM2d_cpu_opt::Ocl_SOM2d_cpu_opt(const vole::EdgeDetectionConfig &conf,
                      const multi_img &data,
                      std::vector<multi_img_base::BandDesc> meta)
     : SOM2d(conf, data, meta),
       d_data(conf.sidelength,
-             conf.type == vole::SOM_SQUARE ? conf.sidelength : 1, data.size())
+             conf.type == vole::SOM_SQUARE ? conf.sidelength : 1,
+             1, data.size())
 {    
 }
 
-OCL_SOM2d_cpu_opt::OCL_SOM2d_cpu_opt(const vole::EdgeDetectionConfig &conf,
+Ocl_SOM2d_cpu_opt::Ocl_SOM2d_cpu_opt(const vole::EdgeDetectionConfig &conf,
                      int dimension,
                      std::vector<multi_img_base::BandDesc> meta)
     : SOM2d(conf, dimension, meta),
       d_data(conf.sidelength,
-             conf.type == vole::SOM_SQUARE ? conf.sidelength : 1, round_up(dimension, 4))
+             conf.type == vole::SOM_SQUARE ? conf.sidelength : 1,
+             1, round_up(dimension, 4))
 {
     initOpenCL();
     initParamters();
@@ -42,11 +44,11 @@ OCL_SOM2d_cpu_opt::OCL_SOM2d_cpu_opt(const vole::EdgeDetectionConfig &conf,
     setKernelParams();
 }
 
-OCL_SOM2d_cpu_opt::~OCL_SOM2d_cpu_opt()
+Ocl_SOM2d_cpu_opt::~Ocl_SOM2d_cpu_opt()
 {
 }
 
-void OCL_SOM2d_cpu_opt::initOpenCL()
+void Ocl_SOM2d_cpu_opt::initOpenCL()
 {
     init_opencl(d_context, d_queue);    
 
@@ -79,7 +81,7 @@ void OCL_SOM2d_cpu_opt::initOpenCL()
     update_kernel = cl::Kernel(program, "update_network");
 }
 
-void OCL_SOM2d_cpu_opt::initParamters()
+void Ocl_SOM2d_cpu_opt::initParamters()
 {
     reduction_kernel_local_x = 1;
     reduction_kernel_global_x = compute_units;
@@ -88,11 +90,11 @@ void OCL_SOM2d_cpu_opt::initParamters()
 }
 
 
-void OCL_SOM2d_cpu_opt::initLocalMemDims()
+void Ocl_SOM2d_cpu_opt::initLocalMemDims()
 {
 }
 
-void OCL_SOM2d_cpu_opt::initRanges()
+void Ocl_SOM2d_cpu_opt::initRanges()
 {
     calculate_distances_global = cl::NDRange(get2dWidth() * get2dHeight());
     calculate_distances_local = cl::NullRange;
@@ -101,7 +103,7 @@ void OCL_SOM2d_cpu_opt::initRanges()
     global_min_local = cl::NDRange(reduction_kernel_local_x);
 }
 
-void OCL_SOM2d_cpu_opt::initDeviceBuffers()
+void Ocl_SOM2d_cpu_opt::initDeviceBuffers()
 {
     int som_size_x = get2dWidth();
     int som_size_y = get2dHeight();
@@ -127,7 +129,7 @@ void OCL_SOM2d_cpu_opt::initDeviceBuffers()
 
 }
 
-void OCL_SOM2d_cpu_opt::setKernelParams()
+void Ocl_SOM2d_cpu_opt::setKernelParams()
 {
     // Set arguments to kernel
     calculate_distances_kernel.setArg(0, d_som);
@@ -147,7 +149,7 @@ void OCL_SOM2d_cpu_opt::setKernelParams()
   //  update_kernel.setArg(3, get2dHeight());
 }
 
-void OCL_SOM2d_cpu_opt::uploadDataToDevice()
+void Ocl_SOM2d_cpu_opt::uploadDataToDevice()
 {
     for(int i = 0; i < neurons.size(); ++i)
     {
@@ -174,7 +176,7 @@ void OCL_SOM2d_cpu_opt::uploadDataToDevice()
     delete[] zero_vector;
 }
 
-void OCL_SOM2d_cpu_opt::downloadDataFromDevice()
+void Ocl_SOM2d_cpu_opt::downloadDataFromDevice()
 {
     d_queue.enqueueReadBuffer(d_som, CL_TRUE, 0, d_data.size * sizeof(float),
                               d_data.data);
@@ -199,7 +201,7 @@ void OCL_SOM2d_cpu_opt::downloadDataFromDevice()
 }
 
 
-void OCL_SOM2d_cpu_opt::notifyTrainingStart()
+void Ocl_SOM2d_cpu_opt::notifyTrainingStart()
 {
     uploadDataToDevice();
 
@@ -209,7 +211,7 @@ void OCL_SOM2d_cpu_opt::notifyTrainingStart()
     final_min_indexes = new int[reduced_elems_count];
 }
 
-void OCL_SOM2d_cpu_opt::notifyTrainingEnd()
+void Ocl_SOM2d_cpu_opt::notifyTrainingEnd()
 {
     downloadDataFromDevice();
 
@@ -217,7 +219,7 @@ void OCL_SOM2d_cpu_opt::notifyTrainingEnd()
     delete[] final_min_indexes;
 }
 
-SOM::iterator OCL_SOM2d_cpu_opt::identifyWinnerNeuron(const multi_img::Pixel &inputVec)
+SOM::iterator Ocl_SOM2d_cpu_opt::identifyWinnerNeuron(const multi_img::Pixel &inputVec)
 {
 #ifdef TIME_MEASURE
     vole::Stopwatch running_time("Identify winner time");
@@ -273,7 +275,7 @@ SOM::iterator OCL_SOM2d_cpu_opt::identifyWinnerNeuron(const multi_img::Pixel &in
     return SOM::iterator(new Iterator2d(this, winner_x, winner_y));
 }
 
-int OCL_SOM2d_cpu_opt::updateNeighborhood(iterator &neuron,
+int Ocl_SOM2d_cpu_opt::updateNeighborhood(iterator &neuron,
                                   const multi_img::Pixel &input,
                                   double sigma, double learnRate)
 {

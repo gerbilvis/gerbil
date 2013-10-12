@@ -1,24 +1,22 @@
-#ifndef OCLSOM2D_NEW_H
-#define OCLSOM2D_NEW_H
+#ifndef OCLSOM3D_H
+#define OCLSOM3D_H
 
 #include <cstdlib>
-#include "som2d.h"
+#include "som3d.h"
 #include "ocl_som_types.h"
 #include "ocl_utils.h"
 
-void ocl_som2d_test();
-
 //#define DEBUG_MODE
 
-class OCL_SOM2d_new : public SOM2d
+class Ocl_SOM3d : public SOM3d
 {
 public:
-    OCL_SOM2d_new(const vole::EdgeDetectionConfig &conf, int dimension,
+    Ocl_SOM3d(const vole::EdgeDetectionConfig &conf, int dimension,
               std::vector<multi_img_base::BandDesc> meta);
-    OCL_SOM2d_new(const vole::EdgeDetectionConfig &conf, const multi_img &data,
+    Ocl_SOM3d(const vole::EdgeDetectionConfig &conf, const multi_img &data,
               std::vector<multi_img_base::BandDesc> meta);
 
-    ~OCL_SOM2d_new();
+    ~Ocl_SOM3d();
 
     SOM::iterator identifyWinnerNeuron(const multi_img::Pixel &inputVec);
     int updateNeighborhood(iterator &neuron, const multi_img::Pixel &input,
@@ -68,9 +66,11 @@ private:
 
     int dist_find_local_x;
     int dist_find_local_y;
+    int dist_find_local_z;
 
     int dist_find_global_x;
     int dist_find_global_y;
+    int dist_find_global_z;
 
     int reduction_global;
     int reduction_local;
@@ -95,7 +95,5 @@ private:
     float* final_min_vals;
     int* final_min_indexes;
 };
-
-
 
 #endif
