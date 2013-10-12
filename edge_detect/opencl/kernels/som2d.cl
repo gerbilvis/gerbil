@@ -1,7 +1,7 @@
 //#define DEBUG
 //#define CPU
 
-#pragma OPENCL EXTENSION cl_khr_int64_base_atomics: enable
+//#pragma OPENCL EXTENSION cl_khr_int64_base_atomics: enable
 
 #ifdef DEBUG
 #define assert(x) \
@@ -60,10 +60,10 @@ __kernel void calculate_distances(__global const float* som_data,
         rbuff_local[local_id_x] += diff * diff;
     }
 
-    if(X_DIM > 32)
-        barrier(CLK_LOCAL_MEM_FENCE);
-
 #ifdef CPU
+
+    barrier(CLK_LOCAL_MEM_FENCE);
+
     for (uint s = X_DIM / 2; s > 0; s >>= 1)
     {
         if (local_id_x < s)
@@ -73,6 +73,10 @@ __kernel void calculate_distances(__global const float* som_data,
         barrier(CLK_LOCAL_MEM_FENCE);
     }
 #else
+
+    if(X_DIM > 32)
+        barrier(CLK_LOCAL_MEM_FENCE);
+
     if(X_DIM >= 512)
     {
         if (local_id_x < 256)
@@ -120,8 +124,6 @@ __kernel void calculate_distances(__global const float* som_data,
         if(local_id_x < 1)
             rbuff_local[local_id_x] += rbuff_local[local_id_x + 1];
 #endif
-
-  //  barrier(CLK_LOCAL_MEM_FENCE);
 
     if(local_id_x == 0 && global_id_y < SOM_SIZE_Y)
     {
@@ -251,7 +253,6 @@ __kernel void find_global_first_pass(__global const float* values,
 
 __kernel void find_global_min(__global float* min_values,
                               __global int* min_indexes,
-//                              const int som_width,
                               const int vector_size,
                               __local volatile float* reduction_buff)
 {
@@ -317,8 +318,6 @@ __kernel void find_global_min(__global float* min_values,
 __kernel void update_network(__global float* som_data,
                              __global const float* input_vector,
                              __global const int* winner_idx,
-//                             const int som_size_x,
-//                             const int som_size_y,
                              const int radius,
                              const float sigma_square,
                              const float learning_rate,
@@ -401,8 +400,12 @@ __kernel void update_network(__global float* som_data,
     }
 #endif
 
-//    if(X_DIM > 32)
+#ifdef CPU
+    barrier(CLK_LOCAL_MEM_FENCE);
+#else
+    if(X_DIM > 32)
         barrier(CLK_LOCAL_MEM_FENCE);
+#endif
 
     float weight = weights[local_id_y];
 

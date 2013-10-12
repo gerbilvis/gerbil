@@ -61,6 +61,8 @@ void Ocl_SOM2d::initOpenCL()
 
     cl::Device device = d_queue.getInfo<CL_QUEUE_DEVICE>();
 
+    int device_type = device.getInfo<CL_DEVICE_TYPE>();
+
     preffered_group_size = 512;
     max_group_size = device.getInfo<CL_DEVICE_MAX_WORK_GROUP_SIZE>();
 
@@ -77,6 +79,9 @@ void Ocl_SOM2d::initOpenCL()
     stream << " -DSOM_SIZE_X=" << width;
     stream << " -DSOM_SIZE_Y=" << height;
     stream << " -DSOM_SIZE_Z=" << 1;
+
+    if(device_type == CL_DEVICE_TYPE_CPU)
+        stream << " -DCPU";
 
 #ifdef DEBUG_MODE
     stream << " -DDEBUG_MODE -Werror";
