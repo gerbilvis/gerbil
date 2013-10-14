@@ -3,16 +3,16 @@
 
 //#pragma OPENCL EXTENSION cl_khr_int64_base_atomics: enable
 
-#ifdef DEBUG
-#define assert(x) \
-            if (! (x)) \
-            { \
-                printf((__constant char*)"Assert(%s) failed in line: %d\n", \
-                       (__constant char*)#x, __LINE__); \
-            }
-#else
-        #define assert(X)
-#endif
+//#ifdef DEBUG
+//#define assert(x) \
+//            if (! (x)) \
+//            { \
+//                printf((__constant char*)"Assert(%s) failed in line: %d\n", \
+//                       (__constant char*)#x, __LINE__); \
+//            }
+//#else
+//        #define assert(X)
+//#endif
 
 //#define X_DIM 32 <-- should be passed as a compile-time parameter
 //#define SOM_SIZE_X 32
@@ -23,8 +23,9 @@
 
 
 __kernel void calculate_distances(__global const float* som_data,
-                                  __global const float* input_vector,
+                                  __global const float* input_vectors,
                                   __global float* output_distances,
+                                  const int input_vector_idx,
                                   __local float* rbuff)
 {
     const int local_id_x = get_local_id(0);
@@ -46,6 +47,9 @@ __kernel void calculate_distances(__global const float* som_data,
 #endif
 
     __local volatile float* rbuff_local = rbuff + local_id_y * X_DIM;
+
+    __global const float* input_vector = input_vectors
+                                      + NEURON_SIZE_ROUNDED * input_vector_idx;
 
     if(global_id_y < SOM_SIZE_Y)
     {
@@ -316,8 +320,9 @@ __kernel void find_global_min(__global float* min_values,
 
 
 __kernel void update_network(__global float* som_data,
-                             __global const float* input_vector,
+                             __global const float* input_vectors,
                              __global const int* winner_idx,
+                             int input_vector_idx,
                              const int radius,
                              const float sigma_square,
                              const float learning_rate,
@@ -367,6 +372,10 @@ __kernel void update_network(__global float* som_data,
     const int global_vector_idx = (global_translated_y * SOM_SIZE_X
                                    + global_translated_x) * NEURON_SIZE_ROUNDED;
 #endif
+
+    __global const float* input_vector = input_vectors
+                                      + NEURON_SIZE_ROUNDED * input_vector_idx;
+
 
 #ifdef SOM_3D
     if(get_local_id(0) == 0 && group_id_x < width

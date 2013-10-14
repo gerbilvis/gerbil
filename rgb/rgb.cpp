@@ -372,9 +372,11 @@ cv::Mat3f RGB::executeSOM(const multi_img &input_img, vole::ProgressObserver *po
 
 	// set RGB pixels
 	{
-		vole::Stopwatch watch("False Color Image Generation");
+        vole::Stopwatch watch("False Color Image Generation");
 		tbb::parallel_for(tbb::blocked_range<int>(0, img.height*img.width),
-		                  SOMTBB(img, som, weights, bgr, stddevs, avg_coords));
+                          SOMTBB(img, som, weights, bgr, stddevs, avg_coords));
+
+       // SOMTBB(img, som, weights, bgr, stddevs, avg_coords)(tbb::blocked_range<int>(0, img.height*img.width));
 	}
 
 	if (config.som.verbosity >= 3 && N > 1)

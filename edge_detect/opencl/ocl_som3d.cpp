@@ -203,9 +203,8 @@ void Ocl_SOM3d::setKernelParams()
     calculate_distances_kernel.setArg(0, d_som);
     calculate_distances_kernel.setArg(1, input_vector);
     calculate_distances_kernel.setArg(2, distances);
-//    calculate_distances_kernel.setArg(3, width);
-//    calculate_distances_kernel.setArg(4, height);
-    calculate_distances_kernel.setArg(3, dist_find_reduct_buff_local);
+    calculate_distances_kernel.setArg(3, 0);
+    calculate_distances_kernel.setArg(4, dist_find_reduct_buff_local);
 
     global_min_first_kernel.setArg(0, distances);
     global_min_first_kernel.setArg(1, out_min_values);
@@ -221,6 +220,7 @@ void Ocl_SOM3d::setKernelParams()
     update_kernel.setArg(0, d_som);
     update_kernel.setArg(1, input_vector);
     update_kernel.setArg(2, out_min_indexes);
+    update_kernel.setArg(3, 0);
 //    update_kernel.setArg(3, width);
 //    update_kernel.setArg(4, height);
 //    update_kernel.setArg(5, depth);
@@ -474,10 +474,10 @@ int Ocl_SOM3d::updateNeighborhood(iterator &neuron,
         cl::LocalSpaceArg update_weights_buff_local
                 = cl::__local(sizeof(float) * local_y);
 
-        update_kernel.setArg(3, (int)update_radius);
-        update_kernel.setArg(4, (float)sigmaSquare);
-        update_kernel.setArg(5, (float)learnRate);
-        update_kernel.setArg(6, update_weights_buff_local);
+        update_kernel.setArg(4, (int)update_radius);
+        update_kernel.setArg(5, (float)sigmaSquare);
+        update_kernel.setArg(6, (float)learnRate);
+        update_kernel.setArg(7, update_weights_buff_local);
 
 #ifdef DEBUG_MODE
         std::cerr << "update | global_x: " << global_x

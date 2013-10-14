@@ -287,7 +287,7 @@ public:
 
 	// writes a list of (distance, iterator) tuples to coords,
 	// that is sorted by distance, N = coords.size()
-	void closestN(const multi_img::Pixel &inputVec,
+    virtual void closestN(const multi_img::Pixel &inputVec,
 		std::vector<std::pair<double, SOM::iterator> > &coords);
 
 	// returns the amount of updated neurons

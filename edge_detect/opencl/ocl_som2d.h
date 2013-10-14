@@ -26,6 +26,9 @@ public:
 
     void notifyTrainingStart();
     void notifyTrainingEnd();
+    void closestN(const multi_img::Pixel &inputVec,
+                  std::vector<std::pair<double, iterator> > &coords);
+
 
 private:
 
@@ -37,6 +40,7 @@ private:
     void setKernelParams();
     void uploadDataToDevice();
     void downloadDataFromDevice();
+    void uploadTrainingVectors();
 
     ocl_som_data d_data;
     cl::Context d_context;
@@ -44,17 +48,20 @@ private:
     cl::Program program;
 
     cl::Kernel calculate_distances_kernel;
-    cl::Kernel global_min_first_kernel;
-    cl::Kernel global_min_kernel;
+    cl::Kernel find_local_minima;
+    cl::Kernel find_global_minima;
     cl::Kernel update_kernel;
 
     /* OCL BUFFERS */
     cl::Buffer d_som;
-    cl::Buffer input_vector;
+    cl::Buffer input_vectors;
     cl::Buffer distances;
 
     cl::Buffer out_min_indexes;
     cl::Buffer out_min_values;
+
+    std::vector<multi_img::Pixel> training_vectors;
+    std::vector<std::pair<double, double> > training_params;
 
     /* OCL RUNTIME PARAMETERS */
 
@@ -76,7 +83,7 @@ private:
     int reduction_local;
     int reduced_elems_count;
 
-    unsigned int update_radius;
+    int update_radius;
 
     /* LOCAL MEMORY OCCUPANCY */
 
@@ -94,6 +101,8 @@ private:
 
     float* final_min_vals;
     int* final_min_indexes;
+
+    float* local_distances; // N-closest neighbours finding
 };
 
 #endif
