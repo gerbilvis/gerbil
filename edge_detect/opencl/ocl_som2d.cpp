@@ -285,7 +285,7 @@ void Ocl_SOM2d::uploadTrainingVectors()
 
     std::fill(data, data + buff_size, 0.f);
 
-    for(int i; i < vectors_num; ++i)
+    for(int i = 0; i < vectors_num; ++i)
     {
         float* ptr = data + i * neuron_size_rounded;
         multi_img::Pixel& vec = training_vectors[i];
