@@ -35,6 +35,7 @@ vole_compile_library(
         "som_distance"
         "som_tester"
         "som_trainer"
+        "opencl/ocl_generic_som"
         "opencl/ocl_som2d"
 #        "opencl/ocl_som2d_new"
         "opencl/ocl_som2d_cpu_opt"
@@ -42,25 +43,8 @@ vole_compile_library(
         "opencl/ocl_utils"
         "opencl/ocl_som_types"
         "opencl/kernels" #generated
-        "opencl/kernels/som2d.cl"
+        "opencl/kernels/som_gpu_opt.cl"
         "opencl/kernels/som2d_cpu_opt.cl"
-        "opencl/kernels/som3d.cl"
 )
 
 vole_add_module()
-
-
-#file(MAKE_DIRECTORY ${PROJECT_BINARY_DIR}/bin/kernels)
-
-## it should be automated using list and loop
-#configure_file(${CMAKE_CURRENT_SOURCE_DIR}/opencl/kernels/vector_add.cl
-#    ${PROJECT_BINARY_DIR}/bin/kernels/vector_add.cl COPYONLY)
-
-#configure_file(${CMAKE_CURRENT_SOURCE_DIR}/opencl/kernels/som2d.cl
-#    ${PROJECT_BINARY_DIR}/bin/kernels/som2d.cl COPYONLY)
-
-#configure_file(${CMAKE_CURRENT_SOURCE_DIR}/opencl/kernels/som2d_new.cl
-#    ${PROJECT_BINARY_DIR}/bin/kernels/som2d_new.cl COPYONLY)
-
-#configure_file(${CMAKE_CURRENT_SOURCE_DIR}/opencl/kernels/som2d_cpu_opt.cl
-#    ${PROJECT_BINARY_DIR}/bin/kernels/som2d_cpu_opt.cl COPYONLY)
