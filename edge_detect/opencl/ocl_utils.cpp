@@ -8,7 +8,7 @@ void print_ocl_err(cl::Error error)
     std::cout << error.what() << "(" << error.err() << ")" << std::endl;
 }
 
-void init_opencl(cl::Context& context, cl::CommandQueue& queue)
+void init_opencl(cl::Context& context, cl::CommandQueue& queue, bool profiling)
 {
     try
     {
@@ -28,7 +28,8 @@ void init_opencl(cl::Context& context, cl::CommandQueue& queue)
             std::cout << "Platform name: " << platform_name << std::endl;
         }
 
-        // Select the default platform and create a context using this platform and the GPU
+        // Select the default platform and create
+        // a context using this platform and the GPU
         cl_context_properties cps[3] = {
             CL_CONTEXT_PLATFORM,
             (cl_context_properties)(platforms[0])(),
@@ -45,7 +46,13 @@ void init_opencl(cl::Context& context, cl::CommandQueue& queue)
                      << std::endl;
 
         // Create a command queue and use the first device
-        queue = cl::CommandQueue(context, devices[0]);
+
+        cl_command_queue_properties props = 0;
+
+        if(profiling)
+            props |= CL_QUEUE_PROFILING_ENABLE;
+
+        queue = cl::CommandQueue(context, devices[0], props);
 
     }
     catch (cl::Error err)
@@ -91,4 +98,33 @@ std::string read_source(const std::string& path)
         (std::istreambuf_iterator<char>()));
 
     return sourceCode;
+}
+
+void get_profile_info(std::vector<cl::Event> &events,
+                      float &total_time, int &num_of_valid_events)
+{
+    cl_ulong total_time_ulong = 0;
+    int counter = 0;
+
+    for(int i = 0; i < events.size(); ++i)
+    {
+        cl::Event& event = events[i];
+
+        try {
+            cl_ulong start = event
+                    .getProfilingInfo<CL_PROFILING_COMMAND_START>();
+            cl_ulong end = event
+                    .getProfilingInfo<CL_PROFILING_COMMAND_END>();
+
+            total_time_ulong += end - start;
+            counter++;
+        }
+        catch (...)
+        {
+            break;
+        }
+    }
+
+    num_of_valid_events = counter;
+    total_time = total_time_ulong / 1000000.f;
 }

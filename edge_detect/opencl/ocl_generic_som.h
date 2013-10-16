@@ -5,6 +5,8 @@
 #include "ocl_som_types.h"
 #include "ocl_utils.h"
 
+//#define OPENCL_PROFILE
+
 class Ocl_GenericSOM
 {
 public:
@@ -13,11 +15,9 @@ public:
 
     virtual ~Ocl_GenericSOM();
     virtual void train();
-
     void clearSomData();
 
 protected:
-
     ocl_som_data d_data;
     std::vector<multi_img::Pixel> training_vectors;
     std::vector<std::pair<double, double> > training_params;
@@ -27,6 +27,9 @@ protected:
     virtual void uploadTrainingVectors();
 
 private:
+    void findMinima(int vector_idx);
+    void updateRadius(int vector_idx);
+    void update(int vector_idx);
 
     std::string oclParams;
 
@@ -64,9 +67,9 @@ private:
     cl::CommandQueue d_queue;
     cl::Program program;
 
-    cl::Kernel calculate_distances_kernel;
-    cl::Kernel find_local_minima;
-    cl::Kernel find_global_minima;
+    cl::Kernel calc_dist_kernel;
+    cl::Kernel local_min_kernel;
+    cl::Kernel global_min_kernel;
     cl::Kernel update_kernel;
 
     /* OCL BUFFERS */
@@ -92,6 +95,17 @@ private:
     int* final_min_indexes;
 
     float* local_distances; // N-closest neighbours finding
+
+#ifdef OPENCL_PROFILE
+    void initProfiling();
+    void showProfilingInfo();
+
+    std::vector<cl::Event> calc_dist_events;
+    std::vector<cl::Event> local_min_events;
+    std::vector<cl::Event> global_min_events;
+    std::vector<cl::Event> update_events;
+#endif
+
 };
 
 #endif
