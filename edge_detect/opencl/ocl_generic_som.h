@@ -5,7 +5,7 @@
 #include "ocl_som_types.h"
 #include "ocl_utils.h"
 
-//#define OPENCL_PROFILE
+#define OPENCL_PROFILE
 
 class Ocl_GenericSOM
 {
@@ -14,7 +14,13 @@ public:
                    int neuron_size, const std::string& ocl_params);
 
     virtual ~Ocl_GenericSOM();
-    virtual void train();
+
+    void train();
+
+    void calculateAllDistances(const multi_img& image, float* distances);
+    void calculateAllDistances();
+
+
     void clearSomData();
 
 protected:
@@ -71,6 +77,7 @@ private:
     cl::Kernel local_min_kernel;
     cl::Kernel global_min_kernel;
     cl::Kernel update_kernel;
+    cl::Kernel calc_all_dist_kernel;
 
     /* OCL BUFFERS */
     cl::Buffer d_som;
@@ -95,6 +102,10 @@ private:
     int* final_min_indexes;
 
     float* local_distances; // N-closest neighbours finding
+
+    void verify_distance_calculation(float* input_1, float* input_2,
+                                     int length_1, int length_2,
+                                     int vector_size, float* output);
 
 #ifdef OPENCL_PROFILE
     void initProfiling();

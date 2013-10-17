@@ -100,10 +100,20 @@ std::string read_source(const std::string& path)
     return sourceCode;
 }
 
+void get_profile_info(cl::Event &event, cl_ulong &total_time)
+{
+    cl_ulong start = event
+            .getProfilingInfo<CL_PROFILING_COMMAND_START>();
+    cl_ulong end = event
+            .getProfilingInfo<CL_PROFILING_COMMAND_END>();
+
+    total_time = end - start;
+}
+
 void get_profile_info(std::vector<cl::Event> &events,
                       float &total_time, int &num_of_valid_events)
 {
-    cl_ulong total_time_ulong = 0;
+    cl_ulong total_time_ulong = 0, event_time;
     int counter = 0;
 
     for(int i = 0; i < events.size(); ++i)
@@ -111,12 +121,9 @@ void get_profile_info(std::vector<cl::Event> &events,
         cl::Event& event = events[i];
 
         try {
-            cl_ulong start = event
-                    .getProfilingInfo<CL_PROFILING_COMMAND_START>();
-            cl_ulong end = event
-                    .getProfilingInfo<CL_PROFILING_COMMAND_END>();
+            get_profile_info(event, event_time);
 
-            total_time_ulong += end - start;
+            total_time_ulong += event_time;
             counter++;
         }
         catch (...)

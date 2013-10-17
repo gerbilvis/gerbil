@@ -228,8 +228,9 @@ struct SOMTBB {
 	{
 		// (we just need the correct length,
 		// values will be overwritten in closestN)
-		std::vector<std::pair<double, SOM::iterator> > coords(
+        std::vector<std::pair<double, SOM::iterator> > coords(
 			weight.size(), std::make_pair(0.0, som->end()));
+
 		for (int i = r.begin(); i != r.end(); ++i) {
 			som->closestN(src.atIndex(i), coords);
 
@@ -373,7 +374,7 @@ cv::Mat3f RGB::executeSOM(const multi_img &input_img, vole::ProgressObserver *po
 	// set RGB pixels
 	{
         vole::Stopwatch watch("False Color Image Generation");
-		tbb::parallel_for(tbb::blocked_range<int>(0, img.height*img.width),
+        tbb::parallel_for(tbb::blocked_range<int>(0, img.height*img.width),
                           SOMTBB(img, som, weights, bgr, stddevs, avg_coords));
 
        // SOMTBB(img, som, weights, bgr, stddevs, avg_coords)(tbb::blocked_range<int>(0, img.height*img.width));

@@ -31,6 +31,7 @@ public:
     void closestN(const multi_img::Pixel &inputVec,
                   std::vector<std::pair<double, iterator> > &coords);
 
+    SOM::DistanceCache* createDistanceCache(int img_height, int img_width);
 
 private:
 
@@ -38,6 +39,22 @@ private:
     void downloadDataFromDevice();
   //  void uploadTrainingVectors();
 
+};
+
+
+class Ocl_DistanceCache : SOM2d::DistanceCache
+{
+public:
+
+    Ocl_DistanceCache(Ocl_SOM2d& som) : som(som), host_distances(0){}
+
+    void preload(const multi_img &image);
+    void getDistance(int index, SOM::iterator iterator);
+    void closestN(int, std::vector<std::pair<double, SOM::iterator> > &heap);
+
+private:
+    Ocl_SOM2d& som;
+    float* host_distances;
 };
 
 #endif

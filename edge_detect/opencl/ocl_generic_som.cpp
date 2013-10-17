@@ -111,6 +111,7 @@ void Ocl_GenericSOM::initOpenCL()
     local_min_kernel = cl::Kernel(program, "find_global_first_pass");
     global_min_kernel = cl::Kernel(program, "find_global_min");
     update_kernel = cl::Kernel(program, "update_network");
+    calc_all_dist_kernel = cl::Kernel(program, "calculate_all_distances");
 }
 
 void Ocl_GenericSOM::initParamters()
@@ -357,6 +358,8 @@ void Ocl_GenericSOM::findMinima(int vector_idx)
     }while(elems_to_reduce > 1);
 
 #ifdef DEBUG_MODE
+    int global_min[3];
+
     d_queue.enqueueReadBuffer(out_min_indexes, CL_TRUE, 0,
                               sizeof(int) * 3, &global_min);
 
@@ -431,6 +434,173 @@ void Ocl_GenericSOM::update(int vector_idx)
     d_queue.enqueueNDRangeKernel(update_kernel, cl::NullRange,
                                  update_global, update_local, 0, event);
 }
+
+void Ocl_GenericSOM::calculateAllDistances(const multi_img& image,
+                                           float* distances)
+{
+    std::cout << "calculate all distances" << std::endl;
+
+    int som_size = d_data.x * d_data.y * d_data.z;
+    int distances_size = som_size * som_size;
+
+    int image_size = image.width * image.height;
+    int image_data_size = image_size * neuron_size_rounded;
+
+    float* image_data_buffer = new float[image_data_size];
+
+    std::fill(image_data_buffer, image_data_buffer + image_data_size, 0.f);
+
+    for(int i = 0; i < image_size; ++i)
+    {
+        const multi_img::Pixel& pixel = image.atIndex(i);
+        float* ptr = image_data_buffer + i * neuron_size_rounded;
+        std::copy(pixel.begin(), pixel.end(), ptr);
+    }
+
+    cl::Buffer image_buffer(d_context, CL_MEM_READ_WRITE,
+                            image_data_size * sizeof(float));
+
+    d_queue.enqueueWriteBuffer(image_buffer, CL_TRUE, 0,
+                               image_data_size * sizeof(float),
+                               image_data_buffer);
+
+    cl::Buffer distances_buffer(d_context, CL_MEM_READ_WRITE,
+                                distances_size * sizeof(float));
+
+    calc_all_dist_kernel.setArg(0, d_som);
+    calc_all_dist_kernel.setArg(1, image_buffer);
+    calc_all_dist_kernel.setArg(2, som_size);
+    calc_all_dist_kernel.setArg(3, image_size);
+    calc_all_dist_kernel.setArg(4, distances_buffer);
+
+    cl::NDRange local(16, 16);
+    cl::NDRange global(image_size, som_size);
+
+    cl::Event* event = 0;
+
+#ifdef OPENCL_PROFILE
+    cl::Event e;
+    event = &e;
+#endif
+
+    d_queue.enqueueNDRangeKernel(calc_all_dist_kernel,
+                                 cl::NullRange, global, local, 0, event);
+
+    //float* distances_host = new float[distances_size];
+
+    d_queue.enqueueReadBuffer(distances_buffer, CL_TRUE, 0,
+                              distances_size * sizeof(float), distances);
+
+    verify_distance_calculation(d_data.data, image_data_buffer,
+                                som_size, image_size,
+                                d_data.neuron_size, distances);
+
+#ifdef OPENCL_PROFILE
+
+    cl_ulong kernel_time;
+    get_profile_info(*event, kernel_time);
+
+    std::cout << "find all distances time: "
+              << (kernel_time / 1000000.f)
+              << std::endl;
+
+#endif
+
+ //   delete[] distances_host;
+
+    std::cout << "calculate all distances finished" << std::endl;
+}
+
+void Ocl_GenericSOM::calculateAllDistances()
+{
+    std::cout << "calculate all distances" << std::endl;
+
+    int som_size = d_data.x * d_data.y * d_data.z;
+    int distances_size = som_size * som_size;
+
+    cl::Buffer distances_buffer(d_context, CL_MEM_READ_WRITE,
+                                distances_size * sizeof(float));
+
+    calc_all_dist_kernel.setArg(0, d_som);
+    calc_all_dist_kernel.setArg(1, d_som);
+    calc_all_dist_kernel.setArg(2, som_size);
+    calc_all_dist_kernel.setArg(3, som_size);
+    calc_all_dist_kernel.setArg(4, distances_buffer);
+
+    cl::NDRange local(16, 16);
+    cl::NDRange global(som_size, som_size);
+
+    cl::Event* event = 0;
+
+#ifdef OPENCL_PROFILE
+    cl::Event e;
+    event = &e;
+#endif
+
+    d_queue.enqueueNDRangeKernel(calc_all_dist_kernel,
+                                 cl::NullRange, global, local, 0, event);
+
+    float* distances_host = new float[distances_size];
+
+    d_queue.enqueueReadBuffer(distances_buffer, CL_TRUE, 0,
+                              distances_size * sizeof(float), distances_host);
+
+    verify_distance_calculation(d_data.data, d_data.data,
+                                som_size, som_size,
+                                d_data.neuron_size, distances_host);
+
+#ifdef OPENCL_PROFILE
+
+    cl_ulong kernel_time;
+    get_profile_info(*event, kernel_time);
+
+    std::cout << "find all distances time: "
+              << (kernel_time / 1000000.f)
+              << std::endl;
+
+#endif
+
+    delete[] distances_host;
+
+    std::cout << "calculate all distances finished" << std::endl;
+}
+
+
+void Ocl_GenericSOM::verify_distance_calculation(float *input_1,
+                                                 float *input_2,
+                                                 int length_1,
+                                                 int length_2,
+                                                 int vector_size,
+                                                 float *output)
+{
+
+    for(int i = 0; i < length_1; ++i)
+    {
+        float* in_ptr_1 = input_1 + i * vector_size;
+
+        for(int j = 0; j < length_2; ++j)
+        {
+            float* in_ptr_2 = input_2 + j * vector_size;
+
+            float my_dist = 0.f;
+            for(int k = 0; k < vector_size; ++k)
+            {
+                float diff = in_ptr_1[k] - in_ptr_2[k];
+                my_dist += diff * diff;
+            }
+
+            float dist = output[i * length_2 + j];
+
+            float diff = fabs(my_dist - dist);
+
+            assert(diff < 0.00001f);
+
+//            std::cout << "cpu: " << my_dist << std::endl;
+//            std::cout << "gpu: " << dist << std::endl;
+        }
+    }
+}
+
 
 #ifdef OPENCL_PROFILE
 

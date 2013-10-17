@@ -252,6 +252,20 @@ public:
 		bool preloaded;
 	};
 
+    class DistanceCache
+    {
+    public:
+        DistanceCache() : preloaded(false){}
+
+        virtual ~DistanceCache(){}
+        virtual void preload(const multi_img &image) = 0;
+        virtual void getDistance(int index, SOM::iterator iterator) = 0;
+        virtual void closestN(int, std::vector<std::pair<double, SOM::iterator> > &heap) = 0;
+
+    protected:
+        bool preloaded;
+    };
+
 protected:
 	SOM(const vole::EdgeDetectionConfig &conf, int dimension,
 		std::vector<multi_img_base::BandDesc> meta);
@@ -274,6 +288,11 @@ public:
 	  @arg img_width width of the pixel cache
 	  */
 	virtual SOM::Cache *createCache(int img_height, int img_width) = 0;
+    virtual SOM::DistanceCache *createDistanceCache(int img_height,
+                                                    int img_width)
+    {
+        return 0;
+    }
 
 	// Amount of neurons in the SOM
 	virtual int size() const = 0;

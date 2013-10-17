@@ -14,6 +14,7 @@ cl::Program build_cl_program(cl::Context& context,
 
 std::string read_source(const std::string& path);
 
+void get_profile_info(cl::Event& event, cl_ulong& total_time);
 
 void get_profile_info(std::vector<cl::Event>& events,
                       float& total_time, int& num_of_valid_events);

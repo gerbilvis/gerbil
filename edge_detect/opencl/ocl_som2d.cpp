@@ -99,6 +99,9 @@ void Ocl_SOM2d::notifyTrainingEnd()
     train();
 
     downloadDataFromDevice();
+
+    calculateAllDistances();
+
 }
 
 SOM::iterator Ocl_SOM2d::identifyWinnerNeuron(const multi_img::Pixel &inputVec)
@@ -124,6 +127,7 @@ static bool sortpair(std::pair<double, SOM::iterator> i,
 void Ocl_SOM2d::closestN(const multi_img::Pixel &inputVec,
                          std::vector<std::pair<double, iterator> > &heap)
 {
+
 //    //std::cout << "finding closest N!" << std::endl;
 
 //    if(local_distances == 0)
@@ -183,3 +187,27 @@ void Ocl_SOM2d::closestN(const multi_img::Pixel &inputVec,
 
     SOM::closestN(inputVec, heap);
 }
+
+SOM::DistanceCache* Ocl_SOM2d::createDistanceCache(int img_height, int img_width)
+{
+    return 0;
+}
+
+
+
+void Ocl_DistanceCache::preload(const multi_img &image)
+{
+
+}
+
+void Ocl_DistanceCache::getDistance(int index, SOM::iterator iterator)
+{
+
+}
+
+void Ocl_DistanceCache::closestN(int,
+                         std::vector<std::pair<double, SOM::iterator> > &heap)
+{
+
+}
+
