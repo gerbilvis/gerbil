@@ -42,19 +42,30 @@ private:
 };
 
 
-class Ocl_DistanceCache : SOM2d::DistanceCache
+class Ocl_DistanceCache : public SOM2d::DistanceCache
 {
 public:
 
-    Ocl_DistanceCache(Ocl_SOM2d& som) : som(som), host_distances(0){}
+    Ocl_DistanceCache(Ocl_SOM2d& som) : som(som), host_distances(0),
+                                image_size(0),
+                                som_size(som.get2dWidth() * som.get2dHeight()),
+                                som_width(som.get2dWidth()){}
+
+    ~Ocl_DistanceCache()
+    {
+        if(host_distances) delete[] host_distances;
+    }
 
     void preload(const multi_img &image);
-    void getDistance(int index, SOM::iterator iterator);
-    void closestN(int, std::vector<std::pair<double, SOM::iterator> > &heap);
+    float getDistance(int index, SOM::iterator& iterator);
+    void closestN(int index, std::vector<std::pair<double, SOM::iterator> > &heap);
 
 private:
     Ocl_SOM2d& som;
     float* host_distances;
+    int image_size;
+    int som_size;
+    int som_width;
 };
 
 #endif

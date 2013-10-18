@@ -119,8 +119,8 @@ int Ocl_SOM2d::updateNeighborhood(iterator &neuron,
 }
 
 
-static bool sortpair(std::pair<double, SOM::iterator> i,
-                     std::pair<double, SOM::iterator> j) {
+static bool sortpair(std::pair<double, SOM::iterator>& i,
+                     std::pair<double, SOM::iterator>& j) {
     return (i.first < j.first);
 }
 
@@ -190,24 +190,73 @@ void Ocl_SOM2d::closestN(const multi_img::Pixel &inputVec,
 
 SOM::DistanceCache* Ocl_SOM2d::createDistanceCache(int img_height, int img_width)
 {
-    return 0;
+    return new Ocl_DistanceCache(*this);
 }
 
 
 
 void Ocl_DistanceCache::preload(const multi_img &image)
 {
+    int som_size = som.get2dWidth() * som.get2dWidth();
+    image_size = image.width * image.height;
 
+    if(host_distances)
+        delete[] host_distances;
+
+    host_distances = new float[som_size * image_size];
+
+    som.calculateAllDistances(image, host_distances);
+
+    preloaded = true;
 }
 
-void Ocl_DistanceCache::getDistance(int index, SOM::iterator iterator)
-{
+float Ocl_DistanceCache::getDistance(int index, SOM::iterator& iterator)
+{    
+    if(preloaded)
+    {
+        cv::Point point = iterator.get2dCoordinates();
+        int som_index = point.y * som_width + point.x;
 
+        return host_distances[index * som_size + som_index];
+    }
+    else
+    {
+        return 0.f;
+    }
 }
 
-void Ocl_DistanceCache::closestN(int,
+void Ocl_DistanceCache::closestN(int index,
                          std::vector<std::pair<double, SOM::iterator> > &heap)
 {
+    // initialize with maximum values
+    for (int i = 0; i < heap.size(); ++i)
+        heap[i].first = std::numeric_limits<double>::max();
 
+    // find closest Neurons to inputVec in the SOM
+    // iterate over all neurons in grid
+    for (SOM::iterator neuron = som.begin(); neuron != som.end(); ++neuron)
+    {
+        //double dist = distfun->getSimilarity(*neuron, inputVec);
+
+        double dist = getDistance(index, neuron);
+
+        /* compare current distance with the maximum of the N shortest
+         * found distances */
+        if (dist < heap[0].first) {
+            // remove max. value in heap
+            std::pop_heap(heap.begin(), heap.end(), sortpair);
+
+            /* max element is now on position "back" and should be popped
+             * instead we overwrite it directly with the new element */
+            std::pair<double, SOM::iterator> &back = heap.back();
+            back.first = dist;
+            back.second = neuron;
+
+            std::push_heap(heap.begin(), heap.end(), sortpair);
+        }
+    }
+
+    assert(heap[0].first != std::numeric_limits<double>::max());
+    std::sort_heap(heap.begin(), heap.end(), sortpair); // sort ascending
 }
 

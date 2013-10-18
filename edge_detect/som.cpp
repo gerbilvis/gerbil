@@ -119,8 +119,8 @@ SOM::iterator SOM::identifyWinnerNeuron(const multi_img::Pixel &inputVec)
 }
 
 // comparer for heap in closestN()
-static bool sortpair(std::pair<double, SOM::iterator> i,
-					 std::pair<double, SOM::iterator> j) {
+static bool sortpair(std::pair<double, SOM::iterator>& i,
+                     std::pair<double, SOM::iterator>& j) {
 	return (i.first < j.first);
 }
 

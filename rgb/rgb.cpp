@@ -220,9 +220,11 @@ void writeDensityMap(std::string filename, cv::Point res,
 // TODO: schlechte lastverteilung
 struct SOMTBB {
 
-	SOMTBB (const multi_img& src, SOM *som, const std::vector<double>& w,
+    SOMTBB (const multi_img& src, SOM *som, SOM::DistanceCache* cache,
+            const std::vector<double>& w,
 			cv::Mat3f &dst, cv::Mat1f &stddevs, cv::Mat3d &avg_coords)
-		: src(src), som(som), weight(w), dst(dst), stddevs(stddevs), avg_coords(avg_coords) {}
+        : src(src), som(som), distCache(cache),
+          weight(w), dst(dst), stddevs(stddevs), avg_coords(avg_coords) {}
 
 	void operator()(const tbb::blocked_range<int>& r) const
 	{
@@ -232,7 +234,11 @@ struct SOMTBB {
 			weight.size(), std::make_pair(0.0, som->end()));
 
 		for (int i = r.begin(); i != r.end(); ++i) {
-			som->closestN(src.atIndex(i), coords);
+
+            if(distCache)
+                distCache->closestN(i, coords);
+            else
+                som->closestN(src.atIndex(i), coords);
 
 			// Calculate stdandard deviation between positions of the BMUs
 			if (!stddevs.empty())
@@ -277,6 +283,7 @@ struct SOMTBB {
 
 	const multi_img& src;
 	SOM *const som;
+    SOM::DistanceCache* distCache;
 	const std::vector<double> &weight;
 	cv::Mat3f &dst;
 	cv::Mat1f &stddevs;
@@ -373,11 +380,17 @@ cv::Mat3f RGB::executeSOM(const multi_img &input_img, vole::ProgressObserver *po
 
 	// set RGB pixels
 	{
+
+        SOM::DistanceCache* cache = som->createDistanceCache(img.width, img.height);
+
+        if(cache)
+            cache->preload(img);
+
         vole::Stopwatch watch("False Color Image Generation");
         tbb::parallel_for(tbb::blocked_range<int>(0, img.height*img.width),
-                          SOMTBB(img, som, weights, bgr, stddevs, avg_coords));
+                          SOMTBB(img, som, cache, weights, bgr, stddevs, avg_coords));
 
-       // SOMTBB(img, som, weights, bgr, stddevs, avg_coords)(tbb::blocked_range<int>(0, img.height*img.width));
+        delete cache;
 	}
 
 	if (config.som.verbosity >= 3 && N > 1)

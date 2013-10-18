@@ -259,7 +259,7 @@ public:
 
         virtual ~DistanceCache(){}
         virtual void preload(const multi_img &image) = 0;
-        virtual void getDistance(int index, SOM::iterator iterator) = 0;
+        virtual float getDistance(int index, SOM::iterator& iterator) = 0;
         virtual void closestN(int, std::vector<std::pair<double, SOM::iterator> > &heap) = 0;
 
     protected:

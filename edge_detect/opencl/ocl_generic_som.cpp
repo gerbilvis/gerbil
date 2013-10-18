@@ -441,10 +441,11 @@ void Ocl_GenericSOM::calculateAllDistances(const multi_img& image,
     std::cout << "calculate all distances" << std::endl;
 
     int som_size = d_data.x * d_data.y * d_data.z;
-    int distances_size = som_size * som_size;
 
     int image_size = image.width * image.height;
     int image_data_size = image_size * neuron_size_rounded;
+
+    int distances_size = som_size * image_size;
 
     float* image_data_buffer = new float[image_data_size];
 
@@ -464,49 +465,56 @@ void Ocl_GenericSOM::calculateAllDistances(const multi_img& image,
                                image_data_size * sizeof(float),
                                image_data_buffer);
 
+    delete[] image_data_buffer;
+
     cl::Buffer distances_buffer(d_context, CL_MEM_READ_WRITE,
                                 distances_size * sizeof(float));
 
-    calc_all_dist_kernel.setArg(0, d_som);
-    calc_all_dist_kernel.setArg(1, image_buffer);
-    calc_all_dist_kernel.setArg(2, som_size);
-    calc_all_dist_kernel.setArg(3, image_size);
+    calc_all_dist_kernel.setArg(0, image_buffer);
+    calc_all_dist_kernel.setArg(1, d_som);
+    calc_all_dist_kernel.setArg(2, image_size);
+    calc_all_dist_kernel.setArg(3, som_size);
     calc_all_dist_kernel.setArg(4, distances_buffer);
 
     cl::NDRange local(16, 16);
-    cl::NDRange global(image_size, som_size);
+    //cl::NDRange global(image_size, som_size);
+    cl::NDRange global(som_size, image_size);
 
-    cl::Event* event = 0;
+    cl::Event* kernel_event = 0;
+    cl::Event* mem_read_event = 0;
 
 #ifdef OPENCL_PROFILE
-    cl::Event e;
-    event = &e;
+    cl::Event e1, e2;
+    kernel_event = &e1;
+    mem_read_event = &e2;
 #endif
 
     d_queue.enqueueNDRangeKernel(calc_all_dist_kernel,
-                                 cl::NullRange, global, local, 0, event);
-
-    //float* distances_host = new float[distances_size];
+                                 cl::NullRange, global, local, 0, kernel_event);
 
     d_queue.enqueueReadBuffer(distances_buffer, CL_TRUE, 0,
-                              distances_size * sizeof(float), distances);
+                              distances_size * sizeof(float),
+                              distances, 0, mem_read_event);
 
-    verify_distance_calculation(d_data.data, image_data_buffer,
-                                som_size, image_size,
-                                d_data.neuron_size, distances);
+//    verify_distance_calculation(d_data.data, image_data_buffer,
+//                                som_size, image_size,
+//                                d_data.neuron_size, distances);
 
 #ifdef OPENCL_PROFILE
 
-    cl_ulong kernel_time;
-    get_profile_info(*event, kernel_time);
+    cl_ulong kernel_time, mem_read_time;
+    get_profile_info(*kernel_event, kernel_time);
+    get_profile_info(*mem_read_event, mem_read_time);
 
     std::cout << "find all distances time: "
               << (kernel_time / 1000000.f)
               << std::endl;
 
-#endif
+    std::cout << "downloading distances time: "
+              << (mem_read_time / 1000000.f)
+              << std::endl;
 
- //   delete[] distances_host;
+#endif
 
     std::cout << "calculate all distances finished" << std::endl;
 }
@@ -545,9 +553,9 @@ void Ocl_GenericSOM::calculateAllDistances()
     d_queue.enqueueReadBuffer(distances_buffer, CL_TRUE, 0,
                               distances_size * sizeof(float), distances_host);
 
-    verify_distance_calculation(d_data.data, d_data.data,
-                                som_size, som_size,
-                                d_data.neuron_size, distances_host);
+//    verify_distance_calculation(d_data.data, d_data.data,
+//                                som_size, som_size,
+//                                d_data.neuron_size, distances_host);
 
 #ifdef OPENCL_PROFILE
 
