@@ -45,6 +45,8 @@ vole_compile_library(
         "opencl/kernels" #generated
         "opencl/kernels/som_gpu_opt.cl"
         "opencl/kernels/som2d_cpu_opt.cl"
+        "opencl/kernels/distance_calc.cl"
+        "opencl/kernels/rbc_build.cl"
 )
 
 vole_add_module()

@@ -12,6 +12,10 @@ cl::Program build_cl_program(cl::Context& context,
                              const std::string& source_code,
                              const std::string& params = "");
 
+cl::Program build_cl_program(cl::Context &context,
+                             const std::vector<std::string>& source_codes,
+                             const std::string& params = "");
+
 std::string read_source(const std::string& path);
 
 void get_profile_info(cl::Event& event, cl_ulong& total_time);

@@ -10,6 +10,7 @@
 #include "ocl_utils.h"
 
 extern const char* som_gpu_opt;
+extern const char* distance_calc;
 
 Ocl_GenericSOM::Ocl_GenericSOM(int som_width, int som_height, int som_depth,
                int neuron_size, const std::string& ocl_params)
@@ -72,7 +73,9 @@ void Ocl_GenericSOM::initOpenCL()
     init_opencl(d_context, d_queue, false);
 #endif
 
-    std::string source(som_gpu_opt);
+    std::vector<std::string> sources;
+    sources.push_back(std::string(som_gpu_opt));
+    sources.push_back(std::string(distance_calc));
 
     cl::Device device = d_queue.getInfo<CL_QUEUE_DEVICE>();
 
@@ -94,6 +97,7 @@ void Ocl_GenericSOM::initOpenCL()
     stream << " -DSOM_SIZE_X=" << d_data.x;
     stream << " -DSOM_SIZE_Y=" << d_data.y;
     stream << " -DSOM_SIZE_Z=" << d_data.z;
+    stream << " -DVECTOR_SIZE=" << neuron_size_rounded;
 
     if(device_type == CL_DEVICE_TYPE_CPU)
         stream << " -DCPU";
@@ -104,7 +108,7 @@ void Ocl_GenericSOM::initOpenCL()
     stream << " -DDEBUG_MODE -Werror";
 #endif
 
-    program = build_cl_program(d_context, source, stream.str());
+    program = build_cl_program(d_context, sources, stream.str());
 
     // Make kernels
     calc_dist_kernel = cl::Kernel(program, "calculate_distances");

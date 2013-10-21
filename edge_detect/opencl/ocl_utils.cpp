@@ -66,16 +66,28 @@ cl::Program build_cl_program(cl::Context& context,
                              const std::string& source_code,
                              const std::string& params)
 {
-    cl::Program::Sources source(1, std::make_pair(source_code.c_str(),
-                                                  source_code.length()+1));
+    return build_cl_program(context,
+                     std::vector<std::string>(1, source_code), params);
+}
 
-    // Make program of the source code in the context
-    cl::Program program = cl::Program(context, source);
+cl::Program build_cl_program(cl::Context &context,
+                             const std::vector<std::string> &source_codes,
+                             const std::string &params)
+{
 
-    // Get a list of devices on this platform
+    cl::Program::Sources sources;
+
+    for(std::vector<std::string>::const_iterator it = source_codes.begin();
+        it != source_codes.end(); ++it)
+    {
+        const char* code = it->c_str();
+        sources.push_back(std::make_pair(code, strlen(code)));
+    }
+
+    cl::Program program = cl::Program(context, sources);
+
     std::vector<cl::Device> devices = context.getInfo<CL_CONTEXT_DEVICES>();
 
-    // Build program for these specific devices
     try
     {
         program.build(devices, params.c_str());
