@@ -1,0 +1,34 @@
+This is a list of people directly involved in development of gerbil, and the
+components they contributed to. The list is alphabetically sorted.
+
+Georg Altmann
+	GUI,
+	reorganization, overall maintainance, documentation
+
+Michael Bleier
+	vole build system
+
+Daniel Danner
+	meanshift segmentation
+
+David Föhrweiser
+	similarity measures
+
+Johannes Jordan
+	project head, all parts
+
+Petr Koupý
+	parallelization, background tasks, incremental updates,
+	limited multi_img, optimizations
+
+Felix Lugauer
+	similarity measures, edge detection
+
+Ralph Müssig
+	edge detection
+
+Stefan Ploner
+	GUI, false coloring, edge detection
+
+Christian Rieß
+	vole build system

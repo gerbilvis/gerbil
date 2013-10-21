@@ -115,7 +115,7 @@ macro(vole_add_module)
 	vole_debug_message("  vole_module_executable_sources: ${vole_module_executable_sources}")
 
 	# Add switch to turn build on/off
-	option(${vole_module_variable} ${vole_module_description} OFF)
+	option(${vole_module_variable} ${vole_module_description} ON)
 
 	# Enable sse2 (#FIXME evil hack for gerbil, requires EnableSSE2.cmake)
 	enable_sse2()

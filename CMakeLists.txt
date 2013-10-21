@@ -1,5 +1,6 @@
 cmake_minimum_required(VERSION 2.6)
 cmake_policy(SET CMP0009 NEW)
+cmake_policy(SET CMP0022 NEW)
 project(Vole)
 
 set(CMAKE_MODULE_PATH "${CMAKE_SOURCE_DIR}/cmake")
