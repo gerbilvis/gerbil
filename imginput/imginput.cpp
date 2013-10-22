@@ -34,7 +34,7 @@ multi_img::ptr ImgInput::execute()
 		}
 	}
 #endif
-    if (img_ptr->empty()) {
+	if (!img_ptr || img_ptr->empty()) {
         img_ptr = multi_img::ptr(new multi_img(config.file));
     }
 
