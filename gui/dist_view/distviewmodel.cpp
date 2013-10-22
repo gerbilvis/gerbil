@@ -21,7 +21,8 @@ using namespace std;
 
 DistViewModel::DistViewModel(representation::t type)
 	: type(type), queue(NULL),
-	  ignoreLabels(false)
+	  ignoreLabels(false),
+	  inbetween(false)
 {}
 
 std::pair<multi_img_base::Value, multi_img_base::Value> DistViewModel::getRange()
@@ -97,9 +98,8 @@ void DistViewModel::updateLabels(const cv::Mat1s &newLabels,
 	if (!newLabels.empty())
 		labels = newLabels.clone();
 
-	// check if we are ready to compute anything
-	// TODO: also exit when in roi change. how to propagate this properly?
-	if (!image.get() || labels.empty())
+	// check if we are ready to compute anything and not within ROI change
+	if (inbetween || !image.get() || labels.empty())
 		return;
 
 	SharedDataLock ctxlock(context->mutex);
@@ -164,61 +164,18 @@ void DistViewModel::updateLabelsPartially(const cv::Mat1s &newLabels,
 	}
 }
 
-
-void DistViewModel::subPixels(const std::map<std::pair<int, int>, short> &points)
-{
-	std::vector<cv::Rect> sub(points.size());
-	std::map<std::pair<int, int>, short>::const_iterator it;
-	for (it = points.begin(); it != points.end(); ++it) {
-		sub.push_back(cv::Rect(it->first.first, it->first.second, 1, 1));
-	}
-
-	SharedDataLock ctxlock(context->mutex);
-	ViewportCtx args = **context;
-	ctxlock.unlock();
-
-	BackgroundTaskPtr taskSub(new DistviewBinsTbb(
-		image, labels, labelColors, illuminant, args, context, binsets,
-		sets_ptr(new SharedData<std::vector<BinSet> >(NULL)), sub, std::vector<cv::Rect>(), cv::Mat1b(), true, false));
-	queue->push(taskSub);
-	taskSub->wait(); // TODO: why do we wait?
-
-	/* Note: subPixels() is always first step before addPixels(). So finished
-	 * operation is only signalled at the end of addPixels() */
-}
-
-void DistViewModel::addPixels(const std::map<std::pair<int, int>, short> &points)
-{
-	std::vector<cv::Rect> add(points.size());
-	std::map<std::pair<int, int>, short>::const_iterator it;
-	for (it = points.begin(); it != points.end(); ++it) {
-		add.push_back(cv::Rect(it->first.first, it->first.second, 1, 1));
-	}
-
-	SharedDataLock ctxlock(context->mutex);
-	ViewportCtx args = **context;
-	ctxlock.unlock();
-
-	BackgroundTaskPtr taskAdd(new DistviewBinsTbb(
-		image, labels, labelColors, illuminant, args, context, binsets,
-		sets_ptr(new SharedData<std::vector<BinSet> >(NULL)), std::vector<cv::Rect>(), add, cv::Mat1b(), true, false));
-	queue->push(taskAdd);
-	bool success = taskAdd->wait(); // TODO: why do we wait?
-
-	propagateBinning(success);
-}
-
 void DistViewModel::subImage(sets_ptr temp,
 								const std::vector<cv::Rect> &regions,
 								cv::Rect roi)
 {
+	inbetween = true;
 	SharedDataLock ctxlock(context->mutex);
 	ViewportCtx args = **context;
 	ctxlock.unlock();
 
 	BackgroundTaskPtr taskBins(new DistviewBinsTbb(
-		image, labels, labelColors, illuminant, args, context,
-		binsets,	temp, regions,
+		image, labels, labelColors, illuminant, args, context, binsets,
+		temp, regions,
 		std::vector<cv::Rect>(), cv::Mat1b(), false, false, roi));
 	queue->push(taskBins);
 }
@@ -227,6 +184,7 @@ void DistViewModel::addImage(sets_ptr temp,
 								const std::vector<cv::Rect> &regions,
 								cv::Rect roi)
 {
+	inbetween = false;
 	SharedDataLock ctxlock(context->mutex);
 	ViewportCtx args = **context;
 	ctxlock.unlock();

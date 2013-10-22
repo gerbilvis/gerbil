@@ -16,6 +16,7 @@ int rectComplement(int width, int height, cv::Rect r,
  *  @return (A | B) - (A & B) < B
  */
 bool rectTransform(const cv::Rect &oldR, const cv::Rect &newR,
-				   std::vector<cv::Rect> sub, std::vector<cv::Rect> add);
+				   std::vector<cv::Rect> &sub,
+				   std::vector<cv::Rect> &add);
 
 #endif // RECTANGLES_H

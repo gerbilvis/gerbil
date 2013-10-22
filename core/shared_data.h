@@ -83,7 +83,11 @@ public:
 	/** Destruct wrapper alongside with the internal data. */
 	virtual ~SharedData() { delete data; }
 	/** De-allocate data and replace with new data */
-	void replace(T *newData) { if (data != newData) delete data; data = newData; }
+	void replace(T *newData) {
+		if (data != newData)
+			delete data;
+		data = newData;
+	}
 	
 	T &operator*() { return *data; }
 	T *operator->() { return data; }

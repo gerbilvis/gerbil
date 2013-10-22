@@ -42,15 +42,17 @@ bool DistviewBinsTbb::run()
 	bool reuse = ((!add.empty() || !sub.empty()) && !inplace);
 	bool keepOldContext = false;
 	if (reuse) {
-		keepOldContext = ((fabs(args.minval) * REUSE_THRESHOLD) >= (fabs(args.minval - (*multi)->minval))) &&
-			((fabs(args.maxval) * REUSE_THRESHOLD) >= (fabs(args.maxval - (*multi)->maxval)));
+		/* test if minval / maxval differ too much to re-use data */
+		keepOldContext = ((fabs(args.minval) * REUSE_THRESHOLD) >=
+						  (fabs(args.minval - (*multi)->minval))) &&
+			((fabs(args.maxval) * REUSE_THRESHOLD) >=
+			 (fabs(args.maxval - (*multi)->maxval)));
 		if (!keepOldContext) {
 			reuse = false;
 			add.clear();
 			sub.clear();
 		}
 	}
-
 	std::vector<BinSet> *result;
 	SharedDataSwapLock current_lock(current->mutex, boost::defer_lock_t());
 	if (reuse) {
@@ -111,7 +113,8 @@ bool DistviewBinsTbb::run()
 
 	if (!args.binsizeValid) {
 		if (!keepOldContext)
-			args.binsize = ((*multi)->maxval - (*multi)->minval) / (multi_img::Value)(args.nbins - 1);
+			args.binsize = ((*multi)->maxval - (*multi)->minval)
+							/ (multi_img::Value)(args.nbins - 1);
 		args.binsizeValid = true;
 	}
 
@@ -129,16 +132,21 @@ bool DistviewBinsTbb::run()
 
 	std::vector<cv::Rect>::iterator it;
 	for (it = sub.begin(); it != sub.end(); ++it) {
-		Accumulate substract(true, **multi, labels, mask, args.nbins, args.binsize, args.minval, args.ignoreLabels, illuminant, *result);
+		Accumulate substract(true, **multi, labels, mask, args.nbins,
+							 args.binsize, args.minval, args.ignoreLabels,
+							 illuminant, *result);
 		tbb::parallel_for(
-			tbb::blocked_range2d<int>(it->y, it->y + it->height, it->x, it->x + it->width),
+			tbb::blocked_range2d<int>(it->y, it->y + it->height,
+									  it->x, it->x + it->width),
 				substract, tbb::auto_partitioner(), stopper);
 	}
 	for (it = add.begin(); it != add.end(); ++it) {
 		Accumulate add(
-			false, **multi, labels, mask, args.nbins, args.binsize, args.minval, args.ignoreLabels, illuminant, *result);
+			false, **multi, labels, mask, args.nbins, args.binsize,
+					args.minval, args.ignoreLabels, illuminant, *result);
 		tbb::parallel_for(
-			tbb::blocked_range2d<int>(it->y, it->y + it->height, it->x, it->x + it->width),
+			tbb::blocked_range2d<int>(it->y, it->y + it->height,
+									  it->x, it->x + it->width),
 				add, tbb::auto_partitioner(), stopper);
 	}
 
@@ -148,7 +156,8 @@ bool DistviewBinsTbb::run()
 	} else {
 		if (reuse && !apply) {
 			SharedDataSwapLock temp_wlock(temp->mutex);
-			temp->replace(result);
+			std::cerr << "TODO REPLACE" << std::endl;
+			//temp->replace(result);
 		} else if (inplace) {
 			current_lock.unlock();
 		} else {

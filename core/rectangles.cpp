@@ -33,7 +33,8 @@ int rectComplement(int width, int height, cv::Rect r,
 }
 
 bool rectTransform(const cv::Rect &oldR, const cv::Rect &newR,
-				   std::vector<cv::Rect> sub, std::vector<cv::Rect> add)
+				   std::vector<cv::Rect> &sub,
+				   std::vector<cv::Rect> &add)
 {
 	// intersection between old and new on global coordinates
 	cv::Rect isecGlob = oldR & newR;

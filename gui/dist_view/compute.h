@@ -122,17 +122,15 @@ struct ViewportCtx {
 	// default constructors
 
 	// FIXME: document members
-	tbb::atomic<int> wait;
-	tbb::atomic<int> reset;
+	tbb::atomic<int> wait; // viewport has current data, but not on GPU yet
+	tbb::atomic<int> reset; // viewport will need to reset
 	size_t dimensionality;
 	bool dimensionalityValid;
 	representation::t type;
 	std::vector<multi_img::BandDesc> meta;
 	bool metaValid;
-
-	// x-axis labels
-	std::vector<QString> xlabels;
-	bool labelsValid;
+	std::vector<QString> xlabels; 	// x-axis labels
+	bool labelsValid; // todo better name (these are not pixel labels!)
 	bool ignoreLabels;
 	int nbins;
 	multi_img::Value binsize;
