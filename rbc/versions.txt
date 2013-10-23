@@ -1,0 +1,25 @@
+0.2.6 oct 2011
+    Minor bug fixes.
+    Code cleanup.
+    Added example input.
+
+0.2.5 july 2011
+    Minor bug fixes.
+
+0.2.4 apr 2011
+    Driver cleanup and minor bug fix.
+
+0.2.3 mar 2011
+    Memory leak fix.
+  
+0.2.2 mar 2011
+    Minor bug fix.
+
+0.2.1 dec 2010
+    Bug fix and cuda 3.2 compatability update.    
+
+0.2 nov 2010
+    Added support for k-NN queries, for k <= 32.  
+
+0.1 aug 2010 
+    Initial release.

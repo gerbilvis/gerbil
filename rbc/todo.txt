@@ -1,0 +1,9 @@
+- make use of void* to clean up code
+
+- consider putting iteration limit on findRangeKernel-- in fact this
+  is necessary for the case when there are multiple points at the 
+  same distance
+
+- findRangeKernel will be called with too few rows to make use of the
+  processor.  So this is another reason to break it down so that 
+  each block contains only one or a few rows.
