@@ -34,13 +34,10 @@ private:
 	std::vector<BinSet> &sets;
 };
 
-#include <opencv2/highgui/highgui.hpp>
-
 bool DistviewBinsTbb::run()
 {
-	//cv::imwrite("/tmp/mask.png", mask);
 	bool reuse = ((!add.empty() || !sub.empty()) && !inplace);
-	bool keepOldContext = false;
+	bool keepOldContext = args.valid;
 	if (reuse) {
 		/* test if minval / maxval differ too much to re-use data */
 		keepOldContext = ((fabs(args.minval) * REUSE_THRESHOLD) >=
@@ -56,81 +53,35 @@ bool DistviewBinsTbb::run()
 	std::vector<BinSet> *result;
 	SharedDataSwapLock current_lock(current->mutex, boost::defer_lock_t());
 	if (reuse) {
-		// TODO: we still operate on the data afterwards (we are the only ones
-		// that work on it), this needs to be done properly, maybe by just not
-		// using shared data for temp as it is not really shared
 		SharedDataSwapLock temp_wlock(temp->mutex);
-		assert(multi);
 		result = &(**temp);
+		// make sure we own the data now
+		temp->release();
 		if (!result) {
+			// copy-over current binset for editing
 			result = new std::vector<BinSet>(**current);
-		} else {
-			for (int i = result->size(); i < colors.size(); ++i) {
-				result->push_back(BinSet(colors[i], (*multi)->size()));
-			}
 		}
 	} else if (inplace) {
 		current_lock.lock();
-		assert(multi);
+		// operate on current binset
 		result = &(**current);
-		for (int i = result->size(); i < colors.size(); ++i) {
-			result->push_back(BinSet(colors[i], (*multi)->size()));
-		}
 	} else {
+		// we start fresh, so empty binset, add all pixels
 		result = new std::vector<BinSet>();
-		assert(multi);
-		for (int i = 0; i < colors.size(); ++i) {
-			result->push_back(BinSet(colors[i], (*multi)->size()));
-		}
 		add.push_back(cv::Rect(0, 0, (*multi)->width, (*multi)->height));
 	}
 
-	if (!args.dimensionalityValid) {
-		if (!keepOldContext)
-			args.dimensionality = (*multi)->size();
-		args.dimensionalityValid = true;
+	// create (additional) binsets
+	for (int i = result->size(); i < colors.size(); ++i) {
+		result->push_back(BinSet(colors[i], (*multi)->size()));
 	}
 
-	if (!args.metaValid) {
-		if (!keepOldContext)
-			args.meta = (*multi)->meta;
-		args.metaValid = true;
-	}
-
-	if (!args.labelsValid) {
-		if (!keepOldContext) {
-			args.xlabels.resize((*multi)->size());
-			for (unsigned int i = 0; i < (*multi)->size(); ++i) {
-				if (!(*multi)->meta[i].empty) {
-					args.xlabels[i].setNum((*multi)->meta[i].center);
-				} else {
-					//GGDBGM(i << " meta is empty. "<< args.type << endl);
-				}
-			}
-		}
-		args.labelsValid = true;
-	}
-
-	if (!args.binsizeValid) {
-		if (!keepOldContext)
-			args.binsize = ((*multi)->maxval - (*multi)->minval)
-							/ (multi_img::Value)(args.nbins - 1);
-		args.binsizeValid = true;
-	}
-
-	if (!args.minvalValid) {
-		if (!keepOldContext)
-			args.minval = (*multi)->minval;
-		args.minvalValid = true;
-	}
-
-	if (!args.maxvalValid) {
-		if (!keepOldContext)
-			args.maxval = (*multi)->maxval;
-		args.maxvalValid = true;
-	}
+	// ensure up-to-date image metadata in context
+	if (!keepOldContext)
+		updateContext();
 
 	std::vector<cv::Rect>::iterator it;
+	/* substract pixels from bins */
 	for (it = sub.begin(); it != sub.end(); ++it) {
 		Accumulate substract(true, **multi, labels, mask, args.nbins,
 							 args.binsize, args.minval, args.ignoreLabels,
@@ -140,6 +91,7 @@ bool DistviewBinsTbb::run()
 									  it->x, it->x + it->width),
 				substract, tbb::auto_partitioner(), stopper);
 	}
+	/* add pixels to bins */
 	for (it = add.begin(); it != add.end(); ++it) {
 		Accumulate add(
 			false, **multi, labels, mask, args.nbins, args.binsize,
@@ -150,24 +102,45 @@ bool DistviewBinsTbb::run()
 				add, tbb::auto_partitioner(), stopper);
 	}
 
+	/* throwaway result if something wrong */
 	if (stopper.is_group_execution_cancelled()) {
-		delete result;
+		if (!inplace)
+			delete result; // TODO
 		return false;
-	} else {
-		if (reuse && !apply) {
-			SharedDataSwapLock temp_wlock(temp->mutex);
-			std::cerr << "TODO REPLACE" << std::endl;
-			//temp->replace(result);
-		} else if (inplace) {
-			current_lock.unlock();
-		} else {
-			SharedDataSwapLock context_wlock(context->mutex);
-			SharedDataSwapLock current_wlock(current->mutex);
-			**context = args;
-			current->replace(result);
-		}
-		return true;
 	}
+
+	if (reuse && !apply) {
+		SharedDataSwapLock temp_wlock(temp->mutex);
+		temp->replace(result);
+	} else if (inplace) {
+		current_lock.unlock();
+	} else {
+		SharedDataSwapLock context_wlock(context->mutex);
+		SharedDataSwapLock current_wlock(current->mutex);
+		**context = args;
+		current->replace(result);
+	}
+	return true;
+}
+
+void DistviewBinsTbb::updateContext()
+{
+	args.dimensionality = (*multi)->size();
+	args.meta = (*multi)->meta;
+	args.xlabels.resize((*multi)->size());
+	for (unsigned int i = 0; i < (*multi)->size(); ++i) {
+		if (!(*multi)->meta[i].empty) {
+			args.xlabels[i].setNum((*multi)->meta[i].center);
+		} else {
+			//GGDBGM(i << " meta is empty. "<< args.type << endl);
+		}
+	}
+	args.binsize = ((*multi)->maxval - (*multi)->minval)
+					/ (multi_img::Value)(args.nbins - 1);
+	args.minval = (*multi)->minval;
+	args.maxval = (*multi)->maxval;
+
+	args.valid = true;
 }
 
 void Accumulate::operator()(const tbb::blocked_range2d<int> &r) const

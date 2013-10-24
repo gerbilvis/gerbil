@@ -101,9 +101,7 @@ sets_ptr DistViewController::subImage(representation::t type,
 							   const std::vector<cv::Rect> &regions,
 							   cv::Rect roi)
 {
-	sets_ptr temp(new SharedData<std::vector<BinSet> >(NULL));
-	map[type]->model.subImage(temp, regions, roi);
-	return temp;
+	return map[type]->model.subImage(regions, roi);
 }
 
 void DistViewController::addImage(representation::t type, sets_ptr temp,

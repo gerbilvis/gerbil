@@ -55,9 +55,7 @@ void DistViewModel::updateBinning(int bins)
 		args.nbins = bins;
 	}
 
-	args.minvalValid = false;
-	args.maxvalValid = false;
-	args.binsizeValid = false;
+	args.valid = false;
 
 	args.reset.fetch_and_store(1);
 	args.wait.fetch_and_store(1);
@@ -109,8 +107,7 @@ void DistViewModel::updateLabels(const cv::Mat1s &newLabels,
 	args.wait.fetch_and_store(1);
 
 	BackgroundTaskPtr taskBins(new DistviewBinsTbb(
-		image, labels, labelColors, illuminant, args, context,
-								   binsets));
+		image, labels, labelColors, illuminant, args, context, binsets));
 	QObject::connect(taskBins.get(), SIGNAL(finished(bool)),
 					 this, SLOT(propagateBinning(bool)), Qt::QueuedConnection);
 	queue->push(taskBins);
@@ -135,7 +132,6 @@ void DistViewModel::updateLabelsPartially(const cv::Mat1s &newLabels,
 
 	// we calculate into temp, then from temp in the second round
 	sets_ptr temp(new SharedData<std::vector<BinSet> >(NULL));
-
 	{	// first round: delete all pixels from their *previous* labels
 		std::vector<cv::Rect> sub;
 		sub.push_back(cv::Rect(0, 0, mask.cols, mask.rows));
@@ -164,10 +160,10 @@ void DistViewModel::updateLabelsPartially(const cv::Mat1s &newLabels,
 	}
 }
 
-void DistViewModel::subImage(sets_ptr temp,
-								const std::vector<cv::Rect> &regions,
-								cv::Rect roi)
+sets_ptr DistViewModel::subImage(const std::vector<cv::Rect> &regions,
+								 cv::Rect roi)
 {
+	sets_ptr temp(new SharedData<std::vector<BinSet> >(NULL));
 	inbetween = true;
 	SharedDataLock ctxlock(context->mutex);
 	ViewportCtx args = **context;
@@ -178,22 +174,19 @@ void DistViewModel::subImage(sets_ptr temp,
 		temp, regions,
 		std::vector<cv::Rect>(), cv::Mat1b(), false, false, roi));
 	queue->push(taskBins);
+
+	return temp;
 }
 
-void DistViewModel::addImage(sets_ptr temp,
-								const std::vector<cv::Rect> &regions,
-								cv::Rect roi)
+void DistViewModel::addImage(sets_ptr temp,const std::vector<cv::Rect> &regions,
+							 cv::Rect roi)
 {
 	inbetween = false;
 	SharedDataLock ctxlock(context->mutex);
 	ViewportCtx args = **context;
 	ctxlock.unlock();
 
-	args.labelsValid = false;
-	args.metaValid = false;
-	args.minvalValid = false;
-	args.maxvalValid = false;
-	args.binsizeValid = false;
+	args.valid = false;
 
 	args.reset.fetch_and_store(1);
 	args.wait.fetch_and_store(1);
@@ -222,12 +215,7 @@ void DistViewModel::setImage(SharedMultiImgPtr img, cv::Rect roi, int bins)
 
 	args.nbins = bins;
 
-	args.dimensionalityValid = false;
-	args.labelsValid = false;
-	args.metaValid = false;
-	args.minvalValid = false;
-	args.maxvalValid = false;
-	args.binsizeValid = false;
+	args.valid = false;
 
 	args.reset.fetch_and_store(1);
 	args.wait.fetch_and_store(1);
@@ -235,8 +223,9 @@ void DistViewModel::setImage(SharedMultiImgPtr img, cv::Rect roi, int bins)
 	assert(context);
 	BackgroundTaskPtr taskBins(new DistviewBinsTbb(
 		image, labels, labelColors, illuminant, args, context, binsets,
-		sets_ptr(new SharedData<std::vector<BinSet> >(NULL)), std::vector<cv::Rect>(),
-		std::vector<cv::Rect>(), cv::Mat1b(), false, true, roi));
+		sets_ptr(new SharedData<std::vector<BinSet> >(NULL)),
+		std::vector<cv::Rect>(), std::vector<cv::Rect>(),
+		cv::Mat1b(), false, true, roi));
 	// connect to propagateBinningRange, new image may have new range
 	QObject::connect(taskBins.get(), SIGNAL(finished(bool)),
 					 this, SLOT(propagateBinningRange(bool)));

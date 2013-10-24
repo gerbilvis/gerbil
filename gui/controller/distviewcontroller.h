@@ -27,8 +27,10 @@ public:
 								BackgroundTaskQueue *taskQueue);
 	void init();
 
-	sets_ptr subImage(representation::t type, const std::vector<cv::Rect> &regions, cv::Rect roi);
-	void addImage(representation::t type, sets_ptr temp, const std::vector<cv::Rect> &regions, cv::Rect roi);
+	sets_ptr subImage(representation::t type,
+					  const std::vector<cv::Rect> &regions, cv::Rect roi);
+	void addImage(representation::t type, sets_ptr temp,
+				  const std::vector<cv::Rect> &regions, cv::Rect roi);
 	void setImage(representation::t type, SharedMultiImgPtr image, cv::Rect roi);
 
 public slots:

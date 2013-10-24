@@ -43,8 +43,10 @@ public slots:
 	void setLabelColors(QVector<QColor> colors);
 	void setIlluminant(cv::Mat1f illum);
 
-	void subImage(sets_ptr temp, const std::vector<cv::Rect> &regions, cv::Rect roi);
-	void addImage(sets_ptr temp, const std::vector<cv::Rect> &regions, cv::Rect roi);
+	sets_ptr subImage(const std::vector<cv::Rect> &regions,
+						  cv::Rect roi);
+	void addImage(sets_ptr temp, const std::vector<cv::Rect> &regions,
+				  cv::Rect roi);
 	void setImage(SharedMultiImgPtr image, cv::Rect roi, int bins);
 
 	void updateBinning(int bins);

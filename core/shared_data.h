@@ -88,6 +88,8 @@ public:
 			delete data;
 		data = newData;
 	}
+	/** Release data ownership */
+	void release() { data = NULL; }
 	
 	T &operator*() { return *data; }
 	T *operator->() { return data; }
