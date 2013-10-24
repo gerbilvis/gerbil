@@ -20,7 +20,8 @@ void subRandPerm(unint l, unint n, unint *x){
     
   struct timeval t3;
   gettimeofday(&t3,NULL);
-  srand(t3.tv_usec);
+  //srand(t3.tv_usec);
+  srand(0);
   
   for(i=0;i<n;i++)
     y[i]=i;
@@ -43,7 +44,8 @@ void randPerm(unint n, unint *x){
   
   struct timeval t3;
   gettimeofday(&t3,NULL);
-  srand(t3.tv_usec);
+  //srand(t3.tv_usec);
+  srand(0);
   
   for(i=0;i<n;i++){
     x[i]=i;

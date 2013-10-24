@@ -79,6 +79,10 @@ void kqueryRBC(const matrix q, const ocl_rbcStruct rbcS, intMatrix NNs, matrix N
   unint *qMap;
   cl::Buffer dqMap;
 
+  device_matrix_to_file(rbcS.dr, "rbcS_dr.txt");
+  device_matrix_to_file(rbcS.dx, "rbcS_dx.txt");
+  device_matrix_to_file(rbcS.dxMap, "rbcS_dxMap.txt");
+
   qMap = (unint*)calloc(PAD(m+(BLOCK_SIZE-1)*PAD(numReps)),sizeof(*qMap));
 
   ocl_matrix dq;
@@ -171,7 +175,7 @@ void buildRBC(const matrix x, ocl_rbcStruct *rbcS, unint numReps, unint s){
  // memFree = 1024 * 1024 * 1024;
  // memTot = 1024 * 1024 * 1024;
 
-  unint ptsAtOnce = 128;//DPAD(memFree/((n+1)*sizeof(real) + n*sizeof(char) + (n+1)*sizeof(unint) + 2*MEM_USED_IN_SCAN(n)));
+  unint ptsAtOnce = 1024 * 64;//DPAD(memFree/((n+1)*sizeof(real) + n*sizeof(char) + (n+1)*sizeof(unint) + 2*MEM_USED_IN_SCAN(n)));
   if(!ptsAtOnce){
     fprintf(stderr,"error: %lu is not enough memory to build the RBC.. exiting\n", (unsigned long)memFree);
     exit(1);
@@ -227,6 +231,9 @@ void buildRBC(const matrix x, ocl_rbcStruct *rbcS, unint numReps, unint s){
     dD.r = pi; dD.pr = pip; dir.r=pi; dir.pr=pip; dSums.r=pi; dSums.pr=pip;
 
     distSubMat(rbcS->dr, rbcS->dx, dD, row, pip); //compute the distance matrix
+
+    device_matrix_to_file(rbcS->dr, "srbS_dr0.txt");
+
     findRangeWrap(dD, dranges, s);  //find an appropriate range
     rangeSearchWrap(dD, dranges, dir); //set binary vector for points in range
     sumWrap(dir, dSums);  //This and the next call perform the parallel compaction.
@@ -238,6 +245,13 @@ void buildRBC(const matrix x, ocl_rbcStruct *rbcS, unint numReps, unint s){
 
     err = queue.enqueueReadBuffer(dCnts, CL_TRUE, 0,
                                   pi * sizeof(unint), rbcS->groupCount);
+
+    for(int i = 0; i < pi; ++i)
+        printf("[%d]=%d ", i, rbcS->groupCount[i]);
+    printf("\n");
+
+    fflush(stdout);
+
     checkErr(err);
     
     numLeft -= pi;

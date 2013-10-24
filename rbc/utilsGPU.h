@@ -16,6 +16,15 @@ public:
     static cl::CommandQueue queue;
 
     static cl::Kernel dist1Kernel;
+    static cl::Kernel findRangeKernel;
+    static cl::Kernel rangeSearchKernel;
+    static cl::Kernel sumKernel;
+    static cl::Kernel sumKernelI;
+    static cl::Kernel combineSumKernel;
+    static cl::Kernel buildMapKernel;
+    static cl::Kernel getCountsKernel;
+    static cl::Kernel planKNNKernel;
+    static cl::Kernel nnKernel;
 
     static void oclInit();
 };
@@ -24,6 +33,9 @@ public:
 void copyAndMove(ocl_matrix*,const matrix*);
 void copyAndMoveI(ocl_intMatrix*,const intMatrix*);
 void copyAndMoveC(ocl_charMatrix*,const charMatrix*);
+
+void device_matrix_to_file(const ocl_matrix&, const char*);
+void device_matrix_to_file(const ocl_intMatrix&, const char*);
 
 //void copyAndMove(matrix*,const matrix*);
 //void copyAndMoveI(intMatrix*,const intMatrix*);

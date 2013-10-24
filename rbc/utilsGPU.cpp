@@ -17,6 +17,16 @@ cl::Context OclContextHolder::context;
 cl::CommandQueue OclContextHolder::queue;
 
 cl::Kernel OclContextHolder::dist1Kernel;
+cl::Kernel OclContextHolder::findRangeKernel;
+cl::Kernel OclContextHolder::rangeSearchKernel;
+cl::Kernel OclContextHolder::sumKernel;
+cl::Kernel OclContextHolder::sumKernelI;
+cl::Kernel OclContextHolder::combineSumKernel;
+cl::Kernel OclContextHolder::buildMapKernel;
+cl::Kernel OclContextHolder::getCountsKernel;
+cl::Kernel OclContextHolder::planKNNKernel;
+cl::Kernel OclContextHolder::nnKernel;
+
 
 extern const char* rbc;
 
@@ -115,14 +125,18 @@ void OclContextHolder::oclInit()
     }
 
 //    // Make kernels
-//    calc_dist_kernel = cl::Kernel(program, "calculate_distances");
-//    local_min_kernel = cl::Kernel(program, "find_global_first_pass");
-//    global_min_kernel = cl::Kernel(program, "find_global_min");
-//    update_kernel = cl::Kernel(program, "update_network");
-//    calc_all_dist_kernel = cl::Kernel(program, "calculate_all_distances");
-
     dist1Kernel = cl::Kernel(program, "dist1Kernel");
+    findRangeKernel = cl::Kernel(program, "findRangeKernel");
+    rangeSearchKernel = cl::Kernel(program, "rangeSearchKernel");
+    sumKernel = cl::Kernel(program, "sumKernel");
+    sumKernelI = cl::Kernel(program, "sumKernelI");
+    combineSumKernel = cl::Kernel(program, "combineSumKernel");
+    buildMapKernel = cl::Kernel(program, "buildMapKernel");
+    getCountsKernel = cl::Kernel(program, "getCountsKernel");
+    planKNNKernel = cl::Kernel(program, "planKNNKernel");
+    nnKernel = cl::Kernel(program, "nnKernel");
 }
+
 
 
 
@@ -165,6 +179,74 @@ void copyAndMoveC(ocl_charMatrix *dx, const charMatrix *x)
 {
     genericCopyAndMove(dx, x);
 }
+
+
+void device_matrix_to_file(const ocl_matrix& mat, const char* filetxt)
+{
+    FILE *fp = fopen(filetxt,"w");
+    if( !fp ){
+      fprintf(stderr, "can't open output file\n");
+      return;
+    }
+
+    int total_size = mat.pr * mat.pc;
+
+    int total_size_byte = total_size * sizeof(float);
+
+    float *mem = new float[total_size];
+
+    cl::CommandQueue& queue = OclContextHolder::queue;
+
+    queue.enqueueReadBuffer(mat.mat, CL_TRUE, 0, total_size_byte, mem);
+
+    for(int i = 0; i < mat.r; ++i)
+    {
+        for(int j = 0; j < mat.c; ++j)
+        {
+            //int index = i * mat.pr + j;
+            fprintf( fp, "%f ", mem[IDX(i,j, mat.ld)]);
+        }
+        fprintf(fp, "\n");
+    }
+
+    fclose(fp);
+
+    delete[] mem;
+}
+
+void device_matrix_to_file(const ocl_intMatrix& mat, const char* filetxt)
+{
+    FILE *fp = fopen(filetxt,"w");
+    if( !fp ){
+      fprintf(stderr, "can't open output file\n");
+      return;
+    }
+
+    int total_size = mat.pr * mat.pc;
+
+    int total_size_byte = total_size * sizeof(unint);
+
+    unint *mem = new unint[total_size];
+
+    cl::CommandQueue& queue = OclContextHolder::queue;
+
+    queue.enqueueReadBuffer(mat.mat, CL_TRUE, 0, total_size_byte, mem);
+
+    for(int i = 0; i < mat.r; ++i)
+    {
+        for(int j = 0; j < mat.c; ++j)
+        {
+            //int index = i * mat.pr + j;
+            fprintf( fp, "%u ", mem[IDX(i,j, mat.ld)]);
+        }
+        fprintf(fp, "\n");
+    }
+
+    fclose(fp);
+
+    delete[] mem;
+}
+
 
 //void copyAndMove(matrix *dx, const matrix *x){
 //  dx->r = x->r;
