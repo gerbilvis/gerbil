@@ -82,11 +82,14 @@ void kqueryRBC(const matrix q, const ocl_rbcStruct rbcS, intMatrix NNs, matrix N
   device_matrix_to_file(rbcS.dr, "rbcS_dr.txt");
   device_matrix_to_file(rbcS.dx, "rbcS_dx.txt");
   device_matrix_to_file(rbcS.dxMap, "rbcS_dxMap.txt");
+  matrix_to_file(q, "q.txt");
 
   qMap = (unint*)calloc(PAD(m+(BLOCK_SIZE-1)*PAD(numReps)),sizeof(*qMap));
 
   ocl_matrix dq;
   copyAndMove(&dq, &q);
+
+  device_matrix_to_file(dq, "dq.txt");
   
   charMatrix cM;
   cM.r=cM.c=numReps; cM.pr=cM.pc=cM.ld=PAD(numReps);
@@ -101,11 +104,17 @@ void kqueryRBC(const matrix q, const ocl_rbcStruct rbcS, intMatrix NNs, matrix N
   
   computeReps(dq, rbcS.dr, repIDsQ, distToRepsQ);
 
+  array_to_file(repIDsQ, m, "repIDsQ.txt");
+  array_to_file(distToRepsQ, m, "distToRepsQ.txt");
+
+
   //How many points are assigned to each group?
   computeCounts(repIDsQ, m, groupCountQ);
   
   //Set up the mapping from groups to queries (qMap).
   buildQMap(q, qMap, repIDsQ, numReps, &compLength);
+
+  printf("comp len: %u\n", compLength);
   
   // Setup the computation matrix.  Currently, the computation matrix is 
   // just the identity matrix: each query assigned to a particular 
@@ -133,6 +142,17 @@ void kqueryRBC(const matrix q, const ocl_rbcStruct rbcS, intMatrix NNs, matrix N
   //cudaMemcpy( dqMap, qMap, compLength*sizeof(*dqMap), cudaMemcpyHostToDevice );
   
   computeKNNs(rbcS.dx, rbcS.dxMap, dq, dqMap, dcP, NNs, NNdists, compLength);
+
+//  matrix_to_file(q, "q.txt");
+//  matrix_to_file(q, "q.txt");
+
+//  device_matrix_to_file(dcP.numGroups, "rbcS_dx.txt");
+//  device_matrix_to_file(rbcS.dxMap, "rbcS_dxMap.txt");
+
+//  cl::Buffer numGroups;
+//  cl::Buffer groupCountX;
+//  cl::Buffer qToQGroup;
+//  cl::Buffer qGroupToXGroup;
 
   free(qMap);
   freeCompPlan(&dcP);
@@ -326,7 +346,7 @@ void computeReps(const ocl_matrix& dq, const ocl_matrix& dr, unint *repIDs, real
   checkErr(err);
   
   byte_size = dq.r*sizeof(unint);
-  err = queue.enqueueReadBuffer(dMins, CL_TRUE, 0, byte_size, repIDs);
+  err = queue.enqueueReadBuffer(dMinIDs, CL_TRUE, 0, byte_size, repIDs);
   checkErr(err);
 
   //cudaMemcpy(distToReps,dMins,dq.r*sizeof(*dMins),cudaMemcpyDeviceToHost);
@@ -421,7 +441,7 @@ void computeNNs(matrix dx, intMatrix dxMap, matrix dq, unint *dqMap, compPlan dc
 }*/
 
 //void computeKNNs(matrix dx, intMatrix dxMap, matrix dq, unint *dqMap, compPlan dcP, intMatrix NNs, matrix NNdists, unint compLength){
-void computeKNNs(const ocl_matrix& dx, const ocl_intMatrix& dxMap, ocl_matrix& dq, cl::Buffer& dqMap,
+void computeKNNs(const ocl_matrix& dx, const ocl_intMatrix& dxMap, const ocl_matrix& dq, cl::Buffer& dqMap,
                  ocl_compPlan& dcP, intMatrix NNs, matrix NNdists, unint compLength){
   ocl_matrix dNNdists;
   ocl_intMatrix dMinIDs;

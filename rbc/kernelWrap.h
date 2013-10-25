@@ -32,8 +32,8 @@ void planNNWrap(const matrix,const unint*,const matrix,const intMatrix,real*,uni
 
 
 //void planKNNWrap(const matrix,const unint*,const matrix,const intMatrix,matrix,intMatrix,compPlan,unint);
-void planKNNWrap(const ocl_matrix&,cl::Buffer&,const ocl_matrix&,
+void planKNNWrap(const ocl_matrix&,const cl::Buffer&,const ocl_matrix&,
                  const ocl_intMatrix&,ocl_matrix&,ocl_intMatrix&,
-                 ocl_compPlan&,unint);
+                 const ocl_compPlan&,unint);
 
 #endif

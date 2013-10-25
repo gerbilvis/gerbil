@@ -32,7 +32,7 @@ void freeCompPlan(ocl_compPlan*);
 //                cl::Buffer&,ocl_compPlan&,unint*,real*,unint);
 
 //void computeKNNs(matrix,intMatrix,matrix,unint*,compPlan,intMatrix,matrix,unint);
-void computeKNNs(const ocl_matrix&, const ocl_intMatrix&,ocl_matrix&,cl::Buffer&,ocl_compPlan&,intMatrix,matrix,unint);
+void computeKNNs(const ocl_matrix&, const ocl_intMatrix&,const ocl_matrix&,cl::Buffer&,ocl_compPlan&,intMatrix,matrix,unint);
 
 void setupReps(matrix,ocl_rbcStruct*,unint);
 

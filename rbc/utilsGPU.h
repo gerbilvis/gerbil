@@ -6,7 +6,9 @@
 #define UTILSGPU_H
 
 #include "defs.h"
-#include<cuda.h>
+//#include<cuda.h>
+
+#include <cstdio>
 
 
 class OclContextHolder
@@ -36,6 +38,46 @@ void copyAndMoveC(ocl_charMatrix*,const charMatrix*);
 
 void device_matrix_to_file(const ocl_matrix&, const char*);
 void device_matrix_to_file(const ocl_intMatrix&, const char*);
+
+void matrix_to_file(const matrix& mat, const char* filetxt);
+void matrix_to_file(const intMatrix& mat, const char* filetxt);
+
+
+template<typename T>
+void generic_write(T val, FILE *fp)
+{
+}
+
+template<>
+inline void generic_write<unint>(unint val, FILE *fp)
+{
+    fprintf( fp, "%u ", val);
+}
+
+template<>
+inline void generic_write<real>(real val, FILE *fp)
+{
+    fprintf( fp, "%f ", val);
+}
+
+template<typename T>
+inline void array_to_file(T* data, int size, const char* filetxt)
+{
+
+    FILE *fp = fopen(filetxt,"w");
+    if( !fp ){
+      fprintf(stderr, "can't open output file\n");
+      return;
+    }
+
+    for(int i = 0; i < size; ++i)
+    {
+        //fprintf( fp, "%f ", data[i]);
+        generic_write(data[i], fp);
+    }
+
+    fclose(fp);
+}
 
 //void copyAndMove(matrix*,const matrix*);
 //void copyAndMoveI(intMatrix*,const intMatrix*);

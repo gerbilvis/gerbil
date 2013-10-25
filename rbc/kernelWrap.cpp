@@ -224,7 +224,8 @@ void nnWrap(const ocl_matrix& dq, const ocl_matrix& dx,
         todo = MIN( dq.pr - numDone, MAX_BS*BLOCK_SIZE );
         //grid.y = todo/BLOCK_SIZE;
 
-        cl::NDRange global(todo, BLOCK_SIZE);
+        //cl::NDRange global(todo, BLOCK_SIZE);
+        cl::NDRange global(BLOCK_SIZE, todo);
 
         cl::CommandQueue& queue = OclContextHolder::queue;
         cl::Kernel& nnKernel = OclContextHolder::nnKernel;
@@ -310,9 +311,9 @@ void planNNWrap(const matrix dq, const unint *dqMap, const matrix dx, const intM
 
 
 //void planKNNWrap(const matrix dq, const unint *dqMap, const matrix dx, const intMatrix dxMap, matrix dMins, intMatrix dMinIDs, compPlan dcP, unint compLength){
-void planKNNWrap(const ocl_matrix& dq, cl::Buffer& dqMap, const ocl_matrix& dx,
+void planKNNWrap(const ocl_matrix& dq, const cl::Buffer& dqMap, const ocl_matrix& dx,
                  const ocl_intMatrix& dxMap, ocl_matrix& dMins,
-                 ocl_intMatrix& dMinIDs, ocl_compPlan& dcP, unint compLength){
+                 ocl_intMatrix& dMinIDs, const ocl_compPlan& dcP, unint compLength){
 
 
     cl::NDRange local(BLOCK_SIZE,BLOCK_SIZE);
@@ -325,7 +326,7 @@ void planKNNWrap(const ocl_matrix& dq, cl::Buffer& dqMap, const ocl_matrix& dx,
       todo = MIN( (compLength-numDone) , MAX_BS*BLOCK_SIZE );
       //grid.y = todo/BLOCK_SIZE;
 
-      cl::NDRange global(todo, BLOCK_SIZE);
+      cl::NDRange global(BLOCK_SIZE, todo);
 
       cl::CommandQueue& queue = OclContextHolder::queue;
       cl::Kernel& planKNNKernel = OclContextHolder::planKNNKernel;

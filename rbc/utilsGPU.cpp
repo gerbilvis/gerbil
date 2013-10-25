@@ -247,6 +247,52 @@ void device_matrix_to_file(const ocl_intMatrix& mat, const char* filetxt)
     delete[] mem;
 }
 
+void matrix_to_file(const matrix& mat, const char* filetxt)
+{
+    FILE *fp = fopen(filetxt,"w");
+    if( !fp ){
+      fprintf(stderr, "can't open output file\n");
+      return;
+    }
+
+    real *mem = mat.mat;
+
+    for(int i = 0; i < mat.r; ++i)
+    {
+        for(int j = 0; j < mat.c; ++j)
+        {
+            //int index = i * mat.pr + j;
+            fprintf( fp, "%f ", mem[IDX(i,j, mat.ld)]);
+        }
+        fprintf(fp, "\n");
+    }
+
+    fclose(fp);
+}
+
+void matrix_to_file(const intMatrix& mat, const char* filetxt)
+{
+    FILE *fp = fopen(filetxt,"w");
+    if( !fp ){
+      fprintf(stderr, "can't open output file\n");
+      return;
+    }
+
+    unint *mem = mat.mat;
+
+    for(int i = 0; i < mat.r; ++i)
+    {
+        for(int j = 0; j < mat.c; ++j)
+        {
+            //int index = i * mat.pr + j;
+            fprintf( fp, "%u ", mem[IDX(i,j, mat.ld)]);
+        }
+        fprintf(fp, "\n");
+    }
+
+    fclose(fp);
+}
+
 
 //void copyAndMove(matrix *dx, const matrix *x){
 //  dx->r = x->r;

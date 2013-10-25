@@ -635,7 +635,7 @@ void sort16off(__local real x[][48], __local unint xi[][48]){
 // routine then merges these lists into one sorted list of length 48.
 void merge32x16(__local real x[][48], __local unint xi[][48]){
   int i = get_local_id(0);
-  int j = get_local_id(0);
+  int j = get_local_id(1);
 
   mmGateI( x[j]+i, x[j]+i+32, xi[j]+i, xi[j]+i+32 );
   barrier(CLK_LOCAL_MEM_FENCE);
@@ -705,10 +705,10 @@ __kernel void planKNNKernel(__global const real* Q_mat,
                             unint dMinIDs_pr,
                             unint dMinIDs_pc,
                             unint dMinIDs_ld,
-                            __global unint* cP_numGroups,
-                            __global unint* cP_groupCountX,
-                            __global unint* cP_qToQGroup,
-                            __global unint* cP_qGroupToXGroup,
+                            __global const unint* cP_numGroups,
+                            __global const unint* cP_groupCountX,
+                            __global const unint* cP_qToQGroup,
+                            __global const unint* cP_qGroupToXGroup,
                             unint cP_ld,
                             unint qStartPos)
 {
