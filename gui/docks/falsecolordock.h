@@ -31,6 +31,7 @@ signals:
 	/** Requests the model to cancel the previously requested calculation for
 	 * coloringType */
 	void cancelComputationRequested(FalseColoring::Type coloringType);
+
 public slots:
 	void processVisibilityChanged(bool visible);
 	// from model: our displayed coloringType may be out of date

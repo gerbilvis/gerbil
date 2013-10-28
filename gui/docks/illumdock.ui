@@ -7,7 +7,7 @@
     <x>0</x>
     <y>0</y>
     <width>338</width>
-    <height>108</height>
+    <height>133</height>
    </rect>
   </property>
   <property name="sizePolicy">
@@ -21,16 +21,6 @@
   </property>
   <widget class="QWidget" name="dockWidgetContents">
    <layout class="QGridLayout" name="gridLayout">
-    <item row="1" column="0">
-     <widget class="QLabel" name="i2Label">
-      <property name="text">
-       <string>Change to:</string>
-      </property>
-      <property name="alignment">
-       <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
-      </property>
-     </widget>
-    </item>
     <item row="1" column="3">
      <spacer name="horizontalSpacer">
       <property name="orientation">
@@ -58,6 +48,16 @@
       </property>
       <property name="text">
        <string>Apply</string>
+      </property>
+     </widget>
+    </item>
+    <item row="1" column="0">
+     <widget class="QLabel" name="i2Label">
+      <property name="text">
+       <string>Change to:</string>
+      </property>
+      <property name="alignment">
+       <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
       </property>
      </widget>
     </item>

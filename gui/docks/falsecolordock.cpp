@@ -116,7 +116,6 @@ void FalseColorDock::initUi()
 	connect(theButton, SIGNAL(clicked()),
 			this, SLOT(processApplyClicked()));
 
-
 	connect(this, SIGNAL(visibilityChanged(bool)),
 			this, SLOT(processVisibilityChanged(bool)));
 }
@@ -181,9 +180,7 @@ void FalseColorDock::enterState(FalseColoring::Type coloringType, FalseColoringS
 
 void FalseColorDock::processVisibilityChanged(bool visible)
 {
-	// do we get this when first shown? -> Yes
 	dockVisible = visible;
-	//GGDBGM(format("visible=%1%  rgbValid=%2%")%dockVisible %rgbValid <<endl);
 	if(dockVisible) {
 		requestColoring(selectedColoring());
 	}

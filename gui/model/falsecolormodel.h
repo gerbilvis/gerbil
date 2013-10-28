@@ -77,7 +77,8 @@ public:
 						   )
 		: canceled(false),
 		  coloringType(coloringType),
-		  img(img), grad(grad)
+		  img(img), grad(grad),
+		  runner(NULL)
 	{}
 
 	/** Start calculation.

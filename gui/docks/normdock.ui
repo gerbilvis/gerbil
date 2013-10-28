@@ -6,8 +6,8 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>388</width>
-    <height>112</height>
+    <width>413</width>
+    <height>273</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -58,19 +58,6 @@
       </item>
      </layout>
     </item>
-    <item row="2" column="4">
-     <spacer name="horizontalSpacer_9">
-      <property name="orientation">
-       <enum>Qt::Horizontal</enum>
-      </property>
-      <property name="sizeHint" stdset="0">
-       <size>
-        <width>293</width>
-        <height>20</height>
-       </size>
-      </property>
-     </spacer>
-    </item>
     <item row="1" column="3" rowspan="2">
      <layout class="QGridLayout" name="gridLayout_2">
       <item row="0" column="2">
@@ -99,29 +86,6 @@
          </spacer>
         </item>
        </layout>
-      </item>
-      <item row="1" column="3">
-       <widget class="QPushButton" name="normClampButton">
-        <property name="enabled">
-         <bool>true</bool>
-        </property>
-        <property name="toolTip">
-         <string>enforce given range</string>
-        </property>
-        <property name="text">
-         <string>Clamp Data</string>
-        </property>
-       </widget>
-      </item>
-      <item row="0" column="3">
-       <widget class="QPushButton" name="normApplyButton">
-        <property name="toolTip">
-         <string>use given range for display</string>
-        </property>
-        <property name="text">
-         <string>Apply</string>
-        </property>
-       </widget>
       </item>
       <item row="1" column="4">
        <spacer name="horizontalSpacer_7">
@@ -190,7 +154,7 @@
         </item>
        </layout>
       </item>
-      <item row="2" column="2">
+      <item row="8" column="2">
        <spacer name="verticalSpacer_3">
         <property name="orientation">
          <enum>Qt::Vertical</enum>
@@ -202,6 +166,46 @@
          </size>
         </property>
        </spacer>
+      </item>
+      <item row="4" column="2">
+       <layout class="QHBoxLayout" name="horizontalLayout">
+        <item>
+         <spacer name="horizontalSpacer">
+          <property name="orientation">
+           <enum>Qt::Horizontal</enum>
+          </property>
+          <property name="sizeHint" stdset="0">
+           <size>
+            <width>0</width>
+            <height>0</height>
+           </size>
+          </property>
+         </spacer>
+        </item>
+        <item>
+         <widget class="QPushButton" name="normApplyButton">
+          <property name="toolTip">
+           <string>use given range for display</string>
+          </property>
+          <property name="text">
+           <string>Apply</string>
+          </property>
+         </widget>
+        </item>
+        <item>
+         <widget class="QPushButton" name="normClampButton">
+          <property name="enabled">
+           <bool>true</bool>
+          </property>
+          <property name="toolTip">
+           <string>enforce given range</string>
+          </property>
+          <property name="text">
+           <string>Clamp Data</string>
+          </property>
+         </widget>
+        </item>
+       </layout>
       </item>
      </layout>
     </item>

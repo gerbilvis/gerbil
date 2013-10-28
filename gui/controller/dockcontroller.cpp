@@ -28,29 +28,28 @@ void DockController::init()
 	createDocks();
 	setupDocks();
 
+	/// left side
+	chief->mainWindow()->addDockWidget(Qt::LeftDockWidgetArea, roiDock);
+	chief->mainWindow()->addDockWidget(Qt::LeftDockWidgetArea, illumDock);
+	chief->mainWindow()->addDockWidget(Qt::LeftDockWidgetArea, normDock);
+	chief->mainWindow()->tabifyDockWidget(illumDock, normDock);
+#ifdef WITH_SEG_MEANSHIFT
+	chief->mainWindow()->addDockWidget(Qt::LeftDockWidgetArea, clusteringDock);
+#endif
+
+	/// right side
 	chief->mainWindow()->addDockWidget(Qt::RightDockWidgetArea, bandDock);
 	chief->mainWindow()->addDockWidget(Qt::RightDockWidgetArea, labelingDock);
-	chief->mainWindow()->addDockWidget(Qt::RightDockWidgetArea, normDock);
-#ifdef WITH_SEG_MEANSHIFT
-	chief->mainWindow()->addDockWidget(Qt::RightDockWidgetArea, clusteringDock);
-	// FIXME set to false
-	clusteringDock->setVisible(true);
-#endif
-	chief->mainWindow()->addDockWidget(Qt::RightDockWidgetArea, falseColorDock);
-	chief->mainWindow()->addDockWidget(Qt::RightDockWidgetArea, roiDock);
-	chief->mainWindow()->addDockWidget(Qt::RightDockWidgetArea, illumDock);
 	chief->mainWindow()->addDockWidget(Qt::RightDockWidgetArea, labelDock);
+	chief->mainWindow()->tabifyDockWidget(labelingDock, labelDock);
+	chief->mainWindow()->addDockWidget(Qt::RightDockWidgetArea, falseColorDock);
 
 	// dock arrangement
-	chief->mainWindow()->tabifyDockWidget(roiDock, falseColorDock);
+//	chief->mainWindow()->tabifyDockWidget(roiDock, falseColorDock);
 #ifdef WITH_SEG_MEANSHIFT
-	chief->mainWindow()->tabifyDockWidget(roiDock, clusteringDock);
+//	chief->mainWindow()->tabifyDockWidget(roiDock, clusteringDock);
 #endif
 	roiDock->raise();
-
-	chief->mainWindow()->tabifyDockWidget(labelingDock, illumDock);
-	chief->mainWindow()->tabifyDockWidget(labelingDock, normDock);
-	chief->mainWindow()->tabifyDockWidget(labelingDock, labelDock);
 
 	chief->imageModel()->computeFullRgb();
 }

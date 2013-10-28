@@ -72,7 +72,7 @@ void FalseColorModel::processImageUpdate(representation::t type,
 	// make sure no computations based on old image data make it into the
 	// cache
 	FalseColorModelPayloadMap::iterator payloadIt;
-	for(payloadIt = payloads.begin(); payloadIt != payloads.end(); payloadIt++) {
+	for (payloadIt = payloads.begin(); payloadIt != payloads.end(); payloadIt++) {
 		FalseColoring::Type coloringType = payloadIt.key();
 		if(FalseColoring::isBasedOn(coloringType, type)) {
 			//GGDBGM("canceling " << coloringType << endl);
@@ -85,7 +85,7 @@ void FalseColorModel::processImageUpdate(representation::t type,
 
 	// invalidate affected cache entries:
 	FalseColoringCache::iterator it;
-	for(it=cache.begin(); it != cache.end(); it++) {
+	for (it=cache.begin(); it != cache.end(); it++) {
 		FalseColoring::Type coloringType = it.key();
 		if(FalseColoring::isBasedOn(coloringType, type)) {
 			it.value().upToDate = false;
@@ -93,12 +93,22 @@ void FalseColorModel::processImageUpdate(representation::t type,
 		}
 	}
 	foreach(FalseColoring::Type coloringType, outOfDateList) {
-		emit coloringOutOfDate(coloringType);
+		if (coloringType != FalseColoring::CMF) // see HACK below
+			emit coloringOutOfDate(coloringType);
 	}
+	// HACK:always emit for CMF to make initial configuration work (TODO proper fix)
+	emit coloringOutOfDate(FalseColoring::CMF);
 }
 
 void FalseColorModel::requestColoring(FalseColoring::Type coloringType, bool recalc)
 {
+	/* TODO:
+	 * Guards!? They are missing in rgb->execute, too! */
+	// check if we are already initialized and should deal with that request
+	if (!shared_img || !shared_grad ||
+		(**shared_img).empty() || (**shared_grad).empty())
+		return;
+
 	//GGDBG_CALL();
 	FalseColoringCache::iterator cacheIt = cache.find(coloringType);
 	if(cacheIt != cache.end() && cacheIt->upToDate) {
@@ -119,10 +129,11 @@ void FalseColorModel::requestColoring(FalseColoring::Type coloringType, bool rec
 void FalseColorModel::computeColoring(FalseColoring::Type coloringType)
 {
 	FalseColorModelPayloadMap::iterator payloadIt = payloads.find(coloringType);
-	if(payloadIt != payloads.end()) {
+	if (payloadIt != payloads.end()) {
 		// computation in progress
 		return;
 	}
+
 	FalseColorModelPayload *payload =
 			new FalseColorModelPayload(coloringType, shared_img, shared_grad);
 	payloads.insert(coloringType, payload);
@@ -131,6 +142,7 @@ void FalseColorModel::computeColoring(FalseColoring::Type coloringType)
 	// forward progress signal
 	connect(payload, SIGNAL(progressChanged(FalseColoring::Type,int)),
 			this, SIGNAL(progressChanged(FalseColoring::Type,int)));
+
 	payload->run();
 }
 
@@ -229,7 +241,7 @@ void FalseColorModelPayload::cancel()
 {
 	//GGDBGM( coloringType << endl);
 	canceled = true;
-	if(runner) {
+	if (runner) {
 		runner->terminate();
 	}
 }
