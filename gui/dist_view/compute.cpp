@@ -59,10 +59,8 @@ void Compute::PreprocessBins::join(PreprocessBins &toJoin)
 	for (int d = 0; d < dimensionality; ++d) {
 		std::pair<int, int> &local = ranges[d];
 		std::pair<int, int> &remote = toJoin.ranges[d];
-		if (local.first < remote.first)
-			local.first = remote.first;
-		if (local.second > remote.second)
-			local.second = remote.second;
+		local.first = std::min<int>(local.first, remote.first);
+		local.second = std::max<int>(local.second, remote.second);
 	}
 }
 
