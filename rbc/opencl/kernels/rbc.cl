@@ -713,83 +713,85 @@ __kernel void planKNNKernel(__global const real* Q_mat,
                             unint qStartPos)
 {
 
-  size_t threadIdx_x = get_local_id(0);
-  size_t threadIdx_y = get_local_id(1);
+    size_t threadIdx_x = get_local_id(0);
+    size_t threadIdx_y = get_local_id(1);
 
-  size_t blockIdx_x = get_group_id(0);
-  size_t blockIdx_y = get_group_id(1);
+    size_t blockIdx_x = get_group_id(0);
+    size_t blockIdx_y = get_group_id(1);
 
-  unint qB = qStartPos + blockIdx_y * BLOCK_SIZE;  //indexes Q
-  unint xB; //X (DB) Block;
-  unint cB; //column Block
-  unint offQ = threadIdx_y; //the offset of qPos in this block
-  unint offX = threadIdx_x; //ditto for x
-  unint i,j,k;
-  unint groupIts;
+    unint qB = qStartPos + blockIdx_y * BLOCK_SIZE;  //indexes Q
+    unint xB; //X (DB) Block;
+    unint cB; //column Block
+    unint offQ = threadIdx_y; //the offset of qPos in this block
+    unint offX = threadIdx_x; //ditto for x
+    unint i,j,k;
+    unint groupIts;
 
-  __local real dNN[BLOCK_SIZE][KMAX+BLOCK_SIZE];
-  __local unint idNN[BLOCK_SIZE][KMAX+BLOCK_SIZE];
+    __local real dNN[BLOCK_SIZE][KMAX+BLOCK_SIZE];
+    __local unint idNN[BLOCK_SIZE][KMAX+BLOCK_SIZE];
 
-  __local real Xs[BLOCK_SIZE][BLOCK_SIZE];
-  __local real Qs[BLOCK_SIZE][BLOCK_SIZE];
+    __local real Xs[BLOCK_SIZE][BLOCK_SIZE];
+    __local real Qs[BLOCK_SIZE][BLOCK_SIZE];
 
-  unint g; //query group of q
-  unint xG; //DB group currently being examined
-  unint numGroups;
-  unint groupCount;
+    unint g; //query group of q
+    unint xG; //DB group currently being examined
+    unint numGroups;
+    unint groupCount;
 
-  g = cP_qToQGroup[qB];
-  numGroups = cP_numGroups[g];
+    g = cP_qToQGroup[qB];
+    numGroups = cP_numGroups[g];
 
-  dNN[offQ][offX] = FLT_MAX;//MAX_REAL;
-  dNN[offQ][offX+16] = FLT_MAX;//MAX_REAL;
-  idNN[offQ][offX] = DUMMY_IDX;
-  idNN[offQ][offX+16] = DUMMY_IDX;
+    dNN[offQ][offX] = FLT_MAX;//MAX_REAL;
+    dNN[offQ][offX+16] = FLT_MAX;//MAX_REAL;
+    idNN[offQ][offX] = DUMMY_IDX;
+    idNN[offQ][offX+16] = DUMMY_IDX;
 
-  barrier(CLK_LOCAL_MEM_FENCE);
+    barrier(CLK_LOCAL_MEM_FENCE);
 
-  for(i=0; i<numGroups; i++){ //iterate over DB groups
-    xG = cP_qGroupToXGroup[IDX( g, i, cP_ld )];
-    groupCount = cP_groupCountX[IDX( g, i, cP_ld )];
-    groupIts = (groupCount+BLOCK_SIZE-1)/BLOCK_SIZE;
+    for(i=0; i<numGroups; i++) //iterate over DB groups
+    {
+        xG = cP_qGroupToXGroup[IDX( g, i, cP_ld )];
+        groupCount = cP_groupCountX[IDX( g, i, cP_ld )];
+        groupIts = (groupCount+BLOCK_SIZE-1)/BLOCK_SIZE;
 
-    for(j=0; j<groupIts; j++){ //iterate over elements of group
-      xB=j*BLOCK_SIZE;
+        for(j=0; j<groupIts; j++) //iterate over elements of group
+        {
+            xB=j*BLOCK_SIZE;
 
-      real ans=0;
-      for(cB=0; cB<X_pc; cB+=BLOCK_SIZE){ // iterate over cols to compute distances
+            real ans=0;
+            for(cB=0; cB<X_pc; cB+=BLOCK_SIZE) // iterate over cols to compute distances
+            {
+                Xs[offX][offQ] = X_mat[IDX( xMap_mat[IDX( xG, xB+offQ, xMap_ld )], cB+offX, X_ld )];
+                Qs[offX][offQ] = ( (qMap[qB+offQ]==DUMMY_IDX) ? 0 : Q_mat[IDX( qMap[qB+offQ], cB+offX, Q_ld )] );
 
-        Xs[offX][offQ] = X_mat[IDX( xMap_mat[IDX( xG, xB+offQ, xMap_ld )], cB+offX, X_ld )];
-        Qs[offX][offQ] = ( (qMap[qB+offQ]==DUMMY_IDX) ? 0 : Q_mat[IDX( qMap[qB+offQ], cB+offX, Q_ld )] );
+                barrier(CLK_LOCAL_MEM_FENCE);
 
-        barrier(CLK_LOCAL_MEM_FENCE);
+                for(k=0; k<BLOCK_SIZE; k++)
+                    ans+=DIST( Xs[k][offX], Qs[k][offQ] );
 
-        for(k=0; k<BLOCK_SIZE; k++)
-          ans+=DIST( Xs[k][offX], Qs[k][offQ] );
+                barrier(CLK_LOCAL_MEM_FENCE);
+            }
 
-        barrier(CLK_LOCAL_MEM_FENCE);
-      }
+            dNN[offQ][offX+32] = (xB+offX<groupCount)? ans:FLT_MAX;
+            idNN[offQ][offX+32] = (xB+offX<groupCount)? xMap_mat[IDX( xG, xB+offX, xMap_ld )]: DUMMY_IDX;
 
-      dNN[offQ][offX+32] = (xB+offX<groupCount)? ans:FLT_MAX;
-      idNN[offQ][offX+32] = (xB+offX<groupCount)? xMap_mat[IDX( xG, xB+offX, xMap_ld )]: DUMMY_IDX;
+            barrier(CLK_LOCAL_MEM_FENCE);
 
-      barrier(CLK_LOCAL_MEM_FENCE);
+            sort16off( dNN, idNN );
 
-      sort16off( dNN, idNN );
+            barrier(CLK_LOCAL_MEM_FENCE);
 
-      barrier(CLK_LOCAL_MEM_FENCE);
-
-      merge32x16( dNN, idNN );
+            merge32x16( dNN, idNN );
+        }
     }
-  }
 
-  barrier(CLK_LOCAL_MEM_FENCE);
+    barrier(CLK_LOCAL_MEM_FENCE);
 
-  if(qMap[qB+offQ]!=DUMMY_IDX){
-    dMins_mat[IDX(qMap[qB+offQ], offX, dMins_ld)] = dNN[offQ][offX];
-    dMins_mat[IDX(qMap[qB+offQ], offX+16, dMins_ld)] = dNN[offQ][offX+16];
-    dMinIDs_mat[IDX(qMap[qB+offQ], offX, dMins_ld)] = idNN[offQ][offX];
-    dMinIDs_mat[IDX(qMap[qB+offQ], offX+16, dMinIDs_ld)] = idNN[offQ][offX+16];
-  }
+    if(qMap[qB+offQ]!=DUMMY_IDX){
+        dMins_mat[IDX(qMap[qB+offQ], offX, dMins_ld)] = dNN[offQ][offX];
+        dMins_mat[IDX(qMap[qB+offQ], offX+16, dMins_ld)] = dNN[offQ][offX+16];
+        dMinIDs_mat[IDX(qMap[qB+offQ], offX, dMins_ld)] = idNN[offQ][offX];
+        dMinIDs_mat[IDX(qMap[qB+offQ], offX+16, dMinIDs_ld)] = idNN[offQ][offX+16];
+    }
 }
 

@@ -5,6 +5,8 @@
 #ifndef UTILSGPU_CU
 #define UTILSGPU_CU
 
+//#define DEBUG_WRITE_TO_FILE
+
 #include<cuda.h>
 #include<stdio.h>
 #include "defs.h"
@@ -183,6 +185,7 @@ void copyAndMoveC(ocl_charMatrix *dx, const charMatrix *x)
 
 void device_matrix_to_file(const ocl_matrix& mat, const char* filetxt)
 {
+#ifdef DEBUG_WRITE_TO_FILE
     FILE *fp = fopen(filetxt,"w");
     if( !fp ){
       fprintf(stderr, "can't open output file\n");
@@ -212,10 +215,12 @@ void device_matrix_to_file(const ocl_matrix& mat, const char* filetxt)
     fclose(fp);
 
     delete[] mem;
+#endif
 }
 
 void device_matrix_to_file(const ocl_intMatrix& mat, const char* filetxt)
 {
+#ifdef DEBUG_WRITE_TO_FILE
     FILE *fp = fopen(filetxt,"w");
     if( !fp ){
       fprintf(stderr, "can't open output file\n");
@@ -245,10 +250,12 @@ void device_matrix_to_file(const ocl_intMatrix& mat, const char* filetxt)
     fclose(fp);
 
     delete[] mem;
+#endif
 }
 
 void matrix_to_file(const matrix& mat, const char* filetxt)
 {
+#ifdef DEBUG_WRITE_TO_FILE
     FILE *fp = fopen(filetxt,"w");
     if( !fp ){
       fprintf(stderr, "can't open output file\n");
@@ -268,10 +275,12 @@ void matrix_to_file(const matrix& mat, const char* filetxt)
     }
 
     fclose(fp);
+#endif
 }
 
 void matrix_to_file(const intMatrix& mat, const char* filetxt)
 {
+#ifdef DEBUG_WRITE_TO_FILE
     FILE *fp = fopen(filetxt,"w");
     if( !fp ){
       fprintf(stderr, "can't open output file\n");
@@ -291,6 +300,7 @@ void matrix_to_file(const intMatrix& mat, const char* filetxt)
     }
 
     fclose(fp);
+#endif
 }
 
 
