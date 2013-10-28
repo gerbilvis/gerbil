@@ -136,19 +136,23 @@ signals:
 	 * This signal is emitted whenever the ROI is set to a new rect or the
 	 * underlying data has been altered. Basically it is emitted after every
 	 * spawn().
-	 * See dataRangeUdpate, numBandsROIChanged and roiRectChanged for more
+	 * See observedDataRangeUdpate, numBandsROIChanged and roiRectChanged for more
 	 * specific signals.
 	 */
 	void imageUpdate(representation::t type, SharedMultiImgPtr image);
 
-	/** The data range for representation type has changed. */
-	void dataRangeUdpate(representation::t type, const multi_img::Range& range);
+	/** The observed data range for representation type has changed. */
+	void observedDataRangeUdpate(representation::t type, const multi_img::Range& range);
 
-	/** The number of spectral bands of the ROI image has changed to nBands. 
-	 * 
+	// FIXME:
+	/** Not implemented. */
+	void theoreticalDataRangeUpdate(representation::t type, const multi_img::Range& range);
+
+	/** The number of spectral bands of the ROI image has changed to nBands.
+	 *
 	 * numBandsROIChanged() is only emitted if the number of spectral bands has
 	 * actually changed. That is, there will be no signal if the ROI image data
-	 * has been altered while keeping the number of bands unchanged. 
+	 * has been altered while keeping the number of bands unchanged.
 	 */
 	void numBandsROIChanged(int nBands);
 

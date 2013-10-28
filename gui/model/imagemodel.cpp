@@ -40,7 +40,7 @@ ImageModel::ImageModel(BackgroundTaskQueue &queue, bool lm)
 		connect(p, SIGNAL(newImageData(representation::t,SharedMultiImgPtr)),
 				this, SLOT(processNewImageData(representation::t,SharedMultiImgPtr)));
 		connect(p, SIGNAL(dataRangeUpdate(representation::t,multi_img::Range)),
-				this, SIGNAL(dataRangeUdpate(representation::t,multi_img::Range)));
+				this, SIGNAL(observedDataRangeUdpate(representation::t,multi_img::Range)));
 	}
 }
 
@@ -110,10 +110,13 @@ void ImageModelPayload::processImageDataTaskFinished(bool success)
 {
 	if (!success)
 		return;
-
+//	std::cout << " type " << this->type
+//			  << " minval " << (*image)->minval
+//			  << " maxval " << (*image)->maxval << std::endl;
 	// signal new image data
 	emit newImageData(type, image);
 	emit dataRangeUpdate(type, **normRange);
+
 }
 
 void ImageModel::spawn(representation::t type, const cv::Rect &newROI, int bands)
