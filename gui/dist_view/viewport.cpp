@@ -31,7 +31,7 @@ Viewport::Viewport(representation::t type, QGLWidget *target)
 	  active(false), useralpha(1.f),
 	  showLabeled(true), showUnlabeled(true),
 	  overlayMode(false), highlightLabel(-1),
-	  illuminant_show(true), illuminant_apply(false),
+	  illuminant_show(true),
 	  zoom(1.), shift(0), lasty(-1), holdSelection(false), activeLimiter(0),
 	  drawMeans(true), drawRGB(false), drawHQ(true), drawingState(HIGH_QUALITY),
 	  yaxisWidth(0), vb(QGLBuffer::VertexBuffer),
@@ -202,8 +202,7 @@ void Viewport::prepareLines()
 	// second step (cpu -> gpu)
 	target->makeCurrent();
 	int success = Compute::storeVertices(**ctx, **sets, shuffleIdx, vb,
-										 drawMeans, illuminant_apply,
-										 illuminant);
+										 drawMeans, illuminantAppl);
 
 	// gracefully fail if there is a problem with VBO support
 	switch (success) {
@@ -253,16 +252,11 @@ void Viewport::insertPixelOverlay(const QPolygonF &points)
 	update();
 }
 
-void Viewport::changeIlluminant(cv::Mat1f illum)
+void Viewport::changeIlluminantCurve(QVector<multi_img::Value> illum)
 {
-	illuminant = illum;
-
-	if (illuminant_apply) {
-		// vertices need to change
-		rebuild();
-	} else {
+	illuminantCurve = illum;
+	if (illuminant_show)
 		update();
-	}
 }
 
 void Viewport::setIlluminationCurveShown(bool show)
@@ -271,12 +265,12 @@ void Viewport::setIlluminationCurveShown(bool show)
 	update();
 }
 
-void Viewport::setIlluminantApply(bool applied)
+void Viewport::setAppliedIlluminant(QVector<multi_img_base::Value> illum)
 {
-	bool change = (applied != illuminant_apply);
-	illuminant_apply = applied;
-	if (change)
-		rebuild();
+	//bool change = (applied != illuminant_apply);
+	illuminantAppl = illum.toStdVector();
+/*	if (change) TODO: I assume this is already triggered by invalidated ROI
+		rebuild();*/
 }
 
 void Viewport::setLimiters(int label)
@@ -294,7 +288,8 @@ void Viewport::setLimiters(int label)
 		SharedDataLock setslock(sets->mutex);
 		if ((int)(*sets)->size() > label && (**sets)[label].totalweight > 0) {
 			// use range from this label
-			const std::vector<std::pair<int, int> > &b = (**sets)[label].boundary;
+			const std::vector<std::pair<int, int> > &b =
+					(**sets)[label].boundary;
 			limiters.assign(b.begin(), b.end());
 		} else {
 			setLimiters(0);

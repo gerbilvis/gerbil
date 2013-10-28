@@ -77,16 +77,17 @@ void DistViewController::init()
 
 	/* connect illuminant correction stuff only to IMG distview */
 	DistViewGUI *g = &map[representation::IMG]->gui;
-	connect(this, SIGNAL(newIlluminant(cv::Mat1f)),
-			g, SIGNAL(newIlluminant(cv::Mat1f)));
-	connect(this, SIGNAL(toggleIlluminantApplied(bool)),
-			g, SIGNAL(toggleIlluminantApplied(bool)));
+	connect(this, SIGNAL(newIlluminantCurve(QVector<multi_img::Value>)),
+			g, SIGNAL(newIlluminantCurve(QVector<multi_img::Value>)));
 	connect(this, SIGNAL(toggleIlluminationShown(bool)),
 			g, SIGNAL(toggleIlluminationShown(bool)));
+	connect(this, SIGNAL(newIlluminantApplied(QVector<multi_img::Value>)),
+			g, SIGNAL(newIlluminantApplied(QVector<multi_img::Value>)));
 
-	/* model also need to know illuminant; TODO: check all this */
-	connect(this, SIGNAL(newIlluminant(cv::Mat1f)),
-			&map[representation::IMG]->model, SLOT(setIlluminant(cv::Mat1f)));
+	/* model needs to know applied illuminant */
+	connect(this, SIGNAL(newIlluminantApplied(QVector<multi_img::Value>)),
+			&map[representation::IMG]->model,
+			SLOT(setIlluminant(QVector<multi_img::Value>)));
 }
 
 void DistViewController::setGUIEnabled(bool enable, TaskType tt)

@@ -135,13 +135,12 @@ void DistViewGUI::initSignals(DistViewController *chief)
 
 
 	// illumination correction
-	connect(this, SIGNAL(newIlluminant(cv::Mat1f)),
-			vp, SLOT(changeIlluminant(cv::Mat1f)));
-	connect(this, SIGNAL(toggleIlluminantApplied(bool)),
-			vp, SLOT(setIlluminantApply(bool)));
+	connect(this, SIGNAL(newIlluminantCurve(QVector<multi_img::Value>)),
+			vp, SLOT(changeIlluminantCurve(QVector<multi_img::Value>)));
 	connect(this, SIGNAL(toggleIlluminationShown(bool)),
 			vp, SLOT(setIlluminationCurveShown(bool)));
-
+	connect(this, SIGNAL(newIlluminantApplied(QVector<multi_img::Value>)),
+			vp, SLOT(setAppliedIlluminant(QVector<multi_img::Value>)));
 }
 
 void DistViewGUI::setEnabled(bool enabled)

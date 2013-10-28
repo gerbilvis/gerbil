@@ -36,11 +36,10 @@ void DistViewModel::setLabelColors(QVector<QColor> colors)
 	labelColors = colors; // TODO: maybe not threadsafe!
 }
 
-void DistViewModel::setIlluminant(cv::Mat1f illum)
+void DistViewModel::setIlluminant(QVector<multi_img::Value> illum)
 {
-	// illuminant should not affect binning, so no re-calculation
-	// this is strange stuff. recheck, why illuminant sometimes is needed..
-	illuminant = illum;
+	// no recalculation as is triggered elsewhere
+	illuminant = illum.toStdVector();
 }
 
 /*********   B I N N I N G   C A L C U L A T I O N S   **********/
@@ -302,8 +301,10 @@ QPolygonF DistViewModel::getPixelOverlay(int y, int x)
 	QPolygonF points((*image)->size());
 
 	for (unsigned int d = 0; d < (*image)->size(); ++d) {
-		points[d] = QPointF(d, Compute::curpos(pixel[d], d,
-			(*context)->minval, (*context)->binsize, illuminant));
+		// note: do not apply illuminant correction here! no binning involved!
+		points[d] = QPointF(d,
+			Compute::curpos(pixel[d], d,
+							(*context)->minval, (*context)->binsize));
 	}
 	return points;
 }

@@ -24,8 +24,10 @@ void IllumModel::setMultiImage(SharedMultiImgPtr image)
 
 void IllumModel::finishTask(bool success)
 {
-	if(success) // task was not cancelled
+	if(success) { // task was not cancelled
+		emit newIlluminantApplied(getIllumCoeff(i1));
 		emit requestInvalidateROI(roi);
+	}
 }
 
 // TODO: part of controller!
@@ -38,17 +40,10 @@ void IllumModel::applyIllum()
 
 	submitRemoveOldIllumTask();
 	submitAddNewIllumTask();
+	// currently active illuminant will be in i1
+	i1 = i2;
 
-
-	if (i2>0) {
-		cv::Mat1f il = getIllumCoeff(i2);
-		emit newIlluminant(il);
-		emit illuminantIsApplied(true);
-	} else	{
-		// back to neutral
-		emit illuminantIsApplied(false);
-	}
-
+	/* trigger re-calculation of dependent data */
 	BackgroundTaskPtr taskEpilog(new BackgroundTask(roi));
 	QObject::connect(taskEpilog.get(), SIGNAL(finished(bool)),
 		this, SLOT(finishTask(bool)), Qt::QueuedConnection);
@@ -58,8 +53,7 @@ void IllumModel::applyIllum()
 void IllumModel::updateIllum1(int t)
 {
 	i1 = t;
-	cv::Mat1f il = getIllumCoeff(t);
-	emit newIlluminant(il);
+	emit newIlluminantCurve(getIllumCoeff(i1));
 }
 
 void IllumModel::updateIllum2(int t)
@@ -83,7 +77,7 @@ const Illuminant & IllumModel::getIlluminant(int t)
 	return illuminants[t].first;
 }
 
-cv::Mat1f IllumModel::getIllumCoeff(int t)
+QVector<multi_img::Value> IllumModel::getIllumCoeff(int t)
 {
 	Illum_map::iterator i = illuminants.find(t);
 	if (i != illuminants.end()) {
@@ -97,15 +91,16 @@ cv::Mat1f IllumModel::getIllumCoeff(int t)
 void IllumModel::buildIllum(int t)
 {
 	Illuminant il(t);
-	cv::Mat1f cf;
-	{
+	QVector<multi_img::Value> cf;
+	if (t > 0) {
 		SharedMultiImgBaseGuard guard(*image);
 		il.calcWeight((*image)->meta[0].center,
 					  (*image)->meta[(*image)->size()-1].center);
-		std::vector<float> cfv = (*image)->getIllumCoeff(il);
-		cf = cv::Mat1f(cfv, /* copy */ true);
-
+		cf = QVector<multi_img::Value>::fromStdVector(
+					(*image)->getIllumCoeff(il));
 	}
+	// else: cf is empty vector
+
 	illuminants[t] = std::make_pair(il, cf);
 }
 

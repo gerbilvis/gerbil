@@ -4,10 +4,10 @@
 #include "controller/controller.h"
 #include "dist_view/distviewmodel.h"
 #include "dist_view/distviewgui.h"
-#include <multi_img/illuminant.h>
 #include <background_task/background_task_queue.h>
 
 #include <QObject>
+#include <QVector>
 // TODO
 // * check if bands can be removed from MainWindow altogether
 
@@ -92,9 +92,11 @@ signals:
 	void alterLabelRequested(short,cv::Mat1b,bool);
 
 	// viewport on-the-fly illuminant-correction (only IMG distview)
-	void newIlluminant(cv::Mat1f illum);
+	void newIlluminantCurve(QVector<multi_img::Value>);
 	void toggleIlluminationShown(bool show);
-	void toggleIlluminantApplied(bool applied);
+
+	// distviewmodel/viewport recognition of applied illuminant (only IMG)
+	void newIlluminantApplied(QVector<multi_img::Value>);
 
 
 protected:

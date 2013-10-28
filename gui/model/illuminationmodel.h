@@ -30,9 +30,9 @@ signals:
 	/* effect: rebuild ROI from input full image. */
 	void requestInvalidateROI(cv::Rect roi);
 	/* effect: illuminant curve is drawn in viewers */
-	void newIlluminant(cv::Mat1f illum);
-	/* if(applied): illuminant has been applied to image data. */
-	void illuminantIsApplied(bool applied);
+	void newIlluminantCurve(QVector<multi_img::Value> illum);
+	/* effect: illuminant is employed in binning */
+	void newIlluminantApplied(QVector<multi_img::Value> illum);
 
 public slots:
 	void applyIllum();
@@ -45,7 +45,7 @@ protected slots:
 protected:
 	// FIXME altmann: reference to member data... asking for trouble
 	const Illuminant & getIlluminant(int t);
-	cv::Mat1f getIllumCoeff(int t);
+	QVector<multi_img_base::Value> getIllumCoeff(int t);
 	void buildIllum(int t);
 	void submitRemoveOldIllumTask();
 	void submitAddNewIllumTask();
@@ -61,11 +61,11 @@ private:
 
 	// cache for illumination coefficients
 	typedef std::map<int, std::pair<
-			Illuminant, cv::Mat1f> > Illum_map;
+			Illuminant, QVector<multi_img::Value> > > Illum_map;
 	Illum_map illuminants;
 
 	// Selected illuminant temp (K) in the combo boxes
-	int i1,i2;
+	int i1, i2;
 };
 
 #endif // MODEL_ILLUMINATION

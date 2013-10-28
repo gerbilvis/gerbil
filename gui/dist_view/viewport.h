@@ -72,10 +72,9 @@ public slots:
 	void insertPixelOverlay(const QPolygonF &points);
 
 	// illuminant correction
-	void changeIlluminant(cv::Mat1f illum);
-	void setIlluminantApply(bool applied);
+	void changeIlluminantCurve(QVector<multi_img::Value> illum);
 	void setIlluminationCurveShown(bool show);
-
+	void setAppliedIlluminant(QVector<multi_img::Value> illum);
 
 protected slots:
 
@@ -176,12 +175,12 @@ private:
 	renderbuffer buffers[2];
 	QGLFramebufferObject *multisampleBlit;
 
-	// normalized illuminant spectrum
-	std::vector<multi_img::Value> illuminant;
+	// normalized illuminant spectrum for drawing the curve
+	QVector<multi_img::Value> illuminantCurve;
 	// draw the illuminant curve
 	bool illuminant_show;
 	// draw vectors skewed according to illuminant
-	bool illuminant_apply;
+	std::vector<multi_img::Value> illuminantAppl;
 
 	int selection, hover;
 	bool limiterMode;
@@ -223,7 +222,7 @@ private:
 	enum {
 		HIGH_QUALITY,        // drawing HQ as usual
 		HIGH_QUALITY_QUICK,  // last update was HQ, quick updates requested
-		QUICK,               // last update not HQ, quick updates requested
+		QUICK                // last update not HQ, quick updates requested
 	} drawingState;
 
 	// this timer will resize the scene after resize/folding

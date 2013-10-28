@@ -150,7 +150,8 @@ public:
 	static multi_img::Value curpos(const multi_img::Value &val, int dim,
 								   const multi_img::Value &minval,
 								   const multi_img::Value &binsize,
-							  const std::vector<multi_img::Value> &illuminant);
+							  const std::vector<multi_img::Value> &illuminant
+								   = std::vector<multi_img::Value>());
 
 	/* method and helper class to preprocess bins before vertex generation */
 	static void preparePolylines(const ViewportCtx &context,
@@ -186,16 +187,16 @@ public:
 	static int storeVertices(const ViewportCtx &context,
 							 const std::vector<BinSet> &sets,
 							 const binindex& index, QGLBuffer &vb,
-							 bool drawMeans, bool illuminant_correction,
+							 bool drawMeans,
 							 const std::vector<multi_img::Value> &illuminant);
 
 	class GenerateVertices {
 	public:
 		GenerateVertices(bool drawMeans, size_t dimensionality, multi_img::Value minval, multi_img::Value binsize,
-			bool illuminant_correction, const std::vector<multi_img::Value> &illuminant, const std::vector<BinSet> &sets,
+			const std::vector<multi_img::Value> &illuminant, const std::vector<BinSet> &sets,
 			const binindex &index, GLfloat *varr)
 			: drawMeans(drawMeans), dimensionality(dimensionality), minval(minval), binsize(binsize),
-			illuminant_correction(illuminant_correction), illuminant(illuminant), sets(sets),
+			illuminant(illuminant), sets(sets),
 			index(index), varr(varr) {}
 		void operator()(const tbb::blocked_range<size_t> &r) const;
 	private:
@@ -203,14 +204,11 @@ public:
 		size_t dimensionality;
 		multi_img::Value minval;
 		multi_img::Value binsize;
-		bool illuminant_correction;
 		const std::vector<multi_img::Value> &illuminant;
 		const std::vector<BinSet> &sets;
 		const binindex &index;
 		GLfloat *varr;
 	};
-
-	Compute();
 };
 
 #endif // COMPUTE_H

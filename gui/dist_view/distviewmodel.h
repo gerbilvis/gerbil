@@ -41,7 +41,7 @@ public:
 
 public slots:
 	void setLabelColors(QVector<QColor> colors);
-	void setIlluminant(cv::Mat1f illum);
+	void setIlluminant(QVector<multi_img::Value> illum);
 
 	sets_ptr subImage(const std::vector<cv::Rect> &regions,
 						  cv::Rect roi);
@@ -75,7 +75,14 @@ protected:
 	BackgroundTaskQueue *queue;
 
 	QVector<QColor> labelColors;
+
+	/* the illuminant currently applied to the image
+	 * we use the illuminant to provide a binning adapted to it. the reason is
+	 * that we would otherwise would introduce resolution artifacts with the
+	 * illuminant. we have full binning resolution regardless of the illuminant
+	 * coefficient. */
 	std::vector<multi_img::Value> illuminant;
+
 	bool ignoreLabels;
 	cv::Mat1b highlightMask;
 

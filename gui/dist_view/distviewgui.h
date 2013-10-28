@@ -63,9 +63,9 @@ signals:
 	void requestBinCount(representation::t type, int bins);
 
 	// from controller to GUI elements
-	void newIlluminant(cv::Mat1f illum);
+	void newIlluminantCurve(QVector<multi_img::Value>);
 	void toggleIlluminationShown(bool show);
-	void toggleIlluminantApplied(bool applied);
+	void newIlluminantApplied(QVector<multi_img::Value>);
 
 protected:
 	// initialize target, vp, ui::gv

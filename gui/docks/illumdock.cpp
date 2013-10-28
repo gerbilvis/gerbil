@@ -72,6 +72,6 @@ void IllumDock::onApplyClicked()
 
 	emit applyIllum();
 
-	/* reflect change in our own gui (will propagate to viewports) */
+	/* reflect change in our own gui, will propagate accordingly */
 	illum1Box->setCurrentIndex(illum2Box->currentIndex());
 }

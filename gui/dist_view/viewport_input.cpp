@@ -33,8 +33,8 @@ bool Viewport::updateXY(int sel, int bin)
 	/* second: handle bin -> intensity highlight */
 
 	/* correct y for illuminant */
-	if (!illuminant.empty() && illuminant_apply)
-		bin = std::floor(bin / illuminant.at(sel) + 0.5f);
+	if (!illuminantAppl.empty())
+		bin = std::floor(bin / illuminantAppl.at(sel) + 0.5f);
 
 	if (bin >= 0 && bin < (*ctx)->nbins) {
 		if (!limiterMode && (hover != bin)) {

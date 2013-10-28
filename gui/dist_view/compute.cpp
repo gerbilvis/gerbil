@@ -91,7 +91,7 @@ void Compute::preparePolylines(const ViewportCtx &ctx,
 int Compute::storeVertices(const ViewportCtx &ctx,
 						   const std::vector<BinSet> &sets,
 						   const binindex& index, QGLBuffer &vb,
-						   bool drawMeans, bool illuminant_correction,
+						   bool drawMeans,
 						   const std::vector<multi_img::Value> &illuminant)
 {
 	vb.setUsagePattern(QGLBuffer::StaticDraw);
@@ -114,8 +114,7 @@ int Compute::storeVertices(const ViewportCtx &ctx,
 		return 2;
 
 	GenerateVertices generate(drawMeans, ctx.dimensionality, ctx.minval,
-							  ctx.binsize, illuminant_correction,
-							  illuminant, sets, index, varr);
+							  ctx.binsize, illuminant, sets, index, varr);
 	tbb::parallel_for(tbb::blocked_range<size_t>(0, index.size()),
 		generate, tbb::auto_partitioner());
 
@@ -138,16 +137,11 @@ void Compute::GenerateVertices::operator()(const tbb::blocked_range<size_t> &r) 
 				curpos = ((b.means[d] / b.weight) - minval) / binsize;
 			} else {
 				curpos = (unsigned char)K[d] + 0.5;
-				if (illuminant_correction && !illuminant.empty())
+				if (!illuminant.empty())
 					curpos *= illuminant[d];
 			}
 			varr[vidx++] = d;
 			varr[vidx++] = curpos;
 		}
 	}
-}
-
-
-Compute::Compute()
-{
 }

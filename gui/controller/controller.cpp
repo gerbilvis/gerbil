@@ -81,10 +81,10 @@ Controller::Controller(const std::string &filename, bool limited_mode,
 			dvc, SLOT(updateLabelsPartially(const cv::Mat1s&,const cv::Mat1b&)));
 	connect(dvc, SIGNAL(alterLabelRequested(short,cv::Mat1b,bool)),
 			lm, SLOT(alterLabel(short,cv::Mat1b,bool)));
-	connect(illumm, SIGNAL(newIlluminant(cv::Mat1f)),
-			dvc, SIGNAL(newIlluminant(cv::Mat1f)));
-	connect(illumm, SIGNAL(illuminantIsApplied(bool)),
-			dvc, SIGNAL(toggleIlluminantApplied(bool)));
+	connect(illumm, SIGNAL(newIlluminantCurve(QVector<multi_img::Value>)),
+			dvc, SIGNAL(newIlluminantCurve(QVector<multi_img::Value>)));
+	connect(illumm, SIGNAL(newIlluminantApplied(QVector<multi_img::Value>)),
+			dvc, SIGNAL(newIlluminantApplied(QVector<multi_img::Value>)));
 
 	/* start with initial label or provided labeling
 	 * Do this after all signals are connected, and before initial ROI spawn!

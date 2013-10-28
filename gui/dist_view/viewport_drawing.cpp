@@ -392,8 +392,8 @@ void Viewport::drawAxesFg(QPainter *painter)
 	else
 		painter->setPen(Qt::gray);
 	qreal top = ((*ctx)->nbins);
-	if (!illuminant.empty() && illuminant_apply)
-		top *= illuminant.at(selection);
+	if (illuminant_show && !illuminantCurve.empty())
+		top *= illuminantCurve.at(selection);
 	painter->drawLine(QPointF(selection, 0.), QPointF(selection, top));
 
 	// draw limiters
@@ -401,9 +401,9 @@ void Viewport::drawAxesFg(QPainter *painter)
 		painter->setPen(Qt::red);
 		for (int i = 0; i < (*ctx)->dimensionality; ++i) {
 			qreal y1 = limiters[i].first, y2 = limiters[i].second + 1;
-			if (!illuminant.empty() && illuminant_apply) {
-				y1 *= illuminant.at(selection);
-				y2 *= illuminant.at(selection);
+			if (!illuminantAppl.empty()) {
+				y1 *= illuminantAppl.at(i);
+				y2 *= illuminantAppl.at(i);
 			}
 			qreal h = (*ctx)->nbins*0.01;
 			if (h > y2 - y1)	// don't let them overlap, looks uncool
@@ -431,7 +431,7 @@ void Viewport::drawAxesBg(QPainter *painter)
 	painter->setPen(QColor(64, 64, 64));
 
 	/* without illuminant */
-	if (!illuminant_show || illuminant.empty()) {
+	if (!illuminant_show || illuminantCurve.empty()) {
 		for (int i = 0; i < (*ctx)->dimensionality; ++i)
 			painter->drawLine(i, 0, i, (*ctx)->nbins);
 		return;
@@ -442,7 +442,7 @@ void Viewport::drawAxesBg(QPainter *painter)
 	// polygon describing illuminant
 	QPolygonF poly;
 	for (int i = 0; i < (*ctx)->dimensionality; ++i) {
-		qreal top = ((*ctx)->nbins-1) * illuminant.at(i);
+		qreal top = ((*ctx)->nbins-1) * illuminantCurve.at(i);
 		painter->drawLine(QPointF(i, 0.), QPointF(i, top));
 		poly << QPointF(i, top);
 	}
