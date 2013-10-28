@@ -232,6 +232,10 @@ void DockController::setupDocks()
 	connect(chief->labelingModel(),
 			SIGNAL(newLabeling(cv::Mat1s,QVector<QColor>,bool)),
 			labelDock, SLOT(setLabeling(cv::Mat1s,QVector<QColor>,bool)));
+	connect(chief->labelingModel(),
+			SIGNAL(partialLabelUpdate(const cv::Mat1s&, const cv::Mat1b&)),
+			labelDock,
+			SLOT(processPartialLabelUpdate(const cv::Mat1s&,const cv::Mat1b&)));
 	connect(labelDock, SIGNAL(mergeLabelsRequested(QVector<int>)),
 			chief->labelingModel(), SLOT(mergeLabels(QVector<int>)));
 	connect(labelDock, SIGNAL(deleteLabelsRequested(QVector<int>)),
@@ -242,6 +246,13 @@ void DockController::setupDocks()
 			this, SLOT(highlightSingleLabel(short,bool)));
 	connect(labelDock, SIGNAL(highlightLabelRequested(short,bool)),
 			bandDock->bandView(), SLOT(highlightSingleLabel(short,bool)));
+	connect(labelDock, SIGNAL(labelMaskIconsRequested()),
+			chief->labelingModel(), SLOT(computeLabelIcons()));
+	connect(labelDock, SIGNAL(labelMaskIconSizeChanged(const QSize&)),
+			chief->labelingModel(), SLOT(setLabelIconSize(const QSize&)));
+	connect(chief->labelingModel(),
+			SIGNAL(labelIconsComputed(const QVector<QImage>&)),
+			labelDock, SLOT(processMaskIconsComputed(const QVector<QImage>&)));
 }
 
 void DockController::setGUIEnabled(bool enable, TaskType tt)

@@ -89,6 +89,23 @@ QImage Band2QImage(const multi_img::Band src,
 	return dest;
 }
 
+QImage Mat2QImage(const cv::Mat4b &src)
+{
+	QImage dest(src.cols, src.rows, QImage::Format_ARGB32);
+	for (int y = 0; y < src.rows; ++y) {
+		const cv::Vec4b *srcrow = src[y];
+		QRgb *destrow = (QRgb*)dest.scanLine(y);
+		for (int x = 0; x < src.cols; ++x) {
+			destrow[x] = qRgba(
+						srcrow[x][1],  // r
+						srcrow[x][2],  // g
+						srcrow[x][3],  // b
+						srcrow[x][0]); // a
+		}
+	}
+	return dest;
+}
+
 }
 
 #endif

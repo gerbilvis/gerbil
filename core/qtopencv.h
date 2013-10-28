@@ -31,6 +31,9 @@ QImage Mask2QImage(const cv::Mat1b &src, const QColor &color);
 QImage Mat2QImage(const cv::Mat_<double> &src);
 QImage Band2QImage(const multi_img::Band src, multi_img::Value minval, multi_img::Value maxval);
 
+/** Convert ARGB cv::Mat to QImage. */
+QImage Mat2QImage(const cv::Mat4b &src);
+
 inline cv::Vec3b QColor2Vec(const QColor &src)
 {
 	return cv::Vec3b(src.blue(), src.green(), src.red());

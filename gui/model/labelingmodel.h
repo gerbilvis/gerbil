@@ -6,6 +6,12 @@
 #include <QObject>
 #include <QColor>
 #include <QVector>
+#include <QPixmap>
+#include <QPair>
+#include <QCache>
+#include <QVariant>
+
+class IconTask;
 
 class LabelingModel : public QObject
 {
@@ -44,6 +50,22 @@ public slots:
 	/** Remove all empty labels, recolor all labels. */
 	void consolidate();
 
+	/////// Label Mask Icons ////////////
+
+	/** Set the size of the computed label mask icons in pixels.
+	 *
+	 *  Default size is 32x32 pixels.
+	*/
+	void setLabelIconSize(int width, int height);
+	void setLabelIconSize(const QSize& size);
+
+	/** Compute the label mask icons for all labels.
+	 *
+	 * When the computation is complete, the result is signalled by
+	 * labelIconsComputed(). Results are cached, so calling this function
+	 * multiple times is cheap. */
+	void computeLabelIcons();
+
 signals:
 	/** The Labeling has changed.
 	 *
@@ -58,7 +80,19 @@ signals:
 	 */
 	void partialLabelUpdate(const cv::Mat1s &labels, const cv::Mat1b &mask);
 
+	/** Signal result requested by computeLabelIcons(). */
+	void labelIconsComputed(const QVector<QImage>& icons);
+
+	// signal to IconTask
+	void requestIconTaskAbort();
+private slots:
+	// process label icon task result
+	void processLabelIconsComputed(const QVector<QImage> &icons);
+	void processIconTaskAborted();
 private:
+	/** The labeling has changed, mask icons are out of date. */
+	void invalidateMaskIcons();
+
 	// full image labels and roi scoped labels
 	/* labels is always a header with the same data as full_labels (CV memory
 	 * sharing and reference counting). That is, the contents of labels and
@@ -71,6 +105,27 @@ private:
 	cv::Rect roi;
 	// label colors
 	QVector<QColor> colors;
+
+	// current size of label icons
+	QSize iconSize;
+
+//  nah, make icon masks work first, then try caching implementation
+//	// Icons are stored in a cache indexed by label id and icon size.
+//	typedef QPair<short, QSize> IconKey;
+//	typedef QCache<IconKey, QPixmap> IconCache;
+
+//	IconCache iconCache;
+
+	// Label icons (colored alpha masks)
+	QVector<QImage> icons;
+
+	// The execution icon task (=thread).
+	// If iconTaskp != NULL, a task is executing.
+	IconTask *iconTaskp;
+	bool iconTaskAborted;
 };
 
+Q_DECLARE_METATYPE(QVector<QImage>)
+//Q_DECLARE_METATYPE(const QVector<QImage>&)
 #endif // LABELING_MODEL_H
+

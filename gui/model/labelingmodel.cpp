@@ -5,11 +5,17 @@
 
 #include "../gerbil_gui_debug.h"
 
+#include "labels/icontask.h"
+
 // for DEBUG, FIXME defined in controller.cpp, all operator<<s should go in one module.
 std::ostream &operator<<(std::ostream& os, const cv::Rect& r);
 
+
 LabelingModel::LabelingModel()
+	: iconSize(QSize(32,32)), iconTaskp(NULL), iconTaskAborted(false)
 {
+	qRegisterMetaType<QVector<QImage> >("QVector<QImage>");
+	//qRegisterMetaType<const QVector<QImage>& >("const QVector<QImage>&");
 	labels = full_labels;
 }
 
@@ -28,6 +34,8 @@ void LabelingModel::updateROI(const cv::Rect &roi)
 
 	// signal new matrix
 	emit newLabeling(labels, colors);
+
+	// mask icons are on full image, no update required
 }
 
 void LabelingModel::setLabels(const vole::Labeling &labeling, bool full)
@@ -55,6 +63,7 @@ void LabelingModel::setLabels(const vole::Labeling &labeling, bool full)
 
 	// now signal new labels and colors as well
 	emit newLabeling(labels, colors, true);
+	invalidateMaskIcons();
 }
 
 void LabelingModel::setLabels(const cv::Mat1s &labeling)
@@ -90,6 +99,7 @@ void LabelingModel::setLabelColors(const std::vector<cv::Vec3b> &newColors,
 
 	// signal only the colors, do not cause costly updates
 	emit newLabeling(cv::Mat1s(), colors, changed);
+	invalidateMaskIcons();
 }
 
 void LabelingModel::addLabel()
@@ -117,6 +127,7 @@ void LabelingModel::alterLabel(short index, cv::Mat1b mask,
 
 	// signal change
 	emit partialLabelUpdate(labels, mask);
+	invalidateMaskIcons();
 }
 
 void LabelingModel::alterPixels(const cv::Mat1s &newLabels,
@@ -127,6 +138,7 @@ void LabelingModel::alterPixels(const cv::Mat1s &newLabels,
 
 	// signal change
 	emit partialLabelUpdate(labels, mask);
+	invalidateMaskIcons();
 }
 
 void LabelingModel::loadLabeling(const QString &filename)
@@ -199,6 +211,7 @@ void LabelingModel::mergeLabels(const QVector<int> &mlabels)
 	full_labels.setTo(target, mask);
 
 	emit newLabeling(labels, colors, false);
+	invalidateMaskIcons();
 }
 
 void LabelingModel::deleteLabels(const QVector<int> &labels)
@@ -221,4 +234,78 @@ void LabelingModel::consolidate()
 	//newfull.setColors(vole::Labeling::colors(newfull.colors().size(), true));
 	// set it
 	setLabels(newfull, true);
+}
+
+void LabelingModel::setLabelIconSize(int width, int height)
+{
+	setLabelIconSize(QSize(width, height));
+	invalidateMaskIcons();
+}
+
+void LabelingModel::setLabelIconSize(const QSize& size)
+{
+	iconSize = size;
+}
+
+void LabelingModel::computeLabelIcons()
+{
+	if(iconTaskp != NULL) {
+		//GGDBGM("IconTask already in progress" << endl);
+	} else {
+		//GGDBGM("starting IconTask." << endl);
+		// shared pointer
+		IconTaskCtxPtr ctxp(new IconTaskCtx(
+					colors.size(),
+					full_labels,
+					iconSize,
+					colors));
+
+		iconTaskAborted = false;
+		iconTaskp = new IconTask(ctxp,this);
+
+		connect(this, SIGNAL(requestIconTaskAbort()),
+				iconTaskp, SLOT(abort()));
+		connect(iconTaskp, SIGNAL(taskAborted()),
+				this, SLOT(processIconTaskAborted()));
+		connect(iconTaskp, SIGNAL(labelIconsComputed(const QVector<QImage>&)),
+				this, SLOT(processLabelIconsComputed(const QVector<QImage>&)));
+
+		iconTaskp->start();
+	}
+}
+
+
+void LabelingModel::processLabelIconsComputed(const QVector<QImage> &icons)
+{
+	//GGDBGM("IconTask finished successfully" << endl);
+	// clean up finished task
+	iconTaskp->wait();
+	iconTaskp->deleteLater();
+	// no task is executing
+	iconTaskp = NULL;
+	// store the result and emit
+	this->icons = icons;
+	emit labelIconsComputed(icons);
+}
+
+void LabelingModel::processIconTaskAborted()
+{
+	//GGDBGM("IconTask has aborted" << endl);
+	// clean up aborted task
+	iconTaskp->wait();
+	iconTaskp->deleteLater();
+	iconTaskp = NULL;
+
+	//GGDBGM("requesting new icon computation" << endl);
+	computeLabelIcons();
+}
+
+void LabelingModel::invalidateMaskIcons()
+{
+	// if a icon task is running, abort it
+	//GGDBGM("aborting IconTask" << endl);
+	iconTaskAborted = true;
+	emit requestIconTaskAbort();
+
+	icons.clear();
 }

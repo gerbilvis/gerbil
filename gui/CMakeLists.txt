@@ -39,6 +39,7 @@ vole_compile_library(
 	model/illuminationmodel
 	model/graphsegmentationmodel
 	model/clusteringmodel
+	model/labels/icontask
 
 
 	docks/banddock
@@ -83,6 +84,7 @@ vole_moc_library(
 
 	model/imagemodel.h
 	model/labelingmodel.h
+	model/labels/icontask.h
 	model/falsecolormodel.h
 	model/illuminationmodel.h
 	model/graphsegmentationmodel.h

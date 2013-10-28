@@ -27,14 +27,18 @@ public slots:
 	void setLabeling(const cv::Mat1s &labels,
 					 const QVector<QColor>& colors,
 					 bool colorsChanged);
+
+	void processPartialLabelUpdate(const cv::Mat1s &, const cv::Mat1b &);
+
 	/** Merge/delete currently selected labels depending on sender. */
 	void mergeOrDeleteSelected();
 
+	void processMaskIconsComputed(const QVector<QImage>& icons);
 signals:
-	/** The user has selected labels and want's them to be merged. */
+	/** The user has selected labels and wants them to be merged. */
 	void mergeLabelsRequested(const QVector<int>& labels);
 
-	/** The user has selected labels and want's them to be deleted. */
+	/** The user has selected labels and wants them to be deleted. */
 	void deleteLabelsRequested(const QVector<int>& labels);
 
 	/** The user pressed the clean-up button */
@@ -52,18 +56,25 @@ signals:
 	 */
 	void highlightLabelRequested(short label, bool highlight);
 
+	/** Request a vector of mask icons representing the label masks. */
+	void labelMaskIconsRequested();
+
+	/** The user changed the mask icon size using the slider. */
+	void labelMaskIconSizeChanged(const QSize& size);
 private slots:
 	void processSelectionChanged(const QItemSelection & selected,
 							const QItemSelection & deselected);
 	void processLabelItemEntered(QModelIndex midx);
 	void processLabelItemLeft();
 
+	/** Icon size slider value changed. */
+	void processSliderValueChanged(int);
+	void updateSliderToolTip();
 private:
 
 	enum { LabelIndexRole = Qt::UserRole };
 
 	void init();
-	void addLabel(int idx, const QColor& color);
 
 
 	Ui::LabelDock *ui;
@@ -75,8 +86,11 @@ private:
 	bool hovering;
 	short hoverLabel;
 
+	// Label mask icons indexed by labelid
+	QVector<QImage> icons;
+
 //	cv::Mat1s labels;
-//	QVector<QColor> colors;
+	QVector<QColor> colors;
 };
 
 // utility class to filter leave event
