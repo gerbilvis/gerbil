@@ -1,9 +1,9 @@
 cmake_minimum_required(VERSION 2.6)
 cmake_policy(SET CMP0009 NEW)
 
-# see bug #58
-# https://svn.i5.informatik.uni-erlangen.de/projects/computervision/ticket/58
-#cmake_policy(SET CMP0022 NEW)
+if(CMAKE_VERSION VERSION_GREATER "2.8.11")
+	cmake_policy(SET CMP0022 NEW)
+endif()
 
 project(Vole)
 
