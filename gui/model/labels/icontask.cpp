@@ -108,7 +108,11 @@ void IconTask::abort()
 	abortFlag = true;
 
 	// tell executing tasks to abort
-	tbb::task::self().context()->cancel_group_execution();
+	// FIXME race condition with other TBB code!
+	// # Assertion !master_outermost_level() || !CancellationInfoPresent(*my_dummy_task) failed on line 637 of file ../../src/tbb/custom_scheduler.h
+	// # Detailed description: Unexpected exception or cancellation data in the master's dummy task
+	// (triggered in band2qimagetbb)
+	//tbb::task::self().context()->cancel_group_execution();
 }
 
 void IconTask::run()

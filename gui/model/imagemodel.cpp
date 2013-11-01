@@ -236,16 +236,21 @@ void ImageModel::spawn(representation::t type, const cv::Rect &newROI, int bands
 void ImageModel::computeBand(representation::t type, int dim)
 {
 	QMap<int, QPixmap> &m = map[type]->bands;
-
 	SharedMultiImgPtr src = map[type]->image;
-	// ensure sane input
-	SharedDataLock hlock(src->mutex);
-	int size = (*src)->size();
-	hlock.unlock();
 
+	SharedDataLock hlock(src->mutex);
+
+	// ensure sane input
+	int size = (*src)->size();
 	if (dim >= size)
 		dim = 0;
 
+	// retrieve wavelength metadata
+	std::string banddesc = (*src)->meta[dim].str();
+
+	hlock.unlock();
+
+	// compute image data if necessary
 	if (!m.contains(dim)) {
 		SharedMultiImgPtr src = map[type]->image;
 		qimage_ptr dest(new SharedData<QImage>(new QImage()));
@@ -259,10 +264,6 @@ void ImageModel::computeBand(representation::t type, int dim)
 		m[dim] = QPixmap::fromImage(**dest);
 	}
 
-	// retrieve wavelength information
-	hlock.lock();
-	std::string banddesc = (*src)->meta[dim].str();
-	hlock.unlock();
 	QString desc;
 	const char * const str[] =
 		{ "Image", "Gradient", "Image PCA", "Gradient PCA" };
