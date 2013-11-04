@@ -99,8 +99,8 @@ void LabelDock::mergeOrDeleteSelected()
 	QItemSelection selection = ui->labelView->selectionModel()->selection();
 	QModelIndexList modelIdxs = selection.indexes();
 
-	// need at least two selected colors
-	if (modelIdxs.size() < 2) {
+	/* need at least two selected colors to merge, one color to delete */
+	if (modelIdxs.size() < (sender() == ui->delBtn ? 1 : 2)) {
 		return;
 	}
 
@@ -161,7 +161,7 @@ void LabelDock::processSelectionChanged(const QItemSelection &,
 		const QItemSelection &)
 {
 	int nSelected = ui->labelView->selectionModel()->selectedIndexes().size();
-	//GGDBGM("nSelected " << nSelected << endl);
+
 	// more than one label selected
 	ui->mergeBtn->setEnabled(nSelected > 1);
 	// any label selected
