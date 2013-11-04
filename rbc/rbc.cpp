@@ -433,7 +433,7 @@ void buildQMap(matrix q, unint *qMap, unint *repIDs,
 
     gS = (unint*)calloc(numReps+1,sizeof(*gS));
 
-    /** histogram /
+    /** histogram */
     for(i = 0; i < n; i++)
         gS[repIDs[i]+1]++;
 
