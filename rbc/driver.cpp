@@ -26,118 +26,117 @@ unint n=0, m=0, d=0, numReps=0, deviceNum=0;
 int main(int argc, char**argv){
 
     try{
+        OclContextHolder::oclInit();
 
-  OclContextHolder::oclInit();
+        matrix x, q;
+        intMatrix nnsRBC;
+        matrix distsRBC;
+        struct timeval tvB,tvE;
+        // cudaError_t cE;
+        ocl_rbcStruct rbcS;
 
-  matrix x, q;
-  intMatrix nnsRBC;
-  matrix distsRBC;
-  struct timeval tvB,tvE;
- // cudaError_t cE;
-  ocl_rbcStruct rbcS;
+        printf("*****************\n");
+        printf("RANDOM BALL COVER\n");
+        printf("*****************\n");
 
-  printf("*****************\n");
-  printf("RANDOM BALL COVER\n");
-  printf("*****************\n");
-  
-  parseInput(argc,argv);
-  
-//  gettimeofday( &tvB, NULL );
-//  printf("Using GPU #%d\n",deviceNum);
-//  if(cudaSetDevice(deviceNum) != cudaSuccess){
-//    printf("Unable to select device %d.. exiting. \n",deviceNum);
-//    exit(1);
-//  }
-  
-//  size_t memFree, memTot;
-//  cudaMemGetInfo(&memFree, &memTot);
-//  printf("GPU memory free = %lu/%lu (MB) \n",(unsigned long)memFree/(1024*1024),(unsigned long)memTot/(1024*1024));
-//  gettimeofday( &tvE, NULL );
-//  printf(" init time: %6.2f \n", timeDiff( tvB, tvE ) );
-  
+        parseInput(argc,argv);
 
-  //Setup matrices
-  initMat( &x, n, d );
-  initMat( &q, m, d );
-  x.mat = (real*)calloc( sizeOfMat(x), sizeof(*(x.mat)) );
-  q.mat = (real*)calloc( sizeOfMat(q), sizeof(*(q.mat)) );
-    
-  //Load data 
-  if( dataFileXtxt )
-    readDataText( dataFileXtxt, x );
-  else
-    readData( dataFileX, x );
-  if( dataFileQtxt )
-    readDataText( dataFileQtxt, q );
-  else
-    readData( dataFileQ, q );
+        //  gettimeofday( &tvB, NULL );
+        //  printf("Using GPU #%d\n",deviceNum);
+        //  if(cudaSetDevice(deviceNum) != cudaSuccess){
+        //    printf("Unable to select device %d.. exiting. \n",deviceNum);
+        //    exit(1);
+        //  }
 
+        //  size_t memFree, memTot;
+        //  cudaMemGetInfo(&memFree, &memTot);
+        //  printf("GPU memory free = %lu/%lu (MB) \n",(unsigned long)memFree/(1024*1024),(unsigned long)memTot/(1024*1024));
+        //  gettimeofday( &tvE, NULL );
+        //  printf(" init time: %6.2f \n", timeDiff( tvB, tvE ) );
 
-  //Allocate space for NNs and dists
-  initIntMat( &nnsRBC, m, KMAX );  //KMAX is defined in defs.h
-  initMat( &distsRBC, m, KMAX );
-  nnsRBC.mat = (unint*)calloc( sizeOfIntMat(nnsRBC), sizeof(*nnsRBC.mat) );
-  distsRBC.mat = (real*)calloc( sizeOfMat(distsRBC), sizeof(*distsRBC.mat) );
+        //Setup matrices
+        initMat( &x, n, d );
+        initMat( &q, m, d );
+        x.mat = (real*)calloc( sizeOfMat(x), sizeof(*(x.mat)));
+        q.mat = (real*)calloc( sizeOfMat(q), sizeof(*(q.mat)));
 
-  //Build the RBC
-  printf("building the rbc..\n");
-  gettimeofday( &tvB, NULL );
-  buildRBC( x, &rbcS, numReps, numReps );
-  gettimeofday( &tvE, NULL );
-  printf( "\t.. build time = %6.4f \n", timeDiff(tvB,tvE) );
-  
-  //This finds the 32-NNs; if you are only interested in the 1-NN, use queryRBC(..) instead
-  gettimeofday( &tvB, NULL );
-  kqueryRBC( q, rbcS, nnsRBC, distsRBC );
-  gettimeofday( &tvE, NULL );
-  printf( "\t.. query time for krbc = %6.4f \n", timeDiff(tvB,tvE) );
-  
-  //Shows how to run brute force search
-  if( runBrute ){
-    intMatrix nnsBrute;
-    matrix distsBrute;
-    initIntMat( &nnsBrute, m, KMAX );
-    nnsBrute.mat = (unint*)calloc( sizeOfIntMat(nnsBrute), sizeof(*nnsBrute.mat) );
-    initMat( &distsBrute, m, KMAX );
-    distsBrute.mat = (real*)calloc( sizeOfMat(distsBrute), sizeof(*distsBrute.mat) );
-    
-    printf("running k-brute force..\n");
-    gettimeofday( &tvB, NULL );
-    bruteK( x, q, nnsBrute, distsBrute );
-    gettimeofday( &tvE, NULL );
-    printf( "\t.. time elapsed = %6.4f \n", timeDiff(tvB,tvE) );
+        //Load data
+        if( dataFileXtxt )
+            readDataText( dataFileXtxt, x );
+        else
+            readData( dataFileX, x );
 
-    writeNeighbs(NULL, "output_brute.txt", nnsBrute, distsBrute);
-    
-    free( nnsBrute.mat );
-    free( distsBrute.mat );
-  }
+        if( dataFileQtxt )
+            readDataText( dataFileQtxt, q );
+        else
+            readData( dataFileQ, q );
 
-//  cE = cudaGetLastError();
-//  if( cE != cudaSuccess ){
-//    printf("Execution failed; error type: %s \n", cudaGetErrorString(cE) );
-//  }
-  
-  if( runEval )
-    evalKNNerror(x,q,nnsRBC);
-  
-  if( outFile || outFiletxt )
-    writeNeighbs( outFile, outFiletxt, nnsRBC, distsRBC );
+        //Allocate space for NNs and dists
+        initIntMat( &nnsRBC, m, KMAX );  //KMAX is defined in defs.h
+        initMat( &distsRBC, m, KMAX );
+        nnsRBC.mat = (unint*)calloc( sizeOfIntMat(nnsRBC), sizeof(*nnsRBC.mat));
+        distsRBC.mat = (real*)calloc( sizeOfMat(distsRBC), sizeof(*distsRBC.mat));
 
-  destroyRBC( &rbcS );
- // cudaThreadExit();
-  free( nnsRBC.mat );
-  free( distsRBC.mat );
-  free( x.mat );
-  free( q.mat );
+        //Build the RBC
+        printf("building the rbc..\n");
+        gettimeofday( &tvB, NULL );
+        buildRBC( x, &rbcS, numReps, numReps );
+        gettimeofday( &tvE, NULL );
+        printf( "\t.. build time = %6.4f \n", timeDiff(tvB,tvE) );
 
+        //This finds the 32-NNs; if you are only interested in the 1-NN, use queryRBC(..) instead
+        gettimeofday( &tvB, NULL );
+        kqueryRBC( q, rbcS, nnsRBC, distsRBC );
+        gettimeofday( &tvE, NULL );
+        printf( "\t.. query time for krbc = %6.4f \n", timeDiff(tvB,tvE) );
+
+        //Shows how to run brute force search
+        if(runBrute)
+        {
+            intMatrix nnsBrute;
+            matrix distsBrute;
+            initIntMat( &nnsBrute, m, KMAX );
+            nnsBrute.mat = (unint*)calloc(sizeOfIntMat(nnsBrute),
+                                          sizeof(*nnsBrute.mat));
+            initMat( &distsBrute, m, KMAX );
+            distsBrute.mat = (real*)calloc( sizeOfMat(distsBrute),
+                                            sizeof(*distsBrute.mat) );
+
+            printf("running k-brute force..\n");
+            gettimeofday( &tvB, NULL );
+            bruteK( x, q, nnsBrute, distsBrute );
+            gettimeofday( &tvE, NULL );
+            printf( "\t.. time elapsed = %6.4f \n", timeDiff(tvB,tvE) );
+
+            writeNeighbs(NULL, "output_brute.txt", nnsBrute, distsBrute);
+
+            free( nnsBrute.mat );
+            free( distsBrute.mat );
+        }
+
+        //  cE = cudaGetLastError();
+        //  if( cE != cudaSuccess ){
+        //    printf("Execution failed; error type: %s \n", cudaGetErrorString(cE) );
+        //  }
+
+        if(runEval)
+            evalKNNerror(x,q,nnsRBC);
+
+        if(outFile || outFiletxt)
+            writeNeighbs( outFile, outFiletxt, nnsRBC, distsRBC );
+
+        destroyRBC( &rbcS );
+        // cudaThreadExit();
+        free(nnsRBC.mat);
+        free(distsRBC.mat);
+        free(x.mat);
+        free(q.mat);
     }
     catch(cl::Error error)
     {
         std::cerr << "ERROR: " << error.what()
                   << "(" << error.err() << ")" << std::endl;
     }
-
 }
 
 

@@ -5,10 +5,33 @@
 #ifndef UTILSGPU_H
 #define UTILSGPU_H
 
+#define DEBUG_WRITE_TO_FILE
+
 #include "defs.h"
 //#include<cuda.h>
 
 #include <cstdio>
+
+#ifdef DEBUG_WRITE_TO_FILE
+#define DBG_DEVICE_MATRIX_WRITE(MATRIX, FILE) \
+        device_matrix_to_file(MATRIX, FILE)
+#define DBG_HOST_MATRIX_WRITE(MATRIX, FILE) \
+        matrix_to_file(MATRIX, FILE)
+#define DBG_DEVICE_UINT_BUFF_WRITE(BUFF, SIZE, FILE) \
+        buffer_to_file<uint>(BUFF, SIZE, FILE)
+#define DBG_DEVICE_CHAR_BUFF_WRITE(BUFF, SIZE, FILE) \
+        buffer_to_file<char>(BUFF, SIZE, FILE)
+#define DBG_DEVICE_REAL_BUFF_WRITE(BUFF, SIZE, FILE) \
+        buffer_to_file<real>(BUFF, SIZE, FILE)
+#define DBG_ARRAY_WRITE(ARRAY, SIZE, FILE) \
+        array_to_file(ARRAY, SIZE, FILE)
+#else
+#define DBG_DEVICE_MATRIX_WRITE(MATRIX, FILE)
+#define DBG_HOST_MATRIX_WRITE(MATRIX, FILE)
+#define DBG_DEVICE_UINT_BUFF_WRITE(BUFF, SIZE, FILE)
+#define DBG_DEVICE_CHAR_BUFF_WRITE(BUFF, SIZE, FILE)
+#define DBG_DEVICE_REAL_BUFF_WRITE(BUFF, SIZE, FILE)
+#endif
 
 
 class OclContextHolder

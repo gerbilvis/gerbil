@@ -11,56 +11,56 @@
 #include "defs.h"
 #include "utilsGPU.h"
 
-void dist1Wrap(const ocl_matrix& dq, const ocl_matrix& dx, ocl_matrix& dD){
-
+void dist1Wrap(const ocl_matrix& dq, const ocl_matrix& dx,
+               ocl_matrix& dD, unint dq_offset)
+{
     cl::Kernel& dist1Kernel = OclContextHolder::dist1Kernel;
-
     cl::NDRange local(BLOCK_SIZE, BLOCK_SIZE);
 
     unint todoX, todoY, numDoneX, numDoneY;
 
     numDoneX = 0;
-    while ( numDoneX < dx.pr ){
-      todoX = MIN( dx.pr - numDoneX, MAX_BS*BLOCK_SIZE );
+    while ( numDoneX < dx.pr )
+    {
+        todoX = MIN( dx.pr - numDoneX, MAX_BS*BLOCK_SIZE );
 
-      int global_x = todoX;
+        numDoneY = 0;
 
-      numDoneY = 0;
-      while( numDoneY < dq.pr ){
+        while(numDoneY < dq.pr)
+        {
+            todoY = MIN(dq.pr - numDoneY, MAX_BS*BLOCK_SIZE);
 
-        todoY = MIN( dq.pr - numDoneY, MAX_BS*BLOCK_SIZE );
-        int global_y = todoY;
+            cl::NDRange global(todoX, todoY);
 
-        cl::NDRange global(global_x, global_y);
+            cl::CommandQueue& queue = OclContextHolder::queue;
 
-        cl::CommandQueue& queue = OclContextHolder::queue;
+            dist1Kernel.setArg(0, dq.mat);
+            dist1Kernel.setArg(1, dq.r);
+            dist1Kernel.setArg(2, dq.c);
+            dist1Kernel.setArg(3, dq.pr);
+            dist1Kernel.setArg(4, dq.pc);
+            dist1Kernel.setArg(5, dq.ld);
+            dist1Kernel.setArg(6, numDoneY);
+            dist1Kernel.setArg(7, dx.mat);
+            dist1Kernel.setArg(8, dx.r);
+            dist1Kernel.setArg(9, dx.c);
+            dist1Kernel.setArg(10, dx.pr);
+            dist1Kernel.setArg(11, dx.pc);
+            dist1Kernel.setArg(12, dx.ld);
+            dist1Kernel.setArg(13, numDoneX);
+            dist1Kernel.setArg(14, dD.mat);
+            dist1Kernel.setArg(15, dD.r);
+            dist1Kernel.setArg(16, dD.c);
+            dist1Kernel.setArg(17, dD.pr);
+            dist1Kernel.setArg(18, dD.pc);
+            dist1Kernel.setArg(19, dD.ld);
+            dist1Kernel.setArg(20, dq_offset);
 
-        dist1Kernel.setArg(0, dq.mat);
-        dist1Kernel.setArg(1, dq.r);
-        dist1Kernel.setArg(2, dq.c);
-        dist1Kernel.setArg(3, dq.pr);
-        dist1Kernel.setArg(4, dq.pc);
-        dist1Kernel.setArg(5, dq.ld);
-        dist1Kernel.setArg(6, numDoneY);
-        dist1Kernel.setArg(7, dx.mat);
-        dist1Kernel.setArg(8, dx.r);
-        dist1Kernel.setArg(9, dx.c);
-        dist1Kernel.setArg(10, dx.pr);
-        dist1Kernel.setArg(11, dx.pc);
-        dist1Kernel.setArg(12, dx.ld);
-        dist1Kernel.setArg(13, numDoneX);
-        dist1Kernel.setArg(14, dD.mat);
-        dist1Kernel.setArg(15, dD.r);
-        dist1Kernel.setArg(16, dD.c);
-        dist1Kernel.setArg(17, dD.pr);
-        dist1Kernel.setArg(18, dD.pc);
-        dist1Kernel.setArg(19, dD.ld);
-
-        queue.enqueueNDRangeKernel(dist1Kernel, cl::NullRange, global, local);
-
-        numDoneY += todoY;
-      }
-      numDoneX += todoX;
+            queue.enqueueNDRangeKernel(dist1Kernel, cl::NullRange,
+                                       global, local);
+            numDoneY += todoY;
+        }
+        numDoneX += todoX;
     }
 
 /*
@@ -82,7 +82,6 @@ void dist1Wrap(const ocl_matrix& dq, const ocl_matrix& dx, ocl_matrix& dD){
     }
     numDoneX += todoX;
   }
-
   cudaThreadSynchronize();
 */
 }
@@ -96,33 +95,32 @@ void findRangeWrap(const ocl_matrix& dD, cl::Buffer& dranges, unint cntWant){
 
     unint numDone, todo;
 
-    numDone=0;
-    while( numDone < dD.pr ){
-      todo = MIN ( dD.pr - numDone, MAX_BS*BLOCK_SIZE/4 );
-      //grid.y = 4*(todo/BLOCK_SIZE);
+    numDone = 0;
 
-      cl::NDRange global(4*BLOCK_SIZE, todo);
+    while(numDone < dD.pr)
+    {
+        todo = MIN ( dD.pr - numDone, MAX_BS*BLOCK_SIZE/4 );
+        //grid.y = 4*(todo/BLOCK_SIZE);
 
-      findRangeKernel.setArg(0, dD.mat);
-      findRangeKernel.setArg(1, dD.r);
-      findRangeKernel.setArg(2, dD.c);
-      findRangeKernel.setArg(3, dD.pr);
-      findRangeKernel.setArg(4, dD.pc);
-      findRangeKernel.setArg(5, dD.ld);
-      findRangeKernel.setArg(6, numDone);
-      findRangeKernel.setArg(7, dranges);
-      findRangeKernel.setArg(8, cntWant);
+        cl::NDRange global(4*BLOCK_SIZE, todo);
 
-      cl::CommandQueue& queue = OclContextHolder::queue;
+        findRangeKernel.setArg(0, dD.mat);
+        findRangeKernel.setArg(1, dD.r);
+        findRangeKernel.setArg(2, dD.c);
+        findRangeKernel.setArg(3, dD.pr);
+        findRangeKernel.setArg(4, dD.pc);
+        findRangeKernel.setArg(5, dD.ld);
+        findRangeKernel.setArg(6, numDone);
+        findRangeKernel.setArg(7, dranges);
+        findRangeKernel.setArg(8, cntWant);
 
-      queue.enqueueNDRangeKernel(findRangeKernel, cl::NullRange,
-                                 global, local);
+        cl::CommandQueue& queue = OclContextHolder::queue;
 
+        queue.enqueueNDRangeKernel(findRangeKernel, cl::NullRange,
+                                   global, local);
 
-      numDone += todo;
+        numDone += todo;
     }
-
-
 
 /*  dim3 block(4*BLOCK_SIZE,BLOCK_SIZE/4);
   dim3 grid(1,4*(dD.pr/BLOCK_SIZE));
@@ -139,7 +137,9 @@ void findRangeWrap(const ocl_matrix& dD, cl::Buffer& dranges, unint cntWant){
 }
 
 
-void rangeSearchWrap(const ocl_matrix& dD, cl::Buffer& dranges, ocl_charMatrix& dir){
+void rangeSearchWrap(const ocl_matrix& dD, cl::Buffer& dranges,
+                     ocl_charMatrix& dir)
+{
 
     cl::Kernel& rangeSearchKernel = OclContextHolder::rangeSearchKernel;
 
@@ -148,44 +148,42 @@ void rangeSearchWrap(const ocl_matrix& dD, cl::Buffer& dranges, ocl_charMatrix& 
     unint todoX, todoY, numDoneX, numDoneY;
 
     numDoneX = 0;
-    while ( numDoneX < dD.pc ){
-      todoX = MIN( dD.pc - numDoneX, MAX_BS*BLOCK_SIZE );
-      //grid.x = todoX/BLOCK_SIZE;
-      numDoneY = 0;
-      while( numDoneY < dD.pr ){
-        todoY = MIN( dD.pr - numDoneY, MAX_BS*BLOCK_SIZE );
-        //grid.y = todoY/BLOCK_SIZE;
+    while ( numDoneX < dD.pc )
+    {
+        todoX = MIN( dD.pc - numDoneX, MAX_BS*BLOCK_SIZE );
 
-        cl::NDRange global(todoX, todoY);
+        numDoneY = 0;
 
-        rangeSearchKernel.setArg(0, dD.mat);
-        rangeSearchKernel.setArg(1, dD.r);
-        rangeSearchKernel.setArg(2, dD.c);
-        rangeSearchKernel.setArg(3, dD.pr);
-        rangeSearchKernel.setArg(4, dD.pc);
-        rangeSearchKernel.setArg(5, dD.ld);
-        rangeSearchKernel.setArg(6, numDoneX);
-        rangeSearchKernel.setArg(7, numDoneY);
-        rangeSearchKernel.setArg(8, dranges);
-        rangeSearchKernel.setArg(9, dir.mat);
-        rangeSearchKernel.setArg(10, dir.r);
-        rangeSearchKernel.setArg(11, dir.c);
-        rangeSearchKernel.setArg(12, dir.pr);
-        rangeSearchKernel.setArg(13, dir.pc);
-        rangeSearchKernel.setArg(14, dir.ld);
+        while( numDoneY < dD.pr )
+        {
+            todoY = MIN( dD.pr - numDoneY, MAX_BS*BLOCK_SIZE );
 
-        cl::CommandQueue& queue = OclContextHolder::queue;
+            cl::NDRange global(todoX, todoY);
 
-        queue.enqueueNDRangeKernel(rangeSearchKernel, cl::NullRange,
-                                   global, local);
+            rangeSearchKernel.setArg(0, dD.mat);
+            rangeSearchKernel.setArg(1, dD.r);
+            rangeSearchKernel.setArg(2, dD.c);
+            rangeSearchKernel.setArg(3, dD.pr);
+            rangeSearchKernel.setArg(4, dD.pc);
+            rangeSearchKernel.setArg(5, dD.ld);
+            rangeSearchKernel.setArg(6, numDoneX);
+            rangeSearchKernel.setArg(7, numDoneY);
+            rangeSearchKernel.setArg(8, dranges);
+            rangeSearchKernel.setArg(9, dir.mat);
+            rangeSearchKernel.setArg(10, dir.r);
+            rangeSearchKernel.setArg(11, dir.c);
+            rangeSearchKernel.setArg(12, dir.pr);
+            rangeSearchKernel.setArg(13, dir.pc);
+            rangeSearchKernel.setArg(14, dir.ld);
 
-        //rangeSearchKernel<<<grid,block>>>(dD, numDoneX, numDoneY, dranges, dir);
-        numDoneY += todoY;
-      }
-      numDoneX += todoX;
+            cl::CommandQueue& queue = OclContextHolder::queue;
+
+            queue.enqueueNDRangeKernel(rangeSearchKernel, cl::NullRange,
+                                       global, local);
+            numDoneY += todoY;
+        }
+        numDoneX += todoX;
     }
-
-
 
 /*  dim3 block(BLOCK_SIZE,BLOCK_SIZE);
   dim3 grid;

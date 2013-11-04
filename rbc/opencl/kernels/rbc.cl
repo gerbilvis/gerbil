@@ -63,44 +63,45 @@ __kernel void dist1Kernel(__global const real* Q_mat,
                          unint D_c,
                          unint D_pr,
                          unint D_pc,
-                         unint D_ld)
+                         unint D_ld,
+                         unint dq_offset)
 {
-  unint c, i, j;
+    unint c, i, j;
 
-  size_t threadIdx_x = get_local_id(0);
-  size_t threadIdx_y = get_local_id(1);
+    size_t threadIdx_x = get_local_id(0);
+    size_t threadIdx_y = get_local_id(1);
 
-  size_t blockIdx_x = get_group_id(0);
-  size_t blockIdx_y = get_group_id(1);
+    size_t blockIdx_x = get_group_id(0);
+    size_t blockIdx_y = get_group_id(1);
 
-  unint qB = blockIdx_y*BLOCK_SIZE + qStart;
-  unint q  = threadIdx_y;
-  unint xB = blockIdx_x*BLOCK_SIZE + xStart;
-  unint x = threadIdx_x;
+    unint qB = blockIdx_y*BLOCK_SIZE + qStart;
+    unint q  = threadIdx_y;
+    unint xB = blockIdx_x*BLOCK_SIZE + xStart;
+    unint x = threadIdx_x;
 
-  real ans=0;
+    real ans=0;
 
-  //This thread is responsible for computing the dist between Q[qB+q] and X[xB+x]
+    //This thread is responsible for computing the dist between Q[qB+q] and X[xB+x]
 
-  __local real Qs[BLOCK_SIZE][BLOCK_SIZE];
-  __local real Xs[BLOCK_SIZE][BLOCK_SIZE];
+    __local real Qs[BLOCK_SIZE][BLOCK_SIZE];
+    __local real Xs[BLOCK_SIZE][BLOCK_SIZE];
 
+    for(i=0 ; i<Q_pc/BLOCK_SIZE; i++)
+    {
+        c=i*BLOCK_SIZE; //current col block
 
-  for(i=0 ; i<Q_pc/BLOCK_SIZE; i++){
-    c=i*BLOCK_SIZE; //current col block
+        Qs[x][q] = Q_mat[ dq_offset + IDX(qB+q, c+x, Q_ld) ];
+        Xs[x][q] = X_mat[ IDX(xB+q, c+x, X_ld) ];
 
-    Qs[x][q] = Q_mat[ IDX(qB+q, c+x, Q_ld) ];
-    Xs[x][q] = X_mat[ IDX(xB+q, c+x, X_ld) ];
+        barrier(CLK_LOCAL_MEM_FENCE);
 
-    barrier(CLK_LOCAL_MEM_FENCE);
+        for(j=0 ; j<BLOCK_SIZE ; j++)
+            ans += DIST( Qs[j][q], Xs[j][x] );
 
-    for(j=0 ; j<BLOCK_SIZE ; j++)
-      ans += DIST( Qs[j][q], Xs[j][x] );
+        barrier(CLK_LOCAL_MEM_FENCE);
+    }
 
-    barrier(CLK_LOCAL_MEM_FENCE);
-  }
-
-  D_mat[ IDX( qB+q, xB+x, D_ld ) ] = ans;
+    D_mat[ IDX( qB+q, xB+x, D_ld ) ] = ans;
 }
 
 
