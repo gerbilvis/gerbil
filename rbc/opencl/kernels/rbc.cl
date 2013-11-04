@@ -1,6 +1,19 @@
 typedef float real;
 typedef uint unint;
 
+#define DEBUG
+
+#ifdef DEBUG
+#define assert(x) \
+            if (! (x)) \
+            { \
+                printf((__constant char*)"Assert(%s) failed in line: %d\n", \
+                       (__constant char*)#x, __LINE__); \
+            }
+#else
+        #define assert(X)
+#endif
+
 #define BLOCK_SIZE 16
 #define SCAN_WIDTH 1024
 
@@ -239,7 +252,14 @@ __kernel void rangeSearchKernel(__global const real* D_mat,
   ir_mat[IDX( row, col, ir_ld )] = D_mat[IDX( row, col, D_ld )] < ranges[row];
 }
 
-
+/** Performs parallel scan for chunks of size SCAN_WIDTH
+  * in_mat - matrix of binary values
+  * sum_mat - matrix of exclusive prefix sums
+  * sumaux_mat - contains the last values from each scan for every row
+  *
+  * e.g: if row has 4 * SCAN_WIDTH elements, 4 partial scans will be performed,
+  *      sumaux_mat will have 4 columns and the same number of rows as in_mat
+  */
 __kernel void sumKernel(__global const char* in_mat,
                        unint in_r,
                        unint in_c,
@@ -410,34 +430,45 @@ __kernel void combineSumKernel(__global unint* sum_mat,
                                 unint daux_ld,
                                 unint n)
 {
-  unint id = get_local_id(0);
+    unint id = get_local_id(0);
 
-  size_t blockIdx_x = get_group_id(0);
-  size_t blockIdx_y = get_group_id(1);
+    size_t blockIdx_x = get_group_id(0);
+    size_t blockIdx_y = get_group_id(1);
 
-  unint bo = blockIdx_x * SCAN_WIDTH;
-  unint r = blockIdx_y + numDone;
+    unint bo = blockIdx_x * SCAN_WIDTH;
+    unint r = blockIdx_y + numDone;
 
-  if(bo+2*id < n)
-    sum_mat[IDX( r, bo+2*id, sum_ld )] += daux_mat[IDX( r, blockIdx_x, daux_ld )];
-  if(bo+2*id+1 < n)
-    sum_mat[IDX( r, bo+2*id+1, sum_ld )] += daux_mat[IDX( r, blockIdx_x, daux_ld )];
+    if(bo+2*id < n)
+    {
+        sum_mat[IDX(r, bo + 2 * id, sum_ld)]
+                          += daux_mat[IDX(r, blockIdx_x, daux_ld)];
+    }
+    if(bo+2*id+1 < n)
+    {
+        sum_mat[IDX(r, bo + 2 * id + 1, sum_ld)]
+                          += daux_mat[IDX(r, blockIdx_x, daux_ld)];
+    }
 
 }
 
+/** Creates lists of indexes of nearests neighbours for every row
+  *  map - output matrix
+  *  ir - binary mask
+  *  sums - prefix sums
+  */
 __kernel void buildMapKernel(__global unint* map_mat,
                             unint map_r,
                             unint map_c,
                             unint map_pr,
                             unint map_pc,
                             unint map_ld,
-                            __global char* ir_mat,
+                            __global const char* ir_mat,
                             unint ir_r,
                             unint ir_c,
                             unint ir_pr,
                             unint ir_pc,
                             unint ir_ld,
-                            __global unint* sums_mat,
+                            __global const unint* sums_mat,
                             unint sums_r,
                             unint sums_c,
                             unint sums_pr,
@@ -445,18 +476,30 @@ __kernel void buildMapKernel(__global unint* map_mat,
                             unint sums_ld,
                             unint offSet)
 {
-  unint id = get_local_id(0);
+    unint id = get_local_id(0);
 
-  size_t blockIdx_x = get_group_id(0);
-  size_t blockIdx_y = get_group_id(1);
+    size_t blockIdx_x = get_group_id(0);
+    size_t blockIdx_y = get_group_id(1);
 
-  unint bo = blockIdx_x * SCAN_WIDTH;
-  unint r = blockIdx_y;
+    unint bo = blockIdx_x * SCAN_WIDTH;
+    unint r = blockIdx_y;
 
-  if(bo+2*id < ir_c && ir_mat[IDX( r, bo+2*id, ir_ld )])
-    map_mat[IDX( r+offSet, sums_mat[IDX( r, bo+2*id, sums_ld )], map_ld)] = bo+2*id;
-  if(bo+2*id+1 < ir_c && ir_mat[IDX( r, bo+2*id+1, ir_ld )])
-    map_mat[IDX( r+offSet, sums_mat[IDX( r, bo+2*id+1, sums_ld )], map_ld)] = bo+2*id+1;
+    if(bo+2*id < ir_c && ir_mat[IDX( r, bo+2*id, ir_ld )])
+    {
+//        assert(r+offSet < map_r);
+//        assert(r < sums_r);
+//        assert(bo+2*id < sums_c);
+        //assert(sums_mat[IDX(r, bo+2*id, sums_ld)] < map_c);
+
+       // if(sums_mat[IDX(r, bo+2*id, sums_ld)] < map_c)
+        map_mat[IDX(r+offSet, sums_mat[IDX(r, bo+2*id, sums_ld)], map_ld)] = bo+2*id;
+    }
+
+    if(bo+2*id+1 < ir_c && ir_mat[IDX( r, bo+2*id+1, ir_ld )])
+    {
+       // if(sums_mat[IDX( r, bo+2*id+1, sums_ld )] < map_c)
+        map_mat[IDX( r+offSet, sums_mat[IDX( r, bo+2*id+1, sums_ld )], map_ld)] = bo+2*id+1;
+    }
 }
 
 __kernel void getCountsKernel(__global unint *counts,
@@ -484,7 +527,12 @@ __kernel void getCountsKernel(__global unint *counts,
 }
 
 
-//The basic 1-NN search kernel.
+/**The basic 1-NN search kernel.
+  * Q - query matrix
+  * X - representatives matrix
+  * dMins - output distances
+  * dMinIDs - output indexes
+  */
 __kernel void nnKernel(__global const real* Q_mat,
                         unint Q_r,
                         unint Q_c,
@@ -501,132 +549,146 @@ __kernel void nnKernel(__global const real* Q_mat,
                         __global real* dMins,
                         __global unint* dMinIDs)
 {
-  size_t blockIdx_x = get_group_id(0);
-  size_t blockIdx_y = get_group_id(1);
+    size_t blockIdx_y = get_group_id(1);
 
-  size_t threadIdx_x = get_local_id(0);
-  size_t threadIdx_y = get_local_id(1);
+    unint qB = blockIdx_y * BLOCK_SIZE + numDone;  //indexes Q
+    unint xB; //indexes X;
+    unint cB; //colBlock
+    unint offQ = get_local_id(1); //the offset of qPos in this block
+    unint offX = get_local_id(0); //ditto for x
+    unint i;
+    real ans;
 
-  unint qB = blockIdx_y * BLOCK_SIZE + numDone;  //indexes Q
-  unint xB; //indexes X;
-  unint cB; //colBlock
-  unint offQ = threadIdx_y; //the offset of qPos in this block
-  unint offX = threadIdx_x; //ditto for x
-  unint i;
-  real ans;
+    __local real min_val[BLOCK_SIZE][BLOCK_SIZE];
+    __local unint minPos[BLOCK_SIZE][BLOCK_SIZE];
 
-  __local real min_val[BLOCK_SIZE][BLOCK_SIZE];
-  __local unint minPos[BLOCK_SIZE][BLOCK_SIZE];
+    __local real Xs[BLOCK_SIZE][BLOCK_SIZE];
+    __local real Qs[BLOCK_SIZE][BLOCK_SIZE];
 
-  __local real Xs[BLOCK_SIZE][BLOCK_SIZE];
-  __local real Qs[BLOCK_SIZE][BLOCK_SIZE];
+    //min[offQ][offX]=MAX_REAL;
+    min_val[offQ][offX] = FLT_MAX;
 
-//  min[offQ][offX]=MAX_REAL;
-    min_val[offQ][offX]=FLT_MAX;
-
-  barrier(CLK_LOCAL_MEM_FENCE);
-
-  for(xB=0; xB<X_pr; xB+=BLOCK_SIZE){
-    ans=0;
-    for(cB=0; cB<X_pc; cB+=BLOCK_SIZE){
-
-      //Each thread loads one element of X and Q into memory.
-      Xs[offX][offQ] = X_mat[IDX( xB+offQ, cB+offX, X_ld )];
-      Qs[offX][offQ] = Q_mat[IDX( qB+offQ, cB+offX, Q_ld )];
-
-      barrier(CLK_LOCAL_MEM_FENCE);
-
-      for(i=0;i<BLOCK_SIZE;i++)
-        ans += DIST( Xs[i][offX], Qs[i][offQ] );
-
-      barrier(CLK_LOCAL_MEM_FENCE);
-    }
-
-    if( xB+offX<X_r && ans<min_val[offQ][offX] ){
-      minPos[offQ][offX] = xB+offX;
-      min_val[offQ][offX] = ans;
-    }
-  }
-
-  barrier(CLK_LOCAL_MEM_FENCE);
-
-
-  //reduce across threads
-  for(i=BLOCK_SIZE/2; i>0; i/=2){
-    if(offX<i){
-      if(min_val[offQ][offX+i]<min_val[offQ][offX]){
-        min_val[offQ][offX] = min_val[offQ][offX+i];
-        minPos[offQ][offX] = minPos[offQ][offX+i];
-      }
-    }
     barrier(CLK_LOCAL_MEM_FENCE);
-  }
 
-  if(offX==0){
-    dMins[qB+offQ] = min_val[offQ][0];
-    dMinIDs[qB+offQ] = minPos[offQ][0];
-  }
+    for(xB = 0; xB < X_pr; xB += BLOCK_SIZE)
+    {
+        ans = 0;
+
+        for(cB = 0; cB < X_pc; cB += BLOCK_SIZE)
+        {
+            //Each thread loads one element of X and Q into memory.
+            Xs[offX][offQ] = X_mat[IDX(xB + offQ, cB + offX, X_ld)];
+            Qs[offX][offQ] = Q_mat[IDX(qB + offQ, cB + offX, Q_ld)];
+
+            barrier(CLK_LOCAL_MEM_FENCE);
+
+            for(i = 0; i < BLOCK_SIZE; i++)
+                ans += DIST(Xs[i][offX], Qs[i][offQ]);
+
+            barrier(CLK_LOCAL_MEM_FENCE);
+        }
+
+        if(xB + offX < X_r && ans < min_val[offQ][offX])
+        {
+            minPos[offQ][offX] = xB + offX;
+            min_val[offQ][offX] = ans;
+        }
+    }
+
+    barrier(CLK_LOCAL_MEM_FENCE);
+
+    //reduce across threads
+    for(i = BLOCK_SIZE / 2; i > 0; i /= 2)
+    {
+        if(offX < i)
+        {
+            if(min_val[offQ][offX+i]<min_val[offQ][offX])
+            {
+                min_val[offQ][offX] = min_val[offQ][offX+i];
+                minPos[offQ][offX] = minPos[offQ][offX+i];
+            }
+        }
+        barrier(CLK_LOCAL_MEM_FENCE);
+    }
+
+    if(offX == 0)
+    {
+        dMins[qB+offQ] = min_val[offQ][0];
+        dMinIDs[qB+offQ] = minPos[offQ][0];
+    }
 }
 
 
 //min-max gate: it sets the minimum of x and y into x, the maximum into y, and
 //exchanges the indices (xi and yi) accordingly.
-void mmGateI(__local real *x, __local real *y, __local unint *xi, __local unint *yi){
-  int ti = MINi( *x, *y, *xi, *yi );
-  *yi = MAXi( *x, *y, *xi, *yi );
-  *xi = ti;
-  real t = MIN( *x, *y );
-  *y = MAX( *x, *y );
-  *x = t;
+void mmGateI(__local real *x, __local real *y,
+             __local unint *xi, __local unint *yi)
+{
+    int ti = MINi( *x, *y, *xi, *yi );
+    *yi = MAXi( *x, *y, *xi, *yi );
+    *xi = ti;
+    real t = MIN( *x, *y );
+    *y = MAX( *x, *y );
+    *x = t;
 }
 
 //This is the same as sort16, but takes as input lists of length 48
 //and sorts the last 16 entries.  This cleans up some of the NN code,
 //though it is inelegant.
-void sort16off(__local real x[][48], __local unint xi[][48]){
-  int i = get_local_id(0);
-  int j = get_local_id(1);
+void sort16off(__local real x[][48], __local unint xi[][48])
+{
+    int i = get_local_id(0);
+    int j = get_local_id(1);
 
-  if(i%2==0)
-    mmGateI( x[j]+KMAX+i, x[j]+KMAX+i+1, xi[j]+KMAX+i, xi[j]+KMAX+i+1 );
-  barrier(CLK_LOCAL_MEM_FENCE);
+    if(i%2==0)
+        mmGateI( x[j]+KMAX+i, x[j]+KMAX+i+1, xi[j]+KMAX+i, xi[j]+KMAX+i+1 );
 
-  if(i%4<2)
-    mmGateI( x[j]+KMAX+i, x[j]+KMAX+i+2, xi[j]+KMAX+i, xi[j]+KMAX+i+2 );
-  barrier(CLK_LOCAL_MEM_FENCE);
+    barrier(CLK_LOCAL_MEM_FENCE);
 
-  if(i%4==1)
-    mmGateI( x[j]+KMAX+i, x[j]+KMAX+i+1, xi[j]+KMAX+i, xi[j]+KMAX+i+1 );
-  barrier(CLK_LOCAL_MEM_FENCE);
+    if(i%4<2)
+        mmGateI( x[j]+KMAX+i, x[j]+KMAX+i+2, xi[j]+KMAX+i, xi[j]+KMAX+i+2 );
 
-  if(i%8<4)
-    mmGateI( x[j]+KMAX+i, x[j]+KMAX+i+4, xi[j]+KMAX+i, xi[j]+KMAX+i+4 );
-  barrier(CLK_LOCAL_MEM_FENCE);
+    barrier(CLK_LOCAL_MEM_FENCE);
 
-  if(i%8==2 || i%8==3)
-    mmGateI( x[j]+KMAX+i, x[j]+KMAX+i+2, xi[j]+KMAX+i, xi[j]+KMAX+i+2 );
-  barrier(CLK_LOCAL_MEM_FENCE);
+    if(i%4==1)
+        mmGateI( x[j]+KMAX+i, x[j]+KMAX+i+1, xi[j]+KMAX+i, xi[j]+KMAX+i+1 );
 
-  if( i%2 && i%8 != 7 )
-    mmGateI( x[j]+KMAX+i, x[j]+KMAX+i+1, xi[j]+KMAX+i, xi[j]+KMAX+i+1 );
-  barrier(CLK_LOCAL_MEM_FENCE);
+    barrier(CLK_LOCAL_MEM_FENCE);
 
-  //0-7; 8-15 now sorted.  merge time.
-  if( i<8)
-    mmGateI( x[j]+KMAX+i, x[j]+KMAX+i+8, xi[j]+KMAX+i, xi[j]+KMAX+i+8 );
-  barrier(CLK_LOCAL_MEM_FENCE);
+    if(i%8<4)
+        mmGateI( x[j]+KMAX+i, x[j]+KMAX+i+4, xi[j]+KMAX+i, xi[j]+KMAX+i+4 );
 
-  if( i>3 && i<8 )
-    mmGateI( x[j]+KMAX+i, x[j]+KMAX+i+4, xi[j]+KMAX+i, xi[j]+KMAX+i+4 );
-  barrier(CLK_LOCAL_MEM_FENCE);
+    barrier(CLK_LOCAL_MEM_FENCE);
 
-  int os = (i/2)*4+2 + i%2;
-  if(i<6)
-    mmGateI( x[j]+KMAX+os, x[j]+KMAX+os+2, xi[j]+KMAX+os, xi[j]+KMAX+os+2 );
-  barrier(CLK_LOCAL_MEM_FENCE);
+    if(i%8==2 || i%8==3)
+        mmGateI( x[j]+KMAX+i, x[j]+KMAX+i+2, xi[j]+KMAX+i, xi[j]+KMAX+i+2 );
 
-  if( i%2 && i<15)
-    mmGateI( x[j]+KMAX+i, x[j]+KMAX+i+1, xi[j]+KMAX+i, xi[j]+KMAX+i+1 );
+    barrier(CLK_LOCAL_MEM_FENCE);
+
+    if( i%2 && i%8 != 7 )
+        mmGateI( x[j]+KMAX+i, x[j]+KMAX+i+1, xi[j]+KMAX+i, xi[j]+KMAX+i+1 );
+
+    barrier(CLK_LOCAL_MEM_FENCE);
+
+    //0-7; 8-15 now sorted.  merge time.
+    if( i<8)
+        mmGateI( x[j]+KMAX+i, x[j]+KMAX+i+8, xi[j]+KMAX+i, xi[j]+KMAX+i+8 );
+
+    barrier(CLK_LOCAL_MEM_FENCE);
+
+    if( i>3 && i<8 )
+        mmGateI( x[j]+KMAX+i, x[j]+KMAX+i+4, xi[j]+KMAX+i, xi[j]+KMAX+i+4 );
+
+    barrier(CLK_LOCAL_MEM_FENCE);
+
+    int os = (i/2)*4+2 + i%2;
+    if(i<6)
+        mmGateI( x[j]+KMAX+os, x[j]+KMAX+os+2, xi[j]+KMAX+os, xi[j]+KMAX+os+2 );
+
+    barrier(CLK_LOCAL_MEM_FENCE);
+
+    if( i%2 && i<15)
+        mmGateI( x[j]+KMAX+i, x[j]+KMAX+i+1, xi[j]+KMAX+i, xi[j]+KMAX+i+1 );
 }
 
 
@@ -634,40 +696,46 @@ void sort16off(__local real x[][48], __local unint xi[][48]){
 // that the first 32 numbers are sorted, and the last 16 numbers.  The
 // routine then merges these lists into one sorted list of length 48.
 void merge32x16(__local real x[][48], __local unint xi[][48]){
-  int i = get_local_id(0);
-  int j = get_local_id(1);
 
-  mmGateI( x[j]+i, x[j]+i+32, xi[j]+i, xi[j]+i+32 );
-  barrier(CLK_LOCAL_MEM_FENCE);
+    int i = get_local_id(0);
+    int j = get_local_id(1);
 
-  mmGateI( x[j]+i+16, x[j]+i+32, xi[j]+i+16, xi[j]+i+32 );
-  barrier(CLK_LOCAL_MEM_FENCE);
+    mmGateI( x[j]+i, x[j]+i+32, xi[j]+i, xi[j]+i+32 );
 
-  int os = (i<8)? 24: 0;
-  mmGateI( x[j]+os+i, x[j]+os+i+8, xi[j]+os+i, xi[j]+os+i+8 );
-  barrier(CLK_LOCAL_MEM_FENCE);
+    barrier(CLK_LOCAL_MEM_FENCE);
 
-  os = (i/4)*8+4 + i%4;
-  mmGateI( x[j]+os, x[j]+os+4, xi[j]+os, xi[j]+os+4 );
-  if(i<4)
-    mmGateI(x[j]+36+i, x[j]+36+i+4, xi[j]+36+i, xi[j]+36+i+4 );
-  barrier(CLK_LOCAL_MEM_FENCE);
+    mmGateI( x[j]+i+16, x[j]+i+32, xi[j]+i+16, xi[j]+i+32 );
 
-  os = (i/2)*4+2 + i%2;
-  mmGateI( x[j]+os, x[j]+os+2, xi[j]+os, xi[j]+os+2 );
+    barrier(CLK_LOCAL_MEM_FENCE);
 
-  os = (i/2)*4+34 + i%2;
-  if(i<6)
+    int os = (i<8)? 24: 0;
+    mmGateI( x[j]+os+i, x[j]+os+i+8, xi[j]+os+i, xi[j]+os+i+8 );
+
+    barrier(CLK_LOCAL_MEM_FENCE);
+
+    os = (i/4)*8+4 + i%4;
+    mmGateI( x[j]+os, x[j]+os+4, xi[j]+os, xi[j]+os+4 );
+
+    if(i<4)
+        mmGateI(x[j]+36+i, x[j]+36+i+4, xi[j]+36+i, xi[j]+36+i+4 );
+
+    barrier(CLK_LOCAL_MEM_FENCE);
+
+    os = (i/2)*4+2 + i%2;
     mmGateI( x[j]+os, x[j]+os+2, xi[j]+os, xi[j]+os+2 );
-  barrier(CLK_LOCAL_MEM_FENCE);
 
-  os = 2*i+1;
-  mmGateI(x[j]+os, x[j]+os+1, xi[j]+os, xi[j]+os+1 );
+    os = (i/2)*4+34 + i%2;
+    if(i<6)
+        mmGateI( x[j]+os, x[j]+os+2, xi[j]+os, xi[j]+os+2 );
 
-  os = 2*i+33;
-  if(i<7)
+    barrier(CLK_LOCAL_MEM_FENCE);
+
+    os = 2*i+1;
     mmGateI(x[j]+os, x[j]+os+1, xi[j]+os, xi[j]+os+1 );
 
+    os = 2*i+33;
+    if(i<7)
+        mmGateI(x[j]+os, x[j]+os+1, xi[j]+os, xi[j]+os+1 );
 }
 
 
@@ -795,3 +863,96 @@ __kernel void planKNNKernel(__global const real* Q_mat,
     }
 }
 
+//Computes the 32-NNs for each query in Q.  It is similar to nnKernel above, but maintains a
+//list of the 32 currently-closest points in the DB, instead of just the single NN.  After each
+//batch of 16 points is processed, it sorts these 16 points according to the distance from the
+//query, then merges this list with the other list.
+__kernel void knnKernel(__global const real* Q_mat,
+                        unint Q_r,
+                        unint Q_c,
+                        unint Q_pr,
+                        unint Q_pc,
+                        unint Q_ld,
+                        unint numDone,
+                        __global const real* X_mat,
+                        unint X_r,
+                        unint X_c,
+                        unint X_pr,
+                        unint X_pc,
+                        unint X_ld,
+                        __global real* dMins_mat,
+                        unint dMins_r,
+                        unint dMins_c,
+                        unint dMins_pr,
+                        unint dMins_pc,
+                        unint dMins_ld,
+                        __global unint* dMinIDs_mat,
+                        unint dMinIDs_r,
+                        unint dMinIDs_c,
+                        unint dMinIDs_pr,
+                        unint dMinIDs_pc,
+                        unint dMinIDs_ld)
+{
+  //unint qB = blockIdx.y * BLOCK_SIZE + numDone;  //indexes Q
+
+    unint qB = get_group_id(1) * BLOCK_SIZE + numDone;  //indexes Q
+
+    unint xB; //indexes X;
+    unint cB; //colBlock
+    unint offQ = get_local_id(1);//threadIdx.y; //the offset of qPos in this block
+    unint offX = get_local_id(0);//threadIdx.x; //ditto for x
+    unint i;
+    real ans;
+
+    __local real Xs[BLOCK_SIZE][BLOCK_SIZE];
+    __local real Qs[BLOCK_SIZE][BLOCK_SIZE];
+
+    __local real dNN[BLOCK_SIZE][KMAX+BLOCK_SIZE];
+    __local unint idNN[BLOCK_SIZE][KMAX+BLOCK_SIZE];
+
+    dNN[offQ][offX] = FLT_MAX;//MAX_REAL;
+    dNN[offQ][offX+16] = FLT_MAX;//MAX_REAL;
+    idNN[offQ][offX] = DUMMY_IDX;
+    idNN[offQ][offX+16] = DUMMY_IDX;
+
+    barrier(CLK_LOCAL_MEM_FENCE);
+
+    for(xB = 0; xB < X_pr; xB += BLOCK_SIZE)
+    {
+        ans=0;
+
+        for(cB=0; cB < X_pc; cB += BLOCK_SIZE)
+        {
+
+            //Each thread loads one element of X and Q into memory.
+            Xs[offX][offQ] = X_mat[IDX(xB + offQ, cB + offX, X_ld)];
+            Qs[offX][offQ] = Q_mat[IDX(qB + offQ, cB + offX, Q_ld)];
+
+            barrier(CLK_LOCAL_MEM_FENCE);
+
+            for(i = 0; i < BLOCK_SIZE; i++)
+                ans += DIST(Xs[i][offX], Qs[i][offQ]);
+
+            barrier(CLK_LOCAL_MEM_FENCE);
+        }
+
+        //dNN[offQ][offX+32] = (xB+offX<X.r)? ans:MAX_REAL;
+        dNN[offQ][offX + 32] = (xB + offX < X_r) ? ans : FLT_MAX;
+        idNN[offQ][offX + 32] = xB + offX;
+
+        barrier(CLK_LOCAL_MEM_FENCE);
+
+        sort16off(dNN, idNN);
+
+        barrier(CLK_LOCAL_MEM_FENCE);
+
+        merge32x16(dNN, idNN);
+    }
+
+    barrier(CLK_LOCAL_MEM_FENCE);
+
+    dMins_mat[IDX(qB + offQ, offX, dMins_ld)] = dNN[offQ][offX];
+    dMins_mat[IDX(qB + offQ, offX + 16, dMins_ld)] = dNN[offQ][offX + 16];
+    dMinIDs_mat[IDX(qB + offQ, offX, dMins_ld)] = idNN[offQ][offX];
+    dMinIDs_mat[IDX(qB + offQ, offX + 16, dMins_ld)] = idNN[offQ][offX + 16];
+}

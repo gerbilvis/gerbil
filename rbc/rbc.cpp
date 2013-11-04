@@ -7,7 +7,7 @@
 
 #include<sys/time.h>
 #include<stdio.h>
-#include<cuda.h>
+//#include<cuda.h>
 #include "utils.h"
 #include "defs.h"
 #include "utilsGPU.h"
@@ -68,8 +68,13 @@ void queryRBC(const matrix q, const rbcStruct rbcS, unint *NNs, real* NNdists){
   free(groupCountQ);
 }*/
 
-//This function is very similar to queryRBC, with a couple of basic changes to handle
-//k-nn.  
+/** This function is very similar to queryRBC, with a couple of basic changes to handle
+  * k-nn.
+  * q - query
+  * rbcS - rbc structure
+  * NNs - output matrix of indexes
+  * NNdists - output matrix of distances
+  */
 void kqueryRBC(const matrix q, const ocl_rbcStruct rbcS, intMatrix NNs, matrix NNdists){
   unint m = q.r;
   unint numReps = rbcS.dr.r;
@@ -102,13 +107,21 @@ void kqueryRBC(const matrix q, const ocl_rbcStruct rbcS, intMatrix NNs, matrix N
   unint *groupCountQ;
   groupCountQ = (unint*)calloc( PAD(numReps), sizeof(*groupCountQ) );
   
+  /**
+   * repIDsQ - indexes of nearest represetatives for consecutive
+   *           elements from dq
+   * distToRepsQ - distances to nearest representatives
+   */
   computeReps(dq, rbcS.dr, repIDsQ, distToRepsQ);
 
   array_to_file(repIDsQ, m, "repIDsQ.txt");
   array_to_file(distToRepsQ, m, "distToRepsQ.txt");
 
 
-  //How many points are assigned to each group?
+  /** How many points are assigned to each group?
+    * m - numer of query points
+    * groupCountQ - representative occurence histogram
+    */
   computeCounts(repIDsQ, m, groupCountQ);
   
   //Set up the mapping from groups to queries (qMap).
@@ -245,25 +258,56 @@ void buildRBC(const matrix x, ocl_rbcStruct *rbcS, unint numReps, unint s){
   unint row = 0; //base row for iteration of while loop
   unint pi, pip; //pi=pts per it, pip=pad(pi)
 
-  while( numLeft > 0 ){
-    pi = MIN(ptsAtOnce, numLeft);  //points to do this iteration.
-    pip = PAD(pi);
-    dD.r = pi; dD.pr = pip; dir.r=pi; dir.pr=pip; dSums.r=pi; dSums.pr=pip;
+    while( numLeft > 0 )
+    {
+        pi = MIN(ptsAtOnce, numLeft);  //points to do this iteration.
+        pip = PAD(pi);
+        dD.r = pi; dD.pr = pip; dir.r=pi; dir.pr=pip; dSums.r=pi; dSums.pr=pip;
 
-    distSubMat(rbcS->dr, rbcS->dx, dD, row, pip); //compute the distance matrix
+        /** compute the distance matrix
+         *  rbcS->dr - matrix of representatives (choosen from input data)
+         *  rbcS->dx - matrix of input data
+         *  dD - matrix of distances
+         */
+        distSubMat(rbcS->dr, rbcS->dx, dD, row, pip);
 
-    device_matrix_to_file(rbcS->dr, "srbS_dr0.txt");
+        device_matrix_to_file(dD, "distances.txt");
 
-    findRangeWrap(dD, dranges, s);  //find an appropriate range
-    rangeSearchWrap(dD, dranges, dir); //set binary vector for points in range
-    sumWrap(dir, dSums);  //This and the next call perform the parallel compaction.
-    buildMapWrap(rbcS->dxMap, dir, dSums, row);
-    getCountsWrap(dCnts,dir,dSums);  //How many points are assigned to each rep?  It is not 
-                                     //*exactly* s, which is why we need to compute this.
+        device_matrix_to_file(rbcS->dr, "srbS_dr0.txt");
 
-    //cudaMemcpy( &rbcS->groupCount[row], dCnts, pi*sizeof(*rbcS->groupCount), cudaMemcpyDeviceToHost );
+        /** find an appropriate range
+         *  dD - matrix of distances
+         *  dranges - vector of maximal value for each row
+         *  s - desired number of values within a range
+         */
+        findRangeWrap(dD, dranges, s);
 
-    err = queue.enqueueReadBuffer(dCnts, CL_TRUE, 0,
+        /** set binary vector for points in range
+         *  dD - matrix of disances
+         *  dranges - buffer of range upper bounds
+         *  dir - matrix (the same size as dD) containing binary indication
+         *        if corresponding value from dD belongs to the range
+         */
+        rangeSearchWrap(dD, dranges, dir);
+
+        device_matrix_to_file(dir, "bin_vec.txt");
+
+        sumWrap(dir, dSums);  //This and the next call perform the parallel compaction.
+
+        device_matrix_to_file(dSums, "dSums.txt");
+
+        buildMapWrap(rbcS->dxMap, dir, dSums, row);
+
+        device_matrix_to_file(rbcS->dxMap, "dxMap.txt");
+
+        getCountsWrap(dCnts,dir,dSums);  //How many points are assigned to each rep?  It is not
+                                         //*exactly* s, which is why we need to compute this.
+
+        buffer_to_file<unint>(dCnts, pi, "dCnts.txt");
+
+//    //cudaMemcpy( &rbcS->groupCount[row], dCnts, pi*sizeof(*rbcS->groupCount), cudaMemcpyDeviceToHost );
+
+        err = queue.enqueueReadBuffer(dCnts, CL_TRUE, 0,
                                   pi * sizeof(unint), rbcS->groupCount);
 
     for(int i = 0; i < pi; ++i)
@@ -317,10 +361,14 @@ void setupReps(matrix x, ocl_rbcStruct *rbcS, unint numReps){
 }
 
 
-//Assign each point in dq to its nearest point in dr.  
-void computeReps(const ocl_matrix& dq, const ocl_matrix& dr, unint *repIDs, real *distToReps){
-//  real *dMins;
-//  unint *dMinIDs;
+/** Assign each point in dq to its nearest point in dr.
+  *
+  */
+void computeReps(const ocl_matrix& dq, const ocl_matrix& dr,
+                 unint *repIDs, real *distToReps)
+{
+    //  real *dMins;
+    //  unint *dMinIDs;
 
     cl::Context& context = OclContextHolder::context;
     cl::CommandQueue& queue = OclContextHolder::queue;
@@ -336,24 +384,25 @@ void computeReps(const ocl_matrix& dq, const ocl_matrix& dr, unint *repIDs, real
     cl::Buffer dMinIDs(context, CL_TRUE, byte_size, 0, &err);
     checkErr(err);
 
-  //checkErr( cudaMalloc((void**)&(dMins), dq.pr*sizeof(*dMins)) );
-  //checkErr( cudaMalloc((void**)&(dMinIDs), dq.pr*sizeof(*dMinIDs)) );
-  
-  nnWrap(dq,dr,dMins,dMinIDs);
+    //checkErr( cudaMalloc((void**)&(dMins), dq.pr*sizeof(*dMins)) );
+    //checkErr( cudaMalloc((void**)&(dMinIDs), dq.pr*sizeof(*dMinIDs)) );
 
-  byte_size = dq.r*sizeof(real);
-  err = queue.enqueueReadBuffer(dMins, CL_TRUE, 0, byte_size, distToReps);
-  checkErr(err);
-  
-  byte_size = dq.r*sizeof(unint);
-  err = queue.enqueueReadBuffer(dMinIDs, CL_TRUE, 0, byte_size, repIDs);
-  checkErr(err);
+    nnWrap(dq,dr,dMins,dMinIDs);
 
-  //cudaMemcpy(distToReps,dMins,dq.r*sizeof(*dMins),cudaMemcpyDeviceToHost);
-  //cudaMemcpy(repIDs,dMinIDs,dq.r*sizeof(*dMinIDs),cudaMemcpyDeviceToHost);
-  
-  //cudaFree(dMins);
-  //cudaFree(dMinIDs);
+    // POTENTIAL PERFORMANCE BOTTLENECK:
+
+    byte_size = dq.r*sizeof(real);
+    err = queue.enqueueReadBuffer(dMins, CL_TRUE, 0, byte_size, distToReps);
+    checkErr(err);
+
+    byte_size = dq.r*sizeof(unint);
+    err = queue.enqueueReadBuffer(dMinIDs, CL_TRUE, 0, byte_size, repIDs);
+    checkErr(err);
+
+    //cudaMemcpy(distToReps,dMins,dq.r*sizeof(*dMins),cudaMemcpyDeviceToHost);
+    //cudaMemcpy(repIDs,dMinIDs,dq.r*sizeof(*dMinIDs),cudaMemcpyDeviceToHost);
+    //cudaFree(dMins);
+    //cudaFree(dMinIDs);
 }
 
 
@@ -375,32 +424,43 @@ void computeCounts(unint *repIDs, unint n, unint *groupCount){
 }
 
 
-void buildQMap(matrix q, unint *qMap, unint *repIDs, unint numReps, unint *compLength){
-  unint n=q.r;
-  unint i;
-  unint *gS; //groupSize
-  
-  gS = (unint*)calloc(numReps+1,sizeof(*gS));
-  
-  for( i=0; i<n; i++ )
-    gS[repIDs[i]+1]++;
-  for( i=0; i<numReps+1; i++ )
-    gS[i]=PAD(gS[i]);
-  
-  for( i=1; i<numReps+1; i++ )
-    gS[i]=gS[i-1]+gS[i];
-  
-  *compLength = gS[numReps];
-  
-  for( i=0; i<(*compLength); i++ )
-    qMap[i]=DUMMY_IDX;
-  
-  for( i=0; i<n; i++ ){
-    qMap[gS[repIDs[i]]]=i;
-    gS[repIDs[i]]++;
-  }
+void buildQMap(matrix q, unint *qMap, unint *repIDs,
+               unint numReps, unint *compLength)
+{
+    unint n=q.r;
+    unint i;
+    unint *gS; //groupSize
 
-  free(gS);
+    gS = (unint*)calloc(numReps+1,sizeof(*gS));
+
+    /** histogram /
+    for(i = 0; i < n; i++)
+        gS[repIDs[i]+1]++;
+
+    /** padding */
+    for(i = 0; i < numReps + 1; i++)
+        gS[i] = PAD(gS[i]);
+
+    /** exclusive prefix sum */
+    for(i = 1; i < numReps + 1; i++)
+        gS[i] = gS[i - 1] + gS[i];
+
+    /** number of queries after padding */
+    *compLength = gS[numReps];
+
+    /** map initialization */
+    for(i = 0; i < (*compLength); i++)
+        qMap[i] = DUMMY_IDX;
+
+
+
+    for(i = 0; i < n; i++)
+    {
+        qMap[gS[repIDs[i]]] = i;
+        gS[repIDs[i]]++;
+    }
+
+    free(gS);
 }
 
 

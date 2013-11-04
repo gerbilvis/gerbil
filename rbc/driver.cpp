@@ -17,7 +17,7 @@ void readData(char*,matrix);
 void readDataText(char*,matrix);
 void evalNNerror(matrix, matrix, unint*);
 void evalKNNerror(matrix,matrix,intMatrix);
-void writeNeighbs(char*,char*,intMatrix,matrix);
+void writeNeighbs(const char*, const char*,intMatrix,matrix);
 
 char *dataFileX, *dataFileQ, *dataFileXtxt, *dataFileQtxt, *outFile, *outFiletxt;
 char runBrute=0, runEval=0;
@@ -106,6 +106,8 @@ int main(int argc, char**argv){
     bruteK( x, q, nnsBrute, distsBrute );
     gettimeofday( &tvE, NULL );
     printf( "\t.. time elapsed = %6.4f \n", timeDiff(tvB,tvE) );
+
+    writeNeighbs(NULL, "output_brute.txt", nnsBrute, distsBrute);
     
     free( nnsBrute.mat );
     free( distsBrute.mat );
@@ -299,76 +301,89 @@ void readDataText(char *dataFile, matrix x){
 
 
 //evals the error rate of k-nns
-void evalKNNerror(matrix x, matrix q, intMatrix NNs){
-  struct timeval tvB, tvE;
-  unint i,j,k;
+void evalKNNerror(matrix x, matrix q, intMatrix NNs)
+{
+    struct timeval tvB, tvE;
+    unint i,j,k;
 
-  unint m = q.r;
-  printf("\nComputing error rates (this might take a while)\n");
-  
-  unint *ol = (unint*)calloc( q.r, sizeof(*ol) );
-  
-  intMatrix NNsB;
-  matrix distsBrute;
+    unint m = q.r;
+    printf("\nComputing error rates (this might take a while)\n");
 
-  initIntMat( &NNsB, q.r, KMAX );
-  initMat( &distsBrute, q.r, KMAX );
-  NNsB.mat = (unint*)calloc( sizeOfIntMat(NNsB), sizeof(*NNsB.mat) );
-  distsBrute.mat = (real*)calloc( sizeOfMat(distsBrute), sizeof(*distsBrute.mat) );
+    unint *ol = (unint*)calloc( q.r, sizeof(*ol) );
 
-  gettimeofday(&tvB,NULL);
-  bruteK(x,q,NNsB,distsBrute);
-  gettimeofday(&tvE,NULL);
+    intMatrix NNsB;
+    matrix distsBrute;
 
-   //calc overlap
-  for(i=0; i<m; i++){
-    for(j=0; j<KMAX; j++){
-      for(k=0; k<KMAX; k++){
-	ol[i] += ( NNs.mat[IDX(i, j, NNs.ld)] == NNsB.mat[IDX(i, k, NNsB.ld)] );
-      }
+    initIntMat( &NNsB, q.r, KMAX );
+    initMat( &distsBrute, q.r, KMAX );
+    NNsB.mat = (unint*)calloc( sizeOfIntMat(NNsB), sizeof(*NNsB.mat) );
+    distsBrute.mat = (real*)calloc( sizeOfMat(distsBrute), sizeof(*distsBrute.mat) );
+
+    gettimeofday(&tvB,NULL);
+    bruteK(x,q,NNsB,distsBrute);
+
+    gettimeofday(&tvE,NULL);
+
+    //calc overlap
+    for(i=0; i<m; i++)
+    {
+        for(j=0; j<KMAX; j++)
+        {
+            for(k=0; k<KMAX; k++)
+            {
+                ol[i] += (NNs.mat[IDX(i, j, NNs.ld)] == NNsB.mat[IDX(i, k, NNsB.ld)]);
+            }
+        }
     }
-  }
 
-  long int nc=0;
-  for(i=0;i<m;i++){
-    nc += ol[i];
-  }
+    long int nc=0;
+    for(i=0;i<m;i++)
+    {
+        nc += ol[i];
+    }
 
-  double mean = ((double)nc)/((double)m);
-  double var = 0.0;
-  for(i=0;i<m;i++) {
-    var += (((double)ol[i])-mean)*(((double)ol[i])-mean)/((double)m);
-  }
-  printf("\tavg overlap = %6.4f/%d; std dev = %6.4f \n", mean, KMAX, sqrt(var));
+    double mean = ((double)nc)/((double)m);
+    double var = 0.0;
 
-  real *ranges = (real*)calloc(q.pr,sizeof(*ranges));
-  for(i=0;i<q.r;i++){
-    ranges[i] = distVec(q,x,i,NNs.mat[IDX(i, KMAX-1, NNs.ld)]);
-  }
-    
-  unint *cnts = (unint*)calloc(q.pr,sizeof(*cnts));
-  bruteRangeCount(x,q,ranges,cnts);
-  
-  nc=0;
-  for(i=0;i<m;i++){
-    nc += cnts[i];
-  }
-  mean = ((double)nc)/((double)m);
-  var = 0.0;
-  for(i=0;i<m;i++) {
-    var += (((double)cnts[i])-mean)*(((double)cnts[i])-mean)/((double)m);
-  }
-  printf("\tavg actual rank of 32nd NN returned by the RBC = %6.4f; std dev = %6.4f \n\n", mean, sqrt(var));
-  printf("(brute k-nn took %6.4f) \n", timeDiff(tvB, tvE));
+    for(i=0;i<m;i++)
+    {
+        var += (((double)ol[i])-mean)*(((double)ol[i])-mean)/((double)m);
+    }
+    printf("\tavg overlap = %6.4f/%d; std dev = %6.4f \n", mean, KMAX, sqrt(var));
 
-  free(cnts);
-  free(ol);
-  free(NNsB.mat);
-  free(distsBrute.mat);
+    real *ranges = (real*)calloc(q.pr,sizeof(*ranges));
+    for(i=0;i<q.r;i++)
+    {
+        ranges[i] = distVec(q,x,i,NNs.mat[IDX(i, KMAX-1, NNs.ld)]);
+    }
+
+    unint *cnts = (unint*)calloc(q.pr,sizeof(*cnts));
+    bruteRangeCount(x,q,ranges,cnts);
+
+    nc=0;
+    for(i=0;i<m;i++)
+    {
+        nc += cnts[i];
+    }
+    mean = ((double)nc)/((double)m);
+    var = 0.0;
+    for(i=0;i<m;i++)
+    {
+        var += (((double)cnts[i])-mean)*(((double)cnts[i])-mean)/((double)m);
+    }
+    printf("\tavg actual rank of 32nd NN returned by the RBC = %6.4f; std dev = %6.4f \n\n", mean, sqrt(var));
+    printf("(brute k-nn took %6.4f) \n", timeDiff(tvB, tvE));
+
+    free(cnts);
+    free(ol);
+    free(NNsB.mat);
+    free(distsBrute.mat);
 }
 
 
-void writeNeighbs(char *file, char *filetxt, intMatrix NNs, matrix dNNs){
+void writeNeighbs(const char *file, const char *filetxt,
+                  intMatrix NNs, matrix dNNs)
+{
   unint i,j;
   
   if( filetxt ) { //write text

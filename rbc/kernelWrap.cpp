@@ -5,7 +5,7 @@
 #ifndef KERNELWRAP_CU
 #define KERNELWRAP_CU
 
-#include<cuda.h>
+//#include<cuda.h>
 #include<stdio.h>
 #include "kernels.h"
 #include "defs.h"
@@ -220,8 +220,9 @@ void nnWrap(const ocl_matrix& dq, const ocl_matrix& dx,
     //grid.x = 1;
 
     numDone = 0;
-    while( numDone < dq.pr ){
-        todo = MIN( dq.pr - numDone, MAX_BS*BLOCK_SIZE );
+    while( numDone < dq.pr )
+    {
+        todo = MIN(dq.pr - numDone, MAX_BS*BLOCK_SIZE);
         //grid.y = todo/BLOCK_SIZE;
 
         //cl::NDRange global(todo, BLOCK_SIZE);
@@ -273,7 +274,58 @@ void nnWrap(const ocl_matrix& dq, const ocl_matrix& dx,
 }
 
 
-void knnWrap(const ocl_matrix& dq, const ocl_matrix& dx, ocl_matrix& dMins, ocl_intMatrix& dMinIDs){
+void knnWrap(const ocl_matrix& dq, const ocl_matrix& dx,
+             ocl_matrix& dMins, ocl_intMatrix& dMinIDs){
+
+    cl::NDRange local(BLOCK_SIZE, BLOCK_SIZE);
+    //dim3 grid;
+    unint numDone, todo;
+//    grid.x = 1;
+
+    numDone = 0;
+    while( numDone < dq.pr )
+    {
+        todo = MIN(dq.pr - numDone, MAX_BS*BLOCK_SIZE);
+
+        cl::NDRange global(BLOCK_SIZE, todo);
+
+        cl::CommandQueue& queue = OclContextHolder::queue;
+        cl::Kernel& knnKernel = OclContextHolder::knnKernel;
+
+        knnKernel.setArg(0, dq.mat);
+        knnKernel.setArg(1, dq.r);
+        knnKernel.setArg(2, dq.c);
+        knnKernel.setArg(3, dq.pr);
+        knnKernel.setArg(4, dq.pc);
+        knnKernel.setArg(5, dq.ld);
+        knnKernel.setArg(6, numDone);
+        knnKernel.setArg(7, dx.mat);
+        knnKernel.setArg(8, dx.r);
+        knnKernel.setArg(9, dx.c);
+        knnKernel.setArg(10, dx.pr);
+        knnKernel.setArg(11, dx.pc);
+        knnKernel.setArg(12, dx.ld);
+        knnKernel.setArg(13, dMins.mat);
+        knnKernel.setArg(14, dMins.r);
+        knnKernel.setArg(15, dMins.c);
+        knnKernel.setArg(16, dMins.pr);
+        knnKernel.setArg(17, dMins.pc);
+        knnKernel.setArg(18, dMins.ld);
+        knnKernel.setArg(19, dMinIDs.mat);
+        knnKernel.setArg(20, dMinIDs.r);
+        knnKernel.setArg(21, dMinIDs.c);
+        knnKernel.setArg(22, dMinIDs.pr);
+        knnKernel.setArg(23, dMinIDs.pc);
+        knnKernel.setArg(24, dMinIDs.ld);
+
+        queue.enqueueNDRangeKernel(knnKernel, cl::NullRange,
+                                   global, local);
+
+        numDone += todo;
+    }
+
+
+
 /*  dim3 block(BLOCK_SIZE,BLOCK_SIZE);
   dim3 grid;
   unint numDone, todo;

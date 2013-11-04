@@ -104,9 +104,9 @@ void FAMS::ComputePilotPoint::operator()(const tbb::blocked_range<int> &r)
 	unsigned int nn;
 	unsigned int wjd = (unsigned int)(win_j * fams.d_);
 
-	LSHReader *lsh = NULL;
-	if (fams.lsh_)
-		lsh = new LSHReader(*fams.lsh_);
+    LSHReader *lsh = NULL;
+    if (fams.lsh_)
+        lsh = new LSHReader(*fams.lsh_);
 
 	int done = 0;
 	for (size_t j = r.begin(); j != r.end(); ++j) {
@@ -120,9 +120,9 @@ void FAMS::ComputePilotPoint::operator()(const tbb::blocked_range<int> &r)
 				if (nn < mwpwj)
 					numns[nn]++;
 			}
-		} else {
-			lsh->query(j);
-			const std::vector<unsigned int> &lshResult = lsh->getResult();
+        } else {
+            lsh->query(j);
+            const std::vector<unsigned int> &lshResult = lsh->getResult();
 			for (int i = 0; i < lshResult.size(); i++) {
 				nn = fams.DistL1(fams.points_[j], fams.points_[lshResult[i]])
 						/ wjd;
@@ -164,7 +164,7 @@ void FAMS::ComputePilotPoint::operator()(const tbb::blocked_range<int> &r)
 		}
 	}
 	fams.progressUpdate((float)done/(float)fams.n_ * 20.f, false);
-	delete lsh;
+    delete lsh;
 }
 
 // compute the pilot h_i's for the data points

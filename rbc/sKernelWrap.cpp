@@ -5,7 +5,7 @@
 #define SKERNELWRAP_CU
 
 #include "sKernel.h"
-#include<cuda.h>
+//#include<cuda.h>
 #include "defs.h"
 #include "utilsGPU.h"
 #include<stdio.h>
@@ -65,8 +65,15 @@ void getCountsWrap(cl::Buffer& counts, ocl_charMatrix& ir, ocl_intMatrix& sums){
   }*/
 }
 
-
-void buildMapWrap(ocl_intMatrix& map, ocl_charMatrix& ir, ocl_intMatrix& sums, unint offSet){
+/**
+ * @brief buildMapWrap
+ * @param map
+ * @param ir binary matrix (mask for selected distances)
+ * @param sums matrix with prefix sums
+ * @param offSet
+ */
+void buildMapWrap(ocl_intMatrix& map, ocl_charMatrix& ir,
+                  ocl_intMatrix& sums, unint offSet){
 
     unint numScans = (ir.c+SCAN_WIDTH-1)/SCAN_WIDTH;
 
@@ -128,53 +135,79 @@ void buildMapWrap(ocl_intMatrix& map, ocl_charMatrix& ir, ocl_intMatrix& sums, u
 }
 
 
-
+/** @brief Computes exclusive prefix sum for each row from sumWrap matrix
+ * @param in    matrix of binary values
+ * @param sum   matrix of prefix sums
+ */
 void sumWrap(ocl_charMatrix& in, ocl_intMatrix& sum){
 
     int i;
-      unint todo, numDone, temp;
-      unint n = in.c;
-      unint numScans = (n+SCAN_WIDTH-1)/SCAN_WIDTH;
-      unint depth = ceil( log(n) / log(SCAN_WIDTH) ) -1 ;
-      unint *width = (unint*)calloc( depth+1, sizeof(*width) );
+    unint todo, numDone, temp;
+    unint n = in.c;
+    unint numScans = (n+SCAN_WIDTH-1)/SCAN_WIDTH;
 
-//      intMatrix *dAux;
-//      dAux = (intMatrix*)calloc( depth+1, sizeof(*dAux) );
+    // number of scan iterations
+    unint depth = ceil(log(n) / log(SCAN_WIDTH)) - 1; // probably log2 should be used
 
-      cl::Context& context = OclContextHolder::context;
-      cl::CommandQueue& queue = OclContextHolder::queue;
+    unint *width = (unint*)calloc(depth+1, sizeof(*width));
 
+//  intMatrix *dAux;
+//  dAux = (intMatrix*)calloc( depth+1, sizeof(*dAux) );
 
-      ocl_intMatrix* dAux = new ocl_intMatrix[depth + 1];
+    cl::Context& context = OclContextHolder::context;
+    cl::CommandQueue& queue = OclContextHolder::queue;
 
-      for( i=0, temp=n; i<=depth; i++){
+    ocl_intMatrix* dAux = new ocl_intMatrix[depth + 1];
+
+    for( i=0, temp=n; i<=depth; i++){
+
+        /* number of partial results produced in i-th iteration */
         temp = (temp+SCAN_WIDTH-1)/SCAN_WIDTH;
-        dAux[i].r=dAux[i].pr=in.r; dAux[i].c=dAux[i].pc=dAux[i].ld=temp;
+        dAux[i].r = dAux[i].pr = in.r;
+        dAux[i].c = dAux[i].pc = dAux[i].ld = temp;
 
         int byte_size = dAux[i].pr*dAux[i].pc*sizeof(unint);
         cl_int err;
 
+        /* buffer for partial results in i-th iteration */
         dAux[i].mat = cl::Buffer(context, CL_MEM_READ_WRITE, byte_size, 0, &err);
         checkErr(err);
 
-        //checkErr( cudaMalloc( (void**)&dAux[i].mat, dAux[i].pr*dAux[i].pc*sizeof(*dAux[i].mat)));
-      }
+        //checkErr( cudaMalloc( (void**)&dAux[i].mat,
+        //dAux[i].pr*dAux[i].pc*sizeof(*dAux[i].mat)));
+    }
 
-      //dim3 block( SCAN_WIDTH/2, 1 );
-      cl::NDRange local(SCAN_WIDTH/2, 1);
-      //dim3 grid;
+    //dim3 block( SCAN_WIDTH/2, 1 );
+    //dim3 grid;
 
-      numDone=0;
-      while( numDone < in.r ){
+    cl::NDRange local(SCAN_WIDTH/2, 1);
+
+    numDone=0;
+
+    /** rows are completely independent from each other,
+     *  array will be processed in chunks in case of very large input datasets
+     */
+    while(numDone < in.r)
+    {
+        /* portion of rows to be processed in current iteration */
         todo = MIN( in.r - numDone, MAX_BS );
-        numScans = (n+SCAN_WIDTH-1)/SCAN_WIDTH;
-        dAux[0].r=dAux[0].pr=todo;
-//        grid.x = numScans;
-//        grid.y = todo;
 
-        cl::NDRange global(numScans * SCAN_WIDTH / 2, todo);
+        /* number of partial scans performed in current itaration
+           each work-group computes one partial scan */
+        numScans = (n + SCAN_WIDTH - 1) / SCAN_WIDTH;
+
+        dAux[0].r = dAux[0].pr = todo;
+
+        //grid.x = numScans;
+        //grid.y = todo;
+
+        cl::NDRange global(numScans * (SCAN_WIDTH / 2), todo);
 
         cl::Kernel& sumKernel = OclContextHolder::sumKernel;
+
+        /**
+          *  WHY numDone IS NOT PASSED TO THE sumKernel and used as a row offset??
+          */
 
         sumKernel.setArg(0, in.mat);
         sumKernel.setArg(1, in.r);
@@ -196,49 +229,66 @@ void sumWrap(ocl_charMatrix& in, ocl_intMatrix& sum){
         sumKernel.setArg(17, dAux[0].ld);
         sumKernel.setArg(18, n);
 
+        /** first step of parallel scan calculation */
         queue.enqueueNDRangeKernel(sumKernel, cl::NullRange, global, local);
+
         //sumKernel<<<grid,block>>>(in, sum, dAux[0], n);
+
+        device_matrix_to_file(sum, "dSums_internal.txt");
+        device_matrix_to_file(dAux[0], "dAux[0]_internal.txt");
 
         //cudaThreadSynchronize();
 
-        width[0] = numScans; // Necessary because following loop might not be entered
-        for( i=0; i<depth; i++ ){
-          width[i] = numScans;
-          numScans = (numScans+SCAN_WIDTH-1)/SCAN_WIDTH;
-          dAux[i+1].r=dAux[i+1].pr=todo;
+        /** The next steps works identically to the first step.
+          * The only difference is the need to use wider type for intput data
+          */
+        width[0] = numScans; /** Necessary because following loop
+                                 might not be entered */
+        for(i=0; i < depth; i++)
+        {
+            width[i] = numScans;
+            numScans = (numScans+SCAN_WIDTH-1)/SCAN_WIDTH;
+            dAux[i+1].r=dAux[i+1].pr=todo;
 
-          //grid.x = numScans;
-          cl::NDRange global(numScans * SCAN_WIDTH / 2, todo);
+            //grid.x = numScans;
+            cl::NDRange global(numScans * SCAN_WIDTH / 2, todo);
 
-          cl::Kernel& sumKernelI = OclContextHolder::sumKernelI;
+            cl::Kernel& sumKernelI = OclContextHolder::sumKernelI;
 
-          sumKernelI.setArg(0, dAux[i].mat);
-          sumKernelI.setArg(1, dAux[i].r);
-          sumKernelI.setArg(2, dAux[i].c);
-          sumKernelI.setArg(3, dAux[i].pr);
-          sumKernelI.setArg(4, dAux[i].pc);
-          sumKernelI.setArg(5, dAux[i].ld);
-          sumKernelI.setArg(6, dAux[i].mat);
-          sumKernelI.setArg(7, dAux[i].r);
-          sumKernelI.setArg(8, dAux[i].c);
-          sumKernelI.setArg(9, dAux[i].pr);
-          sumKernelI.setArg(10, dAux[i].pc);
-          sumKernelI.setArg(11, dAux[i].ld);
-          sumKernelI.setArg(12, dAux[i+1].mat);
-          sumKernelI.setArg(13, dAux[i+1].r);
-          sumKernelI.setArg(14, dAux[i+1].c);
-          sumKernelI.setArg(15, dAux[i+1].pr);
-          sumKernelI.setArg(16, dAux[i+1].pc);
-          sumKernelI.setArg(17, dAux[i+1].ld);
-          sumKernelI.setArg(18, width[i]);
+            sumKernelI.setArg(0, dAux[i].mat);
+            sumKernelI.setArg(1, dAux[i].r);
+            sumKernelI.setArg(2, dAux[i].c);
+            sumKernelI.setArg(3, dAux[i].pr);
+            sumKernelI.setArg(4, dAux[i].pc);
+            sumKernelI.setArg(5, dAux[i].ld);
+            sumKernelI.setArg(6, dAux[i].mat);
+            sumKernelI.setArg(7, dAux[i].r);
+            sumKernelI.setArg(8, dAux[i].c);
+            sumKernelI.setArg(9, dAux[i].pr);
+            sumKernelI.setArg(10, dAux[i].pc);
+            sumKernelI.setArg(11, dAux[i].ld);
+            sumKernelI.setArg(12, dAux[i+1].mat);
+            sumKernelI.setArg(13, dAux[i+1].r);
+            sumKernelI.setArg(14, dAux[i+1].c);
+            sumKernelI.setArg(15, dAux[i+1].pr);
+            sumKernelI.setArg(16, dAux[i+1].pc);
+            sumKernelI.setArg(17, dAux[i+1].ld);
+            sumKernelI.setArg(18, width[i]);
 
-          queue.enqueueNDRangeKernel(sumKernelI, cl::NullRange, global, local);
+            queue.enqueueNDRangeKernel(sumKernelI, cl::NullRange,
+                                       global, local);
+
+            device_matrix_to_file(dAux[0], "dAux[0]_internal_2.txt");
+            device_matrix_to_file(dAux[1], "dAux[1]_internal_2.txt");
+
+            //for(int j = 0)
 
 //          sumKernelI<<<grid,block>>>(dAux[i], dAux[i], dAux[i+1], width[i]);
 //          cudaThreadSynchronize();
         }
 
-        for( i=depth-1; i>0; i-- ){
+        for(i = ((int)depth) - 1; i > 0; i--)
+        {
         //  grid.x = width[i];
 
             cl::NDRange global(width[i] * SCAN_WIDTH / 2, todo);
@@ -260,9 +310,11 @@ void sumWrap(ocl_charMatrix& in, ocl_intMatrix& sum){
             combineSumKernel.setArg(12, dAux[i].ld);
             combineSumKernel.setArg(13, width[i-1]);
 
-            queue.enqueueNDRangeKernel(combineSumKernel, cl::NullRange, global, local);
+            queue.enqueueNDRangeKernel(combineSumKernel, cl::NullRange,
+                                       global, local);
 
-         // combineSumKernel<<<grid,block>>>(dAux[i-1], numDone, dAux[i], width[i-1]);
+         // combineSumKernel<<<grid,block>>>(dAux[i-1], numDone,
+         // dAux[i], width[i-1]);
          // cudaThreadSynchronize();
         }
 
@@ -270,101 +322,44 @@ void sumWrap(ocl_charMatrix& in, ocl_intMatrix& sum){
        // combineSumKernel<<<grid,block>>>(sum, numDone, dAux[0], n);
        // cudaThreadSynchronize();
 
-        global = cl::NDRange(width[0] * SCAN_WIDTH / 2, todo);
+        if(depth)
+        {
+            global = cl::NDRange(width[0] * (SCAN_WIDTH / 2), todo);
 
-        cl::Kernel& combineSumKernel = OclContextHolder::combineSumKernel;
+            cl::Kernel& combineSumKernel = OclContextHolder::combineSumKernel;
 
-        combineSumKernel.setArg(0, sum.mat);
-        combineSumKernel.setArg(1, sum.r);
-        combineSumKernel.setArg(2, sum.c);
-        combineSumKernel.setArg(3, sum.pr);
-        combineSumKernel.setArg(4, sum.pc);
-        combineSumKernel.setArg(5, sum.ld);
-        combineSumKernel.setArg(6, numDone);
-        combineSumKernel.setArg(7, dAux[0].mat);
-        combineSumKernel.setArg(8, dAux[0].r);
-        combineSumKernel.setArg(9, dAux[0].c);
-        combineSumKernel.setArg(10, dAux[0].pr);
-        combineSumKernel.setArg(11, dAux[0].pc);
-        combineSumKernel.setArg(12, dAux[0].ld);
-        combineSumKernel.setArg(13, n);
+            combineSumKernel.setArg(0, sum.mat);
+            combineSumKernel.setArg(1, sum.r);
+            combineSumKernel.setArg(2, sum.c);
+            combineSumKernel.setArg(3, sum.pr);
+            combineSumKernel.setArg(4, sum.pc);
+            combineSumKernel.setArg(5, sum.ld);
+            combineSumKernel.setArg(6, numDone);
+            combineSumKernel.setArg(7, dAux[0].mat);
+            combineSumKernel.setArg(8, dAux[0].r);
+            combineSumKernel.setArg(9, dAux[0].c);
+            combineSumKernel.setArg(10, dAux[0].pr);
+            combineSumKernel.setArg(11, dAux[0].pc);
+            combineSumKernel.setArg(12, dAux[0].ld);
+            combineSumKernel.setArg(13, n);
 
-        queue.enqueueNDRangeKernel(combineSumKernel, cl::NullRange, global, local);
+            queue.enqueueNDRangeKernel(combineSumKernel, cl::NullRange,
+                                      global, local);
+        }
 
+        device_matrix_to_file(dAux[0], "dAux[0]_internal_final.txt");
+
+        device_matrix_to_file(sum, "dSums_internal_1.txt");
 
         numDone += todo;
-      }
+    }
 
 //      for( i=0; i<=depth; i++)
 //       cudaFree(dAux[i].mat);
       //free(dAux);
 
       delete[] dAux;
-
       free(width);
-
-
-
-
-
-/*  int i;
-  unint todo, numDone, temp;
-  unint n = in.c;
-  unint numScans = (n+SCAN_WIDTH-1)/SCAN_WIDTH;
-  unint depth = ceil( log(n) / log(SCAN_WIDTH) ) -1 ;
-  unint *width = (unint*)calloc( depth+1, sizeof(*width) );
-    
-  intMatrix *dAux;
-  dAux = (intMatrix*)calloc( depth+1, sizeof(*dAux) );
-  
-  for( i=0, temp=n; i<=depth; i++){
-    temp = (temp+SCAN_WIDTH-1)/SCAN_WIDTH;
-    dAux[i].r=dAux[i].pr=in.r; dAux[i].c=dAux[i].pc=dAux[i].ld=temp;
-    checkErr( cudaMalloc( (void**)&dAux[i].mat, dAux[i].pr*dAux[i].pc*sizeof(*dAux[i].mat) ) );
-  }
-
-  dim3 block( SCAN_WIDTH/2, 1 );
-  dim3 grid;
-  
-  numDone=0;
-  while( numDone < in.r ){
-    todo = MIN( in.r - numDone, MAX_BS );
-    numScans = (n+SCAN_WIDTH-1)/SCAN_WIDTH;
-    dAux[0].r=dAux[0].pr=todo;
-    grid.x = numScans;
-    grid.y = todo;
-    sumKernel<<<grid,block>>>(in, sum, dAux[0], n);
-    cudaThreadSynchronize();
-    
-    width[0] = numScans; // Necessary because following loop might not be entered
-    for( i=0; i<depth; i++ ){
-      width[i] = numScans;
-      numScans = (numScans+SCAN_WIDTH-1)/SCAN_WIDTH;
-      dAux[i+1].r=dAux[i+1].pr=todo;
-      
-      grid.x = numScans;
-      sumKernelI<<<grid,block>>>(dAux[i], dAux[i], dAux[i+1], width[i]);
-      cudaThreadSynchronize();
-    }
-  
-    for( i=depth-1; i>0; i-- ){
-      grid.x = width[i];
-      combineSumKernel<<<grid,block>>>(dAux[i-1], numDone, dAux[i], width[i-1]);
-      cudaThreadSynchronize();
-    }
-    
-    grid.x = width[0];
-    combineSumKernel<<<grid,block>>>(sum, numDone, dAux[0], n);
-    cudaThreadSynchronize();
-    
-    numDone += todo;
-  }
-
-  for( i=0; i<=depth; i++)
-   cudaFree(dAux[i].mat);
-  free(dAux);
-  free(width);
-  */
 }
 
 

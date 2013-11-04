@@ -76,6 +76,9 @@ cv::Mat1s MeanShift::execute(const multi_img& input, ProgressObserver *progress,
 
 	// prepare MS run (adaptive bandwidths)
 	bool success = cfams.PrepareFAMS(bandwidths);
+
+    std::cout << "prepareFAMS finished!" << std::endl;
+
 	if (!success)
 		return cv::Mat1s();
 

@@ -13,7 +13,7 @@
 #include "kernelWrap.h"
 #include "brute.h"
 #include<stdio.h>
-#include<cuda.h>
+//#include<cuda.h>
 //#include<gsl/gsl_sort.h>
 
 void bruteRangeCount(matrix x, matrix q, real *ranges, unint *cnts){
