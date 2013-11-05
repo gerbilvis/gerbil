@@ -130,7 +130,7 @@ void DistviewBinsTbb::updateContext()
 	args.xlabels.resize((*multi)->size());
 	for (unsigned int i = 0; i < (*multi)->size(); ++i) {
 		if (!(*multi)->meta[i].empty) {
-			args.xlabels[i].setNum((*multi)->meta[i].center);
+			args.xlabels[i].setNum((*multi)->meta[i].center, 'g', 4);
 		} else {
 			//GGDBGM(i << " meta is empty. "<< args.type << endl);
 		}
