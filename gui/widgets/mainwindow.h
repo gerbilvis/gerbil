@@ -49,7 +49,7 @@ class MainWindow : public QMainWindow, private Ui::MainWindow {
     Q_OBJECT
 public:
 	MainWindow(bool limitedMode = false);
-	void initUI(std::string filename, size_t size);
+	void initUI(std::string filename);
 	void initSignals(Controller *chief, DistViewController *chief2);
 
 	// add distribution view widget to the appropr. container
@@ -63,8 +63,6 @@ public slots:
 //	void segmentationFinished();
 //	void segmentationApply(std::map<std::string, boost::any>);
 
-	void bandsSliderMoved(int b);
-
 	// TODO -> NormDock
 	void normTargetChanged(bool usecurrent = false);
 	void normModeSelected(int mode, bool targetchange = false, bool usecurrent = false);
@@ -75,9 +73,6 @@ public slots:
 	void openContextMenu();
 
 	void screenshot();
-
-signals:
-	void specRescaleRequested(int bands);
 
 protected:
 	void changeEvent(QEvent *e);

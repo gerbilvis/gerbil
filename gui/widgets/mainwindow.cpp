@@ -42,17 +42,11 @@ MainWindow::MainWindow(bool limitedMode)
 	setupUi(this);
 }
 
-void MainWindow::initUI(std::string filename, size_t size)
+void MainWindow::initUI(std::string filename)
 {
 	/* set title */
 	QFileInfo fi(QString::fromStdString(filename));
 	setWindowTitle(QString("Gerbil - %1").arg(fi.completeBaseName()));
-
-	/* init bandsSlider */
-	bandsLabel->setText(QString("%1 bands").arg(size));
-	bandsSlider->setMinimum(3);
-	bandsSlider->setMaximum(size);
-	bandsSlider->setValue(size);
 }
 
 void MainWindow::initSignals(Controller *chief, DistViewController *chief2)
@@ -92,13 +86,6 @@ void MainWindow::initSignals(Controller *chief, DistViewController *chief2)
 //	connect(chief2, SIGNAL(normTargetChanged(bool)),
 //			this, SLOT(normTargetChanged(bool)));
 
-	connect(bandsSlider, SIGNAL(valueChanged(int)),
-			this, SLOT(bandsSliderMoved(int)));
-	connect(bandsSlider, SIGNAL(sliderMoved(int)),
-			this, SLOT(bandsSliderMoved(int)));
-	connect(this, SIGNAL(specRescaleRequested(int)),
-			chief, SLOT(rescaleSpectrum(int)));
-
 	/// global shortcuts
 	QShortcut *scr = new QShortcut(Qt::CTRL + Qt::Key_S, this);
 	connect(scr, SIGNAL(activated()), this, SLOT(screenshot()));
@@ -118,7 +105,6 @@ void MainWindow::addDistView(QWidget *frame)
 
 void MainWindow::setGUIEnabled(bool enable, TaskType tt)
 {
-	bandsSlider->setEnabled(enable || tt == TT_BAND_COUNT);
 	ignoreButton->setEnabled(enable || tt == TT_TOGGLE_LABELS);
 	addButton->setEnabled(enable);
 	remButton->setEnabled(enable);
@@ -130,14 +116,6 @@ void MainWindow::setGUIEnabled(bool enable, TaskType tt)
 //	normModeBox->setEnabled(enable);
 //	normApplyButton->setEnabled(enable || tt == TT_NORM_RANGE);
 //	normClampButton->setEnabled(enable || tt == TT_CLAMP_RANGE_IMG || tt == TT_CLAMP_RANGE_GRAD);
-}
-
-void MainWindow::bandsSliderMoved(int b)
-{
-	bandsLabel->setText(QString("%1 bands").arg(b));
-	if (!bandsSlider->isSliderDown()) {
-		emit specRescaleRequested(b);
-	}
 }
 
 void MainWindow::normTargetChanged(bool usecurrent)

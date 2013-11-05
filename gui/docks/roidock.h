@@ -21,14 +21,23 @@ signals:
 	/** The user has requested a new ROI by clicking apply. */
 	void roiRequested(const cv::Rect &roi);
 
+	/** User has requested a new binning by adjusting bands slider */
+	void specRescaleRequested(int bands);
+
 public slots:
 	/** Update the pixmap displayed in the ROI-View. */
 	void updatePixmap(const QPixmap image);
 	/** Change the ROI in the GUI programmatically. */
 	void setRoi(const cv::Rect &roi);
+	/** Set maximum number of bands for binning slider */
+	void setMaxBands(int bands);
 
 protected slots:
+	// band slider movement
+	void processBandsSliderChange(int b);
+
 	void processRoiButtonsClicked(QAbstractButton *sender);
+
 	// new roi selected in RoiView
 	void processNewSelection(const QRect &roi);
 

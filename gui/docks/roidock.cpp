@@ -37,14 +37,35 @@ void RoiDock::setRoi(const cv::Rect &roi)
 	processNewSelection(CVRect2QRect(roi));
 }
 
+void RoiDock::setMaxBands(int bands)
+{
+	/* init bandsSlider according to maximum */
+	bandsSlider->setMinimum(3);
+	bandsSlider->setMaximum(bands);
+	// default is no interpolation
+	bandsSlider->setValue(bands);
+}
+
 void RoiDock::initUi()
 {
+	/* init signals */
 	connect(roiButtons, SIGNAL(clicked(QAbstractButton*)),
 			 this, SLOT(processRoiButtonsClicked(QAbstractButton*)));
 	connect(roiView, SIGNAL(newSelection(const QRect&)),
 			this, SLOT(processNewSelection(const QRect&)));
+	connect(bandsSlider, SIGNAL(valueChanged(int)),
+			this, SLOT(processBandsSliderChange(int)));
+	connect(bandsSlider, SIGNAL(sliderMoved(int)),
+			this, SLOT(processBandsSliderChange(int)));
 }
 
+void RoiDock::processBandsSliderChange(int b)
+{
+	bandsLabel->setText(QString("%1 bands").arg(b));
+	if (!bandsSlider->isSliderDown()) {
+		emit specRescaleRequested(b);
+	}
+}
 
 void RoiDock::processRoiButtonsClicked(QAbstractButton *sender)
 {

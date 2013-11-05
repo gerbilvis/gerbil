@@ -161,17 +161,24 @@ void DockController::setupDocks()
 	connect(chief->falseColorModel(), SIGNAL(computationCancelled(FalseColoring::Type)),
 			falseColorDock, SLOT(processComputationCancelled(FalseColoring::Type)));
 
+	// needed for ROI dock, clustering dock
+	int nbands = chief->imageModel()->getNumBandsFull();
 
 	/* ROI Dock */
-	// signals for ROI (reset handled in RoiDock)
+	roiDock->setMaxBands(nbands);
+	// model to dock (reset handled in RoiDock)
 	connect(chief->imageModel(), SIGNAL(fullRgbUpdate(QPixmap)),
 			roiDock, SLOT(updatePixmap(QPixmap)));
 
 	connect(chief->imageModel(), SIGNAL(roiRectChanged(cv::Rect)),
 			roiDock, SLOT(setRoi(cv::Rect)));
 
+	// dock to controller
 	connect(roiDock, SIGNAL(roiRequested(const cv::Rect&)),
 			chief, SLOT(spawnROI(const cv::Rect&)));
+	connect(roiDock, SIGNAL(specRescaleRequested(int)),
+			chief, SLOT(rescaleSpectrum(int)));
+
 
 	/* Labeling Dock */
 	connect(labelingDock, SIGNAL(requestLoadLabeling()),
@@ -194,7 +201,6 @@ void DockController::setupDocks()
 	/* Unsupervised Segmentation Dock */
 #ifdef WITH_SEG_MEANSHIFT
 	ClusteringModel const*cm = chief->clusteringModel();
-	int nbands = chief->imageModel()->getNumBandsFull();
 	clusteringDock->setNumBands(nbands);
 	connect(chief->imageModel(), SIGNAL(numBandsROIChanged(int)),
 			clusteringDock, SLOT(setNumBands(int)));
