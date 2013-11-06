@@ -37,11 +37,6 @@
 #include <QMenu>
 #include <opencv2/core/core.hpp>
 
-class IllumDock;
-class FalseColorDock;
-//TODO create
-//class LabelDock;
-class ClusteringDock;
 class Controller;
 class DistViewController;
 
@@ -58,18 +53,6 @@ public:
 	void setGUIEnabled(bool enable, TaskType tt = TT_NONE);
 
 public slots:
-
-	// TODO -> segmentationDock
-//	void segmentationFinished();
-//	void segmentationApply(std::map<std::string, boost::any>);
-
-	// TODO -> NormDock
-	void normTargetChanged(bool usecurrent = false);
-	void normModeSelected(int mode, bool targetchange = false, bool usecurrent = false);
-	void normModeFixed();
-	void applyNormUserRange();
-	void clampNormUserRange();
-
 	void openContextMenu();
 
 	void screenshot();
