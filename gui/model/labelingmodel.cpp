@@ -264,7 +264,7 @@ void LabelingModel::computeLabelIcons()
 		iconTaskp = new IconTask(ctxp,this);
 
 		connect(this, SIGNAL(requestIconTaskAbort()),
-				iconTaskp, SLOT(abort()));
+				iconTaskp, SLOT(abort()), Qt::DirectConnection);
 		connect(iconTaskp, SIGNAL(taskAborted()),
 				this, SLOT(processIconTaskAborted()));
 		connect(iconTaskp, SIGNAL(labelIconsComputed(const QVector<QImage>&)),

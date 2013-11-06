@@ -47,8 +47,8 @@ public:
 public slots:
 	/** Abort the computation.
 	 *
-	 * WARNING: Don't call this directly, always signal with queued
-	 *          connection. abort() must execute in the IconTask thread!
+	 * WARNING: Always call this directly. Always signal with direct connection.
+	 * abort() must execute in the GUI thread!
 	 */
 	void abort();
 protected:
