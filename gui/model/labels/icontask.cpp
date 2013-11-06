@@ -23,29 +23,26 @@ struct ComputeIconMasks {
 
 	void operator()(const tbb::blocked_range<short>& range) const {
 		for( short label=range.begin(); label!=range.end(); ++label ) {
-			if(abortFlag) {
-				tbb::task::self().cancel_group_execution();
-				return;
-			}
-			if(tbb::task::self().is_cancelled())
-				return;
-
 			// Compute mask.
 			// For big images it might make sense to parallelize this on a
 			// smaller granularity (pixel ranges).
 			// And it might be a good idea to cache these.
 			cv::Mat1b mask = (ctx.full_labels == label);
 
-			if(tbb::task::self().is_cancelled())
+			if(tbb::task::self().is_cancelled()) {
+				//GGDBGM("aborted through tbb cancel." << endl);
 				return;
+			}
 
 			// convert QSize
 			cv::Size iconSizecv(ctx.iconSize.width(), ctx.iconSize.height());
 			// interpolate the mask to icon size
 			cv::resize(mask, mask, iconSizecv, 0, 0, cv::INTER_AREA);
 
-			if(tbb::task::self().is_cancelled())
+			if(tbb::task::self().is_cancelled()) {
+				//GGDBGM("aborted through tbb cancel." << endl);
 				return;
+			}
 			// the rest is probably too fast to allow checking for cancellation.
 
 			QColor color = ctx.colors.at(label);
@@ -97,8 +94,8 @@ struct ComputeIconMasks {
 };
 
 IconTask::IconTask(IconTaskCtxPtr &ctxp, QObject *parent)
-	:QThread(parent), ctxp(ctxp), abortFlag(false)
-	//, taskgctxp(NULL)
+	:QThread(parent), ctxp(ctxp), abortFlag(false),
+	  tbbTaskGroupContext(tbb::task_group_context::isolated)
 {
 }
 
@@ -108,11 +105,7 @@ void IconTask::abort()
 	abortFlag = true;
 
 	// tell executing tasks to abort
-	// FIXME race condition with other TBB code!
-	// # Assertion !master_outermost_level() || !CancellationInfoPresent(*my_dummy_task) failed on line 637 of file ../../src/tbb/custom_scheduler.h
-	// # Detailed description: Unexpected exception or cancellation data in the master's dummy task
-	// (triggered in band2qimagetbb)
-	//tbb::task::self().context()->cancel_group_execution();
+    tbbTaskGroupContext.cancel_group_execution();
 }
 
 void IconTask::run()
@@ -129,12 +122,6 @@ void IconTask::run()
 	// init result vector
 	ctx.icons = QVector<QImage>(ctx.nlabels);
 
-	// No idea if it is necessary to get the task_group_context of the self-task
-	// or if parallel_for will use it anyway.
-	// FIXME:
-	// Also there may be a race-condition, if cancel_group_execution() is reset
-	// upon calling parallel_for.
-	tbb::task_group_context*  taskgctxp = tbb::task::self().context();
 	tbb::auto_partitioner partitioner;
 
 	if(abortFlag) {
@@ -145,7 +132,7 @@ void IconTask::run()
 	tbb::parallel_for(tbb::blocked_range<short>(0,ctx.nlabels),
 					  ComputeIconMasks(ctx,abortFlag),
 					  partitioner,
-					  *taskgctxp);
+                      tbbTaskGroupContext);
 
 	if(!abortFlag) {
 		emit labelIconsComputed(ctx.icons);

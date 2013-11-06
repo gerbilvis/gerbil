@@ -13,8 +13,8 @@
 #include <boost/shared_ptr.hpp>
 #include <tbb/task_group.h>
 
-// Context struct for label icon computation
-// Bad style, but better then fiddling all parameters through constructors
+// Context struct for label icon computation.
+// Bad style, but better than fiddling all parameters through constructors.
 struct IconTaskCtx {
 	explicit IconTaskCtx(int nlabels, const cv::Mat1s& full_labels,
 						 const QSize& iconSize, const QVector<QColor>& colors)
@@ -47,7 +47,7 @@ public:
 public slots:
 	/** Abort the computation.
 	 *
-	 * WARNING: Don't call this directly, but always signal with queued
+	 * WARNING: Don't call this directly, always signal with queued
 	 *          connection. abort() must execute in the IconTask thread!
 	 */
 	void abort();
@@ -61,6 +61,7 @@ signals:
 private:
 	IconTaskCtxPtr ctxp;
 	volatile bool abortFlag;
+    tbb::task_group_context tbbTaskGroupContext;
 };
 
 #endif // ICONTASK_H
