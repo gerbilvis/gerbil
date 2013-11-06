@@ -14,7 +14,7 @@
    <string>Multispectral Image Viewer</string>
   </property>
   <property name="windowIcon">
-   <iconset resource="gerbil.qrc">
+	  <iconset resource="../gerbil.qrc">
     <normaloff>:/logoicon</normaloff>:/logoicon</iconset>
   </property>
   <widget class="QWidget" name="centralWidget">
@@ -117,7 +117,7 @@
            <string/>
           </property>
           <property name="icon">
-           <iconset resource="gerbil.qrc">
+			  <iconset resource="../gerbil.qrc">
             <normaloff>:/toolbar/add</normaloff>:/toolbar/add</iconset>
           </property>
           <property name="iconSize">
@@ -137,7 +137,7 @@
            <string/>
           </property>
           <property name="icon">
-           <iconset resource="gerbil.qrc">
+			  <iconset resource="../gerbil.qrc">
             <normaloff>:/toolbar/remove</normaloff>:/toolbar/remove</iconset>
           </property>
           <property name="iconSize">
@@ -164,7 +164,7 @@
            <string/>
           </property>
           <property name="icon">
-           <iconset resource="gerbil.qrc">
+			  <iconset resource="../gerbil.qrc">
             <normaloff>:/toolbar/windows</normaloff>:/toolbar/windows</iconset>
           </property>
           <property name="iconSize">
@@ -212,7 +212,7 @@
   </widget>
  </widget>
  <resources>
-  <include location="gerbil.qrc"/>
+	 <include location="../gerbil.qrc"/>
  </resources>
  <connections/>
 </ui>
