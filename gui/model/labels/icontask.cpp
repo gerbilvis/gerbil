@@ -17,8 +17,8 @@
 // TBB functor struct
 struct ComputeIconMasks {
 
-	ComputeIconMasks(IconTaskCtx& ctx, volatile bool& abortFlag)
-		: ctx(ctx), abortFlag(abortFlag)
+	ComputeIconMasks(IconTaskCtx& ctx)
+		: ctx(ctx)
 	{}
 
 	void operator()(const tbb::blocked_range<short>& range) const {
@@ -90,7 +90,6 @@ struct ComputeIconMasks {
 	}
 
 	IconTaskCtx& ctx;
-	volatile bool& abortFlag;
 };
 
 IconTask::IconTask(IconTaskCtxPtr &ctxp, QObject *parent)
@@ -130,9 +129,7 @@ void IconTask::run()
 	}
 
 	tbb::parallel_for(tbb::blocked_range<short>(0,ctx.nlabels),
-					  ComputeIconMasks(ctx,abortFlag),
-					  partitioner,
-                      tbbTaskGroupContext);
+					  ComputeIconMasks(ctx), partitioner, tbbTaskGroupContext);
 
 	if(!abortFlag) {
 		emit labelIconsComputed(ctx.icons);
