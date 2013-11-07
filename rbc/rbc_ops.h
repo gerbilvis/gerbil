@@ -2,8 +2,8 @@
  * (C) Copyright 2010, Lawrence Cayton [lcayton@tuebingen.mpg.de]
  */
 
-#ifndef RBC_H
-#define RBC_H
+#ifndef RBC_OPS_H
+#define RBC_OPS_H
 
 #include "defs.h"
 

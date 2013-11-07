@@ -4,7 +4,7 @@
 #include "defs.h"
 #include "utils.h"
 #include "utilsGPU.h"
-#include "rbc.h"
+#include "rbc_ops.h"
 #include "brute.h"
 #include "sKernel.h"
 

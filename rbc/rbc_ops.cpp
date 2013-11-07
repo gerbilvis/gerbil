@@ -2,8 +2,8 @@
  * (C) Copyright 2010, Lawrence Cayton [lcayton@tuebingen.mpg.de]
  */
 
-#ifndef RBC_CU
-#define RBC_CU
+#ifndef RBC_OPS_CU
+#define RBC_OPS_CU
 
 #include<sys/time.h>
 #include<stdio.h>
@@ -11,7 +11,7 @@
 #include "utils.h"
 #include "defs.h"
 #include "utilsGPU.h"
-#include "rbc.h"
+#include "rbc_ops.h"
 #include "kernels.h"
 #include "kernelWrap.h"
 #include "sKernelWrap.h"
@@ -216,6 +216,7 @@ void buildRBC(const matrix x, ocl_rbcStruct *rbcS, unint numReps, unint s)
  // memTot = 1024 * 1024 * 1024;
 
     unint ptsAtOnce = 1024 * 64;//DPAD(memFree/((n+1)*sizeof(real) + n*sizeof(char) + (n+1)*sizeof(unint) + 2*MEM_USED_IN_SCAN(n)));
+   // unint ptsAtOnce = 512;//DPAD(memFree/((n+1)*sizeof(real) + n*sizeof(char) + (n+1)*sizeof(unint) + 2*MEM_USED_IN_SCAN(n)));
     if(!ptsAtOnce)
     {
         fprintf(stderr,"error: %lu is not enough memory to build the RBC.. exiting\n", (unsigned long)memFree);
@@ -228,7 +229,9 @@ void buildRBC(const matrix x, ocl_rbcStruct *rbcS, unint numReps, unint s)
 
     //Now set everything up for the scans
     ocl_matrix dD;
-    dD.pr=dD.r=ptsAtOnce; dD.c=rbcS->dx.r; dD.pc=rbcS->dx.pr; dD.ld=dD.pc;
+    dD.pr = dD.r = ptsAtOnce;         /** IN MOST CASES NUM OF REPRESENTATIVES SHOULD BE USED */
+    dD.c = rbcS->dx.r; dD.pc = rbcS->dx.pr;
+    dD.ld = dD.pc;
     //checkErr( cudaMalloc( (void**)&dD.mat, dD.pr*dD.pc*sizeof(*dD.mat) ) );
     int byte_size = dD.pr*dD.pc*sizeof(real);
     dD.mat = cl::Buffer(context, CL_MEM_READ_WRITE, byte_size, 0, &err);

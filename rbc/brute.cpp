@@ -7,7 +7,7 @@
 
 #include "utilsGPU.h"
 #include "utils.h"
-#include "rbc.h"
+#include "rbc_ops.h"
 #include "defs.h"
 #include "kernels.h"
 #include "kernelWrap.h"
@@ -16,48 +16,49 @@
 //#include<cuda.h>
 //#include<gsl/gsl_sort.h>
 
-void bruteRangeCount(matrix x, matrix q, real *ranges, unint *cnts){
-  ocl_matrix dx, dq;
-//  real *dranges;
-//  unint *dcnts;
+void bruteRangeCount(matrix x, matrix q, real *ranges, unint *cnts)
+{
+    ocl_matrix dx, dq;
+    //  real *dranges;
+    //  unint *dcnts;
 
-  cl::Buffer dranges;
-  cl::Buffer dcnts;
-  
-  cl::Context& context = OclContextHolder::context;
-  cl::CommandQueue& queue = OclContextHolder::queue;
+    cl::Buffer dranges;
+    cl::Buffer dcnts;
 
-  copyAndMove(&dx, &x);
-  copyAndMove(&dq, &q);
+    cl::Context& context = OclContextHolder::context;
+    cl::CommandQueue& queue = OclContextHolder::queue;
 
-  int byte_size = q.pr*sizeof(real);
-  cl_int err;
+    copyAndMove(&dx, &x);
+    copyAndMove(&dq, &q);
 
-  dranges = cl::Buffer(context, CL_MEM_READ_WRITE, byte_size, 0, &err);
-  checkErr(err);
+    int byte_size = q.pr*sizeof(real);
+    cl_int err;
 
-  byte_size = q.r*sizeof(real);
+    dranges = cl::Buffer(context, CL_MEM_READ_WRITE, byte_size, 0, &err);
+    checkErr(err);
 
-  err = queue.enqueueWriteBuffer(dranges, CL_TRUE, 0, byte_size, ranges);
-  checkErr(err);
+    byte_size = q.r*sizeof(real);
 
-  //checkErr( cudaMalloc( (void**)&dranges, q.pr*sizeof(*dranges) ) );
-  //cudaMemcpy( dranges, ranges, q.r*sizeof(*dranges), cudaMemcpyHostToDevice );
+    err = queue.enqueueWriteBuffer(dranges, CL_TRUE, 0, byte_size, ranges);
+    checkErr(err);
 
-  //checkErr( cudaMalloc( (void**)&dcnts, q.pr*sizeof(*dcnts) ) );
-  
-  rangeCountWrap(dq, dx, dranges, dcnts);
-  
-  byte_size = q.r*sizeof(*cnts);
+    //checkErr( cudaMalloc( (void**)&dranges, q.pr*sizeof(*dranges) ) );
+    //cudaMemcpy( dranges, ranges, q.r*sizeof(*dranges), cudaMemcpyHostToDevice );
 
-  err = queue.enqueueReadBuffer(dranges, CL_TRUE, 0, byte_size, cnts);
-  checkErr(err);
+    //checkErr( cudaMalloc( (void**)&dcnts, q.pr*sizeof(*dcnts) ) );
 
-  //cudaMemcpy(cnts, dcnts, q.r*sizeof(*cnts), cudaMemcpyDeviceToHost );
-//  cudaFree(dcnts);
-//  cudaFree(dranges);
-//  cudaFree(dx.mat);
-//  cudaFree(dq.mat);
+    rangeCountWrap(dq, dx, dranges, dcnts);
+
+    byte_size = q.r*sizeof(*cnts);
+
+    err = queue.enqueueReadBuffer(dranges, CL_TRUE, 0, byte_size, cnts);
+    checkErr(err);
+
+    //cudaMemcpy(cnts, dcnts, q.r*sizeof(*cnts), cudaMemcpyDeviceToHost );
+    //  cudaFree(dcnts);
+    //  cudaFree(dranges);
+    //  cudaFree(dx.mat);
+    //  cudaFree(dq.mat);
 }
 
 
@@ -84,75 +85,82 @@ void bruteSearch(matrix x, matrix q, unint *NNs){
 }*/
 
 
-void bruteK(matrix x, matrix q, intMatrix NNs, matrix NNdists){
-  ocl_matrix dNNdists;
-  ocl_intMatrix dMinIDs;
-  ocl_matrix dx, dq;
+void bruteK(matrix x, matrix q, intMatrix NNs, matrix NNdists)
+{
+    ocl_matrix dNNdists;
+    ocl_intMatrix dMinIDs;
+    ocl_matrix dx, dq;
 
-  copyAndMove( &dx, &x );
-  copyAndMove( &dq, &q );
-  
-  cl::Context& context = OclContextHolder::context;
-  cl::CommandQueue& queue = OclContextHolder::queue;
+    copyAndMove( &dx, &x );
+    copyAndMove( &dq, &q );
 
-  initMat( &dNNdists, q.r, KMAX );
+    cl::Context& context = OclContextHolder::context;
+    cl::CommandQueue& queue = OclContextHolder::queue;
 
-  int byte_size = sizeOfMatB(dNNdists);
-  cl_int err;
+    initMat( &dNNdists, q.r, KMAX );
 
-  dNNdists.mat = cl::Buffer(context, CL_MEM_READ_WRITE, byte_size, 0, &err);
-  checkErr(err);
+    int byte_size = sizeOfMatB(dNNdists);
+    cl_int err;
 
-  //checkErr( cudaMalloc((void**)&dNNdists.mat, sizeOfMatB(dNNdists) ) );
+    dNNdists.mat = cl::Buffer(context, CL_MEM_READ_WRITE, byte_size, 0, &err);
+    checkErr(err);
 
-  initIntMat( &dMinIDs, q.r, KMAX );
+    //checkErr( cudaMalloc((void**)&dNNdists.mat, sizeOfMatB(dNNdists) ) );
 
-  byte_size = sizeOfIntMatB(dMinIDs);
+    initIntMat( &dMinIDs, q.r, KMAX );
 
-  dMinIDs.mat = cl::Buffer(context, CL_MEM_READ_WRITE, byte_size, 0, &err);
-  checkErr(err);
+    byte_size = sizeOfIntMatB(dMinIDs);
 
- // checkErr( cudaMalloc((void**)&dMinIDs.mat, sizeOfIntMatB(dMinIDs) ) );
+    dMinIDs.mat = cl::Buffer(context, CL_MEM_READ_WRITE, byte_size, 0, &err);
+    checkErr(err);
 
-  knnWrap( dq, dx, dNNdists, dMinIDs );
+    // checkErr( cudaMalloc((void**)&dMinIDs.mat, sizeOfIntMatB(dMinIDs) ) );
 
-  err = queue.enqueueReadBuffer(dMinIDs.mat, CL_TRUE, 0, sizeOfIntMatB(NNs), NNs.mat);
-  checkErr(err);
+    knnWrap( dq, dx, dNNdists, dMinIDs );
 
-  err = queue.enqueueReadBuffer(dNNdists.mat, CL_TRUE, 0, sizeOfMatB(NNdists), NNdists.mat);
-  checkErr(err);
+    err = queue.enqueueReadBuffer(dMinIDs.mat, CL_TRUE, 0,
+                                  sizeOfIntMatB(NNs), NNs.mat);
+    checkErr(err);
 
-//  cudaMemcpy( NNs.mat, dMinIDs.mat, sizeOfIntMatB(NNs), cudaMemcpyDeviceToHost );
-//  cudaMemcpy( NNdists.mat, dNNdists.mat, sizeOfMatB(NNdists), cudaMemcpyDeviceToHost );
-  
-//  cudaFree( dNNdists.mat );
-//  cudaFree( dMinIDs.mat );
-//  cudaFree( dx.mat );
-//  cudaFree( dq.mat );
+    err = queue.enqueueReadBuffer(dNNdists.mat, CL_TRUE, 0,
+                                  sizeOfMatB(NNdists), NNdists.mat);
+    checkErr(err);
+
+    //  cudaMemcpy( NNs.mat, dMinIDs.mat, sizeOfIntMatB(NNs), cudaMemcpyDeviceToHost );
+    //  cudaMemcpy( NNdists.mat, dNNdists.mat, sizeOfMatB(NNdists), cudaMemcpyDeviceToHost );
+
+    //  cudaFree( dNNdists.mat );
+    //  cudaFree( dMinIDs.mat );
+    //  cudaFree( dx.mat );
+    //  cudaFree( dq.mat );
 }
 
 
-void bruteCPU(matrix X, matrix Q, unint *NNs){
-  real *dtoNNs; 
-  real temp;
+void bruteCPU(matrix X, matrix Q, unint *NNs)
+{
+    real *dtoNNs;
+    real temp;
 
-  unint i, j;
+    unint i, j;
 
-  dtoNNs = (real*)calloc(Q.r,sizeof(*dtoNNs));
-  
-  for( i=0; i<Q.r; i++ ){
-    dtoNNs[i] = MAX_REAL;
-    NNs[i] = 0;
-    for(j=0; j<X.r; j++ ){
-      temp = distVec( Q, X, i, j );
-      if( temp < dtoNNs[i]){
-	NNs[i] = j;
-	dtoNNs[i] = temp;
-      }
+    dtoNNs = (real*)calloc(Q.r,sizeof(*dtoNNs));
+
+    for( i=0; i<Q.r; i++ )
+    {
+        dtoNNs[i] = MAX_REAL;
+        NNs[i] = 0;
+        for(j=0; j<X.r; j++)
+        {
+            temp = distVec( Q, X, i, j );
+            if( temp < dtoNNs[i])
+            {
+                NNs[i] = j;
+                dtoNNs[i] = temp;
+            }
+        }
     }
-  }
-  
-  free(dtoNNs);  
+
+    free(dtoNNs);
 }
 
 
