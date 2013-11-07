@@ -263,6 +263,8 @@ void LabelingModel::computeLabelIcons()
 		iconTaskAborted = false;
 		iconTaskp = new IconTask(ctxp,this);
 
+		// Any signals from any to IconTask must be disconnected in
+		// cleanUpIconTask().
 		connect(this, SIGNAL(requestIconTaskAbort()),
 				iconTaskp, SLOT(abort()), Qt::DirectConnection);
 		connect(iconTaskp, SIGNAL(taskAborted()),
@@ -277,12 +279,14 @@ void LabelingModel::computeLabelIcons()
 
 void LabelingModel::processLabelIconsComputed(const QVector<QImage> &icons)
 {
+	// The reference argument icons is valid, since the icon task will be
+	// deleted only after this function leaves its scope.
+
 	//GGDBGM("IconTask finished successfully" << endl);
+
 	// clean up finished task
-	iconTaskp->wait();
-	iconTaskp->deleteLater();
-	// no task is executing
-	iconTaskp = NULL;
+	cleanUpIconTask();
+
 	// store the result and emit
 	this->icons = icons;
 	emit labelIconsComputed(icons);
@@ -291,10 +295,9 @@ void LabelingModel::processLabelIconsComputed(const QVector<QImage> &icons)
 void LabelingModel::processIconTaskAborted()
 {
 	//GGDBGM("IconTask has aborted" << endl);
+
 	// clean up aborted task
-	iconTaskp->wait();
-	iconTaskp->deleteLater();
-	iconTaskp = NULL;
+	cleanUpIconTask();
 
 	//GGDBGM("requesting new icon computation" << endl);
 	computeLabelIcons();
@@ -302,10 +305,28 @@ void LabelingModel::processIconTaskAborted()
 
 void LabelingModel::invalidateMaskIcons()
 {
-	// if a icon task is running, abort it
 	//GGDBGM("aborting IconTask" << endl);
-	iconTaskAborted = true;
-	emit requestIconTaskAbort();
+
+	// If an icon task is running, abort it.
+	if(iconTaskp && !iconTaskAborted) {
+		iconTaskAborted = true;
+
+		// There is no race condition (test-and-set) for iconTaskp or
+		// iconTaskAborted here, since they are written in the GUI thread only.
+
+		emit requestIconTaskAbort();
+	}
 
 	icons.clear();
+}
+
+void LabelingModel::cleanUpIconTask()
+{
+	// disconnect all signals to IconTask
+	disconnect(this, 0, iconTaskp, 0);
+
+	iconTaskp->wait();
+	iconTaskp->deleteLater();
+	// NULL means no task is executing
+	iconTaskp = NULL;
 }

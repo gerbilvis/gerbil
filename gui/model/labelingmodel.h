@@ -92,6 +92,7 @@ private slots:
 private:
 	/** The labeling has changed, mask icons are out of date. */
 	void invalidateMaskIcons();
+	void cleanUpIconTask();
 
 	// full image labels and roi scoped labels
 	/* labels is always a header with the same data as full_labels (CV memory
