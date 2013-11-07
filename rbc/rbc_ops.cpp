@@ -191,7 +191,7 @@ void buildRBC(const matrix x, ocl_rbcStruct *rbcS, unint numReps, unint s)
     xmap.pr = PAD(numReps);
     xmap.c = s;
     xmap.pc = xmap.ld = PAD(s);
-    xmap.mat = NULL;//(unint*)calloc( xmap.pr*xmap.pc, sizeof(*xmap.mat) );
+    xmap.mat = (unint*)calloc( xmap.pr*xmap.pc, sizeof(*xmap.mat) );
     copyAndMoveI(&rbcS->dxMap, &xmap);
 
     rbcS->groupCount = (unint*)calloc( PAD(numReps), sizeof(*rbcS->groupCount) );
