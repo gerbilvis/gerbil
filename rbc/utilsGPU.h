@@ -5,7 +5,7 @@
 #ifndef UTILSGPU_H
 #define UTILSGPU_H
 
-#define DEBUG_WRITE_TO_FILE
+//#define DEBUG_WRITE_TO_FILE
 
 #include "defs.h"
 //#include<cuda.h>
@@ -31,6 +31,7 @@
 #define DBG_DEVICE_UINT_BUFF_WRITE(BUFF, SIZE, FILE)
 #define DBG_DEVICE_CHAR_BUFF_WRITE(BUFF, SIZE, FILE)
 #define DBG_DEVICE_REAL_BUFF_WRITE(BUFF, SIZE, FILE)
+#define DBG_ARRAY_WRITE(ARRAY, SIZE, FILE)
 #endif
 
 

@@ -33,7 +33,6 @@ int RBC::execute()
                               "-r", "128"};
 
         return old_main(13, (char**)argv);
-
     }
 
 
@@ -69,9 +68,6 @@ int RBC::execute()
 
 
         buildRBC(mat, &rbcS, numReps, numReps);
-
-
-
 
         free(mat.mat);
 
@@ -158,7 +154,16 @@ void writeNeighbs(const char*, const char*,intMatrix,matrix);
 
 char *dataFileX, *dataFileQ, *dataFileXtxt, *dataFileQtxt, *outFile, *outFiletxt;
 char runBrute=0, runEval=0;
-unint n=0, m=0, d=0, numReps=0, deviceNum=0;
+/** number of input points (database) */
+unint n = 0;
+/** number of points per representative */
+unint m = 0;
+/** dimensionality */
+unint d = 0;
+/** number of representatives */
+unint numReps = 0;
+/** device number */
+unint deviceNum = 0;
 
 int old_main(int argc, char**argv){
 

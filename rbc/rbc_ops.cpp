@@ -158,17 +158,6 @@ void kqueryRBC(const matrix q, const ocl_rbcStruct rbcS,
 
     computeKNNs(rbcS.dx, rbcS.dxMap, dq, dqMap, dcP, NNs, NNdists, compLength);
 
-    //  matrix_to_file(q, "q.txt");
-    //  matrix_to_file(q, "q.txt");
-
-    //  device_matrix_to_file(dcP.numGroups, "rbcS_dx.txt");
-    //  device_matrix_to_file(rbcS.dxMap, "rbcS_dxMap.txt");
-
-    //  cl::Buffer numGroups;
-    //  cl::Buffer groupCountX;
-    //  cl::Buffer qToQGroup;
-    //  cl::Buffer qGroupToXGroup;
-
     free(qMap);
     freeCompPlan(&dcP);
     // cudaFree(dq.mat);
@@ -215,7 +204,8 @@ void buildRBC(const matrix x, ocl_rbcStruct *rbcS, unint numReps, unint s)
  // memFree = 1024 * 1024 * 1024;
  // memTot = 1024 * 1024 * 1024;
 
-    unint ptsAtOnce = 1024 * 64;//DPAD(memFree/((n+1)*sizeof(real) + n*sizeof(char) + (n+1)*sizeof(unint) + 2*MEM_USED_IN_SCAN(n)));
+//    unint ptsAtOnce = 1024 * 64;//DPAD(memFree/((n+1)*sizeof(real) + n*sizeof(char) + (n+1)*sizeof(unint) + 2*MEM_USED_IN_SCAN(n)));
+   unint ptsAtOnce = 128;
    // unint ptsAtOnce = 512;//DPAD(memFree/((n+1)*sizeof(real) + n*sizeof(char) + (n+1)*sizeof(unint) + 2*MEM_USED_IN_SCAN(n)));
     if(!ptsAtOnce)
     {
@@ -230,7 +220,8 @@ void buildRBC(const matrix x, ocl_rbcStruct *rbcS, unint numReps, unint s)
     //Now set everything up for the scans
     ocl_matrix dD;
     dD.pr = dD.r = ptsAtOnce;         /** IN MOST CASES NUM OF REPRESENTATIVES SHOULD BE USED */
-    dD.c = rbcS->dx.r; dD.pc = rbcS->dx.pr;
+    dD.c = rbcS->dx.r;
+    dD.pc = rbcS->dx.pr;
     dD.ld = dD.pc;
     //checkErr( cudaMalloc( (void**)&dD.mat, dD.pr*dD.pc*sizeof(*dD.mat) ) );
     int byte_size = dD.pr*dD.pc*sizeof(real);
@@ -572,11 +563,11 @@ void distSubMat(ocl_matrix& dr, ocl_matrix& dx, ocl_matrix &dD, unint start, uni
 
     unint dr_offset = IDX(start, 0, dr.ld);
 
-    if(start != 0)
-    {
-        printf("subbuffers are not supported!\n");
-        exit(1);
-    }
+//    if(start != 0)
+//    {
+//        printf("subbuffers are not supported!\n");
+//        exit(1);
+//    }
 
     dist1Wrap(dr_tmp, dx, dD, dr_offset);
 }
