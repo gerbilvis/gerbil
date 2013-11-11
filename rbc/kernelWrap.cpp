@@ -212,18 +212,13 @@ void nnWrap(const ocl_matrix& dq, const ocl_matrix& dx,
 
     cl::NDRange local(BLOCK_SIZE, BLOCK_SIZE);
 
-    //dim3 grid;
-    unint numDone, todo;
+    unint numDone = 0;
+    unint todo;
 
-    //grid.x = 1;
-
-    numDone = 0;
-    while( numDone < dq.pr )
+    while(numDone < dq.pr)
     {
         todo = MIN(dq.pr - numDone, MAX_BS*BLOCK_SIZE);
-        //grid.y = todo/BLOCK_SIZE;
 
-        //cl::NDRange global(todo, BLOCK_SIZE);
         cl::NDRange global(BLOCK_SIZE, todo);
 
         cl::CommandQueue& queue = OclContextHolder::queue;
@@ -248,7 +243,6 @@ void nnWrap(const ocl_matrix& dq, const ocl_matrix& dx,
         queue.enqueueNDRangeKernel(nnKernel, cl::NullRange,
                                    global, local);
 
-        //nnKernel<<<grid,block>>>(dq,numDone,dx,dMins,dMinIDs);
         numDone += todo;
     }
       //cudaThreadSynchronize();
@@ -361,72 +355,66 @@ void planNNWrap(const matrix dq, const unint *dqMap, const matrix dx, const intM
 
 
 //void planKNNWrap(const matrix dq, const unint *dqMap, const matrix dx, const intMatrix dxMap, matrix dMins, intMatrix dMinIDs, compPlan dcP, unint compLength){
-void planKNNWrap(const ocl_matrix& dq, const cl::Buffer& dqMap, const ocl_matrix& dx,
-                 const ocl_intMatrix& dxMap, ocl_matrix& dMins,
-                 ocl_intMatrix& dMinIDs, const ocl_compPlan& dcP, unint compLength){
-
-
-    cl::NDRange local(BLOCK_SIZE,BLOCK_SIZE);
-    //dim3 grid;
+void planKNNWrap(const ocl_matrix& dq, const cl::Buffer& dqMap,
+                 const ocl_matrix& dx, const ocl_intMatrix& dxMap,
+                 ocl_matrix& dMins, ocl_intMatrix& dMinIDs,
+                 const ocl_compPlan& dcP, unint compLength)
+{
+    cl::NDRange local(BLOCK_SIZE, BLOCK_SIZE);
     unint todo;
 
-    //grid.x = 1;
     unint numDone = 0;
-    while( numDone<compLength ){
-      todo = MIN( (compLength-numDone) , MAX_BS*BLOCK_SIZE );
-      //grid.y = todo/BLOCK_SIZE;
+    while( numDone<compLength )
+    {
+        todo = MIN( (compLength-numDone) , MAX_BS*BLOCK_SIZE );
 
-      cl::NDRange global(BLOCK_SIZE, todo);
+        cl::NDRange global(BLOCK_SIZE, todo);
 
-      cl::CommandQueue& queue = OclContextHolder::queue;
-      cl::Kernel& planKNNKernel = OclContextHolder::planKNNKernel;
+        cl::CommandQueue& queue = OclContextHolder::queue;
+        cl::Kernel& planKNNKernel = OclContextHolder::planKNNKernel;
 
-      planKNNKernel.setArg(0, dq.mat);
-      planKNNKernel.setArg(1, dq.r);
-      planKNNKernel.setArg(2, dq.c);
-      planKNNKernel.setArg(3, dq.pr);
-      planKNNKernel.setArg(4, dq.pc);
-      planKNNKernel.setArg(5, dq.ld);
-      planKNNKernel.setArg(6, dqMap);
-      planKNNKernel.setArg(7, dx.mat);
-      planKNNKernel.setArg(8, dx.r);
-      planKNNKernel.setArg(9, dx.c);
-      planKNNKernel.setArg(10, dx.pr);
-      planKNNKernel.setArg(11, dx.pc);
-      planKNNKernel.setArg(12, dx.ld);
-      planKNNKernel.setArg(13, dxMap.mat);
-      planKNNKernel.setArg(14, dxMap.r);
-      planKNNKernel.setArg(15, dxMap.c);
-      planKNNKernel.setArg(16, dxMap.pr);
-      planKNNKernel.setArg(17, dxMap.pc);
-      planKNNKernel.setArg(18, dxMap.ld);
-      planKNNKernel.setArg(19, dMins.mat);
-      planKNNKernel.setArg(20, dMins.r);
-      planKNNKernel.setArg(21, dMins.c);
-      planKNNKernel.setArg(22, dMins.pr);
-      planKNNKernel.setArg(23, dMins.pc);
-      planKNNKernel.setArg(24, dMins.ld);
-      planKNNKernel.setArg(25, dMinIDs.mat);
-      planKNNKernel.setArg(26, dMinIDs.r);
-      planKNNKernel.setArg(27, dMinIDs.c);
-      planKNNKernel.setArg(28, dMinIDs.pr);
-      planKNNKernel.setArg(29, dMinIDs.pc);
-      planKNNKernel.setArg(30, dMinIDs.ld);
-      planKNNKernel.setArg(31, dcP.numGroups);
-      planKNNKernel.setArg(32, dcP.groupCountX);
-      planKNNKernel.setArg(33, dcP.qToQGroup);
-      planKNNKernel.setArg(34, dcP.qGroupToXGroup);
-      planKNNKernel.setArg(35, dcP.ld);
-      planKNNKernel.setArg(36, numDone);
+        planKNNKernel.setArg(0, dq.mat);
+        planKNNKernel.setArg(1, dq.r);
+        planKNNKernel.setArg(2, dq.c);
+        planKNNKernel.setArg(3, dq.pr);
+        planKNNKernel.setArg(4, dq.pc);
+        planKNNKernel.setArg(5, dq.ld);
+        planKNNKernel.setArg(6, dqMap);
+        planKNNKernel.setArg(7, dx.mat);
+        planKNNKernel.setArg(8, dx.r);
+        planKNNKernel.setArg(9, dx.c);
+        planKNNKernel.setArg(10, dx.pr);
+        planKNNKernel.setArg(11, dx.pc);
+        planKNNKernel.setArg(12, dx.ld);
+        planKNNKernel.setArg(13, dxMap.mat);
+        planKNNKernel.setArg(14, dxMap.r);
+        planKNNKernel.setArg(15, dxMap.c);
+        planKNNKernel.setArg(16, dxMap.pr);
+        planKNNKernel.setArg(17, dxMap.pc);
+        planKNNKernel.setArg(18, dxMap.ld);
+        planKNNKernel.setArg(19, dMins.mat);
+        planKNNKernel.setArg(20, dMins.r);
+        planKNNKernel.setArg(21, dMins.c);
+        planKNNKernel.setArg(22, dMins.pr);
+        planKNNKernel.setArg(23, dMins.pc);
+        planKNNKernel.setArg(24, dMins.ld);
+        planKNNKernel.setArg(25, dMinIDs.mat);
+        planKNNKernel.setArg(26, dMinIDs.r);
+        planKNNKernel.setArg(27, dMinIDs.c);
+        planKNNKernel.setArg(28, dMinIDs.pr);
+        planKNNKernel.setArg(29, dMinIDs.pc);
+        planKNNKernel.setArg(30, dMinIDs.ld);
+        planKNNKernel.setArg(31, dcP.numGroups);
+        planKNNKernel.setArg(32, dcP.groupCountX);
+        planKNNKernel.setArg(33, dcP.qToQGroup);
+        planKNNKernel.setArg(34, dcP.qGroupToXGroup);
+        planKNNKernel.setArg(35, dcP.ld);
+        planKNNKernel.setArg(36, numDone);
 
-      queue.enqueueNDRangeKernel(planKNNKernel, cl::NullRange,
+        queue.enqueueNDRangeKernel(planKNNKernel, cl::NullRange,
                                  global, local);
-
-      //planKNNKernel<<<grid,block>>>(dq,dqMap,dx,dxMap,dMins,dMinIDs,dcP,numDone);
-
-      numDone += todo;
+        numDone += todo;
     }
-    //cudaThreadSynchronize();
 
 /*
   dim3 block(BLOCK_SIZE,BLOCK_SIZE);

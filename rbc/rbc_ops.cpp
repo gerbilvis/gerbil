@@ -68,7 +68,8 @@ void queryRBC(const matrix q, const rbcStruct rbcS, unint *NNs, real* NNdists){
   free(groupCountQ);
 }*/
 
-/** This function is very similar to queryRBC, with a couple of basic changes to handle
+/** This function is very similar to queryRBC, with a couple of
+ *  basic changes to handle
   * k-nn.
   * q - query
   * rbcS - rbc structure
@@ -99,15 +100,16 @@ void kqueryRBC(const matrix q, const ocl_rbcStruct rbcS,
     DBG_DEVICE_MATRIX_WRITE(dq, "dq.txt");
 
     charMatrix cM;
-    cM.r=cM.c=numReps; cM.pr=cM.pc=cM.ld=PAD(numReps);
-    cM.mat = (char*)calloc( cM.pr*cM.pc, sizeof(*cM.mat) );
+    cM.r = cM.c = numReps;
+    cM.pr = cM.pc = cM.ld = PAD(numReps);
+    cM.mat = (char*)calloc(cM.pr * cM.pc, sizeof(*cM.mat));
 
     unint *repIDsQ;
-    repIDsQ = (unint*)calloc( m, sizeof(*repIDsQ) );
+    repIDsQ = (unint*)calloc(m, sizeof(*repIDsQ));
     real *distToRepsQ;
-    distToRepsQ = (real*)calloc( m, sizeof(*distToRepsQ) );
+    distToRepsQ = (real*)calloc(m, sizeof(*distToRepsQ));
     unint *groupCountQ;
-    groupCountQ = (unint*)calloc( PAD(numReps), sizeof(*groupCountQ) );
+    groupCountQ = (unint*)calloc(PAD(numReps), sizeof(*groupCountQ));
 
     /**
     * repIDsQ - indexes of nearest represetatives for consecutive
@@ -126,17 +128,18 @@ void kqueryRBC(const matrix q, const ocl_rbcStruct rbcS,
     */
     computeCounts(repIDsQ, m, groupCountQ);
 
-    //Set up the mapping from groups to queries (qMap).
+    /** Set up the mapping from groups to queries (qMap). */
     buildQMap(q, qMap, repIDsQ, numReps, &compLength);
 
     printf("comp len: %u\n", compLength);
 
-    // Setup the computation matrix.  Currently, the computation matrix is
-    // just the identity matrix: each query assigned to a particular
-    // representative is compared only to that representative's points.
-
-    // NOTE: currently, idIntersection is the *only* computation matrix
-    // that will work properly with k-nn search (this is not true for 1-nn above).
+    /** Setup the computation matrix.  Currently, the computation matrix is
+      * just the identity matrix: each query assigned to a particular
+      * representative is compared only to that representative's points.
+      *
+      * NOTE: currently, idIntersection is the *only* computation matrix
+      * that will work properly with k-nn search (this is not true for 1-nn above).
+      */
     idIntersection(cM);
 
     initCompPlan(&dcP, cM, groupCountQ, rbcS.groupCount, numReps);
@@ -167,7 +170,12 @@ void kqueryRBC(const matrix q, const ocl_rbcStruct rbcS,
     free(groupCountQ);
 }
 
-
+/** Building rbc structure
+ *  x - input points (database)
+ *  rbcS - output rbc structure
+ *  numReps - number of representatives
+ *  s - number of points assigned to each representative.
+ */
 void buildRBC(const matrix x, ocl_rbcStruct *rbcS, unint numReps, unint s)
 {
     unint n = x.pr;
@@ -363,9 +371,6 @@ void setupReps(matrix x, ocl_rbcStruct *rbcS, unint numReps)
 void computeReps(const ocl_matrix& dq, const ocl_matrix& dr,
                  unint *repIDs, real *distToReps)
 {
-    //  real *dMins;
-    //  unint *dMinIDs;
-
     cl::Context& context = OclContextHolder::context;
     cl::CommandQueue& queue = OclContextHolder::queue;
 
@@ -380,10 +385,7 @@ void computeReps(const ocl_matrix& dq, const ocl_matrix& dr,
     cl::Buffer dMinIDs(context, CL_TRUE, byte_size, 0, &err);
     checkErr(err);
 
-    //checkErr( cudaMalloc((void**)&(dMins), dq.pr*sizeof(*dMins)) );
-    //checkErr( cudaMalloc((void**)&(dMinIDs), dq.pr*sizeof(*dMinIDs)) );
-
-    nnWrap(dq,dr,dMins,dMinIDs);
+    nnWrap(dq, dr, dMins, dMinIDs);
 
     // POTENTIAL PERFORMANCE BOTTLENECK:
 
@@ -448,8 +450,6 @@ void buildQMap(matrix q, unint *qMap, unint *repIDs,
     for(i = 0; i < (*compLength); i++)
         qMap[i] = DUMMY_IDX;
 
-
-
     for(i = 0; i < n; i++)
     {
         qMap[gS[repIDs[i]]] = i;
@@ -461,12 +461,13 @@ void buildQMap(matrix q, unint *qMap, unint *repIDs,
 
 
 // Sets the computation matrix to the identity.  
-void idIntersection(charMatrix cM){
-  unint i;
-  for(i=0;i<cM.r;i++){
-    if(i<cM.c)
-      cM.mat[IDX(i,i,cM.ld)]=1;
-  }
+void idIntersection(charMatrix cM)
+{
+    for(unint i = 0; i < cM.r; i++)
+    {
+        if(i < cM.c)
+            cM.mat[IDX(i, i, cM.ld)] = 1;
+    }
 }
 
 
@@ -585,91 +586,108 @@ void destroyRBC(ocl_rbcStruct *rbcS){
  * Use freeCompPlan to clear mem.  
  * See the readme.txt file for a description of why this function is needed.
  */
-void initCompPlan(ocl_compPlan *dcP, charMatrix cM, unint *groupCountQ, unint *groupCountX, unint numReps){
-  unint i,j,k;
-  unint maxNumGroups=0;
-  compPlan cP;
-  
-  unint sNumGroups = numReps;
-  cP.numGroups = (unint*)calloc(sNumGroups, sizeof(*cP.numGroups));
-  
-  for(i=0; i<numReps; i++){
-    cP.numGroups[i] = 0;
-    for(j=0; j<numReps; j++)
-      cP.numGroups[i] += cM.mat[IDX(i,j,cM.ld)];
-    maxNumGroups = MAX(cP.numGroups[i], maxNumGroups);
-  }
-  cP.ld = maxNumGroups;
-  
-  unint sQToQGroup;
-  for(i=0, sQToQGroup=0; i<numReps; i++)
-    sQToQGroup += PAD(groupCountQ[i]);
-  
-  cP.qToQGroup = (unint*)calloc( sQToQGroup, sizeof(*cP.qToQGroup) );
+void initCompPlan(ocl_compPlan *dcP, charMatrix cM, unint *groupCountQ,
+                  unint *groupCountX, unint numReps)
+{
+    unint i, j, k;
+    unint maxNumGroups = 0;
+    compPlan cP;
 
-  for(i=0, k=0; i<numReps; i++){
-    for(j=0; j<PAD(groupCountQ[i]); j++)
-      cP.qToQGroup[k++] = i;
-  }
-  
-  unint sQGroupToXGroup = numReps*maxNumGroups;
-  cP.qGroupToXGroup = (unint*)calloc( sQGroupToXGroup, sizeof(*cP.qGroupToXGroup) );
-  unint sGroupCountX = maxNumGroups*numReps;
-  cP.groupCountX = (unint*)calloc( sGroupCountX, sizeof(*cP.groupCountX) );
-  
-  for(i=0; i<numReps; i++){
-    for(j=0, k=0; j<numReps; j++){
-      if( cM.mat[IDX( i, j, cM.ld )] ){
-	cP.qGroupToXGroup[IDX( i, k, cP.ld )] = j;
-	cP.groupCountX[IDX( i, k++, cP.ld )] = groupCountX[j];
-      }
+    unint sNumGroups = numReps;
+    cP.numGroups = (unint*)calloc(sNumGroups, sizeof(*cP.numGroups));
+
+    for(i = 0; i < numReps; i++)
+    {
+        cP.numGroups[i] = 0;
+
+        for(j = 0; j < numReps; j++)
+        {
+            cP.numGroups[i] += cM.mat[IDX(i, j, cM.ld)];
+        }
+
+        maxNumGroups = MAX(cP.numGroups[i], maxNumGroups);
     }
-  }
 
-  cl::Context& context = OclContextHolder::context;
-  cl::CommandQueue& queue = OclContextHolder::queue;
+    cP.ld = maxNumGroups;
+  
+    unint sQToQGroup;
 
-  cl_int err;
+    for(i = 0, sQToQGroup = 0; i < numReps; i++)
+    {
+        sQToQGroup += PAD(groupCountQ[i]);
+    }
+  
+    cP.qToQGroup = (unint*)calloc( sQToQGroup, sizeof(*cP.qToQGroup));
 
-  int byte_size = sNumGroups*sizeof(unint);
-  dcP->numGroups = cl::Buffer(context, CL_MEM_READ_WRITE, byte_size, 0, &err);
-  checkErr(err);
-  err = queue.enqueueWriteBuffer(dcP->numGroups, CL_TRUE, 0, byte_size, cP.numGroups);
-  checkErr(err);
+    for(i=0, k=0; i<numReps; i++)
+    {
+        for(j=0; j<PAD(groupCountQ[i]); j++)
+        {
+            cP.qToQGroup[k++] = i;
+        }
+    }
+  
+    unint sQGroupToXGroup = numReps*maxNumGroups;
+    cP.qGroupToXGroup = (unint*)calloc(sQGroupToXGroup,
+                                       sizeof(*cP.qGroupToXGroup));
+    unint sGroupCountX = maxNumGroups*numReps;
+    cP.groupCountX = (unint*)calloc(sGroupCountX, sizeof(*cP.groupCountX));
+  
+    for(i = 0; i<numReps; i++)
+    {
+        for(j = 0, k = 0; j < numReps; j++)
+        {
+            if(cM.mat[IDX(i, j, cM.ld )])
+            {
+                cP.qGroupToXGroup[IDX(i, k, cP.ld )] = j;
+                cP.groupCountX[IDX(i, k++, cP.ld)] = groupCountX[j];
+            }
+        }
+    }
 
-  byte_size = sGroupCountX*sizeof(unint);
-  dcP->groupCountX = cl::Buffer(context, CL_MEM_READ_WRITE, byte_size, 0, &err);
-  checkErr(err);
-  err = queue.enqueueWriteBuffer(dcP->groupCountX, CL_TRUE, 0, byte_size, cP.groupCountX);
-  checkErr(err);
+    cl::Context& context = OclContextHolder::context;
+    cl::CommandQueue& queue = OclContextHolder::queue;
 
-  byte_size = sQToQGroup*sizeof(unint);
-  dcP->qToQGroup = cl::Buffer(context, CL_MEM_READ_WRITE, byte_size, 0, &err);
-  checkErr(err);
-  err = queue.enqueueWriteBuffer(dcP->qToQGroup, CL_TRUE, 0, byte_size, cP.qToQGroup);
-  checkErr(err);
+    cl_int err;
 
-  byte_size = sQGroupToXGroup*sizeof(unint);
-  dcP->qGroupToXGroup = cl::Buffer(context, CL_MEM_READ_WRITE, byte_size, 0, &err);
-  checkErr(err);
-  err = queue.enqueueWriteBuffer(dcP->qGroupToXGroup, CL_TRUE, 0, byte_size, cP.qGroupToXGroup);
-  checkErr(err);
+    int byte_size = sNumGroups*sizeof(unint);
+    dcP->numGroups = cl::Buffer(context, CL_MEM_READ_WRITE,
+                                byte_size, 0, &err);
+    checkErr(err);
+    err = queue.enqueueWriteBuffer(dcP->numGroups, CL_TRUE,
+                                   0, byte_size, cP.numGroups);
+    checkErr(err);
 
-  //Move to device
-  //checkErr( cudaMalloc( (void**)&dcP->numGroups, sNumGroups*sizeof(*dcP->numGroups) ) );
-  //cudaMemcpy( dcP->numGroups, cP.numGroups, sNumGroups*sizeof(*dcP->numGroups), cudaMemcpyHostToDevice );
-//  checkErr( cudaMalloc( (void**)&dcP->groupCountX, sGroupCountX*sizeof(*dcP->groupCountX) ) );
-//  cudaMemcpy( dcP->groupCountX, cP.groupCountX, sGroupCountX*sizeof(*dcP->groupCountX), cudaMemcpyHostToDevice );
-//  checkErr( cudaMalloc( (void**)&dcP->qToQGroup, sQToQGroup*sizeof(*dcP->qToQGroup) ) );
-//  cudaMemcpy( dcP->qToQGroup, cP.qToQGroup, sQToQGroup*sizeof(*dcP->qToQGroup), cudaMemcpyHostToDevice );
-//  checkErr( cudaMalloc( (void**)&dcP->qGroupToXGroup, sQGroupToXGroup*sizeof(*dcP->qGroupToXGroup) ) );
-//  cudaMemcpy( dcP->qGroupToXGroup, cP.qGroupToXGroup, sQGroupToXGroup*sizeof(*dcP->qGroupToXGroup), cudaMemcpyHostToDevice );
-  dcP->ld = cP.ld;
+    byte_size = sGroupCountX*sizeof(unint);
+    dcP->groupCountX = cl::Buffer(context, CL_MEM_READ_WRITE,
+                                  byte_size, 0, &err);
+    checkErr(err);
+    err = queue.enqueueWriteBuffer(dcP->groupCountX, CL_TRUE,
+                                   0, byte_size, cP.groupCountX);
+    checkErr(err);
 
-  free(cP.numGroups);
-  free(cP.groupCountX);
-  free(cP.qToQGroup);
-  free(cP.qGroupToXGroup);
+    byte_size = sQToQGroup*sizeof(unint);
+    dcP->qToQGroup = cl::Buffer(context, CL_MEM_READ_WRITE,
+                                byte_size, 0, &err);
+    checkErr(err);
+    err = queue.enqueueWriteBuffer(dcP->qToQGroup, CL_TRUE,
+                                   0, byte_size, cP.qToQGroup);
+    checkErr(err);
+
+    byte_size = sQGroupToXGroup*sizeof(unint);
+    dcP->qGroupToXGroup = cl::Buffer(context, CL_MEM_READ_WRITE,
+                                     byte_size, 0, &err);
+    checkErr(err);
+    err = queue.enqueueWriteBuffer(dcP->qGroupToXGroup, CL_TRUE,
+                                   0, byte_size, cP.qGroupToXGroup);
+    checkErr(err);
+
+    dcP->ld = cP.ld;
+
+    free(cP.numGroups);
+    free(cP.groupCountX);
+    free(cP.qToQGroup);
+    free(cP.qGroupToXGroup);
 }
 
 

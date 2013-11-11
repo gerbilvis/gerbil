@@ -19,6 +19,28 @@ RBC::RBC(const vole::RBCConfig &cfg)
 
 int old_main(int argc, char **argv);
 
+
+void getRepresentatives(const matrix x, int numOfReps, matrix& q)
+{
+    q.c = x.c;
+    q.pc = x.pc;
+    q.r = numOfReps;
+    q.pr = PAD(numOfReps);
+    q.ld = q.pc;
+
+    q.mat = (real*)calloc(q.pc * q.pr, sizeof(real));
+
+    for(int i = 0; i < numOfReps; ++i)
+    {
+        int idx = rand() % x.r;
+
+        real* src_ptr = x.mat + IDX(idx, 0, x.ld);
+        real* dst_ptr = q.mat + IDX(i, 0, q.ld);
+
+        std::copy(src_ptr, src_ptr + x.pc, dst_ptr);
+    }
+}
+
 int RBC::execute()
 {
     if(config.old_impl)
@@ -59,17 +81,36 @@ int RBC::execute()
         //float* buffer = new float[img.width * img.height * img.size()];
         //imgToPlainBuffer(img, buffer);
 
-        matrix mat;
+        matrix database;
+        matrix queries;
         ocl_rbcStruct rbcS;
 
-        imgToMatrix(img, mat);
+        int numReps = 512*5;
+        int numQueries = 512*512;
 
-        int numReps = 128;
+        imgToMatrix(img, database);
+        getRepresentatives(database, numQueries, queries);
+
+        std::cout << "calcualting rbc" << std::endl;
+
+        buildRBC(database, &rbcS, numReps, numReps);
+
+        std::cout << "querying" << std::endl;
+
+        intMatrix nnsRBC;
+        matrix distsRBC;
+
+        //Allocate space for NNs and dists
+        initIntMat( &nnsRBC, numQueries, KMAX );  //KMAX is defined in defs.h
+        initMat( &distsRBC, numQueries, KMAX );
+        nnsRBC.mat = (unint*)calloc(sizeOfIntMat(nnsRBC), sizeof(*nnsRBC.mat));
+        distsRBC.mat = (real*)calloc(sizeOfMat(distsRBC), sizeof(*distsRBC.mat));
+
+        kqueryRBC(queries, rbcS, nnsRBC, distsRBC);
 
 
-        buildRBC(mat, &rbcS, numReps, numReps);
-
-        free(mat.mat);
+        free(database.mat);
+        free(queries.mat);
 
         //delete[] buffer;
     }
@@ -156,7 +197,7 @@ char *dataFileX, *dataFileQ, *dataFileXtxt, *dataFileQtxt, *outFile, *outFiletxt
 char runBrute=0, runEval=0;
 /** number of input points (database) */
 unint n = 0;
-/** number of points per representative */
+/** number queries */
 unint m = 0;
 /** dimensionality */
 unint d = 0;
