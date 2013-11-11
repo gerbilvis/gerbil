@@ -2,14 +2,6 @@
 <ui version="4.0">
  <class>RoiDockUI</class>
  <widget class="QDockWidget" name="RoiDockUI">
-  <property name="geometry">
-   <rect>
-    <x>0</x>
-    <y>0</y>
-    <width>318</width>
-    <height>428</height>
-   </rect>
-  </property>
   <property name="windowTitle">
    <string>Region of Interest</string>
   </property>
@@ -33,6 +25,19 @@
       <property name="topMargin">
        <number>0</number>
       </property>
+      <item>
+       <widget class="QLabel" name="bandsLabel">
+        <property name="sizePolicy">
+         <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
+          <horstretch>0</horstretch>
+          <verstretch>0</verstretch>
+         </sizepolicy>
+        </property>
+        <property name="text">
+         <string>Bands</string>
+        </property>
+       </widget>
+      </item>
       <item>
        <widget class="QSlider" name="bandsSlider">
         <property name="sizePolicy">
@@ -59,18 +64,11 @@
         <property name="orientation">
          <enum>Qt::Horizontal</enum>
         </property>
-       </widget>
-      </item>
-      <item>
-       <widget class="QLabel" name="bandsLabel">
-        <property name="sizePolicy">
-         <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
-          <horstretch>0</horstretch>
-          <verstretch>0</verstretch>
-         </sizepolicy>
+        <property name="tickPosition">
+         <enum>QSlider::TicksBelow</enum>
         </property>
-        <property name="text">
-         <string>Bands</string>
+        <property name="tickInterval">
+         <number>5</number>
         </property>
        </widget>
       </item>
@@ -99,12 +97,6 @@
         <horstretch>0</horstretch>
         <verstretch>0</verstretch>
        </sizepolicy>
-      </property>
-      <property name="minimumSize">
-       <size>
-        <width>300</width>
-        <height>300</height>
-       </size>
       </property>
      </widget>
     </item>

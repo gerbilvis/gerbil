@@ -4,8 +4,8 @@
 #include <QWidget>
 #include <QGraphicsView>
 #include <QGraphicsProxyWidget>
+#include <iostream>
 
-// TODO: abstract version of ViewerController
 class AutohideWidget : public QWidget
 {
 	Q_OBJECT
@@ -42,6 +42,11 @@ class GraphicsView : public QGraphicsView
 {
 public:
 	GraphicsView(QWidget *parent) : QGraphicsView(parent) {}
+
+	/* provide a reasonably high size of correct aspect ratio for layouting */
+	virtual QSize sizeHint() const {
+		return QSize(1000, 200);
+	}
 
 protected:
 	void resizeEvent(QResizeEvent *event) {

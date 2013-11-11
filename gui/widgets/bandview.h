@@ -84,7 +84,7 @@ private:
 	inline void markCachePixelS(QPainter &p, int x, int y);
 	void updateCache();
 	void updateCache(int y, int x, short label = 0);
-	void updatePoint(const QPointF &p);
+	void updatePoint(const QPoint &p);
 
 	// local labeling matrix
 	cv::Mat1s labels;
@@ -99,7 +99,7 @@ private:
 	QPixmap cachedPixmap;
 	bool cacheValid;
 
-	QPointF cursor, lastcursor;
+	QPoint cursor, lastcursor;
 	short curLabel;
 	const cv::Mat1b *overlay;
 

@@ -30,17 +30,14 @@ signals:
 public slots:
 	void setNumBands(int nBands);
 	void updateProgress(int percent);
-	void processResultKL(int k, int l);
 	void processSegmentationCompleted();
+
 protected slots:
-	void startUnsupervisedSeg(bool findKL=false);
-	void startFindKL();
+	void startUnsupervisedSeg();
 	void cancel();
 	void usMethodChanged(int idx);
-	void usInitMethodChanged(int idx);
 	void unsupervisedSegCancelled();
-	void usBandwidthMethodChanged(const QString &current);
-//	void setBandsSpinBoxTouched(bool touched=true);
+
 protected:
 	void initUi();
 

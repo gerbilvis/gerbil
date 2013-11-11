@@ -131,16 +131,23 @@ void BandView::paintEvent(QPaintEvent *ev)
 		updateCache();
 	}
 
+	fillBackground(painter, ev->rect());
+
 	painter.save();
 
 	//painter.setRenderHint(QPainter::Antialiasing); too slow!
-
 	painter.setWorldTransform(scaler);
 	QRect damaged = scalerI.mapRect(ev->rect());
 	painter.drawPixmap(damaged, cachedPixmap, damaged);
 
-	// draw current cursor
-	if (!singleLabel && curLabel>=0 && (curLabel < labelColors.count())) {
+	/* draw current cursor */
+	bool drawCursor = (seedMode || !singleLabel);
+	if (!pixmap.rect().contains(cursor.x(), cursor.y()))
+		drawCursor = false;
+	if (curLabel < 1 || curLabel >= labelColors.count())
+		drawCursor = false;
+
+	if (drawCursor) {
 //		GGDBGM(boost::format("count=%1% curLabel=%2%")
 //			  %labelColors.count()% curLabel << endl);
 		QPen pen(seedMode ? Qt::yellow : labelColors.at(curLabel));
@@ -149,7 +156,7 @@ void BandView::paintEvent(QPaintEvent *ev)
 		painter.drawRect(QRectF(cursor, QSizeF(1, 1)));
 	}
 
-	// draw overlay (a quasi one-timer)
+	/* draw overlay (a quasi one-timer) */
 	QPen pen;
 	if (overlay) {
 		if (scale > 4.) {
@@ -314,9 +321,10 @@ void BandView::cursorAction(QMouseEvent *ev, bool click)
 	// kill overlay to free the view
 	bool grandupdate = (overlay != NULL);
 
-	cursor = QPointF(ev->pos() / scale);
-	cursor.setX(std::floor(cursor.x() - 0.25));
-	cursor.setY(std::floor(cursor.y() - 0.25));
+	// do the mapping in floating point for accuracy
+	QPointF cursorF = scalerI.map(QPointF(ev->pos()));
+	cursor.setX(std::floor(cursorF.x() - 0.25));
+	cursor.setY(std::floor(cursorF.y() - 0.25));
 
 	//GGDBGM(boost::format("lastcursor %1%, cursor %2%, clicked %3%")%lastcursor%cursor%click << endl);
 
@@ -326,7 +334,7 @@ void BandView::cursorAction(QMouseEvent *ev, bool click)
 	}
 
 	// nothing new after all..
-	if ((cursor == lastcursor))
+	if (cursor == lastcursor)
 		return;
 
 	// lastcursor invalid -> begin drawing at cursor
@@ -334,14 +342,13 @@ void BandView::cursorAction(QMouseEvent *ev, bool click)
 		lastcursor = cursor;
 	}
 
-	int x = cursor.x(), y = cursor.y();
-
 	// test for dimension match
-	if (!pixmap.rect().contains(x, y)) {
+	if (!pixmap.rect().contains(cursor)) {
 		lastcursor = QPoint(-1,-1);
 		return;
 	}
 
+	int x = cursor.x(), y = cursor.y();
 	if (singleLabel && showLabels) {
 		if (ev->buttons() & Qt::LeftButton) {
 			holdLabel = !holdLabel;
@@ -441,7 +448,7 @@ void BandView::commitLabels()
 	ignoreUpdates = false;
 }
 
-void BandView::updatePoint(const QPointF &p)
+void BandView::updatePoint(const QPoint &p)
 {
 	QPoint damagetl = scaler.map(QPoint(p.x() - 2, p.y() - 2));
 	QPoint damagebr = scaler.map(QPoint(p.x() + 2, p.y() + 2));
@@ -470,8 +477,7 @@ void BandView::leaveEvent(QEvent *ev)
 {
 //	GGDBGM("leaveEvent" << endl);
 	// invalidate cursor
-	cursor = QPoint(-1, -1);
-	lastcursor = QPoint(-1, -1);
+	cursor = lastcursor = QPoint(-1, -1);
 
 	// invalidate previous overlay
 	emit pixelOverlay(-1, -1);

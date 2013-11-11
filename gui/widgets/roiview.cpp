@@ -24,12 +24,16 @@ void ROIView::paintEvent(QPaintEvent *ev)
 		return;
 
 	QPainter painter(this);
+
+	fillBackground(painter, ev->rect());
+
 	painter.setRenderHint(QPainter::SmoothPixmapTransform);
 
 	painter.setWorldTransform(scaler);
 	QRect damaged = scalerI.mapRect(ev->rect());
 	painter.drawPixmap(damaged, pixmap, damaged);
 
+	/* gray out region outside ROI */
 	QColor color(Qt::darkGray); color.setAlpha(127);
 	painter.fillRect(0, 0, roi.x(), pixmap.height(), color);
 	painter.fillRect(roi.x()+roi.width(), 0,
@@ -46,7 +50,7 @@ void ROIView::paintEvent(QPaintEvent *ev)
 
 void ROIView::cursorAction(QMouseEvent *ev, bool click)
 {
-	QPointF cursor(ev->pos() / scale);
+	QPointF cursor = scalerI.map(QPointF(ev->pos()));
 	cursor.setX(std::floor(cursor.x() - 0.25));
 	cursor.setY(std::floor(cursor.y() - 0.25));
 

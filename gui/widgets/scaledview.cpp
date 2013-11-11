@@ -17,13 +17,26 @@
  */
 ScaledView::ScaledView(QWidget *parent)
 	: QGLWidget(QGLFormat(QGL::SampleBuffers), parent)
-{}
+{
+	// avoid floating point exceptions, unreasonable shrinkage
+	setMinimumSize(50, 50);
+	updateGeometry();
+}
+
+
+QSize ScaledView::sizeHint() const
+{
+	float src_aspect = 1.f;
+	if (!pixmap.isNull())
+		src_aspect = pixmap.width()/(float)pixmap.height();
+	return QSize(300*src_aspect, 300);
+}
 
 void ScaledView::setPixmap(QPixmap p)
 {
 	pixmap = p;
 	resizeEvent(0);
-	update();
+	updateGeometry();
 }
 
 void ScaledView::resizeEvent(QResizeEvent *ev)
@@ -40,8 +53,14 @@ void ScaledView::resizeEvent(QResizeEvent *ev)
 	else
 		w = height()*src_aspect - 1;
 
+	/* centering */
+	scaler = QTransform().translate((width() - w)/2.f,
+									(height() - w/src_aspect)/2.f);
+	/* scaling */
 	scale = w/pixmap.width();
-	scaler = QTransform().scale(scale, scale);
+	scaler.scale(scale, scale);
+
+	// inverted transform to handle input
 	scalerI = scaler.inverted();
 }
 
@@ -49,15 +68,16 @@ void ScaledView::paintEvent(QPaintEvent *ev)
 {
 	QPainter painter(this);
 	if (!pixmap) {
-		painter.fillRect(this->rect(), QBrush(Qt::gray, Qt::BDiagPattern));
+		painter.fillRect(ev->rect(), QBrush(Qt::gray, Qt::BDiagPattern));
 		drawWaitMessage(painter);
 		return;
 	}
 
+	fillBackground(painter, ev->rect());
+
 	painter.save();
 
 	painter.setRenderHint(QPainter::SmoothPixmapTransform);
-
 	painter.setWorldTransform(scaler);
 	QRect damaged = scalerI.mapRect(ev->rect());
 	painter.drawPixmap(damaged, pixmap, damaged);
