@@ -22,7 +22,7 @@ typedef uint unint;
 //Row major indexing
 #define IDX(i,j,ld) (((size_t)(i)*(ld))+(j))
 
-#define DIST(i,j) ( ( (i)-(j) )*( (i)-(j) ) )  // L_2
+#define DIST(i,j) (((i) - (j)) * ((i) - (j))) // L_2
 
 #define MAX(a,b) max(a,b)
 #define MIN(a,b) min(a,b)
@@ -118,110 +118,119 @@ __kernel void findRangeKernel(__global const real* D_mat,
                               unint cntWant)
 {
 
-  size_t blockIdx_y = get_group_id(1);
+    size_t blockIdx_y = get_group_id(1);
 
     size_t threadIdx_x = get_local_id(0);
     size_t threadIdx_y = get_local_id(1);
 
-  unint row = blockIdx_y*(BLOCK_SIZE/4)+threadIdx_y + numDone;
-  unint ro = threadIdx_y;
-  unint co = threadIdx_x;
-  unint i, c;
-  real t;
+    unint row = blockIdx_y*(BLOCK_SIZE/4)+threadIdx_y + numDone;
+    unint ro = threadIdx_y;
+    unint co = threadIdx_x;
+    unint i;
+    real t;
 
-  const unint LB = (90*cntWant)/100 ;
-  const unint UB = cntWant;
+    const unint LB = (90 * cntWant) / 100;
+    const unint UB = cntWant;
 
-  __local real smin[BLOCK_SIZE/4][4*BLOCK_SIZE];
-  __local real smax[BLOCK_SIZE/4][4*BLOCK_SIZE];
+    __local real smin[BLOCK_SIZE/4][4*BLOCK_SIZE];
+    __local real smax[BLOCK_SIZE/4][4*BLOCK_SIZE];
 
-//  real min= MAX_REAL;
+    //  real min= MAX_REAL;
     real min_val = FLT_MAX;
+    real max_val = 0;
 
-
-  real max_val=0;
-  for(c=0 ; c<D_pc ; c+=(4*BLOCK_SIZE)){
-    if( c+co < D_c ){
-      t = D_mat[ IDX( row, c+co, D_ld ) ];
-      min_val = MIN(t,min_val);
-      max_val = MAX(t,max_val);
+    for(unint c = 0 ; c < D_pc; c += (4*BLOCK_SIZE))
+    {
+        if(c + co < D_c)
+        {
+            t = D_mat[IDX( row, c+co, D_ld )];
+            min_val = MIN(t,min_val);
+            max_val = MAX(t,max_val);
+        }
     }
-  }
 
-  smin[ro][co] = min_val;
-  smax[ro][co] = max_val;
-
-  barrier(CLK_LOCAL_MEM_FENCE);
-
-  for(i=2*BLOCK_SIZE ; i>0 ; i/=2){
-    if( co < i ){
-      smin[ro][co] = MIN( smin[ro][co], smin[ro][co+i] );
-      smax[ro][co] = MAX( smax[ro][co], smax[ro][co+i] );
-    }
-    barrier(CLK_LOCAL_MEM_FENCE);
-  }
-
-  //Now start range counting.
-
-  unint itcount=0;
-  unint cnt;
-  real rg;
-
-  __local unint scnt[BLOCK_SIZE/4][4*BLOCK_SIZE];
-  __local char cont[BLOCK_SIZE/4];
-
-  if(co==0)
-    cont[ro]=1;
-
-  do{
-    itcount++;
+    smin[ro][co] = min_val;
+    smax[ro][co] = max_val;
 
     barrier(CLK_LOCAL_MEM_FENCE);
 
-    if( cont[ro] )  //if we didn't actually need to cont, leave rg as it was.
-      rg = ( smax[ro][0] + smin[ro][0] ) / ((real)2.0) ;
-
-    cnt=0;
-    for(c=0 ; c<D_pc ; c+=(4*BLOCK_SIZE)){
-      cnt += (c+co < D_c && row < D_r && D_mat[ IDX( row, c+co, D_ld ) ] <= rg);
+    for(i = 2 * BLOCK_SIZE; i > 0; i /= 2)
+    {
+        if(co < i)
+        {
+            smin[ro][co] = MIN(smin[ro][co], smin[ro][co+i]);
+            smax[ro][co] = MAX(smax[ro][co], smax[ro][co+i]);
+        }
+        barrier(CLK_LOCAL_MEM_FENCE);
     }
 
-    scnt[ro][co] = cnt;
+    //Now start range counting.
 
-    barrier(CLK_LOCAL_MEM_FENCE);
+    unint itcount = 0;
+    real rg;
 
-    for(i=2*BLOCK_SIZE ; i>0 ; i/=2){
-      if( co < i ){
-        scnt[ro][co] += scnt[ro][co+i];
-      }
-      barrier(CLK_LOCAL_MEM_FENCE);
-    }
+    __local unint scnt[BLOCK_SIZE/4][4*BLOCK_SIZE];
+    __local char cont[BLOCK_SIZE/4];
 
-    if(co==0){
-      if( scnt[ro][0] < cntWant )
-        smin[ro][0]=rg;
-      else
-        smax[ro][0]=rg;
-    }
-
-    // cont[ro] == this row needs to continue
     if(co==0)
-      cont[ro] = row<D_r && ( scnt[ro][0] < LB || scnt[ro][0] > UB );
+        cont[ro]=1;
 
-    barrier(CLK_LOCAL_MEM_FENCE);
+    do
+    {
+        itcount++;
 
-    // Determine if *any* of the rows need to continue
-    for(i=BLOCK_SIZE/8 ; i>0 ; i/=2){
-      if( ro < i && co==0)
-        cont[ro] |= cont[ro+i];
-      barrier(CLK_LOCAL_MEM_FENCE);
-    }
+        barrier(CLK_LOCAL_MEM_FENCE);
 
-  } while(cont[0]);
+        if(cont[ro])  //if we didn't actually need to cont, leave rg as it was.
+            rg = ( smax[ro][0] + smin[ro][0] ) / ((real)2.0) ;
 
-  if(co==0 && row<D_r )
-    ranges[row]=rg;
+        unint cnt = 0;
 
+        for(unint c = 0; c < D_pc; c += (4*BLOCK_SIZE))
+        {
+            cnt += (c+co < D_c && row < D_r
+                               && D_mat[ IDX( row, c+co, D_ld ) ] <= rg);
+        }
+
+        scnt[ro][co] = cnt;
+
+        barrier(CLK_LOCAL_MEM_FENCE);
+
+        for(i = 2 * BLOCK_SIZE; i > 0; i /= 2)
+        {
+            if(co < i)
+            {
+                scnt[ro][co] += scnt[ro][co+i];
+            }
+            barrier(CLK_LOCAL_MEM_FENCE);
+        }
+
+        if(co == 0)
+        {
+            if(scnt[ro][0] < cntWant)
+                smin[ro][0]=rg;
+            else
+                smax[ro][0]=rg;
+        }
+
+        // cont[ro] == this row needs to continue
+        if(co == 0)
+            cont[ro] = row<D_r && ( scnt[ro][0] < LB || scnt[ro][0] > UB );
+
+        barrier(CLK_LOCAL_MEM_FENCE);
+
+        // Determine if *any* of the rows need to continue
+        for(i = BLOCK_SIZE / 8; i > 0; i /= 2)
+        {
+            if(ro < i && co == 0)
+                cont[ro] |= cont[ro+i];
+            barrier(CLK_LOCAL_MEM_FENCE);
+        }
+
+    } while(cont[0]);
+
+    if(co == 0 && row < D_r)
+        ranges[row] = rg;
 }
 
 
@@ -241,16 +250,16 @@ __kernel void rangeSearchKernel(__global const real* D_mat,
                                 unint ir_pc,
                                 unint ir_ld)
 {
-  size_t threadIdx_x = get_local_id(0);
-  size_t threadIdx_y = get_local_id(1);
+    size_t threadIdx_x = get_local_id(0);
+    size_t threadIdx_y = get_local_id(1);
 
-  size_t blockIdx_x = get_group_id(0);
-  size_t blockIdx_y = get_group_id(1);
+    size_t blockIdx_x = get_group_id(0);
+    size_t blockIdx_y = get_group_id(1);
 
-  unint col = blockIdx_x*BLOCK_SIZE + threadIdx_x + xOff;
-  unint row = blockIdx_y*BLOCK_SIZE + threadIdx_y + yOff;
+    unint col = blockIdx_x*BLOCK_SIZE + threadIdx_x + xOff;
+    unint row = blockIdx_y*BLOCK_SIZE + threadIdx_y + yOff;
 
-  ir_mat[IDX( row, col, ir_ld )] = D_mat[IDX( row, col, D_ld )] < ranges[row];
+    ir_mat[IDX( row, col, ir_ld )] = D_mat[IDX( row, col, D_ld )] < ranges[row];
 }
 
 /** Performs parallel scan for chunks of size SCAN_WIDTH
@@ -487,18 +496,11 @@ __kernel void buildMapKernel(__global unint* map_mat,
 
     if(bo+2*id < ir_c && ir_mat[IDX( r, bo+2*id, ir_ld )])
     {
-//        assert(r+offSet < map_r);
-//        assert(r < sums_r);
-//        assert(bo+2*id < sums_c);
-        //assert(sums_mat[IDX(r, bo+2*id, sums_ld)] < map_c);
-
-       // if(sums_mat[IDX(r, bo+2*id, sums_ld)] < map_c)
         map_mat[IDX(r+offSet, sums_mat[IDX(r, bo+2*id, sums_ld)], map_ld)] = bo+2*id;
     }
 
     if(bo+2*id+1 < ir_c && ir_mat[IDX( r, bo+2*id+1, ir_ld )])
     {
-       // if(sums_mat[IDX( r, bo+2*id+1, sums_ld )] < map_c)
         map_mat[IDX( r+offSet, sums_mat[IDX( r, bo+2*id+1, sums_ld )], map_ld)] = bo+2*id+1;
     }
 }
@@ -518,13 +520,15 @@ __kernel void getCountsKernel(__global unint *counts,
                               unint sums_pc,
                               unint sums_ld)
 {
-  size_t threadIdx_x = get_local_id(0);
-  size_t blockIdx_x = get_group_id(0);
+    size_t threadIdx_x = get_local_id(0);
+    size_t blockIdx_x = get_group_id(0);
 
-  unint r = blockIdx_x*BLOCK_SIZE + threadIdx_x + numDone;
-  if ( r < ir_r ){
-    counts[r] = ir_mat[IDX( r, ir_c-1, ir_ld )] ? sums_mat[IDX( r, sums_c-1, sums_ld )]+1 : sums_mat[IDX( r, sums_c-1, sums_ld )];
-  }
+    unint r = blockIdx_x*BLOCK_SIZE + threadIdx_x + numDone;
+    if (r < ir_r)
+    {
+        int val = sums_mat[IDX(r, sums_c-1, sums_ld)];
+        counts[r] = ir_mat[IDX( r, ir_c-1, ir_ld )] ? val + 1 : val;
+    }
 }
 
 
@@ -866,10 +870,21 @@ __kernel void planKNNKernel(__global const real* Q_mat,
 
     if(qMap[qB + offQ] != DUMMY_IDX)
     {
-        dMins_mat[IDX(qMap[qB + offQ], offX, dMins_ld)] = dNN[offQ][offX];
+/*        dMins_mat[IDX(qMap[qB + offQ], offX, dMins_ld)] = dNN[offQ][offX];
         dMins_mat[IDX(qMap[qB + offQ], offX + 16, dMins_ld)] = dNN[offQ][offX + 16];
-        dMinIDs_mat[IDX(qMap[qB + offQ], offX, dMins_ld)] = idNN[offQ][offX];
-        dMinIDs_mat[IDX(qMap[qB + offQ], offX + 16, dMinIDs_ld)] = idNN[offQ][offX + 16];
+        dMinIDs_mat[IDX(qMap[qB + offQ], offX, dMins_ld)] = idNN[offQ][offX]; <-- consider this dMins_ld
+        dMinIDs_mat[IDX(qMap[qB + offQ], offX + 16, dMinIDs_ld)] = idNN[offQ][offX + 16];*/
+
+        int out_idx = IDX(qMap[qB + offQ], offX, dMins_ld);
+
+        dMins_mat[out_idx] = dNN[offQ][offX];
+        dMins_mat[out_idx + 16] = dNN[offQ][offX + 16];
+
+        out_idx = IDX(qMap[qB + offQ], offX, dMinIDs_ld);
+
+        dMinIDs_mat[out_idx] = idNN[offQ][offX];
+        dMinIDs_mat[out_idx + 16] = idNN[offQ][offX + 16];
+
     }
 }
 
