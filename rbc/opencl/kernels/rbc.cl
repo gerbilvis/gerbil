@@ -633,9 +633,10 @@ void mmGateI(__local real *x, __local real *y,
     *x = t;
 }
 
-//This is the same as sort16, but takes as input lists of length 48
-//and sorts the last 16 entries.  This cleans up some of the NN code,
-//though it is inelegant.
+/** This is the same as sort16, but takes as input lists of length 48
+  * and sorts the last 16 entries.  This cleans up some of the NN code,
+  * though it is inelegant.
+  */
 void sort16off(__local real x[][48], __local unint xi[][48])
 {
     int i = get_local_id(0);
@@ -693,9 +694,10 @@ void sort16off(__local real x[][48], __local unint xi[][48])
 }
 
 
-// This function takes an array of lists, each of length 48. It is assumed
-// that the first 32 numbers are sorted, and the last 16 numbers.  The
-// routine then merges these lists into one sorted list of length 48.
+/** This function takes an array of lists, each of length 48. It is assumed
+  * that the first 32 numbers are sorted, and the last 16 numbers.  The
+  * routine then merges these lists into one sorted list of length 48.
+  */
 void merge32x16(__local real x[][48], __local unint xi[][48]){
 
     int i = get_local_id(0);
@@ -794,69 +796,80 @@ __kernel void planKNNKernel(__global const real* Q_mat,
     unint offQ = threadIdx_y; //the offset of qPos in this block
     unint offX = threadIdx_x; //ditto for x
 
-    __local real dNN[BLOCK_SIZE][KMAX+BLOCK_SIZE];
-    __local unint idNN[BLOCK_SIZE][KMAX+BLOCK_SIZE];
+    __local real dNN[BLOCK_SIZE][KMAX + BLOCK_SIZE];
+    __local unint idNN[BLOCK_SIZE][KMAX + BLOCK_SIZE];
 
     __local real Xs[BLOCK_SIZE][BLOCK_SIZE];
     __local real Qs[BLOCK_SIZE][BLOCK_SIZE];
 
-    unint xG; //DB group currently being examined
-
-    unint g = cP_qToQGroup[qB]; //query group of q
-    unint numGroups = cP_numGroups[g];
+    unint g = cP_qToQGroup[qB]; /** query group of q */
+    unint numGroups = cP_numGroups[g]; /** always 1 in case of identity matrix */
 
     dNN[offQ][offX] = FLT_MAX;//MAX_REAL;
-    dNN[offQ][offX+16] = FLT_MAX;//MAX_REAL;
+    dNN[offQ][offX + 16] = FLT_MAX;//MAX_REAL;
     idNN[offQ][offX] = DUMMY_IDX;
-    idNN[offQ][offX+16] = DUMMY_IDX;
+    idNN[offQ][offX + 16] = DUMMY_IDX;
 
     barrier(CLK_LOCAL_MEM_FENCE);
 
     for(unint i = 0; i < numGroups; i++) //iterate over DB groups
     {
-        xG = cP_qGroupToXGroup[IDX( g, i, cP_ld )];
-        unint groupCount = cP_groupCountX[IDX( g, i, cP_ld )];
+        //DB group currently being examined
+        unint xG = cP_qGroupToXGroup[IDX(g, i, cP_ld)];
+        unint groupCount = cP_groupCountX[IDX(g, i, cP_ld)];
 
-        unint groupIts = (groupCount+BLOCK_SIZE-1)/BLOCK_SIZE;
+        unint groupIts = (groupCount + BLOCK_SIZE - 1) / BLOCK_SIZE;
 
         for(unint j = 0; j < groupIts; j++) //iterate over elements of group
         {
-            xB=j*BLOCK_SIZE;
+            xB = j * BLOCK_SIZE;
+            real ans = 0;
 
-            real ans=0;
-            for(cB = 0; cB < X_pc; cB += BLOCK_SIZE) // iterate over cols to compute distances
+            /** iterate over cols to compute distances */
+            for(cB = 0; cB < X_pc; cB += BLOCK_SIZE)
             {
-                Xs[offX][offQ] = X_mat[IDX( xMap_mat[IDX( xG, xB+offQ, xMap_ld )], cB+offX, X_ld )];
-                Qs[offX][offQ] = ( (qMap[qB+offQ]==DUMMY_IDX) ? 0 : Q_mat[IDX( qMap[qB+offQ], cB+offX, Q_ld )] );
+                unint databaseIdx = IDX(xMap_mat[IDX(xG, xB + offQ, xMap_ld)],
+                                        cB + offX, X_ld);
 
+                unint queryIdx = IDX(qMap[qB+offQ], cB+offX, Q_ld);
+
+                Xs[offX][offQ] = X_mat[databaseIdx];
+                Qs[offX][offQ] = ((qMap[qB + offQ] == DUMMY_IDX)
+                                                        ? 0 : Q_mat[queryIdx]);
                 barrier(CLK_LOCAL_MEM_FENCE);
 
                 for(unint k = 0; k < BLOCK_SIZE; k++)
-                    ans+=DIST( Xs[k][offX], Qs[k][offQ] );
+                    ans += DIST(Xs[k][offX], Qs[k][offQ]);
 
                 barrier(CLK_LOCAL_MEM_FENCE);
             }
 
-            dNN[offQ][offX+32] = (xB+offX<groupCount)? ans:FLT_MAX;
-            idNN[offQ][offX+32] = (xB+offX<groupCount)? xMap_mat[IDX( xG, xB+offX, xMap_ld )]: DUMMY_IDX;
+            dNN[offQ][offX+32] = (xB + offX < groupCount) ? ans : FLT_MAX;
+
+            idNN[offQ][offX+32] = (xB + offX < groupCount)
+                            ? xMap_mat[IDX(xG, xB + offX, xMap_ld)] : DUMMY_IDX;
 
             barrier(CLK_LOCAL_MEM_FENCE);
 
-            sort16off( dNN, idNN );
+            /** sorting the last 16 items of 48 */
+            sort16off(dNN, idNN);
 
             barrier(CLK_LOCAL_MEM_FENCE);
 
-            merge32x16( dNN, idNN );
+            /** merging the last 16 items with first 32 items into
+              * one sorted array of 48 items */
+            merge32x16(dNN, idNN);
         }
     }
 
     barrier(CLK_LOCAL_MEM_FENCE);
 
-    if(qMap[qB+offQ]!=DUMMY_IDX){
-        dMins_mat[IDX(qMap[qB+offQ], offX, dMins_ld)] = dNN[offQ][offX];
-        dMins_mat[IDX(qMap[qB+offQ], offX+16, dMins_ld)] = dNN[offQ][offX+16];
-        dMinIDs_mat[IDX(qMap[qB+offQ], offX, dMins_ld)] = idNN[offQ][offX];
-        dMinIDs_mat[IDX(qMap[qB+offQ], offX+16, dMinIDs_ld)] = idNN[offQ][offX+16];
+    if(qMap[qB + offQ] != DUMMY_IDX)
+    {
+        dMins_mat[IDX(qMap[qB + offQ], offX, dMins_ld)] = dNN[offQ][offX];
+        dMins_mat[IDX(qMap[qB + offQ], offX + 16, dMins_ld)] = dNN[offQ][offX + 16];
+        dMinIDs_mat[IDX(qMap[qB + offQ], offX, dMins_ld)] = idNN[offQ][offX];
+        dMinIDs_mat[IDX(qMap[qB + offQ], offX + 16, dMinIDs_ld)] = idNN[offQ][offX + 16];
     }
 }
 
@@ -952,4 +965,66 @@ __kernel void knnKernel(__global const real* Q_mat,
     dMins_mat[IDX(qB + offQ, offX + 16, dMins_ld)] = dNN[offQ][offX + 16];
     dMinIDs_mat[IDX(qB + offQ, offX, dMins_ld)] = idNN[offQ][offX];
     dMinIDs_mat[IDX(qB + offQ, offX + 16, dMins_ld)] = idNN[offQ][offX + 16];
+}
+
+#define PILOT_BLOCK_SIZE_X 32
+#define PILOT_BLOCK_SIZE_Y 8
+#define PILOT_POINTS_PER_ROW 4
+
+__kernel void computePilotKernel(__global const float* nns,
+                                 int width, int height,
+                                 int neighbours_num,
+                                 int neighbours_pitch,
+                                 float threshold,
+                                 __global int* result)
+{
+    size_t x = get_global_id(0);
+    size_t y = get_global_id(1);
+
+    size_t local_id_x = get_local_id(0);
+    size_t local_id_y = get_local_id(1);
+
+    size_t nns_base_group = y * width + x * PILOT_POINTS_PER_ROW;
+
+    __local int counters[PILOT_BLOCK_SIZE_Y][PILOT_BLOCK_SIZE_Y];
+
+    for(int i = 0; i < PILOT_POINTS_PER_ROW; ++i)
+    {
+        counters[local_id_y][local_id_x] = 0;
+
+        __global const float* current_nns
+                            = nns + ((nns_base_group + i) * neighbours_pitch);
+
+        /** testing each neigbour from the list */
+        for(int j = 0; j < neighbours_num; j += PILOT_BLOCK_SIZE_X)
+        {
+            float distance = current_nns[j];
+
+            if(distance < threshold)
+            {
+                counters[local_id_y][local_id_x]++;
+            }
+        }
+
+        barrier(CLK_LOCAL_MEM_FENCE);
+
+        /** reduction */
+
+        for (unsigned int s = PILOT_BLOCK_SIZE_X; s > 0; s >>= 1)
+        {
+            if (local_id_x < s)
+            {
+                counters[local_id_y][local_id_x]
+                                       += counters[local_id_y][local_id_x + s];
+            }
+
+            barrier(CLK_LOCAL_MEM_FENCE);
+        }
+
+        /** writing result */
+        if(local_id_x == 0)
+        {
+            result[nns_base_group + i] = counters[local_id_y][0];
+        }
+    }
 }

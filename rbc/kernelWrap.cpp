@@ -362,11 +362,11 @@ void planKNNWrap(const ocl_matrix& dq, const cl::Buffer& dqMap,
 {
     cl::NDRange local(BLOCK_SIZE, BLOCK_SIZE);
     unint todo;
-
     unint numDone = 0;
-    while( numDone<compLength )
+
+    while(numDone < compLength)
     {
-        todo = MIN( (compLength-numDone) , MAX_BS*BLOCK_SIZE );
+        todo = MIN((compLength-numDone), MAX_BS*BLOCK_SIZE);
 
         cl::NDRange global(BLOCK_SIZE, todo);
 
@@ -412,7 +412,7 @@ void planKNNWrap(const ocl_matrix& dq, const cl::Buffer& dqMap,
         planKNNKernel.setArg(36, numDone);
 
         queue.enqueueNDRangeKernel(planKNNKernel, cl::NullRange,
-                                 global, local);
+                                   global, local);
         numDone += todo;
     }
 

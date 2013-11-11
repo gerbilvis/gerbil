@@ -47,8 +47,8 @@ int RBC::execute()
     {
 
         const char* argv[] = {"testRBC",
-                              "-X", "/home/mcieslak/SOCIS/RBC-GPU-CMAKE/sample_input/sample_db.txt",
-                              "-Q", "/home/mcieslak/SOCIS/RBC-GPU-CMAKE/sample_input/sample_queries.txt",
+                              "-X", "/home/michalc/SOCIS/RandomBallCover-GPU-master/sample_input/sample_db.txt",
+                              "-Q", "/home/michalc/SOCIS/RandomBallCover-GPU-master/sample_input/sample_queries.txt",
                               "-n", "1024",
                               "-m", "128",
                               "-d", "16",
@@ -101,8 +101,17 @@ int RBC::execute()
         matrix distsRBC;
 
         //Allocate space for NNs and dists
-        initIntMat( &nnsRBC, numQueries, KMAX );  //KMAX is defined in defs.h
-        initMat( &distsRBC, numQueries, KMAX );
+        initIntMat(&nnsRBC, numQueries, KMAX);  //KMAX is defined in defs.h
+        initMat(&distsRBC, numQueries, KMAX);
+
+        std::cout << "query indexes size: "
+                  << ((float)(numQueries * KMAX * sizeof(unint))) / (1024 * 1024)
+                  << "MB" << std::endl;
+
+        std::cout << "query distances size: "
+                  << ((float)(numQueries * KMAX * sizeof(real))) / (1024 * 1024)
+                  << "MB" << std::endl;
+
         nnsRBC.mat = (unint*)calloc(sizeOfIntMat(nnsRBC), sizeof(*nnsRBC.mat));
         distsRBC.mat = (real*)calloc(sizeOfMat(distsRBC), sizeof(*distsRBC.mat));
 

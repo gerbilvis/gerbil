@@ -156,9 +156,6 @@ void kqueryRBC(const matrix q, const ocl_rbcStruct rbcS,
     err = queue.enqueueWriteBuffer(dqMap, CL_TRUE, 0, byte_size, qMap);
     checkErr(err);
 
-    //checkErr( cudaMalloc( (void**)&dqMap, compLength*sizeof(*dqMap) ) );
-    //cudaMemcpy( dqMap, qMap, compLength*sizeof(*dqMap), cudaMemcpyHostToDevice );
-
     computeKNNs(rbcS.dx, rbcS.dxMap, dq, dqMap, dcP, NNs, NNdists, compLength);
 
     free(qMap);
@@ -497,7 +494,6 @@ void computeNNs(matrix dx, intMatrix dxMap, matrix dq, unint *dqMap, compPlan dc
   cudaFree(dMinIDs);
 }*/
 
-//void computeKNNs(matrix dx, intMatrix dxMap, matrix dq, unint *dqMap, compPlan dcP, intMatrix NNs, matrix NNdists, unint compLength){
 void computeKNNs(const ocl_matrix& dx, const ocl_intMatrix& dxMap,
                  const ocl_matrix& dq, cl::Buffer& dqMap,
                  ocl_compPlan& dcP, intMatrix NNs,
@@ -512,39 +508,35 @@ void computeKNNs(const ocl_matrix& dx, const ocl_intMatrix& dxMap,
     dMinIDs.r = compLength; dMinIDs.pr = compLength;
     dMinIDs.c = KMAX; dMinIDs.pc = KMAX; dMinIDs.ld = dMinIDs.pc;
 
-    //checkErr( cudaMalloc((void**)&dNNdists.mat,dNNdists.pr*dNNdists.pc*sizeof(*dNNdists.mat)) );
-    //checkErr( cudaMalloc((void**)&dMinIDs.mat,dMinIDs.pr*dMinIDs.pc*sizeof(*dMinIDs.mat)) );
-
     cl::Context& context = OclContextHolder::context;
     cl::CommandQueue& queue = OclContextHolder::queue;
 
     int byte_size = dNNdists.pr * dNNdists.pc * sizeof(real);
     cl_int err;
 
-    dNNdists.mat = cl::Buffer(context, CL_MEM_READ_WRITE, byte_size, 0, &err);
+    dNNdists.mat = cl::Buffer(context, CL_MEM_READ_WRITE,
+                              byte_size, 0, &err);
     checkErr(err);
 
     byte_size = dMinIDs.pr * dMinIDs.pc * sizeof(unint);
 
-    dMinIDs.mat = cl::Buffer(context, CL_MEM_READ_WRITE, byte_size, 0, &err);
+    dMinIDs.mat = cl::Buffer(context, CL_MEM_READ_WRITE,
+                             byte_size, 0, &err);
     checkErr(err);
 
     planKNNWrap(dq, dqMap, dx, dxMap, dNNdists, dMinIDs, dcP, compLength);
 
     byte_size = dq.r * KMAX*sizeof(unint);
 
-    err = queue.enqueueReadBuffer(dMinIDs.mat, CL_TRUE, 0, byte_size, NNs.mat);
+    err = queue.enqueueReadBuffer(dMinIDs.mat, CL_TRUE,
+                                  0, byte_size, NNs.mat);
     checkErr(err);
 
     byte_size = dq.r*KMAX*sizeof(real);
 
-    err = queue.enqueueReadBuffer(dNNdists.mat, CL_TRUE, 0, byte_size, NNdists.mat);
+    err = queue.enqueueReadBuffer(dNNdists.mat, CL_TRUE,
+                                  0, byte_size, NNdists.mat);
     checkErr(err);
-
-    //cudaMemcpy( NNs.mat, dMinIDs.mat, dq.r*KMAX*sizeof(*NNs.mat), cudaMemcpyDeviceToHost );
-    //cudaMemcpy( NNdists.mat, dNNdists.mat, dq.r*KMAX*sizeof(*NNdists.mat), cudaMemcpyDeviceToHost );
-    //cudaFree(dNNdists.mat);
-    //cudaFree(dMinIDs.mat);
 }
 
 
@@ -554,30 +546,18 @@ void computeKNNs(const ocl_matrix& dx, const ocl_intMatrix& dxMap,
 //are computed, resulting in a distance matrix of size 
 //length by dx.pr.  It is assumed that length is padded.
 //void distSubMat(matrix dr, matrix dx, matrix dD, unint start, unint length){
-void distSubMat(ocl_matrix& dr, ocl_matrix& dx, ocl_matrix &dD, unint start, unint length){
-
-
+void distSubMat(ocl_matrix& dr, ocl_matrix& dx, ocl_matrix &dD, unint start, unint length)
+{
     ocl_matrix dr_tmp = dr;
     dr_tmp.r = dr_tmp.pr = length;
-
-    //dr.mat = &dr.mat[IDX( start, 0, dr.ld )];
-
     unint dr_offset = IDX(start, 0, dr.ld);
-
-//    if(start != 0)
-//    {
-//        printf("subbuffers are not supported!\n");
-//        exit(1);
-//    }
 
     dist1Wrap(dr_tmp, dx, dD, dr_offset);
 }
 
 
-void destroyRBC(ocl_rbcStruct *rbcS){
-//  cudaFree(rbcS->dx.mat);
-//  cudaFree(rbcS->dxMap.mat);
-//  cudaFree(rbcS->dr.mat);
+void destroyRBC(ocl_rbcStruct *rbcS)
+{
   free(rbcS->groupCount);
 }
 
@@ -586,8 +566,9 @@ void destroyRBC(ocl_rbcStruct *rbcS){
  * Use freeCompPlan to clear mem.  
  * See the readme.txt file for a description of why this function is needed.
  */
-void initCompPlan(ocl_compPlan *dcP, charMatrix cM, unint *groupCountQ,
-                  unint *groupCountX, unint numReps)
+void initCompPlan(ocl_compPlan *dcP, const charMatrix cM,
+                  const unint *groupCountQ, const unint *groupCountX,
+                  unint numReps)
 {
     unint i, j, k;
     unint maxNumGroups = 0;
@@ -596,6 +577,9 @@ void initCompPlan(ocl_compPlan *dcP, charMatrix cM, unint *groupCountQ,
     unint sNumGroups = numReps;
     cP.numGroups = (unint*)calloc(sNumGroups, sizeof(*cP.numGroups));
 
+    /** for identity matrix cM, cp.numGroups is initialized to 1,
+     *  and maxNumGroups is initialized to 1
+     */
     for(i = 0; i < numReps; i++)
     {
         cP.numGroups[i] = 0;
@@ -693,10 +677,7 @@ void initCompPlan(ocl_compPlan *dcP, charMatrix cM, unint *groupCountQ,
 
 //Frees memory allocated in initCompPlan.
 void freeCompPlan(ocl_compPlan *dcP){
-//  cudaFree(dcP->numGroups);
-//  cudaFree(dcP->groupCountX);
-//  cudaFree(dcP->qToQGroup);
-//  cudaFree(dcP->qGroupToXGroup);
+
 }
 
 #endif

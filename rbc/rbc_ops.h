@@ -23,7 +23,8 @@ void computeCounts(unint*,unint,unint*);
 void buildQMap(matrix,unint*,unint*,unint,unint*);
 void idIntersection(charMatrix);
 void fullIntersection(charMatrix);
-void initCompPlan(ocl_compPlan*,charMatrix,unint*,unint*,unint);
+void initCompPlan(ocl_compPlan*, const charMatrix,
+                  const unint*, const unint*, unint);
 void freeCompPlan(ocl_compPlan*);
 
 //NEVER USED
