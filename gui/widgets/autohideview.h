@@ -5,21 +5,32 @@
 
 #include <QGraphicsView>
 #include <QMap>
+#include <iostream>
+
+class QGLWidget;
 
 class AutohideView : public QGraphicsView
 {
 	Q_OBJECT
 public:
-	AutohideView(QWidget *parent);
+	explicit AutohideView(QWidget *parent);
 
-	/* provide a reasonably high size of correct aspect ratio for layouting */
+	QGLWidget* init(bool mouseTrack = false);
+
+	/* provide a reasonably high size of correct aspect ratio for layouting
+	 * Note: to make this work correctly with Qt's layouting habits, set the
+	 * baseSize property of this widget, such that it is known early enough
+	 */
 	virtual QSize sizeHint() const {
-		return QSize(1000, 200);
+		return (hint.isEmpty() ? baseSize() : hint);
 	}
 
 	void addWidget(AutohideWidget::border location, AutohideWidget *widget);
 
 public slots:
+
+	// provide newer size hint
+	void updateSizeHint(QSize sizeHint);
 
 protected:
 
@@ -37,6 +48,12 @@ protected:
 	{ suppressScroll = true; QGraphicsView::mousePressEvent(event); }
 	void mouseReleaseEvent(QMouseEvent *event)
 	{ suppressScroll = false; QGraphicsView::mouseReleaseEvent(event); }
+
+	// our target widget (we keep it as viewport() only returns a QWidget*)
+	QGLWidget *target;
+
+	// size hint to provide when asked
+	QSize hint;
 
 	// all scrolling widgets
 	QMap<AutohideWidget::border, AutohideWidget*> widgets;

@@ -1,11 +1,9 @@
 #ifndef BANDDOCK_H
 #define BANDDOCK_H
 
-#include <QDockWidget>
 #include "ui_banddock.h"
 
-
-// FIXME button icons
+class BandView;
 
 class BandDock : public QDockWidget, private Ui::BandDock
 {
@@ -18,11 +16,11 @@ public:
 	// It is OK for the controller to access BandView directly. It is a
 	// separate entity and not just a GUI element. This is cleaner than
 	// duplicating the entire BandView interface in BandDock.
-	BandView *bandView() {return bv;}
-	GraphSegWidget *graphSegWidget() {return gs;}
+	BandView *bandView() { return bv; }
+	GraphSegWidget *graphSegWidget() { return gs; }
 
 	// get bandId of currently shown band
-	representation::t getCurRepresentation() {return curRepr;}
+	representation::t getCurRepresentation() { return curRepr; }
 	// get representation of currently shown band
 	int getCurBandId() {return curBandId;}
 
@@ -58,14 +56,21 @@ protected slots:
 	void processMarkerSelectorIndexChanged(int index);
 
 protected:
+	// event filter to intercept enter()/leave() on our view
+	bool eventFilter(QObject *obj, QEvent *event);
+
 	void initUi();
-	// local copy
+
+	// local copies
 	QVector<QColor> labelColors;
 	cv::Rect fullImgSize;
 
 	// representation and bandId of currently shown band
 	representation::t curRepr;
 	int curBandId;
+
+	// our band view
+	BandView *bv;
 };
 
 #endif // BANDDOCK_H

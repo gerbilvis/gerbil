@@ -1,4 +1,5 @@
 #include "roidock.h"
+#include "../widgets/roiview.h"
 
 #include <iostream>
 #include "../gerbil_gui_debug.h"
@@ -48,7 +49,15 @@ void RoiDock::setMaxBands(int bands)
 
 void RoiDock::initUi()
 {
+	// initialize ROI view
+	view->init();
+	roiView = new ROIView();
+	view->setScene(roiView);
+
 	/* init signals */
+	connect(roiView, SIGNAL(newSizeHint(QSize)),
+			view, SLOT(updateSizeHint(QSize)));
+
 	connect(roiButtons, SIGNAL(clicked(QAbstractButton*)),
 			 this, SLOT(processRoiButtonsClicked(QAbstractButton*)));
 	connect(roiView, SIGNAL(newSelection(const QRect&)),

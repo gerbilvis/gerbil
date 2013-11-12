@@ -6,6 +6,7 @@
 #include "widgets/graphsegwidget.h"
 
 #include "docks/banddock.h"
+#include "widgets/bandview.h"
 #include "docks/labelingdock.h"
 #include "docks/normdock.h"
 #include "docks/falsecolordock.h"
@@ -264,7 +265,7 @@ void DockController::setupDocks()
 void DockController::setGUIEnabled(bool enable, TaskType tt)
 {
 	bandDock->setEnabled(enable);
-	bandDock->bandView()->setEnabled(enable);
+//TODO	bandDock->bandView()->setEnabled(enable);
 
 	if (tt == TT_SELECT_ROI && (!enable)) {
 		/* TODO: check if this is enough to make sure no label changes

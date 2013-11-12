@@ -53,6 +53,12 @@
            <property name="orientation">
             <enum>Qt::Horizontal</enum>
            </property>
+           <property name="sizeHint" stdset="0">
+            <size>
+             <width>0</width>
+             <height>0</height>
+            </size>
+           </property>
           </spacer>
          </item>
          <item>
@@ -73,12 +79,21 @@
        <number>0</number>
       </property>
       <item>
-       <widget class="ScaledView" name="view" native="true">
-        <property name="sizePolicy">
-         <sizepolicy hsizetype="Expanding" vsizetype="Expanding">
-          <horstretch>0</horstretch>
-          <verstretch>0</verstretch>
-         </sizepolicy>
+       <widget class="AutohideView" name="view">
+        <property name="baseSize">
+         <size>
+          <width>250</width>
+          <height>300</height>
+         </size>
+        </property>
+        <property name="frameShape">
+         <enum>QFrame::NoFrame</enum>
+        </property>
+        <property name="verticalScrollBarPolicy">
+         <enum>Qt::ScrollBarAlwaysOff</enum>
+        </property>
+        <property name="horizontalScrollBarPolicy">
+         <enum>Qt::ScrollBarAlwaysOff</enum>
         </property>
        </widget>
       </item>
@@ -89,10 +104,9 @@
  </widget>
  <customwidgets>
   <customwidget>
-   <class>ScaledView</class>
-   <extends>QWidget</extends>
-   <header>widgets/scaledview.h</header>
-   <container>1</container>
+   <class>AutohideView</class>
+   <extends>QGraphicsView</extends>
+   <header>widgets/autohideview.h</header>
   </customwidget>
  </customwidgets>
  <resources/>

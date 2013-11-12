@@ -3,10 +3,9 @@
 
 #include <iostream>
 #include "gerbil_gui_debug.h"
-#include "widgets/scaledview.h"
 #include "falsecolordock.h"
 #include "../model/falsecolormodel.h"
-
+#include "../widgets/scaledview.h"
 
 std::ostream &operator<<(std::ostream& os, const FalseColoringState::Type& state)
 {
@@ -42,7 +41,7 @@ void FalseColorDock::processColoringComputed(FalseColoring::Type coloringType, Q
 	updateProgressBar();
 	if (coloringType == selectedColoring()) {
 		view->setEnabled(true);
-		view->setPixmap(p);
+		scene->setPixmap(p);
 		view->update();
 		view->setToolTip(prettyFalseColorNames[coloringType]);
 		lastShown = coloringType;
@@ -92,6 +91,12 @@ void FalseColorDock::processApplyClicked()
 
 void FalseColorDock::initUi()
 {
+	// initialize scaled view
+	view->init();
+	scene = new ScaledView();
+	view->setScene(scene);
+
+	// fill up source choices
 	sourceBox->addItem(prettyFalseColorNames[FalseColoring::CMF],
 					   FalseColoring::CMF);
 	sourceBox->addItem(prettyFalseColorNames[FalseColoring::PCA],
@@ -109,6 +114,8 @@ void FalseColorDock::initUi()
 	updateTheButton();
 	updateProgressBar();
 
+	connect(scene, SIGNAL(newSizeHint(QSize)),
+			view, SLOT(updateSizeHint(QSize)));
 
 	connect(sourceBox, SIGNAL(currentIndexChanged(int)),
 			this, SLOT(processSelectedColoring()));

@@ -16,7 +16,6 @@
 #include <vector>
 #include <QLabel>
 #include <QTimer>
-#include <QResizeEvent>
 
 class Viewport : public QGraphicsScene
 {

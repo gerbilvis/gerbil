@@ -10,47 +10,45 @@
 
 #include <stopwatch.h>
 #include <QPainter>
-#include <QPaintEvent>
+#include <QGraphicsSceneEvent>
 #include <iostream>
 #include <cmath>
 
-ROIView::ROIView(QWidget *parent)
-	: ScaledView(parent), lockX(-1), lockY(-1), lastcursor(-1, -1)
+ROIView::ROIView()
+	: lockX(-1), lockY(-1), lastcursor(-1, -1)
 {}
 
-void ROIView::paintEvent(QPaintEvent *ev)
+void ROIView::paintEvent(QPainter *painter, const QRectF &rect)
 {
 	if (pixmap.isNull())
 		return;
 
-	QPainter painter(this);
+	fillBackground(painter, rect);
 
-	fillBackground(painter, ev->rect());
+	painter->setRenderHint(QPainter::SmoothPixmapTransform);
 
-	painter.setRenderHint(QPainter::SmoothPixmapTransform);
-
-	painter.setWorldTransform(scaler);
-	QRect damaged = scalerI.mapRect(ev->rect());
-	painter.drawPixmap(damaged, pixmap, damaged);
+	painter->setWorldTransform(scaler);
+	QRectF damaged = scalerI.mapRect(rect);
+	painter->drawPixmap(damaged, pixmap, damaged);
 
 	/* gray out region outside ROI */
 	QColor color(Qt::darkGray); color.setAlpha(127);
-	painter.fillRect(0, 0, roi.x(), pixmap.height(), color);
-	painter.fillRect(roi.x()+roi.width(), 0,
+	painter->fillRect(0, 0, roi.x(), pixmap.height(), color);
+	painter->fillRect(roi.x()+roi.width(), 0,
 					 pixmap.width() - roi.x() - roi.width(),
 					 pixmap.height(), color);
 
-	painter.fillRect(roi.x(), 0, roi.width(), roi.y(), color);
-	painter.fillRect(roi.x(), roi.y()+roi.height(),
+	painter->fillRect(roi.x(), 0, roi.width(), roi.y(), color);
+	painter->fillRect(roi.x(), roi.y()+roi.height(),
 					 roi.width(), pixmap.height() - roi.y() - roi.height(),
 					 color);
-	painter.setPen(Qt::red);
-	painter.drawRect(roi);
+	painter->setPen(Qt::red);
+	painter->drawRect(roi);
 }
 
-void ROIView::cursorAction(QMouseEvent *ev, bool click)
+void ROIView::cursorAction(QGraphicsSceneMouseEvent *ev, bool click)
 {
-	QPointF cursor = scalerI.map(QPointF(ev->pos()));
+	QPointF cursor = scalerI.map(QPointF(ev->scenePos()));
 	cursor.setX(std::floor(cursor.x() - 0.25));
 	cursor.setY(std::floor(cursor.y() - 0.25));
 
@@ -95,7 +93,7 @@ void ROIView::cursorAction(QMouseEvent *ev, bool click)
 	emit newSelection(roi);
 }
 
-void ROIView::mouseReleaseEvent(QMouseEvent *)
+void ROIView::mouseReleaseEvent(QGraphicsSceneMouseEvent *)
 {
 	// enable 'grabbing' of different border on next click
 	lockX = lockY = -1;

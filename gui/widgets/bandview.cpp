@@ -11,7 +11,8 @@
 
 #include <stopwatch.h>
 #include <QPainter>
-#include <QPaintEvent>
+#include <QGraphicsSceneEvent>
+#include <QKeyEvent>
 #include <iostream>
 #include <cmath>
 #include <tbb/task.h>
@@ -26,9 +27,8 @@ std::ostream& operator<<(std::ostream& stream, const QPointF &p) {
 	return stream;
 }
 
-BandView::BandView(QWidget *parent)
-	: ScaledView(parent),
-	  // note: start with invalid curLabel to trigger proper initialization!
+BandView::BandView()
+	: // note: start with invalid curLabel to trigger proper initialization!
 	  cacheValid(false), cursor(-1, -1), lastcursor(-1, -1), curLabel(-1),
 	  overlay(0), showLabels(true), singleLabel(false), holdLabel(false),
 	  ignoreUpdates(false),
@@ -39,7 +39,6 @@ BandView::BandView(QWidget *parent)
 	// the timer automatically sends an accumulated update request
 	labelTimer.setSingleShot(true);
 	labelTimer.setInterval(500);
-	setMouseTracking(true);
 }
 
 void BandView::initUi()
@@ -60,7 +59,7 @@ void BandView::setPixmap(QPixmap p)
 		// TODO: send signal to model, maybe move whole seed map to model
 	}
 
-	cacheValid = false;
+	refresh();
 }
 
 void BandView::refresh()
@@ -113,16 +112,15 @@ void BandView::updateLabeling(const cv::Mat1s &newLabels, const cv::Mat1b &mask)
 	refresh();
 }
 
-void BandView::paintEvent(QPaintEvent *ev)
+void BandView::paintEvent(QPainter *painter, const QRectF &rect)
 {
-	QPainter painter(this);
 	/* deal with no pixmap set (width==0), or labeling does not fit the pixmap
 	 * (as updates to pixmap and labeling are not synchronised) */
 	bool consistent = ((pixmap.width() == labels.cols) &&
 					   (pixmap.height() == labels.rows));
 
 	if (!consistent) {
-		painter.fillRect(this->rect(), QBrush(Qt::gray, Qt::BDiagPattern));
+		painter->fillRect(rect, QBrush(Qt::gray, Qt::BDiagPattern));
 		drawWaitMessage(painter);
 		return;
 	}
@@ -131,14 +129,14 @@ void BandView::paintEvent(QPaintEvent *ev)
 		updateCache();
 	}
 
-	fillBackground(painter, ev->rect());
+	fillBackground(painter, rect);
 
-	painter.save();
+	painter->save();
 
 	//painter.setRenderHint(QPainter::Antialiasing); too slow!
-	painter.setWorldTransform(scaler);
-	QRect damaged = scalerI.mapRect(ev->rect());
-	painter.drawPixmap(damaged, cachedPixmap, damaged);
+	painter->setWorldTransform(scaler);
+	QRectF damaged = scalerI.mapRect(rect);
+	painter->drawPixmap(damaged, cachedPixmap, damaged);
 
 	/* draw current cursor */
 	bool drawCursor = (seedMode || !singleLabel);
@@ -152,21 +150,22 @@ void BandView::paintEvent(QPaintEvent *ev)
 //			  %labelColors.count()% curLabel << endl);
 		QPen pen(seedMode ? Qt::yellow : labelColors.at(curLabel));
 		pen.setWidth(0);
-		painter.setPen(pen);
-		painter.drawRect(QRectF(cursor, QSizeF(1, 1)));
+		painter->setPen(pen);
+		painter->drawRect(QRectF(cursor, QSizeF(1, 1)));
 	}
 
 	/* draw overlay (a quasi one-timer) */
 	QPen pen;
 	if (overlay) {
 		if (scale > 4.) {
-			pen.setColor(Qt::yellow); painter.setPen(pen);
+			pen.setColor(Qt::yellow);
+			painter->setPen(pen);
 			for (int y = 0; y < overlay->rows; ++y) {
 				const unsigned char *row = (*overlay)[y];
 				for (int x = 0; x < overlay->cols; ++x) {
 					if (row[x]) {
-						painter.drawLine(x+1, y, x, y+1);
-						painter.drawLine(x, y, x+1, y+1);
+						painter->drawLine(x+1, y, x, y+1);
+						painter->drawLine(x, y, x+1, y+1);
 					}
 				}
 			}
@@ -182,22 +181,19 @@ void BandView::paintEvent(QPaintEvent *ev)
 						destrow[x] = qRgba(255, 255, 0, 255);
 				}
 			}
-			painter.drawImage(0, 0, dest);
+			painter->drawImage(0, 0, dest);
 		}
 	}
 
 	if (seedMode) {
+		/* TODO: most times barely visible! */
 		pen.setColor(Qt::yellow); pen.setWidthF(0.5); pen.setStyle(Qt::DotLine);
-		painter.setPen(pen);
-		painter.setBrush(Qt::NoBrush);
-		painter.drawRect(0, 0, pixmap.width(), pixmap.height());
+		painter->setPen(pen);
+		painter->setBrush(Qt::NoBrush);
+		painter->drawRect(0, 0, pixmap.width(), pixmap.height());
 	}
 
-	painter.restore();
-
-	if (!isEnabled()) {
-		drawWaitMessage(painter);
-	}
+	painter->restore();
 }
 
 struct updateCacheBody {
@@ -311,7 +307,7 @@ void BandView::drawOverlay(const cv::Mat1b &mask)
 	update();
 }
 
-void BandView::cursorAction(QMouseEvent *ev, bool click)
+void BandView::cursorAction(QGraphicsSceneMouseEvent *ev, bool click)
 {
 	bool consistent = ((pixmap.width() == labels.cols) &&
 						   (pixmap.height() == labels.rows));
@@ -322,7 +318,7 @@ void BandView::cursorAction(QMouseEvent *ev, bool click)
 	bool grandupdate = (overlay != NULL);
 
 	// do the mapping in floating point for accuracy
-	QPointF cursorF = scalerI.map(QPointF(ev->pos()));
+	QPointF cursorF = scalerI.map(QPointF(ev->scenePos()));
 	cursor.setX(std::floor(cursorF.x() - 0.25));
 	cursor.setY(std::floor(cursorF.y() - 0.25));
 
@@ -450,9 +446,10 @@ void BandView::commitLabels()
 
 void BandView::updatePoint(const QPoint &p)
 {
-	QPoint damagetl = scaler.map(QPoint(p.x() - 2, p.y() - 2));
-	QPoint damagebr = scaler.map(QPoint(p.x() + 2, p.y() + 2));
-	repaint(QRect(damagetl, damagebr));
+	QPointF damagetl = scaler.map(QPointF(p.x() - 2, p.y() - 2));
+	QPointF damagebr = scaler.map(QPointF(p.x() + 2, p.y() + 2));
+	// force redraw
+	invalidate(QRectF(damagetl, damagebr), BackgroundLayer);
 }
 
 void BandView::clearSeeds()
@@ -461,19 +458,16 @@ void BandView::clearSeeds()
 	refresh();
 }
 
-void BandView::enterEvent(QEvent *event)
+void BandView::enterEvent()
 {
 	/* as we have some action in the window that is only triggered by hovering,
 	 * we steal keyboard focus here. Otherwise the user would have to click
 	 * first just to get keyboard focus (unintuitive)
 	 */
 	setFocus(Qt::MouseFocusReason);
-
-	ScaledView::enterEvent(event);
 }
 
-
-void BandView::leaveEvent(QEvent *ev)
+void BandView::leaveEvent()
 {
 //	GGDBGM("leaveEvent" << endl);
 	// invalidate cursor
@@ -481,9 +475,6 @@ void BandView::leaveEvent(QEvent *ev)
 
 	// invalidate previous overlay
 	emit pixelOverlay(-1, -1);
-
-	ScaledView::leaveEvent(ev);
-
 	update();
 }
 

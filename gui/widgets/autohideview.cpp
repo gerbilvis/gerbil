@@ -1,16 +1,34 @@
 #include "autohideview.h"
 
+#include <QGLWidget>
 #include <cassert>
 
 AutohideView::AutohideView(QWidget *parent)
- : QGraphicsView(parent), suppressScroll(false)
+	: QGraphicsView(parent), suppressScroll(false)
 {
+	// avoid floating point exceptions, unreasonable shrinkage
+	setMinimumSize(50, 50);
+	updateGeometry();
+}
+
+QGLWidget* AutohideView::init(bool mouseTrack)
+{
+	target = new QGLWidget(QGLFormat(QGL::SampleBuffers));
+	setViewport(target);
+	// TODO: needed? setViewportUpdateMode(QGraphicsView::FullViewportUpdate);
+	// TODO: should we cache the background?
+
+	if (mouseTrack)
+		target->setMouseTracking(true);
+
+	// the target belongs to us, but others might need access to it
+	return target;
 }
 
 void AutohideView::addWidget(AutohideWidget::border loc, AutohideWidget *w)
 {
 	assert(scene());
-	assert(!widgets.find(loc));
+	assert(!widgets.contains(loc));
 
 	// add to scene
 	QGraphicsProxyWidget *p = scene()->addWidget(w);
@@ -26,6 +44,12 @@ void AutohideView::addWidget(AutohideWidget::border loc, AutohideWidget *w)
 
 	// add to our own reference
 	widgets.insert(loc, w);
+}
+
+void AutohideView::updateSizeHint(QSize sizeHint)
+{
+	hint = sizeHint;
+	updateGeometry();
 }
 
 void AutohideView::resizeEvent(QResizeEvent *event)
@@ -53,8 +77,11 @@ void AutohideView::mouseMoveEvent(QMouseEvent *event)
 
 void AutohideView::leaveEvent(QEvent *event)
 {
-	foreach (AutohideWidget* w, widgets)
-		w->scrollOut();
+	// only scrollout if cursor really moved out (no popup menu etc.)
+	if (!rect().contains(mapFromGlobal(QCursor::pos()))) {
+		foreach (AutohideWidget* w, widgets)
+			w->scrollOut();
+	}
 
 	QGraphicsView::leaveEvent(event);
 }

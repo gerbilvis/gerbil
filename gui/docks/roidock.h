@@ -7,6 +7,8 @@
 #include <QRect>
 #include <QAbstractButton>
 
+class ROIView;
+
 class RoiDock : public QDockWidget, private Ui::RoiDockUI
 {
 	Q_OBJECT
@@ -53,6 +55,9 @@ private:
 	QRect oldRoi;
 	// The current ROI selected, but possibly not yet applied.
 	QRect curRoi;
+
+	// our viewport
+	ROIView *roiView;
 };
 
 #endif // ROIDOCK_H

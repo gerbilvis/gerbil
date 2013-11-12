@@ -1,32 +1,45 @@
 #ifndef SCALEDVIEW_H
 #define SCALEDVIEW_H
 
-#include <QGLWidget>
+#include <QGraphicsScene>
+#include <QPainter>
 
-class ScaledView : public QGLWidget
+class QGLWidget;
+
+class ScaledView : public QGraphicsScene
 {
 	Q_OBJECT
 public:
-	ScaledView(QWidget *parent = 0);
+	ScaledView();
 	virtual ~ScaledView() {}
-	void resizeEvent(QResizeEvent * ev);
-	virtual void paintEvent(QPaintEvent *ev);
-	void mouseMoveEvent(QMouseEvent *ev);
-	void mousePressEvent(QMouseEvent *ev);
+
+	// handles both resize and drawing
+	void drawBackground(QPainter *painter, const QRectF &rect);
+	virtual void resizeEvent();
+	virtual void paintEvent(QPainter *painter, const QRectF &rect);
+	void mouseMoveEvent(QGraphicsSceneMouseEvent*);
+	void mousePressEvent(QGraphicsSceneMouseEvent*);
+
 	virtual void setPixmap(QPixmap p);
 
 	/* provide a reasonably high size of correct aspect ratio for layouting */
-	virtual QSize sizeHint() const;
+	virtual QSize updateSizeHint();
+
+signals:
+	void newSizeHint(QSize hint);
 
 protected:
-	virtual void cursorAction(QMouseEvent *ev, bool click = false);
-	void drawWaitMessage(QPainter &painter);
+	virtual void cursorAction(QGraphicsSceneMouseEvent *ev,
+							  bool click = false);
+	void drawWaitMessage(QPainter *painter);
 
 	// draw the background, inline function
-	void fillBackground(QPainter &painter, const QRect& rect) {
+	void fillBackground(QPainter *painter, const QRectF& rect) {
 		static QBrush brush(QColor(63, 31, 63), Qt::Dense4Pattern);
-		painter.fillRect(rect, brush);
+		painter->fillRect(rect, brush);
 	}
+
+	int width, height;
 
 	qreal scale;
 	QTransform scaler, scalerI;

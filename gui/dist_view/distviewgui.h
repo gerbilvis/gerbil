@@ -84,7 +84,6 @@ protected:
 	Ui::ViewportControl *uivc;
 	Viewport *vp;
 	AutohideWidget *vc;
-	QGLWidget *target;
 
 	QVector<QColor> labelColors;
 	QMenu limiterMenu;

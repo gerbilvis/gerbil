@@ -9,7 +9,6 @@
 
 class ScaledView;
 
-
 struct FalseColoringState {
 	enum Type {FINISHED=0, CALCULATING, ABORTING};
 };
@@ -66,6 +65,8 @@ protected:
 	QMap<FalseColoring::Type, int> coloringProgress;
 	QMap<FalseColoring::Type, bool> coloringUpToDate;
 	FalseColoring::Type lastShown;
+
+	ScaledView *scene;
 };
 
 #endif // FALSECOLORDOCK_H

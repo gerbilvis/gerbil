@@ -8,10 +8,10 @@ class ROIView : public ScaledView
 {
 	Q_OBJECT
 public:
-	ROIView(QWidget *parent = 0);
+	ROIView();
 
-	void paintEvent(QPaintEvent *ev);
-	void mouseReleaseEvent(QMouseEvent*);
+	void paintEvent(QPainter *painter, const QRectF &rect);
+	void mouseReleaseEvent(QGraphicsSceneMouseEvent*);
 
 	QRect roi;
 
@@ -19,7 +19,7 @@ signals:
 	void newSelection(const QRect& roi);
 
 private:
-	void cursorAction(QMouseEvent *ev, bool click = false);
+	void cursorAction(QGraphicsSceneMouseEvent *ev, bool click = false);
 
 	int lockX, lockY;
 	QPointF lastcursor;

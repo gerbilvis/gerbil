@@ -1,6 +1,6 @@
 #include "banddock.h"
+#include "../widgets/bandview.h"
 #include "../iogui.h"
-#include "ui_banddock.h"
 
 #include "../gerbil_gui_debug.h"
 
@@ -26,6 +26,15 @@ BandDock::~BandDock()
 
 void BandDock::initUi()
 {
+	// initialize band view
+	view->installEventFilter(this);
+	view->init(true);
+	bv = new BandView();
+	view->setScene(bv);
+
+	connect(bv, SIGNAL(newSizeHint(QSize)),
+			view, SLOT(updateSizeHint(QSize)));
+
 	connect(gs, SIGNAL(requestLoadSeeds()),
 			this, SLOT(loadSeeds()));
 
@@ -65,7 +74,7 @@ void BandDock::changeBand(representation::t repr, int bandId,
 	curRepr = repr;
 	curBandId = bandId;
 
-	bv->setEnabled(true);
+//TODO	bv->setEnabled(true);
 	bv->setPixmap(band);
 	setWindowTitle(desc);
 }
@@ -116,6 +125,17 @@ void BandDock::processMarkerSelectorIndexChanged(int index)
 		// propagate label change
 		emit currentLabelChanged(index);
 	}
+}
+
+bool BandDock::eventFilter(QObject *obj, QEvent *event)
+{
+	if (event->type() == QEvent::Enter)
+		bv->enterEvent();
+	if (event->type() == QEvent::Leave)
+		bv->leaveEvent();
+
+	// continue with standard event processing
+	return QObject::eventFilter(obj, event);
 }
 
 void BandDock::processLabelingChange(const cv::Mat1s &labels,

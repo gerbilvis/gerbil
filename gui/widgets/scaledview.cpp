@@ -6,56 +6,67 @@
 	find it here: http://www.gnu.org/licenses/gpl.html
 */
 
-#include "widgets/scaledview.h"
+#include "scaledview.h"
 
 #include <stopwatch.h>
+#include <QGLWidget>
 #include <QPainter>
 #include <QPaintEvent>
 #include <iostream>
 
 /* TODO: do we really want sample buffers for these views? configurable?
  */
-ScaledView::ScaledView(QWidget *parent)
-	: QGLWidget(QGLFormat(QGL::SampleBuffers), parent)
-{
-	// avoid floating point exceptions, unreasonable shrinkage
-	setMinimumSize(50, 50);
-	updateGeometry();
-}
+ScaledView::ScaledView()
+	: width(50), height(50) // values don't matter much, but should be over 0
+{}
 
-
-QSize ScaledView::sizeHint() const
+QSize ScaledView::updateSizeHint()
 {
 	float src_aspect = 1.f;
 	if (!pixmap.isNull())
 		src_aspect = pixmap.width()/(float)pixmap.height();
-	return QSize(300*src_aspect, 300);
+	emit newSizeHint(QSize(300*src_aspect, 300));
 }
 
 void ScaledView::setPixmap(QPixmap p)
 {
 	pixmap = p;
-	resizeEvent(0);
-	updateGeometry();
+	resizeEvent();
+	updateSizeHint();
 }
 
-void ScaledView::resizeEvent(QResizeEvent *ev)
+void ScaledView::drawBackground(QPainter *painter, const QRectF &rect)
+{
+	// update geometry
+	int nwidth = painter->device()->width();
+	int nheight = painter->device()->height();
+	if (nwidth != width || nheight != height) {
+		width = nwidth;
+		height = nheight;
+		resizeEvent();
+	}
+
+	// paint
+	paintEvent(painter, rect);
+}
+
+void ScaledView::resizeEvent()
 {
 	if (pixmap.isNull())
 		return;
 
 	// determine scale of correct aspect-ratio
 	float src_aspect = pixmap.width()/(float)pixmap.height();
-	float dest_aspect = width()/(float)height();
+	float dest_aspect = width/(float)height;
 	float w;	// new width
 	if (src_aspect > dest_aspect)
-		w = width() - 1;
+		w = (width - 3) - 1;
 	else
-		w = height()*src_aspect - 1;
+		w = (height - 3)*src_aspect - 1;
 
 	/* centering */
-	scaler = QTransform().translate((width() - w)/2.f,
-									(height() - w/src_aspect)/2.f);
+	scaler = QTransform().translate((width - w)/2.f,
+									(height - w/src_aspect)/2.f);
 	/* scaling */
 	scale = w/pixmap.width();
 	scaler.scale(scale, scale);
@@ -64,58 +75,52 @@ void ScaledView::resizeEvent(QResizeEvent *ev)
 	scalerI = scaler.inverted();
 }
 
-void ScaledView::paintEvent(QPaintEvent *ev)
+void ScaledView::paintEvent(QPainter *painter, const QRectF &rect)
 {
-	QPainter painter(this);
 	if (!pixmap) {
-		painter.fillRect(ev->rect(), QBrush(Qt::gray, Qt::BDiagPattern));
+		painter->fillRect(rect, QBrush(Qt::gray, Qt::BDiagPattern));
 		drawWaitMessage(painter);
 		return;
 	}
 
-	fillBackground(painter, ev->rect());
+	fillBackground(painter, rect);
 
-	painter.save();
+	painter->save();
 
-	painter.setRenderHint(QPainter::SmoothPixmapTransform);
-	painter.setWorldTransform(scaler);
-	QRect damaged = scalerI.mapRect(ev->rect());
-	painter.drawPixmap(damaged, pixmap, damaged);
+	painter->setRenderHint(QPainter::SmoothPixmapTransform);
+	painter->setWorldTransform(scaler);
+	QRectF damaged = scalerI.mapRect(rect);
+	painter->drawPixmap(damaged, pixmap, damaged);
 
-	painter.restore();
-
-	if (!isEnabled()) {
-		drawWaitMessage(painter);
-	}
+	painter->restore();
 }
 
-void ScaledView::mouseMoveEvent(QMouseEvent *ev)
+void ScaledView::mouseMoveEvent(QGraphicsSceneMouseEvent *ev)
 {
 	cursorAction(ev);
 }
 
-void ScaledView::mousePressEvent(QMouseEvent *ev)
+void ScaledView::mousePressEvent(QGraphicsSceneMouseEvent *ev)
 {
 	cursorAction(ev, true);
 }
 
-void ScaledView::drawWaitMessage(QPainter &painter)
+void ScaledView::drawWaitMessage(QPainter *painter)
 {
-	painter.save();
+	painter->save();
 	// darken
-	painter.fillRect(rect(), QColor(0, 0, 0, 127));
+	painter->fillRect(sceneRect(), QColor(0, 0, 0, 127));
 
 	// text in larger size with nice color
-	painter.setPen(QColor(255, 230, 0));
+	painter->setPen(QColor(255, 230, 0));
 	QFont tmp(font());
 	tmp.setPointSize(tmp.pointSize() * 1.75);
-	painter.setFont(tmp);
-	painter.drawText(rect(), Qt::AlignCenter,
+	painter->setFont(tmp);
+	painter->drawText(sceneRect(), Qt::AlignCenter,
 					 QString::fromUtf8("Calculating…"));
-	painter.restore();
+	painter->restore();
 }
 
-void ScaledView::cursorAction(QMouseEvent *ev, bool click)
+void ScaledView::cursorAction(QGraphicsSceneMouseEvent *ev, bool click)
 {
 }
-

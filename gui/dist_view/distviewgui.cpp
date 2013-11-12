@@ -24,10 +24,8 @@ DistViewGUI::DistViewGUI(representation::t type)
 
 void DistViewGUI::initVP()
 {
-	// create target widget that is rendered into (handled by ui->gv)
-	target = new QGLWidget(QGLFormat(QGL::SampleBuffers));
-	ui->gv->setViewport(target);
-	ui->gv->setViewportUpdateMode(QGraphicsView::FullViewportUpdate);
+	// create target widget
+	QGLWidget *target = ui->gv->init();
 
 	// create viewport. The viewport is a GraphicsScene
 	vp = new Viewport(type, target);
@@ -240,7 +238,7 @@ void DistViewGUI::showLimiterMenu()
 	// map to scene coordinates
 	QPoint scenepoint = uivc->limiterMenuButton->mapToGlobal(QPoint(0, 0));
 	// map to screen coordinates
-	QPoint screenpoint = target->mapToGlobal(scenepoint);
+	QPoint screenpoint = ui->gv->mapToGlobal(scenepoint);
 
 	QAction *a = limiterMenu.exec(screenpoint);
 	if (!a)

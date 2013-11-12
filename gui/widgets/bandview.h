@@ -21,7 +21,7 @@ class BandView : public ScaledView
 {
 	Q_OBJECT
 public:
-	BandView(QWidget *parent = 0);
+	BandView();
 
 	void initUi();
 
@@ -53,6 +53,9 @@ public slots:
 	void clearSeeds();
 	void highlightSingleLabel(short label, bool highlight);
 
+	void enterEvent();
+	void leaveEvent();
+
 signals:
 	void pixelOverlay(int y, int x);
 	void killHover();
@@ -73,13 +76,11 @@ signals:
 	void clearRequested();
 
 protected:
-	void paintEvent(QPaintEvent *ev);
-	void enterEvent(QEvent *event);
-	void leaveEvent(QEvent *ev);
+	void paintEvent(QPainter *painter, const QRectF &rect);
 	void keyPressEvent(QKeyEvent *);
 
 private:
-	void cursorAction(QMouseEvent *ev, bool click = false);
+	void cursorAction(QGraphicsSceneMouseEvent *ev, bool click = false);
 	inline void markCachePixel(QPainter &p, int x, int y);
 	inline void markCachePixelS(QPainter &p, int x, int y);
 	void updateCache();
