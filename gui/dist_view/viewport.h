@@ -25,8 +25,6 @@ public:
 	Viewport(representation::t type, QGLWidget *target);
 	~Viewport();
 
-	QGraphicsProxyWidget* createControlProxy();
-
 	void prepareLines();
 	void setLimiters(int label);
 
@@ -103,10 +101,6 @@ signals:
 	void addSelectionRequested();
 	void remSelectionRequested();
 
-	// mouse movement triggers showing/hiding control widget
-	void scrollInControl();
-	void scrollOutControl();
-
 protected:
 	void initTimers();
 	// called on resize
@@ -121,9 +115,6 @@ protected:
 	void mouseReleaseEvent(QGraphicsSceneMouseEvent*);
 	void wheelEvent(QGraphicsSceneWheelEvent *);
 	void keyPressEvent(QKeyEvent *);
-
-	// to intercept leaveEvent
-	bool event(QEvent *event);
 
 	// helper function that updates Y-axis labels
 	void updateYAxis();
@@ -235,9 +226,6 @@ private:
 
 	// single label to be highlighted
 	int highlightLabel;
-
-	// item in the scene that holds the control widget
-	QGraphicsProxyWidget* controlItem;
 };
 
 #endif // VIEWPORT_H

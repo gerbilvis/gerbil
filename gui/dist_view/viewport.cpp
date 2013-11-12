@@ -35,7 +35,7 @@ Viewport::Viewport(representation::t type, QGLWidget *target)
 	  zoom(1.), shift(0), lasty(-1), holdSelection(false), activeLimiter(0),
 	  drawMeans(true), drawRGB(false), drawHQ(true), drawingState(HIGH_QUALITY),
 	  yaxisWidth(0), vb(QGLBuffer::VertexBuffer),
-	  multisampleBlit(0), controlItem(0)
+	  multisampleBlit(0)
 {
 	(*ctx)->wait = 1;
 	(*ctx)->reset = 1;
@@ -53,15 +53,6 @@ Viewport::~Viewport()
 }
 
 /********* I N I T **************/
-
-QGraphicsProxyWidget* Viewport::createControlProxy()
-{
-	// proxy for control widget
-	controlItem = new QGraphicsProxyWidget();
-	addItem(controlItem);
-
-	return controlItem;
-}
 
 void Viewport::initTimers()
 {
@@ -115,17 +106,6 @@ void Viewport::initBuffers()
 	multisampleBlit = new QGLFramebufferObject(width, height);
 }
 
-bool Viewport::event(QEvent *event)
-{
-	// we only deal with leaveEvent
-	if (event->type() == QEvent::Leave) {
-		emit scrollOutControl();
-		return true;
-	}
-
-	return QGraphicsScene::event(event);
-}
-
 /********* S T A T E ********/
 
 void Viewport::drawBackground(QPainter *painter, const QRectF &rect)
@@ -143,9 +123,6 @@ void Viewport::drawBackground(QPainter *painter, const QRectF &rect)
 		// defer buffer update (do not hinder resizing with slow update)
 		buffers[0].dirty = buffers[1].dirty = true;
 		resizeTimer.start(150);
-
-		// update control widget
-		controlItem->setMinimumHeight(height);
 	}
 
 	// draw

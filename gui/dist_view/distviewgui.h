@@ -69,9 +69,9 @@ signals:
 
 protected:
 	// initialize target, vp, ui::gv
-	QGraphicsProxyWidget *initVP();
+	void initVP();
 	// initialize vc, uivc
-	void initVC(QGraphicsProxyWidget *proxy, representation::t type);
+	void initVC(representation::t type);
 	// initialize topbar, title
 	void initTop();
 	// (re-)create the menu according to labels

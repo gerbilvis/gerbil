@@ -87,15 +87,6 @@ void Viewport::mouseMoveEvent(QGraphicsSceneMouseEvent *event)
 		buffers[0].renderTimer.stop();
 		buffers[1].renderTimer.stop();
 		scrollTimer.start(10);
-
-	} else {
-		/* access to control widget */
-		if (event->scenePos().x() < 20) {
-			emit scrollInControl();
-		} else if (event->scenePos().x() >
-				 controlItem->boundingRect().right() + 10) {
-			emit scrollOutControl();
-		}
 	}
 
 	if (needTextureUpdate) {

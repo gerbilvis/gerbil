@@ -2,14 +2,16 @@
 #define AUTOHIDEWIDGET_H
 
 #include <QWidget>
-#include <QGraphicsView>
 #include <QGraphicsProxyWidget>
-#include <iostream>
 
 class AutohideWidget : public QWidget
 {
 	Q_OBJECT
 public:
+	enum border {
+		LEFT, RIGHT, TOP, BOTTOM
+	};
+
 	/* does not take a parent. Widgets in QGraphicsView must always be
 	 * top-level (no parent).
 	 */
@@ -17,9 +19,16 @@ public:
 
 	/* this method is called with the corresponding proxy item as argument.
 	 * the widget will use it as its anchor in the graphics scene.
+	 * @loc the border this widget resides in
 	 */
-	void initProxy(QGraphicsProxyWidget *proxy);
+	void init(QGraphicsProxyWidget *proxy, border loc);
 	
+	/* stretch the widget to fill the whole border */
+	void adjustToSize(QSize size);
+
+	/* decide if scrolling needed based on mouse position */
+	void triggerScrolling(QPoint pos);
+
 signals:
 	
 public slots:
@@ -27,33 +36,20 @@ public slots:
 	virtual void scrollOut();
 
 protected:
+	// which border we are in
+	border location;
+
+	// visibility state
 	enum {
-		STATE_IN = 1,
-		STATE_OUT = 2
+		STATE_IN = 1, // scrolling into/residing in view
+		STATE_OUT = 2 // scrolling out of view / hidden
 	} state;
+
+	// our connection to the graphics view
 	QGraphicsProxyWidget *proxy;
 
 	virtual void timerEvent(QTimerEvent *e);
 	virtual void changeEvent(QEvent *e);
-};
-
-/* our custom graphics view always resizes the scene accordingly */
-class GraphicsView : public QGraphicsView
-{
-public:
-	GraphicsView(QWidget *parent) : QGraphicsView(parent) {}
-
-	/* provide a reasonably high size of correct aspect ratio for layouting */
-	virtual QSize sizeHint() const {
-		return QSize(1000, 200);
-	}
-
-protected:
-	void resizeEvent(QResizeEvent *event) {
-		if (scene())
-			scene()->setSceneRect(QRect(QPoint(0, 0), event->size()));
-		QGraphicsView::resizeEvent(event);
-	}
 };
 
 #endif // AUTOHIDEWIDGET_H

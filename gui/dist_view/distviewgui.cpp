@@ -13,46 +13,36 @@ DistViewGUI::DistViewGUI(representation::t type)
 	ui->setupUi(frame);
 
 	// create viewport
-	QGraphicsProxyWidget *proxy = initVP();
+	initVP();
 
 	// create controller widget that will reside inside viewport
-	initVC(proxy, type);
+	initVC(type);
 
 	// connect and initialize topBar
 	initTop();
 }
 
-QGraphicsProxyWidget* DistViewGUI::initVP()
+void DistViewGUI::initVP()
 {
 	// create target widget that is rendered into (handled by ui->gv)
 	target = new QGLWidget(QGLFormat(QGL::SampleBuffers));
+	ui->gv->setViewport(target);
+	ui->gv->setViewportUpdateMode(QGraphicsView::FullViewportUpdate);
 
 	// create viewport. The viewport is a GraphicsScene
 	vp = new Viewport(type, target);
-	QGraphicsProxyWidget *proxy = vp->createControlProxy();
-
-	// attach everything to our member widget == QGraphicsView
-	ui->gv->setViewport(target);
-	ui->gv->setViewportUpdateMode(QGraphicsView::FullViewportUpdate);
 	ui->gv->setScene(vp);
-
-	return proxy;
 }
 
-void DistViewGUI::initVC(QGraphicsProxyWidget *proxy, representation::t type)
+void DistViewGUI::initVC(representation::t type)
 {
+	/* create VC, apply UI to it, then add to GV */
 	vc = new AutohideWidget();
 	uivc = new Ui::ViewportControl();
 	uivc->setupUi(vc);
-
-	// connect widget with graphicsscene
-	vc->initProxy(proxy);
+	ui->gv->addWidget(AutohideWidget::LEFT, vc);
 
 	/* we are ready to connect signals/slots */
-	connect(vp, SIGNAL(scrollInControl()),
-			vc, SLOT(scrollIn()));
-	connect(vp, SIGNAL(scrollOutControl()),
-			vc, SLOT(scrollOut()));
 
 	// let user see how many bins he will end up with
 	connect(uivc->binSlider, SIGNAL(sliderMoved(int)),

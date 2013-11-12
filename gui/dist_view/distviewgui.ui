@@ -34,7 +34,7 @@
     </widget>
    </item>
    <item>
-    <widget class="GraphicsView" name="gv">
+    <widget class="AutohideView" name="gv">
      <property name="sizePolicy">
       <sizepolicy hsizetype="Expanding" vsizetype="Preferred">
        <horstretch>0</horstretch>
@@ -62,9 +62,9 @@
    <container>1</container>
   </customwidget>
   <customwidget>
-   <class>GraphicsView</class>
+   <class>AutohideView</class>
    <extends>QGraphicsView</extends>
-   <header>widgets/autohidewidget.h</header>
+   <header>widgets/autohideview.h</header>
   </customwidget>
  </customwidgets>
  <resources/>

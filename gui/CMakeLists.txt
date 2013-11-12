@@ -12,6 +12,7 @@ vole_compile_library(
 	commandrunner
 
 	widgets/autohidewidget
+	widgets/autohideview
 	widgets/mainwindow
 	widgets/scaledview
 	widgets/bandview
@@ -59,6 +60,7 @@ vole_moc_library(
 
 	widgets/mainwindow.h
 	widgets/autohidewidget.h
+	widgets/autohideview.h
 	widgets/scaledview.h
 	widgets/bandview.h
 	widgets/roiview.h
