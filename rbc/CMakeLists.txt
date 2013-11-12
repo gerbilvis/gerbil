@@ -35,6 +35,7 @@ vole_compile_library("RBC"
                      "sKernelWrap"
                      "utils"
                      "utilsGPU"
+                     "supportRoutines"
                      "opencl/kernels/rbc.cl"
                      "opencl/kernels")
 vole_add_module()
