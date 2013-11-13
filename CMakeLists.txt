@@ -5,7 +5,7 @@ if(CMAKE_VERSION VERSION_GREATER "2.8.11")
 	cmake_policy(SET CMP0022 NEW)
 endif()
 
-project(Vole)
+project(Gerbil)
 
 set(CMAKE_MODULE_PATH "${CMAKE_SOURCE_DIR}/cmake")
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin)
