@@ -48,7 +48,7 @@ struct ComputeIconMasks {
 			QColor color = ctx.colors.at(label);
 
 			if(0==label) {
-				color = Qt::black;
+				color = Qt::white;
 			}
 
 			// convert QColor to RGBA
