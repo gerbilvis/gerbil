@@ -366,10 +366,11 @@ void BandView::cursorAction(QGraphicsSceneMouseEvent *ev, bool click)
 	/// end of function for singleLabel case. no manipulations,
 	/// destroying overlay etc.
 
-	// overlay in spectral views
-	emit pixelOverlay(y, x);
+	// overlay in spectral views but not during pixel labeling (reduce lag)
+	if (ev->buttons() == Qt::NoButton)
+		emit pixelOverlay(y, x);
 
-	if (!(ev->buttons() & Qt::NoButton)) {
+	if (ev->buttons() != Qt::NoButton) {
 		/* alter all pixels on the line between previous and current position.
 		 * the idea is that due to lag we might not get a notification about
 		 * every pixel the mouse moved over. this is a good approximation. */
