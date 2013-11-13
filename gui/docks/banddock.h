@@ -1,9 +1,13 @@
 #ifndef BANDDOCK_H
 #define BANDDOCK_H
 
+#include "model/representation.h"
+
 #include "ui_banddock.h"
+#include <opencv2/core/core.hpp>
 
 class BandView;
+class GraphSegWidget;
 
 class BandDock : public QDockWidget, private Ui::BandDock
 {
@@ -71,6 +75,8 @@ protected:
 
 	// our band view
 	BandView *bv;
+	// our widget for graph segmentation controls
+	GraphSegWidget *gs;
 };
 
 #endif // BANDDOCK_H

@@ -29,6 +29,8 @@ public:
 	/* decide if scrolling needed based on mouse position */
 	void triggerScrolling(QPoint pos);
 
+	static const int OutOffset = 10;
+
 signals:
 	
 public slots:

@@ -11,14 +11,18 @@
 #include <stopwatch.h>
 #include <QGLWidget>
 #include <QPainter>
-#include <QPaintEvent>
+#include <QGraphicsSceneEvent>
+
 #include <iostream>
 
 /* TODO: do we really want sample buffers for these views? configurable?
  */
 ScaledView::ScaledView()
 	: width(50), height(50) // values don't matter much, but should be over 0
-{}
+{
+	// by default small offsets; can be altered from outside
+	offLeft = offTop = offRight = offBottom = 2;
+}
 
 QSize ScaledView::updateSizeHint()
 {
@@ -60,15 +64,16 @@ void ScaledView::resizeEvent()
 	float dest_aspect = width/(float)height;
 	float w;	// new width
 	if (src_aspect > dest_aspect)
-		w = (width - 3) - 1;
+		w = (width - offLeft - offRight);
 	else
-		w = (height - 3)*src_aspect - 1;
+		w = (height - offTop - offBottom)*src_aspect;
 
 	/* centering */
-	scaler = QTransform().translate((width - w)/2.f,
-									(height - w/src_aspect)/2.f);
+	scaler.reset();
+	scaler.translate(offLeft + (width - offLeft - offRight - w)/2.f,
+					 offTop + (height - offTop - offBottom - w/src_aspect)/2.f);
 	/* scaling */
-	scale = w/pixmap.width();
+	float scale = w/pixmap.width();
 	scaler.scale(scale, scale);
 
 	// inverted transform to handle input
@@ -97,11 +102,21 @@ void ScaledView::paintEvent(QPainter *painter, const QRectF &rect)
 
 void ScaledView::mouseMoveEvent(QGraphicsSceneMouseEvent *ev)
 {
+	// check for scene elements first (we are technically the background)
+	QGraphicsScene::mouseMoveEvent(ev);
+	if (ev->isAccepted())
+		return;
+
 	cursorAction(ev);
 }
 
 void ScaledView::mousePressEvent(QGraphicsSceneMouseEvent *ev)
 {
+	// check for scene elements first (we are technically the background)
+	QGraphicsScene::mousePressEvent(ev);
+	if (ev->isAccepted())
+		return;
+
 	cursorAction(ev, true);
 }
 

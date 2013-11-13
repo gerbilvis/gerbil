@@ -157,32 +157,17 @@ void BandView::paintEvent(QPainter *painter, const QRectF &rect)
 	/* draw overlay (a quasi one-timer) */
 	QPen pen;
 	if (overlay) {
-		if (scale > 4.) {
-			pen.setColor(Qt::yellow);
-			painter->setPen(pen);
-			for (int y = 0; y < overlay->rows; ++y) {
-				const unsigned char *row = (*overlay)[y];
-				for (int x = 0; x < overlay->cols; ++x) {
-					if (row[x]) {
-						painter->drawLine(x+1, y, x, y+1);
-						painter->drawLine(x, y, x+1, y+1);
-					}
-				}
+		QImage dest(overlay->cols, overlay->rows, QImage::Format_ARGB32);
+		dest.fill(qRgba(0, 0, 0, 0));
+		for (int y = 0; y < overlay->rows; ++y) {
+			const unsigned char *srcrow = (*overlay)[y];
+			QRgb *destrow = (QRgb*)dest.scanLine(y);
+			for (int x = 0; x < overlay->cols; ++x) {
+				if (srcrow[x])
+					destrow[x] = qRgba(255, 255, 0, 255);
 			}
-		} else {
-			QImage dest(overlay->cols, overlay->rows, QImage::Format_ARGB32);
-			dest.fill(qRgba(0, 0, 0, 0));
-			for (int y = 0; y < overlay->rows; ++y) {
-				const unsigned char *srcrow = (*overlay)[y];
-				QRgb *destrow = (QRgb*)dest.scanLine(y);
-				for (int x = 0; x < overlay->cols; ++x) {
-					if (srcrow[x])
-//						destrow[x] = qRgba(255, 255, 0, 63);
-						destrow[x] = qRgba(255, 255, 0, 255);
-				}
-			}
-			painter->drawImage(0, 0, dest);
 		}
+		painter->drawImage(0, 0, dest);
 	}
 
 	if (seedMode) {

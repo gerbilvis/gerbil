@@ -2,7 +2,7 @@
 #include "model/representation.h"
 
 GraphSegWidget::GraphSegWidget(QWidget *parent) :
-	QWidget(parent)
+	AutohideWidget()
 {
 	setupUi(this);
 	initUi();

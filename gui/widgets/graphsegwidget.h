@@ -3,13 +3,12 @@
 
 #include "ui_graphsegwidget.h"
 #include "model/representation.h"
+#include "autohidewidget.h"
 
 #include <graphseg.h>
 #include <shared_data.h>
 
-#include <QDockWidget>
-
-class GraphSegWidget : public QWidget, private Ui::GraphSegWidget
+class GraphSegWidget : public AutohideWidget, private Ui::GraphSegWidget
 {
 	Q_OBJECT
 	

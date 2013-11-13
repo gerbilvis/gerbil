@@ -25,6 +25,9 @@ public:
 	/* provide a reasonably high size of correct aspect ratio for layouting */
 	virtual QSize updateSizeHint();
 
+	// offsets reserved for autohidewidgets, can be altered from outside
+	int offLeft, offTop, offRight, offBottom;
+
 signals:
 	void newSizeHint(QSize hint);
 
@@ -39,10 +42,13 @@ protected:
 		painter->fillRect(rect, brush);
 	}
 
+	// scene geometry
 	int width, height;
 
-	qreal scale;
+	// transformations between pixmap coords. and scene coords.
 	QTransform scaler, scalerI;
+
+	// the pixmap we display
 	QPixmap	pixmap;
 };
 

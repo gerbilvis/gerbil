@@ -1,5 +1,6 @@
 #include "banddock.h"
 #include "../widgets/bandview.h"
+#include "../widgets/graphsegwidget.h"
 #include "../iogui.h"
 
 #include "../gerbil_gui_debug.h"
@@ -27,10 +28,15 @@ BandDock::~BandDock()
 void BandDock::initUi()
 {
 	// initialize band view
-	view->installEventFilter(this);
+	view->installEventFilter(this); // needed for enter/leave events
 	view->init(true);
 	bv = new BandView();
 	view->setScene(bv);
+
+	// add graphseg control widget
+	gs = new GraphSegWidget();
+	bv->offBottom = AutohideWidget::OutOffset;
+	view->addWidget(AutohideWidget::BOTTOM, gs);
 
 	connect(bv, SIGNAL(newSizeHint(QSize)),
 			view, SLOT(updateSizeHint(QSize)));
@@ -65,7 +71,6 @@ void BandDock::initUi()
 			bv, SLOT(setCurrentLabel(int)));
 
 	bv->initUi();
-	gs->setVisible(false);
 }
 
 void BandDock::changeBand(representation::t repr, int bandId,
@@ -172,9 +177,8 @@ void BandDock::processLabelingChange(const cv::Mat1s &labels,
 	bv->updateLabeling(labels, mask);
 }
 
-void BandDock::graphSegModeToggled(bool enable)
+void BandDock::graphSegModeToggled(bool)
 {
-	gs->setVisible(enable);
 }
 
 void BandDock::loadSeeds()

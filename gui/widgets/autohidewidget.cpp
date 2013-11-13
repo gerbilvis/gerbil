@@ -5,6 +5,26 @@
 AutohideWidget::AutohideWidget()
 	: location(LEFT), state(STATE_OUT)
 {
+	/* set dark, transparent background and corresponding white text */
+	QPalette palette;
+	QBrush brush(QColor(255, 255, 255, 255));
+	brush.setStyle(Qt::SolidPattern);
+	palette.setBrush(QPalette::Active, QPalette::WindowText, brush);
+	QBrush brush1(QColor(250, 250, 250, 255));
+	brush1.setStyle(Qt::SolidPattern);
+	palette.setBrush(QPalette::Active, QPalette::Base, brush1);
+	QBrush brush2(QColor(63, 63, 63, 191));
+	brush2.setStyle(Qt::SolidPattern);
+	palette.setBrush(QPalette::Active, QPalette::Window, brush2);
+	palette.setBrush(QPalette::Inactive, QPalette::WindowText, brush);
+	palette.setBrush(QPalette::Inactive, QPalette::Base, brush1);
+	palette.setBrush(QPalette::Inactive, QPalette::Window, brush2);
+	QBrush brush3(QColor(144, 144, 145, 255));
+	brush3.setStyle(Qt::SolidPattern);
+	palette.setBrush(QPalette::Disabled, QPalette::WindowText, brush3);
+	palette.setBrush(QPalette::Disabled, QPalette::Base, brush2);
+	palette.setBrush(QPalette::Disabled, QPalette::Window, brush2);
+	setPalette(palette);
 }
 
 void AutohideWidget::init(QGraphicsProxyWidget *p, border loc)
@@ -17,16 +37,16 @@ void AutohideWidget::init(QGraphicsProxyWidget *p, border loc)
 	 */
 	switch (location) {
 	case LEFT:
-		proxy->setPos(10.f - width(), 0.f);
+		proxy->setPos(OutOffset - width(), 0.f);
 		break;
 	case RIGHT:
-		proxy->setPos(proxy->scene()->width() - 10.f, 0.f);
+		proxy->setPos(proxy->scene()->width() - OutOffset, 0.f);
 		break;
 	case TOP:
-		proxy->setPos(0.f, 10.f - height());
+		proxy->setPos(0.f, OutOffset - height());
 		break;
 	case BOTTOM:
-		proxy->setPos(0.f, proxy->scene()->height() - 10.f);
+		proxy->setPos(0.f, proxy->scene()->height() - OutOffset);
 		break;
 	}
 }
@@ -36,7 +56,7 @@ void AutohideWidget::adjustToSize(QSize size)
 	switch (location) {
 	case RIGHT:
 		// reset to sunken state instead of messing with differential movement
-		proxy->setPos(proxy->scene()->width() - 10.f, 0.f);
+		proxy->setPos(proxy->scene()->width() - OutOffset, 0.f);
 		state = STATE_OUT;
 		// no break here
 	case LEFT:
@@ -45,7 +65,7 @@ void AutohideWidget::adjustToSize(QSize size)
 
 	case BOTTOM:
 		// reset to sunken state instead of messing with differential movement
-		proxy->setPos(0.f, proxy->scene()->height() - 10.f);
+		proxy->setPos(0.f, proxy->scene()->height() - OutOffset);
 		state = STATE_OUT;
 		// no break here
 	case TOP:
@@ -60,16 +80,16 @@ void AutohideWidget::triggerScrolling(QPoint pos)
 	bool proximity;
 	switch (location) {
 	case LEFT:
-		proximity = (pos.x() < ownpos.x() + width() + 10);
+		proximity = (pos.x() < ownpos.x() + width() + OutOffset);
 		break;
 	case RIGHT:
-		proximity = (pos.x() > ownpos.x() - 10);
+		proximity = (pos.x() > ownpos.x() - OutOffset);
 		break;
 	case TOP:
-		proximity = (pos.y() < ownpos.y() + height() + 10);
+		proximity = (pos.y() < ownpos.y() + height() + OutOffset);
 		break;
 	case BOTTOM:
-		proximity = (pos.y() > ownpos.y() - 10);
+		proximity = (pos.y() > ownpos.y() - OutOffset);
 		break;
 	}
 	if (state == STATE_IN && !proximity)
@@ -136,9 +156,9 @@ void AutohideWidget::timerEvent(QTimerEvent *e)
 		}
 	} else {
 		// if not (almost) fully out of scene, scroll further out
-		if ((relpos + offset) > 10.f) {
+		if ((relpos + offset) > OutOffset) {
 			// adjust diff down to almost hidden state
-			relpos = std::max(relpos - (qreal)60.f, (qreal)(10.f) - offset);
+			relpos = std::max(relpos - (qreal)60.f, OutOffset - offset);
 			update = true;
 		}
 	}
