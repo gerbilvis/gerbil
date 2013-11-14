@@ -11,15 +11,16 @@ AutohideView::AutohideView(QWidget *parent)
 	updateGeometry();
 }
 
-QGLWidget* AutohideView::init(bool mouseTrack)
+QGLWidget* AutohideView::init()
 {
 	target = new QGLWidget(QGLFormat(QGL::SampleBuffers));
 	setViewport(target);
 	// TODO: needed? setViewportUpdateMode(QGraphicsView::FullViewportUpdate);
 	// TODO: should we cache the background?
 
-	if (mouseTrack)
-		target->setMouseTracking(true);
+	/* mouse tracking will implicitely switched on as soon as we have widgets
+	 * in the view. we make it explicit to avoid confusion. */
+	target->setMouseTracking(true);
 
 	// the target belongs to us, but others might need access to it
 	return target;
@@ -52,6 +53,39 @@ void AutohideView::updateSizeHint(QSize sizeHint)
 	updateGeometry();
 }
 
+void AutohideView::fitContentRect(QRect rect)
+{
+	/* let autohide widgets that completely fit-in stay in */
+	foreach (AutohideWidget::border location, widgets.keys()) {
+		AutohideWidget* w = widgets.value(location);
+		AutohideWidget::scrollstate state = w->scrollState();
+		if (state == AutohideWidget::STAY_OUT)
+			continue;
+
+		bool keepIn;
+		switch (location) {
+		case AutohideWidget::LEFT:
+			keepIn = (rect.left() > w->width());
+			break;
+		case AutohideWidget::RIGHT:
+			keepIn = (rect.right() < width() - w->width());
+			break;
+		case AutohideWidget::TOP:
+			keepIn = (rect.top() > w->height());
+			break;
+		case AutohideWidget::BOTTOM:
+			keepIn = (rect.bottom() < height() - w->height());
+			break;
+		}
+
+		if (keepIn) {
+			w->scrollIn(true);  // enforce staying in
+		} else if (state == AutohideWidget::STAY_IN) {
+			w->scrollOut(false); // revert previous enforcement
+		}
+	}
+}
+
 void AutohideView::resizeEvent(QResizeEvent *event)
 {
 	/* always resize the scene accordingly */
@@ -77,10 +111,10 @@ void AutohideView::mouseMoveEvent(QMouseEvent *event)
 
 void AutohideView::leaveEvent(QEvent *event)
 {
-	// only scrollout if cursor really moved out (no popup menu etc.)
+	// only let them know if cursor really moved out (no popup menu etc.)
 	if (!rect().contains(mapFromGlobal(QCursor::pos()))) {
 		foreach (AutohideWidget* w, widgets)
-			w->scrollOut();
+			w->triggerScrolling(QPoint(-1, -1));
 	}
 
 	QGraphicsView::leaveEvent(event);

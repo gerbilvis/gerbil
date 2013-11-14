@@ -30,6 +30,7 @@ public:
 
 signals:
 	void newSizeHint(QSize hint);
+	void newContentRect(QRect rect);
 
 protected:
 	virtual void cursorAction(QGraphicsSceneMouseEvent *ev,
@@ -38,7 +39,8 @@ protected:
 
 	// draw the background, inline function
 	void fillBackground(QPainter *painter, const QRectF& rect) {
-		static QBrush brush(QColor(63, 31, 63), Qt::Dense4Pattern);
+		static QBrush brush(Qt::gray, Qt::Dense4Pattern);
+		painter->fillRect(rect, Qt::black);
 		painter->fillRect(rect, brush);
 	}
 

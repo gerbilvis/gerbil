@@ -78,6 +78,9 @@ void ScaledView::resizeEvent()
 
 	// inverted transform to handle input
 	scalerI = scaler.inverted();
+
+	// let the view know about the geometry we actually do occupy
+	emit newContentRect(scaler.mapRect(pixmap.rect()));
 }
 
 void ScaledView::paintEvent(QPainter *painter, const QRectF &rect)

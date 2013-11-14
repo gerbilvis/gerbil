@@ -3,7 +3,7 @@
 #include <QGraphicsScene>
 
 AutohideWidget::AutohideWidget()
-	: location(LEFT), state(STATE_OUT)
+	: location(LEFT), state(SCROLL_OUT)
 {
 	/* set dark, transparent background and corresponding white text */
 	QPalette palette;
@@ -55,27 +55,39 @@ void AutohideWidget::adjustToSize(QSize size)
 {
 	switch (location) {
 	case RIGHT:
-		// reset to sunken state instead of messing with differential movement
-		proxy->setPos(proxy->scene()->width() - OutOffset, 0.f);
-		state = STATE_OUT;
+		if (state == STAY_IN || state == SCROLL_IN)
+			proxy->setPos(proxy->scene()->width() - width(), 0.f);
+		else
+			proxy->setPos(proxy->scene()->width() - OutOffset, 0.f);
 		// no break here
 	case LEFT:
 		setMinimumHeight(size.height());
+		setMaximumHeight(size.height());
 		break;
 
 	case BOTTOM:
-		// reset to sunken state instead of messing with differential movement
-		proxy->setPos(0.f, proxy->scene()->height() - OutOffset);
-		state = STATE_OUT;
+		if (state == STAY_IN || state == SCROLL_IN)
+			proxy->setPos(0.f, proxy->scene()->height() - height());
+		else
+			proxy->setPos(0.f, proxy->scene()->height() - OutOffset);
 		// no break here
 	case TOP:
 		setMinimumWidth(size.width());
+		setMaximumWidth(size.width());
 		break;
 	}
+	repaint();
 }
 
 void AutohideWidget::triggerScrolling(QPoint pos)
 {
+	// invalid position means we lost the mouse
+	if (pos.x() < 0) {
+		if (state == SCROLL_IN) // we are inside, but not enforced
+			scrollOut();
+		return;
+	}
+
 	QPointF ownpos = proxy->pos();
 	bool proximity;
 	switch (location) {
@@ -92,30 +104,30 @@ void AutohideWidget::triggerScrolling(QPoint pos)
 		proximity = (pos.y() > ownpos.y() - OutOffset);
 		break;
 	}
-	if (state == STATE_IN && !proximity)
+	if (state == SCROLL_IN && !proximity)
 		scrollOut();
-	if (state == STATE_OUT && proximity)
+	if (state == SCROLL_OUT && proximity)
 		scrollIn();
 }
 
-void AutohideWidget::scrollOut()
+void AutohideWidget::scrollOut(bool enforce)
 {
-	// already scrolling
-	if (state == STATE_OUT)
-		return;
+	// already scrolling?
+	bool redundant = (state == SCROLL_OUT || state == STAY_OUT);
+	state = (enforce ? STAY_OUT : SCROLL_OUT);
 
-	state = STATE_OUT;
-	startTimer(40);
+	if (!redundant)
+		startTimer(40); // scroll
 }
 
-void AutohideWidget::scrollIn()
+void AutohideWidget::scrollIn(bool enforce)
 {
-	// already scrolling
-	if (state == STATE_IN)
-		return;
+	// already scrolling?
+	bool redundant = (state == SCROLL_IN || state == STAY_IN);
+	state = (enforce ? STAY_IN : SCROLL_IN);
 
-	state = STATE_IN;
-	startTimer(50);
+	if (!redundant)
+		startTimer(40); // scroll
 }
 
 void AutohideWidget::timerEvent(QTimerEvent *e)
@@ -147,7 +159,7 @@ void AutohideWidget::timerEvent(QTimerEvent *e)
 		break;
 	}
 
-	if (state == STATE_IN) {
+	if (state == SCROLL_IN || state == STAY_IN) {
 		// if not fully in scene, scroll further in
 		if (relpos < 0.f) {
 			// adjust diff up to fully scrolled-in state

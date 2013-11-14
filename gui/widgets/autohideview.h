@@ -15,7 +15,7 @@ class AutohideView : public QGraphicsView
 public:
 	explicit AutohideView(QWidget *parent);
 
-	QGLWidget* init(bool mouseTrack = false);
+	QGLWidget* init();
 
 	/* provide a reasonably high size of correct aspect ratio for layouting
 	 * Note: to make this work correctly with Qt's layouting habits, set the
@@ -31,6 +31,8 @@ public slots:
 
 	// provide newer size hint
 	void updateSizeHint(QSize sizeHint);
+	// optimize autohide widgets for bounding rectangle of the content
+	void fitContentRect(QRect rect);
 
 protected:
 

@@ -29,9 +29,11 @@ void BandDock::initUi()
 {
 	// initialize band view
 	view->installEventFilter(this); // needed for enter/leave events
-	view->init(true);
+	view->init();
 	bv = new BandView();
 	view->setScene(bv);
+	connect(bv, SIGNAL(newContentRect(QRect)),
+			view, SLOT(fitContentRect(QRect)));
 
 	// add graphseg control widget
 	gs = new GraphSegWidget();
