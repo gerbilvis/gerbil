@@ -2,7 +2,7 @@
 #include <tbb/parallel_for.h>
 #include <tbb/blocked_range.h>
 #include <tbb/blocked_range2d.h>
-#include <cv.h>
+#include <opencv2/core/core.hpp>
 
 #include <multi_img.h>
 #include <multi_img/illuminant.h>

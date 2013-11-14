@@ -1,6 +1,5 @@
 #include <vector>
-#include <cv.h>
-
+#include <opencv2/core/core.hpp>
 #include "rectangles.h"
 
 int rectComplement(int width, int height, cv::Rect r,
