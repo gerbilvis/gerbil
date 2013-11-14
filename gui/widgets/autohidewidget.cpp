@@ -94,7 +94,6 @@ void AutohideWidget::adjust()
 	adjustSize();
 	// then make sure it stays visible
 	reposition();
-	std::cerr << proxy->sceneBoundingRect().bottom() << std::endl;
 }
 
 void AutohideWidget::scrollOut(bool enforce)
