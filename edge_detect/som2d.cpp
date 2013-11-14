@@ -227,7 +227,9 @@ cv::Vec3f SOM2d::getColor(cv::Point3d pos)
 	}
 
 	// normalize color by sidelength
-	return pixel / config.sidelength;
+	// use temporary to workaround OpenCV 2.3 bug
+	const double div = 1.0 / config.sidelength;
+	return pixel * div;
 }
 
 std::string SOM2d::description()
