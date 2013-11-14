@@ -1,20 +1,22 @@
 #ifndef FALSECOLORDOCK_H
 #define FALSECOLORDOCK_H
 
+#include "ui_falsecolordock_sel.h"
 #include <QDockWidget>
 #include <shared_data.h>
 #include "../model/representation.h"
 #include "../model/falsecolormodel.h"
-#include "ui_falsecolordock.h"
 
+class AutohideView;
 class ScaledView;
+class AutohideWidget;
 
 struct FalseColoringState {
 	enum Type {FINISHED=0, CALCULATING, ABORTING};
 };
 std::ostream &operator<<(std::ostream& os, const FalseColoringState::Type& state);
 
-class FalseColorDock : public QDockWidget, private Ui::FalseColorDock{
+class FalseColorDock : public QDockWidget {
 	Q_OBJECT
 public:
 	explicit FalseColorDock(QWidget *parent = 0);
@@ -66,7 +68,13 @@ protected:
 	QMap<FalseColoring::Type, bool> coloringUpToDate;
 	FalseColoring::Type lastShown;
 
+	// viewport and scene
+	AutohideView *view;
 	ScaledView *scene;
+	// UI and widget for our button row
+	Ui::FalsecolorDockSelUI *uisel;
+	AutohideWidget *sel;
+
 };
 
 #endif // FALSECOLORDOCK_H

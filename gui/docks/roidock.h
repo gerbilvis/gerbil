@@ -58,7 +58,7 @@ private:
 	// The current ROI selected, but possibly not yet applied.
 	QRect curRoi;
 
-	// our viewport
+	// our viewport (a scene actually)
 	ROIView *roiView;
 	// UI and widget for our button row
 	Ui::RoiDockButtonUI *uibtn;

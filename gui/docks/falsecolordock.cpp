@@ -6,6 +6,8 @@
 #include "falsecolordock.h"
 #include "../model/falsecolormodel.h"
 #include "../widgets/scaledview.h"
+#include "../widgets/autohideview.h"
+#include "../widgets/autohidewidget.h"
 
 std::ostream &operator<<(std::ostream& os, const FalseColoringState::Type& state)
 {
@@ -28,7 +30,17 @@ static QStringList prettyFalseColorNames = QStringList()
 FalseColorDock::FalseColorDock(QWidget *parent)
 	: QDockWidget(parent), lastShown(FalseColoring::CMF)
 {
-	setupUi(this);
+	/* setup our UI here as it is quite minimalistic */
+	QWidget *contents = new QWidget(this);
+	QVBoxLayout *layout = new QVBoxLayout(contents);
+	view = new AutohideView(contents);
+	view->setBaseSize(QSize(250, 300));
+	view->setFrameShape(QFrame::NoFrame);
+	view->setVerticalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
+	view->setHorizontalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
+	layout->addWidget(view);
+	this->setWidget(contents);
+
 	initUi();
 }
 
@@ -79,10 +91,10 @@ void FalseColorDock::processApplyClicked()
 		emit cancelComputationRequested(selectedColoring());
 		// go back to last shown coloring
 		if(coloringUpToDate[lastShown]) {
-			sourceBox->setCurrentIndex(int(lastShown));
+			uisel->sourceBox->setCurrentIndex(int(lastShown));
 			requestColoring(lastShown);
 		} else { // or fall back to CMF, e.g. after ROI change
-			sourceBox->setCurrentIndex(FalseColoring::CMF);
+			uisel->sourceBox->setCurrentIndex(FalseColoring::CMF);
 			requestColoring(FalseColoring::CMF);
 		}
 	} else if(coloringState[selectedColoring()] == FalseColoringState::FINISHED) {
@@ -96,21 +108,30 @@ void FalseColorDock::initUi()
 	view->init();
 	scene = new ScaledView();
 	view->setScene(scene);
+	connect(scene, SIGNAL(newContentRect(QRect)),
+			view, SLOT(fitContentRect(QRect)));
+
+	// initialize selection widget
+	sel = new AutohideWidget();
+	uisel = new Ui::FalsecolorDockSelUI();
+	uisel->setupUi(sel);
+	scene->offTop = AutohideWidget::OutOffset;
+	view->addWidget(AutohideWidget::TOP, sel);
 
 	// fill up source choices
-	sourceBox->addItem(prettyFalseColorNames[FalseColoring::CMF],
+	uisel->sourceBox->addItem(prettyFalseColorNames[FalseColoring::CMF],
 					   FalseColoring::CMF);
-	sourceBox->addItem(prettyFalseColorNames[FalseColoring::PCA],
+	uisel->sourceBox->addItem(prettyFalseColorNames[FalseColoring::PCA],
 					   FalseColoring::PCA);
-	sourceBox->addItem(prettyFalseColorNames[FalseColoring::PCAGRAD],
+	uisel->sourceBox->addItem(prettyFalseColorNames[FalseColoring::PCAGRAD],
 					   FalseColoring::PCAGRAD);
 #ifdef WITH_EDGE_DETECT
-	sourceBox->addItem(prettyFalseColorNames[FalseColoring::SOM],
+	uisel->sourceBox->addItem(prettyFalseColorNames[FalseColoring::SOM],
 					   FalseColoring::SOM);
-	sourceBox->addItem(prettyFalseColorNames[FalseColoring::SOMGRAD],
+	uisel->sourceBox->addItem(prettyFalseColorNames[FalseColoring::SOMGRAD],
 					   FalseColoring::SOMGRAD);
 #endif // WITH_EDGE_DETECT
-	sourceBox->setCurrentIndex(0);
+	uisel->sourceBox->setCurrentIndex(0);
 
 	updateTheButton();
 	updateProgressBar();
@@ -118,10 +139,10 @@ void FalseColorDock::initUi()
 	connect(scene, SIGNAL(newSizeHint(QSize)),
 			view, SLOT(updateSizeHint(QSize)));
 
-	connect(sourceBox, SIGNAL(currentIndexChanged(int)),
+	connect(uisel->sourceBox, SIGNAL(currentIndexChanged(int)),
 			this, SLOT(processSelectedColoring()));
 
-	connect(theButton, SIGNAL(clicked()),
+	connect(uisel->theButton, SIGNAL(clicked()),
 			this, SLOT(processApplyClicked()));
 
 	connect(this, SIGNAL(visibilityChanged(bool)),
@@ -130,7 +151,8 @@ void FalseColorDock::initUi()
 
 FalseColoring::Type FalseColorDock::selectedColoring()
 {
-	QVariant boxData = sourceBox->itemData(sourceBox->currentIndex());
+	QComboBox *src = uisel->sourceBox;
+	QVariant boxData = src->itemData(src->currentIndex());
 	FalseColoring::Type coloringType = FalseColoring::Type(boxData.toInt());
 	return coloringType;
 }
@@ -145,13 +167,19 @@ void FalseColorDock::requestColoring(FalseColoring::Type coloringType, bool reca
 
 void FalseColorDock::updateProgressBar()
 {
-	if(coloringState[selectedColoring()] == FalseColoringState::CALCULATING) {
+	if (coloringState[selectedColoring()] == FalseColoringState::CALCULATING) {
 		int percent = coloringProgress[selectedColoring()];
-		calcProgress->setVisible(true);
-		calcProgress->setValue(percent);
+		uisel->calcProgress->setValue(percent);
+		uisel->calcProgress->setVisible(true);
+		// stay visible
+		sel->scrollIn(true);
 	} else {
-		calcProgress->setValue(0);
-		calcProgress->setVisible(false);
+		std::cerr << prettyFalseColorNames[selectedColoring()].toStdString()
+				<< " not CALCULATING" << std::endl;
+		uisel->calcProgress->setValue(0);
+		uisel->calcProgress->setVisible(false);
+		// remove enforced visibility
+		sel->scrollOut();
 	}
 }
 
@@ -159,20 +187,20 @@ void FalseColorDock::updateTheButton()
 {
 	switch (coloringState[selectedColoring()]) {
 	case FalseColoringState::FINISHED:
-		theButton->setText("Re-Calculate");
-		theButton->setVisible(false);
+		uisel->theButton->setText("Re-Calculate");
+		uisel->theButton->setVisible(false);
 		if( selectedColoring()==FalseColoring::SOM ||
 			selectedColoring()==FalseColoring::SOMGRAD)
 		{
-			theButton->setVisible(true);
+			uisel->theButton->setVisible(true);
 		}
 		break;
 	case FalseColoringState::CALCULATING:
-		theButton->setText("Cancel Computation");
-		theButton->setVisible(true);
+		uisel->theButton->setText("Cancel Computation");
+		uisel->theButton->setVisible(true);
 		break;
 	case FalseColoringState::ABORTING:
-		theButton->setVisible(true);
+		uisel->theButton->setVisible(true);
 		break;
 	default:
 		assert(false);
@@ -205,5 +233,7 @@ void FalseColorDock::processColoringOutOfDate(FalseColoring::Type coloringType)
 void FalseColorDock::processCalculationProgressChanged(FalseColoring::Type coloringType, int percent)
 {
 	coloringProgress[coloringType] = percent;
-	updateProgressBar();
+
+	if (coloringType == selectedColoring())
+		updateProgressBar();
 }
