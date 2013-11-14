@@ -171,6 +171,7 @@ void FalseColorDock::updateProgressBar()
 		int percent = coloringProgress[selectedColoring()];
 		uisel->calcProgress->setValue(percent);
 		uisel->calcProgress->setVisible(true);
+		sel->adjust(); // grow accordingly
 		// stay visible
 		sel->scrollIn(true);
 	} else {
@@ -178,6 +179,7 @@ void FalseColorDock::updateProgressBar()
 				<< " not CALCULATING" << std::endl;
 		uisel->calcProgress->setValue(0);
 		uisel->calcProgress->setVisible(false);
+		sel->adjust(); // shrink accordingly
 		// remove enforced visibility
 		sel->scrollOut();
 	}
@@ -187,7 +189,8 @@ void FalseColorDock::updateTheButton()
 {
 	switch (coloringState[selectedColoring()]) {
 	case FalseColoringState::FINISHED:
-		uisel->theButton->setText("Re-Calculate");
+		uisel->theButton->setIcon(QIcon::fromTheme("view-refresh"));
+		uisel->theButton->setText("Recalculate");
 		uisel->theButton->setVisible(false);
 		if( selectedColoring()==FalseColoring::SOM ||
 			selectedColoring()==FalseColoring::SOMGRAD)
@@ -196,7 +199,8 @@ void FalseColorDock::updateTheButton()
 		}
 		break;
 	case FalseColoringState::CALCULATING:
-		uisel->theButton->setText("Cancel Computation");
+		uisel->theButton->setIcon(QIcon::fromTheme("process-stop"));
+		uisel->theButton->setText("Cancel");
 		uisel->theButton->setVisible(true);
 		break;
 	case FalseColoringState::ABORTING:

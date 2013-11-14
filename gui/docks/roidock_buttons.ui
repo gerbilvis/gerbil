@@ -11,6 +11,9 @@
    </rect>
   </property>
   <layout class="QVBoxLayout" name="verticalLayout">
+   <property name="topMargin">
+    <number>10</number>
+   </property>
    <item>
     <widget class="QDialogButtonBox" name="roiButtons">
      <property name="enabled">

@@ -94,7 +94,7 @@ void AutohideView::resizeEvent(QResizeEvent *event)
 
 	/* also let the widgets adjust */
 	foreach (AutohideWidget* w, widgets)
-		w->adjustToSize(event->size());
+		w->reposition();
 
 	QGraphicsView::resizeEvent(event);
 }

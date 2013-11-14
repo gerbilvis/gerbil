@@ -15,48 +15,43 @@ void AutohideWidget::init(QGraphicsProxyWidget *p, border loc)
 	location = loc;
 	proxy = p;
 
-	/* move widget to the margin of the display
-	 * so it will pop-out on demand
-	 */
-	switch (location) {
-	case LEFT:
-		proxy->setPos(OutOffset - width(), 0.f);
-		break;
-	case RIGHT:
-		proxy->setPos(proxy->scene()->width() - OutOffset, 0.f);
-		break;
-	case TOP:
-		proxy->setPos(0.f, OutOffset - height());
-		break;
-	case BOTTOM:
-		proxy->setPos(0.f, proxy->scene()->height() - OutOffset);
-		break;
-	}
+	reposition();
 }
 
-void AutohideWidget::adjustToSize(QSize size)
+void AutohideWidget::reposition()
 {
+	qreal sceneWidth = proxy->scene()->width();
+	qreal sceneHeight = proxy->scene()->height();
+
 	switch (location) {
 	case RIGHT:
 		if (state == STAY_IN || state == SCROLL_IN)
-			proxy->setPos(proxy->scene()->width() - width(), 0.f);
+			proxy->setPos(sceneWidth - width(), 0.f);
 		else
-			proxy->setPos(proxy->scene()->width() - OutOffset, 0.f);
-		// no break here
+			proxy->setPos(sceneWidth - OutOffset, 0.f);
+		setFixedHeight(sceneHeight);
+		break;
 	case LEFT:
-		setMinimumHeight(size.height());
-		setMaximumHeight(size.height());
+		if (state == STAY_IN || state == SCROLL_IN)
+			proxy->setPos(0.f, 0.f);
+		else
+			proxy->setPos(OutOffset - width(), 0.f);
+		setFixedHeight(sceneHeight);
 		break;
 
 	case BOTTOM:
 		if (state == STAY_IN || state == SCROLL_IN)
-			proxy->setPos(0.f, proxy->scene()->height() - height());
+			proxy->setPos(0.f, sceneHeight - height());
 		else
-			proxy->setPos(0.f, proxy->scene()->height() - OutOffset);
-		// no break here
+			proxy->setPos(0.f, sceneHeight - OutOffset);
+		setFixedWidth(sceneWidth);
+		break;
 	case TOP:
-		setMinimumWidth(size.width());
-		setMaximumWidth(size.width());
+		if (state == STAY_IN || state == SCROLL_IN)
+			proxy->setPos(0.f, 0.f);
+		else
+			proxy->setPos(0.f, OutOffset - height());
+		setFixedWidth(sceneWidth);
 		break;
 	}
 	repaint();
@@ -91,6 +86,15 @@ void AutohideWidget::triggerScrolling(QPoint pos)
 		scrollOut();
 	if (state == SCROLL_OUT && proximity)
 		scrollIn();
+}
+
+void AutohideWidget::adjust()
+{
+	// first rescale the widget
+	adjustSize();
+	// then make sure it stays visible
+	reposition();
+	std::cerr << proxy->sceneBoundingRect().bottom() << std::endl;
 }
 
 void AutohideWidget::scrollOut(bool enforce)

@@ -34,11 +34,16 @@ public:
 	 */
 	void init(QGraphicsProxyWidget *proxy, border loc);
 	
-	/* stretch the widget to fill the whole border */
-	void adjustToSize(QSize size);
+	/* adjust position and stretch the widget to fill the whole border */
+	void reposition();
 
 	/* decide if scrolling needed based on mouse position */
 	void triggerScrolling(QPoint pos);
+
+	/* Call this instead of QWidget::adjustSize()
+	 * Whenever the widget gets a new size, we also have to reset its position.
+	 */
+	void adjust();
 
 	static const int OutOffset = 10;
 

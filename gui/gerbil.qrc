@@ -24,5 +24,7 @@
         <file alias="list-add">resources/icons/list-add.png</file>
         <file alias="list-remove">resources/icons/list-remove.png</file>
         <file alias="preferences-system-windows">resources/icons/preferences-system-windows.png</file>
+        <file alias="process-stop">resources/icons/process-stop.png</file>
+        <file alias="view-refresh">resources/icons/view-refresh.png</file>
     </qresource>
 </RCC>
