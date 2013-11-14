@@ -44,6 +44,7 @@ void FalseColorDock::processColoringComputed(FalseColoring::Type coloringType, Q
 		scene->setPixmap(p);
 		view->update();
 		view->setToolTip(prettyFalseColorNames[coloringType]);
+		this->setWindowTitle(prettyFalseColorNames[coloringType]);
 		lastShown = coloringType;
 	}
 }
