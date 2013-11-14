@@ -106,7 +106,7 @@ vole_ui_library(
 	docks/banddock.ui
 	docks/labelingdock.ui
 	docks/normdock.ui
-	docks/falsecolordock.ui
+	docks/falsecolordock_sel.ui
 	docks/labeldock.ui
 )
 

@@ -5,26 +5,9 @@
 AutohideWidget::AutohideWidget()
 	: location(LEFT), state(SCROLL_OUT)
 {
-	/* set dark, transparent background and corresponding white text */
-	QPalette palette;
-	QBrush brush(QColor(255, 255, 255, 255));
-	brush.setStyle(Qt::SolidPattern);
-	palette.setBrush(QPalette::Active, QPalette::WindowText, brush);
-	QBrush brush1(QColor(250, 250, 250, 255));
-	brush1.setStyle(Qt::SolidPattern);
-	palette.setBrush(QPalette::Active, QPalette::Base, brush1);
-	QBrush brush2(QColor(63, 63, 63, 191));
-	brush2.setStyle(Qt::SolidPattern);
-	palette.setBrush(QPalette::Active, QPalette::Window, brush2);
-	palette.setBrush(QPalette::Inactive, QPalette::WindowText, brush);
-	palette.setBrush(QPalette::Inactive, QPalette::Base, brush1);
-	palette.setBrush(QPalette::Inactive, QPalette::Window, brush2);
-	QBrush brush3(QColor(144, 144, 145, 255));
-	brush3.setStyle(Qt::SolidPattern);
-	palette.setBrush(QPalette::Disabled, QPalette::WindowText, brush3);
-	palette.setBrush(QPalette::Disabled, QPalette::Base, brush2);
-	palette.setBrush(QPalette::Disabled, QPalette::Window, brush2);
-	setPalette(palette);
+	QString style = "AutohideWidget { background: rgba(63, 63, 63, 191); } ";
+	style.append("QLabel, QRadioButton, QCheckBox { color: white; }");
+	setStyleSheet(style);
 }
 
 void AutohideWidget::init(QGraphicsProxyWidget *p, border loc)
