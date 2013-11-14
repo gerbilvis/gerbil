@@ -102,14 +102,23 @@ void FalseColorModel::processImageUpdate(representation::t type,
 
 void FalseColorModel::requestColoring(FalseColoring::Type coloringType, bool recalc)
 {
-	/* TODO:
-	 * Guards!? They are missing in rgb->execute, too! */
-	// check if we are already initialized and should deal with that request
-	if (!shared_img || !shared_grad ||
-		(**shared_img).empty() || (**shared_grad).empty())
-		return;
-
 	//GGDBG_CALL();
+
+	// check if we are already initialized and should deal with that request
+	bool abort = false;
+	{
+		SharedDataLock  lock_img(shared_img->mutex);
+		SharedDataLock  lock_grad(shared_grad->mutex);
+		if (!shared_img || !shared_grad ||
+			(**shared_img).empty() || (**shared_grad).empty())
+			abort = true;
+	}
+	if(abort) {
+		// DO NOT emit computationCancelled(coloringType);
+		return;
+	}
+
+
 	FalseColoringCache::iterator cacheIt = cache.find(coloringType);
 	if(cacheIt != cache.end() && cacheIt->upToDate) {
 		if(recalc &&

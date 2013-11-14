@@ -128,6 +128,8 @@ public slots:
 	/** Request a rendering of coloringType of the current image or
 	 * gradient and ROI.
 	 *
+	 * If FalseColorModel is not initialized, request will be ignored.
+	 *
 	 * @param recalc If set, the result shall be recalculated wether or not an
 	 *               up-to-date cached copy is available. Useful to request a
 	 *               new SOM.
@@ -151,6 +153,10 @@ signals:
 
 	void coloringComputed(FalseColoring::Type coloringType, QPixmap p);
 
+	/** The computation was cancelled as requested.
+	 *
+	 *	Not used for signalling abort by FalseColorModel itself.
+	 */
 	void computationCancelled(FalseColoring::Type coloringType);
 
 	void progressChanged(FalseColoring::Type coloringType, int percent);
