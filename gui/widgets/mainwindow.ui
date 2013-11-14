@@ -14,7 +14,7 @@
    <string>Multispectral Image Viewer</string>
   </property>
   <property name="windowIcon">
-	  <iconset resource="../gerbil.qrc">
+   <iconset resource="../gerbil.qrc">
     <normaloff>:/logoicon</normaloff>:/logoicon</iconset>
   </property>
   <widget class="QWidget" name="centralWidget">
@@ -22,7 +22,16 @@
     <property name="spacing">
      <number>0</number>
     </property>
-    <property name="margin">
+    <property name="leftMargin">
+     <number>0</number>
+    </property>
+    <property name="topMargin">
+     <number>0</number>
+    </property>
+    <property name="rightMargin">
+     <number>0</number>
+    </property>
+    <property name="bottomMargin">
      <number>0</number>
     </property>
     <item>
@@ -117,8 +126,7 @@
            <string/>
           </property>
           <property name="icon">
-			  <iconset resource="../gerbil.qrc">
-            <normaloff>:/toolbar/add</normaloff>:/toolbar/add</iconset>
+           <iconset theme="list-add"/>
           </property>
           <property name="iconSize">
            <size>
@@ -137,8 +145,7 @@
            <string/>
           </property>
           <property name="icon">
-			  <iconset resource="../gerbil.qrc">
-            <normaloff>:/toolbar/remove</normaloff>:/toolbar/remove</iconset>
+           <iconset theme="list-remove"/>
           </property>
           <property name="iconSize">
            <size>
@@ -164,8 +171,7 @@
            <string/>
           </property>
           <property name="icon">
-			  <iconset resource="../gerbil.qrc">
-            <normaloff>:/toolbar/windows</normaloff>:/toolbar/windows</iconset>
+           <iconset theme="preferences-system-windows"/>
           </property>
           <property name="iconSize">
            <size>
@@ -212,7 +218,7 @@
   </widget>
  </widget>
  <resources>
-	 <include location="../gerbil.qrc"/>
+  <include location="../gerbil.qrc"/>
  </resources>
  <connections/>
 </ui>
