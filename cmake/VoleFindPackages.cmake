@@ -1,5 +1,5 @@
 # Library versions
-set(VOLE_MINIMUM_OPENCV_VERSION "2.4.0")
+set(VOLE_MINIMUM_OPENCV_VERSION "2.3.0")
 set(VOLE_MINIMUM_QT_VERSION "4.7.0")
 set(VOLE_MINIMUM_BOOST_VERSION "1.35")
 #set(VOLE_MINIMUM_EIGEN_VERSION "3.0")
@@ -7,10 +7,9 @@ set(VOLE_MINIMUM_BOOST_VERSION "1.35")
 
 # OpenCV
 find_package(OpenCV PATHS "/net/cv/lib/share/OpenCV" "/local/opencv/share/OpenCV")
-if (${OpenCV_VERSION})
-	if(${OpenCV_VERSION} VERSION_LESS ${VOLE_MINIMUM_OPENCV_VERSION})
-		set(OpenCV_FOUND)
-	endif()
+if(NOT (${OpenCV_VERSION} VERSION_LESS ${VOLE_MINIMUM_OPENCV_VERSION}))
+	set(OpenCV_FOUND TRUE)
+	message(STATUS "Found OpenCV version: ${OpenCV_VERSION}")
 endif()
 if(OpenCV_FOUND)
 	add_definitions(-DOPENCV_VERSION=${OpenCV_VERSION})

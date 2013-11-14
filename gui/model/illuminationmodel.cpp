@@ -8,6 +8,7 @@
 #include <opencv2/gpu/gpu.hpp>
 
 #include "gerbil_gui_debug.h"
+#include "gerbil_config.h"
 
 #define USE_CUDA_ILLUMINANT     0
 
@@ -109,8 +110,7 @@ void IllumModel::submitRemoveOldIllumTask()
 	/* remove old illuminant */
 	if (i1 != 0) {
 		const Illuminant &il = getIlluminant(i1);
-
-		if (cv::gpu::getCudaEnabledDeviceCount() > 0 && USE_CUDA_ILLUMINANT) {
+		if (HAVE_CUDA_GPU && USE_CUDA_ILLUMINANT) {
 			BackgroundTaskPtr taskIllum(new IlluminantCuda(
 				image, il, true, roi, false));
 			queue->push(taskIllum);
@@ -128,7 +128,7 @@ void IllumModel::submitAddNewIllumTask()
 	if (i2 != 0) {
 		const Illuminant &il = getIlluminant(i2);
 
-		if (cv::gpu::getCudaEnabledDeviceCount() > 0 && USE_CUDA_ILLUMINANT) {
+		if (HAVE_CUDA_GPU && USE_CUDA_ILLUMINANT) {
 			BackgroundTaskPtr taskIllum(new IlluminantCuda(
 				image, il, false, roi, false));
 			queue->push(taskIllum);

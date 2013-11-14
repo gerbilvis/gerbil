@@ -19,6 +19,12 @@
 
 #include <opencv2/gpu/gpu.hpp>
 
+#include "gerbil_config.h"
+
+// FIXME
+//   USE_CUDA_GRADIENT, USE_CUDA_DATARANGE, USE_CUDA_CLAMP
+//   These are better moved to core/gerbil_config.h and made configurable
+//   through CMake.
 #define USE_CUDA_GRADIENT       1
 #define USE_CUDA_DATARANGE      0
 #define USE_CUDA_CLAMP          0
@@ -173,7 +179,7 @@ void ImageModel::spawn(representation::t type, const cv::Rect &newROI, int bands
 	}
 
 	if (type == representation::GRAD) {
-		if (cv::gpu::getCudaEnabledDeviceCount() > 0 && USE_CUDA_GRADIENT) {
+		if (HAVE_CUDA_GPU  && USE_CUDA_GRADIENT) {
 			BackgroundTaskPtr taskGradient(new GradientCuda(
 				image, gradient, roi));
 			queue.push(taskGradient);
@@ -199,7 +205,7 @@ void ImageModel::spawn(representation::t type, const cv::Rect &newROI, int bands
 		double max = (*range)->max;
 		hlock.unlock();
 
-		if (cv::gpu::getCudaEnabledDeviceCount() > 0 && USE_CUDA_DATARANGE) {
+		if (HAVE_CUDA_GPU && USE_CUDA_DATARANGE) {
 			BackgroundTaskPtr taskNormRange(new NormRangeCuda(
 				target, range, mode, isGRAD, min, max, true, roi));
 			queue.push(taskNormRange);

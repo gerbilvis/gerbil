@@ -41,6 +41,20 @@ include(VoleFindExternalModules)
 
 include(VolePythonExtension)
 
+# Test if OpenCV version has GPU support (cv::gpu)
+# -> HAVE_OPENCV_GPU pre-processor define
+# See also core/gerbil_config.h.
+if(NOT (${OpenCV_VERSION} VERSION_LESS "2.4.0"))
+        #message(STATUS "HAVE_OPENCV_GPU ON")
+        set(HAVE_OPENCV_GPU ON)
+else()
+        #message(STATUS "HAVE_OPENCV_GPU OFF")
+        set(HAVE_OPENCV_GPU OFF)
+endif()
+if(HAVE_OPENCV_GPU)
+        add_definitions(-DHAVE_OPENCV_GPU)
+endif(HAVE_OPENCV_GPU)
+
 include_directories(core shell ${VOLE_EXTERNAL_SUBDIRECTORIES})
 # TODO: why?
 #link_directories(${ITK_LIBRARY_DIRS})
