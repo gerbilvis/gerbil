@@ -100,6 +100,7 @@ vole_ui_library(
 	dist_view/foldingbar.ui
 	dist_view/viewportcontrol.ui
 	docks/roidock.ui
+	docks/roidock_buttons.ui
 	docks/illumdock.ui
 	docks/clusteringdock.ui
 	docks/banddock.ui

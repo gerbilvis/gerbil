@@ -46,8 +46,12 @@ void ROIView::paintEvent(QPainter *painter, const QRectF &rect)
 	painter->drawRect(roi);
 }
 
-void ROIView::cursorAction(QGraphicsSceneMouseEvent *ev, bool click)
+void ROIView::cursorAction(QGraphicsSceneMouseEvent *ev, bool)
 {
+	// only perform an action when left mouse button pressed
+	if (!(ev->buttons() & Qt::LeftButton))
+		return;
+
 	QPointF cursor = scalerI.map(QPointF(ev->scenePos()));
 	cursor.setX(std::floor(cursor.x() - 0.25));
 	cursor.setY(std::floor(cursor.y() - 0.25));
@@ -93,8 +97,13 @@ void ROIView::cursorAction(QGraphicsSceneMouseEvent *ev, bool click)
 	emit newSelection(roi);
 }
 
-void ROIView::mouseReleaseEvent(QGraphicsSceneMouseEvent *)
+void ROIView::mouseReleaseEvent(QGraphicsSceneMouseEvent *ev)
 {
+	// check for scene elements first (we are technically the background)
+	QGraphicsScene::mouseReleaseEvent(ev);
+	if (ev->isAccepted())
+		return;
+
 	// enable 'grabbing' of different border on next click
 	lockX = lockY = -1;
 }

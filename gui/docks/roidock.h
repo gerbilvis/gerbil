@@ -1,13 +1,15 @@
 #ifndef ROIDOCK_H
 #define ROIDOCK_H
 
-#include <ui_roidock.h>
+#include "ui_roidock.h"
+#include "ui_roidock_buttons.h"
 
 #include <opencv2/core/core.hpp> // for cv::Rect
 #include <QRect>
 #include <QAbstractButton>
 
 class ROIView;
+class AutohideWidget;
 
 class RoiDock : public QDockWidget, private Ui::RoiDockUI
 {
@@ -58,6 +60,9 @@ private:
 
 	// our viewport
 	ROIView *roiView;
+	// UI and widget for our button row
+	Ui::RoiDockButtonUI *uibtn;
+	AutohideWidget *btn;
 };
 
 #endif // ROIDOCK_H

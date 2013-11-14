@@ -117,19 +117,6 @@
       </property>
      </widget>
     </item>
-    <item>
-     <widget class="QDialogButtonBox" name="roiButtons">
-      <property name="enabled">
-       <bool>false</bool>
-      </property>
-      <property name="standardButtons">
-       <set>QDialogButtonBox::Apply|QDialogButtonBox::Reset</set>
-      </property>
-      <property name="centerButtons">
-       <bool>true</bool>
-      </property>
-     </widget>
-    </item>
    </layout>
   </widget>
  </widget>

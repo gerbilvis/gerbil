@@ -1,5 +1,6 @@
 #include "roidock.h"
 #include "../widgets/roiview.h"
+#include "../widgets/autohidewidget.h"
 
 #include <iostream>
 #include "../gerbil_gui_debug.h"
@@ -53,12 +54,21 @@ void RoiDock::initUi()
 	view->init();
 	roiView = new ROIView();
 	view->setScene(roiView);
+	connect(roiView, SIGNAL(newContentRect(QRect)),
+			view, SLOT(fitContentRect(QRect)));
+
+	// initialize button row
+	btn = new AutohideWidget();
+	uibtn = new Ui::RoiDockButtonUI();
+	uibtn->setupUi(btn);
+	roiView->offBottom = AutohideWidget::OutOffset;
+	view->addWidget(AutohideWidget::BOTTOM, btn);
 
 	/* init signals */
 	connect(roiView, SIGNAL(newSizeHint(QSize)),
 			view, SLOT(updateSizeHint(QSize)));
 
-	connect(roiButtons, SIGNAL(clicked(QAbstractButton*)),
+	connect(uibtn->roiButtons, SIGNAL(clicked(QAbstractButton*)),
 			 this, SLOT(processRoiButtonsClicked(QAbstractButton*)));
 	connect(roiView, SIGNAL(newSelection(const QRect&)),
 			this, SLOT(processNewSelection(const QRect&)));
@@ -78,8 +88,8 @@ void RoiDock::processBandsSliderChange(int b)
 
 void RoiDock::processRoiButtonsClicked(QAbstractButton *sender)
 {
-	QDialogButtonBox::ButtonRole role = roiButtons->buttonRole(sender);
-	roiButtons->setDisabled(true);
+	QDialogButtonBox::ButtonRole role = uibtn->roiButtons->buttonRole(sender);
+	uibtn->roiButtons->setDisabled(true);
 	if (role == QDialogButtonBox::ResetRole) {
 		resetRoi();
 	} else if (role == QDialogButtonBox::ApplyRole) {
@@ -90,7 +100,7 @@ void RoiDock::processRoiButtonsClicked(QAbstractButton *sender)
 void RoiDock::processNewSelection(const QRect &roi)
 {
 	curRoi = roi;
-	roiButtons->setEnabled(true);
+	uibtn->roiButtons->setEnabled(true);
 
 	QString title("<b>ROI:</b> %1, %2 - %3, %4 (%5x%6)");
 	title = title.arg(roi.x()).arg(roi.y()).arg(roi.right()).arg(roi.bottom())
