@@ -12,57 +12,51 @@ GraphSegWidget::~GraphSegWidget() { }
 
 void GraphSegWidget::initUi(AutohideView *view)
 {
-	graphsegSourceBox->setAHView(view);
-	graphsegSourceBox->addItem("Image", 0);
-	graphsegSourceBox->addItem("Gradient", 1); // TODO PCA
-	graphsegSourceBox->addItem("Shown Band", 2);
-	graphsegSourceBox->setCurrentIndex(0);
+	sourceBox->setAHView(view);
+	sourceBox->addItem("Image", 0);
+	sourceBox->addItem("Gradient", 1); // TODO PCA
+	sourceBox->addItem("Shown Band", 2);
+	sourceBox->setCurrentIndex(0);
 
-	graphsegSimilarityBox->setAHView(view);
-	graphsegSimilarityBox->addItem("Manhattan distance (L1)", vole::MANHATTAN);
-	graphsegSimilarityBox->addItem("Euclidean distance (L2)", vole::EUCLIDEAN);
-	graphsegSimilarityBox->addItem(QString::fromUtf8("Chebyshev distance (L∞)"),
+	similarityBox->setAHView(view);
+	similarityBox->addItem("Manhattan distance (L1)", vole::MANHATTAN);
+	similarityBox->addItem("Euclidean distance (L2)", vole::EUCLIDEAN);
+	similarityBox->addItem(QString::fromUtf8("Chebyshev distance (L∞)"),
 								   vole::CHEBYSHEV);
-	graphsegSimilarityBox->addItem("Spectral Angle", vole::MOD_SPEC_ANGLE);
-	graphsegSimilarityBox->addItem("Spectral Information Divergence",
+	similarityBox->addItem("Spectral Angle", vole::MOD_SPEC_ANGLE);
+	similarityBox->addItem("Spectral Information Divergence",
 								   vole::SPEC_INF_DIV);
-	graphsegSimilarityBox->addItem("SID+SAM I", vole::SIDSAM1);
-	graphsegSimilarityBox->addItem("SID+SAM II", vole::SIDSAM2);
-	graphsegSimilarityBox->addItem("Normalized L2", vole::NORM_L2);
-	graphsegSimilarityBox->setCurrentIndex(3);
+	similarityBox->addItem("SID+SAM I", vole::SIDSAM1);
+	similarityBox->addItem("SID+SAM II", vole::SIDSAM2);
+	similarityBox->addItem("Normalized L2", vole::NORM_L2);
+	similarityBox->setCurrentIndex(3);
 
-	graphsegAlgoBox->setAHView(view);
-	graphsegAlgoBox->addItem("Kruskal", vole::KRUSKAL);
-	graphsegAlgoBox->addItem("Prim", vole::PRIM);
-	graphsegAlgoBox->addItem("Power Watershed q=2", vole::WATERSHED2);
-	graphsegAlgoBox->setCurrentIndex(1);
-
+	connect(seedModeButton, SIGNAL(toggled(bool)),
+			this, SIGNAL(requestToggleSeedMode(bool)));
 	connect(loadSeedsButton, SIGNAL(clicked()),
 			this, SIGNAL(requestLoadSeeds()));
 
-	connect(graphsegGoButton, SIGNAL(clicked()),
+	connect(addButton, SIGNAL(clicked()),
+			this, SLOT(startGraphseg()));
+	connect(replaceButton, SIGNAL(clicked()),
 			this, SLOT(startGraphseg()));
 }
 
 // pass it to model via signal requestSegmentation(config).
 void GraphSegWidget::startGraphseg()
 {
+	bool resetLabel = (sender() == replaceButton);
+
 	vole::GraphSegConfig conf("graphseg");
-	conf.algo = (vole::graphsegalg)
-				graphsegAlgoBox->itemData(graphsegAlgoBox->currentIndex())
-				.value<int>();
+	conf.algo = vole::PRIM;
 	conf.similarity.measure = (vole::similarity_fun)
-		  graphsegSimilarityBox->itemData(graphsegSimilarityBox->currentIndex())
-		  .value<int>();
+		  similarityBox->itemData(similarityBox->currentIndex()).value<int>();
 #ifdef WITH_EDGE_DETECT
 	conf.som_similarity = false;
 #endif
-	conf.geodesic = graphsegGeodCheck->isChecked();
+	conf.geodesic = false;
 	conf.multi_seed = false;
-	int src = graphsegSourceBox->itemData(graphsegSourceBox->currentIndex())
-								 .value<int>();
-
-	bool resetLabel = resetLabelRadio->isChecked();
+	int src = sourceBox->itemData(sourceBox->currentIndex()).value<int>();
 
 	if (src == 0) {
 		emit requestGraphseg(representation::IMG, conf, resetLabel);
@@ -71,4 +65,9 @@ void GraphSegWidget::startGraphseg()
 	} else {
 		emit requestGraphsegCurBand(conf, resetLabel); // currently shown band
 	}
+}
+
+void GraphSegWidget::processSeedingDone()
+{
+	seedModeButton->setChecked(false);
 }

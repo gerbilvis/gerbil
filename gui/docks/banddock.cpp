@@ -64,9 +64,9 @@ void BandDock::initUi()
 	// label update is triggered by timer. Hide it for now.
 	applyButton->setVisible(false);
 
-	connect(graphsegButton, SIGNAL(toggled(bool)),
+	connect(gs, SIGNAL(requestToggleSeedMode(bool)),
 			this, SLOT(graphSegModeToggled(bool)));
-	connect(graphsegButton, SIGNAL(toggled(bool)),
+	connect(gs, SIGNAL(requestToggleSeedMode(bool)),
 			bv, SLOT(toggleSeedMode(bool)));
 
 	connect(this, SIGNAL(currentLabelChanged(int)),
@@ -92,11 +92,6 @@ void BandDock::processImageUpdate(representation::t type)
 		// our view became invalid. fetch new one.
 		emit bandRequested(curRepr, curBandId);
 	}
-}
-
-void BandDock::processSeedingDone()
-{
-	graphsegButton->setChecked(false);
 }
 
 void BandDock::clearLabelOrSeeds()
@@ -192,11 +187,6 @@ void BandDock::loadSeeds()
 		return;
 
 	bv->setSeedMap(seeding);
-
-	// now make sure we are in seed mode
-	if (!graphsegButton->isChecked()) {
-		graphsegButton->toggle();
-	}
 }
 
 

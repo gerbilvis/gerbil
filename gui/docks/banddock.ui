@@ -126,45 +126,6 @@
         </property>
        </widget>
       </item>
-      <item>
-       <spacer name="horizontalSpacer_11">
-        <property name="orientation">
-         <enum>Qt::Horizontal</enum>
-        </property>
-        <property name="sizeType">
-         <enum>QSizePolicy::Minimum</enum>
-        </property>
-        <property name="sizeHint" stdset="0">
-         <size>
-          <width>20</width>
-          <height>20</height>
-         </size>
-        </property>
-       </spacer>
-      </item>
-      <item>
-       <widget class="QPushButton" name="graphsegButton">
-        <property name="toolTip">
-         <string>graph-cut segmentation</string>
-        </property>
-        <property name="text">
-         <string/>
-        </property>
-        <property name="icon">
-         <iconset resource="../gerbil.qrc">
-          <normaloff>:/toolbar/cut</normaloff>:/toolbar/cut</iconset>
-        </property>
-        <property name="iconSize">
-         <size>
-          <width>16</width>
-          <height>16</height>
-         </size>
-        </property>
-        <property name="checkable">
-         <bool>true</bool>
-        </property>
-       </widget>
-      </item>
      </layout>
     </item>
     <item row="1" column="0">
@@ -200,7 +161,6 @@
   <tabstop>markerSelector</tabstop>
   <tabstop>clearButton</tabstop>
   <tabstop>alphaSlider</tabstop>
-  <tabstop>graphsegButton</tabstop>
   <tabstop>applyButton</tabstop>
  </tabstops>
  <resources>

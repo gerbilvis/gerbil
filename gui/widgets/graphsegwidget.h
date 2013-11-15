@@ -25,12 +25,16 @@ protected:
 
 signals:
 	void requestShowAndRefreshSeedMap(cv::Mat1s seeding);
+	void requestToggleSeedMode(bool toggle);
 	void requestLoadSeeds();
 	void requestGraphseg(representation::t type,
 						 const vole::GraphSegConfig &config,
 						 bool resetLabel);
 	void requestGraphsegCurBand(const vole::GraphSegConfig &config,
 								bool resetLabel);
+
+public slots:
+	void processSeedingDone();
 
 protected slots:
 	void startGraphseg();

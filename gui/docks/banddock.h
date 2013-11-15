@@ -43,7 +43,6 @@ signals:
 public slots:
 	void loadSeeds();
 	void graphSegModeToggled(bool enable);
-	void processSeedingDone();
 
 	void changeBand(representation::t repr, int bandId,
 					QPixmap band, QString desc);
