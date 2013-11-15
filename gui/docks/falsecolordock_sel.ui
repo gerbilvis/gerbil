@@ -7,7 +7,7 @@
     <x>0</x>
     <y>0</y>
     <width>200</width>
-    <height>70</height>
+    <height>71</height>
    </rect>
   </property>
   <layout class="QVBoxLayout" name="verticalLayout_2">
@@ -60,7 +60,7 @@
       <number>0</number>
      </property>
      <property name="format">
-      <string>calculation in progress: %p% complete</string>
+      <string>calculating… %p% complete</string>
      </property>
     </widget>
    </item>
