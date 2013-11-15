@@ -2,14 +2,6 @@
 <ui version="4.0">
  <class>LabelDock</class>
  <widget class="QDockWidget" name="LabelDock">
-  <property name="geometry">
-   <rect>
-    <x>0</x>
-    <y>0</y>
-    <width>292</width>
-    <height>280</height>
-   </rect>
-  </property>
   <property name="windowTitle">
    <string>Labels</string>
   </property>
@@ -113,23 +105,49 @@
        </widget>
       </item>
       <item>
-       <widget class="QSlider" name="sizeSlider">
-        <property name="minimum">
-         <number>32</number>
+       <layout class="QVBoxLayout" name="verticalLayout">
+        <property name="spacing">
+         <number>0</number>
         </property>
-        <property name="maximum">
-         <number>128</number>
-        </property>
-        <property name="singleStep">
-         <number>2</number>
-        </property>
-        <property name="pageStep">
-         <number>16</number>
-        </property>
-        <property name="orientation">
-         <enum>Qt::Vertical</enum>
-        </property>
-       </widget>
+        <item>
+         <widget class="QSlider" name="sizeSlider">
+          <property name="sizePolicy">
+           <sizepolicy hsizetype="Fixed" vsizetype="Preferred">
+            <horstretch>0</horstretch>
+            <verstretch>0</verstretch>
+           </sizepolicy>
+          </property>
+          <property name="minimum">
+           <number>32</number>
+          </property>
+          <property name="maximum">
+           <number>128</number>
+          </property>
+          <property name="singleStep">
+           <number>2</number>
+          </property>
+          <property name="pageStep">
+           <number>16</number>
+          </property>
+          <property name="orientation">
+           <enum>Qt::Vertical</enum>
+          </property>
+         </widget>
+        </item>
+        <item>
+         <spacer name="verticalSpacer">
+          <property name="orientation">
+           <enum>Qt::Vertical</enum>
+          </property>
+          <property name="sizeHint" stdset="0">
+           <size>
+            <width>0</width>
+            <height>40</height>
+           </size>
+          </property>
+         </spacer>
+        </item>
+       </layout>
       </item>
      </layout>
     </item>
