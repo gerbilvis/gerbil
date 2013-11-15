@@ -32,11 +32,11 @@ void RoiDock::setRoi(const cv::Rect &roi)
 		return;
 	}
 
-	curRoi = CVRect2QRect(roi);
+	// set curRoi, reflect it in GUI
+	processNewSelection(CVRect2QRect(roi), true);
+
+	// remember old selection for reset
 	oldRoi = curRoi;
-	roiView->roi = CVRect2QRect(roi);
-	roiView->update();
-	processNewSelection(CVRect2QRect(roi));
 }
 
 void RoiDock::setMaxBands(int bands)
@@ -97,10 +97,17 @@ void RoiDock::processRoiButtonsClicked(QAbstractButton *sender)
 	}
 }
 
-void RoiDock::processNewSelection(const QRect &roi)
+void RoiDock::processNewSelection(const QRect &roi, bool internal)
 {
 	curRoi = roi;
-	uibtn->roiButtons->setEnabled(true);
+	if (internal) {
+		// also update the roiView
+		roiView->roi = roi;
+		roiView->update();
+	} else {
+		// we have something to apply / reset from
+		uibtn->roiButtons->setEnabled(true);
+	}
 
 	QString title("<b>ROI:</b> %1, %2 - %3, %4 (%5x%6)");
 	title = title.arg(roi.x()).arg(roi.y()).arg(roi.right()).arg(roi.bottom())

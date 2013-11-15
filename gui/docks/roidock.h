@@ -42,8 +42,8 @@ protected slots:
 
 	void processRoiButtonsClicked(QAbstractButton *sender);
 
-	// new roi selected in RoiView
-	void processNewSelection(const QRect &roi);
+	// new roi selected in RoiView or propagated through controller (internal)
+	void processNewSelection(const QRect &roi, bool internal = false);
 
 protected:
 	// helper functions to roiButtonsClicked
