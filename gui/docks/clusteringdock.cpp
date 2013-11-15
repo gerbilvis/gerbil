@@ -19,11 +19,11 @@ ClusteringDock::ClusteringDock(QWidget *parent) :
 #ifdef WITH_SEG_MEANSHIFT
 void ClusteringDock::initUi()
 {
-	usMethodBox->addItem("FAMS", 0);
-	usMethodBox->addItem("PSPMS", 3);
+	usMethodBox->addItem("Accurate (FAMS)", 0);
+	usMethodBox->addItem("Fast (PSPMS)", 3);
 	// TODO usMethodBox->addItem("FSPMS", 4);
 
-	usMethodChanged(0); // set default state
+	usMethodChanged(3); // set default state to PSPMS
 
 	// will be set later by controller
 	usBandsSpinBox->setValue(-1);
@@ -46,7 +46,7 @@ void ClusteringDock::initUi()
 
 void ClusteringDock::unsupervisedSegCancelled() {
 	usCancelButton->setDisabled(true);
-	usCancelButton->setText("Please wait...");
+	usCancelButton->setText("Please wait…");
 	/// runner->terminate() will be called by the Cancel button
 }
 

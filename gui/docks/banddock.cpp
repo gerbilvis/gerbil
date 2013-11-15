@@ -160,7 +160,7 @@ void BandDock::processLabelingChange(const cv::Mat1s &labels,
 		{
 			markerSelector->addItem(colorIcon(colors.at(i)), "");
 		}
-		markerSelector->addItem(QIcon(":/toolbar/add"), "");
+		markerSelector->addItem(QIcon::fromTheme("list-add"), "");
 		markerSelector->blockSignals(false);
 
 		/* make sure our current label fits -> this does not only affect bv! */

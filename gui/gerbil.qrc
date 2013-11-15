@@ -1,6 +1,5 @@
 <RCC>
     <qresource prefix="/toolbar">
-        <file alias="clear">resources/edit-clear.png</file>
         <file alias="right">resources/right.png</file>
         <file alias="left">resources/left.png</file>
         <file alias="cut">resources/edit-cut.png</file>
@@ -12,7 +11,6 @@
     </qresource>
     <qresource prefix="/">
         <file alias="mainicon">resources/mainicon.svg</file>
-        <file alias="mainicon2">resources/mainicon.png</file>
         <file alias="logoicon">resources/logo/icon.png</file>
     </qresource>
     <qresource prefix="/basic">
@@ -26,5 +24,10 @@
         <file alias="preferences-system-windows">resources/icons/preferences-system-windows.png</file>
         <file alias="process-stop">resources/icons/process-stop.png</file>
         <file alias="view-refresh">resources/icons/view-refresh.png</file>
+        <file alias="document-open">resources/icons/document-open.png</file>
+        <file alias="document-save">resources/icons/document-save.png</file>
+        <file alias="edit-copy">resources/icons/edit-copy.png</file>
+        <file alias="edit-delete">resources/icons/edit-delete.png</file>
+        <file alias="edit-clear">resources/icons/edit-clear.png</file>
     </qresource>
 </RCC>

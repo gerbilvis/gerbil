@@ -37,12 +37,11 @@ void DockController::init()
 #ifdef WITH_SEG_MEANSHIFT
 	chief->mainWindow()->addDockWidget(Qt::LeftDockWidgetArea, clusteringDock);
 #endif
+	chief->mainWindow()->addDockWidget(Qt::LeftDockWidgetArea, labelingDock);
 
 	/// right side
 	chief->mainWindow()->addDockWidget(Qt::RightDockWidgetArea, bandDock);
-	chief->mainWindow()->addDockWidget(Qt::RightDockWidgetArea, labelingDock);
 	chief->mainWindow()->addDockWidget(Qt::RightDockWidgetArea, labelDock);
-	chief->mainWindow()->tabifyDockWidget(labelingDock, labelDock);
 	chief->mainWindow()->addDockWidget(Qt::RightDockWidgetArea, falseColorDock);
 
 	// dock arrangement
