@@ -77,17 +77,20 @@ int RGB::execute()
 #ifdef WITH_BOOST
 std::map<std::string, boost::any> RGB::execute(std::map<std::string, boost::any> &input, vole::ProgressObserver *po)
 {
-	SharedMultiImgPtr src = boost::any_cast<SharedMultiImgPtr>(input["multi_img"]);
-	if ((**src).empty())
-		assert(false);
+	{
+		SharedMultiImgPtr src = boost::any_cast<SharedMultiImgPtr>(input["multi_img"]);
+		SharedDataLock lock(src->mutex);
+		if ((**src).empty())
+			assert(false);
 
-	// BUG BUG BUG
-	// we need to copy the source image, because the pointer stored in the
-	// shared data object may be deleted.
-	// FIXME TODO gerbil's SharedData concept is broken.
+		// BUG BUG BUG
+		// we need to copy the source image, because the pointer stored in the
+		// shared data object may be deleted.
+		// FIXME TODO gerbil's SharedData concept is broken.
 
-	// copy
-	srcimg = new multi_img(**src);
+		// copy
+		srcimg = new multi_img(**src);
+	}
 
 	cv::Mat3f bgr = execute(*srcimg, po);
 	if (bgr.empty())
