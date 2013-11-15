@@ -4,7 +4,7 @@
 #include <iostream>
 #include "gerbil_gui_debug.h"
 #include "falsecolordock.h"
-#include "../model/falsecolormodel.h"
+#include "../model/falsecolor/falsecoloring.h"
 #include "../widgets/scaledview.h"
 #include "../widgets/autohideview.h"
 #include "../widgets/autohidewidget.h"

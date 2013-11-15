@@ -16,6 +16,7 @@
 #include "docks/labeldock.h"
 
 #include "model/labelingmodel.h"
+#include "model/falsecolormodel.h"
 #include "model/graphsegmentationmodel.h"
 #include "model/clusteringmodel.h"
 

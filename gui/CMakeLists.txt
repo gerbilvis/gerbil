@@ -38,6 +38,8 @@ vole_compile_library(
 	model/imagemodel
 	model/labelingmodel
 	model/falsecolormodel
+	model/falsecolor/falsecoloring
+	model/falsecolor/falsecolormodelpayload
 	model/illuminationmodel
 	model/graphsegmentationmodel
 	model/clusteringmodel
@@ -90,6 +92,7 @@ vole_moc_library(
 	model/labelingmodel.h
 	model/labels/icontask.h
 	model/falsecolormodel.h
+	model/falsecolor/falsecolormodelpayload.h
 	model/illuminationmodel.h
 	model/graphsegmentationmodel.h
 	model/clusteringmodel.h

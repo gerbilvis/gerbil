@@ -5,7 +5,7 @@
 #include <QDockWidget>
 #include <shared_data.h>
 #include "../model/representation.h"
-#include "../model/falsecolormodel.h"
+#include "../model/falsecolor/falsecoloring.h"
 
 class AutohideView;
 class ScaledView;

@@ -11,115 +11,13 @@
 
 #include <boost/any.hpp>
 
+#include "falsecolor/falsecoloring.h"
+#include "falsecolor/falsecoloringcacheitem.h"
+
 // FIXME
 // SOM-generation is not canceled when the program is terminated
 
-class CommandRunner;
 class FalseColorModelPayload;
-class BackgroundTaskQueue;
-
-/** Encapsulated enum representing the different false coloring types. */
-struct FalseColoring {
-	/* if this is changed, also update static member FalseColoring::allList
-	 * and prettyFalseColorNames in falsecolordock.cpp */
-	enum Type {
-		CMF=0,
-		PCA,
-		PCAGRAD,
-		SOM,
-		SOMGRAD
-	};
-	enum {SIZE=5};
-	static bool isDeterministic(Type coloringType) {
-		return !(coloringType == SOM || coloringType == SOMGRAD);
-	}
-	/** Returns true if the computation false coloring coloringType is based on
-	 * image represesentation type and false otherwise.	 */
-	static bool isBasedOn(Type coloringType, representation::t type) {
-		switch (coloringType) {
-		case CMF:
-		case PCA:
-		case SOM:
-			return type == representation::IMG;
-			break;
-		case PCAGRAD:
-		case SOMGRAD:
-			return type == representation::GRAD;
-			break;
-		default:
-			assert(false);
-			break;
-		}
-	}
-
-	static QList<Type> all() { return allList;	}
-	static size_t size() { return SIZE; }
-private:
-	static QList<Type> allList;
-};
-Q_DECLARE_METATYPE(FalseColoring)
-std::ostream &operator<<(std::ostream& os, const FalseColoring::Type& coloringType);
-
-// FIXME header too big: Put FalseColoringCacheItem in separate header
-
-/** Cache item for computed false color images. */
-class FalseColoringCacheItem {
-public:
-    FalseColoringCacheItem() : pixmap_() {}  // invalid cache item
-    FalseColoringCacheItem(QPixmap img) : pixmap_(img)  {} // valid cache item
-    void invalidate() { pixmap_ = QPixmap(); }
-    bool valid() { return ! pixmap_.isNull(); }
-    QPixmap pixmap() { return pixmap_; }
-private:
-    QPixmap pixmap_;
-};
-
-// FIXME header too big: Put FalseColorModelPayload in separate module
-
-class FalseColorModelPayload : public QObject
-{
-	Q_OBJECT
-public:
-	FalseColorModelPayload(FalseColoring::Type coloringType,
-						   SharedMultiImgPtr img,
-						   SharedMultiImgPtr grad
-						   )
-		: canceled(false),
-		  coloringType(coloringType),
-		  img(img), grad(grad),
-		  runner(NULL)
-	{}
-
-	/** Start calculation.
-	 *
-	 * Start new thread or whatever is necessary.
-	 */
-	void run();
-
-	/** Cancel computation: Actually signal the running thread. */
-	void cancel();
-
-	QPixmap getResult() { return result; }
-
-signals:
-	/** Computation progress changed. */
-	void progressChanged(FalseColoring::Type coloringType, int percent);
-
-	/** Computation completed. */
-	void finished(FalseColoring::Type coloringType, bool success = true);
-private slots:
-	void processRunnerSuccess(std::map<std::string, boost::any> output);
-	void processRunnerFailure();
-	void processRunnerProgress(int percent);
-private:
-	bool canceled;
-	FalseColoring::Type coloringType;
-	SharedMultiImgPtr img;
-	SharedMultiImgPtr grad;
-	CommandRunner *runner;
-	QPixmap result;
-};
-
 
 /**
  * @brief The FalseColorModel class provides false color image processing to the GUI.
