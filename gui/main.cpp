@@ -1,4 +1,5 @@
 #include "controller/controller.h"
+#include "multi_img.h"
 
 #include <opencv2/gpu/gpu.hpp>
 #include <opencv2/core/core.hpp>
@@ -10,6 +11,8 @@
 #include <QMessageBox>
 #include <QApplication>
 #include <QFileDialog>
+#include <QPushButton>
+
 #include <iostream>
 #include <string>
 

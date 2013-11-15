@@ -1,15 +1,6 @@
 #ifndef CONTROLLER_H
 #define CONTROLLER_H
 
-#include "model/imagemodel.h"
-#include "model/labelingmodel.h"
-#include "model/illuminationmodel.h"
-#include "model/falsecolormodel.h"
-#include "model/graphsegmentationmodel.h"
-#include "model/clusteringmodel.h"
-
-#include "widgets/mainwindow.h"
-
 #include <background_task/background_task.h>
 #include <background_task/background_task_queue.h>
 
@@ -19,6 +10,13 @@
 
 class DockController;
 class DistViewController;
+class GraphSegmentationModel;
+class FalseColorModel;
+class LabelingModel;
+class ClusteringModel;
+class IllumModel;
+class ImageModel;
+class MainWindow;
 
 class Controller : public QObject
 {

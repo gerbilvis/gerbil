@@ -4,6 +4,15 @@
 #include <imginput.h>
 #include <rectangles.h>
 
+#include "model/imagemodel.h"
+#include "model/labelingmodel.h"
+#include "model/illuminationmodel.h"
+#include "model/falsecolormodel.h"
+#include "model/graphsegmentationmodel.h"
+#include "model/clusteringmodel.h"
+
+#include "widgets/mainwindow.h"
+
 #include "gerbil_gui_debug.h"
 
 #include <cstdlib> // for exit()
