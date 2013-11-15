@@ -187,15 +187,15 @@ vole_check_package(BOOST_DATE_TIME
 	"${Boost_DATE_TIME_LIBRARY}"
 )
 
-# Boost chrono
-find_package(Boost ${VOLE_MINIMUM_BOOST_VERSION} COMPONENTS chrono)
-vole_check_package(BOOST_CHRONO
-	"Boost chrono"
-	"Please install Boost chrono >=${VOLE_MINIMUM_BOOST_VERSION} or set Boost_ROOT."
-	Boost_CHRONO_FOUND
-	"${Boost_INCLUDE_DIR}/include/;${Boost_INCLUDE_DIR}"
-	"${Boost_CHRONO_LIBRARY}"
-)
+## Boost chrono
+#find_package(Boost ${VOLE_MINIMUM_BOOST_VERSION} COMPONENTS chrono)
+#vole_check_package(BOOST_CHRONO
+#	"Boost chrono"
+#	"Please install Boost chrono >=${VOLE_MINIMUM_BOOST_VERSION} or set Boost_ROOT."
+#	Boost_CHRONO_FOUND
+#	"${Boost_INCLUDE_DIR}/include/;${Boost_INCLUDE_DIR}"
+#	"${Boost_CHRONO_LIBRARY}"
+#)
 
 # Boost python
 #find_package(Boost ${VOLE_MINIMUM_BOOST_VERSION} COMPONENTS python)
