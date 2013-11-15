@@ -151,19 +151,24 @@ private:
 	int width, height;
 
 	struct renderbuffer {
-		renderbuffer() : fbo(0), dirty(true),
+		renderbuffer() : fbo(0), blit(0), dirty(true),
 			renderStep(10000), renderedLines(0) {}
 
+		// buffer to render to
 		QGLFramebufferObject *fbo;
-		// fbo is not initialized, or was not drawn-to yet.
+		// buffer for blitting
+		QGLFramebufferObject *blit;
+		// true: fbo is not initialized, or was not drawn-to yet.
 		bool dirty;
+		// how many elements to render per step
 		const unsigned int renderStep;
-		QTimer renderTimer;
+		// how many elements were already rendered
 		unsigned int renderedLines;
+		// timer for incremental rendering
+		QTimer renderTimer;
 	};
 
 	renderbuffer buffers[2];
-	QGLFramebufferObject *multisampleBlit;
 
 	// normalized illuminant spectrum for drawing the curve
 	QVector<multi_img::Value> illuminantCurve;

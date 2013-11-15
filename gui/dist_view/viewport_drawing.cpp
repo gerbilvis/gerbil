@@ -69,10 +69,9 @@ bool Viewport::drawScene(QPainter *painter, bool withDynamics)
 			break;
 		}
 
-		// blit first to get from multisample to regular fbo. then draw that
-		QGLFramebufferObject::blitFramebuffer(multisampleBlit,
-											  rect, b.fbo, rect);
-		target->drawTexture(rect, multisampleBlit->texture());
+		// blit first to get from multisample to regular buffer. then draw that
+		QGLFramebufferObject::blitFramebuffer(b.blit, rect, b.fbo, rect);
+		target->drawTexture(rect, b.blit->texture());
 	}
 
 	// foreground axes are a dynamic part

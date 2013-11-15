@@ -34,8 +34,7 @@ Viewport::Viewport(representation::t type, QGLWidget *target)
 	  illuminant_show(true),
 	  zoom(1.), shift(0), lasty(-1), holdSelection(false), activeLimiter(0),
 	  drawMeans(true), drawRGB(false), drawHQ(true), drawingState(HIGH_QUALITY),
-	  yaxisWidth(0), vb(QGLBuffer::VertexBuffer),
-	  multisampleBlit(0)
+	  yaxisWidth(0), vb(QGLBuffer::VertexBuffer)
 {
 	(*ctx)->wait = 1;
 	(*ctx)->reset = 1;
@@ -47,9 +46,10 @@ Viewport::Viewport(representation::t type, QGLWidget *target)
 Viewport::~Viewport()
 {
 	target->makeCurrent();
-	delete buffers[0].fbo;
-	delete buffers[1].fbo;
-	delete multisampleBlit;
+	for (int i = 0; i < 2; ++i) {
+		delete buffers[i].fbo;
+		delete buffers[i].blit;
+	}
 }
 
 /********* I N I T **************/
@@ -79,29 +79,31 @@ void Viewport::initBuffers()
 	/* (re)set framebuffers */
 	target->makeCurrent();
 
-	QGLFramebufferObjectFormat format_buf, format_blit;
-
-	/* use floating point for better alpha accuracy in back buffer! */
-	// TODO RGBA32F yet looks better, make configurable!
-	format_blit.setInternalTextureFormat(0x881A); // GL_RGBA16F
-
-	// strict: format_buf must be format_blit, except multisampling! OGL spec!
-	format_buf = format_blit;
-
-	/* multisampling. 0 deactivates. 2 or 4 should be reasonable values.
-	 * TODO: make this configurable and/or test with cheap GPUs */
-	format_buf.setSamples(4);
-
-	// initialize buffers
 	for (int i = 0; i < 2; ++i) {
+		// first: formats
+		QGLFramebufferObjectFormat format_buf, format_blit;
+
+		/* use floating point for better alpha accuracy in back buffer! */
+		// TODO RGBA32F yet looks better, make configurable!
+		if (i == 0)
+			format_blit.setInternalTextureFormat(0x881A); // GL_RGBA16F
+
+		// strict: format_buf must be format_blit + multisampling! OGL spec!
+		format_buf = format_blit;
+
+		/* multisampling. 0 deactivates. 2 or 4 should be reasonable values.
+		 * TODO: make this configurable and/or test with cheap GPUs */
+		format_buf.setSamples(4);
+
+		// second: buffer
 		delete buffers[i].fbo;
 		buffers[i].fbo = new QGLFramebufferObject(width, height, format_buf);
 		buffers[i].dirty = true;
-	}
 
-	// initialize intermediate buffer
-	delete multisampleBlit;
-	multisampleBlit = new QGLFramebufferObject(width, height, format_blit);
+		// third: blit buffer
+		delete buffers[i].blit;
+		buffers[i].blit = new QGLFramebufferObject(width, height, format_blit);
+	}
 }
 
 /********* S T A T E ********/
