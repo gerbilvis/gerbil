@@ -196,18 +196,20 @@ struct updateCacheBody {
 
 	void operator()(const tbb::blocked_range2d<size_t> &r) const {
 		for (int y = r.rows().begin(); y != r.rows().end(); ++y) {
-			const short *srcrow = (seedMode ? seedMap[y] : labels[y]);
+			const short *lrow = labels[y], *srow = seedMap[y];
 			QRgb *destrow = (QRgb*)dest.scanLine(y);
 			for (int x = r.cols().begin(); x != r.cols().end(); ++x) {
-				short val = srcrow[x];
+				short lval = lrow[x], sval = srow[x];
 				destrow[x] = qRgba(0, 0, 0, 0);
 				if (seedMode) {
-					if (val == 255)
+					if (sval == 255)
 						destrow[x] = seedColors.first.rgba();
-					else if (val == 0)
+					else if (sval == 0)
 						destrow[x] = seedColors.second.rgba();
-				} else if (val > 0) {
-					destrow[x] = labelColorsA[val].rgba();
+					else if (lval > 0)
+						destrow[x] = labelColorsA[lval].rgba();
+				} else if (lval > 0) {
+					destrow[x] = labelColorsA[lval].rgba();
 				}
 			}
 		}
