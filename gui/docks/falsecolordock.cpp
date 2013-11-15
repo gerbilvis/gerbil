@@ -164,10 +164,6 @@ FalseColoring::Type FalseColorDock::selectedColoring()
 
 void FalseColorDock::requestColoring(FalseColoring::Type coloringType, bool recalc)
 {
-	if(coloringState[coloringType] == FalseColoringState::CALCULATING) {
-		//GGDBGM(coloringType << " already CALCULATING, returning."<<endl);
-		return;
-	}
 	//GGDBGM("enterState():"<<endl);
 	enterState(coloringType, FalseColoringState::CALCULATING);
 	updateTheButton();
@@ -234,7 +230,7 @@ void FalseColorDock::processVisibilityChanged(bool visible)
 	dockVisible = visible;
 
 	// Causes infinite signal loop if uncommented, because FalseColorModel not
-    // properly initialized yet.
+	// properly initialized yet.
 	//if(dockVisible) {
 	//	requestColoring(selectedColoring());
 	//}

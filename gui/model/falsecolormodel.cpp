@@ -44,6 +44,7 @@ FalseColorModel::FalseColorModel()
 	if (type == 0 || !QMetaType::isRegistered(type))
 		qRegisterMetaType< std::map<std::string, boost::any> >(
 					"std::map<std::string, boost::any>");
+	resetCache();
 }
 
 FalseColorModel::~FalseColorModel()
@@ -62,13 +63,13 @@ void FalseColorModel::setMultiImg(representation::t type,
 	else if (type == representation::GRAD)
 		this->shared_grad = shared_img;
 
-	cache.clear();
+	resetCache();
 }
 
 void FalseColorModel::processImageUpdate(representation::t type,
 										 SharedMultiImgPtr)
 {
-
+	//GGDBGM("representation " << type << endl);
 	// make sure no computations based on old image data make it into the
 	// cache
 	FalseColorModelPayloadMap::iterator payloadIt;
@@ -88,16 +89,14 @@ void FalseColorModel::processImageUpdate(representation::t type,
 	for (it=cache.begin(); it != cache.end(); it++) {
 		FalseColoring::Type coloringType = it.key();
 		if(FalseColoring::isBasedOn(coloringType, type)) {
-			it.value().upToDate = false;
+			it.value().invalidate();
 			outOfDateList.append(coloringType);
 		}
 	}
 	foreach(FalseColoring::Type coloringType, outOfDateList) {
-		if (coloringType != FalseColoring::CMF) // see HACK below
-			emit coloringOutOfDate(coloringType);
+		//GGDBGM("emit coloringOutOfDate " << coloringType << endl);
+		emit coloringOutOfDate(coloringType);
 	}
-	// HACK:always emit for CMF to make initial configuration work (TODO proper fix)
-	emit coloringOutOfDate(FalseColoring::CMF);
 }
 
 void FalseColorModel::requestColoring(FalseColoring::Type coloringType, bool recalc)
@@ -115,22 +114,28 @@ void FalseColorModel::requestColoring(FalseColoring::Type coloringType, bool rec
 	}
 	if(abort) {
 		// DO NOT emit computationCancelled(coloringType);
+		//GGDBGM("shared image data not ininitialized, aborting" << endl);
 		return;
 	}
 
 
 	FalseColoringCache::iterator cacheIt = cache.find(coloringType);
-	if(cacheIt != cache.end() && cacheIt->upToDate) {
+	if(cacheIt != cache.end() && cacheIt->valid()) {
 		if(recalc &&
 				// recalc makes sense only for SOM, the other representations
 				// are deterministic -> no need to recompute
 				!FalseColoring::isDeterministic(coloringType))
 		{
+			//GGDBGM("have valid cached image, but re-calc requested for "
+			//	   << coloringType << ", computing" << endl);
 			computeColoring(coloringType);
 		} else {
-			emit coloringComputed(coloringType, cacheIt->img);
+			//GGDBGM("have valid cached image for " << coloringType
+			//	   << ", emitting coloringComputed" << endl);
+			emit coloringComputed(coloringType, cacheIt->pixmap());
 		}
 	} else {
+		//GGDBGM("invalid cache for "<< coloringType << ", computing." << endl);
 		computeColoring(coloringType);
 	}
 }
@@ -153,6 +158,13 @@ void FalseColorModel::computeColoring(FalseColoring::Type coloringType)
 			this, SIGNAL(progressChanged(FalseColoring::Type,int)));
 
 	payload->run();
+}
+
+void FalseColorModel::resetCache()
+{
+	foreach (FalseColoring::Type coloringType, FalseColoring::all()) {
+		cache[coloringType].invalidate();
+	}
 }
 
 void FalseColorModel::cancelComputation(FalseColoring::Type coloringType)

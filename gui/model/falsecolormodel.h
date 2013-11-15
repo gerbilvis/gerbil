@@ -60,12 +60,21 @@ private:
 Q_DECLARE_METATYPE(FalseColoring)
 std::ostream &operator<<(std::ostream& os, const FalseColoring::Type& coloringType);
 
+// FIXME header too big: Put FalseColoringCacheItem in separate header
+
 /** Cache item for computed false color images. */
-struct FalseColoringCacheItem {
-	FalseColoringCacheItem(QPixmap img) : img(img), upToDate(true) {}
-	QPixmap img;
-	bool upToDate;
+class FalseColoringCacheItem {
+public:
+    FalseColoringCacheItem() : pixmap_() {}  // invalid cache item
+    FalseColoringCacheItem(QPixmap img) : pixmap_(img)  {} // valid cache item
+    void invalidate() { pixmap_ = QPixmap(); }
+    bool valid() { return ! pixmap_.isNull(); }
+    QPixmap pixmap() { return pixmap_; }
+private:
+    QPixmap pixmap_;
 };
+
+// FIXME header too big: Put FalseColorModelPayload in separate module
 
 class FalseColorModelPayload : public QObject
 {
@@ -111,6 +120,16 @@ private:
 	QPixmap result;
 };
 
+
+/**
+ * @brief The FalseColorModel class provides false color image processing to the GUI.
+ *
+ *  FalseColorModel will send a coloringOutOfDate() signal once it has the
+ *  necessary data to compute the given FalseColoring::Type. Clients should not
+ *  requestColoring() until a coloringOutOfDate() for a FalseColoring::Type has
+ *  been signalled.
+ *
+ */
 class FalseColorModel : public QObject
 {
 	Q_OBJECT
@@ -173,6 +192,9 @@ private:
 	 * no effect.
 	 */
 	void computeColoring(FalseColoring::Type coloringType);
+	/** Allocate and reset all cache entries. */
+    void resetCache();
+
 	//typedef QList<payload*> PayloadList;
 	typedef QMap<FalseColoring::Type, FalseColorModelPayload*>
 			FalseColorModelPayloadMap;
