@@ -13,7 +13,13 @@ AutohideView::AutohideView(QWidget *parent)
 
 QGLWidget* AutohideView::init()
 {
-	target = new QGLWidget(QGLFormat(QGL::SampleBuffers));
+	/* Note: we might need different formats in different views. In the future,
+	 * make the format a parameter */
+	QGLFormat format;
+	format.setDepth(false); // we don't use depth buffer (save GPU memory)
+	// note: QPainter uses Stencil Buffer, so it stays
+	format.setSampleBuffers(false); // we use multisample in the FBOs
+	target = new QGLWidget(format);
 	setViewport(target);
 	// TODO: needed? setViewportUpdateMode(QGraphicsView::FullViewportUpdate);
 	// TODO: should we cache the background?

@@ -79,31 +79,29 @@ void Viewport::initBuffers()
 	/* (re)set framebuffers */
 	target->makeCurrent();
 
-	QGLFramebufferObjectFormat format[2];
-	format[0].setAttachment(QGLFramebufferObject::NoAttachment);
-
-	/* multisampling. 0 deactivates. 2 or 4 should be reasonable values.
-	 * TODO: make this configurable and/or test with cheap GPUs */
-	format[0].setSamples(4);
-
-	// same settings for both
-	format[1] = format[0];
+	QGLFramebufferObjectFormat format_buf, format_blit;
 
 	/* use floating point for better alpha accuracy in back buffer! */
 	// TODO RGBA32F yet looks better, make configurable!
-	//format[0].setInternalTextureFormat(0x881A); // GL_RGBA16F
-	// TODO https://bugs.freedesktop.org/show_bug.cgi?id=69689
+	format_blit.setInternalTextureFormat(0x881A); // GL_RGBA16F
+
+	// strict: format_buf must be format_blit, except multisampling! OGL spec!
+	format_buf = format_blit;
+
+	/* multisampling. 0 deactivates. 2 or 4 should be reasonable values.
+	 * TODO: make this configurable and/or test with cheap GPUs */
+	format_buf.setSamples(4);
 
 	// initialize buffers
 	for (int i = 0; i < 2; ++i) {
 		delete buffers[i].fbo;
-		buffers[i].fbo = new QGLFramebufferObject(width, height, format[i]);
+		buffers[i].fbo = new QGLFramebufferObject(width, height, format_buf);
 		buffers[i].dirty = true;
 	}
 
 	// initialize intermediate buffer
 	delete multisampleBlit;
-	multisampleBlit = new QGLFramebufferObject(width, height);
+	multisampleBlit = new QGLFramebufferObject(width, height, format_blit);
 }
 
 /********* S T A T E ********/
