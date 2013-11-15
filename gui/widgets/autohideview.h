@@ -33,6 +33,8 @@ public slots:
 	void updateSizeHint(QSize sizeHint);
 	// optimize autohide widgets for bounding rectangle of the content
 	void fitContentRect(QRect rect);
+	// explicitely (un)lock scroll suppression
+	void suppressScrolling(bool suppress) { suppressScroll = suppress; }
 
 protected:
 

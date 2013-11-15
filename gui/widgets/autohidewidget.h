@@ -26,7 +26,7 @@ public:
 	explicit AutohideWidget();
 
 	/* current widget state */
-	scrollstate scrollState() { return state; };
+	scrollstate scrollState() { return state; }
 
 	/* this method is called with the corresponding proxy item as argument.
 	 * the widget will use it as its anchor in the graphics scene.

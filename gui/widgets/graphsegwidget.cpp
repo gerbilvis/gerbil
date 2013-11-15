@@ -1,22 +1,24 @@
 #include "widgets/graphsegwidget.h"
 #include "model/representation.h"
 
-GraphSegWidget::GraphSegWidget(QWidget *parent) :
+GraphSegWidget::GraphSegWidget(AutohideView *view) :
 	AutohideWidget()
 {
 	setupUi(this);
-	initUi();
+	initUi(view);
 }
 
 GraphSegWidget::~GraphSegWidget() { }
 
-void GraphSegWidget::initUi()
+void GraphSegWidget::initUi(AutohideView *view)
 {
+	graphsegSourceBox->setAHView(view);
 	graphsegSourceBox->addItem("Image", 0);
 	graphsegSourceBox->addItem("Gradient", 1); // TODO PCA
 	graphsegSourceBox->addItem("Shown Band", 2);
 	graphsegSourceBox->setCurrentIndex(0);
 
+	graphsegSimilarityBox->setAHView(view);
 	graphsegSimilarityBox->addItem("Manhattan distance (L1)", vole::MANHATTAN);
 	graphsegSimilarityBox->addItem("Euclidean distance (L2)", vole::EUCLIDEAN);
 	graphsegSimilarityBox->addItem(QString::fromUtf8("Chebyshev distance (L∞)"),
@@ -29,6 +31,7 @@ void GraphSegWidget::initUi()
 	graphsegSimilarityBox->addItem("Normalized L2", vole::NORM_L2);
 	graphsegSimilarityBox->setCurrentIndex(3);
 
+	graphsegAlgoBox->setAHView(view);
 	graphsegAlgoBox->addItem("Kruskal", vole::KRUSKAL);
 	graphsegAlgoBox->addItem("Prim", vole::PRIM);
 	graphsegAlgoBox->addItem("Power Watershed q=2", vole::WATERSHED2);

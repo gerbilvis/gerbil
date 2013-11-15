@@ -8,16 +8,20 @@
 #include <graphseg.h>
 #include <shared_data.h>
 
+class AutohideView;
+
 class GraphSegWidget : public AutohideWidget, private Ui::GraphSegWidget
 {
 	Q_OBJECT
 	
 public:
-	explicit GraphSegWidget(QWidget *parent = 0);
+	// parameter view is needed to set up our custom combo boxes (via initUi)
+	explicit GraphSegWidget(AutohideView *view);
 	~GraphSegWidget();
 
 protected:
-	void initUi();
+	// parameter view is needed to set up our custom combo boxes
+	void initUi(AutohideView *view);
 
 signals:
 	void requestShowAndRefreshSeedMap(cv::Mat1s seeding);

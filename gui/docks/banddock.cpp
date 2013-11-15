@@ -36,7 +36,7 @@ void BandDock::initUi()
 			view, SLOT(fitContentRect(QRect)));
 
 	// add graphseg control widget
-	gs = new GraphSegWidget();
+	gs = new GraphSegWidget(view);
 	bv->offBottom = AutohideWidget::OutOffset;
 	view->addWidget(AutohideWidget::BOTTOM, gs);
 

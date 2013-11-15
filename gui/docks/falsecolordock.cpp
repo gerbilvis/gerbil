@@ -57,7 +57,8 @@ void FalseColorDock::processColoringComputed(FalseColoring::Type coloringType, Q
 		view->setEnabled(true);
 		scene->setPixmap(p);
 		view->update();
-		view->setToolTip(prettyFalseColorNames[coloringType]);
+		// good idea but seems distracting right now
+		//view->setToolTip(prettyFalseColorNames[coloringType]);
 		this->setWindowTitle(prettyFalseColorNames[coloringType]);
 		lastShown = coloringType;
 	}
@@ -121,7 +122,8 @@ void FalseColorDock::initUi()
 	scene->offTop = AutohideWidget::OutOffset;
 	view->addWidget(AutohideWidget::TOP, sel);
 
-	// fill up source choices
+	// setup source box
+	uisel->sourceBox->setAHView(view);
 	uisel->sourceBox->addItem(prettyFalseColorNames[FalseColoring::CMF],
 					   FalseColoring::CMF);
 	uisel->sourceBox->addItem(prettyFalseColorNames[FalseColoring::PCA],
@@ -197,6 +199,7 @@ void FalseColorDock::updateTheButton()
 	case FalseColoringState::FINISHED:
 		uisel->theButton->setIcon(QIcon::fromTheme("view-refresh"));
 		uisel->theButton->setText("Recalculate");
+		uisel->theButton->setToolTip("Run again with different initialization");
 		uisel->theButton->setVisible(false);
 		if( selectedColoring()==FalseColoring::SOM ||
 			selectedColoring()==FalseColoring::SOMGRAD)
@@ -207,6 +210,7 @@ void FalseColorDock::updateTheButton()
 	case FalseColoringState::CALCULATING:
 		uisel->theButton->setIcon(QIcon::fromTheme("process-stop"));
 		uisel->theButton->setText("Cancel");
+		uisel->theButton->setToolTip("Cancel current computation");
 		uisel->theButton->setVisible(true);
 		break;
 	case FalseColoringState::ABORTING:

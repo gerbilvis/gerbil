@@ -11,9 +11,10 @@ vole_compile_library(
 	iogui
 	commandrunner
 
+	widgets/mainwindow
 	widgets/autohidewidget
 	widgets/autohideview
-	widgets/mainwindow
+	widgets/ahcombobox
 	widgets/scaledview
 	widgets/bandview
 	widgets/roiview
@@ -61,10 +62,11 @@ vole_moc_library(
 	widgets/mainwindow.h
 	widgets/autohidewidget.h
 	widgets/autohideview.h
+	widgets/ahcombobox.h
 	widgets/scaledview.h
 	widgets/bandview.h
 	widgets/roiview.h
-        widgets/graphsegwidget.h
+	widgets/graphsegwidget.h
 
 	controller/controller.h
 	controller/dockcontroller.h
