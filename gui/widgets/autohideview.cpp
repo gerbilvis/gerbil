@@ -18,7 +18,7 @@ QGLWidget* AutohideView::init()
 	QGLFormat format;
 	format.setDepth(false); // we don't use depth buffer (save GPU memory)
 	// note: QPainter uses Stencil Buffer, so it stays
-	format.setSampleBuffers(false); // we use multisample in the FBOs
+	format.setSampleBuffers(false); // TODO: configurable!
 	target = new QGLWidget(format);
 	setViewport(target);
 	// TODO: needed? setViewportUpdateMode(QGraphicsView::FullViewportUpdate);

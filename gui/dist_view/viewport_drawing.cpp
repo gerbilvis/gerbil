@@ -518,7 +518,7 @@ void Viewport::drawOverlay(QPainter *painter)
 {
 	painter->save();
 	QPolygonF poly = modelview.map(overlayPoints);
-	QPen pen(Qt::black);
+	QPen pen(QColor(0, 0, 0, 127));
 	pen.setWidth(5);
 	painter->setPen(pen);
 	painter->drawPolyline(poly);
