@@ -1080,18 +1080,18 @@ __kernel void planKNNMeanshiftKernel(__global const real* Q_mat,
                             unint xMap_pr,
                             unint xMap_pc,
                             unint xMap_ld,
-                            __global real* dMins_mat,
-                            unint dMins_r,
-                            unint dMins_c,
-                            unint dMins_pr,
-                            unint dMins_pc,
-                            unint dMins_ld,
-                            __global unint* dMinIDs_mat,
-                            unint dMinIDs_r,
-                            unint dMinIDs_c,
-                            unint dMinIDs_pr,
-                            unint dMinIDs_pc,
-                            unint dMinIDs_ld,
+//                            __global real* dMins_mat,
+//                            unint dMins_r,
+//                            unint dMins_c,
+//                            unint dMins_pr,
+//                            unint dMins_pc,
+//                            unint dMins_ld,
+//                            __global unint* dMinIDs_mat,
+//                            unint dMinIDs_r,
+//                            unint dMinIDs_c,
+//                            unint dMinIDs_pr,
+//                            unint dMinIDs_pc,
+//                            unint dMinIDs_ld,
                             __global const unint* cP_numGroups,
                             __global const unint* cP_groupCountX,
                             __global const unint* cP_qToQGroup,
@@ -1099,6 +1099,9 @@ __kernel void planKNNMeanshiftKernel(__global const real* Q_mat,
                             unint cP_ld,
                             unint qStartPos,
                             __global const real* windows,
+                            __global real* outputMeans,
+                            __global unint* outputMeansNums,
+                            __global real* newWindows,
                             int maxPointsNum)
 {
 
@@ -1120,7 +1123,7 @@ __kernel void planKNNMeanshiftKernel(__global const real* Q_mat,
     __local unint valid_indices[BLOCK_SIZE][BLOCK_SIZE];
     volatile __local unint local_count[BLOCK_SIZE];
     volatile __local unint global_count[BLOCK_SIZE];
-    volatile __local real min_windows[BLOCK_SIZE];
+    volatile __local real min_windows[BLOCK_SIZE][BLOCK_SIZE];
 
     __local real Xs[BLOCK_SIZE][BLOCK_SIZE];
     __local real Qs[BLOCK_SIZE][BLOCK_SIZE];
@@ -1128,13 +1131,12 @@ __kernel void planKNNMeanshiftKernel(__global const real* Q_mat,
     unint g = cP_qToQGroup[qB]; /** query group of q */
     //unint numGroups = cP_numGroups[g]; /** always 1 in case of identity matrix */
 
-    valid_indices[offQ][offX] = 0;
+    //valid_indices[offQ][offX] = 0;
 
     if(offQ == 0)
     {
-        local_count[offX] = 0;
+     //   local_count[offX] = 0;
         global_count[offX] = 0;
-        min_windows[offX] = (real)0;
     }
 
 //    dNN[offQ][offX] = FLT_MAX;//MAX_REAL;
@@ -1153,13 +1155,15 @@ __kernel void planKNNMeanshiftKernel(__global const real* Q_mat,
 
     unint groupIts = (groupCount + BLOCK_SIZE - 1) / BLOCK_SIZE;
 
+    unint queryPointIdx = qMap[qB + offQ];
+
     for(unint j = 0; j < groupIts; j++) //iterate over elements of group
     {
         xB = j * BLOCK_SIZE;
-        real ans = 0;
+        real ans = 0.f;
 
         unint databasePointIdx = xMap_mat[IDX(xG, xB + offQ, xMap_ld)];
-        unint queryPointIdx = qMap[qB + offQ];
+        min_windows[offQ][offX] = FLT_MAX;
 
         /** iterate over cols to compute distances */
         for(cB = 0; cB < X_pc; cB += BLOCK_SIZE)
@@ -1193,46 +1197,52 @@ __kernel void planKNNMeanshiftKernel(__global const real* Q_mat,
         if(isOk)
         {
             int idx = atomic_inc(local_count + offQ);
-            //if(idx < maxPointsNum)
             valid_indices[offQ][idx] = databasePointIdx;
+            min_windows[offQ][offX] = min(min_windows[offQ][offX], window);
         }
 
         barrier(CLK_LOCAL_MEM_FENCE);
 
         /** write indexes to global memory */
 
-        if(offX < local_count[offQ])
+        if(offX < local_count[offQ] && queryPointIdx != DUMMY_IDX)
         {
-            //some_global_memory[base_idx + global_count[offQ] + offX] = valid_indices[offQ][offX];
+            int baseIdx = queryPointIdx * maxPointsNum;
+            int colIdx = global_count[offQ] + offX;
+
+            if(colIdx < maxPointsNum)
+                outputMeans[baseIdx + colIdx] = valid_indices[offQ][offX];
         }
+
+        if(offX == 0 && queryPointIdx != DUMMY_IDX)
+        {
+            real total_min = FLT_MAX;
+
+            for(uint i = 0; i < BLOCK_SIZE; ++i) /** finally it should be done via reduction */
+            {
+                total_min = min(total_min, min_windows[offQ][i]);
+            }
+            newWindows[queryPointIdx] = total_min;
+        }
+
+        barrier(CLK_LOCAL_MEM_FENCE);
 
         /** add local sums to global indexes */
         if(offQ == 0)
         {
             global_count[offX] += local_count[offX];
+            local_count[offX] = 0; /** reset locac counts */
         }
 
         barrier(CLK_LOCAL_MEM_FENCE);
-
-
-//        dNN[offQ][offX+32] = (xB + offX < groupCount) ? ans : FLT_MAX;
-
-//        idNN[offQ][offX+32] = (xB + offX < groupCount)
-//                        ? xMap_mat[IDX(xG, xB + offX, xMap_ld)] : DUMMY_IDX;
-
-//        barrier(CLK_LOCAL_MEM_FENCE);
-
-//        /** sorting the last 16 items of 48 */
-//        sort16off(dNN, idNN);
-
-//        barrier(CLK_LOCAL_MEM_FENCE);
-
-//        /** merging the last 16 items with first 32 items into
-//          * one sorted array of 48 items */
-//        merge32x16(dNN, idNN);
     }
 
-    barrier(CLK_LOCAL_MEM_FENCE);
+    /** writing total numbers of elements which satisfy given condition */
+    if(offQ == 0 && queryPointIdx != DUMMY_IDX)
+    {
+        outputMeansNums[queryPointIdx + offX] = global_count[offX];
+    }
+
 
 //    if(qMap[qB + offQ] != DUMMY_IDX)
 //    {
