@@ -51,7 +51,8 @@ public:
     static cl::Kernel getCountsKernel;
     static cl::Kernel planKNNKernel;
     static cl::Kernel nnKernel;
-    static cl::Kernel knnKernel;
+    static cl::Kernel nn32Kernel;
+    static cl::Kernel bindPilotsKernel;
 
     static void oclInit();
 };

@@ -80,21 +80,24 @@ public:
 
 	struct ComputePilotPoint {
 		ComputePilotPoint(FAMS& master, vector<double> *weights = NULL)
-			: fams(master), weights(weights), dbg_acc(0.), dbg_noknn(0) {}
+            : fams(master), weights(weights), dbg_acc(0.), dbg_noknn(0),
+              dbg_lsh_query_size(0.0){}
 		ComputePilotPoint(ComputePilotPoint& other, tbb::split)
 			: fams(other.fams), weights(other.weights),
-			  dbg_acc(0.), dbg_noknn(0) {}
+              dbg_acc(0.), dbg_noknn(0), dbg_lsh_query_size(0.0) {}
 		void operator()(const tbb::blocked_range<int> &r);
 		void join(ComputePilotPoint &other)
 		{
 			dbg_acc += other.dbg_acc;
 			dbg_noknn += other.dbg_noknn;
+            dbg_lsh_query_size += other.dbg_lsh_query_size;
 		}
 
 		FAMS& fams;
 		vector<double> *weights;
 		double dbg_acc; // double, as it can go over limit of 32 bit integer
 		unsigned int dbg_noknn;
+        double dbg_lsh_query_size;
 	};
 
 	struct MeanShiftPoint {

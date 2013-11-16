@@ -10,6 +10,7 @@
 #include "kernels.h"
 #include "defs.h"
 #include "utilsGPU.h"
+#include <iostream>
 
 void dist1Wrap(const ocl_matrix& dq, const ocl_matrix& dx,
                ocl_matrix& dD, unint dq_offset)
@@ -87,8 +88,9 @@ void dist1Wrap(const ocl_matrix& dq, const ocl_matrix& dx,
 }
 
 
-void findRangeWrap(const ocl_matrix& dD, cl::Buffer& dranges, unint cntWant){
-
+void findRangeWrap(const ocl_matrix& dD, cl::Buffer& dranges,
+                   unint cntWant, unint offset)
+{
     cl::Kernel& findRangeKernel = OclContextHolder::findRangeKernel;
 
     cl::NDRange local(4*BLOCK_SIZE,BLOCK_SIZE/4);
@@ -113,6 +115,7 @@ void findRangeWrap(const ocl_matrix& dD, cl::Buffer& dranges, unint cntWant){
         findRangeKernel.setArg(6, numDone);
         findRangeKernel.setArg(7, dranges);
         findRangeKernel.setArg(8, cntWant);
+        findRangeKernel.setArg(9, offset);
 
         cl::CommandQueue& queue = OclContextHolder::queue;
 
@@ -282,35 +285,35 @@ void knnWrap(const ocl_matrix& dq, const ocl_matrix& dx,
         cl::NDRange global(BLOCK_SIZE, todo);
 
         cl::CommandQueue& queue = OclContextHolder::queue;
-        cl::Kernel& knnKernel = OclContextHolder::knnKernel;
+        cl::Kernel& nn32Kernel = OclContextHolder::nn32Kernel;
 
-        knnKernel.setArg(0, dq.mat);
-        knnKernel.setArg(1, dq.r);
-        knnKernel.setArg(2, dq.c);
-        knnKernel.setArg(3, dq.pr);
-        knnKernel.setArg(4, dq.pc);
-        knnKernel.setArg(5, dq.ld);
-        knnKernel.setArg(6, numDone);
-        knnKernel.setArg(7, dx.mat);
-        knnKernel.setArg(8, dx.r);
-        knnKernel.setArg(9, dx.c);
-        knnKernel.setArg(10, dx.pr);
-        knnKernel.setArg(11, dx.pc);
-        knnKernel.setArg(12, dx.ld);
-        knnKernel.setArg(13, dMins.mat);
-        knnKernel.setArg(14, dMins.r);
-        knnKernel.setArg(15, dMins.c);
-        knnKernel.setArg(16, dMins.pr);
-        knnKernel.setArg(17, dMins.pc);
-        knnKernel.setArg(18, dMins.ld);
-        knnKernel.setArg(19, dMinIDs.mat);
-        knnKernel.setArg(20, dMinIDs.r);
-        knnKernel.setArg(21, dMinIDs.c);
-        knnKernel.setArg(22, dMinIDs.pr);
-        knnKernel.setArg(23, dMinIDs.pc);
-        knnKernel.setArg(24, dMinIDs.ld);
+        nn32Kernel.setArg(0, dq.mat);
+        nn32Kernel.setArg(1, dq.r);
+        nn32Kernel.setArg(2, dq.c);
+        nn32Kernel.setArg(3, dq.pr);
+        nn32Kernel.setArg(4, dq.pc);
+        nn32Kernel.setArg(5, dq.ld);
+        nn32Kernel.setArg(6, numDone);
+        nn32Kernel.setArg(7, dx.mat);
+        nn32Kernel.setArg(8, dx.r);
+        nn32Kernel.setArg(9, dx.c);
+        nn32Kernel.setArg(10, dx.pr);
+        nn32Kernel.setArg(11, dx.pc);
+        nn32Kernel.setArg(12, dx.ld);
+        nn32Kernel.setArg(13, dMins.mat);
+        nn32Kernel.setArg(14, dMins.r);
+        nn32Kernel.setArg(15, dMins.c);
+        nn32Kernel.setArg(16, dMins.pr);
+        nn32Kernel.setArg(17, dMins.pc);
+        nn32Kernel.setArg(18, dMins.ld);
+        nn32Kernel.setArg(19, dMinIDs.mat);
+        nn32Kernel.setArg(20, dMinIDs.r);
+        nn32Kernel.setArg(21, dMinIDs.c);
+        nn32Kernel.setArg(22, dMinIDs.pr);
+        nn32Kernel.setArg(23, dMinIDs.pc);
+        nn32Kernel.setArg(24, dMinIDs.ld);
 
-        queue.enqueueNDRangeKernel(knnKernel, cl::NullRange,
+        queue.enqueueNDRangeKernel(nn32Kernel, cl::NullRange,
                                    global, local);
 
         numDone += todo;
@@ -365,8 +368,10 @@ void planKNNWrap(const ocl_matrix& dq, const cl::Buffer& dqMap,
     unint numDone = 0;
 
     while(numDone < compLength)
-    {
+    {        
         todo = MIN((compLength-numDone), MAX_BS*BLOCK_SIZE);
+
+        //std::cout << "planKNN kernel todo: " << todo << std::endl;
 
         cl::NDRange global(BLOCK_SIZE, todo);
 
@@ -411,8 +416,10 @@ void planKNNWrap(const ocl_matrix& dq, const cl::Buffer& dqMap,
         planKNNKernel.setArg(35, dcP.ld);
         planKNNKernel.setArg(36, numDone);
 
-        queue.enqueueNDRangeKernel(planKNNKernel, cl::NullRange,
-                                   global, local);
+        cl_int err = queue.enqueueNDRangeKernel(planKNNKernel, cl::NullRange,
+                                                global, local);
+        checkErr(err);
+
         numDone += todo;
     }
 

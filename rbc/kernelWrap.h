@@ -10,7 +10,7 @@ void dist1Wrap(const ocl_matrix&, const ocl_matrix&, ocl_matrix&, unint);
 
 void kMinsWrap(matrix, matrix, intMatrix);
 
-void findRangeWrap(const ocl_matrix&, cl::Buffer&,unint);
+void findRangeWrap(const ocl_matrix&, cl::Buffer&,unint,unint);
 
 void rangeSearchWrap(const ocl_matrix&, cl::Buffer&, ocl_charMatrix&);
 

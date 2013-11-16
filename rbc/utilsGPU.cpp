@@ -26,7 +26,8 @@ cl::Kernel OclContextHolder::buildMapKernel;
 cl::Kernel OclContextHolder::getCountsKernel;
 cl::Kernel OclContextHolder::planKNNKernel;
 cl::Kernel OclContextHolder::nnKernel;
-cl::Kernel OclContextHolder::knnKernel;
+cl::Kernel OclContextHolder::nn32Kernel;
+cl::Kernel OclContextHolder::bindPilotsKernel;
 
 
 extern const char* rbc;
@@ -92,9 +93,9 @@ void OclContextHolder::oclInit()
 //    stream << " -DSOM_SIZE_Z=" << d_data.z;
 //    stream << " -DVECTOR_SIZE=" << neuron_size_rounded;
 
-#ifdef DEBUG_MODE
+//#ifdef DEBUG_MODE
     stream << " -DDEBUG_MODE -Werror";
-#endif
+//#endif
 
     cl::Program::Sources sources;
 
@@ -136,7 +137,8 @@ void OclContextHolder::oclInit()
     getCountsKernel = cl::Kernel(program, "getCountsKernel");
     planKNNKernel = cl::Kernel(program, "planKNNKernel");
     nnKernel = cl::Kernel(program, "nnKernel");
-    knnKernel = cl::Kernel(program, "knnKernel");
+    nn32Kernel = cl::Kernel(program, "nn32Kernel");
+    bindPilotsKernel = cl::Kernel(program, "bindPilotsKernel");
 }
 
 

@@ -115,7 +115,8 @@ __kernel void findRangeKernel(__global const real* D_mat,
                               unint D_ld,
                               unint numDone,
                               __global real* ranges,
-                              unint cntWant)
+                              unint cntWant,
+                              unint offset)
 {
 
     size_t blockIdx_y = get_group_id(1);
@@ -230,7 +231,7 @@ __kernel void findRangeKernel(__global const real* D_mat,
     } while(cont[0]);
 
     if(co == 0 && row < D_r)
-        ranges[row] = rg;
+        ranges[row + offset] = rg;
 }
 
 
@@ -629,7 +630,7 @@ __kernel void nnKernel(__global const real* Q_mat,
 void mmGateI(__local real *x, __local real *y,
              __local unint *xi, __local unint *yi)
 {
-    int ti = MINi( *x, *y, *xi, *yi );
+    unint ti = MINi( *x, *y, *xi, *yi );
     *yi = MAXi( *x, *y, *xi, *yi );
     *xi = ti;
     real t = MIN( *x, *y );
@@ -646,13 +647,15 @@ void sort16off(__local real x[][48], __local unint xi[][48])
     int i = get_local_id(0);
     int j = get_local_id(1);
 
-    if(i%2==0)
-        mmGateI( x[j]+KMAX+i, x[j]+KMAX+i+1, xi[j]+KMAX+i, xi[j]+KMAX+i+1 );
+    if(i % 2 == 0)
+        mmGateI(x[j] + KMAX + i, x[j] + KMAX + i + 1,
+                xi[j] + KMAX + i, xi[j] + KMAX + i + 1);
 
     barrier(CLK_LOCAL_MEM_FENCE);
 
-    if(i%4<2)
-        mmGateI( x[j]+KMAX+i, x[j]+KMAX+i+2, xi[j]+KMAX+i, xi[j]+KMAX+i+2 );
+    if(i % 4 < 2)
+        mmGateI(x[j] + KMAX + i, x[j] + KMAX + i + 2,
+                xi[j] + KMAX + i, xi[j] + KMAX + i + 2);
 
     barrier(CLK_LOCAL_MEM_FENCE);
 
@@ -672,7 +675,7 @@ void sort16off(__local real x[][48], __local unint xi[][48])
     barrier(CLK_LOCAL_MEM_FENCE);
 
     if( i%2 && i%8 != 7 )
-        mmGateI( x[j]+KMAX+i, x[j]+KMAX+i+1, xi[j]+KMAX+i, xi[j]+KMAX+i+1 );
+         mmGateI( x[j]+KMAX+i, x[j]+KMAX+i+1, xi[j]+KMAX+i, xi[j]+KMAX+i+1 );
 
     barrier(CLK_LOCAL_MEM_FENCE);
 
@@ -870,11 +873,6 @@ __kernel void planKNNKernel(__global const real* Q_mat,
 
     if(qMap[qB + offQ] != DUMMY_IDX)
     {
-/*        dMins_mat[IDX(qMap[qB + offQ], offX, dMins_ld)] = dNN[offQ][offX];
-        dMins_mat[IDX(qMap[qB + offQ], offX + 16, dMins_ld)] = dNN[offQ][offX + 16];
-        dMinIDs_mat[IDX(qMap[qB + offQ], offX, dMins_ld)] = idNN[offQ][offX]; <-- consider this dMins_ld
-        dMinIDs_mat[IDX(qMap[qB + offQ], offX + 16, dMinIDs_ld)] = idNN[offQ][offX + 16];*/
-
         int out_idx = IDX(qMap[qB + offQ], offX, dMins_ld);
 
         dMins_mat[out_idx] = dNN[offQ][offX];
@@ -892,7 +890,8 @@ __kernel void planKNNKernel(__global const real* Q_mat,
 //list of the 32 currently-closest points in the DB, instead of just the single NN.  After each
 //batch of 16 points is processed, it sorts these 16 points according to the distance from the
 //query, then merges this list with the other list.
-__kernel void knnKernel(__global const real* Q_mat,
+/** Brute search for 32 nns */
+__kernel void nn32Kernel(__global const real* Q_mat,
                         unint Q_r,
                         unint Q_c,
                         unint Q_pr,
@@ -1043,3 +1042,210 @@ __kernel void computePilotKernel(__global const float* nns,
         }
     }
 }
+
+__kernel void bindPilotsKernel(__global const unint* indexes,
+                               __global const real* repsPilots,
+                               __global real* pilots,
+                               unint pilots_size)
+{
+
+    int x = get_global_id(0);
+
+    if(x < pilots_size)
+    {
+        pilots[x] = repsPilots[indexes[x]];
+    }
+}
+
+/** changes in original planKNN kernel:
+  * --> iteration over groups removed
+  * --> 'windows' parameter added to pass precomputed pilots
+  */
+__kernel void planKNNMeanshiftKernel(__global const real* Q_mat,
+                            unint Q_r,
+                            unint Q_c,
+                            unint Q_pr,
+                            unint Q_pc,
+                            unint Q_ld,
+                            __global const unint* qMap,
+                            __global const real* X_mat,
+                            unint X_r,
+                            unint X_c,
+                            unint X_pr,
+                            unint X_pc,
+                            unint X_ld,
+                            __global const unint* xMap_mat,
+                            unint xMap_r,
+                            unint xMap_c,
+                            unint xMap_pr,
+                            unint xMap_pc,
+                            unint xMap_ld,
+                            __global real* dMins_mat,
+                            unint dMins_r,
+                            unint dMins_c,
+                            unint dMins_pr,
+                            unint dMins_pc,
+                            unint dMins_ld,
+                            __global unint* dMinIDs_mat,
+                            unint dMinIDs_r,
+                            unint dMinIDs_c,
+                            unint dMinIDs_pr,
+                            unint dMinIDs_pc,
+                            unint dMinIDs_ld,
+                            __global const unint* cP_numGroups,
+                            __global const unint* cP_groupCountX,
+                            __global const unint* cP_qToQGroup,
+                            __global const unint* cP_qGroupToXGroup,
+                            unint cP_ld,
+                            unint qStartPos,
+                            __global const real* windows,
+                            int maxPointsNum)
+{
+
+    size_t threadIdx_x = get_local_id(0);
+    size_t threadIdx_y = get_local_id(1);
+
+    size_t blockIdx_x = get_group_id(0);
+    size_t blockIdx_y = get_group_id(1);
+
+    unint qB = qStartPos + blockIdx_y * BLOCK_SIZE;  //indexes Q
+    unint xB; //X (DB) Block;
+    unint cB; //column Block
+    unint offQ = threadIdx_y; //the offset of qPos in this block
+    unint offX = threadIdx_x; //ditto for x
+
+//    __local real dNN[BLOCK_SIZE][KMAX + BLOCK_SIZE];
+//    __local unint idNN[BLOCK_SIZE][KMAX + BLOCK_SIZE];
+
+    __local unint valid_indices[BLOCK_SIZE][BLOCK_SIZE];
+    volatile __local unint local_count[BLOCK_SIZE];
+    volatile __local unint global_count[BLOCK_SIZE];
+    volatile __local real min_windows[BLOCK_SIZE];
+
+    __local real Xs[BLOCK_SIZE][BLOCK_SIZE];
+    __local real Qs[BLOCK_SIZE][BLOCK_SIZE];
+
+    unint g = cP_qToQGroup[qB]; /** query group of q */
+    //unint numGroups = cP_numGroups[g]; /** always 1 in case of identity matrix */
+
+    valid_indices[offQ][offX] = 0;
+
+    if(offQ == 0)
+    {
+        local_count[offX] = 0;
+        global_count[offX] = 0;
+        min_windows[offX] = (real)0;
+    }
+
+//    dNN[offQ][offX] = FLT_MAX;//MAX_REAL;
+//    dNN[offQ][offX + 16] = FLT_MAX;//MAX_REAL;
+//    idNN[offQ][offX] = DUMMY_IDX;
+//    idNN[offQ][offX + 16] = DUMMY_IDX;
+
+    barrier(CLK_LOCAL_MEM_FENCE);
+
+
+    int i = 1; /** assumption: we have only one group to visit */
+
+    //DB group currently being examined
+    unint xG = cP_qGroupToXGroup[IDX(g, i, cP_ld)];
+    unint groupCount = cP_groupCountX[IDX(g, i, cP_ld)];
+
+    unint groupIts = (groupCount + BLOCK_SIZE - 1) / BLOCK_SIZE;
+
+    for(unint j = 0; j < groupIts; j++) //iterate over elements of group
+    {
+        xB = j * BLOCK_SIZE;
+        real ans = 0;
+
+        unint databasePointIdx = xMap_mat[IDX(xG, xB + offQ, xMap_ld)];
+        unint queryPointIdx = qMap[qB + offQ];
+
+        /** iterate over cols to compute distances */
+        for(cB = 0; cB < X_pc; cB += BLOCK_SIZE)
+        {
+            unint databaseElemIdx = IDX(databasePointIdx, cB + offX, X_ld);
+
+            unint queryElemIdx = IDX(queryPointIdx, cB + offX, Q_ld);
+
+            /** database points */
+            Xs[offX][offQ] = X_mat[databaseElemIdx];
+
+            /** query points */
+            Qs[offX][offQ] = ((queryPointIdx == DUMMY_IDX)
+                                                    ? 0 : Q_mat[queryElemIdx]);
+            barrier(CLK_LOCAL_MEM_FENCE);
+
+            /** calculating partial distance */
+            for(unint k = 0; k < BLOCK_SIZE; k++)
+                ans += DIST(Xs[k][offX], Qs[k][offQ]);
+
+            barrier(CLK_LOCAL_MEM_FENCE);
+        }
+
+        /** at this point, distance is complete (ans) */
+
+        /** load window */
+        real window = windows[databasePointIdx];
+
+        bool isOk = (xB + offX < groupCount) && (ans < window);
+
+        if(isOk)
+        {
+            int idx = atomic_inc(local_count + offQ);
+            //if(idx < maxPointsNum)
+            valid_indices[offQ][idx] = databasePointIdx;
+        }
+
+        barrier(CLK_LOCAL_MEM_FENCE);
+
+        /** write indexes to global memory */
+
+        if(offX < local_count[offQ])
+        {
+            //some_global_memory[base_idx + global_count[offQ] + offX] = valid_indices[offQ][offX];
+        }
+
+        /** add local sums to global indexes */
+        if(offQ == 0)
+        {
+            global_count[offX] += local_count[offX];
+        }
+
+        barrier(CLK_LOCAL_MEM_FENCE);
+
+
+//        dNN[offQ][offX+32] = (xB + offX < groupCount) ? ans : FLT_MAX;
+
+//        idNN[offQ][offX+32] = (xB + offX < groupCount)
+//                        ? xMap_mat[IDX(xG, xB + offX, xMap_ld)] : DUMMY_IDX;
+
+//        barrier(CLK_LOCAL_MEM_FENCE);
+
+//        /** sorting the last 16 items of 48 */
+//        sort16off(dNN, idNN);
+
+//        barrier(CLK_LOCAL_MEM_FENCE);
+
+//        /** merging the last 16 items with first 32 items into
+//          * one sorted array of 48 items */
+//        merge32x16(dNN, idNN);
+    }
+
+    barrier(CLK_LOCAL_MEM_FENCE);
+
+//    if(qMap[qB + offQ] != DUMMY_IDX)
+//    {
+//        int out_idx = IDX(qMap[qB + offQ], offX, dMins_ld);
+
+//        dMins_mat[out_idx] = dNN[offQ][offX];
+//        dMins_mat[out_idx + 16] = dNN[offQ][offX + 16];
+
+//        out_idx = IDX(qMap[qB + offQ], offX, dMinIDs_ld);
+
+//        dMinIDs_mat[out_idx] = idNN[offQ][offX];
+//        dMinIDs_mat[out_idx + 16] = idNN[offQ][offX + 16];
+
+//    }
+}
+

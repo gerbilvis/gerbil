@@ -123,6 +123,7 @@ void FAMS::ComputePilotPoint::operator()(const tbb::blocked_range<int> &r)
         } else {
             lsh->query(j);
             const std::vector<unsigned int> &lshResult = lsh->getResult();
+            dbg_lsh_query_size += lshResult.size();
 			for (int i = 0; i < lshResult.size(); i++) {
 				nn = fams.DistL1(fams.points_[j], fams.points_[lshResult[i]])
 						/ wjd;
@@ -181,6 +182,9 @@ bool FAMS::ComputePilot(vector<double> *weights) {
 	cout << "Avg. window size: " << comp.dbg_acc / n_ << endl;
 	bgLog("No kNN found for %2.2f%% of all points\n",
 		  (float) comp.dbg_noknn / n_ * 100);
+
+    bgLog("Average lsh query size: %d\n",
+          (int) (comp.dbg_lsh_query_size / n_));
 
 	return !(progress < 0.f); // in case of abort, progress is set to -1
 }
@@ -279,6 +283,7 @@ unsigned int FAMS::DoMSAdaptiveIteration(
 	std::vector<double> rr(d_, 0.);
 	int nel = (config.use_LSH ? res->size() : n_);
 	unsigned int crtH = 0;
+    int dbg_counter = 0;
 	double       hmdist = 1e100;
 	for (i = 0; i < nel; i++) {
 		fams_point &ptp = (config.use_LSH ? points_[(*res)[i]] : points_[i]);
@@ -292,6 +297,7 @@ unsigned int FAMS::DoMSAdaptiveIteration(
 				hmdist = dist;
 				crtH   = ptp.window_;
 			}
+            dbg_counter++;
 		}
 	}
 	if (total_weight == 0) {

@@ -112,6 +112,8 @@ void kqueryRBC(const matrix q, const ocl_rbcStruct rbcS,
     groupCountQ = (unint*)calloc(PAD(numReps), sizeof(*groupCountQ));
 
     /**
+    * dq - queries
+    * rbcS.dr - representatives
     * repIDsQ - indexes of nearest represetatives for consecutive
     *           elements from dq
     * distToRepsQ - distances to nearest representatives
@@ -167,14 +169,70 @@ void kqueryRBC(const matrix q, const ocl_rbcStruct rbcS,
     free(groupCountQ);
 }
 
+void computePilots(const matrix q, const cl::Buffer &repsPilots,
+                   const ocl_rbcStruct& rbcS, cl::Buffer &pilots)
+{
+    unint m = q.r;
+    unint numReps = rbcS.dr.r;
+
+    ocl_matrix dq;
+    copyAndMove(&dq, &q);
+
+    unint *repIDsQ;
+    repIDsQ = (unint*)calloc(m, sizeof(*repIDsQ));
+    real *distToRepsQ;
+    distToRepsQ = (real*)calloc(m, sizeof(*distToRepsQ));
+    unint *groupCountQ;
+    groupCountQ = (unint*)calloc(PAD(numReps), sizeof(*groupCountQ));
+
+    cl::Context& context = OclContextHolder::context;
+    //cl::CommandQueue& queue = OclContextHolder::queue;
+
+    int byte_size = dq.pr * sizeof(unint);
+    cl_int err;
+    cl::Buffer indexes(context, CL_MEM_READ_WRITE, byte_size, 0, &err);
+    checkErr(err);
+
+    computeRepsNoHost(dq, rbcS.dr, indexes);
+
+    bindPilots(indexes, repsPilots, pilots, m);
+
+}
+
+void bindPilots(const cl::Buffer &indexes, const cl::Buffer &repsPilots,
+                cl::Buffer &pilots, int pilots_size)
+{
+    int kernel_size = 256;
+
+    cl::NDRange local(kernel_size, 1);
+
+    cl::NDRange global(((pilots_size + kernel_size - 1)
+                        / kernel_size) * kernel_size, 1);
+
+    cl::CommandQueue& queue = OclContextHolder::queue;
+    cl::Kernel& bindPilotsKernel = OclContextHolder::bindPilotsKernel;
+
+    bindPilotsKernel.setArg(0, indexes);
+    bindPilotsKernel.setArg(1, repsPilots);
+    bindPilotsKernel.setArg(2, pilots);
+    bindPilotsKernel.setArg(3, pilots_size);
+
+    queue.enqueueNDRangeKernel(bindPilotsKernel, cl::NullRange,
+                               global, local);
+}
+
+
 /** Building rbc structure
  *  x - input points (database)
  *  rbcS - output rbc structure
  *  numReps - number of representatives
  *  s - number of points assigned to each representative.
  */
-void buildRBC(const matrix x, ocl_rbcStruct *rbcS, unint numReps, unint s)
+void buildRBC(const matrix x, ocl_rbcStruct *rbcS, unint numReps, unint s,
+              cl::Buffer pilots, int threshold)
 {
+    bool computePilots = threshold != 0;
+
     unint n = x.pr;
     intMatrix xmap;
 
@@ -210,7 +268,7 @@ void buildRBC(const matrix x, ocl_rbcStruct *rbcS, unint numReps, unint s)
  // memTot = 1024 * 1024 * 1024;
 
 //    unint ptsAtOnce = 1024 * 64;//DPAD(memFree/((n+1)*sizeof(real) + n*sizeof(char) + (n+1)*sizeof(unint) + 2*MEM_USED_IN_SCAN(n)));
-   unint ptsAtOnce = 128;
+   unint ptsAtOnce = 512;
    // unint ptsAtOnce = 512;//DPAD(memFree/((n+1)*sizeof(real) + n*sizeof(char) + (n+1)*sizeof(unint) + 2*MEM_USED_IN_SCAN(n)));
     if(!ptsAtOnce)
     {
@@ -291,7 +349,10 @@ void buildRBC(const matrix x, ocl_rbcStruct *rbcS, unint numReps, unint s)
          *  dranges - vector of maximal value for each row
          *  s - desired number of values within a range
          */
-        findRangeWrap(dD, dranges, s);
+        findRangeWrap(dD, dranges, s, 0);
+
+        if(computePilots)
+            findRangeWrap(dD, pilots, threshold, row);
 
         /** set binary vector for points in range
          *  dD - matrix of disances
@@ -393,12 +454,25 @@ void computeReps(const ocl_matrix& dq, const ocl_matrix& dr,
     byte_size = dq.r*sizeof(unint);
     err = queue.enqueueReadBuffer(dMinIDs, CL_TRUE, 0, byte_size, repIDs);
     checkErr(err);
-
-    //cudaMemcpy(distToReps,dMins,dq.r*sizeof(*dMins),cudaMemcpyDeviceToHost);
-    //cudaMemcpy(repIDs,dMinIDs,dq.r*sizeof(*dMinIDs),cudaMemcpyDeviceToHost);
-    //cudaFree(dMins);
-    //cudaFree(dMinIDs);
 }
+
+
+void computeRepsNoHost(const ocl_matrix& dq, const ocl_matrix& dr,
+                       cl::Buffer& indexes)
+{
+    cl::Context& context = OclContextHolder::context;
+    cl::CommandQueue& queue = OclContextHolder::queue;
+
+    int byte_size = dq.pr*sizeof(real);
+    cl_int err;
+
+    /** this buffer in unnecessary, nnWrap version is needed */
+    cl::Buffer dMins(context, CL_TRUE, byte_size, 0, &err);
+    checkErr(err);
+
+    nnWrap(dq, dr, dMins, indexes);
+}
+
 
 
 //Assumes radii is initialized to 0s

@@ -19,7 +19,7 @@ RBC::RBC(const vole::RBCConfig &cfg)
       config(cfg)
 {}
 
-void getRepresentatives(const matrix x, int numOfReps, matrix& q)
+void generateRandomQueries(const matrix x, int numOfReps, matrix& q)
 {
     q.c = x.c;
     q.pc = x.pc;
@@ -91,19 +91,55 @@ int RBC::execute()
 
         int numReps = sqrt(img.width * img.height) * 5;
         int numQueries = img.width * img.height;
+        int pointsPerRepresentative = 1024*16;
 
         std::cout << "number of representatives: " << numReps << std::endl;
         std::cout << "number of queries: " << numQueries << std::endl;
+        std::cout << "number of points per representative: "
+                  << pointsPerRepresentative << std::endl;
 
         imgToMatrix(img, database);
-        getRepresentatives(database, numQueries, queries);
+        generateRandomQueries(database, numQueries, queries);
 
         std::cout << "calcualting rbc" << std::endl;
 
-        buildRBC(database, &rbcS, numReps, numReps);
+
+        cl::Context& context = OclContextHolder::context;
+        cl::CommandQueue& queue = OclContextHolder::queue;
+
+        cl_int err;
+        cl::Buffer repsPilots(context, CL_MEM_READ_WRITE,
+                              PAD(numReps) * sizeof(real), 0, &err);
+        checkErr(err);
+
+        buildRBC(database, &rbcS, numReps, pointsPerRepresentative,
+                 repsPilots, 512);
+
+        real* repsPilotsHost = new real[PAD(numReps)];
+
+        err = queue.enqueueReadBuffer(repsPilots, CL_TRUE, 0,
+                                      PAD(numReps) * sizeof(real),
+                                      repsPilotsHost);
+        checkErr(err);
+
+        for(int i = 0; i < 20; ++i)
+        {
+            std::cout << repsPilotsHost[(rand() % PAD(numReps))] << std::endl;
+        }
+
+
+        delete repsPilotsHost;
 
         std::cout << "querying" << std::endl;
 
+
+        cl::Buffer allPilots(context, CL_MEM_READ_WRITE,
+                              PAD(database.pr) * sizeof(real), 0, &err);
+        checkErr(err);
+
+        computePilots(database, repsPilots, rbcS, allPilots);
+
+        /*
         intMatrix nnsRBC;
         matrix distsRBC;
 
@@ -122,7 +158,7 @@ int RBC::execute()
         nnsRBC.mat = (unint*)calloc(sizeOfIntMat(nnsRBC), sizeof(*nnsRBC.mat));
         distsRBC.mat = (real*)calloc(sizeOfMat(distsRBC), sizeof(*distsRBC.mat));
 
-        kqueryRBC(queries, rbcS, nnsRBC, distsRBC);
+        kqueryRBC(queries, rbcS, nnsRBC, distsRBC);*/
 
 
         free(database.mat);
