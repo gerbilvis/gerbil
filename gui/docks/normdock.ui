@@ -2,6 +2,14 @@
 <ui version="4.0">
  <class>NormDock</class>
  <widget class="QDockWidget" name="NormDock">
+  <property name="geometry">
+   <rect>
+    <x>0</x>
+    <y>0</y>
+    <width>345</width>
+    <height>151</height>
+   </rect>
+  </property>
   <property name="windowTitle">
    <string>Normalization</string>
   </property>
@@ -199,6 +207,9 @@
           </property>
           <property name="text">
            <string>Apply</string>
+          </property>
+          <property name="icon">
+           <iconset theme="dialog-apply"/>
           </property>
          </widget>
         </item>

@@ -2,6 +2,14 @@
 <ui version="4.0">
  <class>LabelDock</class>
  <widget class="QDockWidget" name="LabelDock">
+  <property name="geometry">
+   <rect>
+    <x>0</x>
+    <y>0</y>
+    <width>304</width>
+    <height>270</height>
+   </rect>
+  </property>
   <property name="windowTitle">
    <string>Labels</string>
   </property>
@@ -172,7 +180,7 @@
           <bool>false</bool>
          </property>
          <property name="toolTip">
-          <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Merge the selected labels.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+          <string>Merge selected labels.</string>
          </property>
          <property name="text">
           <string>&amp;Merge</string>
@@ -187,11 +195,16 @@
          <property name="enabled">
           <bool>false</bool>
          </property>
+         <property name="toolTip">
+          <string>Clear selected labels</string>
+         </property>
          <property name="text">
-          <string>&amp;Delete</string>
+          <string>&amp;Clear</string>
          </property>
          <property name="icon">
-          <iconset theme="edit-delete"/>
+          <iconset theme="edit-clear">
+           <normaloff/>
+          </iconset>
          </property>
         </widget>
        </item>
@@ -215,6 +228,9 @@
            <horstretch>0</horstretch>
            <verstretch>0</verstretch>
           </sizepolicy>
+         </property>
+         <property name="toolTip">
+          <string>Remove empty labels</string>
          </property>
          <property name="text">
           <string>Consolidate</string>

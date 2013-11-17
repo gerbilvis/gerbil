@@ -2,6 +2,14 @@
 <ui version="4.0">
  <class>IllumDock</class>
  <widget class="QDockWidget" name="IllumDock">
+  <property name="geometry">
+   <rect>
+    <x>0</x>
+    <y>0</y>
+    <width>304</width>
+    <height>109</height>
+   </rect>
+  </property>
   <property name="windowTitle">
    <string>Illumination</string>
   </property>
@@ -34,6 +42,9 @@
       </property>
       <property name="text">
        <string>Apply</string>
+      </property>
+      <property name="icon">
+       <iconset theme="dialog-apply"/>
       </property>
      </widget>
     </item>

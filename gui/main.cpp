@@ -305,10 +305,10 @@ int main(int argc, char **argv)
 	// create controller
 	Controller chief(filename, limited_mode, labelfile);
 
-	///* debug focus
+	/* debug focus
 	app.connect(&app, SIGNAL(focusChanged(QWidget*, QWidget*)),
 			&chief, SLOT(focusChange(QWidget*, QWidget*)));
-	//*/
+	*/
 
 	// run Qt event loop
 	return app.exec();
