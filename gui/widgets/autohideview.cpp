@@ -109,7 +109,7 @@ void AutohideView::mouseMoveEvent(QMouseEvent *event)
 {
 	if (!suppressScroll) {
 		foreach (AutohideWidget* w, widgets)
-			w->triggerScrolling(event->pos());
+			w->triggerScrolling(event->pos(), 10);
 	}
 
 	QGraphicsView::mouseMoveEvent(event);

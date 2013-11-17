@@ -1,6 +1,7 @@
 #include "widgets/autohidewidget.h"
 
 #include <QGraphicsScene>
+#include <QTimer>
 
 AutohideWidget::AutohideWidget()
 	: location(LEFT), state(SCROLL_OUT)
@@ -16,6 +17,8 @@ void AutohideWidget::init(QGraphicsProxyWidget *p, border loc)
 	proxy = p;
 
 	reposition();
+	/* Idea: start with SCROLL_IN to show that we exist, then disappear later
+	QTimer::singleShot(2000, this, SLOT(scrollOut())); */
 }
 
 void AutohideWidget::reposition()
@@ -57,7 +60,7 @@ void AutohideWidget::reposition()
 	repaint();
 }
 
-void AutohideWidget::triggerScrolling(QPoint pos)
+void AutohideWidget::triggerScrolling(QPoint pos, int offset)
 {
 	// invalid position means we lost the mouse
 	if (pos.x() < 0) {
@@ -70,16 +73,16 @@ void AutohideWidget::triggerScrolling(QPoint pos)
 	bool proximity;
 	switch (location) {
 	case LEFT:
-		proximity = (pos.x() < ownpos.x() + width() + OutOffset);
+		proximity = (pos.x() < ownpos.x() + width() + offset);
 		break;
 	case RIGHT:
-		proximity = (pos.x() > ownpos.x() - OutOffset);
+		proximity = (pos.x() > ownpos.x() - offset);
 		break;
 	case TOP:
-		proximity = (pos.y() < ownpos.y() + height() + OutOffset);
+		proximity = (pos.y() < ownpos.y() + height() + offset);
 		break;
 	case BOTTOM:
-		proximity = (pos.y() > ownpos.y() - OutOffset);
+		proximity = (pos.y() > ownpos.y() - offset);
 		break;
 	}
 	if (state == SCROLL_IN && !proximity)
@@ -96,16 +99,6 @@ void AutohideWidget::adjust()
 	reposition();
 }
 
-void AutohideWidget::scrollOut(bool enforce)
-{
-	// already scrolling?
-	bool redundant = (state == SCROLL_OUT || state == STAY_OUT);
-	state = (enforce ? STAY_OUT : SCROLL_OUT);
-
-	if (!redundant)
-		startTimer(40); // scroll
-}
-
 void AutohideWidget::scrollIn(bool enforce)
 {
 	// already scrolling?
@@ -113,6 +106,23 @@ void AutohideWidget::scrollIn(bool enforce)
 	state = (enforce ? STAY_IN : SCROLL_IN);
 
 	if (!redundant)
+		startTimer(40); // scroll
+}
+
+void AutohideWidget::scrollOut(bool enforce)
+{
+	// already scrolling?
+	bool redundant = (state == SCROLL_OUT || state == STAY_OUT);
+	state = (enforce ? STAY_OUT : SCROLL_OUT);
+
+	if (!redundant)
+		QTimer::singleShot(250, this, SLOT(scrollOutNow()));
+}
+
+void AutohideWidget::scrollOutNow()
+{
+	// only do this if no other scrolling was triggered in-between
+	if (state == SCROLL_OUT || state == STAY_OUT)
 		startTimer(40); // scroll
 }
 

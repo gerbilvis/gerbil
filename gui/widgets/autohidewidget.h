@@ -38,13 +38,14 @@ public:
 	void reposition();
 
 	/* decide if scrolling needed based on mouse position */
-	void triggerScrolling(QPoint pos);
+	void triggerScrolling(QPoint pos, int offset = 0);
 
 	/* Call this instead of QWidget::adjustSize()
 	 * Whenever the widget gets a new size, we also have to reset its position.
 	 */
 	void adjust();
 
+	// how many pixels the widget lurks into the view while scrolled out
 	static const int OutOffset = 10;
 
 signals:
@@ -54,6 +55,8 @@ public slots:
 	virtual void scrollIn(bool enforce = false);
 	// get out of view, stay there indefinitely if enforce is set
 	virtual void scrollOut(bool enforce = false);
+	// start the actual scrolling (scrolling out is delayed a bit)
+	void scrollOutNow();
 
 protected:
 	// which border we are in
