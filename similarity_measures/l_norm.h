@@ -94,8 +94,14 @@ inline double LNorm<float>::getSimilarity(const std::vector<float> &v1, const st
 		int i = 0;
 		__m128 vret = _mm_setzero_ps();
 		for (; i < (int)v1.size() - 4; i += 4) {
+// GNU malloc guarantees 16 bit alignment on 64 bit platforms
+#if defined(__GNUC__) && defined(__LP64__)
 			__m128 vec1 = _mm_load_ps(&v1[i]);
 			__m128 vec2 = _mm_load_ps(&v2[i]);
+#else
+			__m128 vec1 = _mm_loadu_ps(&v1[i]);
+			__m128 vec2 = _mm_loadu_ps(&v2[i]);
+#endif
 			__m128 vdiff = _mm_sub_ps(vec1, vec2);
 			__m128 vdiff2 = _mm_mul_ps(vdiff, vdiff);
 			vret = _mm_add_ps(vret, vdiff2);
@@ -142,8 +148,13 @@ inline double LNorm<double>::getSimilarity(const std::vector<double> &v1, const 
 		int i = 0;
 		__m128d vret = _mm_setzero_pd();
 		for (; i < (int)v1.size() - 2; i += 2) {
+#if defined(__GNUC__) && defined(__LP64__)
 			__m128d vec1 = _mm_load_pd(x1);
 			__m128d vec2 = _mm_load_pd(x2);
+#else
+			__m128d vec1 = _mm_loadu_pd(x1);
+			__m128d vec2 = _mm_loadu_pd(x2);
+#endif
 			__m128d vdiff = _mm_sub_pd(vec1, vec2);
 			__m128d vdiff2 = _mm_mul_pd(vdiff, vdiff);
 			vret = _mm_add_pd(vret, vdiff2);
