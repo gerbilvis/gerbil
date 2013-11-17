@@ -196,7 +196,7 @@ void Viewport::prepareLines()
 			QString("Drawing spectra cannot be continued. "
 					"Please notify us about this problem, state error code %1 "
 					"and what actions led up to this error. Send an email to"
-			" johannes.jordan@cs.fau.de. Thank you for your help!").arg(success));
+			" report@gerbilvis.org. Thank you for your help!").arg(success));
 		return;
 	}
 }

@@ -117,6 +117,16 @@ void Viewport::updateBuffers(RenderMode spectrum, RenderMode highlight)
 
 		b.renderTimer.stop();
 		b.renderedLines = 0;
+
+		if (!(b.fbo->isValid() && b.blit->isValid())) {
+			QMessageBox::critical(target, "Drawing Error",
+				"Drawing spectra cannot be continued. "
+				"Please notify us about this problem, state error code 4 "
+				"and what actions led up to this error. Send an email to"
+				" report@gerbilvis.org. Thank you for your help!");
+			return;
+		}
+
 		QPainter painter(b.fbo);
 
 		painter.setCompositionMode(QPainter::CompositionMode_Source);
@@ -228,7 +238,7 @@ void Viewport::drawBins(QPainter &painter, QTimer &renderTimer,
 			"Drawing spectra cannot be continued. "
 			"Please notify us about this problem, state error code 3 "
 			"and what actions led up to this error. Send an email to"
-			" johannes.jordan@cs.fau.de. Thank you for your help!");
+			" report@gerbilvis.org. Thank you for your help!");
 		painter.endNativePainting();
 		return;
 	}
