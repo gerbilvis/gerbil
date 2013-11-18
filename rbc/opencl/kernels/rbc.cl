@@ -1057,11 +1057,8 @@ __kernel void bindPilotsKernel(__global const unint* indexes,
     }
 }
 
-/** changes in original planKNN kernel:
-  * --> iteration over groups removed
-  * --> 'windows' parameter added to pass precomputed pilots
-  */
-__kernel void planKNNMeanshiftKernel(__global const real* Q_mat,
+
+__kernel void meanshiftPlanKNNKernel(__global const real* Q_mat,
                             unint Q_r,
                             unint Q_c,
                             unint Q_pr,

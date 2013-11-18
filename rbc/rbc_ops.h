@@ -12,12 +12,16 @@ void buildRBC(const matrix x,
               ocl_rbcStruct* rbcS,
               unint numReps,
               unint pointsPerRep,
-              cl::Buffer = cl::Buffer(),
-              int = 0);
+              cl::Buffer pilots = cl::Buffer(),
+              int threshold = 0);
 
 //NEVER USED void queryRBC(const matrix,const rbcStruct,unint*,real*);
 
-void kqueryRBC(const matrix,const ocl_rbcStruct,intMatrix,matrix);
+void kqueryRBC(const matrix q, const ocl_rbcStruct rbcS,
+               intMatrix NNs, matrix NNdists);
+
+void meanshiftKQueryRBC(const matrix q, const ocl_rbcStruct rbcS,
+                        cl::Buffer& pilots, intMatrix NNs, matrix NNdists);
 
 void computePilots(const matrix q, const cl::Buffer &repsPilots,
                    const ocl_rbcStruct& rbcS, cl::Buffer &pilots);
@@ -49,7 +53,9 @@ void freeCompPlan(ocl_compPlan*);
 //                cl::Buffer&,ocl_compPlan&,unint*,real*,unint);
 
 //void computeKNNs(matrix,intMatrix,matrix,unint*,compPlan,intMatrix,matrix,unint);
-void computeKNNs(const ocl_matrix&, const ocl_intMatrix&,const ocl_matrix&,cl::Buffer&,ocl_compPlan&,intMatrix,matrix,unint);
+void computeKNNs(const ocl_matrix&, const ocl_intMatrix&,
+                 const ocl_matrix&, const cl::Buffer&,
+                 const ocl_compPlan&, intMatrix, matrix, unint);
 
 void setupReps(matrix,ocl_rbcStruct*,unint);
 

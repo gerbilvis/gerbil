@@ -83,7 +83,6 @@ void kqueryRBC(const matrix q, const ocl_rbcStruct rbcS,
     unint numReps = rbcS.dr.r;
     unint compLength;
     ocl_compPlan dcP;
-    //unint *qMap, *dqMap;
     unint *qMap;
     cl::Buffer dqMap;
 
@@ -92,7 +91,8 @@ void kqueryRBC(const matrix q, const ocl_rbcStruct rbcS,
     DBG_DEVICE_MATRIX_WRITE(rbcS.dxMap, "rbcS_dxMap.txt");
     DBG_HOST_MATRIX_WRITE(q, "q.txt");
 
-    qMap = (unint*)calloc(PAD(m+(BLOCK_SIZE-1)*PAD(numReps)),sizeof(*qMap));
+    qMap = (unint*)calloc(PAD(m + (BLOCK_SIZE - 1) * PAD(numReps)),
+                          sizeof(*qMap));
 
     ocl_matrix dq;
     copyAndMove(&dq, &q);
@@ -162,7 +162,98 @@ void kqueryRBC(const matrix q, const ocl_rbcStruct rbcS,
 
     free(qMap);
     freeCompPlan(&dcP);
-    // cudaFree(dq.mat);
+    free(cM.mat);
+    free(repIDsQ);
+    free(distToRepsQ);
+    free(groupCountQ);
+}
+
+void meanshiftKQueryRBC(const matrix q, const ocl_rbcStruct rbcS,
+                        cl::Buffer &pilots, intMatrix NNs, matrix NNdists)
+{
+    unint m = q.r;
+    unint numReps = rbcS.dr.r;
+    unint compLength;
+    ocl_compPlan dcP;
+    unint *qMap;
+    cl::Buffer dqMap;
+
+    DBG_DEVICE_MATRIX_WRITE(rbcS.dr, "rbcS_dr.txt");
+    DBG_DEVICE_MATRIX_WRITE(rbcS.dx, "rbcS_dx.txt");
+    DBG_DEVICE_MATRIX_WRITE(rbcS.dxMap, "rbcS_dxMap.txt");
+    DBG_HOST_MATRIX_WRITE(q, "q.txt");
+
+    qMap = (unint*)calloc(PAD(m + (BLOCK_SIZE - 1) * PAD(numReps)),
+                          sizeof(*qMap));
+
+    ocl_matrix dq;
+    copyAndMove(&dq, &q);
+
+    DBG_DEVICE_MATRIX_WRITE(dq, "dq.txt");
+
+    charMatrix cM;
+    cM.r = cM.c = numReps;
+    cM.pr = cM.pc = cM.ld = PAD(numReps);
+    cM.mat = (char*)calloc(cM.pr * cM.pc, sizeof(*cM.mat));
+
+    unint *repIDsQ;
+    repIDsQ = (unint*)calloc(m, sizeof(*repIDsQ));
+    real *distToRepsQ;
+    distToRepsQ = (real*)calloc(m, sizeof(*distToRepsQ));
+    unint *groupCountQ;
+    groupCountQ = (unint*)calloc(PAD(numReps), sizeof(*groupCountQ));
+
+    /**
+    * dq - queries
+    * rbcS.dr - representatives
+    * repIDsQ - indexes of nearest represetatives for consecutive
+    *           elements from dq
+    * distToRepsQ - distances to nearest representatives
+    */
+    computeReps(dq, rbcS.dr, repIDsQ, distToRepsQ);
+
+    DBG_ARRAY_WRITE(repIDsQ, m, "repIDsQ.txt");
+    DBG_ARRAY_WRITE(distToRepsQ, m, "distToRepsQ.txt");
+
+
+    /** How many points are assigned to each group?
+    * m - numer of query points
+    * groupCountQ - representative occurence histogram
+    */
+    computeCounts(repIDsQ, m, groupCountQ);
+
+    /** Set up the mapping from groups to queries (qMap). */
+    buildQMap(q, qMap, repIDsQ, numReps, &compLength);
+
+    printf("comp len: %u\n", compLength);
+
+    /** Setup the computation matrix.  Currently, the computation matrix is
+      * just the identity matrix: each query assigned to a particular
+      * representative is compared only to that representative's points.
+      *
+      * NOTE: currently, idIntersection is the *only* computation matrix
+      * that will work properly with k-nn search (this is not true for 1-nn above).
+      */
+    idIntersection(cM);
+
+    initCompPlan(&dcP, cM, groupCountQ, rbcS.groupCount, numReps);
+
+    cl::Context& context = OclContextHolder::context;
+    cl::CommandQueue& queue = OclContextHolder::queue;
+
+    int byte_size = compLength*sizeof(unint);
+    cl_int err;
+
+    dqMap = cl::Buffer(context, CL_MEM_READ_WRITE, byte_size, 0, &err);
+    checkErr(err);
+
+    err = queue.enqueueWriteBuffer(dqMap, CL_TRUE, 0, byte_size, qMap);
+    checkErr(err);
+
+    computeKNNs(rbcS.dx, rbcS.dxMap, dq, dqMap, dcP, NNs, NNdists, compLength);
+
+    free(qMap);
+    freeCompPlan(&dcP);
     free(cM.mat);
     free(repIDsQ);
     free(distToRepsQ);
@@ -383,17 +474,9 @@ void buildRBC(const matrix x, ocl_rbcStruct *rbcS, unint numReps, unint s,
 
         checkErr(err);
 
-//    for(int i = 0; i < pi; ++i)
-//        printf("[%d]=%d ", i, rbcS->groupCount[i]);
-//    printf("\n");
-    //fflush(stdout);
-
         numLeft -= pi;
         row += pi;
     }
-
-   // free(ir.mat);
-//    free(xmap.mat);
 }
 
 
@@ -542,13 +625,15 @@ void idIntersection(charMatrix cM)
 }
 
 
-void fullIntersection(charMatrix cM){
-  unint i,j;
-  for(i=0;i<cM.r;i++){
-    for(j=0;j<cM.c;j++){
-      cM.mat[IDX(i,j,cM.ld)]=1;
+void fullIntersection(charMatrix cM)
+{
+    for(int i = 0; i < cM.r; i++)
+    {
+        for(int j = 0; j < cM.c; j++)
+        {
+            cM.mat[IDX(i,j,cM.ld)]=1;
+        }
     }
-  }
 }
 
 //NEVER USED
@@ -569,8 +654,8 @@ void computeNNs(matrix dx, intMatrix dxMap, matrix dq, unint *dqMap, compPlan dc
 }*/
 
 void computeKNNs(const ocl_matrix& dx, const ocl_intMatrix& dxMap,
-                 const ocl_matrix& dq, cl::Buffer& dqMap,
-                 ocl_compPlan& dcP, intMatrix NNs,
+                 const ocl_matrix& dq, const cl::Buffer& dqMap,
+                 const ocl_compPlan& dcP, intMatrix NNs,
                  matrix NNdists, unint compLength)
 {
     ocl_matrix dNNdists;
@@ -614,13 +699,63 @@ void computeKNNs(const ocl_matrix& dx, const ocl_intMatrix& dxMap,
 }
 
 
+void meanshiftComputeKNNs(const ocl_matrix& dx, const ocl_intMatrix& dxMap,
+                          const ocl_matrix& dq, const cl::Buffer& dqMap,
+                          const ocl_compPlan& dcP,
+                          cl::Buffer windows, cl::Buffer outputMeans,
+                          cl::Buffer outputMeansNums, cl::Buffer newWindows,
+                          int maxPointsNum, unint compLength)
+{
+//    ocl_matrix dNNdists;
+//    ocl_intMatrix dMinIDs;
+//    dNNdists.r = compLength; dNNdists.pr = compLength;
+//    dNNdists.c = KMAX; dNNdists.pc = KMAX;
+//    dNNdists.ld = dNNdists.pc;
+
+//    dMinIDs.r = compLength; dMinIDs.pr = compLength;
+//    dMinIDs.c = KMAX; dMinIDs.pc = KMAX; dMinIDs.ld = dMinIDs.pc;
+
+//    cl::Context& context = OclContextHolder::context;
+//    cl::CommandQueue& queue = OclContextHolder::queue;
+
+//    int byte_size = dNNdists.pr * dNNdists.pc * sizeof(real);
+//    cl_int err;
+
+//    dNNdists.mat = cl::Buffer(context, CL_MEM_READ_WRITE,
+//                              byte_size, 0, &err);
+//    checkErr(err);
+
+//    byte_size = dMinIDs.pr * dMinIDs.pc * sizeof(unint);
+
+//    dMinIDs.mat = cl::Buffer(context, CL_MEM_READ_WRITE,
+//                             byte_size, 0, &err);
+//    checkErr(err);
+
+    meanshiftPlanKNNWrap(dq, dqMap, dx, dxMap, dcP, windows, outputMeans,
+                         outputMeansNums, newWindows, maxPointsNum, compLength);
+
+//    byte_size = dq.r * KMAX*sizeof(unint);
+
+//    err = queue.enqueueReadBuffer(dMinIDs.mat, CL_TRUE,
+//                                  0, byte_size, NNs.mat);
+//    checkErr(err);
+
+//    byte_size = dq.r*KMAX*sizeof(real);
+
+//    err = queue.enqueueReadBuffer(dNNdists.mat, CL_TRUE,
+//                                  0, byte_size, NNdists.mat);
+//    checkErr(err);
+}
+
+
 //This calls the dist1Kernel wrapper, but has it compute only 
 //a submatrix of the all-pairs distance matrix.  In particular,
 //only distances from dr[start,:].. dr[start+length-1] to all of x
 //are computed, resulting in a distance matrix of size 
 //length by dx.pr.  It is assumed that length is padded.
 //void distSubMat(matrix dr, matrix dx, matrix dD, unint start, unint length){
-void distSubMat(ocl_matrix& dr, ocl_matrix& dx, ocl_matrix &dD, unint start, unint length)
+void distSubMat(ocl_matrix& dr, ocl_matrix& dx, ocl_matrix &dD,
+                unint start, unint length)
 {
     ocl_matrix dr_tmp = dr;
     dr_tmp.r = dr_tmp.pr = length;

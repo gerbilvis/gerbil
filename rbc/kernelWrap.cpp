@@ -357,7 +357,6 @@ void planNNWrap(const matrix dq, const unint *dqMap, const matrix dx, const intM
 }
 
 
-//void planKNNWrap(const matrix dq, const unint *dqMap, const matrix dx, const intMatrix dxMap, matrix dMins, intMatrix dMinIDs, compPlan dcP, unint compLength){
 void planKNNWrap(const ocl_matrix& dq, const cl::Buffer& dqMap,
                  const ocl_matrix& dx, const ocl_intMatrix& dxMap,
                  ocl_matrix& dMins, ocl_intMatrix& dMinIDs,
@@ -422,24 +421,81 @@ void planKNNWrap(const ocl_matrix& dq, const cl::Buffer& dqMap,
 
         numDone += todo;
     }
-
-/*
-  dim3 block(BLOCK_SIZE,BLOCK_SIZE);
-  dim3 grid;
-  unint todo;
-
-  grid.x = 1;
-  unint numDone = 0;
-  while( numDone<compLength ){
-    todo = MIN( (compLength-numDone) , MAX_BS*BLOCK_SIZE );
-    grid.y = todo/BLOCK_SIZE;
-    planKNNKernel<<<grid,block>>>(dq,dqMap,dx,dxMap,dMins,dMinIDs,dcP,numDone);
-    numDone += todo;
-  }
-  cudaThreadSynchronize();
-*/
 }
 
+
+void meanshiftPlanKNNWrap(const ocl_matrix& dq, const cl::Buffer& dqMap,
+                 const ocl_matrix& dx, const ocl_intMatrix& dxMap,
+                 const ocl_compPlan& dcP, const cl::Buffer& windows,
+                 cl::Buffer& outputMeans,
+                 cl::Buffer& outputMeansNum, cl::Buffer& newWindows,
+                 int maxPointsNum, unint compLength)
+{
+    cl::NDRange local(BLOCK_SIZE, BLOCK_SIZE);
+    unint todo;
+    unint numDone = 0;
+
+    while(numDone < compLength)
+    {
+        todo = MIN((compLength-numDone), MAX_BS*BLOCK_SIZE);
+
+        //std::cout << "planKNN kernel todo: " << todo << std::endl;
+
+        cl::NDRange global(BLOCK_SIZE, todo);
+
+        cl::CommandQueue& queue = OclContextHolder::queue;
+        cl::Kernel& planKNNKernel = OclContextHolder::planKNNKernel;
+
+        planKNNKernel.setArg(0, dq.mat);
+        planKNNKernel.setArg(1, dq.r);
+        planKNNKernel.setArg(2, dq.c);
+        planKNNKernel.setArg(3, dq.pr);
+        planKNNKernel.setArg(4, dq.pc);
+        planKNNKernel.setArg(5, dq.ld);
+        planKNNKernel.setArg(6, dqMap);
+        planKNNKernel.setArg(7, dx.mat);
+        planKNNKernel.setArg(8, dx.r);
+        planKNNKernel.setArg(9, dx.c);
+        planKNNKernel.setArg(10, dx.pr);
+        planKNNKernel.setArg(11, dx.pc);
+        planKNNKernel.setArg(12, dx.ld);
+        planKNNKernel.setArg(13, dxMap.mat);
+        planKNNKernel.setArg(14, dxMap.r);
+        planKNNKernel.setArg(15, dxMap.c);
+        planKNNKernel.setArg(16, dxMap.pr);
+        planKNNKernel.setArg(17, dxMap.pc);
+        planKNNKernel.setArg(18, dxMap.ld);
+//        planKNNKernel.setArg(19, dMins.mat);
+//        planKNNKernel.setArg(20, dMins.r);
+//        planKNNKernel.setArg(21, dMins.c);
+//        planKNNKernel.setArg(22, dMins.pr);
+//        planKNNKernel.setArg(23, dMins.pc);
+//        planKNNKernel.setArg(24, dMins.ld);
+//        planKNNKernel.setArg(25, dMinIDs.mat);
+//        planKNNKernel.setArg(26, dMinIDs.r);
+//        planKNNKernel.setArg(27, dMinIDs.c);
+//        planKNNKernel.setArg(28, dMinIDs.pr);
+//        planKNNKernel.setArg(29, dMinIDs.pc);
+//        planKNNKernel.setArg(30, dMinIDs.ld);
+        planKNNKernel.setArg(19, dcP.numGroups);
+        planKNNKernel.setArg(20, dcP.groupCountX);
+        planKNNKernel.setArg(21, dcP.qToQGroup);
+        planKNNKernel.setArg(22, dcP.qGroupToXGroup);
+        planKNNKernel.setArg(23, dcP.ld);
+        planKNNKernel.setArg(24, numDone);
+        planKNNKernel.setArg(25, windows);
+        planKNNKernel.setArg(26, outputMeans);
+        planKNNKernel.setArg(27, outputMeansNum);
+        planKNNKernel.setArg(28, newWindows);
+        planKNNKernel.setArg(29, maxPointsNum);
+
+        cl_int err = queue.enqueueNDRangeKernel(planKNNKernel, cl::NullRange,
+                                                global, local);
+        checkErr(err);
+
+        numDone += todo;
+    }
+}
 
 
 //void rangeCountWrap(const matrix dq, const matrix dx, real *dranges, unint *dcounts){

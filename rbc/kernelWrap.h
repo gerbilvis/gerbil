@@ -28,6 +28,15 @@ void planKNNWrap(const ocl_matrix&,const cl::Buffer&,const ocl_matrix&,
                  const ocl_intMatrix&,ocl_matrix&,ocl_intMatrix&,
                  const ocl_compPlan&,unint);
 
+void meanshiftPlanKNNWrap(const ocl_matrix& dq, const cl::Buffer& dqMap,
+                          const ocl_matrix& dx, const ocl_intMatrix& dxMap,
+                          const ocl_compPlan& dcP, const cl::Buffer& windows,
+                          cl::Buffer& outputMeans,
+                          cl::Buffer& outputMeansNum, cl::Buffer& newWindows,
+                          int maxPointsNum, unint compLength);
+
+
+
 //void findRangeWrap(const matrix,real*,unint);
 //void rangeSearchWrap(const matrix,const real*,charMatrix);
 //void nnWrap(const matrix,const matrix,real*,unint*);
