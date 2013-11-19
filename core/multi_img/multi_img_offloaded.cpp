@@ -91,7 +91,7 @@ void multi_img_offloaded::scopeBand(const Band &source, const cv::Rect &roi, Ban
 	target = scoped.clone();
 }
 
-void multi_img_offloaded::getBand(unsigned int band, Band &data) const
+void multi_img_offloaded::getBand(size_t band, Band &data) const
 {
 	cv::Mat src = cv::imread(bands[band].first, -1); // flag -1: preserve format
 

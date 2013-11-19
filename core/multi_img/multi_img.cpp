@@ -379,10 +379,10 @@ cv::PCA multi_img::pca(unsigned int components) const
 	rebuildPixels(true);
 
 	// create input matrix
-	cv::Mat_<Value> input(size(), pixels.size());
+    cv::Mat_<Value> input(size(), (int)pixels.size());
 	for (size_t i = 0; i < pixels.size(); ++i) {
 		cv::Mat_<Value> in(pixels[i]);
-		cv::Mat_<Value> out(input.col(i));
+        cv::Mat_<Value> out(input.col((int)i));
 		in.copyTo(out);
 	}
 
@@ -569,7 +569,7 @@ bool multi_img::empty() const
 	return bands.empty();
 }
 
-void multi_img::getBand(unsigned int band, Band &data) const
+void multi_img::getBand(size_t band, Band &data) const
 {
 	data = bands[band];
 }

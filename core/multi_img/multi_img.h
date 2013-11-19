@@ -143,7 +143,7 @@ public:
 	virtual bool empty() const = 0;	
 
 	/// returns one band
-	virtual void getBand(unsigned int band, Band &data) const = 0;
+    virtual void getBand(size_t band, Band &data) const = 0;
 
 	/// returns the roi part of the given band
 	virtual void scopeBand(const Band &source, const cv::Rect &roi, Band &target) const = 0;
@@ -274,7 +274,7 @@ public:
 	virtual bool empty() const;
 
 	/// returns one band
-	virtual void getBand(unsigned int band, Band &data) const;
+    virtual void getBand(size_t band, Band &data) const;
 
 	/// returns the roi part of the given band
 	virtual void scopeBand(const Band &source, const cv::Rect &roi, Band &target) const;
@@ -521,7 +521,7 @@ public:
 	multi_img spec_gradient() const;
 
 	/// return a copy with fewer bands (linear interpolation)
-	multi_img spec_rescale(size_t newsize) const;
+    multi_img spec_rescale(unsigned int newsize) const;
 //@}
 
 /** @name Helper functions **/

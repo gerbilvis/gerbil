@@ -18,7 +18,7 @@ public:
 	virtual bool empty() const;
 
 	/// returns one band
-	virtual void getBand(unsigned int band, Band &data) const;
+    virtual void getBand(size_t band, Band &data) const;
 
 	/// returns the roi part of the given band
 	virtual void scopeBand(const Band &source, const cv::Rect &roi, Band &target) const;

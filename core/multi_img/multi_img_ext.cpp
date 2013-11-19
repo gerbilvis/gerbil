@@ -32,7 +32,7 @@ multi_img multi_img::spec_gradient() const
 	return ret;
 }
 
-multi_img multi_img::spec_rescale(size_t newsize) const
+multi_img multi_img::spec_rescale(unsigned int newsize) const
 {
 	std::cerr << "multi_img: spec_rescale(" << newsize << ")" << std::endl;
 	assert(newsize <= this->size());
