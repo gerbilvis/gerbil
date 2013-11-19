@@ -33,7 +33,11 @@ namespace gerbil {
 class SOMProgressObserver : public vole::ProgressObserver {
 public:
 	SOMProgressObserver(RGB *rgbCmd) : rgbCmd(rgbCmd) {}
-	virtual bool update(int percent) { rgbCmd->setSomProgress(percent); }
+    virtual bool update(int percent)
+    {
+        rgbCmd->setSomProgress(percent);
+        return true; // if false: cancel job
+    }
 private:
 	RGB *const rgbCmd;
 };
