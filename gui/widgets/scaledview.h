@@ -23,7 +23,7 @@ public:
 	virtual void setPixmap(QPixmap p);
 
 	/* provide a reasonably high size of correct aspect ratio for layouting */
-	virtual QSize updateSizeHint();
+    virtual void updateSizeHint();
 
 	// offsets reserved for autohidewidgets, can be altered from outside
 	int offLeft, offTop, offRight, offBottom;

@@ -24,7 +24,7 @@ ScaledView::ScaledView()
 	offLeft = offTop = offRight = offBottom = 2;
 }
 
-QSize ScaledView::updateSizeHint()
+void ScaledView::updateSizeHint()
 {
 	float src_aspect = 1.f;
 	if (!pixmap.isNull())
