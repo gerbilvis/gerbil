@@ -158,7 +158,7 @@ void Accumulate::operator()(const tbb::blocked_range2d<int> &r) const
 			BinSet &s = sets[label];
 
 			BinSet::HashKey hashkey(boost::extents[multi.size()]);
-			for (int d = 0; d < multi.size(); ++d) {
+            for (unsigned int d = 0; d < multi.size(); ++d) {
 				int pos = floor(Compute::curpos(
 									pixel[d], d, minval, binsize, illuminant));
 				pos = std::max(pos, 0); pos = std::min(pos, nbins-1);

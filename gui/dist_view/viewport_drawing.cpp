@@ -244,20 +244,20 @@ void Viewport::drawBins(QPainter &painter, QTimer &renderTimer,
 	}
 	glEnableClientState(GL_VERTEX_ARRAY);
 	glVertexPointer(2, GL_FLOAT, 0, 0);
-	int iD = renderedLines * (*ctx)->dimensionality;
+    size_t iD = renderedLines * (*ctx)->dimensionality;
 
 	/* determine drawing range. could be expanded to only draw spec. labels */
 	// make sure that viewport draws "unlabeled" data in ignore-label case
 	int start = ((showUnlabeled || (*ctx)->ignoreLabels == 1) ? 0 : 1);
-	int end = (showLabeled ? (*sets)->size() : 1);
+    int end = (showLabeled ? (int)(*sets)->size() : 1);
 	int single = ((*ctx)->ignoreLabels ? -1 : highlightLabel);
 
-	unsigned int total = shuffleIdx.size();
-	unsigned int first = renderedLines;
-	unsigned int last = std::min(renderedLines + renderStep, total);
+    size_t total = shuffleIdx.size();
+    size_t first = renderedLines;
+    size_t last = std::min((size_t)(renderedLines + renderStep), total);
 
 	// loop over all elements in vertex index, update element and vector indices
-	for (unsigned int i = first; i < last;
+    for (size_t i = first; i < last;
 		 ++i, iD += (*ctx)->dimensionality) {
 		std::pair<int, BinSet::HashKey> &idx = shuffleIdx[i];
 
