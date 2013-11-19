@@ -1,9 +1,13 @@
 # Library versions
+
+# 2.4 introduces some new features we use and older versions are buggy, too!
 set(VOLE_MINIMUM_OPENCV_VERSION "2.4.0")
+
+# 4.7 introduces some GL features we use
 set(VOLE_MINIMUM_QT_VERSION "4.7.0")
-set(VOLE_MINIMUM_BOOST_VERSION "1.35")
-#set(VOLE_MINIMUM_EIGEN_VERSION "3.0")
-#set(VOLE_MINIMUM_SLEPC_VERSION "3.1") # TODO: version check missing in FindSLEPc
+
+# 1.47 introduces CHRONO, and I am tired of even guarding lib dependencies!
+set(VOLE_MINIMUM_BOOST_VERSION "1.47")
 
 # OpenCV
 find_package(OpenCV PATHS "/net/cv/lib/share/OpenCV" "/local/opencv/share/OpenCV")
@@ -194,15 +198,15 @@ vole_check_package(BOOST_DATE_TIME
 	"${Boost_DATE_TIME_LIBRARY}"
 )
 
-## Boost chrono
-#find_package(Boost ${VOLE_MINIMUM_BOOST_VERSION} COMPONENTS chrono)
-#vole_check_package(BOOST_CHRONO
-#	"Boost chrono"
-#	"Please install Boost chrono >=${VOLE_MINIMUM_BOOST_VERSION} or set Boost_ROOT."
-#	Boost_CHRONO_FOUND
-#	"${Boost_INCLUDE_DIR}/include/;${Boost_INCLUDE_DIR}"
-#	"${Boost_CHRONO_LIBRARY}"
-#)
+# Boost chrono (needed by boost_thread, we explicitely depend for Windows builds)
+find_package(Boost ${VOLE_MINIMUM_BOOST_VERSION} COMPONENTS chrono)
+vole_check_package(BOOST_CHRONO
+	"Boost chrono"
+	"Please install Boost chrono >=${VOLE_MINIMUM_BOOST_VERSION} or set Boost_ROOT."
+	Boost_CHRONO_FOUND
+	"${Boost_INCLUDE_DIR}/include/;${Boost_INCLUDE_DIR}"
+	"${Boost_CHRONO_LIBRARY}"
+)
 
 # Boost python
 #find_package(Boost ${VOLE_MINIMUM_BOOST_VERSION} COMPONENTS python)
