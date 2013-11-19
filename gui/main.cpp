@@ -47,7 +47,6 @@ void init_opencv()
 	pca.project(b1, b2);
 }
 
-#ifdef HAVE_OPENCV_GPU
 void init_cuda()
 {
 	if (cv::gpu::getCudaEnabledDeviceCount() > 0) {
@@ -100,7 +99,6 @@ void init_cuda()
 		std::cout << std::endl;
 	}
 }
-#endif /* HAVE_OPENCV_GPU */
 
 #ifdef __GNUC__
 #define cpuid(func, ax, bx, cx, dx)\
@@ -267,9 +265,7 @@ int main(int argc, char **argv)
 	// start qt before we try showing dialogs or use QGLFormat
 	QApplication app(argc, argv);
 	init_opencv();
-#ifdef HAVE_OPENCV_GPU
 	init_cuda();
-#endif /* HAVE_OPENCV_GPU */
 	if (!test_compatibility()) {
 		// TODO: window?
 		std::cerr << "Unfortunately the machine does not meet minimal "
