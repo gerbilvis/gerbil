@@ -1,7 +1,7 @@
-cmake_minimum_required(VERSION 2.6)
+cmake_minimum_required(VERSION 2.6.2) # for VERSION_GREATER, lol
 cmake_policy(SET CMP0009 NEW)
 
-if(CMAKE_VERSION VERSION_GREATER "2.8.11")
+if(CMAKE_VERSION VERSION_GREATER "2.8.11.100")
 	cmake_policy(SET CMP0022 NEW)
 endif()
 
@@ -40,20 +40,6 @@ include(VoleFindPackages)
 include(VoleFindExternalModules)
 
 include(VolePythonExtension)
-
-# Test if OpenCV version has GPU support (cv::gpu)
-# -> HAVE_OPENCV_GPU pre-processor define
-# See also core/gerbil_config.h.
-if(NOT (${OpenCV_VERSION} VERSION_LESS "2.4.0"))
-        #message(STATUS "HAVE_OPENCV_GPU ON")
-        set(HAVE_OPENCV_GPU ON)
-else()
-        #message(STATUS "HAVE_OPENCV_GPU OFF")
-        set(HAVE_OPENCV_GPU OFF)
-endif()
-if(HAVE_OPENCV_GPU)
-        add_definitions(-DHAVE_OPENCV_GPU)
-endif(HAVE_OPENCV_GPU)
 
 include_directories(core shell ${VOLE_EXTERNAL_SUBDIRECTORIES})
 # TODO: why?
