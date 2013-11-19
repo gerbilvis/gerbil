@@ -36,8 +36,8 @@ struct FalseColoring {
 			return type == representation::GRAD;
 			break;
 		default:
-			assert(false);
-			break;
+            assert(false); // this should not happen
+            return false; // prevent compiler warning
 		}
 	}
 
