@@ -168,10 +168,11 @@ void kqueryRBC(const matrix q, const ocl_rbcStruct rbcS,
     free(groupCountQ);
 }
 
-void meanshiftKQueryRBC(const matrix q, const ocl_rbcStruct rbcS,
-                        cl::Buffer &pilots, intMatrix NNs, matrix NNdists)
+void meanshiftKQueryRBC(const matrix input, const ocl_rbcStruct rbcS,
+                        ocl_matrix output_means, const cl::Buffer &pilots,
+                        cl::Buffer& newPilots, int maxPointsNum)
 {
-    unint m = q.r;
+    unint m = input.r;
     unint numReps = rbcS.dr.r;
     unint compLength;
     ocl_compPlan dcP;
@@ -181,13 +182,13 @@ void meanshiftKQueryRBC(const matrix q, const ocl_rbcStruct rbcS,
     DBG_DEVICE_MATRIX_WRITE(rbcS.dr, "rbcS_dr.txt");
     DBG_DEVICE_MATRIX_WRITE(rbcS.dx, "rbcS_dx.txt");
     DBG_DEVICE_MATRIX_WRITE(rbcS.dxMap, "rbcS_dxMap.txt");
-    DBG_HOST_MATRIX_WRITE(q, "q.txt");
+    DBG_HOST_MATRIX_WRITE(input, "q.txt");
 
     qMap = (unint*)calloc(PAD(m + (BLOCK_SIZE - 1) * PAD(numReps)),
                           sizeof(*qMap));
 
     ocl_matrix dq;
-    copyAndMove(&dq, &q);
+    copyAndMove(&dq, &input);
 
     DBG_DEVICE_MATRIX_WRITE(dq, "dq.txt");
 
@@ -223,7 +224,7 @@ void meanshiftKQueryRBC(const matrix q, const ocl_rbcStruct rbcS,
     computeCounts(repIDsQ, m, groupCountQ);
 
     /** Set up the mapping from groups to queries (qMap). */
-    buildQMap(q, qMap, repIDsQ, numReps, &compLength);
+    buildQMap(input, qMap, repIDsQ, numReps, &compLength);
 
     printf("comp len: %u\n", compLength);
 
@@ -250,8 +251,22 @@ void meanshiftKQueryRBC(const matrix q, const ocl_rbcStruct rbcS,
     err = queue.enqueueWriteBuffer(dqMap, CL_TRUE, 0, byte_size, qMap);
     checkErr(err);
 
-    computeKNNs(rbcS.dx, rbcS.dxMap, dq, dqMap, dcP, NNs, NNdists, compLength);
+//    computeKNNs(rbcS.dx, rbcS.dxMap, dq, dqMap, dcP, NNs, NNdists, compLength);
 
+    byte_size = sizeof(unint) * input.pr * maxPointsNum;
+
+    cl::Buffer selectedPoints(context, CL_MEM_READ_WRITE, byte_size, 0, &err);
+    checkErr(err);
+
+    byte_size = sizeof(unint) * input.pr;
+
+    cl::Buffer selectedPointsNum(context, CL_MEM_READ_WRITE,
+                                 byte_size, 0, &err);
+    checkErr(err);
+
+    meanshiftComputeKNNs(rbcS.dx, rbcS.dxMap, dq, dqMap, dcP, pilots,
+                         selectedPoints, selectedPointsNum, newPilots,
+                         maxPointsNum, compLength);
     free(qMap);
     freeCompPlan(&dcP);
     free(cM.mat);
@@ -706,45 +721,10 @@ void meanshiftComputeKNNs(const ocl_matrix& dx, const ocl_intMatrix& dxMap,
                           cl::Buffer outputMeansNums, cl::Buffer newWindows,
                           int maxPointsNum, unint compLength)
 {
-//    ocl_matrix dNNdists;
-//    ocl_intMatrix dMinIDs;
-//    dNNdists.r = compLength; dNNdists.pr = compLength;
-//    dNNdists.c = KMAX; dNNdists.pc = KMAX;
-//    dNNdists.ld = dNNdists.pc;
-
-//    dMinIDs.r = compLength; dMinIDs.pr = compLength;
-//    dMinIDs.c = KMAX; dMinIDs.pc = KMAX; dMinIDs.ld = dMinIDs.pc;
-
-//    cl::Context& context = OclContextHolder::context;
-//    cl::CommandQueue& queue = OclContextHolder::queue;
-
-//    int byte_size = dNNdists.pr * dNNdists.pc * sizeof(real);
-//    cl_int err;
-
-//    dNNdists.mat = cl::Buffer(context, CL_MEM_READ_WRITE,
-//                              byte_size, 0, &err);
-//    checkErr(err);
-
-//    byte_size = dMinIDs.pr * dMinIDs.pc * sizeof(unint);
-
-//    dMinIDs.mat = cl::Buffer(context, CL_MEM_READ_WRITE,
-//                             byte_size, 0, &err);
-//    checkErr(err);
 
     meanshiftPlanKNNWrap(dq, dqMap, dx, dxMap, dcP, windows, outputMeans,
                          outputMeansNums, newWindows, maxPointsNum, compLength);
 
-//    byte_size = dq.r * KMAX*sizeof(unint);
-
-//    err = queue.enqueueReadBuffer(dMinIDs.mat, CL_TRUE,
-//                                  0, byte_size, NNs.mat);
-//    checkErr(err);
-
-//    byte_size = dq.r*KMAX*sizeof(real);
-
-//    err = queue.enqueueReadBuffer(dNNdists.mat, CL_TRUE,
-//                                  0, byte_size, NNdists.mat);
-//    checkErr(err);
 }
 
 

@@ -20,8 +20,9 @@ void buildRBC(const matrix x,
 void kqueryRBC(const matrix q, const ocl_rbcStruct rbcS,
                intMatrix NNs, matrix NNdists);
 
-void meanshiftKQueryRBC(const matrix q, const ocl_rbcStruct rbcS,
-                        cl::Buffer& pilots, intMatrix NNs, matrix NNdists);
+void meanshiftKQueryRBC(const matrix input, const ocl_rbcStruct rbcS,
+                        ocl_matrix output_means, const cl::Buffer &pilots,
+                        cl::Buffer& newPilots, int maxPointsNum);
 
 void computePilots(const matrix q, const cl::Buffer &repsPilots,
                    const ocl_rbcStruct& rbcS, cl::Buffer &pilots);
@@ -56,6 +57,14 @@ void freeCompPlan(ocl_compPlan*);
 void computeKNNs(const ocl_matrix&, const ocl_intMatrix&,
                  const ocl_matrix&, const cl::Buffer&,
                  const ocl_compPlan&, intMatrix, matrix, unint);
+
+
+void meanshiftComputeKNNs(const ocl_matrix& dx, const ocl_intMatrix& dxMap,
+                          const ocl_matrix& dq, const cl::Buffer& dqMap,
+                          const ocl_compPlan& dcP,
+                          cl::Buffer windows, cl::Buffer outputMeans,
+                          cl::Buffer outputMeansNums, cl::Buffer newWindows,
+                          int maxPointsNum, unint compLength);
 
 void setupReps(matrix,ocl_rbcStruct*,unint);
 

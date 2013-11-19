@@ -1096,8 +1096,8 @@ __kernel void meanshiftPlanKNNKernel(__global const real* Q_mat,
                             unint cP_ld,
                             unint qStartPos,
                             __global const real* windows,
-                            __global real* outputMeans,
-                            __global unint* outputMeansNums,
+                            __global real* selectedPoints,
+                            __global unint* selectedPointsNums,
                             __global real* newWindows,
                             int maxPointsNum)
 {
@@ -1208,7 +1208,7 @@ __kernel void meanshiftPlanKNNKernel(__global const real* Q_mat,
             int colIdx = global_count[offQ] + offX;
 
             if(colIdx < maxPointsNum)
-                outputMeans[baseIdx + colIdx] = valid_indices[offQ][offX];
+                selectedPoints[baseIdx + colIdx] = valid_indices[offQ][offX];
         }
 
         if(offX == 0 && queryPointIdx != DUMMY_IDX)
@@ -1237,7 +1237,7 @@ __kernel void meanshiftPlanKNNKernel(__global const real* Q_mat,
     /** writing total numbers of elements which satisfy given condition */
     if(offQ == 0 && queryPointIdx != DUMMY_IDX)
     {
-        outputMeansNums[queryPointIdx + offX] = global_count[offX];
+        selectedPointsNums[queryPointIdx + offX] = global_count[offX];
     }
 
 
@@ -1254,5 +1254,50 @@ __kernel void meanshiftPlanKNNKernel(__global const real* Q_mat,
 //        dMinIDs_mat[out_idx + 16] = idNN[offQ][offX + 16];
 
 //    }
+}
+
+
+__kernel void meanshiftMeanKernel(__global const real* X_mat,
+                                  unint X_r,
+                                  unint X_c,
+                                  unint X_pr,
+                                  unint X_pc,
+                                  unint X_ld,
+                                  __global real* Y_mat,
+                                  unint Y_r,
+                                  unint Y_c,
+                                  unint Y_pr,
+                                  unint Y_pc,
+                                  unint Y_ld,
+                                  __global const unint* selectedPoints,
+                                  __global const unint* selectedPointsNums,
+                                  unint maxPointsNum)
+{
+    size_t local_id_x = get_local_id(0);
+    size_t local_id_y = get_local_id(1);
+
+    size_t global_id_x = get_global_id(0);
+    size_t global_id_y = get_global_id(1);
+
+    size_t block_id_x = get_group_id(0);
+    size_t block_id_y = get_group_id(1);
+
+    __local real localMean[BLOCK_SIZE][BLOCK_SIZE];
+
+    int numPoints = selectedPoints[global_id_y];
+
+    for(unint j = local_id_x; j < X_c; j += BLOCK_SIZE)
+    {
+        localMean[local_id_y][local_id_x] = 0;
+
+        for(unint i = 0; i < numPoints; ++i)
+        {
+            int idx = selectedPoints[maxPointsNum * global_id_y + i];
+            localMean[local_id_y][local_id_x] += X_mat[IDX(idx, j, X_ld)];
+        }
+
+        Y_mat[IDX(global_id_y, j, Y_ld)] = localMean[local_id_y][local_id_x]
+                                                                   / numPoints;
+    }
 }
 
