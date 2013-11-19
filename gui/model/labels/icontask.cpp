@@ -47,24 +47,12 @@ struct ComputeIconMasks {
 
 			QColor color = ctx.colors.at(label);
 
-			if(0==label) {
-				color = Qt::white;
-			}
-
-			// convert QColor to RGBA
-			QRgb qrgb = color.rgba();
-
-
-//			GGDBGM((format("label %1% color QRgb is r%2% g%3% b%4% a%5%")
-//					%label%qRed(qrgb)%qGreen(qrgb)%qBlue(qrgb)%qAlpha(qrgb))
-//				   <<endl);
-
 			// fill icon with solid color in ARGB format
-			cv::Vec4b argb(0, qRed(qrgb), qGreen(qrgb), qBlue(qrgb));
-
-
-
+			cv::Vec4b argb(0, color.red(), color.green(), color.blue());
 			cv::Mat4b icon = cv::Mat4b(mask.rows, mask.cols, argb);
+
+			/* now apply alpha channel. Note: this is better than OpenCV's
+			 * mask functionality as it preserves the antialiasing! */
 
 			cv::Mat1b zero = cv::Mat1b::zeros(mask.rows, mask.cols);
 
