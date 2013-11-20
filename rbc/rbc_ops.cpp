@@ -7,6 +7,8 @@
 
 #include<sys/time.h>
 #include<stdio.h>
+#include <iostream>
+#include <cassert>
 //#include<cuda.h>
 #include "utils.h"
 #include "defs.h"
@@ -267,6 +269,48 @@ void meanshiftKQueryRBC(const matrix input, const ocl_rbcStruct rbcS,
     meanshiftComputeKNNs(rbcS.dx, rbcS.dxMap, dq, dqMap, dcP, pilots,
                          selectedPoints, selectedPointsNum, newPilots,
                          maxPointsNum, compLength);
+
+    ocl_matrix output;
+    output.r = input.r;
+    output.c = input.c;
+    output.pr = input.pr;
+    output.pc = input.pc;
+    output.ld = input.ld;
+
+    byte_size = output.pr * output.pc * sizeof(real);
+
+    output.mat = cl::Buffer(context, CL_MEM_READ_WRITE, byte_size, 0, &err);
+    checkErr(err);
+
+    meanshiftMeanWrap(dq, selectedPoints, selectedPointsNum, maxPointsNum, output);
+
+//dbg
+
+    byte_size = sizeof(unint) * input.pr;
+
+    unint* selectedNumPointsHost = new unint[input.pr];
+
+    err = queue.enqueueReadBuffer(selectedPointsNum, CL_TRUE, 0,
+                                  byte_size, selectedNumPointsHost, 0, 0);
+    checkErr(err);
+
+    for(int i = 0; i < input.pr; ++i)
+    {
+        if(i < 20)
+            std::cout << "max num points: "
+                      << selectedNumPointsHost[i] << std::endl;
+
+        if(selectedNumPointsHost[i] < 0 || selectedNumPointsHost[i] > maxPointsNum)
+        {
+            std::cout << "max num points[" << i << "]: "
+                      << selectedNumPointsHost[i] << std::endl;
+        }
+    }
+
+
+    delete selectedNumPointsHost;
+
+
     free(qMap);
     freeCompPlan(&dcP);
     free(cM.mat);

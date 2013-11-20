@@ -28,7 +28,8 @@ cl::Kernel OclContextHolder::planKNNKernel;
 cl::Kernel OclContextHolder::nnKernel;
 cl::Kernel OclContextHolder::nn32Kernel;
 cl::Kernel OclContextHolder::bindPilotsKernel;
-
+cl::Kernel OclContextHolder::meanshiftPlanKNNKernel;
+cl::Kernel OclContextHolder::meanshiftMeanKernel;
 
 extern const char* rbc;
 
@@ -139,6 +140,8 @@ void OclContextHolder::oclInit()
     nnKernel = cl::Kernel(program, "nnKernel");
     nn32Kernel = cl::Kernel(program, "nn32Kernel");
     bindPilotsKernel = cl::Kernel(program, "bindPilotsKernel");
+    meanshiftPlanKNNKernel = cl::Kernel(program, "meanshiftPlanKNNKernel");
+    meanshiftMeanKernel = cl::Kernel(program, "meanshiftMeanKernel");
 }
 
 

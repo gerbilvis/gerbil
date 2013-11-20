@@ -1099,7 +1099,7 @@ __kernel void meanshiftPlanKNNKernel(__global const real* Q_mat,
                             __global real* selectedPoints,
                             __global unint* selectedPointsNums,
                             __global real* newWindows,
-                            int maxPointsNum)
+                            unint maxPointsNum)
 {
 
     size_t threadIdx_x = get_local_id(0);
@@ -1161,6 +1161,8 @@ __kernel void meanshiftPlanKNNKernel(__global const real* Q_mat,
 
         unint databasePointIdx = xMap_mat[IDX(xG, xB + offQ, xMap_ld)];
         min_windows[offQ][offX] = FLT_MAX;
+
+        local_count[offX] = 0; /** reset locac counts */
 
         /** iterate over cols to compute distances */
         for(cB = 0; cB < X_pc; cB += BLOCK_SIZE)
@@ -1225,20 +1227,26 @@ __kernel void meanshiftPlanKNNKernel(__global const real* Q_mat,
         barrier(CLK_LOCAL_MEM_FENCE);
 
         /** add local sums to global indexes */
-        if(offQ == 0)
+        if(offX == 0)
         {
-            global_count[offX] += local_count[offX];
-            local_count[offX] = 0; /** reset locac counts */
+            global_count[offQ] += local_count[offQ];
+
         }
 
         barrier(CLK_LOCAL_MEM_FENCE);
     }
 
     /** writing total numbers of elements which satisfy given condition */
-    if(offQ == 0 && queryPointIdx != DUMMY_IDX)
+    if(offX == 0 && queryPointIdx != DUMMY_IDX)
     {
-        selectedPointsNums[queryPointIdx + offX] = global_count[offX];
+        selectedPointsNums[queryPointIdx] = min(global_count[offQ],
+                                                       maxPointsNum);
     }
+   // else if(offQ == 0)
+  // {
+   //     selectedPointsNums[queryPointIdx + offX] = 0;
+   // }
+
 
 
 //    if(qMap[qB + offQ] != DUMMY_IDX)
@@ -1293,11 +1301,12 @@ __kernel void meanshiftMeanKernel(__global const real* X_mat,
         for(unint i = 0; i < numPoints; ++i)
         {
             int idx = selectedPoints[maxPointsNum * global_id_y + i];
-            localMean[local_id_y][local_id_x] += X_mat[IDX(idx, j, X_ld)];
+
+      //      localMean[local_id_y][local_id_x] += 5;//X_mat[IDX(idx, j, X_ld)];
         }
 
-        Y_mat[IDX(global_id_y, j, Y_ld)] = localMean[local_id_y][local_id_x]
-                                                                   / numPoints;
+//        Y_mat[IDX(global_id_y, j, Y_ld)] = localMean[local_id_y][local_id_x]
+//                                                                   / numPoints;
     }
 }
 

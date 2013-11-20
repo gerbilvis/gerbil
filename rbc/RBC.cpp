@@ -112,6 +112,11 @@ int RBC::execute()
                               PAD(numReps) * sizeof(real), 0, &err);
         checkErr(err);
 
+        cl::Buffer newRepsPilots(context, CL_MEM_READ_WRITE,
+                                 PAD(numReps) * sizeof(real), 0, &err);
+
+        checkErr(err);
+
         buildRBC(database, &rbcS, numReps, pointsPerRepresentative,
                  repsPilots, 512);
 
@@ -159,6 +164,13 @@ int RBC::execute()
         distsRBC.mat = (real*)calloc(sizeOfMat(distsRBC), sizeof(*distsRBC.mat));
 
         kqueryRBC(queries, rbcS, nnsRBC, distsRBC);*/
+
+        ocl_matrix output_means;
+
+        copyAndMove(&output_means, &database);
+
+        meanshiftKQueryRBC(database, rbcS, output_means,
+                           repsPilots, newRepsPilots, 1024);
 
 
         free(database.mat);

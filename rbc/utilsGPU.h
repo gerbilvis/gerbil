@@ -53,6 +53,8 @@ public:
     static cl::Kernel nnKernel;
     static cl::Kernel nn32Kernel;
     static cl::Kernel bindPilotsKernel;
+    static cl::Kernel meanshiftPlanKNNKernel;
+    static cl::Kernel meanshiftMeanKernel;
 
     static void oclInit();
 };

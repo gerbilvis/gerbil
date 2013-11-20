@@ -444,57 +444,80 @@ void meanshiftPlanKNNWrap(const ocl_matrix& dq, const cl::Buffer& dqMap,
         cl::NDRange global(BLOCK_SIZE, todo);
 
         cl::CommandQueue& queue = OclContextHolder::queue;
-        cl::Kernel& planKNNKernel = OclContextHolder::planKNNKernel;
+        cl::Kernel& meanshiftPlanKNNKernel
+                = OclContextHolder::meanshiftPlanKNNKernel;
 
-        planKNNKernel.setArg(0, dq.mat);
-        planKNNKernel.setArg(1, dq.r);
-        planKNNKernel.setArg(2, dq.c);
-        planKNNKernel.setArg(3, dq.pr);
-        planKNNKernel.setArg(4, dq.pc);
-        planKNNKernel.setArg(5, dq.ld);
-        planKNNKernel.setArg(6, dqMap);
-        planKNNKernel.setArg(7, dx.mat);
-        planKNNKernel.setArg(8, dx.r);
-        planKNNKernel.setArg(9, dx.c);
-        planKNNKernel.setArg(10, dx.pr);
-        planKNNKernel.setArg(11, dx.pc);
-        planKNNKernel.setArg(12, dx.ld);
-        planKNNKernel.setArg(13, dxMap.mat);
-        planKNNKernel.setArg(14, dxMap.r);
-        planKNNKernel.setArg(15, dxMap.c);
-        planKNNKernel.setArg(16, dxMap.pr);
-        planKNNKernel.setArg(17, dxMap.pc);
-        planKNNKernel.setArg(18, dxMap.ld);
-//        planKNNKernel.setArg(19, dMins.mat);
-//        planKNNKernel.setArg(20, dMins.r);
-//        planKNNKernel.setArg(21, dMins.c);
-//        planKNNKernel.setArg(22, dMins.pr);
-//        planKNNKernel.setArg(23, dMins.pc);
-//        planKNNKernel.setArg(24, dMins.ld);
-//        planKNNKernel.setArg(25, dMinIDs.mat);
-//        planKNNKernel.setArg(26, dMinIDs.r);
-//        planKNNKernel.setArg(27, dMinIDs.c);
-//        planKNNKernel.setArg(28, dMinIDs.pr);
-//        planKNNKernel.setArg(29, dMinIDs.pc);
-//        planKNNKernel.setArg(30, dMinIDs.ld);
-        planKNNKernel.setArg(19, dcP.numGroups);
-        planKNNKernel.setArg(20, dcP.groupCountX);
-        planKNNKernel.setArg(21, dcP.qToQGroup);
-        planKNNKernel.setArg(22, dcP.qGroupToXGroup);
-        planKNNKernel.setArg(23, dcP.ld);
-        planKNNKernel.setArg(24, numDone);
-        planKNNKernel.setArg(25, windows);
-        planKNNKernel.setArg(26, outputMeans);
-        planKNNKernel.setArg(27, outputMeansNum);
-        planKNNKernel.setArg(28, newWindows);
-        planKNNKernel.setArg(29, maxPointsNum);
+        meanshiftPlanKNNKernel.setArg(0, dq.mat);
+        meanshiftPlanKNNKernel.setArg(1, dq.r);
+        meanshiftPlanKNNKernel.setArg(2, dq.c);
+        meanshiftPlanKNNKernel.setArg(3, dq.pr);
+        meanshiftPlanKNNKernel.setArg(4, dq.pc);
+        meanshiftPlanKNNKernel.setArg(5, dq.ld);
+        meanshiftPlanKNNKernel.setArg(6, dqMap);
+        meanshiftPlanKNNKernel.setArg(7, dx.mat);
+        meanshiftPlanKNNKernel.setArg(8, dx.r);
+        meanshiftPlanKNNKernel.setArg(9, dx.c);
+        meanshiftPlanKNNKernel.setArg(10, dx.pr);
+        meanshiftPlanKNNKernel.setArg(11, dx.pc);
+        meanshiftPlanKNNKernel.setArg(12, dx.ld);
+        meanshiftPlanKNNKernel.setArg(13, dxMap.mat);
+        meanshiftPlanKNNKernel.setArg(14, dxMap.r);
+        meanshiftPlanKNNKernel.setArg(15, dxMap.c);
+        meanshiftPlanKNNKernel.setArg(16, dxMap.pr);
+        meanshiftPlanKNNKernel.setArg(17, dxMap.pc);
+        meanshiftPlanKNNKernel.setArg(18, dxMap.ld);
+        meanshiftPlanKNNKernel.setArg(19, dcP.numGroups);
+        meanshiftPlanKNNKernel.setArg(20, dcP.groupCountX);
+        meanshiftPlanKNNKernel.setArg(21, dcP.qToQGroup);
+        meanshiftPlanKNNKernel.setArg(22, dcP.qGroupToXGroup);
+        meanshiftPlanKNNKernel.setArg(23, dcP.ld);
+        meanshiftPlanKNNKernel.setArg(24, numDone);
+        meanshiftPlanKNNKernel.setArg(25, windows);
+        meanshiftPlanKNNKernel.setArg(26, outputMeans);
+        meanshiftPlanKNNKernel.setArg(27, outputMeansNum);
+        meanshiftPlanKNNKernel.setArg(28, newWindows);
+        meanshiftPlanKNNKernel.setArg(29, maxPointsNum);
 
-        cl_int err = queue.enqueueNDRangeKernel(planKNNKernel, cl::NullRange,
+        cl_int err = queue.enqueueNDRangeKernel(meanshiftPlanKNNKernel, cl::NullRange,
                                                 global, local);
         checkErr(err);
 
         numDone += todo;
     }
+}
+
+void meanshiftMeanWrap(const ocl_matrix& input,
+                       const cl::Buffer& selectedPoints,
+                       const cl::Buffer& selectedPointsNum,
+                       unint maxPointsNum,
+                       ocl_matrix& output)
+{
+
+    cl::NDRange local(BLOCK_SIZE, BLOCK_SIZE);
+    cl::NDRange global(BLOCK_SIZE, input.pr);
+
+    cl::CommandQueue& queue = OclContextHolder::queue;
+    cl::Kernel& meanshiftMeanKernel = OclContextHolder::meanshiftMeanKernel;
+
+    meanshiftMeanKernel.setArg(0, input.mat);
+    meanshiftMeanKernel.setArg(1, input.r);
+    meanshiftMeanKernel.setArg(2, input.c);
+    meanshiftMeanKernel.setArg(3, input.pr);
+    meanshiftMeanKernel.setArg(4, input.pc);
+    meanshiftMeanKernel.setArg(5, input.ld);
+    meanshiftMeanKernel.setArg(6, output.mat);
+    meanshiftMeanKernel.setArg(7, output.r);
+    meanshiftMeanKernel.setArg(8, output.c);
+    meanshiftMeanKernel.setArg(9, output.pr);
+    meanshiftMeanKernel.setArg(10, output.pc);
+    meanshiftMeanKernel.setArg(11, output.ld);
+    meanshiftMeanKernel.setArg(12, selectedPoints);
+    meanshiftMeanKernel.setArg(13, selectedPointsNum);
+    meanshiftMeanKernel.setArg(14, maxPointsNum);
+
+    cl_int err = queue.enqueueNDRangeKernel(meanshiftMeanKernel, cl::NullRange,
+                                            global, local);
+    checkErr(err);
 }
 
 
