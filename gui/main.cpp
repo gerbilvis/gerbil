@@ -6,10 +6,11 @@
 #include <opencv2/imgproc/imgproc.hpp>
 #include <opencv2/highgui/highgui.hpp>
 
+#include <QApplication>
+#include <QIcon>
 #include <QGLFormat>
 #include <QGLFramebufferObject>
 #include <QMessageBox>
-#include <QApplication>
 #include <QFileDialog>
 #include <QPushButton>
 
@@ -264,6 +265,11 @@ int main(int argc, char **argv)
 {
 	// start qt before we try showing dialogs or use QGLFormat
 	QApplication app(argc, argv);
+
+	// setup our custom icon theme if there is no system theme (OS X, Windows)
+	if (QIcon::themeName().isEmpty())
+		QIcon::setThemeName("Gerbil");
+
 	init_opencv();
 	init_cuda();
 	if (!test_compatibility()) {
