@@ -82,7 +82,10 @@ int old_main(int argc, char**argv){
 
         //This finds the 32-NNs; if you are only interested in the 1-NN, use queryRBC(..) instead
         gettimeofday( &tvB, NULL );
-        kqueryRBC( q, rbcS, nnsRBC, distsRBC );
+       // kqueryRBC( q, rbcS, nnsRBC, distsRBC );
+
+        simpleKqueryRBC(q, rbcS, nnsRBC, distsRBC);
+
         gettimeofday( &tvE, NULL );
         printf( "\t.. query time for krbc = %6.4f \n", timeDiff(tvB,tvE) );
 

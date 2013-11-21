@@ -886,6 +886,150 @@ __kernel void planKNNKernel(__global const real* Q_mat,
     }
 }
 
+__kernel void simplePlanKNNKernel(__global const real* Q_mat,
+                            unint Q_r,
+                            unint Q_c,
+                            unint Q_pr,
+                            unint Q_pc,
+                            unint Q_ld,
+                            //__global const unint* qMap,
+                            __global const real* X_mat,
+                            unint X_r,
+                            unint X_c,
+                            unint X_pr,
+                            unint X_pc,
+                            unint X_ld,
+                            __global const unint* xMap_mat,
+                            unint xMap_r,
+                            unint xMap_c,
+                            unint xMap_pr,
+                            unint xMap_pc,
+                            unint xMap_ld,
+                            __global real* dMins_mat,
+                            unint dMins_r,
+                            unint dMins_c,
+                            unint dMins_pr,
+                            unint dMins_pc,
+                            unint dMins_ld,
+                            __global unint* dMinIDs_mat,
+                            unint dMinIDs_r,
+                            unint dMinIDs_c,
+                            unint dMinIDs_pr,
+                            unint dMinIDs_pc,
+                            unint dMinIDs_ld,
+//                            __global const unint* cP_numGroups,
+//                            __global const unint* cP_groupCountX,
+//                            __global const unint* cP_qToQGroup,
+//                            __global const unint* cP_qGroupToXGroup,
+//                            unint cP_ld,
+                            __global const unint* repsIDs,
+                            unint qStartPos)
+{
+
+    size_t threadIdx_x = get_local_id(0);
+    size_t threadIdx_y = get_local_id(1);
+
+    size_t blockIdx_x = get_group_id(0);
+    size_t blockIdx_y = get_group_id(1);
+
+    unint qB = qStartPos + blockIdx_y * BLOCK_SIZE;  //indexes Q
+    unint xB; //X (DB) Block;
+   // unint cB; //column Block
+    unint offQ = threadIdx_y; //the offset of qPos in this block
+    unint offX = threadIdx_x; //ditto for x
+
+    __local real dNN[BLOCK_SIZE][KMAX + BLOCK_SIZE];
+    __local unint idNN[BLOCK_SIZE][KMAX + BLOCK_SIZE];
+
+    __local real Xs[BLOCK_SIZE][BLOCK_SIZE];
+    __local real Qs[BLOCK_SIZE][BLOCK_SIZE];
+
+    dNN[offQ][offX] = FLT_MAX;//MAX_REAL;
+    dNN[offQ][offX + 16] = FLT_MAX;//MAX_REAL;
+    idNN[offQ][offX] = DUMMY_IDX;
+    idNN[offQ][offX + 16] = DUMMY_IDX;
+
+    barrier(CLK_LOCAL_MEM_FENCE);
+
+    /** id of the nearest representative for every row */
+    unint repId = repsIDs[qB + offQ];
+
+    //DB group currently being examined
+    //unint xG = cP_qGroupToXGroup[IDX(g, i, cP_ld)];
+    //unint groupCount = cP_groupCountX[IDX(g, i, cP_ld)];
+
+    //unint groupIts = (groupCount + BLOCK_SIZE - 1) / BLOCK_SIZE;
+
+    //int indexesBaseIdx = (qB + offQ) * xMap_ld;
+
+    int queryBaseIndex = (qB + offQ) * Q_ld;
+
+    for(unint j = 0; j < xMap_r; j++) //iterate over elements of group
+    {
+        /** index from list attached to given representative */
+        int databaseBaseIndex = xMap_mat[IDX(repId, j, xMap_ld)] * X_ld;
+
+        real ans = 0;
+
+        /** iterate over cols to compute distances */
+        for(unint cB = 0; cB < X_pc; cB += BLOCK_SIZE)
+        {
+            //unint databaseIdx = IDX(xMap_mat[IDX(xG, xB + offQ, xMap_ld)],
+            //                        cB + offX, X_ld);
+
+            unint databaseIdx = databaseBaseIndex + cB + offX;
+            unint queryIdx = queryBaseIndex + cB + offX;
+
+            Xs[offX][offQ] = X_mat[databaseIdx];
+            Qs[offX][offQ] = Q_mat[queryIdx];
+
+            barrier(CLK_LOCAL_MEM_FENCE);
+
+            for(unint k = 0; k < BLOCK_SIZE; k++)
+                ans += DIST(Xs[k][offX], Qs[k][offQ]);
+
+            barrier(CLK_LOCAL_MEM_FENCE);
+        }
+
+        dNN[offQ][offX + 32] = ans;
+
+      //  idNN[offQ][offX + 32] = (xB + offX < groupCount)
+        //                ? xMap_mat[IDX(xG, xB + offX, xMap_ld)] : DUMMY_IDX;
+
+        idNN[offQ][offX + 32] = 0;//xMap_mat[IDX(repsIDs[qB + offX],
+                                    //        j /** BLOCK_SIZE + offX*/, xMap_ld)];
+
+        barrier(CLK_LOCAL_MEM_FENCE);
+
+        /** sorting the last 16 items of 48 */
+        sort16off(dNN, idNN);
+
+        barrier(CLK_LOCAL_MEM_FENCE);
+
+        /** merging the last 16 items with first 32 items into
+          * one sorted array of 48 items */
+        merge32x16(dNN, idNN);
+    }
+
+    barrier(CLK_LOCAL_MEM_FENCE);
+
+    //if(qMap[qB + offQ] != DUMMY_IDX)
+    {
+        int out_idx = IDX(qB + offQ, offX, dMins_ld);
+
+        dMins_mat[out_idx] = dNN[offQ][offX];
+        dMins_mat[out_idx + 16] = dNN[offQ][offX + 16];
+
+        out_idx = IDX(qB + offQ, offX, dMinIDs_ld);
+
+        dMinIDs_mat[out_idx] = idNN[offQ][offX];
+        dMinIDs_mat[out_idx + 16] = idNN[offQ][offX + 16];
+
+    }
+}
+
+
+
 //Computes the 32-NNs for each query in Q.  It is similar to nnKernel above, but maintains a
 //list of the 32 currently-closest points in the DB, instead of just the single NN.  After each
 //batch of 16 points is processed, it sorts these 16 points according to the distance from the

@@ -423,6 +423,69 @@ void planKNNWrap(const ocl_matrix& dq, const cl::Buffer& dqMap,
     }
 }
 
+/** simple version */
+void planKNNWrap(const ocl_matrix& dq,
+                 const ocl_matrix& dx, const ocl_intMatrix& dxMap,
+                 const cl::Buffer& repsIDs,
+                 ocl_matrix& dMins, ocl_intMatrix& dMinIDs)
+{
+    cl::NDRange local(BLOCK_SIZE, BLOCK_SIZE);
+    unint todo;
+    unint numDone = 0;
+
+    while(numDone < dq.pr)
+    {
+        todo = MIN((dq.pr-numDone), MAX_BS*BLOCK_SIZE);
+
+        //std::cout << "planKNN kernel todo: " << todo << std::endl;
+
+        cl::NDRange global(BLOCK_SIZE, todo);
+
+        cl::CommandQueue& queue = OclContextHolder::queue;
+        cl::Kernel& simplePlanKNNKernel = OclContextHolder::simplePlanKNNKernel;
+
+        simplePlanKNNKernel.setArg(0, dq.mat);
+        simplePlanKNNKernel.setArg(1, dq.r);
+        simplePlanKNNKernel.setArg(2, dq.c);
+        simplePlanKNNKernel.setArg(3, dq.pr);
+        simplePlanKNNKernel.setArg(4, dq.pc);
+        simplePlanKNNKernel.setArg(5, dq.ld);
+        simplePlanKNNKernel.setArg(6, dx.mat);
+        simplePlanKNNKernel.setArg(7, dx.r);
+        simplePlanKNNKernel.setArg(8, dx.c);
+        simplePlanKNNKernel.setArg(9, dx.pr);
+        simplePlanKNNKernel.setArg(10, dx.pc);
+        simplePlanKNNKernel.setArg(11, dx.ld);
+        simplePlanKNNKernel.setArg(12, dxMap.mat);
+        simplePlanKNNKernel.setArg(13, dxMap.r);
+        simplePlanKNNKernel.setArg(14, dxMap.c);
+        simplePlanKNNKernel.setArg(15, dxMap.pr);
+        simplePlanKNNKernel.setArg(16, dxMap.pc);
+        simplePlanKNNKernel.setArg(17, dxMap.ld);
+        simplePlanKNNKernel.setArg(18, dMins.mat);
+        simplePlanKNNKernel.setArg(19, dMins.r);
+        simplePlanKNNKernel.setArg(20, dMins.c);
+        simplePlanKNNKernel.setArg(21, dMins.pr);
+        simplePlanKNNKernel.setArg(22, dMins.pc);
+        simplePlanKNNKernel.setArg(23, dMins.ld);
+        simplePlanKNNKernel.setArg(24, dMinIDs.mat);
+        simplePlanKNNKernel.setArg(25, dMinIDs.r);
+        simplePlanKNNKernel.setArg(26, dMinIDs.c);
+        simplePlanKNNKernel.setArg(27, dMinIDs.pr);
+        simplePlanKNNKernel.setArg(28, dMinIDs.pc);
+        simplePlanKNNKernel.setArg(29, dMinIDs.ld);
+        simplePlanKNNKernel.setArg(30, repsIDs);
+        simplePlanKNNKernel.setArg(31, numDone);
+
+        cl_int err = queue.enqueueNDRangeKernel(simplePlanKNNKernel, cl::NullRange,
+                                                global, local);
+        checkErr(err);
+
+        numDone += todo;
+    }
+}
+
+
 
 void meanshiftPlanKNNWrap(const ocl_matrix& dq, const cl::Buffer& dqMap,
                  const ocl_matrix& dx, const ocl_intMatrix& dxMap,

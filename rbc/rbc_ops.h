@@ -20,6 +20,9 @@ void buildRBC(const matrix x,
 void kqueryRBC(const matrix q, const ocl_rbcStruct rbcS,
                intMatrix NNs, matrix NNdists);
 
+void simpleKqueryRBC(const matrix q, const ocl_rbcStruct rbcS,
+               intMatrix NNs, matrix NNdists);
+
 void meanshiftKQueryRBC(const matrix input, const ocl_rbcStruct rbcS,
                         ocl_matrix output_means, const cl::Buffer &pilots,
                         cl::Buffer& newPilots, int maxPointsNum);
@@ -31,6 +34,9 @@ void destroyRBC(ocl_rbcStruct*);
 void distSubMat(ocl_matrix&,ocl_matrix&,ocl_matrix&,unint,unint);
 
 void computeReps(const ocl_matrix&, const ocl_matrix&,unint*,real*);
+
+void computeReps(const ocl_matrix& dq, const ocl_matrix& dr,
+                 cl::Buffer& dMinIDs, cl::Buffer& dMins);
 
 void computeRepsNoHost(const ocl_matrix& dq, const ocl_matrix& dr,
                        cl::Buffer& indexes);
@@ -57,6 +63,11 @@ void freeCompPlan(ocl_compPlan*);
 void computeKNNs(const ocl_matrix&, const ocl_intMatrix&,
                  const ocl_matrix&, const cl::Buffer&,
                  const ocl_compPlan&, intMatrix, matrix, unint);
+
+/** simple version */
+void computeKNNs(const ocl_matrix& dx, const ocl_intMatrix& dxMap,
+                 const ocl_matrix& dq, const cl::Buffer& repIDs,
+                 intMatrix NNs, matrix NNdists);
 
 
 void meanshiftComputeKNNs(const ocl_matrix& dx, const ocl_intMatrix& dxMap,

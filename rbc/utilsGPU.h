@@ -5,7 +5,7 @@
 #ifndef UTILSGPU_H
 #define UTILSGPU_H
 
-//#define DEBUG_WRITE_TO_FILE
+#define DEBUG_WRITE_TO_FILE
 
 #include "defs.h"
 //#include<cuda.h>
@@ -55,6 +55,7 @@ public:
     static cl::Kernel bindPilotsKernel;
     static cl::Kernel meanshiftPlanKNNKernel;
     static cl::Kernel meanshiftMeanKernel;
+    static cl::Kernel simplePlanKNNKernel;
 
     static void oclInit();
 };

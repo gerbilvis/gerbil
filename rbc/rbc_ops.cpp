@@ -170,6 +170,44 @@ void kqueryRBC(const matrix q, const ocl_rbcStruct rbcS,
     free(groupCountQ);
 }
 
+void simpleKqueryRBC(const matrix q, const ocl_rbcStruct rbcS,
+               intMatrix NNs, matrix NNdists)
+{
+    unint m = q.r;
+    unint numReps = rbcS.dr.r;
+
+    ocl_matrix dq;
+    copyAndMove(&dq, &q);
+
+    cl::Context& context = OclContextHolder::context;
+    cl::CommandQueue& queue = OclContextHolder::queue;
+
+//    unint *repIDsQ;
+//    repIDsQ = (unint*)calloc(m, sizeof(*repIDsQ));
+//    real *distToRepsQ;
+//    distToRepsQ = (real*)calloc(m, sizeof(*distToRepsQ));
+
+    cl_int err;
+
+    int byte_size = q.pr * sizeof(unint);
+    cl::Buffer drepIDsQ(context, CL_MEM_READ_WRITE, byte_size, 0, &err);
+    checkErr(err);
+
+    byte_size = q.pr * sizeof(real);
+    cl::Buffer ddistToRepsQ(context, CL_MEM_READ_WRITE, byte_size, 0, &err);
+    checkErr(err);
+
+    computeReps(dq, rbcS.dr, drepIDsQ, ddistToRepsQ);
+
+    DBG_DEVICE_UINT_BUFF_WRITE(drepIDsQ, q.pr, "drepIDsQ.txt");
+
+    computeKNNs(rbcS.dx, rbcS.dxMap, dq, drepIDsQ, NNs, NNdists);
+
+//    free(repIDsQ);
+//    free(distToRepsQ);
+}
+
+
 void meanshiftKQueryRBC(const matrix input, const ocl_rbcStruct rbcS,
                         ocl_matrix output_means, const cl::Buffer &pilots,
                         cl::Buffer& newPilots, int maxPointsNum)
@@ -598,6 +636,14 @@ void computeReps(const ocl_matrix& dq, const ocl_matrix& dr,
     checkErr(err);
 }
 
+/** the same as above, directly on device memory */
+void computeReps(const ocl_matrix& dq, const ocl_matrix& dr,
+                 cl::Buffer& dMinIDs, cl::Buffer& dMins)
+{
+    nnWrap(dq, dr, dMins, dMinIDs);
+}
+
+
 
 void computeRepsNoHost(const ocl_matrix& dq, const ocl_matrix& dr,
                        cl::Buffer& indexes)
@@ -743,6 +789,53 @@ void computeKNNs(const ocl_matrix& dx, const ocl_intMatrix& dxMap,
     checkErr(err);
 
     planKNNWrap(dq, dqMap, dx, dxMap, dNNdists, dMinIDs, dcP, compLength);
+
+    byte_size = dq.r * KMAX*sizeof(unint);
+
+    err = queue.enqueueReadBuffer(dMinIDs.mat, CL_TRUE,
+                                  0, byte_size, NNs.mat);
+    checkErr(err);
+
+    byte_size = dq.r*KMAX*sizeof(real);
+
+    err = queue.enqueueReadBuffer(dNNdists.mat, CL_TRUE,
+                                  0, byte_size, NNdists.mat);
+    checkErr(err);
+}
+
+/** simple version */
+void computeKNNs(const ocl_matrix& dx, const ocl_intMatrix& dxMap,
+                 const ocl_matrix& dq, const cl::Buffer& repIDs,
+                 intMatrix NNs, matrix NNdists)
+{
+    unint compLength = dq.pr;
+
+    ocl_matrix dNNdists;
+    ocl_intMatrix dMinIDs;
+    dNNdists.r = compLength; dNNdists.pr = compLength;
+    dNNdists.c = KMAX; dNNdists.pc = KMAX;
+    dNNdists.ld = dNNdists.pc;
+
+    dMinIDs.r = compLength; dMinIDs.pr = compLength;
+    dMinIDs.c = KMAX; dMinIDs.pc = KMAX; dMinIDs.ld = dMinIDs.pc;
+
+    cl::Context& context = OclContextHolder::context;
+    cl::CommandQueue& queue = OclContextHolder::queue;
+
+    int byte_size = dNNdists.pr * dNNdists.pc * sizeof(real);
+    cl_int err;
+
+    dNNdists.mat = cl::Buffer(context, CL_MEM_READ_WRITE,
+                              byte_size, 0, &err);
+    checkErr(err);
+
+    byte_size = dMinIDs.pr * dMinIDs.pc * sizeof(unint);
+
+    dMinIDs.mat = cl::Buffer(context, CL_MEM_READ_WRITE,
+                             byte_size, 0, &err);
+    checkErr(err);
+
+    planKNNWrap(dq, dx, dxMap, repIDs, dNNdists, dMinIDs);
 
     byte_size = dq.r * KMAX*sizeof(unint);
 

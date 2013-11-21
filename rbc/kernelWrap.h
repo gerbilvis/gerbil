@@ -28,6 +28,11 @@ void planKNNWrap(const ocl_matrix&,const cl::Buffer&,const ocl_matrix&,
                  const ocl_intMatrix&,ocl_matrix&,ocl_intMatrix&,
                  const ocl_compPlan&,unint);
 
+void planKNNWrap(const ocl_matrix& dq, const ocl_matrix& dx,
+                 const ocl_intMatrix& dxMap, const cl::Buffer& repsIDs,
+                 ocl_matrix& dMins, ocl_intMatrix& dMinIDs);
+
+
 void meanshiftPlanKNNWrap(const ocl_matrix& dq, const cl::Buffer& dqMap,
                           const ocl_matrix& dx, const ocl_intMatrix& dxMap,
                           const ocl_compPlan& dcP, const cl::Buffer& windows,
