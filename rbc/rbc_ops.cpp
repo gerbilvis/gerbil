@@ -81,7 +81,7 @@ void queryRBC(const matrix q, const rbcStruct rbcS, unint *NNs, real* NNdists){
 void kqueryRBC(const matrix q, const ocl_rbcStruct rbcS,
                intMatrix NNs, matrix NNdists)
 {
-    unint m = q.r;
+    unint queryPointsNum = q.r;
     unint numReps = rbcS.dr.r;
     unint compLength;
     ocl_compPlan dcP;
@@ -93,7 +93,7 @@ void kqueryRBC(const matrix q, const ocl_rbcStruct rbcS,
     DBG_DEVICE_MATRIX_WRITE(rbcS.dxMap, "rbcS_dxMap.txt");
     DBG_HOST_MATRIX_WRITE(q, "q.txt");
 
-    qMap = (unint*)calloc(PAD(m + (BLOCK_SIZE - 1) * PAD(numReps)),
+    qMap = (unint*)calloc(PAD(queryPointsNum + (BLOCK_SIZE - 1) * PAD(numReps)),
                           sizeof(*qMap));
 
     ocl_matrix dq;
@@ -107,9 +107,9 @@ void kqueryRBC(const matrix q, const ocl_rbcStruct rbcS,
     cM.mat = (char*)calloc(cM.pr * cM.pc, sizeof(*cM.mat));
 
     unint *repIDsQ;
-    repIDsQ = (unint*)calloc(m, sizeof(*repIDsQ));
+    repIDsQ = (unint*)calloc(queryPointsNum, sizeof(*repIDsQ));
     real *distToRepsQ;
-    distToRepsQ = (real*)calloc(m, sizeof(*distToRepsQ));
+    distToRepsQ = (real*)calloc(queryPointsNum, sizeof(*distToRepsQ));
     unint *groupCountQ;
     groupCountQ = (unint*)calloc(PAD(numReps), sizeof(*groupCountQ));
 
@@ -122,15 +122,15 @@ void kqueryRBC(const matrix q, const ocl_rbcStruct rbcS,
     */
     computeReps(dq, rbcS.dr, repIDsQ, distToRepsQ);
 
-    DBG_ARRAY_WRITE(repIDsQ, m, "repIDsQ.txt");
-    DBG_ARRAY_WRITE(distToRepsQ, m, "distToRepsQ.txt");
+    DBG_ARRAY_WRITE(repIDsQ, queryPointsNum, "repIDsQ.txt");
+    DBG_ARRAY_WRITE(distToRepsQ, queryPointsNum, "distToRepsQ.txt");
 
 
     /** How many points are assigned to each group?
     * m - numer of query points
     * groupCountQ - representative occurence histogram
     */
-    computeCounts(repIDsQ, m, groupCountQ);
+    computeCounts(repIDsQ, queryPointsNum, groupCountQ);
 
     /** Set up the mapping from groups to queries (qMap). */
     buildQMap(q, qMap, repIDsQ, numReps, &compLength);
@@ -170,47 +170,49 @@ void kqueryRBC(const matrix q, const ocl_rbcStruct rbcS,
     free(groupCountQ);
 }
 
-void simpleKqueryRBC(const matrix q, const ocl_rbcStruct rbcS,
-               intMatrix NNs, matrix NNdists)
-{
-    unint m = q.r;
-    unint numReps = rbcS.dr.r;
+//void simpleKqueryRBC(const matrix q, const ocl_rbcStruct rbcS,
+//               intMatrix NNs, matrix NNdists)
+//{
+//    unint m = q.r;
+//    unint numReps = rbcS.dr.r;
 
-    ocl_matrix dq;
-    copyAndMove(&dq, &q);
+//    ocl_matrix dq;
+//    copyAndMove(&dq, &q);
 
-    cl::Context& context = OclContextHolder::context;
-    cl::CommandQueue& queue = OclContextHolder::queue;
+//    cl::Context& context = OclContextHolder::context;
+//    cl::CommandQueue& queue = OclContextHolder::queue;
 
-//    unint *repIDsQ;
-//    repIDsQ = (unint*)calloc(m, sizeof(*repIDsQ));
-//    real *distToRepsQ;
-//    distToRepsQ = (real*)calloc(m, sizeof(*distToRepsQ));
+////    unint *repIDsQ;
+////    repIDsQ = (unint*)calloc(m, sizeof(*repIDsQ));
+////    real *distToRepsQ;
+////    distToRepsQ = (real*)calloc(m, sizeof(*distToRepsQ));
 
-    cl_int err;
+//    cl_int err;
 
-    int byte_size = q.pr * sizeof(unint);
-    cl::Buffer drepIDsQ(context, CL_MEM_READ_WRITE, byte_size, 0, &err);
-    checkErr(err);
+//    int byte_size = q.pr * sizeof(unint);
+//    cl::Buffer drepIDsQ(context, CL_MEM_READ_WRITE, byte_size, 0, &err);
+//    checkErr(err);
 
-    byte_size = q.pr * sizeof(real);
-    cl::Buffer ddistToRepsQ(context, CL_MEM_READ_WRITE, byte_size, 0, &err);
-    checkErr(err);
+//    byte_size = q.pr * sizeof(real);
+//    cl::Buffer ddistToRepsQ(context, CL_MEM_READ_WRITE, byte_size, 0, &err);
+//    checkErr(err);
 
-    computeReps(dq, rbcS.dr, drepIDsQ, ddistToRepsQ);
+//    computeReps(dq, rbcS.dr, drepIDsQ, ddistToRepsQ);
 
-    DBG_DEVICE_UINT_BUFF_WRITE(drepIDsQ, q.pr, "drepIDsQ.txt");
+//    DBG_DEVICE_UINT_BUFF_WRITE(drepIDsQ, q.pr, "drepIDsQ.txt");
 
-    computeKNNs(rbcS.dx, rbcS.dxMap, dq, drepIDsQ, NNs, NNdists);
+//    computeKNNs(rbcS.dx, rbcS.dxMap, dq, drepIDsQ, NNs, NNdists);
 
-//    free(repIDsQ);
-//    free(distToRepsQ);
-}
+////    free(repIDsQ);
+////    free(distToRepsQ);
+//}
 
 
 void meanshiftKQueryRBC(const matrix input, const ocl_rbcStruct rbcS,
-                        ocl_matrix output_means, const cl::Buffer &pilots,
-                        cl::Buffer& newPilots, int maxPointsNum)
+                        const cl::Buffer &pilots,
+                        cl::Buffer selectedPoints,
+                        cl::Buffer selectedPointsNum,
+                        int maxPointsNum)
 {
     unint m = input.r;
     unint numReps = rbcS.dr.r;
@@ -293,61 +295,9 @@ void meanshiftKQueryRBC(const matrix input, const ocl_rbcStruct rbcS,
 
 //    computeKNNs(rbcS.dx, rbcS.dxMap, dq, dqMap, dcP, NNs, NNdists, compLength);
 
-    byte_size = sizeof(unint) * input.pr * maxPointsNum;
-
-    cl::Buffer selectedPoints(context, CL_MEM_READ_WRITE, byte_size, 0, &err);
-    checkErr(err);
-
-    byte_size = sizeof(unint) * input.pr;
-
-    cl::Buffer selectedPointsNum(context, CL_MEM_READ_WRITE,
-                                 byte_size, 0, &err);
-    checkErr(err);
-
     meanshiftComputeKNNs(rbcS.dx, rbcS.dxMap, dq, dqMap, dcP, pilots,
-                         selectedPoints, selectedPointsNum, newPilots,
+                         selectedPoints, selectedPointsNum,
                          maxPointsNum, compLength);
-
-    ocl_matrix output;
-    output.r = input.r;
-    output.c = input.c;
-    output.pr = input.pr;
-    output.pc = input.pc;
-    output.ld = input.ld;
-
-    byte_size = output.pr * output.pc * sizeof(real);
-
-    output.mat = cl::Buffer(context, CL_MEM_READ_WRITE, byte_size, 0, &err);
-    checkErr(err);
-
-    meanshiftMeanWrap(dq, selectedPoints, selectedPointsNum, maxPointsNum, output);
-
-//dbg
-
-    byte_size = sizeof(unint) * input.pr;
-
-    unint* selectedNumPointsHost = new unint[input.pr];
-
-    err = queue.enqueueReadBuffer(selectedPointsNum, CL_TRUE, 0,
-                                  byte_size, selectedNumPointsHost, 0, 0);
-    checkErr(err);
-
-    for(int i = 0; i < input.pr; ++i)
-    {
-        if(i < 20)
-            std::cout << "max num points: "
-                      << selectedNumPointsHost[i] << std::endl;
-
-        if(selectedNumPointsHost[i] < 0 || selectedNumPointsHost[i] > maxPointsNum)
-        {
-            std::cout << "max num points[" << i << "]: "
-                      << selectedNumPointsHost[i] << std::endl;
-        }
-    }
-
-
-    delete selectedNumPointsHost;
-
 
     free(qMap);
     freeCompPlan(&dcP);
@@ -672,44 +622,41 @@ void computeRadii(unint *repIDs, real *distToReps, real *radii, unint n, unint n
 }
 
 
-//Assumes groupCount is initialized to 0s
-void computeCounts(unint *repIDs, unint n, unint *groupCount){
-  unint i;
-  
-  for(i=0;i<n;i++)
-    groupCount[repIDs[i]]++;
+/** Assumes groupCount is initialized to 0s */
+void computeCounts(unint *repIDs, unint queryPointsNum, unint *groupCount)
+{
+    for(unint i = 0; i < queryPointsNum; i++)
+        groupCount[repIDs[i]]++;
 }
 
 
 void buildQMap(matrix q, unint *qMap, unint *repIDs,
                unint numReps, unint *compLength)
 {
-    unint n=q.r;
-    unint i;
-    unint *gS; //groupSize
+    unint numQueries = q.r;
 
-    gS = (unint*)calloc(numReps+1,sizeof(*gS));
+    unint* gS = (unint*)calloc(numReps + 1, sizeof(*gS));
 
     /** histogram */
-    for(i = 0; i < n; i++)
+    for(unint i = 0; i < numQueries ; i++)
         gS[repIDs[i]+1]++;
 
     /** padding */
-    for(i = 0; i < numReps + 1; i++)
+    for(unint i = 0; i < numReps + 1; i++)
         gS[i] = PAD(gS[i]);
 
     /** exclusive prefix sum */
-    for(i = 1; i < numReps + 1; i++)
+    for(unint i = 1; i < numReps + 1; i++)
         gS[i] = gS[i - 1] + gS[i];
 
     /** number of queries after padding */
     *compLength = gS[numReps];
 
     /** map initialization */
-    for(i = 0; i < (*compLength); i++)
+    for(unint i = 0; i < (*compLength); i++)
         qMap[i] = DUMMY_IDX;
 
-    for(i = 0; i < n; i++)
+    for(unint i = 0; i < numQueries ; i++)
     {
         qMap[gS[repIDs[i]]] = i;
         gS[repIDs[i]]++;
@@ -803,64 +750,64 @@ void computeKNNs(const ocl_matrix& dx, const ocl_intMatrix& dxMap,
     checkErr(err);
 }
 
-/** simple version */
-void computeKNNs(const ocl_matrix& dx, const ocl_intMatrix& dxMap,
-                 const ocl_matrix& dq, const cl::Buffer& repIDs,
-                 intMatrix NNs, matrix NNdists)
-{
-    unint compLength = dq.pr;
+///** simple version */
+//void computeKNNs(const ocl_matrix& dx, const ocl_intMatrix& dxMap,
+//                 const ocl_matrix& dq, const cl::Buffer& repIDs,
+//                 intMatrix NNs, matrix NNdists)
+//{
+//    unint compLength = dq.pr;
 
-    ocl_matrix dNNdists;
-    ocl_intMatrix dMinIDs;
-    dNNdists.r = compLength; dNNdists.pr = compLength;
-    dNNdists.c = KMAX; dNNdists.pc = KMAX;
-    dNNdists.ld = dNNdists.pc;
+//    ocl_matrix dNNdists;
+//    ocl_intMatrix dMinIDs;
+//    dNNdists.r = compLength; dNNdists.pr = compLength;
+//    dNNdists.c = KMAX; dNNdists.pc = KMAX;
+//    dNNdists.ld = dNNdists.pc;
 
-    dMinIDs.r = compLength; dMinIDs.pr = compLength;
-    dMinIDs.c = KMAX; dMinIDs.pc = KMAX; dMinIDs.ld = dMinIDs.pc;
+//    dMinIDs.r = compLength; dMinIDs.pr = compLength;
+//    dMinIDs.c = KMAX; dMinIDs.pc = KMAX; dMinIDs.ld = dMinIDs.pc;
 
-    cl::Context& context = OclContextHolder::context;
-    cl::CommandQueue& queue = OclContextHolder::queue;
+//    cl::Context& context = OclContextHolder::context;
+//    cl::CommandQueue& queue = OclContextHolder::queue;
 
-    int byte_size = dNNdists.pr * dNNdists.pc * sizeof(real);
-    cl_int err;
+//    int byte_size = dNNdists.pr * dNNdists.pc * sizeof(real);
+//    cl_int err;
 
-    dNNdists.mat = cl::Buffer(context, CL_MEM_READ_WRITE,
-                              byte_size, 0, &err);
-    checkErr(err);
+//    dNNdists.mat = cl::Buffer(context, CL_MEM_READ_WRITE,
+//                              byte_size, 0, &err);
+//    checkErr(err);
 
-    byte_size = dMinIDs.pr * dMinIDs.pc * sizeof(unint);
+//    byte_size = dMinIDs.pr * dMinIDs.pc * sizeof(unint);
 
-    dMinIDs.mat = cl::Buffer(context, CL_MEM_READ_WRITE,
-                             byte_size, 0, &err);
-    checkErr(err);
+//    dMinIDs.mat = cl::Buffer(context, CL_MEM_READ_WRITE,
+//                             byte_size, 0, &err);
+//    checkErr(err);
 
-    planKNNWrap(dq, dx, dxMap, repIDs, dNNdists, dMinIDs);
+//    planKNNWrap(dq, dx, dxMap, repIDs, dNNdists, dMinIDs);
 
-    byte_size = dq.r * KMAX*sizeof(unint);
+//    byte_size = dq.r * KMAX*sizeof(unint);
 
-    err = queue.enqueueReadBuffer(dMinIDs.mat, CL_TRUE,
-                                  0, byte_size, NNs.mat);
-    checkErr(err);
+//    err = queue.enqueueReadBuffer(dMinIDs.mat, CL_TRUE,
+//                                  0, byte_size, NNs.mat);
+//    checkErr(err);
 
-    byte_size = dq.r*KMAX*sizeof(real);
+//    byte_size = dq.r*KMAX*sizeof(real);
 
-    err = queue.enqueueReadBuffer(dNNdists.mat, CL_TRUE,
-                                  0, byte_size, NNdists.mat);
-    checkErr(err);
-}
+//    err = queue.enqueueReadBuffer(dNNdists.mat, CL_TRUE,
+//                                  0, byte_size, NNdists.mat);
+//    checkErr(err);
+//}
 
 
 void meanshiftComputeKNNs(const ocl_matrix& dx, const ocl_intMatrix& dxMap,
                           const ocl_matrix& dq, const cl::Buffer& dqMap,
                           const ocl_compPlan& dcP,
-                          cl::Buffer windows, cl::Buffer outputMeans,
-                          cl::Buffer outputMeansNums, cl::Buffer newWindows,
+                          cl::Buffer windows, cl::Buffer selectedPoints,
+                          cl::Buffer selectedPointsNums,
                           int maxPointsNum, unint compLength)
 {
 
-    meanshiftPlanKNNWrap(dq, dqMap, dx, dxMap, dcP, windows, outputMeans,
-                         outputMeansNums, newWindows, maxPointsNum, compLength);
+    meanshiftPlanKNNWrap(dq, dqMap, dx, dxMap, dcP, windows, selectedPoints,
+                         selectedPointsNums, maxPointsNum, compLength);
 
 }
 
@@ -915,14 +862,14 @@ void initCompPlan(ocl_compPlan *dcP, const charMatrix cM,
             cP.numGroups[i] += cM.mat[IDX(i, j, cM.ld)];
         }
 
-        maxNumGroups = MAX(cP.numGroups[i], maxNumGroups);
+        maxNumGroups = std::max(cP.numGroups[i], maxNumGroups);
     }
 
     cP.ld = maxNumGroups;
   
-    unint sQToQGroup;
+    unint sQToQGroup = 0;
 
-    for(i = 0, sQToQGroup = 0; i < numReps; i++)
+    for(i = 0; i < numReps; i++)
     {
         sQToQGroup += PAD(groupCountQ[i]);
     }

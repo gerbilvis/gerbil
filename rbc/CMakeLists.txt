@@ -36,6 +36,7 @@ vole_compile_library("RBC"
                      "utils"
                      "utilsGPU"
                      "supportRoutines"
+                     "meanshift"
                      "opencl/kernels/rbc.cl"
                      "opencl/kernels")
 vole_add_module()
