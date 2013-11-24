@@ -10,9 +10,9 @@ void meanshift_rbc(matrix database, int numReps = 0,
                    int pointsPerRepresentative = 16*1024);
 
 void validate_pilots(matrix database, cl::Buffer pilots);
-void validate_query(matrix database, cl::Buffer selectedPoints,
+void validate_query_and_mean(matrix database, cl::Buffer selectedPoints,
                     cl::Buffer selectedPointsNum, cl::Buffer pilots,
-                    int maxQuerySize);
+                    int maxQuerySize, ocl_matrix means);
 
 
 #endif

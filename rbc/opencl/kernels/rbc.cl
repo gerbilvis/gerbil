@@ -819,6 +819,9 @@ __kernel void planKNNKernel(__global const real* Q_mat,
 
     barrier(CLK_LOCAL_MEM_FENCE);
 
+    printf("qB, g): %d, %d\n", qB, g);
+//    printf("numGroups: %d\n", numGroups);
+
     for(unint i = 0; i < numGroups; i++) //iterate over DB groups
     {
         //DB group currently being examined
@@ -826,6 +829,8 @@ __kernel void planKNNKernel(__global const real* Q_mat,
         unint groupCount = cP_groupCountX[IDX(g, i, cP_ld)];
 
         unint groupIts = (groupCount + BLOCK_SIZE - 1) / BLOCK_SIZE;
+
+        printf("groupIts: %d\n", groupIts);
 
         for(unint j = 0; j < groupIts; j++) //iterate over elements of group
         {
@@ -1314,13 +1319,18 @@ __kernel void meanshiftPlanKNNKernel(__global const real* Q_mat,
         /** at this point, distance is complete (ans) */
 
         /** load window */
-        real window = windows[databasePointIdx];
+        //real window = windows[databasePointIdx];
+        real window = xB + offX < groupCount
+                        ? windows[xMap_mat[IDX(xG, xB + offX, xMap_ld)]] : 0.f;
 
-        bool isOk = (xB + offX < groupCount) && (ans < window);
+        bool isOk = (ans < window) && (xB + offX < groupCount);
 
         if(isOk)
         {
             int idx = atomic_inc(local_count + offQ);
+          //  assert(idx < BLOCK_SIZE);
+          //  assert(xG < xMap_pr);
+          //  assert(xB + offX < xMap_pc);
             valid_indices[offQ][idx] = xMap_mat[IDX(xG, xB + offX, xMap_ld)];
         }
 
@@ -1340,9 +1350,9 @@ __kernel void meanshiftPlanKNNKernel(__global const real* Q_mat,
         barrier(CLK_LOCAL_MEM_FENCE);
 
         /** add local sums to global indexes */
-        if(offX == 0)
+        if(offQ == 0)
         {
-            global_count[offQ] += local_count[offQ];
+            global_count[offX] += local_count[offX];
 
         }
 
@@ -1355,26 +1365,6 @@ __kernel void meanshiftPlanKNNKernel(__global const real* Q_mat,
         selectedPointsNums[queryPointIdx] = min(global_count[offQ],
                                                        maxPointsNum);
     }
-   // else if(offQ == 0)
-  // {
-   //     selectedPointsNums[queryPointIdx + offX] = 0;
-   // }
-
-
-
-//    if(qMap[qB + offQ] != DUMMY_IDX)
-//    {
-//        int out_idx = IDX(qMap[qB + offQ], offX, dMins_ld);
-
-//        dMins_mat[out_idx] = dNN[offQ][offX];
-//        dMins_mat[out_idx + 16] = dNN[offQ][offX + 16];
-
-//        out_idx = IDX(qMap[qB + offQ], offX, dMinIDs_ld);
-
-//        dMinIDs_mat[out_idx] = idNN[offQ][offX];
-//        dMinIDs_mat[out_idx + 16] = idNN[offQ][offX + 16];
-
-//    }
 }
 
 
@@ -1405,21 +1395,26 @@ __kernel void meanshiftMeanKernel(__global const real* X_mat,
 
     __local real localMean[BLOCK_SIZE][BLOCK_SIZE];
 
-    int numPoints = selectedPoints[global_id_y];
+    int numPoints = selectedPointsNums[global_id_y];
+
+//    if(local_id_x == 0)
+//    {
+//        printf("numPoints: %d\n", numPoints);
+//    }
 
     for(unint j = local_id_x; j < X_c; j += BLOCK_SIZE)
     {
-        localMean[local_id_y][local_id_x] = 0;
+        localMean[local_id_y][local_id_x] = 0.f;
 
         for(unint i = 0; i < numPoints; ++i)
         {
             int idx = selectedPoints[maxPointsNum * global_id_y + i];
 
-      //      localMean[local_id_y][local_id_x] += 5;//X_mat[IDX(idx, j, X_ld)];
+            localMean[local_id_y][local_id_x] += X_mat[IDX(idx, j, X_ld)];
         }
 
-//        Y_mat[IDX(global_id_y, j, Y_ld)] = localMean[local_id_y][local_id_x]
-//                                                                   / numPoints;
+        Y_mat[IDX(global_id_y, j, Y_ld)] = localMean[local_id_y][local_id_x]
+                                                                   / numPoints;
     }
 }
 

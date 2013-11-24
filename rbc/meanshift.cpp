@@ -65,12 +65,11 @@ void meanshift_rbc(matrix database, int numReps, int pointsPerRepresentative)
                                  byte_size, 0, &err);
     checkErr(err);
 
+    std::cout << "calculating meanshift query" << std::endl;
+
     meanshiftKQueryRBC(database, rbcS, allPilots,
                        selectedPoints, selectedPointsNum,
                        maxQuerySize);
-
-    validate_query(database, selectedPoints, selectedPointsNum, allPilots,
-                   maxQuerySize);
 
     ocl_matrix database_ocl;
     copyAndMove(&database_ocl, &database);
@@ -87,8 +86,13 @@ void meanshift_rbc(matrix database, int numReps, int pointsPerRepresentative)
     output.mat = cl::Buffer(context, CL_MEM_READ_WRITE, byte_size, 0, &err);
     checkErr(err);
 
+    std::cout << "calculating meanshift mean" << std::endl;
+
     meanshiftMeanWrap(database_ocl, selectedPoints, selectedPointsNum,
                       maxQuerySize, output);
+
+    validate_query_and_mean(database, selectedPoints, selectedPointsNum, allPilots,
+                   maxQuerySize, output);
 }
 
 bool sort_function(real i, real j)
@@ -98,12 +102,14 @@ bool sort_function(real i, real j)
 
 void validate_pilots(matrix database, cl::Buffer pilots)
 {
+    cl::CommandQueue& queue = OclContextHolder::queue;
+
+    queue.finish();
+
     std::cout << "validating pilots..." << std::endl;
 
     int tests = 10;
     int db_size = database.r;
-
-    cl::CommandQueue& queue = OclContextHolder::queue;
 
     real* pilots_host = new real[db_size];
     real* distances = new real[db_size];
@@ -144,44 +150,68 @@ void validate_pilots(matrix database, cl::Buffer pilots)
 }
 
 
-void validate_query(matrix database, cl::Buffer selectedPoints,
+void validate_query_and_mean(matrix database, cl::Buffer selectedPoints,
                     cl::Buffer selectedPointsNum, cl::Buffer pilots,
-                    int maxQuerySize)
+                    int maxQuerySize, ocl_matrix means)
 {
+    cl::CommandQueue& queue = OclContextHolder::queue;
+    queue.finish();
+
     std::cout << "validating query..." << std::endl;
 
     int tests = 10;
     int db_size = database.r;
 
-    cl::CommandQueue& queue = OclContextHolder::queue;
-
     int selPointsSize = db_size * maxQuerySize;
+    int meansSize = means.pc * means.pr;
 
     unint* selectedPointsHost = new unint[selPointsSize];
     unint* selectedPointsNumHost = new unint[db_size];
     real* pilots_host = new real[db_size];
     real* distances = new real[db_size];
+    real* means_host = new real[meansSize];
+    real* mean = new real[database.c];
 
     cl_int err;
+
+    std::cout << "downloading selected points" << std::endl;
+    std::cout << (selPointsSize / (1024 * 1024) * sizeof(unint))
+              << " MB" << std::endl;
 
     err = queue.enqueueReadBuffer(selectedPoints, CL_TRUE, 0,
                                   selPointsSize * sizeof(unint),
                                   selectedPointsHost);
     checkErr(err);
 
+    std::cout << "downloading numbers of selected points" << std::endl;
+
     err = queue.enqueueReadBuffer(selectedPointsNum, CL_TRUE, 0,
                                   db_size * sizeof(unint),
                                   selectedPointsNumHost);
     checkErr(err);
 
+    std::cout << "downloading pilots";
+
     err = queue.enqueueReadBuffer(pilots, CL_TRUE, 0,
                                   db_size * sizeof(real), pilots_host);
+    checkErr(err);
+
+    std::cout << "downloading means";
+
+    err = queue.enqueueReadBuffer(means.mat, CL_TRUE, 0,
+                                  meansSize * sizeof(real), means_host);
     checkErr(err);
 
     for(int i = 0; i < tests; ++i)
     {
         int candidate = rand() % db_size;
 
+        std::fill(mean, mean + database.c, 0.f);
+
+        std::cout << "test: " << i << ", random candidate: "
+                  << candidate << std::endl;
+
+        /** calculating distances to given candidate */
         for(int j = 0; j < db_size; ++j)
         {
             real distance = 0.f;
@@ -197,24 +227,46 @@ void validate_query(matrix database, cl::Buffer selectedPoints,
             distances[j] = distance;
         }
 
-        //real threshold = pilots_host[candidate];
-
         std::cout << "host:" << std::endl;
 
         int counter = 0;
 
+        /** checking if distance satisfies inequality */
         for(int j = 0; j < db_size; ++j)
         {
-            real threshold = pilots_host[candidate];
+            real threshold = pilots_host[j];
 
             if(distances[j] < threshold)
             {
                 std::cout << j << " ";
                 counter++;
+
+                /** adding value to the mean */
+                for(int k = 0; k < database.c; ++k)
+                {
+                    mean[k] += database.mat[IDX(j, k, database.ld)];
+                }
             }
         }
         std::cout << std::endl;
-        std::cout << "num points: " << counter << std::endl;
+        std::cout << "num points host: " << counter << std::endl;
+        std::cout << "host sum:" << std::endl;
+
+        for(int j = 0; j < database.c; ++j)
+        {
+            std::cout << mean[j] << ", ";
+        }
+
+        std::cout << std::endl;
+
+        std::cout << "host mean:" << std::endl;
+
+        for(int j = 0; j < database.c; ++j)
+        {
+            std::cout << mean[j] / counter << ", ";
+        }
+
+        std::cout << std::endl;
 
         std::cout << "device:" << std::endl;
 
@@ -230,6 +282,16 @@ void validate_query(matrix database, cl::Buffer selectedPoints,
 
         std::cout << std::endl;
         std::cout << "num points device: " << deviceNum << std::endl;
+
+        std::cout << "device mean:" << std::endl;
+
+        for(int j = 0; j < database.c; ++j)
+        {
+            std::cout << means_host[candidate * means.ld + j] << ", ";
+        }
+
+        std::cout << std::endl;
+
         std::cout << std::endl;
 
         //std::sort(distances, distances + db_size, sort_function);
@@ -239,6 +301,7 @@ void validate_query(matrix database, cl::Buffer selectedPoints,
     delete[] selectedPointsNumHost;
     delete[] pilots_host;
     delete[] distances;
+    delete[] mean;
 }
 
 

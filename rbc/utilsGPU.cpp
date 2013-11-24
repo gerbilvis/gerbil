@@ -96,7 +96,7 @@ void OclContextHolder::oclInit()
 //    stream << " -DVECTOR_SIZE=" << neuron_size_rounded;
 
 //#ifdef DEBUG_MODE
-    stream << " -DDEBUG_MODE -Werror";
+//    stream << " -DDEBUG_MODE -Werror";
 //#endif
 
     cl::Program::Sources sources;

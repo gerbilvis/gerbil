@@ -55,7 +55,7 @@ int RBC::execute()
                               "-n", "1024",
                               "-m", "1024",
                               "-d", "16",
-                              "-r", "128",
+                              "-r", "256",
                               "-O", "output.txt"};
 
         return old_main(15, (char**)argv);
