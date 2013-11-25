@@ -109,9 +109,11 @@ Controller::Controller(const std::string &filename, bool limited_mode,
 	//GGDBGM("dimensions " << dimensions << endl);
 	cv::Rect roi = dimensions; // initial ROI is image size, except:
 	if (roi.area() > 262144) {
-		// image is bigger than 512x512, start with a smaller ROI
+		// image is bigger than 512x512, start with a smaller ROI in center
 		roi.width = std::min(roi.width, 512);
 		roi.height = std::min(roi.height, 512);
+		roi.x = 0.5*(dimensions.width - roi.width);
+		roi.y = 0.5*(dimensions.height - roi.height);
 	}
 
 	//GGDBGM("roi " << roi << endl);
