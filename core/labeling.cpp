@@ -111,16 +111,25 @@ void Labeling::read(const cv::Mat &src, bool binary)
 				}
 			}
 		} else { // rgb images
-			assert(src.channels() == 3 && bins == 256);
+			assert((src.channels() == 3 || src.channels() == 4)
+				   && bins == 256);
+			cv::Mat3b src3b;
+			if (src.channels() == 4) { // RGBA case (no sense, but they exist!)
+				// only take first three channels
+				src3b.create(src.rows, src.cols); // allocation mandatory!
+				int pairing[] = { 0,0, 1,1, 2,2 };
+				cv::mixChannels(&src, 1, &src3b, 1, pairing, 3);
+			} else {
+				src3b = src;
+			}
 
 			// calculate histogram of the image colors, stored in indices[b,g,r]
 			vector<vector<vector<int> > > indices
 					(bins, vector<vector<int> >(bins, vector<int>(bins, 0)));
-			for (int y = 0; y < src.rows; ++y) {
-				for (int x = 0; x < src.cols; ++x) {
-					const cv::Vec3b &v = src.at<cv::Vec3b>(y, x);
-					indices[v[0]][v[1]][v[2]]++;
-				}
+			cv::Mat3b::iterator its;
+			for (its = src3b.begin(); its != src3b.end(); ++its) {
+				const cv::Vec3b &v = *its;
+				indices[v[0]][v[1]][v[2]]++;
 			}
 
 			// find colors in the rgb image and add them as label colors
@@ -143,12 +152,12 @@ void Labeling::read(const cv::Mat &src, bool binary)
 			labelcount = index;
 
 			// assign the color indices to the label matrix
-			labels = cv::Mat1s(src.rows, src.cols);
-			for (int y = 0; y < src.rows; ++y) {
-				for (int x = 0; x < src.cols; ++x) {
-					const cv::Vec3b &v = src.at<cv::Vec3b>(y, x);
-					labels(y, x) = indices[v[0]][v[1]][v[2]];
-				}
+			labels = cv::Mat1s(src3b.rows, src3b.cols);
+			cv::Mat1s::iterator itl;
+			for (its = src3b.begin(), itl = labels.begin();
+				 its != src3b.end(); ++its, ++itl) {
+				const cv::Vec3b &v = *its;
+				*itl = indices[v[0]][v[1]][v[2]];
 			}
 			/* Special case: only one white label stored in RGB image (stupid).
 			   We don't want to use white color, it confuses the user. */
