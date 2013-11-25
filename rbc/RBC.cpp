@@ -88,7 +88,8 @@ int RBC::execute()
         matrix database;
         imgToMatrix(img, database);
 
-        meanshift_rbc(database);
+       // for(int i = 0; i < 20; ++i)
+            meanshift_rbc(database);
 
         free(database.mat);
     }

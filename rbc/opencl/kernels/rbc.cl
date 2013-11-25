@@ -819,7 +819,7 @@ __kernel void planKNNKernel(__global const real* Q_mat,
 
     barrier(CLK_LOCAL_MEM_FENCE);
 
-    printf("qB, g): %d, %d\n", qB, g);
+ //   printf("qB, g): %d, %d\n", qB, g);
 //    printf("numGroups: %d\n", numGroups);
 
     for(unint i = 0; i < numGroups; i++) //iterate over DB groups
@@ -1275,7 +1275,7 @@ __kernel void meanshiftPlanKNNKernel(__global const real* Q_mat,
     barrier(CLK_LOCAL_MEM_FENCE);
 
 
-    int i = 1; /** assumption: we have only one group to visit */
+    int i = 0; /** assumption: we have only one group to visit */
 
     //DB group currently being examined
     unint xG = cP_qGroupToXGroup[IDX(g, i, cP_ld)];
@@ -1297,6 +1297,9 @@ __kernel void meanshiftPlanKNNKernel(__global const real* Q_mat,
         /** iterate over cols to compute distances */
         for(cB = 0; cB < X_pc; cB += BLOCK_SIZE)
         {
+         //   assert(databasePointIdx < X_pr);
+       //     assert(cB + offX < X_pc);
+
             unint databaseElemIdx = IDX(databasePointIdx, cB + offX, X_ld);
 
             unint queryElemIdx = IDX(queryPointIdx, cB + offX, Q_ld);
@@ -1311,7 +1314,7 @@ __kernel void meanshiftPlanKNNKernel(__global const real* Q_mat,
 
             /** calculating partial distance */
             for(unint k = 0; k < BLOCK_SIZE; k++)
-                ans += DIST(Xs[k][offX], Qs[k][offQ]);
+               ans += DIST(Xs[k][offX], Qs[k][offQ]);
 
             barrier(CLK_LOCAL_MEM_FENCE);
         }
@@ -1353,7 +1356,6 @@ __kernel void meanshiftPlanKNNKernel(__global const real* Q_mat,
         if(offQ == 0)
         {
             global_count[offX] += local_count[offX];
-
         }
 
         barrier(CLK_LOCAL_MEM_FENCE);

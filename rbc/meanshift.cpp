@@ -159,7 +159,7 @@ void validate_query_and_mean(matrix database, cl::Buffer selectedPoints,
 
     std::cout << "validating query..." << std::endl;
 
-    int tests = 10;
+    int tests = 128*16;
     int db_size = database.r;
 
     int selPointsSize = db_size * maxQuerySize;
