@@ -73,7 +73,7 @@ public:
 		  // rect of the border around the transformed mask
 		  brect(drect.left()-.5*scale, drect.top()-.5*scale,
 				drect.width()+.5*scale, drect.height()+.5*scale)
-{
+	{
 		trafo(0,0) = scale;
 		trafo(1,1) = scale;
 		trafo(0,2) = dx;
@@ -101,7 +101,7 @@ public:
 
 			// transform mask into icon
 			cv::Mat1b masktrf = cv::Mat1b::zeros(iconSizecv);
-			cv::warpAffine(mask, masktrf, trafo, iconSizecv);
+			cv::warpAffine(mask, masktrf, trafo, iconSizecv, CV_INTER_NN);
 
 			if(tbb::task::self().is_cancelled()) {
 				//GGDBGM("aborted through tbb cancel." << endl);
@@ -134,11 +134,9 @@ public:
 			// convert the result to a QImage
 			QImage qimage = vole::Mat2QImage(icon);
 
-			// FIXME
-			// draw a border: temporary fix until the icon view does this
+			// draw a border (alternative: the icon view could do this)
 			QPainter p(&qimage);
 			p.setPen(color);
-			p.setRenderHint(QPainter::Antialiasing, true);
 			p.drawRect(brect);
 
 			ctx.icons[label] = qimage;
