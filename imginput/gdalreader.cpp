@@ -79,7 +79,7 @@ multi_img::ptr GdalReader::readFile()
 	// Read Dataset Metadata
 	// Starting with GDAL 1.10, use dataset->GetMetadata("ENVI"); for ENVI metadata...
 	// http://www.gdal.org/frmt_various.html -> ENVI
-	//std::cout << "Dataset description: " << dataset->GetDescription() << std::endl;
+	std::cout << "Reading image: " << dataset->GetDescription() << std::endl;
 	//char **metadataList = dataset->GetMetadata();
 	//if (metadataList == NULL)
 	//{
@@ -216,6 +216,12 @@ multi_img::ptr GdalReader::readFile()
 	double maxVal = 0;
 	for (int metaDataIdx = bandlow; metaDataIdx <= bandhigh; ++metaDataIdx)
 	{
+		std::string desc = metaTuples[metaDataIdx].bandDesc.str();
+		std::cout << "Reading band " << metaDataIdx;
+		if (!desc.empty())
+			std::cout << ": " << metaTuples[metaDataIdx].bandDesc.str();
+		std::cout << std::endl;
+
 		GDALRasterBand *band;
 		double minMax[2]; // [0] min, [1] max
 
