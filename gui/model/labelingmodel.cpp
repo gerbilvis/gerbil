@@ -52,6 +52,19 @@ void LabelingModel::setLabels(const vole::Labeling &labeling, bool full)
 		m.copyTo(labels);
 	}
 
+	/* Do not accidentially overwrite full label colors: unintuitive, segfault
+	 * Example case: global segmentation performed on ROI; when ROI is changed
+	 * afterwards, pixels outside the old ROI still hold their old labels.
+	 */
+	if (!full && colors.size() >= labeling.colors().size())
+	{
+		emit newLabeling(labels, colors, false);
+		invalidateMaskIcons();
+		return;
+	}
+
+	/* Alternative case: full label swap or need to overwrite label colors */
+
 	// ensure there is always one foreground color
 	if (labeling.colors().size() < 2) {
 		// set label colors, but do not emit signal (we need combined signal)
@@ -313,7 +326,6 @@ void LabelingModel::invalidateMaskIcons()
 
 		// There is no race condition (test-and-set) for iconTaskp or
 		// iconTaskAborted here, since they are written in the GUI thread only.
-
 		emit requestIconTaskAbort();
 	}
 
