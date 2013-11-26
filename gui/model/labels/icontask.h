@@ -44,6 +44,8 @@ class IconTask : public QThread
 	Q_OBJECT
 public:
 	explicit IconTask(IconTaskCtxPtr& ctxp, QObject *parent = 0);
+	enum {IconSizeMin = 32};
+	enum {IconSizeMax = 256};
 public slots:
 	/** Abort the computation.
 	 *

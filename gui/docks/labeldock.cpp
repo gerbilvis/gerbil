@@ -51,6 +51,10 @@ void LabelDock::init()
 
 	connect(ui->sizeSlider, SIGNAL(valueChanged(int)),
 			this, SLOT(processSliderValueChanged(int)));
+	// Icon size is hard-coded to the range [32, 256] in IconTask.
+	// Don't change this unless you know what you are doing.
+	ui->sizeSlider->setMinimum(32);
+	ui->sizeSlider->setMaximum(256);
 	updateSliderToolTip();
 }
 

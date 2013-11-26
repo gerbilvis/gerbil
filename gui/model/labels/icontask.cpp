@@ -14,12 +14,77 @@
 
 #include <gerbil_gui_debug.h>
 
-// TBB functor struct
-struct ComputeIconMasks {
 
+//! Computes a scaling factor, so that the scaled src image size fits entirely
+//! into the destination size, even if aspect ratio of src and dst differ.
+inline float scaleToFit(const cv::Size& src,
+						 const cv::Size& dst)
+{
+	const float rsrc = float(src.width)/src.height;
+	const float rdst = float(dst.width)/dst.height;
+	float scale;
+	if(rsrc >= rdst) {
+		scale = float(dst.width)/src.width;
+	} else {
+		scale = float(dst.height)/src.height;
+	}
+	return scale;
+}
+
+
+//! Clamp an integer value into the range [min, max].
+int clamp(const int& val, const int& min, const int& max)
+{
+	if(val < min) {
+		return min;
+	} else if(max < val) {
+		return max;
+	} else {
+		return val;
+	}
+}
+
+
+// TBB functor
+class ComputeIconMasks {
+public:
 	ComputeIconMasks(IconTaskCtx& ctx)
-		: ctx(ctx)
-	{}
+		: ctx(ctx),
+		  // clamp the icon size
+		  iconSizecv(clamp(ctx.iconSize.width(),
+						   IconTask::IconSizeMin, IconTask::IconSizeMax),
+					 clamp(ctx.iconSize.height(),
+							 IconTask::IconSizeMin, IconTask::IconSizeMax)),
+		  // inner size = icon size without border
+		  innerSize(iconSizecv.width - 2,
+					iconSizecv.height - 2),
+		  innerSizecv(innerSize.width(), innerSize.height()),
+		  // compute scale
+		  scale(scaleToFit(ctx.full_labels.size(), innerSizecv)),
+		  // offset into icon rect
+		  dx(0.5 * (float(iconSizecv.width) - ctx.full_labels.cols*scale)),
+		  dy(0.5 * (float(iconSizecv.height) - ctx.full_labels.rows*scale)),
+		  // affine trafo matrix, init later
+		  trafo(cv::Mat1f::zeros(2,3)),
+		  // rect of the transformed mask in the icon
+		  drect(dx,dy,
+				ctx.full_labels.cols*scale,
+				ctx.full_labels.rows*scale),
+		  // rect of the border around the transformed mask
+		  brect(drect.left()-.5*scale, drect.top()-.5*scale,
+				drect.width()+.5*scale, drect.height()+.5*scale)
+{
+		trafo(0,0) = scale;
+		trafo(1,1) = scale;
+		trafo(0,2) = dx;
+		trafo(1,2) = dy;
+
+//		GGDBGM("desired icon size " << iconSizecv << endl);
+//		GGDBGM("scale " << scale << endl);
+//		GGDBGM("dx " << dx << endl);
+//		GGDBGM("dy " << dy << endl);
+//		GGDBGM("scaled mask size " << innerSizecv << endl);
+	}
 
 	void operator()(const tbb::blocked_range<short>& range) const {
 		for( short label=range.begin(); label!=range.end(); ++label ) {
@@ -34,31 +99,33 @@ struct ComputeIconMasks {
 				return;
 			}
 
-			// convert QSize
-			cv::Size iconSizecv(ctx.iconSize.width(), ctx.iconSize.height());
-			// interpolate the mask to icon size
-			cv::resize(mask, mask, iconSizecv, 0, 0, cv::INTER_AREA);
+			// transform mask into icon
+			cv::Mat1b masktrf = cv::Mat1b::zeros(iconSizecv);
+			cv::warpAffine(mask, masktrf, trafo, iconSizecv);
 
 			if(tbb::task::self().is_cancelled()) {
 				//GGDBGM("aborted through tbb cancel." << endl);
 				return;
 			}
-			// the rest is probably too fast to allow checking for cancellation.
+			// The rest is probably too fast to allow checking for cancellation.
 
 			QColor color = ctx.colors.at(label);
 
-			// fill icon with solid color in ARGB format
+			// Fill icon with solid color in ARGB format.
 			cv::Vec4b argb(0, color.red(), color.green(), color.blue());
-			cv::Mat4b icon = cv::Mat4b(mask.rows, mask.cols, argb);
+			cv::Mat4b icon = cv::Mat4b(iconSizecv.height,
+									   iconSizecv.width,
+									   argb);
 
-			/* now apply alpha channel. Note: this is better than OpenCV's
-			 * mask functionality as it preserves the antialiasing! */
-
-			cv::Mat1b zero = cv::Mat1b::zeros(mask.rows, mask.cols);
+			// Now apply alpha channel.
+			// Note: this is better than OpenCV's mask functionality as it
+			// preserves the antialiasing!
 
 			// Make ARGB 'array' which is interleaved to a true ARGB image
 			// using mixChannels.
-			cv::Mat in[] = {mask, zero, zero, zero};
+			const cv::Mat1b zero = cv::Mat1b::zeros(iconSizecv.height,
+													iconSizecv.width);
+			const cv::Mat in[] = {masktrf, zero, zero, zero};
 			// Copy only the alpha channel (0) of the in array into the
 			// alpha channel (0) of the ARGB icon.
 			const int mix[] = {0,0};
@@ -71,13 +138,31 @@ struct ComputeIconMasks {
 			// draw a border: temporary fix until the icon view does this
 			QPainter p(&qimage);
 			p.setPen(color);
-			p.drawRect(0,0,ctx.iconSize.width()-1,ctx.iconSize.height()-1);
+			p.setRenderHint(QPainter::Antialiasing, true);
+			p.drawRect(brect);
 
 			ctx.icons[label] = qimage;
 		}
 	}
-
+private:
 	IconTaskCtx& ctx;
+	//! Icon size as cv::Size
+	const cv::Size iconSizecv;
+	//! Icon inner size without border
+	const QSize innerSize;
+	const cv::Size innerSizecv;
+	//! Scale factor from image to inner icon size
+	const float scale;
+	//! icon offset in x-dir
+	const float dx;
+	//! icon offset in y-dir
+	const float dy;
+	//! Affine trafo using the above scale and offsets.
+	cv::Mat1f trafo;
+	//! Rect of the transformed mask.
+	const QRectF drect;
+	//! Rect of the border drawn around the transformed mask.
+	const QRectF brect;
 };
 
 IconTask::IconTask(IconTaskCtxPtr &ctxp, QObject *parent)
@@ -103,8 +188,11 @@ void IconTask::run()
 	assert(ctx.nlabels == ctx.colors.size());
 	assert(ctx.colors.size() == ctx.nlabels);
 	assert(ctx.icons.size() == 0); // we do the allocation
-	assert(ctx.iconSize.width() > 0 && ctx.iconSize.width() <= 256);
-	assert(ctx.iconSize.height() > 0 && ctx.iconSize.height() <= 256);
+	assert(IconSizeMin <= ctx.iconSize.width() &&
+		   ctx.iconSize.width() <= IconSizeMax);
+	assert(IconSizeMin <= ctx.iconSize.height() &&
+		   ctx.iconSize.height() <= IconSizeMax);
+
 
 	// init result vector
 	ctx.icons = QVector<QImage>(ctx.nlabels);
