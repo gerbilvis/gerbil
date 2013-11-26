@@ -20,71 +20,66 @@
     </qresource>
     <qresource prefix="/icons/Gerbil">
         <file alias="index.theme">resources/icons/index.theme</file>
-
         <file alias="16x16/dialog-apply.png">resources/icons/16x16/dialog-apply.png</file>
         <file alias="22x22/dialog-apply.png">resources/icons/16x16/dialog-apply.png</file>
         <file alias="24x24/dialog-apply.png">resources/icons/16x16/dialog-apply.png</file>
         <file alias="32x32/dialog-apply.png">resources/icons/16x16/dialog-apply.png</file>
         <file alias="scalable/dialog-apply.png">resources/icons/16x16/dialog-apply.png</file>
-
         <file alias="16x16/list-add.png">resources/icons/16x16/list-add.png</file>
         <file alias="22x22/list-add.png">resources/icons/16x16/list-add.png</file>
         <file alias="24x24/list-add.png">resources/icons/16x16/list-add.png</file>
         <file alias="32x32/list-add.png">resources/icons/16x16/list-add.png</file>
         <file alias="scalable/list-add.png">resources/icons/16x16/list-add.png</file>
-
         <file alias="16x16/list-remove.png">resources/icons/16x16/list-remove.png</file>
         <file alias="22x22/list-remove.png">resources/icons/16x16/list-remove.png</file>
         <file alias="24x24/list-remove.png">resources/icons/16x16/list-remove.png</file>
         <file alias="32x32/list-remove.png">resources/icons/16x16/list-remove.png</file>
         <file alias="scalable/list-remove.png">resources/icons/16x16/list-remove.png</file>
-
         <file alias="16x16/preferences-system-windows.png">resources/icons/16x16/preferences-system-windows.png</file>
         <file alias="22x22/preferences-system-windows.png">resources/icons/16x16/preferences-system-windows.png</file>
         <file alias="24x24/preferences-system-windows.png">resources/icons/16x16/preferences-system-windows.png</file>
         <file alias="32x32/preferences-system-windows.png">resources/icons/16x16/preferences-system-windows.png</file>
         <file alias="scalable/preferences-system-windows.png">resources/icons/16x16/preferences-system-windows.png</file>
-
         <file alias="16x16/process-stop.png">resources/icons/16x16/process-stop.png</file>
         <file alias="22x22/process-stop.png">resources/icons/16x16/process-stop.png</file>
         <file alias="24x24/process-stop.png">resources/icons/16x16/process-stop.png</file>
         <file alias="32x32/process-stop.png">resources/icons/16x16/process-stop.png</file>
         <file alias="scalable/process-stop.png">resources/icons/16x16/process-stop.png</file>
-
         <file alias="16x16/view-refresh.png">resources/icons/16x16/view-refresh.png</file>
         <file alias="22x22/view-refresh.png">resources/icons/16x16/view-refresh.png</file>
         <file alias="24x24/view-refresh.png">resources/icons/16x16/view-refresh.png</file>
         <file alias="32x32/view-refresh.png">resources/icons/16x16/view-refresh.png</file>
         <file alias="scalable/view-refresh.png">resources/icons/16x16/view-refresh.png</file>
-
         <file alias="16x16/document-open.png">resources/icons/16x16/document-open.png</file>
         <file alias="22x22/document-open.png">resources/icons/16x16/document-open.png</file>
         <file alias="24x24/document-open.png">resources/icons/16x16/document-open.png</file>
         <file alias="32x32/document-open.png">resources/icons/16x16/document-open.png</file>
         <file alias="scalable/document-open.png">resources/icons/16x16/document-open.png</file>
-
         <file alias="16x16/document-save.png">resources/icons/16x16/document-save.png</file>
         <file alias="22x22/document-save.png">resources/icons/16x16/document-save.png</file>
         <file alias="24x24/document-save.png">resources/icons/16x16/document-save.png</file>
         <file alias="32x32/document-save.png">resources/icons/16x16/document-save.png</file>
         <file alias="scalable/document-save.png">resources/icons/16x16/document-save.png</file>
-
         <file alias="16x16/edit-copy.png">resources/icons/16x16/edit-copy.png</file>
         <file alias="22x22/edit-copy.png">resources/icons/16x16/edit-copy.png</file>
         <file alias="24x24/edit-copy.png">resources/icons/16x16/edit-copy.png</file>
         <file alias="32x32/edit-copy.png">resources/icons/16x16/edit-copy.png</file>
         <file alias="scalable/edit-copy.png">resources/icons/16x16/edit-copy.png</file>
-
         <file alias="16x16/edit-delete.png">resources/icons/16x16/edit-delete.png</file>
         <file alias="22x22edit-delete.png">resources/icons/16x16/edit-delete.png</file>
         <file alias="24x24/edit-delete.png">resources/icons/16x16/edit-delete.png</file>
         <file alias="32x32/edit-delete.png">resources/icons/16x16/edit-delete.png</file>
         <file alias="scalable/edit-delete.png">resources/icons/16x16/edit-delete.png</file>
-
         <file alias="16x16/edit-clear.png">resources/icons/16x16/edit-clear.png</file>
         <file alias="22x22/edit-clear.png">resources/icons/16x16/edit-clear.png</file>
         <file alias="24x24/edit-clear.png">resources/icons/16x16/edit-clear.png</file>
         <file alias="32x32/edit-clear.png">resources/icons/16x16/edit-clear.png</file>
         <file alias="scalable/edit-clear.png">resources/icons/16x16/edit-clear.png</file>
+    </qresource>
+    <qresource prefix="/autohide">
+        <file alias="bottom">resources/autohide-bottom.png</file>
+        <file alias="left">resources/autohide-left.png</file>
+        <file alias="right">resources/autohide-right.png</file>
+        <file alias="top">resources/autohide-top.png</file>
     </qresource>
 </RCC>

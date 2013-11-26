@@ -61,10 +61,19 @@ public slots:
 protected:
 	// which border we are in
 	border location;
+	// scrolled in our out, forced or not
 	scrollstate state;
+
+	// a small pixmap indicating that we can be scrolled-in, used in paintEvent
+	QPixmap indicator;
+	// only show it in certain states
+	bool show_indicator;
 
 	// our connection to the graphics view
 	QGraphicsProxyWidget *proxy;
+
+	// draw a nice arrow indicator and then the interior widgets (base class)
+	virtual void paintEvent(QPaintEvent *);
 
 	virtual void timerEvent(QTimerEvent *e);
 	virtual void changeEvent(QEvent *e);

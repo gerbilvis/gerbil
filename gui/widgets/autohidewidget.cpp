@@ -2,9 +2,10 @@
 
 #include <QGraphicsScene>
 #include <QTimer>
+#include <QPainter>
 
 AutohideWidget::AutohideWidget()
-	: location(LEFT), state(SCROLL_OUT)
+	: location(LEFT), state(SCROLL_OUT), show_indicator(true)
 {
 	QString style = "AutohideWidget { background: rgba(63, 63, 63, 191); } ";
 	style.append("QLabel, QRadioButton, QCheckBox { color: white; }");
@@ -15,6 +16,13 @@ void AutohideWidget::init(QGraphicsProxyWidget *p, border loc)
 {
 	location = loc;
 	proxy = p;
+
+	switch (location) {
+	case LEFT:   indicator.load(":/autohide/left"); break;
+	case RIGHT:  indicator.load(":/autohide/right"); break;
+	case TOP:    indicator.load(":/autohide/top"); break;
+	case BOTTOM: indicator.load(":/autohide/bottom"); break;
+	}
 
 	reposition();
 	/* Idea: start with SCROLL_IN to show that we exist, then disappear later
@@ -42,13 +50,6 @@ void AutohideWidget::reposition()
 		setFixedHeight(sceneHeight);
 		break;
 
-	case BOTTOM:
-		if (state == STAY_IN || state == SCROLL_IN)
-			proxy->setPos(0.f, sceneHeight - height());
-		else
-			proxy->setPos(0.f, sceneHeight - OutOffset);
-		setFixedWidth(sceneWidth);
-		break;
 	case TOP:
 		if (state == STAY_IN || state == SCROLL_IN)
 			proxy->setPos(0.f, 0.f);
@@ -56,7 +57,18 @@ void AutohideWidget::reposition()
 			proxy->setPos(0.f, OutOffset - height());
 		setFixedWidth(sceneWidth);
 		break;
+	case BOTTOM:
+		if (state == STAY_IN || state == SCROLL_IN)
+			proxy->setPos(0.f, sceneHeight - height());
+		else
+			proxy->setPos(0.f, sceneHeight - OutOffset);
+		setFixedWidth(sceneWidth);
+		break;
 	}
+
+	// now we know if we are fully scrolled out or not
+	show_indicator = (state == STAY_OUT || state == SCROLL_OUT);
+
 	repaint();
 }
 
@@ -106,7 +118,7 @@ void AutohideWidget::scrollIn(bool enforce)
 	state = (enforce ? STAY_IN : SCROLL_IN);
 
 	if (!redundant)
-		startTimer(40); // scroll
+		startTimer(33); // scroll with 30fps
 }
 
 void AutohideWidget::scrollOut(bool enforce)
@@ -123,13 +135,39 @@ void AutohideWidget::scrollOutNow()
 {
 	// only do this if no other scrolling was triggered in-between
 	if (state == SCROLL_OUT || state == STAY_OUT)
-		startTimer(40); // scroll
+		startTimer(33); // scroll with 30fps
+}
+
+void AutohideWidget::paintEvent(QPaintEvent *e)
+{
+	if (show_indicator) {
+		QPainter painter(this);
+		switch (location) {
+		case LEFT:
+			painter.drawPixmap(rect().width() - indicator.width(),
+							   (rect().height() - indicator.height()) / 2,
+							   indicator);
+			break;
+		case RIGHT:
+			painter.drawPixmap(0,
+							   (rect().height() - indicator.height()) / 2,
+							   indicator);
+			break;
+		case TOP:
+			painter.drawPixmap((rect().width() - indicator.width()) / 2,
+							   rect().height() - indicator.height(), indicator);
+			break;
+		case BOTTOM:
+			painter.drawPixmap((rect().width() - indicator.width()) / 2,
+							   0, indicator);
+			break;
+		}
+	}
+	QWidget::paintEvent(e);
 }
 
 void AutohideWidget::timerEvent(QTimerEvent *e)
 {
-	bool update = false;
-
 	// position in the scene (as we have no parent)
 	QPointF pos = proxy->pos();
 	// position of the *outer* edge relative to scene border
@@ -155,23 +193,34 @@ void AutohideWidget::timerEvent(QTimerEvent *e)
 		break;
 	}
 
+	bool changed = false;
+	bool old_indicator = show_indicator;
+	// by default hide the indicator
+	show_indicator = false;
+
 	if (state == SCROLL_IN || state == STAY_IN) {
 		// if not fully in scene, scroll further in
 		if (relpos < 0.f) {
 			// adjust diff up to fully scrolled-in state
-			relpos = std::min(relpos + (qreal)40.f, (qreal)0.f);
-			update = true;
+			relpos = std::min(relpos + (qreal)25.f, (qreal)0.f);
+			changed = true;
 		}
 	} else {
 		// if not (almost) fully out of scene, scroll further out
 		if ((relpos + offset) > OutOffset) {
 			// adjust diff down to almost hidden state
-			relpos = std::max(relpos - (qreal)60.f, OutOffset - offset);
-			update = true;
+			relpos = std::max(relpos - (qreal)40.f, OutOffset - offset);
+			changed = true;
+		} else {
+			// show indicator so the user will find us
+			show_indicator = true;
 		}
 	}
 
-	if (update) {
+	if (show_indicator != old_indicator)
+		repaint(); // get rid of indicator before movement
+
+	if (changed) {
 		switch (location) {
 		case LEFT:
 			pos.setX(relpos);
