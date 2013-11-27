@@ -46,6 +46,9 @@ void meanshiftMeanWrap(const ocl_matrix& input,
                        unint maxPointsNum,
                        ocl_matrix& output);
 
+void simpleDistanceKernelWrap(const ocl_matrix& in_1, const ocl_matrix& in_2,
+                              cl::Buffer& out);
+
 
 //void findRangeWrap(const matrix,real*,unint);
 //void rangeSearchWrap(const matrix,const real*,charMatrix);

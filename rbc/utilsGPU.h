@@ -55,7 +55,7 @@ public:
     static cl::Kernel bindPilotsKernel;
     static cl::Kernel meanshiftPlanKNNKernel;
     static cl::Kernel meanshiftMeanKernel;
-//    static cl::Kernel simplePlanKNNKernel;
+    static cl::Kernel simpleDistancesKernel;
 
     static void oclInit();
 };

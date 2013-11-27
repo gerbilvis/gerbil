@@ -582,6 +582,26 @@ void meanshiftMeanWrap(const ocl_matrix& input,
     checkErr(err);
 }
 
+void simpleDistanceKernelWrap(const ocl_matrix& in_1, const ocl_matrix& in_2,
+                              cl::Buffer& out)
+{
+    cl::NDRange local(BLOCK_SIZE, BLOCK_SIZE);
+    cl::NDRange global(BLOCK_SIZE, in_1.pr);
+
+    cl::CommandQueue& queue = OclContextHolder::queue;
+    cl::Kernel& simpleDistancesKernel = OclContextHolder::simpleDistancesKernel;
+
+    simpleDistancesKernel.setArg(0, in_1.mat);
+    simpleDistancesKernel.setArg(1, in_2.mat);
+    simpleDistancesKernel.setArg(2, out);
+    simpleDistancesKernel.setArg(3, in_1.pc);
+
+    cl_int err = queue.enqueueNDRangeKernel(simpleDistancesKernel,
+                                            cl::NullRange, global, local);
+    checkErr(err);
+}
+
+
 
 //void rangeCountWrap(const matrix dq, const matrix dx, real *dranges, unint *dcounts){
 void rangeCountWrap(const ocl_matrix& dq, const ocl_matrix& dx, cl::Buffer& dranges, cl::Buffer& dcounts){

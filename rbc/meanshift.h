@@ -12,7 +12,8 @@ void meanshift_rbc(matrix database, int numReps = 0,
 void validate_pilots(matrix database, cl::Buffer pilots);
 void validate_query_and_mean(matrix database, cl::Buffer selectedPoints,
                     cl::Buffer selectedPointsNum, cl::Buffer pilots,
-                    int maxQuerySize, ocl_matrix means);
+                    int maxQuerySize, ocl_matrix means,
+                    cl::Buffer result_distances);
 
 
 #endif

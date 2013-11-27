@@ -830,7 +830,7 @@ __kernel void planKNNKernel(__global const real* Q_mat,
 
         unint groupIts = (groupCount + BLOCK_SIZE - 1) / BLOCK_SIZE;
 
-        printf("groupIts: %d\n", groupIts);
+  //      printf("groupIts: %d\n", groupIts);
 
         for(unint j = 0; j < groupIts; j++) //iterate over elements of group
         {
@@ -1399,11 +1399,6 @@ __kernel void meanshiftMeanKernel(__global const real* X_mat,
 
     int numPoints = selectedPointsNums[global_id_y];
 
-//    if(local_id_x == 0)
-//    {
-//        printf("numPoints: %d\n", numPoints);
-//    }
-
     for(unint j = local_id_x; j < X_c; j += BLOCK_SIZE)
     {
         localMean[local_id_y][local_id_x] = 0.f;
@@ -1420,3 +1415,62 @@ __kernel void meanshiftMeanKernel(__global const real* X_mat,
     }
 }
 
+
+__kernel void simpleDistancesKernel(__global const real* X_mat,
+                                    __global const real* Y_mat,
+                                    __global real* output,
+                                    unint dimensionality)
+{
+
+    size_t local_id_x = get_local_id(0);
+    size_t local_id_y = get_local_id(1);
+
+    size_t global_id_x = get_global_id(0);
+    size_t global_id_y = get_global_id(1);
+
+    __local real shared[BLOCK_SIZE][BLOCK_SIZE];
+
+    unint baseIdx = global_id_y * dimensionality;
+
+    shared[local_id_y][local_id_x] = 0;
+
+    /** dimensionality must be n * BLOCK_SIZE */
+    for(unint i = local_id_x; i < dimensionality; i += BLOCK_SIZE)
+    {
+        unint idx = baseIdx + i;
+
+        real X_elem = X_mat[idx];
+        real Y_elem = Y_mat[idx];
+
+        shared[local_id_y][local_id_x] += (X_elem - Y_elem) * (X_elem - Y_elem);
+    }
+
+    barrier(CLK_LOCAL_MEM_FENCE);
+
+    /** reduction */
+
+    if(local_id_x < 8)
+        shared[local_id_y][local_id_x] += shared[local_id_y][local_id_x + 8];
+
+    barrier(CLK_LOCAL_MEM_FENCE);
+
+    if(local_id_x < 4)
+        shared[local_id_y][local_id_x] += shared[local_id_y][local_id_x + 4];
+
+    barrier(CLK_LOCAL_MEM_FENCE);
+
+    if(local_id_x < 2)
+        shared[local_id_y][local_id_x] += shared[local_id_y][local_id_x + 2];
+
+    barrier(CLK_LOCAL_MEM_FENCE);
+
+    if(local_id_x < 1)
+        shared[local_id_y][local_id_x] += shared[local_id_y][local_id_x + 1];
+
+    barrier(CLK_LOCAL_MEM_FENCE);
+
+    if(local_id_x == 0)
+    {
+        output[global_id_y] = shared[local_id_y][0];
+    }
+}
