@@ -83,16 +83,21 @@ signals:
 	/** Signal result requested by computeLabelIcons(). */
 	void labelIconsComputed(const QVector<QImage>& icons);
 
-	// signal to IconTask
-	void requestIconTaskAbort();
 private slots:
 	// process label icon task result
 	void processLabelIconsComputed(const QVector<QImage> &icons);
 	void processIconTaskAborted();
+
+	// This is handling QThread::finished() and will be called wether or not
+	// the IconTask has finished successfully.
+	void resetIconTaskPointer();
 private:
 	/** The labeling has changed, mask icons are out of date. */
 	void invalidateMaskIcons();
-	void cleanUpIconTask();
+	void startIconTask();
+
+	// Cancel and disconnect running IconTask and return without waiting.
+	void discardIconTask();
 
 	// full image labels and roi scoped labels
 	/* labels is always a header with the same data as full_labels (CV memory
@@ -110,12 +115,6 @@ private:
 	// current size of label icons
 	QSize iconSize;
 
-//  nah, make icon masks work first, then try caching implementation
-//	// Icons are stored in a cache indexed by label id and icon size.
-//	typedef QPair<short, QSize> IconKey;
-//	typedef QCache<IconKey, QPixmap> IconCache;
-
-//	IconCache iconCache;
 
 	// Label icons (colored alpha masks)
 	QVector<QImage> icons;
@@ -123,10 +122,8 @@ private:
 	// The execution icon task (=thread).
 	// If iconTaskp != NULL, a task is executing.
 	IconTask *iconTaskp;
-	bool iconTaskAborted;
 };
 
 Q_DECLARE_METATYPE(QVector<QImage>)
-//Q_DECLARE_METATYPE(const QVector<QImage>&)
 #endif // LABELING_MODEL_H
 

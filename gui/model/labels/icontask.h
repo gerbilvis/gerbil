@@ -44,8 +44,10 @@ class IconTask : public QThread
 	Q_OBJECT
 public:
 	explicit IconTask(IconTaskCtxPtr& ctxp, QObject *parent = 0);
+	virtual ~IconTask();
 	enum {IconSizeMin = 32};
 	enum {IconSizeMax = 256};
+	QSize getIconSize() const { return ctxp->iconSize; }
 public slots:
 	/** Abort the computation.
 	 *
@@ -53,6 +55,7 @@ public slots:
 	 * abort() must execute in the GUI thread!
 	 */
 	void abort();
+	void deleteLater();
 protected:
 	virtual void run();
 signals:

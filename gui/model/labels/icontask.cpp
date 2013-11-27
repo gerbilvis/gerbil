@@ -169,13 +169,27 @@ IconTask::IconTask(IconTaskCtxPtr &ctxp, QObject *parent)
 {
 }
 
+IconTask::~IconTask()
+{
+	//GGDBGM("Bye" << endl);
+}
+
 void IconTask::abort()
 {
+	if(abortFlag)
+		return;
+
 	// if no tasks are executing yet, remember not to start
 	abortFlag = true;
 
 	// tell executing tasks to abort
-    tbbTaskGroupContext.cancel_group_execution();
+	tbbTaskGroupContext.cancel_group_execution();
+}
+
+void IconTask::deleteLater()
+{
+	//GGDBGM("object " << this <<  endl);
+	QThread::deleteLater();
 }
 
 void IconTask::run()
@@ -210,5 +224,6 @@ void IconTask::run()
 	} else {
 		emit taskAborted();
 	}
+	//GGDBGM("return" << endl);
 }
 

@@ -4,7 +4,6 @@
 #include "ui_labeldock.h"
 
 #include <QStandardItemModel>
-#include <QLabel> // REMOVE
 
 #include <iostream>
 #include "../gerbil_gui_debug.h"
@@ -67,30 +66,28 @@ void LabelDock::setLabeling(const cv::Mat1s & labels,
 							const QVector<QColor> &colors,
 							bool colorsChanged)
 {
+	//GGDBGM("colors.size()=" << colors.size()
+	//	   << "  colorsChanged=" << colorsChanged << endl;)
 	if(colors.size() < 1) {
 		// only background, no "real" labels
 		return;
 	}
-	bool requestIcons = false;
 
 	// did the colors change?
-	if(this->colors != colors ) {
+	// FIXME: It is probably uneccessary to compare the color vectors.
+	// Test after 1.0 release.
+	if(colorsChanged || (this->colors != colors) ) {
 		this->colors = colors;
-		// once we use colors to draw icon borders, we have to trigger an update
-		// here
-		requestIcons = true;
 	}
 
-	if(colors.size()  != labelModel->rowCount()) {
+	if(colors.size() != labelModel->rowCount()) {
 		// label count changed, slection invalid
 		ui->mergeBtn->setDisabled(true);
 		ui->delBtn->setDisabled(true);
-		requestIcons = true;
 	}
 
-	if(requestIcons) {
-		emit labelMaskIconsRequested();
-	}
+	//GGDBGM("requesting new label icons" << endl);
+	emit labelMaskIconsRequested();
 }
 
 void LabelDock::processPartialLabelUpdate(const cv::Mat1s &, const cv::Mat1b &)
@@ -125,6 +122,7 @@ void LabelDock::mergeOrDeleteSelected()
 
 void LabelDock::processMaskIconsComputed(const QVector<QImage> &icons)
 {
+	//GGDBG_CALL();
 	this->icons = icons;
 
 	bool rebuild = false;
@@ -192,16 +190,15 @@ void LabelDock::processLabelItemLeft()
 
 void LabelDock::processSliderValueChanged(int)
 {
-	//GGDBGM("value " << ui->sizeSlider->value() );
+	//GGDBGM("value " << ui->sizeSlider->value() << endl);
 	int val = ui->sizeSlider->value();
-	// make icon size even, the odd values cause the interpolation  to oscillate
-    // while changing slides values.
+	// Make icon size even. Odd values cause the interpolation to oscillate
+    // while changing slider.
 	val = val + (val%2);
-	//GGDBGP(", value  even " << val << endl);
 	QSize iconSize(val,val);
 	updateSliderToolTip();
 	emit labelMaskIconSizeChanged(iconSize);
-	// updating label masks is fast, request them for each change.
+	// Label mask icons update is non-blocking, request them for each change.
 	emit labelMaskIconsRequested();
 }
 

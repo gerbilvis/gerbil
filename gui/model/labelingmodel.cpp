@@ -11,8 +11,13 @@
 std::ostream &operator<<(std::ostream& os, const cv::Rect& r);
 
 
+static std::ostream &operator<<(std::ostream& os, const QSize& s) {
+	return os << s.width() << "x" << s.height();
+}
+
+
 LabelingModel::LabelingModel()
-	: iconSize(QSize(32,32)), iconTaskp(NULL), iconTaskAborted(false)
+	: iconSize(QSize(32,32)), iconTaskp(NULL)
 {
 	qRegisterMetaType<QVector<QImage> >("QVector<QImage>");
 	//qRegisterMetaType<const QVector<QImage>& >("const QVector<QImage>&");
@@ -252,40 +257,28 @@ void LabelingModel::consolidate()
 void LabelingModel::setLabelIconSize(int width, int height)
 {
 	setLabelIconSize(QSize(width, height));
-	invalidateMaskIcons();
 }
 
 void LabelingModel::setLabelIconSize(const QSize& size)
 {
+	//GGDBGM("new size " << size << endl);
 	iconSize = size;
+	invalidateMaskIcons();
 }
 
 void LabelingModel::computeLabelIcons()
 {
+	//GGDBG_CALL();
 	if(iconTaskp != NULL) {
-		//GGDBGM("IconTask already in progress" << endl);
+		if(iconSize != iconTaskp->getIconSize()) {
+			//GGDBGM("running IconTask is using old icon size, restarting." << endl);
+			discardIconTask();
+			startIconTask();
+		} else {
+			//GGDBGM("IconTask already in progress" << endl);
+		}
 	} else {
-		//GGDBGM("starting IconTask." << endl);
-		// shared pointer
-		IconTaskCtxPtr ctxp(new IconTaskCtx(
-					colors.size(),
-					full_labels,
-					iconSize,
-					colors));
-
-		iconTaskAborted = false;
-		iconTaskp = new IconTask(ctxp,this);
-
-		// Any signals from any to IconTask must be disconnected in
-		// cleanUpIconTask().
-		connect(this, SIGNAL(requestIconTaskAbort()),
-				iconTaskp, SLOT(abort()), Qt::DirectConnection);
-		connect(iconTaskp, SIGNAL(taskAborted()),
-				this, SLOT(processIconTaskAborted()));
-		connect(iconTaskp, SIGNAL(labelIconsComputed(const QVector<QImage>&)),
-				this, SLOT(processLabelIconsComputed(const QVector<QImage>&)));
-
-		iconTaskp->start();
+		startIconTask();
 	}
 }
 
@@ -294,51 +287,72 @@ void LabelingModel::processLabelIconsComputed(const QVector<QImage> &icons)
 {
 	// The reference argument icons is valid, since the icon task will be
 	// deleted only after this function leaves its scope.
-
 	//GGDBGM("IconTask finished successfully" << endl);
-
-	// clean up finished task
-	cleanUpIconTask();
 
 	// store the result and emit
 	this->icons = icons;
 	emit labelIconsComputed(icons);
+	discardIconTask();
 }
 
 void LabelingModel::processIconTaskAborted()
 {
 	//GGDBGM("IconTask has aborted" << endl);
 
-	// clean up aborted task
-	cleanUpIconTask();
+	discardIconTask();
 
 	//GGDBGM("requesting new icon computation" << endl);
 	computeLabelIcons();
 }
 
+void LabelingModel::resetIconTaskPointer()
+{
+	iconTaskp = NULL;
+}
+
 void LabelingModel::invalidateMaskIcons()
 {
 	//GGDBGM("aborting IconTask" << endl);
-
-	// If an icon task is running, abort it.
-	if(iconTaskp && !iconTaskAborted) {
-		iconTaskAborted = true;
-
-		// There is no race condition (test-and-set) for iconTaskp or
-		// iconTaskAborted here, since they are written in the GUI thread only.
-		emit requestIconTaskAbort();
+	if(iconTaskp) {
+		iconTaskp->abort();
 	}
-
 	icons.clear();
 }
 
-void LabelingModel::cleanUpIconTask()
+void LabelingModel::startIconTask()
 {
-	// disconnect all signals to IconTask
-	disconnect(this, 0, iconTaskp, 0);
+	//GGDBGM("starting IconTask." << endl);
+	// shared pointer
+	IconTaskCtxPtr ctxp(new IconTaskCtx(
+				colors.size(),
+				full_labels,
+				iconSize,
+				colors));
 
-	iconTaskp->wait();
-	iconTaskp->deleteLater();
-	// NULL means no task is executing
+	assert(NULL == iconTaskp);
+	iconTaskp = new IconTask(ctxp,this);
+
+	connect(iconTaskp, SIGNAL(finished()), this, SLOT(resetIconTaskPointer()));
+	connect(iconTaskp, SIGNAL(finished()), iconTaskp, SLOT(deleteLater()));
+	connect(iconTaskp, SIGNAL(taskAborted()),
+			this, SLOT(processIconTaskAborted()));
+	connect(iconTaskp, SIGNAL(labelIconsComputed(const QVector<QImage>&)),
+			this, SLOT(processLabelIconsComputed(const QVector<QImage>&)));
+
+	iconTaskp->start();
+}
+
+
+void LabelingModel::discardIconTask()
+{
+	//GGDBG_CALL();
+	if(!iconTaskp)
+		return;
+
+	iconTaskp->abort();
+	// disconnect all signals, except finished() -> deleteLater()
+	disconnect(this, 0, iconTaskp, 0);
+	disconnect(iconTaskp, 0, this, 0);
+	// old icon task will delete itself after aborting, we can drop the pointer.
 	iconTaskp = NULL;
 }
