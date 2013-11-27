@@ -5,6 +5,7 @@
 
 #include <boost/any.hpp>
 
+#include "gerbil_gui_debug.h"
 
 ClusteringModel::ClusteringModel()
 	: cmdr(NULL)
@@ -28,10 +29,11 @@ void ClusteringModel::setMultiImage(SharedMultiImgPtr image)
 void ClusteringModel::startSegmentation(
 		vole::Command* cmd, int numbands, bool gradient)
 {
-	// wait for previous command runner to terminate
+	// get rid of previous command runner  (HACK)
 	if(NULL != cmdr) {
-		cmdr->wait();
-		delete cmdr;
+		// FIXME: the Meanshift will not abort, but continue running
+		// in the background. Resource starvation...
+		silenceCommandRunner();
 	}
 
 	cmdr = new CommandRunner();
@@ -74,6 +76,7 @@ void ClusteringModel::startSegmentation(
 	cmdr->input["multi_img"] = input;
 	cmdr->input["multi_grad"] = inputgrad;
 
+	//GGDBGM("CommandRunner object is "<< static_cast<CommandRunner*>(cmdr) << endl);
 	cmdr->start();
 }
 
@@ -81,6 +84,19 @@ void ClusteringModel::startSegmentation(
 void ClusteringModel::cancel()
 {
 	cmdr->terminate();
+}
+
+void ClusteringModel::processImageUpdate(representation::t type, SharedMultiImgPtr image)
+{
+	//GGDBGM("type " << type << endl);
+	if(representation::IMG == type && NULL != cmdr) {
+		//GGDBGM("canceling running segmentation"<< endl);
+		// Get rid of currently running CommandRunner.
+		silenceCommandRunner();
+		// reset GUI
+		emit progressChanged(100);
+		emit segmentationCompleted();
+	}
 }
 
 void ClusteringModel::onSegmentationCompleted(
@@ -99,4 +115,17 @@ void ClusteringModel::onSegmentationCompleted(
 		emit resultKL(foundK, foundL);
 	}
 	emit segmentationCompleted();
+}
+
+void ClusteringModel::silenceCommandRunner()
+{
+	if(NULL == cmdr)
+		return;
+	// disconnect all signals
+	disconnect(cmdr, 0, 0, 0);
+	// note: CommandRunner overrides terminate(), it just cancels.
+	cmdr->terminate();
+	// make sure the old runner is deleted after the thread has joined.
+	connect(cmdr, SIGNAL(finished()), cmdr, SLOT(deleteLater()));
+	cmdr = NULL;
 }

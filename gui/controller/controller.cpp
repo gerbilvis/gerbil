@@ -95,6 +95,9 @@ Controller::Controller(const std::string &filename, bool limited_mode,
 	connect(illumm, SIGNAL(newIlluminantApplied(QVector<multi_img::Value>)),
 			dvc, SIGNAL(newIlluminantApplied(QVector<multi_img::Value>)));
 
+	connect(im, SIGNAL(imageUpdate(representation::t,SharedMultiImgPtr)),
+			cm, SLOT(processImageUpdate(representation::t,SharedMultiImgPtr)));
+
 	/* start with initial label or provided labeling
 	 * Do this after all signals are connected, and before initial ROI spawn!
 	 */
