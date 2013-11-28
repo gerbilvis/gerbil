@@ -288,6 +288,17 @@ void validate_query_and_mean(matrix database, cl::Buffer selectedPoints,
 
         std::cout << std::endl;
 
+        real dist = 0;
+        for(int i = 0; i < database.c; ++i)
+        {
+            real p1 = database.mat[candidate * database.pc + i];
+            real p2 = means_host[candidate * database.pc + i];
+
+            dist += (p1 - p2) * (p1 - p2);
+        }
+
+        std::cout << "host result distance: " << dist << std::endl;
+
         std::cout << "device:" << std::endl;
 
         int deviceNum = selectedPointsNumHost[candidate];
@@ -326,12 +337,14 @@ void validate_query_and_mean(matrix database, cl::Buffer selectedPoints,
 
     for(int i = 0; i < database.r; ++i)
     {
-        distances_sum += result_distances_host[i];
+        float dist = result_distances_host[i];
 
-        std::cout << "avg result distance: " << distances_sum / database.r
-                     << std::endl;
+        assert(!std::isnan(dist));
+
+        distances_sum += dist;
     }
 
+    std::cout << "result distances sum: " << distances_sum << std::endl;
     std::cout << "avg result distance: " << distances_sum / database.r
                  << std::endl;
 
