@@ -6,7 +6,7 @@
 
 #include <QObject>
 #include <QMap>
-#include <tbb/compat/thread>
+#include <boost/thread.hpp>
 
 class DockController;
 class DistViewController;
@@ -144,7 +144,7 @@ protected:
 /// QUEUE
 
 	BackgroundTaskQueue queue;
-	std::thread *queuethread;
+	boost::thread *queuethread;
 };
 
 #endif // CONTROLLER_H

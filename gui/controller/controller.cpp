@@ -15,6 +15,7 @@
 
 #include "gerbil_gui_debug.h"
 
+#include <boost/ref.hpp>
 #include <cstdlib> // for exit()
 
 // for DEBUG
@@ -341,22 +342,11 @@ void Controller::disableGUI(TaskType tt)
 	setGUIEnabled(false, tt);
 }
 
-/* container to allow passing an object reference to std::thread()
- * needed by initQueue(), without this std::thread() would run on a copy
- */
-template<typename T>
-struct holder {
-	holder(T& payload) : payload(payload) {}
-	void operator()() { payload(); }
-
-	T& payload;
-};
-
 void Controller::startQueue()
 {
 	// start worker thread
-	holder<BackgroundTaskQueue> h(queue);
-	queuethread = new std::thread(h);
+	//boost::ref h(queue);
+	queuethread = new boost::thread(boost::ref(queue));
 	// h is not needed anymore
 }
 
