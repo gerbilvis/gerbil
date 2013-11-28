@@ -55,7 +55,7 @@ public slots:
 							   const cv::Mat1b &mask);
 
 protected slots:
-	void clearLabelOrSeeds();
+	void clearLabel();
 	void processMarkerSelectorIndexChanged(int index);
 
 protected:

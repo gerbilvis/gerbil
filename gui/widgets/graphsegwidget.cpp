@@ -31,8 +31,19 @@ void GraphSegWidget::initUi(AutohideView *view)
 	similarityBox->addItem("Normalized L2", vole::NORM_L2);
 	similarityBox->setCurrentIndex(3);
 
+	seedModeWidget->setHidden(true);
+
 	connect(seedModeButton, SIGNAL(toggled(bool)),
 			this, SIGNAL(requestToggleSeedMode(bool)));
+
+	// first hide button, then show seed explanations
+	connect(seedModeButton, SIGNAL(toggled(bool)),
+			loadSeedsButton, SLOT(setHidden(bool)));
+	connect(seedModeButton, SIGNAL(toggled(bool)),
+			seedModeWidget, SLOT(setShown(bool)));
+
+	connect(clearSeedsButton, SIGNAL(clicked()),
+			this, SIGNAL(requestClearSeeds()));
 	connect(loadSeedsButton, SIGNAL(clicked()),
 			this, SIGNAL(requestLoadSeeds()));
 

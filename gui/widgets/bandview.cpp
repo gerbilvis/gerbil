@@ -470,7 +470,10 @@ void BandView::keyPressEvent(QKeyEvent *event)
 {
 	switch (event->key()) {
 	case Qt::Key_C:
-		emit clearRequested();
+		if (seedMode)
+			clearSeeds();
+		else
+			emit clearRequested();
 		break;
 	default:
 		ScaledView::keyPressEvent(event);

@@ -26,6 +26,7 @@ protected:
 signals:
 	void requestShowAndRefreshSeedMap(cv::Mat1s seeding);
 	void requestToggleSeedMode(bool toggle);
+	void requestClearSeeds();
 	void requestLoadSeeds();
 	void requestGraphseg(representation::t type,
 						 const vole::GraphSegConfig &config,

@@ -45,6 +45,8 @@ void BandDock::initUi()
 
 	connect(gs, SIGNAL(requestLoadSeeds()),
 			this, SLOT(loadSeeds()));
+	connect(gs, SIGNAL(requestClearSeeds()),
+			bv, SLOT(clearSeeds()));
 
 	connect(markerSelector, SIGNAL(currentIndexChanged(int)),
 			this, SLOT(processMarkerSelectorIndexChanged(int)));
@@ -53,9 +55,9 @@ void BandDock::initUi()
 			bv, SLOT(applyLabelAlpha(int)));
 
 	connect(clearButton, SIGNAL(clicked()),
-			this, SLOT(clearLabelOrSeeds()));
+			this, SLOT(clearLabel()));
 	connect(bv, SIGNAL(clearRequested()),
-			this, SLOT(clearLabelOrSeeds()));
+			this, SLOT(clearLabel()));
 
 	/* when applybutton is pressed, bandView commits full label matrix */
 	connect(applyButton, SIGNAL(clicked()),
@@ -94,15 +96,10 @@ void BandDock::processImageUpdate(representation::t type)
 	}
 }
 
-void BandDock::clearLabelOrSeeds()
+void BandDock::clearLabel()
 {
 	// FIXME need to stop label timer of bandview
-
-	if (bv->isSeedModeEnabled()) {
-		bv->clearSeeds();
-	} else {
-		emit clearLabelRequested(bv->getCurrentLabel());
-	}
+	emit clearLabelRequested(bv->getCurrentLabel());
 }
 
 void BandDock::processMarkerSelectorIndexChanged(int index)
