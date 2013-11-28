@@ -133,7 +133,7 @@ void kqueryRBC(const matrix q, const ocl_rbcStruct rbcS,
     computeCounts(repIDsQ, queryPointsNum, groupCountQ);
 
     /** Set up the mapping from groups to queries (qMap). */
-    buildQMap(q, qMap, repIDsQ, numReps, &compLength);
+    buildQMap(q.r, qMap, repIDsQ, numReps, &compLength);
 
     printf("comp len: %u\n", compLength);
 
@@ -208,7 +208,7 @@ void kqueryRBC(const matrix q, const ocl_rbcStruct rbcS,
 //}
 
 
-void meanshiftKQueryRBC(const matrix input, const ocl_rbcStruct rbcS,
+void meanshiftKQueryRBC(const ocl_matrix input, const ocl_rbcStruct rbcS,
                         const cl::Buffer &pilots,
                         cl::Buffer selectedPoints,
                         cl::Buffer selectedPointsNum,
@@ -229,8 +229,8 @@ void meanshiftKQueryRBC(const matrix input, const ocl_rbcStruct rbcS,
     qMap = (unint*)calloc(PAD(m + (BLOCK_SIZE - 1) * PAD(numReps)),
                           sizeof(*qMap));
 
-    ocl_matrix dq;
-    copyAndMove(&dq, &input);
+    ocl_matrix dq = input;
+    //copyAndMove(&dq, &input);
 
     DBG_DEVICE_MATRIX_WRITE(dq, "dq.txt");
 
@@ -266,7 +266,7 @@ void meanshiftKQueryRBC(const matrix input, const ocl_rbcStruct rbcS,
     computeCounts(repIDsQ, m, groupCountQ);
 
     /** Set up the mapping from groups to queries (qMap). */
-    buildQMap(input, qMap, repIDsQ, numReps, &compLength);
+    buildQMap(input.r, qMap, repIDsQ, numReps, &compLength);
 
     printf("comp len: %u\n", compLength);
 
@@ -408,7 +408,7 @@ void buildRBC(const matrix x, ocl_rbcStruct *rbcS, unint numReps, unint s,
  // memTot = 1024 * 1024 * 1024;
 
 //    unint ptsAtOnce = 1024 * 64;//DPAD(memFree/((n+1)*sizeof(real) + n*sizeof(char) + (n+1)*sizeof(unint) + 2*MEM_USED_IN_SCAN(n)));
-   unint ptsAtOnce = 512;
+   unint ptsAtOnce = 256;
    // unint ptsAtOnce = 512;//DPAD(memFree/((n+1)*sizeof(real) + n*sizeof(char) + (n+1)*sizeof(unint) + 2*MEM_USED_IN_SCAN(n)));
     if(!ptsAtOnce)
     {
@@ -632,10 +632,10 @@ void computeCounts(unint *repIDs, unint queryPointsNum, unint *groupCount)
 }
 
 
-void buildQMap(matrix q, unint *qMap, unint *repIDs,
+void buildQMap(unint numQueries, unint *qMap, unint *repIDs,
                unint numReps, unint *compLength)
 {
-    unint numQueries = q.r;
+    //unint numQueries = q.r;
 
     unint* gS = (unint*)calloc(numReps + 1, sizeof(*gS));
 

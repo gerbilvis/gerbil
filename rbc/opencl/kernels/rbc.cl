@@ -1410,8 +1410,8 @@ __kernel void meanshiftMeanKernel(__global const real* X_mat,
             localMean[local_id_y][local_id_x] += X_mat[IDX(idx, j, X_ld)];
         }
 
-        Y_mat[IDX(global_id_y, j, Y_ld)] = localMean[local_id_y][local_id_x]
-                                                                   / numPoints;
+        Y_mat[IDX(global_id_y, j, Y_ld)] =
+               numPoints ? localMean[local_id_y][local_id_x] / numPoints : 0.f;
     }
 }
 

@@ -23,7 +23,7 @@ void kqueryRBC(const matrix q, const ocl_rbcStruct rbcS,
 //void simpleKqueryRBC(const matrix q, const ocl_rbcStruct rbcS,
 //               intMatrix NNs, matrix NNdists);
 
-void meanshiftKQueryRBC(const matrix input, const ocl_rbcStruct rbcS,
+void meanshiftKQueryRBC(const ocl_matrix input, const ocl_rbcStruct rbcS,
                         const cl::Buffer &pilots,
                         cl::Buffer selectedPoints,
                         cl::Buffer selectedPointsNum,
@@ -49,7 +49,7 @@ void bindPilots(const cl::Buffer& indexes, const cl::Buffer& repsPilots,
 
 void computeRadii(unint*,real*,real*,unint,unint);
 void computeCounts(unint*,unint,unint*);
-void buildQMap(matrix,unint*,unint*,unint,unint*);
+void buildQMap(unint,unint*,unint*,unint,unint*);
 void idIntersection(charMatrix);
 void fullIntersection(charMatrix);
 void initCompPlan(ocl_compPlan*, const charMatrix,

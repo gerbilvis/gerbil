@@ -4,12 +4,16 @@
 #include <cassert>
 #include <iostream>
 #include <algorithm>
+#include <set>
+#include <map>
+
+#include <QImage>
 
 #include "kernelWrap.h"
 
 void meanshift_rbc(matrix database, int numReps, int pointsPerRepresentative)
 {
-    int maxQuerySize = 1024;
+    int maxQuerySize = 512;
 
     int database_size = database.r;
 
@@ -49,10 +53,7 @@ void meanshift_rbc(matrix database, int numReps, int pointsPerRepresentative)
 
     validate_pilots(database, allPilots);
 
-//    ocl_matrix output_means;
-//    copyAndMove(&output_means, &database);
-
-//    std::cout << "querying" << std::endl;
+    /** preparing memory for meanshift query */
 
     int byte_size = sizeof(unint) * database.pr * maxQuerySize;
 
@@ -65,42 +66,62 @@ void meanshift_rbc(matrix database, int numReps, int pointsPerRepresentative)
                                  byte_size, 0, &err);
     checkErr(err);
 
-    std::cout << "calculating meanshift query" << std::endl;
-
-    meanshiftKQueryRBC(database, rbcS, allPilots,
-                       selectedPoints, selectedPointsNum,
-                       maxQuerySize);
+    /** preparing memory for input and output means */
 
     ocl_matrix database_ocl;
     copyAndMove(&database_ocl, &database);
 
-    ocl_matrix output = database_ocl;
-//    output.r = database.r;
-//    output.c = database.c;
-//    output.pr = database.pr;
-//    output.pc = database.pc;
-//    output.ld = database.ld;
+    ocl_matrix output_ocl = database_ocl;
 
-    byte_size = output.pr * output.pc * sizeof(real);
-    output.mat = cl::Buffer(context, CL_MEM_READ_WRITE, byte_size, 0, &err);
+    byte_size = output_ocl.pr * output_ocl.pc * sizeof(real);
+    output_ocl.mat = cl::Buffer(context, CL_MEM_READ_WRITE, byte_size, 0, &err);
     checkErr(err);
 
-    std::cout << "calculating meanshift mean" << std::endl;
+    /** preparing memory for distances between points
+     *  from current and previous iteration */
 
-    meanshiftMeanWrap(database_ocl, selectedPoints, selectedPointsNum,
-                      maxQuerySize, output);
-
-
-    byte_size = output.pr * sizeof(real);
+    byte_size = output_ocl.pr * sizeof(real);
     cl::Buffer distances(context, CL_MEM_READ_WRITE, byte_size, 0, &err);
     checkErr(err);
 
-    std::cout << "calculating distances" << std::endl;
+    int itersNum = 15;
 
-    simpleDistanceKernelWrap(database_ocl, output, distances);
+    for(int i = 0; i < itersNum; ++i)
+    {
+        std::cout << "calculating meanshift query" << std::endl;
 
-    validate_query_and_mean(database, selectedPoints, selectedPointsNum, allPilots,
-                   maxQuerySize, output, distances);
+        meanshiftKQueryRBC(database_ocl, rbcS, allPilots,
+                           selectedPoints, selectedPointsNum,
+                           maxQuerySize);
+
+        std::cout << "calculating meanshift mean" << std::endl;
+
+        meanshiftMeanWrap(database_ocl, selectedPoints, selectedPointsNum,
+                          maxQuerySize, output_ocl);
+
+        std::cout << "calculating distances" << std::endl;
+
+        simpleDistanceKernelWrap(database_ocl, output_ocl, distances);
+
+        validate_query_and_mean(database, selectedPoints, selectedPointsNum, allPilots,
+                       maxQuerySize, database_ocl, output_ocl, distances);
+
+        /** switch input and output for the next iteration */
+        if(i != itersNum - 1)
+        {
+            std::cout << "switching input-output" << std::endl;
+
+            ocl_matrix tmp = database_ocl;
+            database_ocl = output_ocl;
+            output_ocl = tmp;
+        }
+    }
+
+
+    write_modes(output_ocl, 512, 512);
+
+//    validate_query_and_mean(database, selectedPoints, selectedPointsNum, allPilots,
+//                   maxQuerySize, database_ocl, output_ocl, distances);
 }
 
 bool sort_function(real i, real j)
@@ -160,8 +181,8 @@ void validate_pilots(matrix database, cl::Buffer pilots)
 
 void validate_query_and_mean(matrix database, cl::Buffer selectedPoints,
                     cl::Buffer selectedPointsNum, cl::Buffer pilots,
-                    int maxQuerySize, ocl_matrix means,
-                    cl::Buffer result_distances)
+                    int maxQuerySize, ocl_matrix previous_means,
+                    ocl_matrix means, cl::Buffer result_distances)
 {
     srand(23);
 
@@ -170,7 +191,7 @@ void validate_query_and_mean(matrix database, cl::Buffer selectedPoints,
 
     std::cout << "validating query..." << std::endl;
 
-    int tests = 16;
+    int tests = 0;
     int db_size = database.r;
 
     int selPointsSize = db_size * maxQuerySize;
@@ -180,6 +201,7 @@ void validate_query_and_mean(matrix database, cl::Buffer selectedPoints,
     unint* selectedPointsNumHost = new unint[db_size];
     real* pilots_host = new real[db_size];
     real* distances = new real[db_size];
+    real* previous_means_host = new real[meansSize];
     real* means_host = new real[meansSize];
     real* mean = new real[database.c];
     real* result_distances_host = new real[database.r];
@@ -208,13 +230,20 @@ void validate_query_and_mean(matrix database, cl::Buffer selectedPoints,
                                   db_size * sizeof(real), pilots_host);
     checkErr(err);
 
-    std::cout << "downloading means";
+    std::cout << "downloading means (1)" << std::endl;
+
+    err = queue.enqueueReadBuffer(previous_means.mat, CL_TRUE, 0,
+                                  meansSize * sizeof(real),
+                                  previous_means_host);
+    checkErr(err);
+
+    std::cout << "downloading means (2)" << std::endl;
 
     err = queue.enqueueReadBuffer(means.mat, CL_TRUE, 0,
                                   meansSize * sizeof(real), means_host);
     checkErr(err);
 
-    std::cout << "downloading distances";
+    std::cout << "downloading distances" << std::endl;
 
     err = queue.enqueueReadBuffer(result_distances, CL_TRUE, 0,
                                   database.r * sizeof(real),
@@ -323,8 +352,8 @@ void validate_query_and_mean(matrix database, cl::Buffer selectedPoints,
 
         std::cout << std::endl;
 
-        std::cout << "result distance: " << result_distances_host[candidate]
-                     << std::endl;
+        std::cout << "device result distance: "
+                  << result_distances_host[candidate] << std::endl;
 
         std::cout << std::endl;
 
@@ -332,6 +361,35 @@ void validate_query_and_mean(matrix database, cl::Buffer selectedPoints,
 
         //std::sort(distances, distances + db_size, sort_function);
     }
+
+    int zeros = 0;
+
+    for(int i = 0; i < database.r; ++i)
+    {
+        if(!selectedPointsHost[i])
+        {
+            zeros++;
+        }
+    }
+
+    std::cout << zeros
+              << " points has no points to calculate mean" << std::endl;
+
+    for(int i = 0; i < database.pr * database.pc; ++i)
+    {
+        if(std::isnan(means_host[i]))
+        {
+            int row = i / database.pc;
+            int col = i % database.pc;
+
+            std::cout << "row: " << row << std::endl;
+            std::cout << "col: " << col << std::endl;
+            std::cout << "num points: "
+                      << selectedPointsNumHost[row] << std::endl;
+            assert(false);
+        }
+    }
+
 
     double distances_sum = 0.0;
 
@@ -352,7 +410,165 @@ void validate_query_and_mean(matrix database, cl::Buffer selectedPoints,
     delete[] selectedPointsNumHost;
     delete[] pilots_host;
     delete[] distances;
+    delete[] previous_means_host;
+    delete[] means_host;
     delete[] mean;
+    delete[] result_distances_host;
 }
 
+void write_modes(ocl_matrix modes, int img_width, int img_height)
+{
+    int modesSize = modes.pc * modes.pr;
 
+    real* modes_host = new real[modesSize];
+
+    cl_int err;
+
+    cl::CommandQueue& queue = OclContextHolder::queue;
+
+    err = queue.enqueueReadBuffer(modes.mat, CL_TRUE, 0,
+                                  modesSize * sizeof(real),
+                                  modes_host);
+    checkErr(err);
+
+    real* min_values = new real[modes.c];
+    real* max_values = new real[modes.c];
+
+    std::fill(min_values, min_values + modes.c,
+              std::numeric_limits<real>::max());
+
+    std::fill(max_values, max_values + modes.c,
+              -std::numeric_limits<real>::max());
+
+    /** find min/max */
+
+    for(int i = 0; i < img_height; ++i)
+    {
+        int row_idx = i * img_width;
+
+        for(int j = 0; j < img_width; ++j)
+        {
+            int linear_idx = row_idx + j;
+
+            real* mode_ptr = modes_host + linear_idx * modes.pc;
+
+            for(int k = 0; k < modes.c; ++k)
+            {
+                min_values[k] = std::min(mode_ptr[k], min_values[k]);
+                max_values[k] = std::max(mode_ptr[k], max_values[k]);
+            }
+        }
+    }
+
+    std::cout << "min values:" << std::endl;
+
+    for(int i = 0; i < modes.c; ++i)
+    {
+        std::cout << min_values[i] << ", ";
+    }
+
+    std::cout << std::endl;
+
+    std::cout << "max values:" << std::endl;
+
+    for(int i = 0; i < modes.c; ++i)
+    {
+        std::cout << max_values[i] << ", ";
+    }
+
+    std::cout << std::endl;
+
+    /** normalize */
+
+    for(int i = 0; i < img_height; ++i)
+    {
+        int row_idx = i * img_width;
+
+        for(int j = 0; j < img_width; ++j)
+        {
+            int linear_idx = row_idx + j;
+
+            real* mode_ptr = modes_host + linear_idx * modes.pc;
+
+            for(int k = 0; k < modes.c; ++k)
+            {
+                mode_ptr[k] = 255 * (mode_ptr[k] - min_values[k])
+                                             / (max_values[k] - min_values[k]);
+            }
+        }
+    }
+
+    /** writing images */
+
+    for(int m = 0; m < modes.c; ++m)
+    {
+        QImage img(img_width, img_height, QImage::Format_ARGB32);
+
+        std::set<real> distinct_values;
+
+        for(int i = 0; i < img_height; ++i)
+        {
+            int row_idx = i * img_width;
+
+            for(int j = 0; j < img_width; ++j)
+            {
+                int linear_idx = row_idx + j;
+
+                real* mode_ptr = modes_host + linear_idx * modes.pc;
+
+                real val = mode_ptr[m];
+
+                distinct_values.insert(val);
+
+                int value = (int)val;
+
+                img.setPixel(j, i, qRgb(value, value, value));
+            }
+        }
+
+        std::cout << "distinct values: "
+                  << distinct_values.size() << std::endl;
+
+        QString filename = QString("mode_%1.png").arg(m);
+        img.save(filename);
+
+        std::map<real, unsigned char> mapping;
+        int counter = 0;
+        int step = 255/distinct_values.size();
+
+        for(std::set<real>::iterator it = distinct_values.begin();
+            it != distinct_values.end(); ++it)
+        {
+            mapping[*it] = counter * step;
+            ++counter;
+        }
+
+        QImage img2(img_width, img_height, QImage::Format_ARGB32);
+
+        for(int i = 0; i < img_height; ++i)
+        {
+            int row_idx = i * img_width;
+
+            for(int j = 0; j < img_width; ++j)
+            {
+                int linear_idx = row_idx + j;
+
+                real* mode_ptr = modes_host + linear_idx * modes.pc;
+
+                real val = mode_ptr[m];
+
+                int value = mapping[val];
+
+                img2.setPixel(j, i, qRgb(value, value, value));
+            }
+        }
+
+        QString filename2 = QString("mode_mapped_%1.png").arg(m);
+        img2.save(filename2);
+
+    }
+
+    delete[] modes_host;
+    delete[] min_values;
+    delete[] max_values;
+}
