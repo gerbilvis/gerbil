@@ -334,10 +334,11 @@ QColor Viewport::determineColor(const QColor &basecolor,
 	   the view with too much low-weight information */
 	/* logarithm is used to prevent single data points to get lost.
 	   this should be configurable. */
-	alpha = useralpha *
-			(0.01 + 0.99*(std::log(weight+1) / std::log(totalweight)));
-	//	TODO: option
-	//      (0.01 + 0.99*(weight / totalweight));
+	alpha = useralpha;
+	if (drawLog)
+		alpha *= (0.01 + 0.99*(std::log(weight+1) / std::log(totalweight)));
+	else
+		alpha *= (0.01 + 0.99*(weight / totalweight));
 	color.setAlphaF(std::min(alpha, 1.)); // cap at 1
 
 	if (highlighted) {

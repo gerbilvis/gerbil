@@ -207,6 +207,8 @@ private:
 	bool holdSelection;
 	int *activeLimiter;
 
+	// draw with log weights vs. linear weights
+	bool drawLog;
 	// drawing mode mean vs. bin center
 	bool drawMeans;
 	// drawing mode labelcolor vs. sRGB color

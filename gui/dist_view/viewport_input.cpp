@@ -235,6 +235,9 @@ void Viewport::keyPressEvent(QKeyEvent *event)
 			updateBuffers();
 		}
 		break;
+	case Qt::Key_L:
+		drawLog = !drawLog;
+		updateBuffers();
 	case Qt::Key_F:
 		switch (bufferFormat) {
 		case RGBA8: bufferFormat = RGBA16F; break;
