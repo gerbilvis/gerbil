@@ -7,6 +7,7 @@
 */
 
 #include "widgets/roiview.h"
+#include "widgets/sizegripitem/sizegripitem.h"
 
 #include <stopwatch.h>
 #include <QPainter>
@@ -15,95 +16,108 @@
 #include <cmath>
 
 ROIView::ROIView()
-	: lockX(-1), lockY(-1), lastcursor(-1, -1)
-{}
-
-void ROIView::paintEvent(QPainter *painter, const QRectF &rect)
 {
-	if (pixmap.isNull())
-		return;
+	rect = new BoundedRect();
+	rect->setBrush(QColor(255, 255, 255, 31));
+	QPen pen(Qt::DashLine);
+	pen.setColor(Qt::lightGray);
+	rect->setPen(pen);
 
-	fillBackground(painter, rect);
 
-	painter->setRenderHint(QPainter::SmoothPixmapTransform);
+	rectX = new QGraphicsRectItem();
+	rectX->setFlag(QGraphicsItem::ItemHasNoContents);
+	rectX->setBrush(Qt::NoBrush);
+	rectX->setPen(Qt::NoPen);
+	addItem(rectX);
+	rect->setParentItem(rectX);
 
-	painter->setWorldTransform(scaler);
-	QRectF damaged = scalerI.mapRect(rect);
-	painter->drawPixmap(damaged, pixmap, damaged);
+	SizeGripItem* grip = new SizeGripItem(new BoundedRectResizer, rect);
+	addItem(grip);
 
-	/* gray out region outside ROI */
-	QColor color(Qt::darkGray); color.setAlpha(127);
-	painter->fillRect(0, 0, roi.x(), pixmap.height(), color);
-	painter->fillRect(roi.x()+roi.width(), 0,
-					 pixmap.width() - roi.x() - roi.width(),
-					 pixmap.height(), color);
-
-	painter->fillRect(roi.x(), 0, roi.width(), roi.y(), color);
-	painter->fillRect(roi.x(), roi.y()+roi.height(),
-					 roi.width(), pixmap.height() - roi.y() - roi.height(),
-					 color);
-	painter->setPen(Qt::red);
-	painter->drawRect(roi);
+	connect(rect, SIGNAL(newRect(QRectF)), grip, SLOT(setRect(QRectF)));
+	connect(rect, SIGNAL(newSelection(QRect)),
+			this, SIGNAL(newSelection(QRect)));
 }
 
-void ROIView::cursorAction(QGraphicsSceneMouseEvent *ev, bool)
+void ROIView::setROI(QRect roi)
 {
-	// only perform an action when left mouse button pressed
-	if (!(ev->buttons() & Qt::LeftButton))
-		return;
+	rect->adjustTo(roi, true);
+}
 
-	QPointF cursor = scalerI.map(QPointF(ev->scenePos()));
-	cursor.setX(std::floor(cursor.x() - 0.25));
-	cursor.setY(std::floor(cursor.y() - 0.25));
+void ROIView::setPixmap(QPixmap p)
+{
+	rectX->setRect(p.rect());
+	ScaledView::setPixmap(p);
+}
+
+void ROIView::resizeEvent()
+{
+	ScaledView::resizeEvent();
+	rectX->setTransform(scaler);
+	rectX->setRect(pixmap.rect());
+}
+
+void BoundedRect::adjustTo(QRectF box, bool internal)
+{
+	/* discretize */
+	box.setLeft(std::floor(box.left()));
+	box.setRight(std::floor(box.right()));
+	box.setTop(std::floor(box.top()));
+	box.setBottom(std::floor(box.bottom()));
+
+	QRectF bound = parentItem()->boundingRect();
+	/* adjustments needed */
+	if (!bound.contains(box)) {
+		// movement or rescaling? (handled differently)
+		bool movement = box.size() == rect().size();
+		if (movement) {
+			box.moveLeft(std::max(box.left(), bound.left()));
+			box.moveRight(std::min(box.right(), bound.right()));
+			box.moveTop(std::max(box.top(), bound.top()));
+			box.moveBottom(std::min(box.bottom(), bound.bottom()));
+		} else {
+			box.setLeft(std::max(box.left(), bound.left()));
+			box.setRight(std::min(box.right(), bound.right()));
+			box.setTop(std::max(box.top(), bound.top()));
+			box.setBottom(std::min(box.bottom(), bound.bottom()));
+		}
+	}
+
+	/* set rectangle and propagate */
+	setRect(box);
+	emit newRect(box);
+
+	if (!internal)
+		emit newSelection(box.toRect());
+}
+
+void BoundedRect::mouseMoveEvent(QGraphicsSceneMouseEvent *ev)
+{
+	// discretize cursor
+	QPointF cursor;
+	cursor.setX(std::floor(ev->pos().x() - 0.25));
+	cursor.setY(std::floor(ev->pos().y() - 0.25));
+
+	// initial movement
+	if (lastcursor.isNull())
+		lastcursor = cursor;
 
 	// nothing new after all..
 	if (cursor == lastcursor)
-		return;
+	  return;
 
-	int x = cursor.x(), y = cursor.y();
-	x = std::max(std::min(x, pixmap.width() - 1), 0);
-	y = std::max(std::min(y, pixmap.height() - 1), 0);
+	/* translate into our coordinates. Note: the way we do it, mouse movement
+	 * and item movement are in perfect sync. if we would use Qt's functionality
+	 * (ItemIsMovable), sadly the scaling would not fit. */
+	QPointF diff = transform().map(cursor - lastcursor);
 
+	// apply difference
+	QRectF box = rect();
+	box.translate(diff);
 
-	bool right;
-	if (roi.width() < 2)
-		right = x > roi.x();
-	else if (lockX > -1)
-		right = (lockX > 0);
-	else
-		right = (std::abs(roi.x()-x) > std::abs(roi.right()-x));
+	// try to adjust
+	adjustTo(box, false);
 
-	if (right)
-		roi.setRight(x);
-	else
-		roi.setLeft(x);
-	lockX = (right ? 1 : 0);
-
-	bool bottom;
-	if (roi.height() < 2)
-		bottom = y > roi.y();
-	else if (lockY > -1)
-		bottom = (lockY > 0);
-	else
-		bottom = (std::abs(roi.y()-y) > std::abs(roi.bottom()-y));
-
-	if (bottom)
-		roi.setBottom(y);
-	else
-		roi.setTop(y);
-	lockY = (bottom ? 1 : 0);
-
-	update();
-	emit newSelection(roi);
-}
-
-void ROIView::mouseReleaseEvent(QGraphicsSceneMouseEvent *ev)
-{
-	// check for scene elements first (we are technically the background)
-	QGraphicsScene::mouseReleaseEvent(ev);
-	if (ev->isAccepted())
-		return;
-
-	// enable 'grabbing' of different border on next click
-	lockX = lockY = -1;
+	// remember where we took off
+	lastcursor = cursor;
 }

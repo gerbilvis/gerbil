@@ -21,8 +21,8 @@ QGLWidget* AutohideView::init()
 	format.setSampleBuffers(false); // TODO: configurable!
 	target = new QGLWidget(format);
 	setViewport(target);
-	// TODO: needed? setViewportUpdateMode(QGraphicsView::FullViewportUpdate);
-	// TODO: should we cache the background?
+	// best for QGLWidget
+	setViewportUpdateMode(QGraphicsView::FullViewportUpdate);
 
 	/* mouse tracking will implicitely switched on as soon as we have widgets
 	 * in the view. we make it explicit to avoid confusion. */

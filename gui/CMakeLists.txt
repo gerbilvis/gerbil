@@ -20,6 +20,8 @@ vole_compile_library(
 	widgets/bandview
 	widgets/roiview
 	widgets/graphsegwidget
+
+	widgets/sizegripitem/sizegripitem
 	
 	controller/controller
 	controller/dockcontroller
@@ -70,6 +72,8 @@ vole_moc_library(
 	widgets/bandview.h
 	widgets/roiview.h
 	widgets/graphsegwidget.h
+
+	widgets/sizegripitem/sizegripitem.h
 
 	controller/controller.h
 	controller/dockcontroller.h

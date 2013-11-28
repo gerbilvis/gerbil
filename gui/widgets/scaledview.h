@@ -13,13 +13,6 @@ public:
 	ScaledView();
 	virtual ~ScaledView() {}
 
-	// handles both resize and drawing
-	void drawBackground(QPainter *painter, const QRectF &rect);
-	virtual void resizeEvent();
-	virtual void paintEvent(QPainter *painter, const QRectF &rect);
-	void mouseMoveEvent(QGraphicsSceneMouseEvent*);
-	void mousePressEvent(QGraphicsSceneMouseEvent*);
-
 	virtual void setPixmap(QPixmap p);
 
 	/* provide a reasonably high size of correct aspect ratio for layouting */
@@ -33,8 +26,15 @@ signals:
 	void newContentRect(QRect rect);
 
 protected:
+	// handles both resize and drawing
+	void drawBackground(QPainter *painter, const QRectF &rect);
+	virtual void resizeEvent();
+	virtual void paintEvent(QPainter *painter, const QRectF &rect);
+	void mouseMoveEvent(QGraphicsSceneMouseEvent*);
+	void mousePressEvent(QGraphicsSceneMouseEvent*);
 	virtual void cursorAction(QGraphicsSceneMouseEvent *ev,
 							  bool click = false);
+
 	void drawWaitMessage(QPainter *painter);
 
 	// draw the background, inline function

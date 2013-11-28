@@ -18,7 +18,7 @@ public:
 	explicit RoiDock(QWidget *parent = 0);
 	virtual ~RoiDock() {}
 	
-	const QRect &getRoi() const;
+	QRect getRoi() const;
 
 
 signals:

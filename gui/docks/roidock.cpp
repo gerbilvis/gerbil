@@ -20,9 +20,9 @@ RoiDock::RoiDock(QWidget *parent) :
 	initUi();
 }
 
-const QRect& RoiDock::getRoi() const
+QRect RoiDock::getRoi() const
 {
-	return roiView->roi;
+	return roiView->roi();
 }
 
 void RoiDock::setRoi(const cv::Rect &roi)
@@ -102,8 +102,7 @@ void RoiDock::processNewSelection(const QRect &roi, bool internal)
 	curRoi = roi;
 	if (internal) {
 		// also update the roiView
-		roiView->roi = roi;
-		roiView->update();
+		roiView->setROI(roi);
 	} else {
 		// we have something to apply / reset from
 		uibtn->roiButtons->setEnabled(true);
@@ -127,9 +126,7 @@ void RoiDock::applyRoi()
 void RoiDock::resetRoi()
 {
 	curRoi = oldRoi;
-	roiView->roi = curRoi;
-	processNewSelection(curRoi);
-	roiView->update();
+	processNewSelection(curRoi, true);
 }
 
 
