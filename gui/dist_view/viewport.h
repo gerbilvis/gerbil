@@ -213,6 +213,12 @@ private:
 	bool drawRGB;
 	// draw with antialiasing
 	bool drawHQ;
+	// texture buffer format
+	enum {
+		RGBA8 = 0x8058,  // GL_RGBA8, constants are missing in windows
+		RGBA16F = 0x881A,// GL_RGBA16F
+		RGBA32F = 0x8814 // GL_RGBA32F
+	} bufferFormat;
 
 	enum {
 		HIGH_QUALITY,        // drawing HQ as usual

@@ -235,9 +235,18 @@ void Viewport::keyPressEvent(QKeyEvent *event)
 			updateBuffers();
 		}
 		break;
+	case Qt::Key_F:
+		switch (bufferFormat) {
+		case RGBA8: bufferFormat = RGBA16F; break;
+		case RGBA16F: bufferFormat = RGBA32F; break;
+		case RGBA32F: bufferFormat = RGBA8; break;
+		}
+		resizeScene(); // will init and update buffers
+		break;
 	case Qt::Key_M:
 		drawMeans = !drawMeans;
 		rebuild();
+		break;
 	}
 
 	if (highlightAltered) {

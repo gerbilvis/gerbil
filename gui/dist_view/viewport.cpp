@@ -33,8 +33,8 @@ Viewport::Viewport(representation::t type, QGLWidget *target)
 	  overlayMode(false), highlightLabel(-1),
 	  illuminant_show(true),
 	  zoom(1.), shift(0), lasty(-1), holdSelection(false), activeLimiter(0),
-	  drawMeans(true), drawRGB(false), drawHQ(true), drawingState(HIGH_QUALITY),
-	  yaxisWidth(0), vb(QGLBuffer::VertexBuffer)
+	  drawMeans(true), drawRGB(false), drawHQ(true), bufferFormat(RGBA16F),
+	  drawingState(HIGH_QUALITY), yaxisWidth(0), vb(QGLBuffer::VertexBuffer)
 {
 	(*ctx)->wait = 1;
 	(*ctx)->reset = 1;
@@ -84,9 +84,8 @@ void Viewport::initBuffers()
 		QGLFramebufferObjectFormat format_buf, format_blit;
 
 		/* use floating point for better alpha accuracy in back buffer! */
-		// TODO RGBA32F yet looks better, make configurable!
 		if (i == 0)
-			format_blit.setInternalTextureFormat(0x881A); // GL_RGBA16F
+			format_blit.setInternalTextureFormat(bufferFormat);
 
 		// strict: format_buf must be format_blit + multisampling! OGL spec!
 		format_buf = format_blit;
