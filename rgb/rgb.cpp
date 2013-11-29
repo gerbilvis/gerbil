@@ -136,7 +136,9 @@ cv::Mat3f RGB::execute(const multi_img& src, vole::ProgressObserver *po)
 
 cv::Mat3f RGB::executePCA(const multi_img& src)
 {
-	multi_img pca3 = src.project(src.pca(3));
+	// cover cases of lt 3 channels
+	unsigned int components = std::min(3u, src.size());
+	multi_img pca3 = src.project(src.pca(components));
 
 	bool cont = progressUpdate(70.0f, po); // TODO: values
 	if (!cont) return cv::Mat3f();
@@ -149,10 +151,14 @@ cv::Mat3f RGB::executePCA(const multi_img& src)
 	cont = progressUpdate(80.0f, po); // TODO: values
 	if (!cont) return cv::Mat3f();
 
-//	bgr = pca3.Mat();
-	// green: component 1, red: component 2, blue: component 3
 	std::vector<cv::Mat> vec(3);
-	vec[0] = pca3[2]; vec[1] = pca3[0]; vec[2] = pca3[1];
+	// initialize all of them in the case the source had less than 3 channels
+	vec[0] = vec[1] = vec[2] = pca3[0]; // green: component 1
+	if (pca3.size() > 1)
+		vec[2] = pca3[1]; // red: component 2
+	if (pca3.size() > 2)
+		vec[0] = pca3[2]; // blue: component 3
+
 	cv::Mat3f bgr;
 	cv::merge(vec, bgr);
 	return bgr;
