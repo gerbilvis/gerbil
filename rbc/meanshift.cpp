@@ -84,7 +84,7 @@ void meanshift_rbc(matrix database, int numReps, int pointsPerRepresentative)
     cl::Buffer distances(context, CL_MEM_READ_WRITE, byte_size, 0, &err);
     checkErr(err);
 
-    int itersNum = 15;
+    int itersNum = 20;
 
     for(int i = 0; i < itersNum; ++i)
     {
@@ -392,6 +392,8 @@ void validate_query_and_mean(matrix database, cl::Buffer selectedPoints,
 
 
     double distances_sum = 0.0;
+    int zero_distances = 0;
+    int nearly_zero_distances = 0;
 
     for(int i = 0; i < database.r; ++i)
     {
@@ -399,12 +401,28 @@ void validate_query_and_mean(matrix database, cl::Buffer selectedPoints,
 
         assert(!std::isnan(dist));
 
+        if(dist == 0.f)
+        {
+            ++zero_distances;
+        }
+        else if(dist < 1.0e-10)
+        {
+            ++nearly_zero_distances;
+        }
+
         distances_sum += dist;
     }
 
     std::cout << "result distances sum: " << distances_sum << std::endl;
     std::cout << "avg result distance: " << distances_sum / database.r
                  << std::endl;
+
+    std::cout << "zero distances: "
+              << (((float)zero_distances) / database.r) * 100
+              << "%" << std::endl;
+    std::cout << "nearly zero distances: "
+              << (((float)nearly_zero_distances) / database.r) * 100
+              << "%" << std::endl;
 
     delete[] selectedPointsHost;
     delete[] selectedPointsNumHost;
