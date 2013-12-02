@@ -80,6 +80,39 @@ void Viewport::initBuffers()
 	/* (re)set framebuffers */
 	target->makeCurrent();
 
+	if(!tryInitBuffers()) {
+		// tryInitBuffers() fails if the buffer format is not supported by the
+		// GL driver. RGBA8 is the default and should be supported by all
+		// drivers.
+
+		// TODO: write operator<<
+		const char* bfs;
+		switch(bufferFormat) {
+		case RGBA8: bfs = "RGBA8"; break;
+		case RGBA16F: bfs = "RGBA16F"; break;
+		case RGBA32F: bfs = "RGBA32F"; break;
+		default:
+			bfs = "UNKNOWN_BUFFER_FORMAT"; break;
+		}
+
+		std::cerr << "Viewport: Warning: Failed to init framebuffer "
+				  << "with format " << bfs << ". "
+				  << "Falling back to RGBA8. Drawing quality reduced."
+				  << std::endl;
+
+		bufferFormat = RGBA8;
+		// try again
+		if(!tryInitBuffers()) {
+			std::cerr << "Viewport: Error: Failed to init framebuffer "
+					  << "with format RGBA8. Aborting."
+					  << std::endl;
+			std::abort();
+		}
+	}
+}
+
+bool Viewport::tryInitBuffers()
+{
 	for (int i = 0; i < 2; ++i) {
 		// first: formats
 		QGLFramebufferObjectFormat format_buf, format_blit;
@@ -98,12 +131,19 @@ void Viewport::initBuffers()
 		// second: buffer
 		delete buffers[i].fbo;
 		buffers[i].fbo = new QGLFramebufferObject(width, height, format_buf);
+		if(!buffers[i].fbo->isValid()) {
+			return false;
+		}
 		buffers[i].dirty = true;
 
 		// third: blit buffer
 		delete buffers[i].blit;
 		buffers[i].blit = new QGLFramebufferObject(width, height, format_blit);
+		if(!buffers[i].blit->isValid()) {
+			return false;
+		}
 	}
+	return true;
 }
 
 /********* S T A T E ********/
@@ -379,3 +419,5 @@ void Viewport::screenshot()
 	IOGui io("Screenshot File", "screenshot", target);
 	io.writeFile(QString(), output);
 }
+
+
