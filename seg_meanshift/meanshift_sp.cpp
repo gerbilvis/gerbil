@@ -211,7 +211,6 @@ void MeanShiftSP::printShortHelp() const {
 	std::cout << "Fast adaptive mean shift segmentation on superpixels" << std::endl;
 }
 
-
 void MeanShiftSP::printHelp() const {
 	std::cout << "Fast adaptive mean shift segmentation on superpixels" << std::endl;
 	std::cout << std::endl;
