@@ -50,6 +50,7 @@ RGB::RGB()
 		"Johannes Jordan",
 		"johannes.jordan@informatik.uni-erlangen.de"),
    calcPo(new SOMProgressObserver(this)),
+   srcimg(NULL),
    abortFlag(false)
 {}
 
