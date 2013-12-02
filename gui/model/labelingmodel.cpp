@@ -45,6 +45,11 @@ void LabelingModel::updateROI(const cv::Rect &roi)
 
 void LabelingModel::setLabels(const vole::Labeling &labeling, bool full)
 {
+	// check for implicit full update
+	full = full ||
+			(labels.cols == full_labels.cols
+			 && labels.rows == full_labels.rows);
+
 	// the label matrix
 	cv::Mat1s m = labeling();
 	if (full) {
