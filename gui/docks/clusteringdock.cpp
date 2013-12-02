@@ -24,8 +24,6 @@ void ClusteringDock::initUi()
 	usMethodBox->addItem("Fast (PSPMS)", 3);
 	usMethodBox->addItem("Fastest (FSPMS)", 4);
 
-	usMethodChanged(3); // set default state to PSPMS
-
 	// will be set later by controller
 	usBandsSpinBox->setValue(-1);
 	usBandsSpinBox->setMaximum(-1);
@@ -43,6 +41,9 @@ void ClusteringDock::initUi()
 
 	connect(usLshCheckBox, SIGNAL(toggled(bool)),
 			usLshWidget, SLOT(setEnabled(bool)));
+
+	// do this after connecting signals
+	usMethodBox->setCurrentIndex(1); // set default state to PSPMS
 }
 
 void ClusteringDock::unsupervisedSegCancelled() {
