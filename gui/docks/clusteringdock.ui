@@ -41,6 +41,9 @@
          <property name="value">
           <number>0</number>
          </property>
+         <property name="format">
+          <string> %p% </string>
+         </property>
         </widget>
        </item>
        <item>
@@ -49,7 +52,9 @@
           <string>Cancel</string>
          </property>
          <property name="icon">
-          <iconset theme="process-stop"/>
+          <iconset theme="process-stop">
+           <normaloff/>
+          </iconset>
          </property>
         </widget>
        </item>
@@ -145,7 +150,9 @@
                   <string>Run</string>
                  </property>
                  <property name="icon">
-                  <iconset theme="dialog-apply"/>
+                  <iconset theme="dialog-apply">
+                   <normaloff/>
+                  </iconset>
                  </property>
                  <property name="iconSize">
                   <size>

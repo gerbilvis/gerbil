@@ -160,7 +160,7 @@ std::vector<fams_point> MeanShift::prepare_sp_points(const FAMS &fams,
 		p.window_ = 0;
 		p.weightdp2_ = 0.;
 
-		int N = mit->size();
+		int N = (int)mit->size();
 
 		// sum up all superpixel members
 		std::fill_n(accum.begin(), D, 0);

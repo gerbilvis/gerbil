@@ -205,7 +205,8 @@ void Viewport::updateModelview()
 	int htp = yaxisWidth - 6; // left padding for text (legend)
 
 	// if gradient, we discard one unit space intentionally for centering
-	int d = (*ctx)->dimensionality - ((*ctx)->type == representation::GRAD ? 0 : 1);
+	int d = (int)(*ctx)->dimensionality
+			- ((*ctx)->type == representation::GRAD ? 0 : 1);
 	qreal w = (wwidth  - 2*hp - htp)/(qreal)(d); // width of one unit
 	qreal h = (wheight - 2*vp - vtp)/(qreal)((*ctx)->nbins); // height of one unit
 	int t = ((*ctx)->type == representation::GRAD ? w/2 : 0); // moving half a unit for centering
@@ -307,13 +308,13 @@ void Viewport::drawBins(QPainter &painter, QTimer &renderTimer,
 		target->qglColor(color);
 
 		// draw polyline
-		glDrawArrays(GL_LINE_STRIP, iD, (*ctx)->dimensionality);
+		glDrawArrays(GL_LINE_STRIP, (GLsizei)iD, (GLint)(*ctx)->dimensionality);
 	}
 	vb.release();
 	painter.endNativePainting();
 
 	// setup succeeding incremental drawing
-	renderedLines += (last - first);
+	renderedLines += (unsigned int)(last - first);
 	if (renderedLines < total) {
 		if (renderedLines <= renderStep) {
 			renderTimer.start(150);
@@ -468,7 +469,7 @@ void Viewport::drawAxesBg(QPainter *painter)
 	painter->setPen(Qt::NoPen);
 	painter->drawPolygon(poly2);
 	painter->setPen(Qt::white);
-	poly2.remove((*ctx)->dimensionality, 2);
+	poly2.remove((int)(*ctx)->dimensionality, 2);
 	painter->drawPolyline(poly2);
 	painter->save();
 	painter->setWorldTransform(modelview);

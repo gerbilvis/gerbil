@@ -289,7 +289,7 @@ multi_img::ptr GdalReader::readFile()
 
 	// set min & max
 	img_ptr->minval = 0;
-	img_ptr->maxval = maxVal;
+	img_ptr->maxval = (multi_img::Value)maxVal;
 
 	/* invalidate pixel cache as pixel length has changed
 	   This step is _mandatory_ also to initialize cache containers */

@@ -37,11 +37,11 @@ int FelzenszwalbShell::execute() {
 
 	if (config.verbosity > 0) {	// statistical output
 		const felzenszwalb::segmap &segmap = result.second;
-		cv::Mat1i sizes(segmap.size(), 1);
+		cv::Mat1i sizes((int)segmap.size(), 1);
 		cv::Mat1i::iterator sit = sizes.begin();
 		felzenszwalb::segmap::const_iterator mit = segmap.begin();
 		for (; mit != segmap.end(); ++sit, ++mit)
-			*sit = mit->size();
+			*sit = (int)mit->size();
 		cv::Scalar mean, stddev;
 		cv::meanStdDev(sizes, mean, stddev);
 		std::cout << "Found " << result.second.size() << " segments"
