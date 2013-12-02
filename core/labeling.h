@@ -129,6 +129,7 @@ public:
 
 	/// Remove empty labels, create clean labeling with new colors
 	void consolidate();
+
 protected:
 
 	/// helper function to build labelColors based on labelcount

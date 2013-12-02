@@ -23,16 +23,14 @@ ROIView::ROIView()
 	pen.setColor(Qt::lightGray);
 	rect->setPen(pen);
 
-
-	rectX = new QGraphicsRectItem();
-	rectX->setFlag(QGraphicsItem::ItemHasNoContents);
-	rectX->setBrush(Qt::NoBrush);
-	rectX->setPen(Qt::NoPen);
-	addItem(rectX);
-	rect->setParentItem(rectX);
+	container = new QGraphicsRectItem();
+	container->setFlag(QGraphicsItem::ItemHasNoContents);
+	container->setBrush(Qt::NoBrush);
+	container->setPen(Qt::NoPen);
+	addItem(container);
+	rect->setParentItem(container);
 
 	SizeGripItem* grip = new SizeGripItem(new BoundedRectResizer, rect);
-	addItem(grip);
 
 	connect(rect, SIGNAL(newRect(QRectF)), grip, SLOT(setRect(QRectF)));
 	connect(rect, SIGNAL(newSelection(QRect)),
@@ -46,15 +44,15 @@ void ROIView::setROI(QRect roi)
 
 void ROIView::setPixmap(QPixmap p)
 {
-	rectX->setRect(p.rect());
+	container->setRect(p.rect());
 	ScaledView::setPixmap(p);
 }
 
 void ROIView::resizeEvent()
 {
 	ScaledView::resizeEvent();
-	rectX->setTransform(scaler);
-	rectX->setRect(pixmap.rect());
+	container->setTransform(scaler);
+	container->setRect(pixmap.rect());
 }
 
 void BoundedRect::adjustTo(QRectF box, bool internal)

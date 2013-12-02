@@ -6,6 +6,7 @@
 // vole modules
 #include <meanshift.h>
 #include <meanshift_shell.h>
+#include <meanshift_sp.h>
 
 ClusteringDock::ClusteringDock(QWidget *parent) :
 	QDockWidget(parent),
@@ -21,7 +22,7 @@ void ClusteringDock::initUi()
 {
 	usMethodBox->addItem("Accurate (FAMS)", 0);
 	usMethodBox->addItem("Fast (PSPMS)", 3);
-	// TODO usMethodBox->addItem("FSPMS", 4);
+	usMethodBox->addItem("Fastest (FSPMS)", 4);
 
 	usMethodChanged(3); // set default state to PSPMS
 
@@ -78,7 +79,22 @@ void ClusteringDock::startUnsupervisedSeg()
 
 		config.use_LSH = usLshCheckBox->isChecked();
 	} else if (method == 4) { // FSPMS
-		// TODO
+		cmd = new vole::MeanShiftSP();
+		vole::MeanShiftConfig &config =
+				static_cast<vole::MeanShiftSP*>(cmd)->config;
+
+		// fixed settings
+		config.batch = true;
+		/* see method == 3
+		 */
+		config.sp_withGrad = usGradientCheckBox->isChecked();
+		config.superpixel.eqhist=1;
+		config.superpixel.c=0.05f;
+		config.superpixel.min_size=5;
+		config.superpixel.similarity.measure=vole::SPEC_INF_DIV;
+		config.sp_weight = 2;
+
+		config.use_LSH = usLshCheckBox->isChecked();
 	}
 
 	connect(usCancelButton, SIGNAL(clicked()),

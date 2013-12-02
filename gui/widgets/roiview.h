@@ -48,9 +48,10 @@ signals:
 protected:
 	void resizeEvent();
 
-	// our rectangle, belongs to the scene
+	// ROI rectangle, children of container
 	BoundedRect *rect;
-	QGraphicsRectItem *rectX;
+	// container of ROI rectangle, needed for proper coord. transformation
+	QGraphicsRectItem *container;
 };
 
 struct BoundedRectResizer : public SizeGripItem::Resizer
