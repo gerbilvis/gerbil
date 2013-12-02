@@ -153,12 +153,15 @@ void BandDock::processLabelingChange(const cv::Mat1s &labels,
 			markerSelector->addItem(colorIcon(colors.at(i)), "");
 		}
 		markerSelector->addItem(QIcon::fromTheme("list-add"), "");
+		markerSelector->setCurrentIndex(bv->getCurrentLabel() - 1);
 		markerSelector->blockSignals(false);
 
 		/* make sure our current label fits -> this does not only affect bv! */
 		int oldindex = bv->getCurrentLabel();
-		if (oldindex < 1 || oldindex >= labelColors.count())
-			emit currentLabelChanged(1); // always valid default
+		if (oldindex < 1 || oldindex >= labelColors.count()) {
+			// set to the always valid default (propagates to bv)
+			markerSelector->setCurrentIndex(0);
+		}
 	}
 
 	// tell bandview about the update as well
