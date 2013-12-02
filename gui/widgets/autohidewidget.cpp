@@ -9,6 +9,9 @@ AutohideWidget::AutohideWidget()
 {
 	QString style = "AutohideWidget { background: rgba(63, 63, 63, 191); } ";
 	style.append("QLabel, QRadioButton, QCheckBox { color: white; }");
+#ifdef _WIN32 // windows progress bars show the text next to the bar
+	style.append("QProgressBar { color: white; }");
+#endif
 	setStyleSheet(style);
 }
 
