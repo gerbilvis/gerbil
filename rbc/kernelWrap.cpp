@@ -6,7 +6,9 @@
 #define KERNELWRAP_CU
 
 //#include<cuda.h>
-#include<stdio.h>
+#include <cstdio>
+#include <cassert>
+
 #include "kernels.h"
 #include "defs.h"
 #include "utilsGPU.h"
@@ -492,19 +494,22 @@ void meanshiftPlanKNNWrap(const ocl_matrix& dq, const cl::Buffer& dqMap,
                  const ocl_compPlan& dcP, const cl::Buffer& windows,
                  cl::Buffer& selectedPoints,
                  cl::Buffer& selectedPointsNum,
-                 int maxPointsNum, unint compLength)
+                 unint maxPointsNum,// unint compLength,
+                 unint startPos, unint length)
 {
     cl::NDRange local(BLOCK_SIZE, BLOCK_SIZE);
-    unint todo;
-    unint numDone = 0;
+   // unint todo;
+    //unint numDone = 0;
 
-    while(numDone < compLength)
-    {
-        todo = MIN((compLength-numDone), MAX_BS*BLOCK_SIZE);
+    assert((length % BLOCK_SIZE) == 0);
 
+   // while(numDone < compLength)
+   // {
+   //     todo = MIN((compLength - numDone), MAX_BS*BLOCK_SIZE);
         //std::cout << "planKNN kernel todo: " << todo << std::endl;
+        //cl::NDRange global(BLOCK_SIZE, todo);
 
-        cl::NDRange global(BLOCK_SIZE, todo);
+        cl::NDRange global(BLOCK_SIZE, length);
 
         cl::CommandQueue& queue = OclContextHolder::queue;
         cl::Kernel& meanshiftPlanKNNKernel
@@ -534,7 +539,8 @@ void meanshiftPlanKNNWrap(const ocl_matrix& dq, const cl::Buffer& dqMap,
         meanshiftPlanKNNKernel.setArg(21, dcP.qToQGroup);
         meanshiftPlanKNNKernel.setArg(22, dcP.qGroupToXGroup);
         meanshiftPlanKNNKernel.setArg(23, dcP.ld);
-        meanshiftPlanKNNKernel.setArg(24, numDone);
+        //meanshiftPlanKNNKernel.setArg(24, numDone);
+        meanshiftPlanKNNKernel.setArg(24, startPos);
         meanshiftPlanKNNKernel.setArg(25, windows);
         meanshiftPlanKNNKernel.setArg(26, selectedPoints);
         meanshiftPlanKNNKernel.setArg(27, selectedPointsNum);
@@ -544,8 +550,8 @@ void meanshiftPlanKNNWrap(const ocl_matrix& dq, const cl::Buffer& dqMap,
                                                 global, local);
         checkErr(err);
 
-        numDone += todo;
-    }
+   //     numDone += todo;
+  //  }
 }
 
 void meanshiftMeanWrap(const ocl_matrix& input,

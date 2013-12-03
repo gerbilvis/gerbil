@@ -11,7 +11,8 @@
 
 #include "kernelWrap.h"
 
-void meanshift_rbc(matrix database, int numReps, int pointsPerRepresentative)
+void meanshift_rbc(matrix database, int img_width, int img_height,
+                   int numReps, int pointsPerRepresentative)
 {
     int maxQuerySize = 512;
 
@@ -84,10 +85,11 @@ void meanshift_rbc(matrix database, int numReps, int pointsPerRepresentative)
     cl::Buffer distances(context, CL_MEM_READ_WRITE, byte_size, 0, &err);
     checkErr(err);
 
-    int itersNum = 20;
+    int itersNum = 10;
 
     for(int i = 0; i < itersNum; ++i)
     {
+        std::cout << "iteration: " << i << std::endl;
         std::cout << "calculating meanshift query" << std::endl;
 
         meanshiftKQueryRBC(database_ocl, rbcS, allPilots,
@@ -117,8 +119,7 @@ void meanshift_rbc(matrix database, int numReps, int pointsPerRepresentative)
         }
     }
 
-
-    write_modes(output_ocl, 512, 512);
+    write_modes(output_ocl, img_width, img_height);
 
 //    validate_query_and_mean(database, selectedPoints, selectedPointsNum, allPilots,
 //                   maxQuerySize, database_ocl, output_ocl, distances);
@@ -547,7 +548,7 @@ void write_modes(ocl_matrix modes, int img_width, int img_height)
         std::cout << "distinct values: "
                   << distinct_values.size() << std::endl;
 
-        QString filename = QString("mode_%1.png").arg(m);
+        QString filename = QString("mode_%1.bmp").arg(m);
         img.save(filename);
 
         std::map<real, unsigned char> mapping;
@@ -581,7 +582,7 @@ void write_modes(ocl_matrix modes, int img_width, int img_height)
             }
         }
 
-        QString filename2 = QString("mode_mapped_%1.png").arg(m);
+        QString filename2 = QString("mode_mapped_%1.bmp").arg(m);
         img2.save(filename2);
 
     }

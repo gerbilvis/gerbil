@@ -77,7 +77,8 @@ void meanshiftComputeKNNs(const ocl_matrix& dx, const ocl_intMatrix& dxMap,
                           const ocl_compPlan& dcP,
                           cl::Buffer windows, cl::Buffer selectedPoints,
                           cl::Buffer selectedPointsNums,
-                          int maxPointsNum, unint compLength);
+                          int maxPointsNum,// unint compLength);
+                          unint startPos, unint length);
 
 void setupReps(matrix,ocl_rbcStruct*,unint);
 

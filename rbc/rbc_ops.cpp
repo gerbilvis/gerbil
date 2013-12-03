@@ -297,7 +297,7 @@ void meanshiftKQueryRBC(const ocl_matrix input, const ocl_rbcStruct rbcS,
 
     meanshiftComputeKNNs(rbcS.dx, rbcS.dxMap, dq, dqMap, dcP, pilots,
                          selectedPoints, selectedPointsNum,
-                         maxPointsNum, compLength);
+                         maxPointsNum, 0, compLength);
 
     free(qMap);
     freeCompPlan(&dcP);
@@ -667,6 +667,85 @@ void buildQMap(unint numQueries, unint *qMap, unint *repIDs,
     free(gS);
 }
 
+void buildQMap(unint numQueries, unint *qMap, unint *repIDs,
+               unint numReps, unint *compLength,
+               unint* partialIndexes, unint* partsSizes,
+               int pointsPerPart)
+{
+    //unint numQueries = q.r;
+
+    unint* gS = (unint*)calloc(numReps + 1, sizeof(*gS));
+
+    /** histogram */
+    for(unint i = 0; i < numQueries ; i++)
+        gS[repIDs[i]+1]++;
+
+    /** padding */
+    for(unint i = 0; i < numReps + 1; i++)
+        gS[i] = PAD(gS[i]);
+
+    /** exclusive prefix sum */
+    for(unint i = 1; i < numReps + 1; i++)
+        gS[i] = gS[i - 1] + gS[i];
+
+    /** number of queries after padding */
+    *compLength = gS[numReps];
+
+    /** map initialization */
+    for(unint i = 0; i < (*compLength); i++)
+        qMap[i] = DUMMY_IDX;
+
+    //unint partSize = 0;
+    unint partsCounter = 0;
+    unint pointsCounter = 0;
+
+    for(unint i = 0; i < numQueries; i++)
+    {
+        int mapIdx = gS[repIDs[i]];
+
+        if(pointsCounter == 0)
+        {
+            partialIndexes[partsCounter] = mapIdx;
+
+            std::cout << "part: " << partsCounter
+                      << ", index: " << mapIdx << std::endl;
+
+            if(partsCounter)
+            {
+                partsSizes[partsCounter - 1]
+                        = partialIndexes[partsCounter - 1] - mapIdx;
+
+                std::cout << "part: " << partsCounter - 1
+                          << ", size: " << partsSizes[partsCounter - 1]
+                          << std::endl;
+            }
+
+//            int prev = partsCounter ? partialIndexes[partsCounter - 1] : 0;
+//            partsSizes[partsCounter] = mapIdx - prev;
+        }
+
+        qMap[mapIdx] = i;
+        gS[repIDs[i]]++;
+
+        pointsCounter++;
+
+        if(pointsCounter == pointsPerPart)
+        {
+            pointsCounter = 0;
+            partsCounter++;
+        }
+    }
+
+    partsSizes[partsCounter] = gS[numReps] - partialIndexes[partsCounter];
+
+    std::cout << "part: " << partsCounter
+              << ", size: " << partsSizes[partsCounter]
+              << std::endl;
+
+
+    free(gS);
+}
+
 
 // Sets the computation matrix to the identity.  
 void idIntersection(charMatrix cM)
@@ -805,11 +884,13 @@ void meanshiftComputeKNNs(const ocl_matrix& dx, const ocl_intMatrix& dxMap,
                           const ocl_compPlan& dcP,
                           cl::Buffer windows, cl::Buffer selectedPoints,
                           cl::Buffer selectedPointsNums,
-                          int maxPointsNum, unint compLength)
+                          int maxPointsNum, //unint compLength)
+                          unint startPos, unint length)
 {
 
     meanshiftPlanKNNWrap(dq, dqMap, dx, dxMap, dcP, windows, selectedPoints,
-                         selectedPointsNums, maxPointsNum, compLength);
+                         selectedPointsNums, maxPointsNum, //compLength);
+                         startPos, length);
 
 }
 
