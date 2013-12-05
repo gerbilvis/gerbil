@@ -367,7 +367,7 @@ void bindPilots(const cl::Buffer &indexes, const cl::Buffer &repsPilots,
  *  s - number of points assigned to each representative.
  */
 void buildRBC(const matrix x, ocl_rbcStruct *rbcS, unint numReps, unint s,
-              cl::Buffer pilots, int threshold)
+              cl::Buffer pilots, cl::Buffer weights, int threshold)
 {
     bool computePilots = threshold != 0;
 
@@ -628,7 +628,10 @@ void computeRadii(unint *repIDs, real *distToReps, real *radii, unint n, unint n
 void computeCounts(unint *repIDs, unint queryPointsNum, unint *groupCount)
 {
     for(unint i = 0; i < queryPointsNum; i++)
-        groupCount[repIDs[i]]++;
+    {
+        unint idx = repIDs[i];
+        groupCount[idx]++;
+    }
 }
 
 

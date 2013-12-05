@@ -13,6 +13,7 @@ void buildRBC(const matrix x,
               unint numReps,
               unint pointsPerRep,
               cl::Buffer pilots = cl::Buffer(),
+              cl::Buffer weights = cl::Buffer(),
               int threshold = 0);
 
 //NEVER USED void queryRBC(const matrix,const rbcStruct,unint*,real*);

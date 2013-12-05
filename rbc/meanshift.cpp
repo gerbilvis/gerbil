@@ -28,6 +28,10 @@ void meanshift_rbc(matrix database, int img_width, int img_height,
     cl_int err;
     cl::Buffer repsPilots(context, CL_MEM_READ_WRITE,
                           PAD(numReps) * sizeof(real), 0, &err);
+
+    cl::Buffer repsWeights(context, CL_MEM_READ_WRITE,
+                           PAD(numReps) * sizeof(real), 0, &err);
+
     checkErr(err);
 
 //    cl::Buffer newRepsPilots(context, CL_MEM_READ_WRITE,
@@ -40,7 +44,7 @@ void meanshift_rbc(matrix database, int img_width, int img_height,
 
     /** calculating RBC and pilots for representatives */
     buildRBC(database, &rbcS, numReps, pointsPerRepresentative,
-             repsPilots, 512);
+             repsPilots, repsWeights, 512);
 
 
     cl::Buffer allPilots(context, CL_MEM_READ_WRITE,
@@ -54,14 +58,20 @@ void meanshift_rbc(matrix database, int img_width, int img_height,
 
     validate_pilots(database, allPilots);
 
+
     /** preparing memory for meanshift query */
 
-    int byte_size = sizeof(unint) * database.pr * maxQuerySize;
+    int partsNum = 2;
+    int pointsPerPart = database.pr / partsNum;
+
+    assert(database.pr % partsNum == 0);
+
+    int byte_size = sizeof(unint) * pointsPerPart * maxQuerySize;
 
     cl::Buffer selectedPoints(context, CL_MEM_READ_WRITE, byte_size, 0, &err);
     checkErr(err);
 
-    byte_size = sizeof(unint) * database.pr;
+    byte_size = sizeof(unint) * pointsPerPart;
 
     cl::Buffer selectedPointsNum(context, CL_MEM_READ_WRITE,
                                  byte_size, 0, &err);
@@ -71,6 +81,12 @@ void meanshift_rbc(matrix database, int img_width, int img_height,
 
     ocl_matrix database_ocl;
     copyAndMove(&database_ocl, &database);
+
+    ocl_matrix input_ocl;
+    copyAndMove(&input_ocl, &database);
+    
+//    ocl_matrix database_ocl_2;
+//    copyAndMove(&database_ocl_2, &database);
 
     ocl_matrix output_ocl = database_ocl;
 
@@ -85,36 +101,70 @@ void meanshift_rbc(matrix database, int img_width, int img_height,
     cl::Buffer distances(context, CL_MEM_READ_WRITE, byte_size, 0, &err);
     checkErr(err);
 
-    int itersNum = 10;
+    int itersNum = 40;
 
     for(int i = 0; i < itersNum; ++i)
     {
         std::cout << "iteration: " << i << std::endl;
-        std::cout << "calculating meanshift query" << std::endl;
 
-        meanshiftKQueryRBC(database_ocl, rbcS, allPilots,
-                           selectedPoints, selectedPointsNum,
-                           maxQuerySize);
+        for(int j = 0; j < partsNum; ++j)
+        {
+            std::cout << "part: " << j << std::endl;
 
-        std::cout << "calculating meanshift mean" << std::endl;
+            cl_buffer_region region;
+            region.origin = j * pointsPerPart * input_ocl.pc * sizeof(real);
+            region.size = pointsPerPart * input_ocl.pc * sizeof(real);
 
-        meanshiftMeanWrap(database_ocl, selectedPoints, selectedPointsNum,
-                          maxQuerySize, output_ocl);
+            cl::Buffer input_subBuffer = input_ocl.mat.createSubBuffer(
+                        CL_MEM_READ_WRITE, CL_BUFFER_CREATE_TYPE_REGION,
+                        &region, &err);
+
+            checkErr(err);
+
+            cl::Buffer output_subBuffer = output_ocl.mat.createSubBuffer(
+                        CL_MEM_READ_WRITE, CL_BUFFER_CREATE_TYPE_REGION,
+                        &region, &err);
+
+            checkErr(err);
+
+            ocl_matrix sub_input_matrix = input_ocl;
+            sub_input_matrix.mat = input_subBuffer;
+            sub_input_matrix.r = pointsPerPart;
+            sub_input_matrix.pr = pointsPerPart;
+
+            ocl_matrix sub_output_matrix = output_ocl;
+            sub_output_matrix.mat = output_subBuffer;
+            sub_output_matrix.r = pointsPerPart;
+            sub_output_matrix.pr = pointsPerPart;
+
+            std::cout << "calculating meanshift query" << std::endl;
+
+            meanshiftKQueryRBC(sub_input_matrix, rbcS, allPilots,
+                               selectedPoints, selectedPointsNum,
+                               maxQuerySize);
+
+            std::cout << "calculating meanshift mean" << std::endl;
+
+            meanshiftMeanWrap(database_ocl, selectedPoints,
+                              selectedPointsNum, maxQuerySize,
+                              sub_output_matrix);
+        }
+
 
         std::cout << "calculating distances" << std::endl;
 
         simpleDistanceKernelWrap(database_ocl, output_ocl, distances);
 
-        validate_query_and_mean(database, selectedPoints, selectedPointsNum, allPilots,
-                       maxQuerySize, database_ocl, output_ocl, distances);
+      //  validate_query_and_mean(database, selectedPoints, selectedPointsNum, allPilots,
+        //               maxQuerySize, database_ocl, output_ocl, distances);
 
         /** switch input and output for the next iteration */
         if(i != itersNum - 1)
         {
             std::cout << "switching input-output" << std::endl;
 
-            ocl_matrix tmp = database_ocl;
-            database_ocl = output_ocl;
+            ocl_matrix tmp = input_ocl;
+            input_ocl = output_ocl;
             output_ocl = tmp;
         }
     }

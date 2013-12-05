@@ -1385,6 +1385,7 @@ __kernel void meanshiftMeanKernel(__global const real* X_mat,
                                   __global const unint* selectedPoints,
                                   __global const unint* selectedPointsNums,
                                   unint maxPointsNum)
+                                  //unint outputOffset)
 {
     size_t local_id_x = get_local_id(0);
     size_t local_id_y = get_local_id(1);
@@ -1414,6 +1415,26 @@ __kernel void meanshiftMeanKernel(__global const real* X_mat,
                numPoints ? localMean[local_id_y][local_id_x] / numPoints : 0.f;
     }
 }
+
+#define FAMS_ALPHA         1.0
+#define FAMS_FLOAT_SHIFT   100000.0
+
+__kernel void meanshiftWeightsKernel(__global const real* pilots,
+                                     __global real* weights,
+                                     unint size,
+                                     unint dimensionality)
+{
+    size_t idx = get_global_id(0);
+
+    if(idx < size)
+    {
+        real pilot = pilots[idx];
+
+        weights[idx] = pow(FAMS_FLOAT_SHIFT / pilot,
+                           (dimensionality + 2) * FAMS_ALPHA);
+    }
+}
+
 
 
 __kernel void simpleDistancesKernel(__global const real* X_mat,

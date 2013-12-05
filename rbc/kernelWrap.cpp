@@ -245,8 +245,10 @@ void nnWrap(const ocl_matrix& dq, const ocl_matrix& dx,
         nnKernel.setArg(13, dMins);
         nnKernel.setArg(14, dMinIDs);
 
-        queue.enqueueNDRangeKernel(nnKernel, cl::NullRange,
-                                   global, local);
+        cl_int err = queue.enqueueNDRangeKernel(nnKernel, cl::NullRange,
+                                                global, local);
+
+        checkErr(err);
 
         numDone += todo;
     }
@@ -562,7 +564,7 @@ void meanshiftMeanWrap(const ocl_matrix& input,
 {
 
     cl::NDRange local(BLOCK_SIZE, BLOCK_SIZE);
-    cl::NDRange global(BLOCK_SIZE, input.pr);
+    cl::NDRange global(BLOCK_SIZE, output.pr);
 
     cl::CommandQueue& queue = OclContextHolder::queue;
     cl::Kernel& meanshiftMeanKernel = OclContextHolder::meanshiftMeanKernel;
@@ -587,6 +589,28 @@ void meanshiftMeanWrap(const ocl_matrix& input,
                                             global, local);
     checkErr(err);
 }
+
+void meanshiftWeightsWrap(const cl::Buffer& pilots, cl::Buffer& weights,
+                          unint size, unint dimensionality)
+{
+    int local_size = BLOCK_SIZE * 8;
+
+    cl::NDRange local(local_size);
+    cl::NDRange global(((size + local_size - 1) / local_size) * local_size);
+
+    cl::CommandQueue& queue = OclContextHolder::queue;
+    cl::Kernel& meanshifWeightsKernel = OclContextHolder::meanshiftWeightsKernel;
+
+    meanshifWeightsKernel.setArg(0, pilots);
+    meanshifWeightsKernel.setArg(1, weights);
+    meanshifWeightsKernel.setArg(2, size);
+    meanshifWeightsKernel.setArg(3, dimensionality);
+
+    cl_int err = queue.enqueueNDRangeKernel(meanshifWeightsKernel,
+                                            cl::NullRange, global, local);
+    checkErr(err);
+}
+
 
 void simpleDistanceKernelWrap(const ocl_matrix& in_1, const ocl_matrix& in_2,
                               cl::Buffer& out)

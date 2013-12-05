@@ -31,6 +31,7 @@ cl::Kernel OclContextHolder::bindPilotsKernel;
 cl::Kernel OclContextHolder::meanshiftPlanKNNKernel;
 cl::Kernel OclContextHolder::meanshiftMeanKernel;
 cl::Kernel OclContextHolder::simpleDistancesKernel;
+cl::Kernel OclContextHolder::meanshiftWeightsKernel;
 
 extern const char* rbc;
 
@@ -144,6 +145,7 @@ void OclContextHolder::oclInit()
     meanshiftPlanKNNKernel = cl::Kernel(program, "meanshiftPlanKNNKernel");
     meanshiftMeanKernel = cl::Kernel(program, "meanshiftMeanKernel");
     simpleDistancesKernel = cl::Kernel(program, "simpleDistancesKernel");
+    meanshiftWeightsKernel = cl::Kernel(program, "meanshiftWeigtsKernel");
 }
 
 
