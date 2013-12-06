@@ -14,7 +14,7 @@
 void meanshift_rbc(matrix database, int img_width, int img_height,
                    int numReps, int pointsPerRepresentative)
 {
-    int maxQuerySize = 512;
+    int maxQuerySize = 1024;
 
     int database_size = database.r;
 
@@ -30,7 +30,7 @@ void meanshift_rbc(matrix database, int img_width, int img_height,
                           PAD(numReps) * sizeof(real), 0, &err);
 
     cl::Buffer repsWeights(context, CL_MEM_READ_WRITE,
-                           PAD(numReps) * sizeof(real), 0, &err);
+                           PAD(numReps) * sizeof(double), 0, &err);
 
     checkErr(err);
 
@@ -44,24 +44,31 @@ void meanshift_rbc(matrix database, int img_width, int img_height,
 
     /** calculating RBC and pilots for representatives */
     buildRBC(database, &rbcS, numReps, pointsPerRepresentative,
-             repsPilots, repsWeights, 512);
+             repsPilots, 512);
+
+    meanshiftWeightsWrap(repsPilots, repsWeights, numReps, database.c);
 
 
     cl::Buffer allPilots(context, CL_MEM_READ_WRITE,
                           PAD(database.pr) * sizeof(real), 0, &err);
     checkErr(err);
 
+    cl::Buffer allWeights(context, CL_MEM_READ_WRITE,
+                          PAD(database.pr) * sizeof(double), 0, &err);
+    checkErr(err);
+
     std::cout << "computing pilot" << std::endl;
 
     /** calculating pilot for every point */
-    computePilots(database, repsPilots, rbcS, allPilots);
+    computePilotsAndWeights(database, repsPilots, repsWeights,
+                            rbcS, allPilots, allWeights);
 
     validate_pilots(database, allPilots);
 
 
     /** preparing memory for meanshift query */
 
-    int partsNum = 2;
+    int partsNum = 1;
     int pointsPerPart = database.pr / partsNum;
 
     assert(database.pr % partsNum == 0);
@@ -69,6 +76,12 @@ void meanshift_rbc(matrix database, int img_width, int img_height,
     int byte_size = sizeof(unint) * pointsPerPart * maxQuerySize;
 
     cl::Buffer selectedPoints(context, CL_MEM_READ_WRITE, byte_size, 0, &err);
+    checkErr(err);
+
+    byte_size = sizeof(real) * pointsPerPart * maxQuerySize;
+
+    cl::Buffer selectedDistances(context, CL_MEM_READ_WRITE,
+                                 byte_size, 0, &err);
     checkErr(err);
 
     byte_size = sizeof(unint) * pointsPerPart;
@@ -139,24 +152,32 @@ void meanshift_rbc(matrix database, int img_width, int img_height,
 
             std::cout << "calculating meanshift query" << std::endl;
 
-            meanshiftKQueryRBC(sub_input_matrix, rbcS, allPilots,
-                               selectedPoints, selectedPointsNum,
-                               maxQuerySize);
+            meanshiftKQueryRBC(sub_input_matrix, rbcS, allPilots, allWeights,
+                               selectedPoints, selectedDistances,
+                               selectedPointsNum, maxQuerySize);
 
             std::cout << "calculating meanshift mean" << std::endl;
 
             meanshiftMeanWrap(database_ocl, selectedPoints,
-                              selectedPointsNum, maxQuerySize,
-                              sub_output_matrix);
+                              selectedDistances, selectedPointsNum, allPilots,
+                              allWeights, maxQuerySize, sub_output_matrix);
+
+//            meanshiftMeanWrap(database_ocl, selectedPoints,
+//                              selectedDistances, selectedPointsNum, allPilots,
+//                              allWeights, maxQuerySize, sub_output_matrix);
         }
 
 
         std::cout << "calculating distances" << std::endl;
 
-        simpleDistanceKernelWrap(database_ocl, output_ocl, distances);
+        simpleDistanceKernelWrap(input_ocl, output_ocl, distances);
+
+        validate_distances(database, distances);
 
       //  validate_query_and_mean(database, selectedPoints, selectedPointsNum, allPilots,
         //               maxQuerySize, database_ocl, output_ocl, distances);
+
+        write_modes(output_ocl, img_width, img_height);
 
         /** switch input and output for the next iteration */
         if(i != itersNum - 1)
@@ -169,7 +190,7 @@ void meanshift_rbc(matrix database, int img_width, int img_height,
         }
     }
 
-    write_modes(output_ocl, img_width, img_height);
+    //write_modes(output_ocl, img_width, img_height);
 
 //    validate_query_and_mean(database, selectedPoints, selectedPointsNum, allPilots,
 //                   maxQuerySize, database_ocl, output_ocl, distances);
@@ -213,7 +234,8 @@ void validate_pilots(matrix database, cl::Buffer pilots)
                 real a = database.mat[IDX(j, k, database.ld)];
                 real b = database.mat[IDX(candidate, k, database.ld)];
 
-                distance += (a - b) * (a - b);
+//                distance += (a - b) * (a - b);
+                distance += std::abs(a - b);
             }
 
             distances[j] = distance;
@@ -484,6 +506,65 @@ void validate_query_and_mean(matrix database, cl::Buffer selectedPoints,
     delete[] mean;
     delete[] result_distances_host;
 }
+
+void validate_distances(matrix database, cl::Buffer result_distances)
+{
+    cl_int err;
+
+    cl::CommandQueue& queue = OclContextHolder::queue;
+    queue.finish();
+
+    std::cout << "validating distances..." << std::endl;
+
+    int db_size = database.r;
+
+    real* result_distances_host = new real[db_size];
+
+
+    std::cout << "downloading distances" << std::endl;
+
+    err = queue.enqueueReadBuffer(result_distances, CL_TRUE, 0,
+                                  database.r * sizeof(real),
+                                  result_distances_host);
+    checkErr(err);
+
+    double distances_sum = 0.0;
+    int zero_distances = 0;
+    int nearly_zero_distances = 0;
+
+    for(int i = 0; i < database.r; ++i)
+    {
+        float dist = result_distances_host[i];
+
+        assert(!std::isnan(dist));
+
+        if(dist == 0.f)
+        {
+            ++zero_distances;
+        }
+        else if(dist < 1.0e-10)
+        {
+            ++nearly_zero_distances;
+        }
+
+        distances_sum += dist;
+    }
+
+    std::cout << "result distances sum: " << distances_sum << std::endl;
+    std::cout << "avg result distance: " << distances_sum / database.r
+                 << std::endl;
+
+    std::cout << "zero distances: "
+              << (((float)zero_distances) / database.r) * 100
+              << "%" << std::endl;
+    std::cout << "nearly zero distances: "
+              << (((float)nearly_zero_distances) / database.r) * 100
+              << "%" << std::endl;
+
+    delete[] result_distances_host;
+
+}
+
 
 void write_modes(ocl_matrix modes, int img_width, int img_height)
 {

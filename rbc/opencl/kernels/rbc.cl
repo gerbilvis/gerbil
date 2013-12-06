@@ -22,7 +22,14 @@ typedef uint unint;
 //Row major indexing
 #define IDX(i,j,ld) (((size_t)(i)*(ld))+(j))
 
-#define DIST(i,j) (((i) - (j)) * ((i) - (j))) // L_2
+//#define L2
+
+#ifdef L2
+    #define DIST(i,j) (((i) - (j)) * ((i) - (j))) // L_2
+#else
+    #define DIST(i,j) (fabs((i) - (j))) // L_1
+#endif
+
 
 #define MAX(a,b) max(a,b)
 #define MIN(a,b) min(a,b)
@@ -79,29 +86,29 @@ __kernel void dist1Kernel(__global const real* Q_mat,
     unint xB = blockIdx_x*BLOCK_SIZE + xStart;
     unint x = threadIdx_x;
 
-    real ans=0;
+    real ans = 0;
 
     //This thread is responsible for computing the dist between Q[qB+q] and X[xB+x]
 
     __local real Qs[BLOCK_SIZE][BLOCK_SIZE];
     __local real Xs[BLOCK_SIZE][BLOCK_SIZE];
 
-    for(i=0 ; i<Q_pc/BLOCK_SIZE; i++)
+    for(i = 0; i < Q_pc / BLOCK_SIZE; i++)
     {
-        c=i*BLOCK_SIZE; //current col block
+        c = i * BLOCK_SIZE; //current col block
 
-        Qs[x][q] = Q_mat[ dq_offset + IDX(qB+q, c+x, Q_ld) ];
-        Xs[x][q] = X_mat[ IDX(xB+q, c+x, X_ld) ];
+        Qs[x][q] = Q_mat[dq_offset + IDX(qB + q, c + x, Q_ld)];
+        Xs[x][q] = X_mat[IDX(xB + q, c + x, X_ld)];
 
         barrier(CLK_LOCAL_MEM_FENCE);
 
-        for(j=0 ; j<BLOCK_SIZE ; j++)
-            ans += DIST( Qs[j][q], Xs[j][x] );
+        for(j = 0; j < BLOCK_SIZE; j++)
+            ans += DIST(Qs[j][q], Xs[j][x]);
 
         barrier(CLK_LOCAL_MEM_FENCE);
     }
 
-    D_mat[ IDX( qB+q, xB+x, D_ld ) ] = ans;
+    D_mat[ IDX(qB + q, xB + x, D_ld)] = ans;
 }
 
 
@@ -140,11 +147,11 @@ __kernel void findRangeKernel(__global const real* D_mat,
     real min_val = FLT_MAX;
     real max_val = 0;
 
-    for(unint c = 0 ; c < D_pc; c += (4*BLOCK_SIZE))
+    for(unint c = 0; c < D_pc; c += (4 * BLOCK_SIZE))
     {
         if(c + co < D_c)
         {
-            t = D_mat[IDX( row, c+co, D_ld )];
+            t = D_mat[IDX(row, c + co, D_ld)];
             min_val = MIN(t,min_val);
             max_val = MAX(t,max_val);
         }
@@ -173,8 +180,8 @@ __kernel void findRangeKernel(__global const real* D_mat,
     __local unint scnt[BLOCK_SIZE/4][4*BLOCK_SIZE];
     __local char cont[BLOCK_SIZE/4];
 
-    if(co==0)
-        cont[ro]=1;
+    if(co == 0)
+        cont[ro] = 1;
 
     do
     {
@@ -183,14 +190,14 @@ __kernel void findRangeKernel(__global const real* D_mat,
         barrier(CLK_LOCAL_MEM_FENCE);
 
         if(cont[ro])  //if we didn't actually need to cont, leave rg as it was.
-            rg = ( smax[ro][0] + smin[ro][0] ) / ((real)2.0) ;
+            rg = (smax[ro][0] + smin[ro][0]) / ((real)2.0);
 
         unint cnt = 0;
 
-        for(unint c = 0; c < D_pc; c += (4*BLOCK_SIZE))
+        for(unint c = 0; c < D_pc; c += (4 * BLOCK_SIZE))
         {
-            cnt += (c+co < D_c && row < D_r
-                               && D_mat[ IDX( row, c+co, D_ld ) ] <= rg);
+            cnt += (c+co < D_c&& row < D_r
+                               && D_mat[IDX(row, c+co, D_ld)] <= rg);
         }
 
         scnt[ro][co] = cnt;
@@ -201,7 +208,7 @@ __kernel void findRangeKernel(__global const real* D_mat,
         {
             if(co < i)
             {
-                scnt[ro][co] += scnt[ro][co+i];
+                scnt[ro][co] += scnt[ro][co + i];
             }
             barrier(CLK_LOCAL_MEM_FENCE);
         }
@@ -209,14 +216,14 @@ __kernel void findRangeKernel(__global const real* D_mat,
         if(co == 0)
         {
             if(scnt[ro][0] < cntWant)
-                smin[ro][0]=rg;
+                smin[ro][0] = rg;
             else
-                smax[ro][0]=rg;
+                smax[ro][0] = rg;
         }
 
         // cont[ro] == this row needs to continue
         if(co == 0)
-            cont[ro] = row<D_r && ( scnt[ro][0] < LB || scnt[ro][0] > UB );
+            cont[ro] = row < D_r && (scnt[ro][0] < LB || scnt[ro][0] > UB);
 
         barrier(CLK_LOCAL_MEM_FENCE);
 
@@ -224,7 +231,7 @@ __kernel void findRangeKernel(__global const real* D_mat,
         for(i = BLOCK_SIZE / 8; i > 0; i /= 2)
         {
             if(ro < i && co == 0)
-                cont[ro] |= cont[ro+i];
+                cont[ro] |= cont[ro + i];
             barrier(CLK_LOCAL_MEM_FENCE);
         }
 
@@ -1192,17 +1199,34 @@ __kernel void computePilotKernel(__global const float* nns,
     }
 }
 
-__kernel void bindPilotsKernel(__global const unint* indexes,
-                               __global const real* repsPilots,
-                               __global real* pilots,
-                               unint pilots_size)
+__kernel void bindPilotsAndWeightsKernel(__global const unint* indexes,
+                                         __global const real* repsPilots,
+                                         __global const double* repsWeights,
+                                         __global real* pilots,
+                                         __global double* weights,
+                                         unint pilots_size)
 {
 
     int x = get_global_id(0);
 
+    if(x == 0)
+    {
+        printf("size: %d\n", pilots_size);
+    }
+    if(x == pilots_size - 1)
+    {
+        printf("CHECK!\n");
+    }
+
     if(x < pilots_size)
     {
-        pilots[x] = repsPilots[indexes[x]];
+        int idx = indexes[x];
+
+        pilots[x] = repsPilots[idx];
+        weights[x] = repsWeights[idx];
+
+        assert(!isnan(repsPilots[idx]));
+        assert(!isnan(repsWeights[idx]));
     }
 }
 
@@ -1233,7 +1257,9 @@ __kernel void meanshiftPlanKNNKernel(__global const real* Q_mat,
                             unint cP_ld,
                             unint qStartPos,
                             __global const real* windows,
+                            __global const real* weights,
                             __global unint* selectedPoints,
+                            __global real* selectedDistances,
                             __global unint* selectedPointsNums,
                             unint maxPointsNum)
 {
@@ -1254,6 +1280,8 @@ __kernel void meanshiftPlanKNNKernel(__global const real* Q_mat,
 //    __local unint idNN[BLOCK_SIZE][KMAX + BLOCK_SIZE];
 
     __local unint valid_indices[BLOCK_SIZE][BLOCK_SIZE];
+    __local real valid_distances[BLOCK_SIZE][BLOCK_SIZE];
+
     volatile __local unint local_count[BLOCK_SIZE];
     volatile __local unint global_count[BLOCK_SIZE];
 
@@ -1326,6 +1354,9 @@ __kernel void meanshiftPlanKNNKernel(__global const real* Q_mat,
         real window = xB + offX < groupCount
                         ? windows[xMap_mat[IDX(xG, xB + offX, xMap_ld)]] : 0.f;
 
+//        real weight = xB + offX < groupCount
+//                        ? weights[xMap_mat[IDX(xG, xB + offX, xMap_ld)]] : 0.f;
+
         bool isOk = (ans < window) && (xB + offX < groupCount);
 
         if(isOk)
@@ -1335,6 +1366,7 @@ __kernel void meanshiftPlanKNNKernel(__global const real* Q_mat,
           //  assert(xG < xMap_pr);
           //  assert(xB + offX < xMap_pc);
             valid_indices[offQ][idx] = xMap_mat[IDX(xG, xB + offX, xMap_ld)];
+            valid_distances[offQ][idx] = ans;
         }
 
         barrier(CLK_LOCAL_MEM_FENCE);
@@ -1347,7 +1379,10 @@ __kernel void meanshiftPlanKNNKernel(__global const real* Q_mat,
             int colIdx = global_count[offQ] + offX;
 
             if(colIdx < maxPointsNum)
+            {
                 selectedPoints[baseIdx + colIdx] = valid_indices[offQ][offX];
+                selectedDistances[baseIdx + colIdx] = valid_distances[offQ][offX];
+            }
         }
 
         barrier(CLK_LOCAL_MEM_FENCE);
@@ -1383,7 +1418,10 @@ __kernel void meanshiftMeanKernel(__global const real* X_mat,
                                   unint Y_pc,
                                   unint Y_ld,
                                   __global const unint* selectedPoints,
+                                  __global const real* selectedDistances,
                                   __global const unint* selectedPointsNums,
+                                  __global const real* windows,
+                                  __global const double* weights,
                                   unint maxPointsNum)
                                   //unint outputOffset)
 {
@@ -1396,42 +1434,106 @@ __kernel void meanshiftMeanKernel(__global const real* X_mat,
     size_t block_id_x = get_group_id(0);
     size_t block_id_y = get_group_id(1);
 
-    __local real localMean[BLOCK_SIZE][BLOCK_SIZE];
+    __local double localMean[BLOCK_SIZE][BLOCK_SIZE];
+
+    __local double localWeights[BLOCK_SIZE][BLOCK_SIZE];
 
     int numPoints = selectedPointsNums[global_id_y];
 
     for(unint j = local_id_x; j < X_c; j += BLOCK_SIZE)
     {
         localMean[local_id_y][local_id_x] = 0.f;
+        localWeights[local_id_y][local_id_x] = 1.f;
 
         for(unint i = 0; i < numPoints; ++i)
         {
             int idx = selectedPoints[maxPointsNum * global_id_y + i];
 
-            localMean[local_id_y][local_id_x] += X_mat[IDX(idx, j, X_ld)];
+            double dist = selectedDistances[maxPointsNum * global_id_y + i];
+
+            //double window = windows[global_id_y + i];
+            //double weight = weights[global_id_y + i];
+
+            double window = windows[idx];
+            double weight = weights[idx];
+
+//            assert(!isnan(dist));
+//            assert(!isinf(dist));
+
+//            assert(!isnan(window));
+//            assert(!isinf(window));
+
+  //          assert(!isnan(weight));
+//            assert(!isinf(weight));
+
+            double x = 1.0 - (dist / window);
+
+
+//            assert(!isnan(x));
+//            assert(!isinf(x));
+
+//            if(isinf(x))
+//            {
+//                printf("dist: %f\n", dist);
+//                printf("window: %f\n", window);
+//                printf("numPoints: %d\n", numPoints);
+//            }
+
+            double w = weight * x * x;
+
+            assert(!isnan(w));
+            assert(!isinf(w));
+
+            localMean[local_id_y][local_id_x] += X_mat[IDX(idx, j, X_ld)] * w;
+            localWeights[local_id_y][local_id_x] += w;
         }
 
-        Y_mat[IDX(global_id_y, j, Y_ld)] =
-               numPoints ? localMean[local_id_y][local_id_x] / numPoints : 0.f;
+        double final = localMean[local_id_y][local_id_x]
+                                    / localWeights[local_id_y][local_id_x];
+
+        Y_mat[IDX(global_id_y, j, Y_ld)] = numPoints ? final : 0.f;
     }
 }
 
 #define FAMS_ALPHA         1.0
 #define FAMS_FLOAT_SHIFT   100000.0
+//#define FAMS_FLOAT_SHIFT   1.0f
 
 __kernel void meanshiftWeightsKernel(__global const real* pilots,
-                                     __global real* weights,
+                                     __global double* weights,
                                      unint size,
                                      unint dimensionality)
 {
     size_t idx = get_global_id(0);
 
+    if(idx == 0)
+    {
+        printf("size: %d\n", size);
+    }
+
+    if(idx == size - 1)
+    {
+        printf("CHECK!\n");
+    }
+
     if(idx < size)
     {
         real pilot = pilots[idx];
 
+     //   assert(!isnan(pilot));
+
         weights[idx] = pow(FAMS_FLOAT_SHIFT / pilot,
                            (dimensionality + 2) * FAMS_ALPHA);
+
+        if(isinf(weights[idx]))
+        {
+            printf("pilot: %f\n", pilot);
+            printf("FAMS_FLOAT_SHIFT / pilot: %f\n", FAMS_FLOAT_SHIFT / pilot);
+            printf("pow: %f\n", pow((double)FAMS_FLOAT_SHIFT / (double)pilot, (double)(dimensionality + 2) * FAMS_ALPHA));
+        }
+
+        assert(!isnan(weights[idx]));
+        assert(!isinf(weights[idx]));
     }
 }
 
@@ -1463,7 +1565,8 @@ __kernel void simpleDistancesKernel(__global const real* X_mat,
         real X_elem = X_mat[idx];
         real Y_elem = Y_mat[idx];
 
-        shared[local_id_y][local_id_x] += (X_elem - Y_elem) * (X_elem - Y_elem);
+        shared[local_id_y][local_id_x] += DIST(X_elem, Y_elem);
+        //(X_elem - Y_elem) * (X_elem - Y_elem);
     }
 
     barrier(CLK_LOCAL_MEM_FENCE);

@@ -145,9 +145,15 @@ void FAMS::ComputePilotPoint::operator()(const tbb::blocked_range<int> &r)
 		}
 
 		fams.points_[j].window_ = (nn + 1) * wjd;
-		fams.points_[j].weightdp2_ = pow(
-					FAMS_FLOAT_SHIFT / fams.points_[j].window_,
-					(fams.d_ + 2) * FAMS_ALPHA);
+
+        double w2 = pow(FAMS_FLOAT_SHIFT / fams.points_[j].window_,
+                    (fams.d_ + 2) * FAMS_ALPHA);
+
+        float w2f = pow(FAMS_FLOAT_SHIFT / fams.points_[j].window_,
+                    (fams.d_ + 2) * FAMS_ALPHA);
+
+        fams.points_[j].weightdp2_ = w2;
+
 		if (weights) {
 			fams.points_[j].weightdp2_ *= (*weights)[j];
 		}
@@ -340,7 +346,9 @@ const
 		*crtH     = currentpt->window_;
 		tMode[jj].m = (unsigned short*)1;
 
-		for (int iter = 0; fams.NotEq(oldMean, crtMean) &&
+        int iter;
+
+        for (iter = 0; fams.NotEq(oldMean, crtMean) &&
 			 (iter < FAMS_MAXITER); iter++) {
 			const std::vector<unsigned int> *lshResult = NULL;
 			if (lsh) {

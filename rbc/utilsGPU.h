@@ -52,7 +52,7 @@ public:
     static cl::Kernel planKNNKernel;
     static cl::Kernel nnKernel;
     static cl::Kernel nn32Kernel;
-    static cl::Kernel bindPilotsKernel;
+    static cl::Kernel bindPilotsAndWeightsKernel;
     static cl::Kernel meanshiftPlanKNNKernel;
     static cl::Kernel meanshiftMeanKernel;
     static cl::Kernel simpleDistancesKernel;

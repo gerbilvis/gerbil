@@ -210,7 +210,9 @@ void kqueryRBC(const matrix q, const ocl_rbcStruct rbcS,
 
 void meanshiftKQueryRBC(const ocl_matrix input, const ocl_rbcStruct rbcS,
                         const cl::Buffer &pilots,
+                        const cl::Buffer &weights,
                         cl::Buffer selectedPoints,
+                        cl::Buffer selectedDistances,
                         cl::Buffer selectedPointsNum,
                         int maxPointsNum)
 {
@@ -295,8 +297,8 @@ void meanshiftKQueryRBC(const ocl_matrix input, const ocl_rbcStruct rbcS,
 
 //    computeKNNs(rbcS.dx, rbcS.dxMap, dq, dqMap, dcP, NNs, NNdists, compLength);
 
-    meanshiftComputeKNNs(rbcS.dx, rbcS.dxMap, dq, dqMap, dcP, pilots,
-                         selectedPoints, selectedPointsNum,
+    meanshiftComputeKNNs(rbcS.dx, rbcS.dxMap, dq, dqMap, dcP, pilots, weights,
+                         selectedPoints, selectedDistances, selectedPointsNum,
                          maxPointsNum, 0, compLength);
 
     free(qMap);
@@ -307,8 +309,12 @@ void meanshiftKQueryRBC(const ocl_matrix input, const ocl_rbcStruct rbcS,
     free(groupCountQ);
 }
 
-void computePilots(const matrix q, const cl::Buffer &repsPilots,
-                   const ocl_rbcStruct& rbcS, cl::Buffer &pilots)
+void computePilotsAndWeights(const matrix q,
+                             const cl::Buffer &repsPilots,
+                             const cl::Buffer &repsWeights,
+                             const ocl_rbcStruct& rbcS,
+                             cl::Buffer &pilots,
+                             cl::Buffer &weights)
 {
     unint m = q.r;
     unint numReps = rbcS.dr.r;
@@ -333,29 +339,34 @@ void computePilots(const matrix q, const cl::Buffer &repsPilots,
 
     computeRepsNoHost(dq, rbcS.dr, indexes);
 
-    bindPilots(indexes, repsPilots, pilots, m);
-
+    bindPilotsAndWeights(indexes, repsPilots, repsWeights, pilots, weights, m);
 }
 
-void bindPilots(const cl::Buffer &indexes, const cl::Buffer &repsPilots,
-                cl::Buffer &pilots, int pilots_size)
+void bindPilotsAndWeights(const cl::Buffer &indexes,
+                          const cl::Buffer &repsPilots,
+                          const cl::Buffer &repsWeights,
+                          cl::Buffer &pilots, cl::Buffer &weights,
+                          int size)
 {
     int kernel_size = 256;
 
     cl::NDRange local(kernel_size, 1);
 
-    cl::NDRange global(((pilots_size + kernel_size - 1)
+    cl::NDRange global(((size + kernel_size - 1)
                         / kernel_size) * kernel_size, 1);
 
     cl::CommandQueue& queue = OclContextHolder::queue;
-    cl::Kernel& bindPilotsKernel = OclContextHolder::bindPilotsKernel;
+    cl::Kernel& bindPilotsAndWeightsKernel
+            = OclContextHolder::bindPilotsAndWeightsKernel;
 
-    bindPilotsKernel.setArg(0, indexes);
-    bindPilotsKernel.setArg(1, repsPilots);
-    bindPilotsKernel.setArg(2, pilots);
-    bindPilotsKernel.setArg(3, pilots_size);
+    bindPilotsAndWeightsKernel.setArg(0, indexes);
+    bindPilotsAndWeightsKernel.setArg(1, repsPilots);
+    bindPilotsAndWeightsKernel.setArg(2, repsWeights);
+    bindPilotsAndWeightsKernel.setArg(3, pilots);
+    bindPilotsAndWeightsKernel.setArg(4, weights);
+    bindPilotsAndWeightsKernel.setArg(5, size);
 
-    queue.enqueueNDRangeKernel(bindPilotsKernel, cl::NullRange,
+    queue.enqueueNDRangeKernel(bindPilotsAndWeightsKernel, cl::NullRange,
                                global, local);
 }
 
@@ -367,7 +378,7 @@ void bindPilots(const cl::Buffer &indexes, const cl::Buffer &repsPilots,
  *  s - number of points assigned to each representative.
  */
 void buildRBC(const matrix x, ocl_rbcStruct *rbcS, unint numReps, unint s,
-              cl::Buffer pilots, cl::Buffer weights, int threshold)
+              cl::Buffer pilots, int threshold)
 {
     bool computePilots = threshold != 0;
 
@@ -885,15 +896,18 @@ void computeKNNs(const ocl_matrix& dx, const ocl_intMatrix& dxMap,
 void meanshiftComputeKNNs(const ocl_matrix& dx, const ocl_intMatrix& dxMap,
                           const ocl_matrix& dq, const cl::Buffer& dqMap,
                           const ocl_compPlan& dcP,
-                          cl::Buffer windows, cl::Buffer selectedPoints,
+                          cl::Buffer windows, cl::Buffer weights,
+                          cl::Buffer selectedPoints,
+                          cl::Buffer selectedDistances,
                           cl::Buffer selectedPointsNums,
                           int maxPointsNum, //unint compLength)
                           unint startPos, unint length)
 {
 
-    meanshiftPlanKNNWrap(dq, dqMap, dx, dxMap, dcP, windows, selectedPoints,
-                         selectedPointsNums, maxPointsNum, //compLength);
-                         startPos, length);
+    meanshiftPlanKNNWrap(dq, dqMap, dx, dxMap, dcP, windows,
+                         weights, selectedPoints, selectedDistances,
+                         selectedPointsNums,
+                         maxPointsNum, startPos, length);
 
 }
 

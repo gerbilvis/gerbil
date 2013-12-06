@@ -70,7 +70,7 @@ int RBC::execute()
 
         multi_img img;
         img.minval = 0.;
-        img.maxval = 1.;
+        img.maxval = 255.;
         img.read_image(config.input_file);
 
         if (img.empty())

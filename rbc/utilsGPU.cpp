@@ -27,7 +27,7 @@ cl::Kernel OclContextHolder::getCountsKernel;
 cl::Kernel OclContextHolder::planKNNKernel;
 cl::Kernel OclContextHolder::nnKernel;
 cl::Kernel OclContextHolder::nn32Kernel;
-cl::Kernel OclContextHolder::bindPilotsKernel;
+cl::Kernel OclContextHolder::bindPilotsAndWeightsKernel;
 cl::Kernel OclContextHolder::meanshiftPlanKNNKernel;
 cl::Kernel OclContextHolder::meanshiftMeanKernel;
 cl::Kernel OclContextHolder::simpleDistancesKernel;
@@ -141,11 +141,11 @@ void OclContextHolder::oclInit()
     planKNNKernel = cl::Kernel(program, "planKNNKernel");
     nnKernel = cl::Kernel(program, "nnKernel");
     nn32Kernel = cl::Kernel(program, "nn32Kernel");
-    bindPilotsKernel = cl::Kernel(program, "bindPilotsKernel");
+    bindPilotsAndWeightsKernel = cl::Kernel(program, "bindPilotsAndWeightsKernel");
     meanshiftPlanKNNKernel = cl::Kernel(program, "meanshiftPlanKNNKernel");
     meanshiftMeanKernel = cl::Kernel(program, "meanshiftMeanKernel");
     simpleDistancesKernel = cl::Kernel(program, "simpleDistancesKernel");
-    meanshiftWeightsKernel = cl::Kernel(program, "meanshiftWeigtsKernel");
+    meanshiftWeightsKernel = cl::Kernel(program, "meanshiftWeightsKernel");
 }
 
 

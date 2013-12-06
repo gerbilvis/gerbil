@@ -492,12 +492,15 @@ void planKNNWrap(const ocl_matrix& dq, const cl::Buffer& dqMap,
 
 
 void meanshiftPlanKNNWrap(const ocl_matrix& dq, const cl::Buffer& dqMap,
-                 const ocl_matrix& dx, const ocl_intMatrix& dxMap,
-                 const ocl_compPlan& dcP, const cl::Buffer& windows,
-                 cl::Buffer& selectedPoints,
-                 cl::Buffer& selectedPointsNum,
-                 unint maxPointsNum,// unint compLength,
-                 unint startPos, unint length)
+                          const ocl_matrix& dx, const ocl_intMatrix& dxMap,
+                          const ocl_compPlan& dcP,
+                          const cl::Buffer& windows,
+                          const cl::Buffer& weights,
+                          cl::Buffer& selectedPoints,
+                          cl::Buffer& selectedDistances,
+                          cl::Buffer& selectedPointsNum,
+                          unint maxPointsNum,// unint compLength,
+                          unint startPos, unint length)
 {
     cl::NDRange local(BLOCK_SIZE, BLOCK_SIZE);
    // unint todo;
@@ -544,9 +547,11 @@ void meanshiftPlanKNNWrap(const ocl_matrix& dq, const cl::Buffer& dqMap,
         //meanshiftPlanKNNKernel.setArg(24, numDone);
         meanshiftPlanKNNKernel.setArg(24, startPos);
         meanshiftPlanKNNKernel.setArg(25, windows);
-        meanshiftPlanKNNKernel.setArg(26, selectedPoints);
-        meanshiftPlanKNNKernel.setArg(27, selectedPointsNum);
-        meanshiftPlanKNNKernel.setArg(28, maxPointsNum);
+        meanshiftPlanKNNKernel.setArg(26, weights);
+        meanshiftPlanKNNKernel.setArg(27, selectedPoints);
+        meanshiftPlanKNNKernel.setArg(28, selectedDistances);
+        meanshiftPlanKNNKernel.setArg(29, selectedPointsNum);
+        meanshiftPlanKNNKernel.setArg(30, maxPointsNum);
 
         cl_int err = queue.enqueueNDRangeKernel(meanshiftPlanKNNKernel, cl::NullRange,
                                                 global, local);
@@ -558,7 +563,10 @@ void meanshiftPlanKNNWrap(const ocl_matrix& dq, const cl::Buffer& dqMap,
 
 void meanshiftMeanWrap(const ocl_matrix& input,
                        const cl::Buffer& selectedPoints,
+                       const cl::Buffer& selectedDistances,
                        const cl::Buffer& selectedPointsNum,
+                       const cl::Buffer& windows,
+                       const cl::Buffer& weights,
                        unint maxPointsNum,
                        ocl_matrix& output)
 {
@@ -582,8 +590,11 @@ void meanshiftMeanWrap(const ocl_matrix& input,
     meanshiftMeanKernel.setArg(10, output.pc);
     meanshiftMeanKernel.setArg(11, output.ld);
     meanshiftMeanKernel.setArg(12, selectedPoints);
-    meanshiftMeanKernel.setArg(13, selectedPointsNum);
-    meanshiftMeanKernel.setArg(14, maxPointsNum);
+    meanshiftMeanKernel.setArg(13, selectedDistances);
+    meanshiftMeanKernel.setArg(14, selectedPointsNum);
+    meanshiftMeanKernel.setArg(15, windows);
+    meanshiftMeanKernel.setArg(16, weights);
+    meanshiftMeanKernel.setArg(17, maxPointsNum);
 
     cl_int err = queue.enqueueNDRangeKernel(meanshiftMeanKernel, cl::NullRange,
                                             global, local);

@@ -36,15 +36,23 @@ void planKNNWrap(const ocl_matrix&,const cl::Buffer&,const ocl_matrix&,
 void meanshiftPlanKNNWrap(const ocl_matrix& dq, const cl::Buffer& dqMap,
                           const ocl_matrix& dx, const ocl_intMatrix& dxMap,
                           const ocl_compPlan& dcP, const cl::Buffer& windows,
+                          const cl::Buffer& weights,
                           cl::Buffer& selectedPoints,
+                          cl::Buffer& selectedDistances,
                           cl::Buffer& selectedPointsNum,
                           unint maxPointsNum, unint startPos, unint length);//unint compLength);
 
 void meanshiftMeanWrap(const ocl_matrix& input,
                        const cl::Buffer& selectedPoints,
+                       const cl::Buffer& selectedDistances,
                        const cl::Buffer& selectedPointsNum,
+                       const cl::Buffer& windows,
+                       const cl::Buffer& weights,
                        unint maxPointsNum,
                        ocl_matrix& output);
+
+void meanshiftWeightsWrap(const cl::Buffer& pilots, cl::Buffer& weights,
+                          unint size, unint dimensionality);
 
 void simpleDistanceKernelWrap(const ocl_matrix& in_1, const ocl_matrix& in_2,
                               cl::Buffer& out);

@@ -13,7 +13,6 @@ void buildRBC(const matrix x,
               unint numReps,
               unint pointsPerRep,
               cl::Buffer pilots = cl::Buffer(),
-              cl::Buffer weights = cl::Buffer(),
               int threshold = 0);
 
 //NEVER USED void queryRBC(const matrix,const rbcStruct,unint*,real*);
@@ -26,12 +25,18 @@ void kqueryRBC(const matrix q, const ocl_rbcStruct rbcS,
 
 void meanshiftKQueryRBC(const ocl_matrix input, const ocl_rbcStruct rbcS,
                         const cl::Buffer &pilots,
+                        const cl::Buffer &weights,
                         cl::Buffer selectedPoints,
+                        cl::Buffer selectedDistances,
                         cl::Buffer selectedPointsNum,
                         int maxPointsNum);
 
-void computePilots(const matrix q, const cl::Buffer &repsPilots,
-                   const ocl_rbcStruct& rbcS, cl::Buffer &pilots);
+void computePilotsAndWeights(const matrix q,
+                             const cl::Buffer &repsPilots,
+                             const cl::Buffer &repsWeights,
+                             const ocl_rbcStruct& rbcS,
+                             cl::Buffer &pilots,
+                             cl::Buffer &weights);
 
 void destroyRBC(ocl_rbcStruct*);
 void distSubMat(ocl_matrix&,ocl_matrix&,ocl_matrix&,unint,unint);
@@ -44,8 +49,11 @@ void computeReps(const ocl_matrix& dq, const ocl_matrix& dr,
 void computeRepsNoHost(const ocl_matrix& dq, const ocl_matrix& dr,
                        cl::Buffer& indexes);
 
-void bindPilots(const cl::Buffer& indexes, const cl::Buffer& repsPilots,
-                cl::Buffer& pilots, int pilots_size);
+void bindPilotsAndWeights(const cl::Buffer &indexes,
+                          const cl::Buffer &repsPilots,
+                          const cl::Buffer &repsWeights,
+                          cl::Buffer &pilots, cl::Buffer &weights,
+                          int size);
 
 
 void computeRadii(unint*,real*,real*,unint,unint);
@@ -76,7 +84,9 @@ void computeKNNs(const ocl_matrix&, const ocl_intMatrix&,
 void meanshiftComputeKNNs(const ocl_matrix& dx, const ocl_intMatrix& dxMap,
                           const ocl_matrix& dq, const cl::Buffer& dqMap,
                           const ocl_compPlan& dcP,
-                          cl::Buffer windows, cl::Buffer selectedPoints,
+                          cl::Buffer windows, cl::Buffer weights,
+                          cl::Buffer selectedPoints,
+                          cl::Buffer selectedDistances,
                           cl::Buffer selectedPointsNums,
                           int maxPointsNum,// unint compLength);
                           unint startPos, unint length);
