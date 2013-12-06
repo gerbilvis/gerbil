@@ -1491,6 +1491,8 @@ __kernel void meanshiftMeanKernel(__global const real* X_mat,
         double final = localMean[local_id_y][local_id_x]
                                     / localWeights[local_id_y][local_id_x];
 
+        final = floor(final);
+
         Y_mat[IDX(global_id_y, j, Y_ld)] = numPoints ? final : 0.f;
     }
 }

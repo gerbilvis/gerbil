@@ -138,17 +138,32 @@ void RBC::imgToMatrix(multi_img &img, matrix &matrix)
 
     int point_counter = 0;
 
-    for(int i = 0; i < height; ++i)
-    {
-        for(int j = 0; j < width; ++j)
-        {
-            multi_img::Pixel pixel = img(i, j);
+    unsigned short* data = img.export_interleaved(true);
 
-            float* ptr = matrix.mat + point_counter * matrix.pc;
-            std::copy(pixel.begin(), pixel.end(), ptr);
-            point_counter++;
+//    for(int i = 0; i < height; ++i)
+//    {
+//        for(int j = 0; j < width; ++j)
+//        {
+//            multi_img::Pixel pixel = img(i, j);
+
+//            float* ptr = matrix.mat + point_counter * matrix.pc;
+//            std::copy(pixel.begin(), pixel.end(), ptr);
+//            point_counter++;
+//        }
+//    }
+
+    for(int i = 0; i < size; ++i)
+    {
+        unsigned short* src = data + i * depth;
+        float* dst = matrix.mat + i * matrix.pc;
+
+        for(int j = 0; j < depth; ++j)
+        {
+            dst[j] = src[j];
         }
     }
+
+    delete[] data;
 }
 
 void RBC::printShortHelp() const
