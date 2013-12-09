@@ -1,3 +1,5 @@
+#pragma OPENCL EXTENSION cl_khr_fp64: enable
+
 typedef float real;
 typedef uint unint;
 
@@ -1209,14 +1211,14 @@ __kernel void bindPilotsAndWeightsKernel(__global const unint* indexes,
 
     int x = get_global_id(0);
 
-    if(x == 0)
-    {
-        printf("size: %d\n", pilots_size);
-    }
-    if(x == pilots_size - 1)
-    {
-        printf("CHECK!\n");
-    }
+//    if(x == 0)
+//    {
+//        printf("size: %d\n", pilots_size);
+//    }
+//    if(x == pilots_size - 1)
+//    {
+//        printf("CHECK!\n");
+//    }
 
     if(x < pilots_size)
     {
@@ -1225,8 +1227,8 @@ __kernel void bindPilotsAndWeightsKernel(__global const unint* indexes,
         pilots[x] = repsPilots[idx];
         weights[x] = repsWeights[idx];
 
-        assert(!isnan(repsPilots[idx]));
-        assert(!isnan(repsWeights[idx]));
+//        assert(!isnan(repsPilots[idx]));
+//        assert(!isnan(repsWeights[idx]));
     }
 }
 
@@ -1481,8 +1483,8 @@ __kernel void meanshiftMeanKernel(__global const real* X_mat,
 
             double w = weight * x * x;
 
-            assert(!isnan(w));
-            assert(!isinf(w));
+//            assert(!isnan(w));
+//            assert(!isinf(w));
 
             localMean[local_id_y][local_id_x] += X_mat[IDX(idx, j, X_ld)] * w;
             localWeights[local_id_y][local_id_x] += w;
@@ -1508,15 +1510,15 @@ __kernel void meanshiftWeightsKernel(__global const real* pilots,
 {
     size_t idx = get_global_id(0);
 
-    if(idx == 0)
-    {
-        printf("size: %d\n", size);
-    }
+//    if(idx == 0)
+//    {
+//        printf("size: %d\n", size);
+//    }
 
-    if(idx == size - 1)
-    {
-        printf("CHECK!\n");
-    }
+//    if(idx == size - 1)
+//    {
+//        printf("CHECK!\n");
+//    }
 
     if(idx < size)
     {
@@ -1527,15 +1529,15 @@ __kernel void meanshiftWeightsKernel(__global const real* pilots,
         weights[idx] = pow(FAMS_FLOAT_SHIFT / pilot,
                            (dimensionality + 2) * FAMS_ALPHA);
 
-        if(isinf(weights[idx]))
-        {
-            printf("pilot: %f\n", pilot);
-            printf("FAMS_FLOAT_SHIFT / pilot: %f\n", FAMS_FLOAT_SHIFT / pilot);
-            printf("pow: %f\n", pow((double)FAMS_FLOAT_SHIFT / (double)pilot, (double)(dimensionality + 2) * FAMS_ALPHA));
-        }
+//        if(isinf(weights[idx]))
+//        {
+//            printf("pilot: %f\n", pilot);
+//            printf("FAMS_FLOAT_SHIFT / pilot: %f\n", FAMS_FLOAT_SHIFT / pilot);
+//            printf("pow: %f\n", pow((double)FAMS_FLOAT_SHIFT / (double)pilot, (double)(dimensionality + 2) * FAMS_ALPHA));
+//        }
 
-        assert(!isnan(weights[idx]));
-        assert(!isinf(weights[idx]));
+//        assert(!isnan(weights[idx]));
+//        assert(!isinf(weights[idx]));
     }
 }
 
@@ -1544,7 +1546,8 @@ __kernel void meanshiftWeightsKernel(__global const real* pilots,
 __kernel void simpleDistancesKernel(__global const real* X_mat,
                                     __global const real* Y_mat,
                                     __global real* output,
-                                    unint dimensionality)
+                                    unint dimensionality,
+                                    unint pitch)
 {
 
     size_t local_id_x = get_local_id(0);
@@ -1555,11 +1558,11 @@ __kernel void simpleDistancesKernel(__global const real* X_mat,
 
     __local real shared[BLOCK_SIZE][BLOCK_SIZE];
 
-    unint baseIdx = global_id_y * dimensionality;
+    unint baseIdx = global_id_y * pitch;
 
-    shared[local_id_y][local_id_x] = 0;
+    shared[local_id_y][local_id_x] = 0.f;
 
-    /** dimensionality must be n * BLOCK_SIZE */
+    ////** dimensionality must be n * BLOCK_SIZE */
     for(unint i = local_id_x; i < dimensionality; i += BLOCK_SIZE)
     {
         unint idx = baseIdx + i;
@@ -1600,3 +1603,99 @@ __kernel void simpleDistancesKernel(__global const real* X_mat,
         output[global_id_y] = shared[local_id_y][0];
     }
 }
+
+
+__kernel void clearKernel(__global real* X_mat, size)
+{
+    size_t idx = get_global_id(0);
+
+    if(idx < size)
+        X_mat[idx] = 0;
+}
+
+__kernel void initIndexesKernel(__global real* X_mat, size)
+{
+    size_t idx = get_global_id(0);
+
+    if(idx < size)
+        X_mat[idx] = idx;
+}
+
+__kernel void meanshiftPackKernel(__global const real* prev_iteration,
+                                  __global const real* curr_iteration,
+                                  __global real* next_iteration,
+                                  __global real* final_modes,
+                                  __global unint* old_indexes,
+                                  __global unint* new_indexes,
+                                  unint size,
+                                  unint dimensionality,
+                                  unint pitch,
+                                  __global volatile int* counter)
+{
+    size_t local_id_x = get_local_id(0);
+    size_t local_id_y = get_local_id(1);
+
+    size_t global_id_x = get_global_id(0);
+    size_t global_id_y = get_global_id(1);
+
+    __local char isEqual[BLOCK_SIZE];
+    __local int newIndexes[BLOCK_SIZE];
+
+    unint baseIdx = global_id_y * pitch;
+
+    if(local_id_y == 0)
+    {
+        isEqual[local_id_x] = 1;
+        newIndexes[local_id_x] = -1;
+    }
+
+    for(unint i = local_id_x; i < dimensionality; i += BLOCK_SIZE)
+    {
+        unint idx = baseIdx + i;
+
+        real prev_elem = prev_iteration[idx];
+        real curr_elem = curr_iteration[idx];
+
+        if(prev_elem != curr_elem)
+            isEqual[local_id_y] = 0;
+    }
+
+    int oldIdx = old_indexes[global_id_y];
+
+    barrier(CLK_LOCAL_MEM_FENCE);
+
+    if(local_id_x == 0 && isEqual[local_id_y])
+    {
+        int idx = atomic_inc(counter);
+
+        newIndexes[local_id_y] = idx;
+        new_indexes[idx] = oldIdx;
+    }
+
+    barrier(CLK_LOCAL_MEM_FENCE);
+
+    unint newIdx = newIndexes[local_id_y];
+
+    if(newIdx != -1)
+    {
+        unint newBaseIdx = newIdx * pitch;
+
+        for(unint i = local_id_x; i < dimensionality; i += BLOCK_SIZE)
+        {
+            unint idx = newBaseIdx + i;
+
+            next_iteration[idx] = curr_iteration[baseIdx + i];
+        }
+    }
+    else
+    {
+        unint newBaseIdx = oldIdx * pitch;
+
+        for(unint i = local_id_x; i < dimensionality; i += BLOCK_SIZE)
+        {
+            unint idx = newBaseIdx + i;
+            final_modes[idx] = curr_iteration[baseIdx + i];
+        }
+    }
+}
+

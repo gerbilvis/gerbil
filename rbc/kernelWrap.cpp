@@ -635,13 +635,25 @@ void simpleDistanceKernelWrap(const ocl_matrix& in_1, const ocl_matrix& in_2,
     simpleDistancesKernel.setArg(0, in_1.mat);
     simpleDistancesKernel.setArg(1, in_2.mat);
     simpleDistancesKernel.setArg(2, out);
-    simpleDistancesKernel.setArg(3, in_1.pc);
+    simpleDistancesKernel.setArg(3, in_1.c);
+    simpleDistancesKernel.setArg(4, in_1.pc);
 
     cl_int err = queue.enqueueNDRangeKernel(simpleDistancesKernel,
                                             cl::NullRange, global, local);
     checkErr(err);
 }
 
+
+void meanshiftPackKernelWrap(const ocl_matrix& prev_iteration,
+                             const ocl_matrix& curr_iteration,
+                             ocl_matrix& next_iteration,
+                             ocl_matrix& final_modes,
+                             cl::Buffer& old_indexes,
+                             cl::Buffer& new_indexes,
+                             unint current_size, unint& result_size)
+{
+
+}
 
 
 //void rangeCountWrap(const matrix dq, const matrix dx, real *dranges, unint *dcounts){

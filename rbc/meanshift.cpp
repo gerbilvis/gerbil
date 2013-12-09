@@ -68,7 +68,7 @@ void meanshift_rbc(matrix database, int img_width, int img_height,
 
     /** preparing memory for meanshift query */
 
-    int partsNum = 1;
+    int partsNum = 4;
     int pointsPerPart = database.pr / partsNum;
 
     assert(database.pr % partsNum == 0);
@@ -114,7 +114,7 @@ void meanshift_rbc(matrix database, int img_width, int img_height,
     cl::Buffer distances(context, CL_MEM_READ_WRITE, byte_size, 0, &err);
     checkErr(err);
 
-    int itersNum = 40;
+    int itersNum = 100;
 
     for(int i = 0; i < itersNum; ++i)
     {

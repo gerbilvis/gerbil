@@ -57,6 +57,7 @@ public:
     static cl::Kernel meanshiftMeanKernel;
     static cl::Kernel simpleDistancesKernel;
     static cl::Kernel meanshiftWeightsKernel;
+    static cl::Kernel meanshiftPackKernel;
 
     static void oclInit();
 };
