@@ -57,6 +57,16 @@ void meanshiftWeightsWrap(const cl::Buffer& pilots, cl::Buffer& weights,
 void simpleDistanceKernelWrap(const ocl_matrix& in_1, const ocl_matrix& in_2,
                               cl::Buffer& out);
 
+void clearKernelWrap(cl::Buffer& buffer, unint size);
+void initIndexesKernelWrap(cl::Buffer& buffer, unint size);
+
+void meanshiftPackKernelWrap(const ocl_matrix& prev_iteration,
+                             const ocl_matrix& curr_iteration,
+                             ocl_matrix& next_iteration,
+                             ocl_matrix& final_modes,
+                             cl::Buffer& old_indexes,
+                             cl::Buffer& new_indexes,
+                             unint current_size, unint& result_size);
 
 //void findRangeWrap(const matrix,real*,unint);
 //void rangeSearchWrap(const matrix,const real*,charMatrix);

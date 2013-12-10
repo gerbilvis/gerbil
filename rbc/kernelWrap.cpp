@@ -643,6 +643,42 @@ void simpleDistanceKernelWrap(const ocl_matrix& in_1, const ocl_matrix& in_2,
     checkErr(err);
 }
 
+void clearKernelWrap(cl::Buffer& buffer, unint size)
+{
+    const int base_size = 256;
+
+    cl::NDRange local(base_size);
+    cl::NDRange global(((size + base_size - 1) / base_size) * base_size);
+
+    cl::CommandQueue& queue = OclContextHolder::queue;
+    cl::Kernel& clearKernel = OclContextHolder::clearKernel;
+
+    clearKernel.setArg(0, buffer);
+    clearKernel.setArg(1, size);
+
+    cl_int err = queue.enqueueNDRangeKernel(clearKernel,
+                                            cl::NullRange, global, local);
+    checkErr(err);
+}
+
+void initIndexesKernelWrap(cl::Buffer& buffer, unint size)
+{
+    const int base_size = 256;
+
+    cl::NDRange local(base_size);
+    cl::NDRange global(((size + base_size - 1) / base_size) * base_size);
+
+    cl::CommandQueue& queue = OclContextHolder::queue;
+    cl::Kernel& initIndexesKernel = OclContextHolder::initIndexesKernel;
+
+    initIndexesKernel.setArg(0, buffer);
+    initIndexesKernel.setArg(1, size);
+
+    cl_int err = queue.enqueueNDRangeKernel(initIndexesKernel,
+                                            cl::NullRange, global, local);
+    checkErr(err);
+}
+
 
 void meanshiftPackKernelWrap(const ocl_matrix& prev_iteration,
                              const ocl_matrix& curr_iteration,
@@ -652,7 +688,43 @@ void meanshiftPackKernelWrap(const ocl_matrix& prev_iteration,
                              cl::Buffer& new_indexes,
                              unint current_size, unint& result_size)
 {
+    cl::NDRange local(BLOCK_SIZE, BLOCK_SIZE);
+    cl::NDRange global(BLOCK_SIZE, ((current_size + BLOCK_SIZE - 1)
+                                    / BLOCK_SIZE) * BLOCK_SIZE);
 
+    cl::CommandQueue& queue = OclContextHolder::queue;
+    cl::Context& context = OclContextHolder::context;
+    cl::Kernel& meanshiftPackKernel = OclContextHolder::meanshiftPackKernel;
+
+    cl_int err;
+    cl::Buffer counterBuffer(context, CL_MEM_READ_WRITE, sizeof(int), 0, &err);
+    checkErr(err);
+
+    int counter_host = 0;
+    err = queue.enqueueWriteBuffer(counterBuffer, CL_TRUE, 0,
+                                   sizeof(int), &counter_host);
+    checkErr(err);
+
+    meanshiftPackKernel.setArg(0, prev_iteration.mat);
+    meanshiftPackKernel.setArg(1, curr_iteration.mat);
+    meanshiftPackKernel.setArg(2, next_iteration.mat);
+    meanshiftPackKernel.setArg(3, final_modes);
+    meanshiftPackKernel.setArg(4, old_indexes);
+    meanshiftPackKernel.setArg(5, new_indexes);
+    meanshiftPackKernel.setArg(6, current_size);
+    meanshiftPackKernel.setArg(7, prev_iteration.c);
+    meanshiftPackKernel.setArg(8, prev_iteration.pc);
+    meanshiftPackKernel.setArg(9, counterBuffer);
+
+    err = queue.enqueueNDRangeKernel(meanshiftPackKernel,
+                                     cl::NullRange, global, local);
+    checkErr(err);
+
+    err = queue.enqueueReadBuffer(counterBuffer, CL_TRUE,
+                            0, sizeof(int), &counter_host);
+    checkErr(err);
+
+    result_size = counter_host;
 }
 
 

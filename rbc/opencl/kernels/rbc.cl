@@ -1607,27 +1607,27 @@ __kernel void simpleDistancesKernel(__global const real* X_mat,
 }
 
 
-__kernel void clearKernel(__global real* X_mat, unint size)
+__kernel void clearKernel(__global real* data, unint size)
 {
     size_t idx = get_global_id(0);
 
     if(idx < size)
-        X_mat[idx] = 0;
+        data[idx] = 0;
 }
 
-__kernel void initIndexesKernel(__global real* X_mat, unint size)
+__kernel void initIndexesKernel(__global real* data, unint size)
 {
     size_t idx = get_global_id(0);
 
     if(idx < size)
-        X_mat[idx] = idx;
+        data[idx] = idx;
 }
 
 __kernel void meanshiftPackKernel(__global const real* prev_iteration,
                                   __global const real* curr_iteration,
                                   __global real* next_iteration,
                                   __global real* final_modes,
-                                  __global unint* old_indexes,
+                                  __global unint* curr_indexes,
                                   __global unint* new_indexes,
                                   unint size,
                                   unint dimensionality,
@@ -1662,7 +1662,7 @@ __kernel void meanshiftPackKernel(__global const real* prev_iteration,
             isEqual[local_id_y] = 0;
     }
 
-    int oldIdx = old_indexes[global_id_y];
+    int oldIdx = curr_indexes[global_id_y];
 
     barrier(CLK_LOCAL_MEM_FENCE);
 
