@@ -296,6 +296,8 @@ unsigned int FAMS::DoMSAdaptiveIteration(
 		if (DistL1Data(old, ptp, ptp.window_, dist)) {
 			double x = 1.0 - (dist / ptp.window_);
 			double w = ptp.weightdp2_ * x * x;
+
+            printf("w: %f\n", w);
 			total_weight += w;
 			for (j = 0; j < d_; j++)
 				rr[j] += ptp.data_[j] * w;

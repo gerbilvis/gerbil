@@ -156,12 +156,15 @@ void meanshift_rbc(matrix database, int img_width, int img_height,
                                selectedPoints, selectedDistances,
                                selectedPointsNum, maxQuerySize);
 
+            queue.finish();
+
             std::cout << "calculating meanshift mean" << std::endl;
 
             meanshiftMeanWrap(database_ocl, selectedPoints,
                               selectedDistances, selectedPointsNum, allPilots,
                               allWeights, maxQuerySize, sub_output_matrix);
 
+            queue.finish();
 //            meanshiftMeanWrap(database_ocl, selectedPoints,
 //                              selectedDistances, selectedPointsNum, allPilots,
 //                              allWeights, maxQuerySize, sub_output_matrix);
@@ -532,6 +535,8 @@ void validate_distances(matrix database, cl::Buffer result_distances)
     int zero_distances = 0;
     int nearly_zero_distances = 0;
 
+    static std::set<int> all_zeros_so_far; // temporary
+
     for(int i = 0; i < database.r; ++i)
     {
         float dist = result_distances_host[i];
@@ -541,6 +546,7 @@ void validate_distances(matrix database, cl::Buffer result_distances)
         if(dist == 0.f)
         {
             ++zero_distances;
+            all_zeros_so_far.insert(i);
         }
         else if(dist < 1.0e-10)
         {
@@ -549,6 +555,10 @@ void validate_distances(matrix database, cl::Buffer result_distances)
 
         distances_sum += dist;
     }
+
+    std::cout << "all_zeros_so_far: "
+              << (((float)all_zeros_so_far.size()) / database.r) * 100
+              << "%" << std::endl;
 
     std::cout << "result distances sum: " << distances_sum << std::endl;
     std::cout << "avg result distance: " << distances_sum / database.r

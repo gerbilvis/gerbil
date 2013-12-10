@@ -1444,8 +1444,8 @@ __kernel void meanshiftMeanKernel(__global const real* X_mat,
 
     for(unint j = local_id_x; j < X_c; j += BLOCK_SIZE)
     {
-        localMean[local_id_y][local_id_x] = 0.f;
-        localWeights[local_id_y][local_id_x] = 1.f;
+        localMean[local_id_y][local_id_x] = 0.0;
+        localWeights[local_id_y][local_id_x] = 0.0;
 
         for(unint i = 0; i < numPoints; ++i)
         {
@@ -1485,6 +1485,8 @@ __kernel void meanshiftMeanKernel(__global const real* X_mat,
 
 //            assert(!isnan(w));
 //            assert(!isinf(w));
+
+            //printf("w: %f\n", w);
 
             localMean[local_id_y][local_id_x] += X_mat[IDX(idx, j, X_ld)] * w;
             localWeights[local_id_y][local_id_x] += w;
@@ -1605,7 +1607,7 @@ __kernel void simpleDistancesKernel(__global const real* X_mat,
 }
 
 
-__kernel void clearKernel(__global real* X_mat, size)
+__kernel void clearKernel(__global real* X_mat, unint size)
 {
     size_t idx = get_global_id(0);
 
@@ -1613,7 +1615,7 @@ __kernel void clearKernel(__global real* X_mat, size)
         X_mat[idx] = 0;
 }
 
-__kernel void initIndexesKernel(__global real* X_mat, size)
+__kernel void initIndexesKernel(__global real* X_mat, unint size)
 {
     size_t idx = get_global_id(0);
 
