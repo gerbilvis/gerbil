@@ -1615,7 +1615,7 @@ __kernel void clearKernel(__global real* data, unint size)
         data[idx] = 0;
 }
 
-__kernel void initIndexesKernel(__global real* data, unint size)
+__kernel void initIndexesKernel(__global unint* data, unint size)
 {
     size_t idx = get_global_id(0);
 
@@ -1651,6 +1651,8 @@ __kernel void meanshiftPackKernel(__global const real* prev_iteration,
         newIndexes[local_id_x] = -1;
     }
 
+    barrier(CLK_LOCAL_MEM_FENCE);
+
     for(unint i = local_id_x; i < dimensionality; i += BLOCK_SIZE)
     {
         unint idx = baseIdx + i;
@@ -1666,7 +1668,7 @@ __kernel void meanshiftPackKernel(__global const real* prev_iteration,
 
     barrier(CLK_LOCAL_MEM_FENCE);
 
-    if(local_id_x == 0 && isEqual[local_id_y])
+    if(local_id_x == 0 && !isEqual[local_id_y])
     {
         int idx = atomic_inc(counter);
 

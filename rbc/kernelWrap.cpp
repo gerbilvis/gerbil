@@ -145,7 +145,6 @@ void findRangeWrap(const ocl_matrix& dD, cl::Buffer& dranges,
 void rangeSearchWrap(const ocl_matrix& dD, cl::Buffer& dranges,
                      ocl_charMatrix& dir)
 {
-
     cl::Kernel& rangeSearchKernel = OclContextHolder::rangeSearchKernel;
 
     cl::NDRange local(BLOCK_SIZE,BLOCK_SIZE);
@@ -153,15 +152,15 @@ void rangeSearchWrap(const ocl_matrix& dD, cl::Buffer& dranges,
     unint todoX, todoY, numDoneX, numDoneY;
 
     numDoneX = 0;
-    while ( numDoneX < dD.pc )
+    while (numDoneX < dD.pc)
     {
-        todoX = MIN( dD.pc - numDoneX, MAX_BS*BLOCK_SIZE );
+        todoX = MIN(dD.pc - numDoneX, MAX_BS*BLOCK_SIZE);
 
         numDoneY = 0;
 
-        while( numDoneY < dD.pr )
+        while(numDoneY < dD.pr)
         {
-            todoY = MIN( dD.pr - numDoneY, MAX_BS*BLOCK_SIZE );
+            todoY = MIN(dD.pr - numDoneY, MAX_BS*BLOCK_SIZE);
 
             cl::NDRange global(todoX, todoY);
 
@@ -343,7 +342,9 @@ void knnWrap(const ocl_matrix& dq, const ocl_matrix& dx,
 }
 
 
-void planNNWrap(const matrix dq, const unint *dqMap, const matrix dx, const intMatrix dxMap, real *dMins, unint *dMinIDs, compPlan dcP, unint compLength){
+void planNNWrap(const matrix dq, const unint *dqMap, const matrix dx,
+                const intMatrix dxMap, real *dMins, unint *dMinIDs,
+                compPlan dcP, unint compLength){
 /* NEVER USED
   dim3 block(BLOCK_SIZE,BLOCK_SIZE);
   dim3 grid;
@@ -553,8 +554,8 @@ void meanshiftPlanKNNWrap(const ocl_matrix& dq, const cl::Buffer& dqMap,
         meanshiftPlanKNNKernel.setArg(29, selectedPointsNum);
         meanshiftPlanKNNKernel.setArg(30, maxPointsNum);
 
-        cl_int err = queue.enqueueNDRangeKernel(meanshiftPlanKNNKernel, cl::NullRange,
-                                                global, local);
+        cl_int err = queue.enqueueNDRangeKernel(meanshiftPlanKNNKernel,
+                                                cl::NullRange, global, local);
         checkErr(err);
 
    //     numDone += todo;
@@ -684,13 +685,15 @@ void meanshiftPackKernelWrap(const ocl_matrix& prev_iteration,
                              const ocl_matrix& curr_iteration,
                              ocl_matrix& next_iteration,
                              ocl_matrix& final_modes,
-                             cl::Buffer& old_indexes,
+                             cl::Buffer& curr_indexes,
                              cl::Buffer& new_indexes,
                              unint current_size, unint& result_size)
 {
     cl::NDRange local(BLOCK_SIZE, BLOCK_SIZE);
     cl::NDRange global(BLOCK_SIZE, ((current_size + BLOCK_SIZE - 1)
                                     / BLOCK_SIZE) * BLOCK_SIZE);
+
+    std::cout << "ms pack, current size:" << current_size << std::endl;
 
     cl::CommandQueue& queue = OclContextHolder::queue;
     cl::Context& context = OclContextHolder::context;
@@ -708,8 +711,8 @@ void meanshiftPackKernelWrap(const ocl_matrix& prev_iteration,
     meanshiftPackKernel.setArg(0, prev_iteration.mat);
     meanshiftPackKernel.setArg(1, curr_iteration.mat);
     meanshiftPackKernel.setArg(2, next_iteration.mat);
-    meanshiftPackKernel.setArg(3, final_modes);
-    meanshiftPackKernel.setArg(4, old_indexes);
+    meanshiftPackKernel.setArg(3, final_modes.mat);
+    meanshiftPackKernel.setArg(4, curr_indexes);
     meanshiftPackKernel.setArg(5, new_indexes);
     meanshiftPackKernel.setArg(6, current_size);
     meanshiftPackKernel.setArg(7, prev_iteration.c);
@@ -729,7 +732,9 @@ void meanshiftPackKernelWrap(const ocl_matrix& prev_iteration,
 
 
 //void rangeCountWrap(const matrix dq, const matrix dx, real *dranges, unint *dcounts){
-void rangeCountWrap(const ocl_matrix& dq, const ocl_matrix& dx, cl::Buffer& dranges, cl::Buffer& dcounts){
+void rangeCountWrap(const ocl_matrix& dq, const ocl_matrix& dx,
+                    cl::Buffer& dranges, cl::Buffer& dcounts)
+{
 /*  dim3 block(BLOCK_SIZE,BLOCK_SIZE);
   dim3 grid;
   unint numDone, todo;

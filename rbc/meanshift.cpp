@@ -95,8 +95,8 @@ void meanshift_rbc(matrix database, int img_width, int img_height,
     ocl_matrix database_ocl; /** original data for calculating mean */
     copyAndMove(&database_ocl, &database);
 
-    ocl_matrix prev_input_ocl; /** input for query */
-    copyAndMove(&prev_input_ocl, &database);
+    ocl_matrix input_ocl; /** input for query */
+    copyAndMove(&input_ocl, &database);
     
 //    ocl_matrix database_ocl_2;
 //    copyAndMove(&database_ocl_2, &database);
@@ -115,7 +115,21 @@ void meanshift_rbc(matrix database, int img_width, int img_height,
 
     final_modes_ocl.mat = cl::Buffer(context, CL_MEM_READ_WRITE,
                                      byte_size, 0, &err);
+
+    clearKernelWrap(final_modes_ocl.mat, database.pr * database.pc);
+
     checkErr(err);
+
+    byte_size = output_ocl.pr * sizeof(unint);
+
+    cl::Buffer curr_indexes(context, CL_MEM_READ_WRITE, byte_size, 0, &err);
+    checkErr(err);
+
+    cl::Buffer new_indexes(context, CL_MEM_READ_WRITE, byte_size, 0, &err);
+    checkErr(err);
+
+    initIndexesKernelWrap(curr_indexes, output_ocl.pr);
+
 
     /** preparing memory for distances between points
      *  from current and previous iteration */
@@ -124,7 +138,9 @@ void meanshift_rbc(matrix database, int img_width, int img_height,
     cl::Buffer distances(context, CL_MEM_READ_WRITE, byte_size, 0, &err);
     checkErr(err);
 
-    int itersNum = 10;
+    int itersNum = 120;
+
+    int data_size = database.pr;
 
     for(int i = 0; i < itersNum; ++i)
     {
@@ -134,11 +150,17 @@ void meanshift_rbc(matrix database, int img_width, int img_height,
         {
             std::cout << "part: " << j << std::endl;
 
-            cl_buffer_region region;
-            region.origin = j * pointsPerPart * prev_input_ocl.pc * sizeof(real);
-            region.size = pointsPerPart * prev_input_ocl.pc * sizeof(real);
+            if(j * pointsPerPart >= input_ocl.pr)
+            {
+                break;
+            }
 
-            cl::Buffer input_subBuffer = prev_input_ocl.mat.createSubBuffer(
+            cl_buffer_region region;
+            region.origin = j * pointsPerPart * input_ocl.pc * sizeof(real);
+            region.size = std::min(pointsPerPart * input_ocl.pc * sizeof(real),
+                                   (input_ocl.pr - j * pointsPerPart) * input_ocl.pc * sizeof(real));
+
+            cl::Buffer input_subBuffer = input_ocl.mat.createSubBuffer(
                         CL_MEM_READ_WRITE, CL_BUFFER_CREATE_TYPE_REGION,
                         &region, &err);
 
@@ -150,7 +172,7 @@ void meanshift_rbc(matrix database, int img_width, int img_height,
 
             checkErr(err);
 
-            ocl_matrix sub_input_matrix = prev_input_ocl;
+            ocl_matrix sub_input_matrix = input_ocl;
             sub_input_matrix.mat = input_subBuffer;
             sub_input_matrix.r = pointsPerPart;
             sub_input_matrix.pr = pointsPerPart;
@@ -180,26 +202,46 @@ void meanshift_rbc(matrix database, int img_width, int img_height,
 //                              allWeights, maxQuerySize, sub_output_matrix);
         }
 
+        unint result_size = 0;
+
+        meanshiftPackKernelWrap(input_ocl, output_ocl, next_input_ocl,
+                                final_modes_ocl, curr_indexes, new_indexes,
+                                data_size, result_size);
+
+        std::cout << "result size: " << result_size << std::endl;
+
 
         std::cout << "calculating distances" << std::endl;
 
-        simpleDistanceKernelWrap(prev_input_ocl, output_ocl, distances);
+       // simpleDistanceKernelWrap(prev_input_ocl, output_ocl, distances);
 
-        validate_distances(database, distances);
+        //validate_distances(database, distances);
 
       //  validate_query_and_mean(database, selectedPoints, selectedPointsNum, allPilots,
         //               maxQuerySize, database_ocl, output_ocl, distances);
 
-        write_modes(output_ocl, img_width, img_height);
+       // write_modes(output_ocl, img_width, img_height);
+
+        write_modes(final_modes_ocl, img_width, img_height);
 
         /** switch input and output for the next iteration */
         if(i != itersNum - 1)
         {
             std::cout << "switching input-output" << std::endl;
 
-            ocl_matrix tmp = prev_input_ocl;
-            prev_input_ocl = output_ocl;
-            output_ocl = tmp;
+            //input_ocl = output_ocl;
+
+            input_ocl = next_input_ocl;
+
+            unint result_size_rounded = ((result_size + BLOCK_SIZE - 1)
+                                        / BLOCK_SIZE) * BLOCK_SIZE;
+
+            input_ocl.pr = result_size_rounded;
+            input_ocl.r = result_size;
+
+//            ocl_matrix tmp = input_ocl;
+//            input_ocl = output_ocl;
+//            output_ocl = tmp;
         }
     }
 
@@ -670,7 +712,10 @@ void write_modes(ocl_matrix modes, int img_width, int img_height)
 
     /** writing images */
 
-    for(int m = 0; m < modes.c; ++m)
+    std::cout << "first dim only!" << std::endl;
+
+//    for(int m = 0; m < modes.c; ++m)
+    for(int m = 0; m < 1; ++m)
     {
         QImage img(img_width, img_height, QImage::Format_ARGB32);
 
