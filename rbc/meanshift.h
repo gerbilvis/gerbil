@@ -16,9 +16,10 @@ void validate_query_and_mean(matrix database, cl::Buffer selectedPoints,
                     ocl_matrix means, cl::Buffer result_distances);
 
 void validate_distances(matrix database, cl::Buffer result_distances);
+void validate_indexes(cl::Buffer oldIndexes, cl::Buffer newIndexes,
+                      int old_size, int new_size);
 
 void write_modes(ocl_matrix modes, int img_width, int img_height);
-
-
+void write_iteration_map(cl::Buffer map, int img_width, int img_height);
 
 #endif

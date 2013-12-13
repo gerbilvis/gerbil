@@ -11,6 +11,7 @@
 #include "defs.h"
 #include "kernels.h"
 
+
 //Returns a length l subset of a random permutation of [0,...,n-1]
 //using the knuth shuffle.
 //Input variable x is assumed to be alloced and of size l.

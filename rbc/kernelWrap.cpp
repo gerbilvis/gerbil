@@ -644,7 +644,7 @@ void simpleDistanceKernelWrap(const ocl_matrix& in_1, const ocl_matrix& in_2,
     checkErr(err);
 }
 
-void clearKernelWrap(cl::Buffer& buffer, unint size)
+void clearRealKernelWrap(cl::Buffer& buffer, unint size)
 {
     const int base_size = 256;
 
@@ -652,12 +652,30 @@ void clearKernelWrap(cl::Buffer& buffer, unint size)
     cl::NDRange global(((size + base_size - 1) / base_size) * base_size);
 
     cl::CommandQueue& queue = OclContextHolder::queue;
-    cl::Kernel& clearKernel = OclContextHolder::clearKernel;
+    cl::Kernel& clearRealKernel = OclContextHolder::clearRealKernel;
 
-    clearKernel.setArg(0, buffer);
-    clearKernel.setArg(1, size);
+    clearRealKernel.setArg(0, buffer);
+    clearRealKernel.setArg(1, size);
 
-    cl_int err = queue.enqueueNDRangeKernel(clearKernel,
+    cl_int err = queue.enqueueNDRangeKernel(clearRealKernel,
+                                            cl::NullRange, global, local);
+    checkErr(err);
+}
+
+void clearIntKernelWrap(cl::Buffer& buffer, unint size)
+{
+    const int base_size = 256;
+
+    cl::NDRange local(base_size);
+    cl::NDRange global(((size + base_size - 1) / base_size) * base_size);
+
+    cl::CommandQueue& queue = OclContextHolder::queue;
+    cl::Kernel& clearIntKernel = OclContextHolder::clearIntKernel;
+
+    clearIntKernel.setArg(0, buffer);
+    clearIntKernel.setArg(1, size);
+
+    cl_int err = queue.enqueueNDRangeKernel(clearIntKernel,
                                             cl::NullRange, global, local);
     checkErr(err);
 }
@@ -687,7 +705,9 @@ void meanshiftPackKernelWrap(const ocl_matrix& prev_iteration,
                              ocl_matrix& final_modes,
                              cl::Buffer& curr_indexes,
                              cl::Buffer& new_indexes,
-                             unint current_size, unint& result_size)
+                             unint current_size, unint& result_size,
+                             cl::Buffer iterationMap,
+                             unint iterationNum)
 {
     cl::NDRange local(BLOCK_SIZE, BLOCK_SIZE);
     cl::NDRange global(BLOCK_SIZE, ((current_size + BLOCK_SIZE - 1)
@@ -718,6 +738,8 @@ void meanshiftPackKernelWrap(const ocl_matrix& prev_iteration,
     meanshiftPackKernel.setArg(7, prev_iteration.c);
     meanshiftPackKernel.setArg(8, prev_iteration.pc);
     meanshiftPackKernel.setArg(9, counterBuffer);
+    meanshiftPackKernel.setArg(10, iterationMap);
+    meanshiftPackKernel.setArg(11, iterationNum);
 
     err = queue.enqueueNDRangeKernel(meanshiftPackKernel,
                                      cl::NullRange, global, local);

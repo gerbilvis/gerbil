@@ -33,7 +33,8 @@ cl::Kernel OclContextHolder::meanshiftMeanKernel;
 cl::Kernel OclContextHolder::simpleDistancesKernel;
 cl::Kernel OclContextHolder::meanshiftWeightsKernel;
 cl::Kernel OclContextHolder::meanshiftPackKernel;
-cl::Kernel OclContextHolder::clearKernel;
+cl::Kernel OclContextHolder::clearRealKernel;
+cl::Kernel OclContextHolder::clearIntKernel;
 cl::Kernel OclContextHolder::initIndexesKernel;
 
 extern const char* rbc;
@@ -150,7 +151,8 @@ void OclContextHolder::oclInit()
     simpleDistancesKernel = cl::Kernel(program, "simpleDistancesKernel");
     meanshiftWeightsKernel = cl::Kernel(program, "meanshiftWeightsKernel");
     meanshiftPackKernel = cl::Kernel(program, "meanshiftPackKernel");
-    clearKernel = cl::Kernel(program, "clearKernel");
+    clearRealKernel = cl::Kernel(program, "clearRealKernel");
+    clearIntKernel = cl::Kernel(program, "clearIntKernel");
     initIndexesKernel = cl::Kernel(program, "initIndexesKernel");
 }
 

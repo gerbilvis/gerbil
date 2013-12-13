@@ -58,7 +58,8 @@ public:
     static cl::Kernel simpleDistancesKernel;
     static cl::Kernel meanshiftWeightsKernel;
     static cl::Kernel meanshiftPackKernel;
-    static cl::Kernel clearKernel;
+    static cl::Kernel clearRealKernel;
+    static cl::Kernel clearIntKernel;
     static cl::Kernel initIndexesKernel;
 
     static void oclInit();

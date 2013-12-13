@@ -1607,7 +1607,15 @@ __kernel void simpleDistancesKernel(__global const real* X_mat,
 }
 
 
-__kernel void clearKernel(__global real* data, unint size)
+__kernel void clearRealKernel(__global real* data, unint size)
+{
+    size_t idx = get_global_id(0);
+
+    if(idx < size)
+        data[idx] = 0;
+}
+
+__kernel void clearIntKernel(__global unint* data, unint size)
 {
     size_t idx = get_global_id(0);
 
@@ -1632,7 +1640,9 @@ __kernel void meanshiftPackKernel(__global const real* prev_iteration,
                                   unint size,
                                   unint dimensionality,
                                   unint pitch,
-                                  __global volatile int* counter)
+                                  __global volatile int* counter,
+                                  __global unint* iteration_map,
+                                  unint iterationNum)
 {
     size_t local_id_x = get_local_id(0);
     size_t local_id_y = get_local_id(1);
@@ -1653,6 +1663,7 @@ __kernel void meanshiftPackKernel(__global const real* prev_iteration,
 
     barrier(CLK_LOCAL_MEM_FENCE);
 
+    /** compare data from previous and current iteration */
     for(unint i = local_id_x; i < dimensionality; i += BLOCK_SIZE)
     {
         unint idx = baseIdx + i;
@@ -1664,23 +1675,25 @@ __kernel void meanshiftPackKernel(__global const real* prev_iteration,
             isEqual[local_id_y] = 0;
     }
 
-    int oldIdx = curr_indexes[global_id_y];
+    /** getting current indexes of compared vectors */
+    int originIdx = curr_indexes[global_id_y];
 
     barrier(CLK_LOCAL_MEM_FENCE);
 
-    if(local_id_x == 0 && !isEqual[local_id_y])
+    /** attaching new positions for not equal vectors */
+    if(local_id_x == 0 && !isEqual[local_id_y] && global_id_y < size)
     {
         int idx = atomic_inc(counter);
 
         newIndexes[local_id_y] = idx;
-        new_indexes[idx] = oldIdx;
+        new_indexes[idx] = originIdx;
     }
 
     barrier(CLK_LOCAL_MEM_FENCE);
 
     unint newIdx = newIndexes[local_id_y];
 
-    if(newIdx != -1)
+    if(newIdx != -1) /** writing data for the next iteration */
     {
         unint newBaseIdx = newIdx * pitch;
 
@@ -1691,13 +1704,19 @@ __kernel void meanshiftPackKernel(__global const real* prev_iteration,
             next_iteration[idx] = curr_iteration[baseIdx + i];
         }
     }
-    else
+    else if(global_id_y < size) /** writing final modes */
     {
-        unint newBaseIdx = oldIdx * pitch;
+        unint finalIdx = originIdx * pitch;
+
+        /** writing iteration map (debug) */
+        if(local_id_x == 0)
+        {
+            iteration_map[originIdx] = iterationNum;
+        }
 
         for(unint i = local_id_x; i < dimensionality; i += BLOCK_SIZE)
         {
-            unint idx = newBaseIdx + i;
+            unint idx = finalIdx + i;
             final_modes[idx] = curr_iteration[baseIdx + i];
         }
     }
