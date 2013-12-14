@@ -255,3 +255,25 @@ vole_check_package(GDAL
         "${GDAL_INCLUDE_DIR}"
         "${GDAL_LIBRARIES}"
 )
+
+#OpenCL
+#find_package(OpenCL)
+#vole_check_package(OpenCL
+#        "OpenCL"
+#        "Please install OpenCL"
+#        OPENCL_FOUND
+#        "${OPENCL_INCLUDE_DIR}"
+#        "${OPENCL_LIBRARIES}"
+#)
+
+if(OpenCL_FOUND)
+    add_definitions(-D__CL_ENABLE_EXCEPTIONS)
+
+    # OpenCL C++ bindings
+    include_directories(BEFORE ${PROJECT_SOURCE_DIR}/external)
+
+    # OPENCL_INCLUDE_DIR moved to front of include directories to prevent
+    # using OpenCL headers from default system include dir
+    include_directories(BEFORE ${OPENCL_INCLUDE_DIR})
+
+endif (OpenCL_FOUND)
