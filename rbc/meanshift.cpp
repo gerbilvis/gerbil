@@ -58,6 +58,10 @@ void meanshift_rbc(matrix database, int img_width, int img_height,
                           PAD(database.pr) * sizeof(double), 0, &err);
     checkErr(err);
 
+    cl::Buffer hmodes(context, CL_MEM_READ_WRITE,
+                      PAD(database.pr) * sizeof(double), 0, &err);
+    checkErr(err);
+
     std::cout << "computing pilot" << std::endl;
 
     /** calculating pilot for every point */
@@ -69,7 +73,7 @@ void meanshift_rbc(matrix database, int img_width, int img_height,
 
     /** preparing memory for meanshift query */
 
-    unint partsNum = 1;
+    unint partsNum = 2;
     unint pointsPerPart = database.pr / partsNum;
 
     assert(database.pr % partsNum == 0);
@@ -205,7 +209,7 @@ void meanshift_rbc(matrix database, int img_width, int img_height,
 
             meanshiftKQueryRBC(sub_input_matrix, rbcS, allPilots, allWeights,
                                selectedPoints, selectedDistances,
-                               selectedPointsNum, maxQuerySize);
+                               selectedPointsNum, hmodes, maxQuerySize);
 
          //   queue.finish();
 
@@ -243,7 +247,7 @@ void meanshift_rbc(matrix database, int img_width, int img_height,
 
        // write_modes(output_ocl, img_width, img_height);
 
-     //   write_modes(final_modes_ocl, img_width, img_height);
+        write_modes(final_modes_ocl, img_width, img_height);
         write_iteration_map(iteration_map, img_width, img_height);
 
         /** switch input and output for the next iteration */

@@ -500,6 +500,7 @@ void meanshiftPlanKNNWrap(const ocl_matrix& dq, const cl::Buffer& dqMap,
                           cl::Buffer& selectedPoints,
                           cl::Buffer& selectedDistances,
                           cl::Buffer& selectedPointsNum,
+                          cl::Buffer& hmodes,
                           unint maxPointsNum,// unint compLength,
                           unint startPos, unint length)
 {
@@ -552,7 +553,8 @@ void meanshiftPlanKNNWrap(const ocl_matrix& dq, const cl::Buffer& dqMap,
         meanshiftPlanKNNKernel.setArg(27, selectedPoints);
         meanshiftPlanKNNKernel.setArg(28, selectedDistances);
         meanshiftPlanKNNKernel.setArg(29, selectedPointsNum);
-        meanshiftPlanKNNKernel.setArg(30, maxPointsNum);
+        meanshiftPlanKNNKernel.setArg(30, hmodes);
+        meanshiftPlanKNNKernel.setArg(31, maxPointsNum);
 
         cl_int err = queue.enqueueNDRangeKernel(meanshiftPlanKNNKernel,
                                                 cl::NullRange, global, local);

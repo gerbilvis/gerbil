@@ -29,6 +29,7 @@ void meanshiftKQueryRBC(const ocl_matrix input, const ocl_rbcStruct rbcS,
                         cl::Buffer selectedPoints,
                         cl::Buffer selectedDistances,
                         cl::Buffer selectedPointsNum,
+                        cl::Buffer hmodes,
                         int maxPointsNum);
 
 void computePilotsAndWeights(const matrix q,
@@ -88,6 +89,7 @@ void meanshiftComputeKNNs(const ocl_matrix& dx, const ocl_intMatrix& dxMap,
                           cl::Buffer selectedPoints,
                           cl::Buffer selectedDistances,
                           cl::Buffer selectedPointsNums,
+                          cl::Buffer hmodes,
                           int maxPointsNum,// unint compLength);
                           unint startPos, unint length);
 

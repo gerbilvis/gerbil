@@ -40,6 +40,7 @@ void meanshiftPlanKNNWrap(const ocl_matrix& dq, const cl::Buffer& dqMap,
                           cl::Buffer& selectedPoints,
                           cl::Buffer& selectedDistances,
                           cl::Buffer& selectedPointsNum,
+                          cl::Buffer& hmodes,
                           unint maxPointsNum, unint startPos, unint length);//unint compLength);
 
 void meanshiftMeanWrap(const ocl_matrix& input,

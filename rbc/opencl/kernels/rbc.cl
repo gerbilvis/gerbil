@@ -19,6 +19,9 @@ typedef uint unint;
 #define BLOCK_SIZE 16
 #define SCAN_WIDTH 1024
 
+#define FAMS_ALPHA         1.0
+#define FAMS_FLOAT_SHIFT   100000.0
+
 #define KMAX 32 //Internal parameter.  Do not change!
 
 //Row major indexing
@@ -1263,6 +1266,7 @@ __kernel void meanshiftPlanKNNKernel(__global const real* Q_mat,
                             __global unint* selectedPoints,
                             __global real* selectedDistances,
                             __global unint* selectedPointsNums,
+                            __global unint* hmodes,
                             unint maxPointsNum)
 {
 
@@ -1287,6 +1291,9 @@ __kernel void meanshiftPlanKNNKernel(__global const real* Q_mat,
     volatile __local unint local_count[BLOCK_SIZE];
     volatile __local unint global_count[BLOCK_SIZE];
 
+    __local real min_distances[BLOCK_SIZE];
+    __local real min_windows[BLOCK_SIZE];
+
     __local real Xs[BLOCK_SIZE][BLOCK_SIZE];
     __local real Qs[BLOCK_SIZE][BLOCK_SIZE];
 
@@ -1299,6 +1306,9 @@ __kernel void meanshiftPlanKNNKernel(__global const real* Q_mat,
     {
      //   local_count[offX] = 0;
         global_count[offX] = 0;
+
+        min_distances[offX] = 0.f;
+        min_windows[offX] = 0.f;
     }
 
 
@@ -1352,7 +1362,6 @@ __kernel void meanshiftPlanKNNKernel(__global const real* Q_mat,
         /** at this point, distance is complete (ans) */
 
         /** load window */
-        //real window = windows[databasePointIdx];
         real window = xB + offX < groupCount
                         ? windows[xMap_mat[IDX(xG, xB + offX, xMap_ld)]] : 0.f;
 
@@ -1363,10 +1372,17 @@ __kernel void meanshiftPlanKNNKernel(__global const real* Q_mat,
 
         if(isOk)
         {
+            if(offX == 0)
+            {
+                if(ans < min_distances[offQ])
+                {
+                    min_distances[offQ] = ans;
+                    min_windows[offQ] = window;
+                }
+            }
+
             int idx = atomic_inc(local_count + offQ);
-          //  assert(idx < BLOCK_SIZE);
-          //  assert(xG < xMap_pr);
-          //  assert(xB + offX < xMap_pc);
+
             valid_indices[offQ][idx] = xMap_mat[IDX(xG, xB + offX, xMap_ld)];
             valid_distances[offQ][idx] = ans;
         }
@@ -1403,6 +1419,8 @@ __kernel void meanshiftPlanKNNKernel(__global const real* Q_mat,
     {
         selectedPointsNums[queryPointIdx] = min(global_count[offQ],
                                                        maxPointsNum);
+
+        hmodes[queryPointIdx] = min_windows[offQ];
     }
 }
 
@@ -1453,40 +1471,11 @@ __kernel void meanshiftMeanKernel(__global const real* X_mat,
 
             double dist = selectedDistances[maxPointsNum * global_id_y + i];
 
-            //double window = windows[global_id_y + i];
-            //double weight = weights[global_id_y + i];
-
             double window = windows[idx];
             double weight = weights[idx];
 
-//            assert(!isnan(dist));
-//            assert(!isinf(dist));
-
-//            assert(!isnan(window));
-//            assert(!isinf(window));
-
-  //          assert(!isnan(weight));
-//            assert(!isinf(weight));
-
             double x = 1.0 - (dist / window);
-
-
-//            assert(!isnan(x));
-//            assert(!isinf(x));
-
-//            if(isinf(x))
-//            {
-//                printf("dist: %f\n", dist);
-//                printf("window: %f\n", window);
-//                printf("numPoints: %d\n", numPoints);
-//            }
-
             double w = weight * x * x;
-
-//            assert(!isnan(w));
-//            assert(!isinf(w));
-
-            //printf("w: %f\n", w);
 
             localMean[local_id_y][local_id_x] += X_mat[IDX(idx, j, X_ld)] * w;
             localWeights[local_id_y][local_id_x] += w;
@@ -1500,10 +1489,6 @@ __kernel void meanshiftMeanKernel(__global const real* X_mat,
         Y_mat[IDX(global_id_y, j, Y_ld)] = numPoints ? final : 0.f;
     }
 }
-
-#define FAMS_ALPHA         1.0
-#define FAMS_FLOAT_SHIFT   100000.0
-//#define FAMS_FLOAT_SHIFT   1.0f
 
 __kernel void meanshiftWeightsKernel(__global const real* pilots,
                                      __global double* weights,

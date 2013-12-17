@@ -214,6 +214,7 @@ void meanshiftKQueryRBC(const ocl_matrix input, const ocl_rbcStruct rbcS,
                         cl::Buffer selectedPoints,
                         cl::Buffer selectedDistances,
                         cl::Buffer selectedPointsNum,
+                        cl::Buffer hmodes,
                         int maxPointsNum)
 {
     unint m = input.r;
@@ -299,7 +300,7 @@ void meanshiftKQueryRBC(const ocl_matrix input, const ocl_rbcStruct rbcS,
 
     meanshiftComputeKNNs(rbcS.dx, rbcS.dxMap, dq, dqMap, dcP, pilots, weights,
                          selectedPoints, selectedDistances, selectedPointsNum,
-                         maxPointsNum, 0, compLength);
+                         hmodes, maxPointsNum, 0, compLength);
 
     free(qMap);
     freeCompPlan(&dcP);
@@ -900,13 +901,14 @@ void meanshiftComputeKNNs(const ocl_matrix& dx, const ocl_intMatrix& dxMap,
                           cl::Buffer selectedPoints,
                           cl::Buffer selectedDistances,
                           cl::Buffer selectedPointsNums,
+                          cl::Buffer hmodes,
                           int maxPointsNum, //unint compLength)
                           unint startPos, unint length)
 {
 
     meanshiftPlanKNNWrap(dq, dqMap, dx, dxMap, dcP, windows,
                          weights, selectedPoints, selectedDistances,
-                         selectedPointsNums,
+                         selectedPointsNums, hmodes,
                          maxPointsNum, startPos, length);
 
 }
