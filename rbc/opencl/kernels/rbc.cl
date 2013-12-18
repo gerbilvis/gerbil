@@ -1307,7 +1307,7 @@ __kernel void meanshiftPlanKNNKernel(__global const real* Q_mat,
      //   local_count[offX] = 0;
         global_count[offX] = 0;
 
-        min_distances[offX] = 0.f;
+        min_distances[offX] = FLT_MAX;//0.f;
         min_windows[offX] = 0.f;
     }
 

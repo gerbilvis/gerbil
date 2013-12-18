@@ -13,6 +13,7 @@
 #include "kernelWrap.h"
 
 void meanshift_rbc(matrix database, int img_width, int img_height,
+                   unsigned short* final_modes, unsigned int* final_hmodes,
                    int numReps, int pointsPerRepresentative)
 {
     int maxQuerySize = 1024;
@@ -73,7 +74,7 @@ void meanshift_rbc(matrix database, int img_width, int img_height,
 
     /** preparing memory for meanshift query */
 
-    unint partsNum = 2;
+    unint partsNum = 1;
     unint pointsPerPart = database.pr / partsNum;
 
     assert(database.pr % partsNum == 0);
@@ -236,10 +237,8 @@ void meanshift_rbc(matrix database, int img_width, int img_height,
         std::cout << "result size: " << result_size << std::endl;
 
 
-        std::cout << "calculating distances" << std::endl;
-
+//        std::cout << "calculating distances" << std::endl;
 //        simpleDistanceKernelWrap(prev_input_ocl, output_ocl, distances);
-
   //      validate_distances(database, distances);
 
       //  validate_query_and_mean(database, selectedPoints, selectedPointsNum, allPilots,
@@ -247,7 +246,7 @@ void meanshift_rbc(matrix database, int img_width, int img_height,
 
        // write_modes(output_ocl, img_width, img_height);
 
-        write_modes(final_modes_ocl, img_width, img_height);
+      //  write_modes(final_modes_ocl, img_width, img_height);
         write_iteration_map(iteration_map, img_width, img_height);
 
         /** switch input and output for the next iteration */
@@ -275,6 +274,48 @@ void meanshift_rbc(matrix database, int img_width, int img_height,
         std::cout << "elapsed time: " << time/1000.f << " [s]" << std::endl;
     }
 
+    /** reading final distances */
+
+    byte_size = database.pr * database.pc * sizeof(real);
+
+    real* final_modes_host = new real[database.pr * database.pc];
+
+    err = queue.enqueueReadBuffer(final_modes_ocl.mat, CL_TRUE, 0, byte_size,
+                                  final_modes_host);
+    checkErr(err);
+
+    for(int i = 0; i < database.r; ++i)
+    {
+        real* row_src = final_modes_host + database.pc * i;
+        unsigned short* row_dst = final_modes + database.c * i;
+
+        for(int j = 0; j < database.c; ++j)
+        {
+            row_dst[j] = row_src[j];
+        }
+    }
+
+    delete[] final_modes_host;
+
+    /** reading final hmodes */
+
+    byte_size = database.pr * sizeof(unsigned int);
+
+    unsigned int* hmodes_host = new unsigned int[database.pr];
+
+    err = queue.enqueueReadBuffer(hmodes, CL_TRUE, 0, byte_size, hmodes_host);
+    checkErr(err);
+
+    for(int i = 0; i < database.r; ++ i)
+    {
+        final_hmodes[i] = hmodes_host[i];
+    }
+
+    delete[] hmodes_host;
+
+
+
+
     //write_modes(output_ocl, img_width, img_height);
 
 //    validate_query_and_mean(database, selectedPoints, selectedPointsNum, allPilots,
@@ -294,7 +335,7 @@ void validate_pilots(matrix database, cl::Buffer pilots)
 
     std::cout << "validating pilots..." << std::endl;
 
-    int tests = 10;
+    int tests = 5;
     int db_size = database.r;
 
     real* pilots_host = new real[db_size];
@@ -304,6 +345,24 @@ void validate_pilots(matrix database, cl::Buffer pilots)
 
     err = queue.enqueueReadBuffer(pilots, CL_TRUE, 0,
                                   db_size * sizeof(real), pilots_host);
+
+    real p_max = 0.f;
+    real p_min = std::numeric_limits<real>::max();
+
+    for(int i = 0; i < db_size; ++i)
+    {
+        real p = pilots_host[i];
+
+        assert(p > 0.f);
+        assert(((int)p) > 0);
+
+        p_max = std::max(p_max, p);
+        p_min = std::min(p_min, p);
+    }
+
+    std::cout << "pilot max: " << p_max << std::endl;
+    std::cout << "pilot min: " << p_min << std::endl;
+
     checkErr(err);
 
     for(int i = 0; i < tests; ++i)

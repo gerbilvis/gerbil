@@ -125,6 +125,9 @@ public:
 	void SelectMsPoints(double percent, int jump);
 	void ImportMsPoints(std::vector<fams_point> &points);
 
+    void ImportMs(const multi_img& img, std::vector<unsigned short>& modes,
+                  std::vector<unsigned int>& hmodes);
+
 	/** optional argument bandwidths provides pre-calculated
 	 *  per-point bandwidth
 	 */

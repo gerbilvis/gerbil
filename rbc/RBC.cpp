@@ -3,10 +3,13 @@
 
 #include "rbc_include.h"
 #include <sys/time.h>
+#include <opencv2/highgui/highgui.hpp>
+#include <labeling.h>
 
 #include "supportRoutines.h"
 
 #include "meanshift.h"
+#include "mfams.h"
 
 RBC::RBC()
     : vole::Command("RBC", config,
@@ -88,10 +91,34 @@ int RBC::execute()
         matrix database;
         imgToMatrix(img, database);
 
-       // for(int i = 0; i < 20; ++i)
-       meanshift_rbc(database, img.width, img.height);
+        unsigned short* modes = new unsigned short[database.c * database.r];
+        unsigned int* hmodes = new unsigned int[database.r];
 
+        meanshift_rbc(database, img.width, img.height, modes, hmodes);
         free(database.mat);
+
+        // create FAMS object and import data to do mode prunning
+
+        FAMS fams(config_ms);
+
+        std::vector<unsigned short> modes_vector(modes, modes
+                                                 + database.c * database.pr);
+
+        std::vector<unsigned int> hmodes_vector(hmodes, hmodes + database.r);
+
+        modes_vector.resize(database.pc * database.pr);
+
+        fams.ImportMs(img, modes_vector, hmodes_vector);
+        fams.PruneModes();
+
+        //cv::Mat1s labels_mask = fams.segmentImage();
+
+        //vole::Labeling labels = labels_mask;
+
+//        std::string output_name = config.output_directory + "/"
+//                                  + config.output_prefix + "segmentation_rgb.png";
+//        cv::imwrite("segmentation_rgb.png", labels.bgr());
+
     }
     catch(cl::Error error)
     {

@@ -96,6 +96,16 @@ void FAMS::ImportMsPoints(std::vector<fams_point> &points) {
 		psel_[i] = &points[i];
 }
 
+void FAMS::ImportMs(const multi_img &img, std::vector<unsigned short> &modes,
+                    std::vector<unsigned int> &hmodes) {
+
+    ImportPoints(img);
+    SelectMsPoints(0., 1);
+
+    modes_ = modes;
+    hmodes_ = hmodes;
+}
+
 void FAMS::ComputePilotPoint::operator()(const tbb::blocked_range<int> &r)
 {
 	const int thresh = (int)(fams.config.k * std::sqrt((float)fams.n_));
@@ -297,7 +307,7 @@ unsigned int FAMS::DoMSAdaptiveIteration(
 			double x = 1.0 - (dist / ptp.window_);
 			double w = ptp.weightdp2_ * x * x;
 
-            printf("w: %f\n", w);
+           // printf("w: %f\n", w);
 			total_weight += w;
 			for (j = 0; j < d_; j++)
 				rr[j] += ptp.data_[j] * w;

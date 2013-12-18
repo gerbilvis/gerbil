@@ -5,6 +5,8 @@
 #include "rbc_ops.h"
 #include "multi_img.h"
 
+#include "meanshift_config.h"
+
 #include <command.h>
 
 class RBC : public vole::Command {
@@ -31,7 +33,7 @@ class RBC : public vole::Command {
         int executeSimple();
 
         vole::RBCConfig config;
-
+        vole::MeanShiftConfig config_ms;
 };
 
 

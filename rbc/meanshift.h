@@ -7,6 +7,8 @@
  *
  */
 void meanshift_rbc(matrix database, int img_width, int img_height,
+                   unsigned short* final_modes = 0,
+                   unsigned int* final_hmodes = 0,
                    int numReps = 0, int pointsPerRepresentative = 16*1024);
 
 void validate_pilots(matrix database, cl::Buffer pilots);

@@ -21,32 +21,32 @@ ENUM_MAGIC(ms_sampling)
 MeanShiftConfig::MeanShiftConfig(const std::string& prefix)
 	: Config(prefix), input("input")
 #ifdef WITH_SEG_FELZENSZWALB
-	, superpixel("superpixel"),
-	sp_withGrad(false), sp_weight(0)
+    , superpixel("superpixel"),
+    sp_withGrad(false), sp_weight(0)
 #endif
 #ifdef WITH_EDGE_DETECT
-	, som("som")
+    , som("som")
 #endif
 {
-	use_LSH = false;
-	K = 20;
-	L = 10;
-	seed = 0;
-	k = 1.f;
-	starting = ALL;
-	jump = 2;
-	percent = 50;
-	bandwidth = 0;
-	Kmin = 1;
-	Kjump = 1;
-	epsilon = 0.05f;
-	pruneMinN = 50;
+    use_LSH = false;
+    K = 20;
+    L = 10;
+    seed = 0;
+    k = 1.f;
+    starting = ALL;
+    jump = 2;
+    percent = 50;
+    bandwidth = 0;
+    Kmin = 1;
+    Kjump = 1;
+    epsilon = 0.05f;
+    pruneMinN = 50;
 
-	output_directory = "/tmp";
-	batch = false;
-	findKL = false;
+    output_directory = "/tmp";
+    batch = false;
+    findKL = false;
 
-	initBoostOptions();
+    initBoostOptions();
 }
 
 MeanShiftConfig::~MeanShiftConfig() {}

@@ -1,4 +1,4 @@
-/*	
+/*
 	Copyright(c) 2010 Christian Riess <christian.riess@cs.fau.de>
 	and Johannes Jordan <johannes.jordan@cs.fau.de>.
 
@@ -25,7 +25,7 @@ Config::Config(const std::string& p) :
 	verbosity(0)
 {
 #ifdef WITH_BOOST_PROGRAM_OPTIONS
-	initMandatoryBoostOptions();
+    initMandatoryBoostOptions();
 #endif // WITH_BOOST_PROGRAM_OPTIONS
 }
 
