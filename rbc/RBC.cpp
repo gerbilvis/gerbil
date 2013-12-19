@@ -111,13 +111,13 @@ int RBC::execute()
         fams.ImportMs(img, modes_vector, hmodes_vector);
         fams.PruneModes();
 
-        //cv::Mat1s labels_mask = fams.segmentImage();
+        cv::Mat1s labels_mask = fams.segmentImage();
 
-        //vole::Labeling labels = labels_mask;
+        vole::Labeling labels = labels_mask;
 
 //        std::string output_name = config.output_directory + "/"
 //                                  + config.output_prefix + "segmentation_rgb.png";
-//        cv::imwrite("segmentation_rgb.png", labels.bgr());
+        cv::imwrite("segmentation_rgb.png", labels.bgr());
 
     }
     catch(cl::Error error)

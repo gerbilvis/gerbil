@@ -59,10 +59,6 @@ void meanshift_rbc(matrix database, int img_width, int img_height,
                           PAD(database.pr) * sizeof(double), 0, &err);
     checkErr(err);
 
-    cl::Buffer hmodes(context, CL_MEM_READ_WRITE,
-                      PAD(database.pr) * sizeof(double), 0, &err);
-    checkErr(err);
-
     std::cout << "computing pilot" << std::endl;
 
     /** calculating pilot for every point */
@@ -94,6 +90,18 @@ void meanshift_rbc(matrix database, int img_width, int img_height,
 
     cl::Buffer selectedPointsNum(context, CL_MEM_READ_WRITE,
                                  byte_size, 0, &err);
+    checkErr(err);
+
+    byte_size = sizeof(real) * pointsPerPart;
+
+    cl::Buffer hmodes(context, CL_MEM_READ_WRITE, byte_size, 0, &err);
+
+    checkErr(err);
+
+    byte_size = sizeof(real) * database.pr;
+
+    cl::Buffer hmodes_total(context, CL_MEM_READ_WRITE, byte_size, 0, &err);
+
     checkErr(err);
 
     /** preparing memory for input and output means */
@@ -230,7 +238,8 @@ void meanshift_rbc(matrix database, int img_width, int img_height,
 
         meanshiftPackKernelWrap(input_ocl, output_ocl, next_input_ocl,
                                 final_modes_ocl, curr_indexes, new_indexes,
-                                data_size, result_size, iteration_map, i + 1);
+                                data_size, result_size, iteration_map,
+                                hmodes, hmodes_total, i + 1);
 
         //validate_indexes(curr_indexes, new_indexes, data_size, result_size);
 
@@ -299,11 +308,11 @@ void meanshift_rbc(matrix database, int img_width, int img_height,
 
     /** reading final hmodes */
 
-    byte_size = database.pr * sizeof(unsigned int);
+    byte_size = database.pr * sizeof(real);
 
-    unsigned int* hmodes_host = new unsigned int[database.pr];
+    real* hmodes_host = new real[database.pr];
 
-    err = queue.enqueueReadBuffer(hmodes, CL_TRUE, 0, byte_size, hmodes_host);
+    err = queue.enqueueReadBuffer(hmodes_total, CL_TRUE, 0, byte_size, hmodes_host);
     checkErr(err);
 
     for(int i = 0; i < database.r; ++ i)
@@ -947,8 +956,5 @@ void write_iteration_map(cl::Buffer map, int img_width, int img_height)
 
     QString filename = "iteration_map.bmp";
     img.save(filename);
-
-
-
 }
 

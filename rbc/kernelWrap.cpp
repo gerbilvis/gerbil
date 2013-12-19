@@ -709,6 +709,8 @@ void meanshiftPackKernelWrap(const ocl_matrix& prev_iteration,
                              cl::Buffer& new_indexes,
                              unint current_size, unint& result_size,
                              cl::Buffer iterationMap,
+                             cl::Buffer partial_hmodes,
+                             cl::Buffer final_hmodes,
                              unint iterationNum)
 {
     cl::NDRange local(BLOCK_SIZE, BLOCK_SIZE);
@@ -741,7 +743,9 @@ void meanshiftPackKernelWrap(const ocl_matrix& prev_iteration,
     meanshiftPackKernel.setArg(8, prev_iteration.pc);
     meanshiftPackKernel.setArg(9, counterBuffer);
     meanshiftPackKernel.setArg(10, iterationMap);
-    meanshiftPackKernel.setArg(11, iterationNum);
+    meanshiftPackKernel.setArg(11, partial_hmodes);
+    meanshiftPackKernel.setArg(12, final_hmodes);
+    meanshiftPackKernel.setArg(13, iterationNum);
 
     err = queue.enqueueNDRangeKernel(meanshiftPackKernel,
                                      cl::NullRange, global, local);

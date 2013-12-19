@@ -71,6 +71,8 @@ void meanshiftPackKernelWrap(const ocl_matrix& prev_iteration,
                              cl::Buffer& new_indexes,
                              unint current_size, unint& result_size,
                              cl::Buffer iterationMap,
+                             cl::Buffer partial_hmodes,
+                             cl::Buffer final_hmodes,
                              unint iterationNum);
 
 //void findRangeWrap(const matrix,real*,unint);

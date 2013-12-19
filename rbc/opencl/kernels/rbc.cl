@@ -1266,7 +1266,7 @@ __kernel void meanshiftPlanKNNKernel(__global const real* Q_mat,
                             __global unint* selectedPoints,
                             __global real* selectedDistances,
                             __global unint* selectedPointsNums,
-                            __global unint* hmodes,
+                            __global real* hmodes,
                             unint maxPointsNum)
 {
 
@@ -1627,6 +1627,8 @@ __kernel void meanshiftPackKernel(__global const real* prev_iteration,
                                   unint pitch,
                                   __global volatile int* counter,
                                   __global unint* iteration_map,
+                                  __global real* partial_hmodes,
+                                  __global real* final_hmodes,
                                   unint iterationNum)
 {
     size_t local_id_x = get_local_id(0);
@@ -1703,6 +1705,15 @@ __kernel void meanshiftPackKernel(__global const real* prev_iteration,
         {
             unint idx = finalIdx + i;
             final_modes[idx] = curr_iteration[baseIdx + i];
+        }
+    }
+
+    /** writing hmodes */ // probably not optimal solution
+    if(global_id_y < size)
+    {
+        if(local_id_x == 0)
+        {
+            final_hmodes[originIdx] = partial_hmodes[global_id_y];
         }
     }
 }

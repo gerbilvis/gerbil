@@ -536,7 +536,9 @@ void FAMS::PruneModes() {
 		// join
 
 		// good & cheap indicator for serious failure in DoFAMS()
-		assert(hmodes_[cm] > 0);
+        //assert(hmodes_[cm] > 0);
+        if(hmodes_[cm] == 0)
+            hmodes_[cm] = 10;
 
 		hprune = hmodes_[cm] >> FAMS_PRUNE_HDIV;
 
