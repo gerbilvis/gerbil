@@ -35,27 +35,13 @@ typedef uint unint;
     #define DIST(i,j) (fabs((i) - (j))) // L_1
 #endif
 
-
-#define MAX(a,b) max(a,b)
-#define MIN(a,b) min(a,b)
-
 #define MAXi(i,j,k,l) ((i) > (j) ? (k) : (l)) //indexed version
 #define MINi(i,j,k,l) ((i) <= (j) ? (k) : (l))
 
 #define DUMMY_IDX UINT_MAX
 
-//Computes all pairs of distances between Q and X.
-
-//typedef struct {
-//  real *mat;
-//  unint r; //rows
-//  unint c; //cols
-//  unint pr; //padded rows
-//  unint pc; //padded cols
-//  unint ld; //the leading dimension (in this code, this is the same as pc)
-//} matrix;
-
-
+/** Computes all pairs of distances between Q and X.
+  */
 __kernel void dist1Kernel(__global const real* Q_mat,
                          unint Q_r,
                          unint Q_c,
@@ -117,8 +103,10 @@ __kernel void dist1Kernel(__global const real* Q_mat,
 }
 
 
-//This function is used by the rbc building routine.  It find an appropriate range
-//such that roughly cntWant points fall within this range.  D is a matrix of distances.
+/** This function is used by the rbc building routine.
+  * It find an appropriate range such that roughly cntWant
+  * points fall within this range.  D is a matrix of distances.
+  */
 __kernel void findRangeKernel(__global const real* D_mat,
                               unint D_r,
                               unint D_c,
@@ -130,35 +118,30 @@ __kernel void findRangeKernel(__global const real* D_mat,
                               unint cntWant,
                               unint offset)
 {
-
+    size_t ro = get_local_id(1);
+    size_t co = get_local_id(0);
     size_t blockIdx_y = get_group_id(1);
 
-    size_t threadIdx_x = get_local_id(0);
-    size_t threadIdx_y = get_local_id(1);
-
-    unint row = blockIdx_y*(BLOCK_SIZE/4)+threadIdx_y + numDone;
-    unint ro = threadIdx_y;
-    unint co = threadIdx_x;
+    unint row = blockIdx_y * (BLOCK_SIZE / 4) + ro + numDone;
     unint i;
     real t;
 
     const unint LB = (90 * cntWant) / 100;
     const unint UB = cntWant;
 
-    __local real smin[BLOCK_SIZE/4][4*BLOCK_SIZE];
-    __local real smax[BLOCK_SIZE/4][4*BLOCK_SIZE];
+    __local real smin[BLOCK_SIZE / 4][4 * BLOCK_SIZE];
+    __local real smax[BLOCK_SIZE / 4][4 * BLOCK_SIZE];
 
-    //  real min= MAX_REAL;
     real min_val = FLT_MAX;
-    real max_val = 0;
+    real max_val = 0.f;
 
     for(unint c = 0; c < D_pc; c += (4 * BLOCK_SIZE))
     {
         if(c + co < D_c)
         {
             t = D_mat[IDX(row, c + co, D_ld)];
-            min_val = MIN(t,min_val);
-            max_val = MAX(t,max_val);
+            min_val = min(t, min_val);
+            max_val = max(t, max_val);
         }
     }
 
@@ -171,8 +154,8 @@ __kernel void findRangeKernel(__global const real* D_mat,
     {
         if(co < i)
         {
-            smin[ro][co] = MIN(smin[ro][co], smin[ro][co+i]);
-            smax[ro][co] = MAX(smax[ro][co], smax[ro][co+i]);
+            smin[ro][co] = min(smin[ro][co], smin[ro][co+i]);
+            smax[ro][co] = max(smax[ro][co], smax[ro][co+i]);
         }
         barrier(CLK_LOCAL_MEM_FENCE);
     }
@@ -180,7 +163,7 @@ __kernel void findRangeKernel(__global const real* D_mat,
     //Now start range counting.
 
     unint itcount = 0;
-    real rg;
+    real range;
 
     __local unint scnt[BLOCK_SIZE/4][4*BLOCK_SIZE];
     __local char cont[BLOCK_SIZE/4];
@@ -194,18 +177,18 @@ __kernel void findRangeKernel(__global const real* D_mat,
 
         barrier(CLK_LOCAL_MEM_FENCE);
 
-        if(cont[ro])  //if we didn't actually need to cont, leave rg as it was.
-            rg = (smax[ro][0] + smin[ro][0]) / ((real)2.0);
+        if(cont[ro])  //if we didn't actually need to cont, leave range as it was.
+            range = (smax[ro][0] + smin[ro][0]) / 2.f;
 
-        unint cnt = 0;
+        unint count = 0;
 
         for(unint c = 0; c < D_pc; c += (4 * BLOCK_SIZE))
         {
-            cnt += (c+co < D_c&& row < D_r
-                               && D_mat[IDX(row, c+co, D_ld)] <= rg);
+            count += (c + co < D_c && row < D_r
+                                 && D_mat[IDX(row, c+co, D_ld)] <= range);
         }
 
-        scnt[ro][co] = cnt;
+        scnt[ro][co] = count;
 
         barrier(CLK_LOCAL_MEM_FENCE);
 
@@ -221,9 +204,9 @@ __kernel void findRangeKernel(__global const real* D_mat,
         if(co == 0)
         {
             if(scnt[ro][0] < cntWant)
-                smin[ro][0] = rg;
+                smin[ro][0] = range;
             else
-                smax[ro][0] = rg;
+                smax[ro][0] = range;
         }
 
         // cont[ro] == this row needs to continue
@@ -243,7 +226,7 @@ __kernel void findRangeKernel(__global const real* D_mat,
     } while(cont[0]);
 
     if(co == 0 && row < D_r)
-        ranges[row + offset] = rg;
+        ranges[row + offset] = range;
 }
 
 
@@ -645,8 +628,8 @@ void mmGateI(__local real *x, __local real *y,
     unint ti = MINi( *x, *y, *xi, *yi );
     *yi = MAXi( *x, *y, *xi, *yi );
     *xi = ti;
-    real t = MIN( *x, *y );
-    *y = MAX( *x, *y );
+    real t = min( *x, *y );
+    *y = max( *x, *y );
     *x = t;
 }
 

@@ -48,21 +48,7 @@ void generateRandomQueries(const matrix x, int numOfReps, matrix& q)
 int RBC::execute()
 {
     if(config.old_impl)
-    {
-
-        const char* argv[] = {"testRBC",
-                              "-X", "/home/mcieslak/SOCIS/RandomBallCover-GPU-master/sample_input/sample_db.txt",
-                              "-Q", "/home/mcieslak/SOCIS/RandomBallCover-GPU-master/sample_input/sample_db.txt",
-                              //"-X", "/home/michalc/SOCIS/RandomBallCover-GPU-master/sample_input/sample_db.txt",
-                              //"-Q", "/home/michalc/SOCIS/RandomBallCover-GPU-master/sample_input/sample_queries.txt",
-                              "-n", "1024",
-                              "-m", "1024",
-                              "-d", "16",
-                              "-r", "256",
-                              "-O", "output.txt"};
-
-        return old_main(15, (char**)argv);
-    }
+        return runOld();
 
     try
     {
@@ -208,4 +194,20 @@ void RBC::printShortHelp() const
 void RBC::printHelp() const
 {
     std::cout << "rbc help" << std::endl;
+}
+
+int RBC::runOld()
+{
+    const char* argv[] = {"testRBC",
+                          "-X", "/home/mcieslak/SOCIS/RandomBallCover-GPU-master/sample_input/sample_db.txt",
+                          "-Q", "/home/mcieslak/SOCIS/RandomBallCover-GPU-master/sample_input/sample_db.txt",
+                          //"-X", "/home/michalc/SOCIS/RandomBallCover-GPU-master/sample_input/sample_db.txt",
+                          //"-Q", "/home/michalc/SOCIS/RandomBallCover-GPU-master/sample_input/sample_queries.txt",
+                          "-n", "1024",
+                          "-m", "1024",
+                          "-d", "16",
+                          "-r", "256",
+                          "-O", "output.txt"};
+
+    return old_main(15, (char**)argv);
 }

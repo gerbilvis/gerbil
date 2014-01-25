@@ -34,6 +34,9 @@ class RBC : public vole::Command {
 
         vole::RBCConfig config;
         vole::MeanShiftConfig config_ms;
+
+    private:
+        int runOld(); /** for testing original RBC implementation */
 };
 
 
