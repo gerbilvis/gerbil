@@ -378,8 +378,8 @@ void bindPilotsAndWeights(const cl::Buffer &indexes,
  *  numReps - number of representatives
  *  s - number of points assigned to each representative.
  */
-void buildRBC(const matrix x, ocl_rbcStruct *rbcS, unint numReps, unint s,
-              cl::Buffer pilots, int threshold)
+void buildRBC(const matrix x, ocl_rbcStruct *rbcS, unint numReps,
+              unint pointsPerRepresentative, cl::Buffer pilots, int threshold)
 {
     bool computePilots = threshold != 0;
 
@@ -391,8 +391,8 @@ void buildRBC(const matrix x, ocl_rbcStruct *rbcS, unint numReps, unint s,
 
     xmap.r = numReps;
     xmap.pr = PAD(numReps);
-    xmap.c = s;
-    xmap.pc = xmap.ld = PAD(s);
+    xmap.c = pointsPerRepresentative;
+    xmap.pc = xmap.ld = PAD(pointsPerRepresentative);
     xmap.mat = (unint*)calloc( xmap.pr*xmap.pc, sizeof(*xmap.mat) );
     copyAndMoveI(&rbcS->dxMap, &xmap);
 
@@ -492,16 +492,12 @@ void buildRBC(const matrix x, ocl_rbcStruct *rbcS, unint numReps, unint s,
          */
         distSubMat(rbcS->dr, rbcS->dx, dD, row, pip);
 
-
-        DBG_DEVICE_MATRIX_WRITE(dD, "distances.txt");
-        DBG_DEVICE_MATRIX_WRITE(rbcS->dr, "srbS_dr0.txt");
-
         /** find an appropriate range
          *  dD - matrix of distances
          *  dranges - vector of maximal value for each row
          *  s - desired number of values within a range
          */
-        findRangeWrap(dD, dranges, s, 0);
+        findRangeWrap(dD, dranges, pointsPerRepresentative, 0);
 
         if(computePilots)
             findRangeWrap(dD, pilots, threshold, row);
@@ -514,21 +510,13 @@ void buildRBC(const matrix x, ocl_rbcStruct *rbcS, unint numReps, unint s,
          */
         rangeSearchWrap(dD, dranges, dir);
 
-        DBG_DEVICE_MATRIX_WRITE(dir, "bin_vec.txt");
-
         sumWrap(dir, dSums);  //This and the next call perform the parallel compaction.
 
-        DBG_DEVICE_MATRIX_WRITE(dSums, "dSums.txt");
-
         buildMapWrap(rbcS->dxMap, dir, dSums, row);
-
-        DBG_DEVICE_MATRIX_WRITE(rbcS->dxMap, "dxMap.txt");
 
         /** How many points are assigned to each rep?  It is not
           *exactly* s, which is why we need to compute this. */
         getCountsWrap(dCnts, dir, dSums);
-
-        DBG_DEVICE_UINT_BUFF_WRITE(dCnts, pi, "dCnts.txt");
 
         err = queue.enqueueReadBuffer(dCnts, CL_TRUE, 0,
                                       pi * sizeof(unint), &(rbcS->groupCount[row]));

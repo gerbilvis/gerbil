@@ -537,8 +537,15 @@ void FAMS::PruneModes() {
 
 		// good & cheap indicator for serious failure in DoFAMS()
         //assert(hmodes_[cm] > 0);
+
+        static int zeroHmodes = 0;
+
         if(hmodes_[cm] == 0)
+        {
             hmodes_[cm] = 10;
+            zeroHmodes++;
+            printf("zero hmodes:%d\n", zeroHmodes);
+        }
 
 		hprune = hmodes_[cm] >> FAMS_PRUNE_HDIV;
 

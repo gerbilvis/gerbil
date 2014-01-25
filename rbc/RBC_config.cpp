@@ -20,6 +20,8 @@ void RBCConfig::initBoostOptions()
     options.add_options()
         (key("input,I"), value(&input_file)->default_value("input.png"),
          "Image file to process")
+        (key("gradient,G"), value(&gradient)->default_value(false),
+         "Compute gradient")
         (key("output,O"), value(&output_dir)->default_value("/tmp/"),
          "Output directory")
         (key("old,D"), value(&old_impl)->default_value(false),

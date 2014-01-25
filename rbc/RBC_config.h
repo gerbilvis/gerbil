@@ -17,6 +17,8 @@ public:
     // working directory
     std::string output_dir;
 
+    bool gradient;
+
     bool old_impl;
 
     virtual std::string getString() const;

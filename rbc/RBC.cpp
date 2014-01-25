@@ -82,6 +82,13 @@ int RBC::execute()
             return -1;
         }
 
+        if(config.gradient)
+        {
+            std::cout << "calculating gradient" << std::endl;
+            img.apply_logarithm();
+            img = img.spec_gradient();
+        }
+
         img.rebuildPixels(false);
 
         std::cout << "image size: " << img.width
