@@ -12,11 +12,14 @@
 
 #include "kernelWrap.h"
 
-void meanshift_rbc(matrix database, int img_width, int img_height,
-                   unsigned short* final_modes, unsigned int* final_hmodes,
-                   int numReps, int pointsPerRepresentative)
+void meanshift_rbc(vole::RBCConfig config, matrix database,
+                   int img_width, int img_height,
+                   unsigned short* final_modes, unsigned int* final_hmodes)
 {
-    int maxQuerySize = 1024;
+    int maxQuerySize = config.maxQuerySize;
+    int numReps = config.numReps;
+    int pointsPerRepresentative = config.pointsPerRepr;
+    int pilotsThreshold = config.pilotsThreshold;
 
     int database_size = database.r;
 
@@ -46,7 +49,7 @@ void meanshift_rbc(matrix database, int img_width, int img_height,
 
     /** calculating RBC and pilots for representatives */
     buildRBC(database, &rbcS, numReps, pointsPerRepresentative,
-             repsPilots, 512);
+             repsPilots, pilotsThreshold);
 
     meanshiftWeightsWrap(repsPilots, repsWeights, numReps, database.c);
 

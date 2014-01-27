@@ -87,7 +87,7 @@ int RBC::execute()
         unsigned short* modes = new unsigned short[database.c * database.r];
         unsigned int* hmodes = new unsigned int[database.r];
 
-        meanshift_rbc(database, img.width, img.height, modes, hmodes);
+        meanshift_rbc(config, database, img.width, img.height, modes, hmodes);
         free(database.mat);
 
         // create FAMS object and import data to do mode prunning

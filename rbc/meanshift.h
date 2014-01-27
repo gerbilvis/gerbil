@@ -2,14 +2,16 @@
 #define MEANSHIFT_H
 
 #include "rbc_include.h"
+#include "RBC_config.h"
 
 /** numReps - number of representatives for rbc or 0 for 5 * sqrt(n)
  *
  */
-void meanshift_rbc(matrix database, int img_width, int img_height,
+void meanshift_rbc(vole::RBCConfig config, matrix database,
+                   int img_width, int img_height,
                    unsigned short* final_modes = 0,
-                   unsigned int* final_hmodes = 0,
-                   int numReps = 0, int pointsPerRepresentative = 16*1024);
+                   unsigned int* final_hmodes = 0);
+                   //int numReps = 0, int pointsPerRepresentative = 16*1024);
 
 void validate_pilots(matrix database, cl::Buffer pilots);
 void validate_query_and_mean(matrix database, cl::Buffer selectedPoints,

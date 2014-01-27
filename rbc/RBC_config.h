@@ -16,8 +16,12 @@ public:
     std::string input_file;
     // working directory
     std::string output_dir;
-
     bool gradient;
+
+    int maxQuerySize;
+    int numReps;
+    int pilotsThreshold;
+    int pointsPerRepr;
 
     bool old_impl;
 
