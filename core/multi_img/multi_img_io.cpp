@@ -125,13 +125,13 @@ void multi_img::read_image(const vector<string> &files, const vector<BandDesc> &
 
 		channels = read_mat(src);
 		
-	    cout << "Added " << files[fi] << ":\t" << channels
+		cerr << "Added " << files[fi] << ":\t" << channels
              << (channels == 1 ? " channel, " : " channels, ")
 			 << (src.depth() == CV_16U ? 16 : 8) << " bits";
 		if (descs.empty() || descs[fi].empty)
-			cout << endl;
+			cerr << endl;
 		else
-			cout << ", " << descs[fi].center << " nm" << endl;
+			cerr << ", " << descs[fi].center << " nm" << endl;
 	}
 
 	/* invalidate pixel cache as pixel length has changed
