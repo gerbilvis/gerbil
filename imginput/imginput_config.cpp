@@ -20,6 +20,7 @@ namespace vole {
 ImgInputConfig::ImgInputConfig(const std::string& prefix)
 	: Config(prefix) {
 	// set default values
+	normalize = false;
 	gradient = false;
 	bands = 0;
 	bandlow=0;
@@ -55,6 +56,8 @@ void ImgInputConfig::initBoostOptions() {
 		 "Image to process")
 		(key("roi"), value(&roi)->default_value(roi),
 		 "apply ROI (x:y:w:h)")
+		(key("normalize"), bool_switch(&normalize)->default_value(normalize),
+		 "normalize vector magnitudes")
 		(key("gradient"), bool_switch(&gradient)->default_value(gradient),
 		 "compute spectral gradient")
 		(key("bands"), value(&bands)->default_value(bands),

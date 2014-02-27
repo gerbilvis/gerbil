@@ -533,6 +533,20 @@ void multi_img::transpose()
 	resetPixels(true);
 }
 
+void multi_img::normalize_magnitudes()
+{
+	rebuildPixels(true);
+	std::vector<Pixel>::iterator it;
+	for (it = pixels.begin(); it != pixels.end(); ++it) {
+		cv::Mat_<Value> p(*it);
+		double n = cv::norm(p, cv::NORM_L2);
+		if (n == 0.)
+			n = 1.;
+		p /= n;
+	}
+	applyCache();
+}
+
 void multi_img::apply_logarithm()
 {
 	for (size_t i = 0; i < size(); ++i) {

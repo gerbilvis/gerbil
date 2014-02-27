@@ -512,6 +512,9 @@ public:
 	/// apply natural logarithm on image
 	void apply_logarithm();
 
+	/// normalize according to L2 norm
+	void normalize_magnitudes();
+
 	/// blur the image with gaussian kernel for noise removal
 	void blur(cv::Size ksize, double sigmaX, double sigmaY = 0,
 			  int borderType = cv::BORDER_DEFAULT);

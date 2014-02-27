@@ -19,6 +19,9 @@ public:
 	// region of interest
 	std::string roi;
 
+	// normalize L2
+	bool normalize;
+
 	// compute spectral gradient
 	bool gradient;
 

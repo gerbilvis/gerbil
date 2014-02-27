@@ -65,6 +65,11 @@ multi_img::ptr ImgInput::execute()
 	if (img_ptr->empty())
 		return img_ptr;
 
+	// normalize L2 magnitudes
+	if (config.normalize) {
+		img_ptr->normalize_magnitudes();
+	}
+
 	// compute gradient
 	if (config.gradient) {
 		img_ptr->apply_logarithm();
