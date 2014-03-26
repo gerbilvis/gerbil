@@ -15,7 +15,7 @@ namespace gerbil {
 ENUM_MAGIC(rgbalg)
 
 RGBConfig::RGBConfig(const std::string& p)
- : vole::Config(p), input("input")
+ : vole::Config(p), input(prefix + "input")
 #ifdef WITH_EDGE_DETECT
  , som(prefix + "som")
 #endif
