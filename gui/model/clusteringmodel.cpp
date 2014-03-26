@@ -61,7 +61,7 @@ void ClusteringModel::startSegmentation(
 			static_cast<vole::MeanShiftShell*>(cmd)->config;
 	if (gradient) {
 		// copy needed here (TODO: only in sp_withGrad case)
-		multi_img loginput(*input);
+		multi_img loginput(*input, true);
 		loginput.apply_logarithm();
 
 		if (config.sp_withGrad) {

@@ -44,21 +44,6 @@ multi_img::multi_img(const cv::Mat& image, Value srcmin, Value srcmax)
 	resetPixels();
 }
 
-multi_img & multi_img::operator=(const multi_img &a) {
-	std::cerr << "multi_img: assignment" << std::endl;
-	if (this != &a) {
-		width = a.width; height = a.height;
-		minval = a.minval; maxval = a.maxval;
-		meta = a.meta;
-		roi = a.roi;
-		bands.resize(a.bands.size());
-		for (size_t i = 0; i < bands.size(); ++i)
-			bands[i] = a.bands[i].clone();
-		resetPixels(true);
-	}
-	return *this;
-}
-
 void multi_img::init(int h, int w, unsigned int d, Value minv, Value maxv) {
 	minval = minv; maxval = maxv;
 	height = h; width = w;
@@ -75,13 +60,42 @@ multi_img::multi_img(int height, int width, unsigned int size)
 	init(height, width, size);
 }
 
-multi_img::multi_img(const multi_img &a)
+multi_img & multi_img::operator=(const multi_img &a) {
+	std::cerr << "multi_img: assignment" << std::endl;
+	if (this != &a) {
+		// metadata
+		width = a.width; height = a.height;
+		minval = a.minval; maxval = a.maxval;
+		meta = a.meta;
+		roi = a.roi;
+
+		// image data
+		bands.resize(a.bands.size());
+		for (size_t i = 0; i < bands.size(); ++i)
+			bands[i] = a.bands[i].clone();
+
+		// cache data
+		pixels = a.pixels;
+		dirty = a.dirty.clone();
+		anydirt = a.anydirt;
+	}
+	return *this;
+}
+
+multi_img::multi_img(const multi_img &a, bool omitCache)
  : multi_img_base(a), roi(a.roi), bands(a.size())
 {
 	std::cerr << "multi_img: copy" << std::endl;
 	for (size_t i = 0; i < bands.size(); ++i)
 		bands[i] = a.bands[i].clone();
-	resetPixels();
+
+	if (omitCache) {
+		resetPixels();
+	} else {
+		pixels = a.pixels;
+		dirty = a.dirty.clone();
+		anydirt = a.anydirt;
+	}
 }
 
 multi_img::multi_img(const multi_img_base &a, const cv::Rect &roi)
@@ -116,17 +130,6 @@ multi_img::multi_img(const multi_img &a, unsigned int start, unsigned int end) :
 			  read-only flag? no constructor but const method?
 	*/
 	resetPixels();
-}
-
-multi_img multi_img::clone(bool cloneCache) const
-{
-	multi_img ret(*this);
-	if (cloneCache) {
-		ret.pixels = pixels;
-		ret.dirty = dirty.clone();
-		ret.anydirt = anydirt;
-	}
-	return ret;
 }
 
 void multi_img::resetPixels(bool force) const

@@ -41,7 +41,7 @@ int MeanShiftSP::execute()
 	multi_img::ptr input, input_grad;
 	if (config.sp_withGrad) {
 		input = ImgInput(config.input).execute();
-		input_grad = multi_img::ptr(new multi_img(*input));
+		input_grad = multi_img::ptr(new multi_img(*input, true));
 		input_grad->apply_logarithm();
 		*input_grad = input_grad->spec_gradient();
 	} else {

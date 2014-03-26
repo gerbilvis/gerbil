@@ -227,7 +227,9 @@ public:
 	multi_img(int height, int width, unsigned int size);
 
 	/// copy constructor
-	multi_img(const multi_img &);
+	/** @arg omitCache only copy the image data, but start with empty cache
+	*/
+	multi_img(const multi_img &, bool omitCache = false);
 
 	/// copy a spatial region of interest
 	multi_img(const multi_img_base &a, const cv::Rect &roi);
@@ -236,8 +238,7 @@ public:
 	multi_img(const multi_img &a, unsigned int start, unsigned int end);
 
 	/// assignment operator
-	/** @note A copy of the image is created.
-              Use clone() if you want to preserve the cache. **/
+	/** @note A copy of the image (including cache) is created **/
 	multi_img & operator=(const multi_img &);
 
 	/** reads in and processes either
@@ -250,14 +251,6 @@ public:
 	multi_img(const cv::Mat& image);
 	/** compiles image from cv::Mat (every channel becomes a band) */
 	multi_img(const cv::Mat& image, Value srcmin, Value srcmax);
-
-	/// get independent copy of image
-	/**
-		@arg cloneCache if true, copies pixel cache. if false, cache is not
-			 copied and all pixels are dirty (useful if cache unneeded or will
-			 be invalidated anyway, common use case for doing a copy)
-	 */
-	multi_img clone(bool cloneCache = false) const;
 
 	/// virtual destructor, does nothing
 	virtual ~multi_img() {}
