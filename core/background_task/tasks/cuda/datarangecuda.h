@@ -7,9 +7,8 @@
 
 class DataRangeCuda : public BackgroundTask {
 public:
-	DataRangeCuda(SharedMultiImgPtr multi, SharedMultiImgRangePtr range,
-		cv::Rect targetRoi = cv::Rect())
-		: BackgroundTask(targetRoi), multi(multi), range(range) {}
+	DataRangeCuda(SharedMultiImgPtr multi, SharedMultiImgRangePtr range)
+		: BackgroundTask(), multi(multi), range(range) {}
 	virtual ~DataRangeCuda() {}
 	virtual bool run();
 	virtual void cancel() { stopper.cancel_group_execution(); }

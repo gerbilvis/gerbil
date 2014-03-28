@@ -8,8 +8,8 @@
 class ClampCuda : public BackgroundTask {
 public:
 	ClampCuda(SharedMultiImgPtr image, SharedMultiImgPtr minmax,
-		cv::Rect targetRoi = cv::Rect(), bool includecache = true)
-		: BackgroundTask(targetRoi), image(image), minmax(minmax), includecache(includecache)
+		bool includecache = true)
+		: BackgroundTask(), image(image), minmax(minmax), includecache(includecache)
 	{}
 	virtual ~ClampCuda() {}
 	virtual bool run();

@@ -3,9 +3,8 @@
 
 class GradientTbb : public BackgroundTask {
 public:
-	GradientTbb(SharedMultiImgPtr source, SharedMultiImgPtr current,
-		cv::Rect targetRoi = cv::Rect(), bool includecache = true)
-		: BackgroundTask(targetRoi), source(source),
+	GradientTbb(SharedMultiImgPtr source, SharedMultiImgPtr current, bool includecache = true)
+		: BackgroundTask(), source(source),
 		current(current), includecache(includecache) {}
 	virtual ~GradientTbb() {}
 	virtual bool run();

@@ -3,9 +3,8 @@
 
 class ClampTbb : public BackgroundTask {
 public:
-	ClampTbb(SharedMultiImgPtr image, SharedMultiImgPtr minmax,
-			 cv::Rect targetRoi = cv::Rect(), bool includecache = true)
-		: BackgroundTask(targetRoi), image(image),	minmax(minmax),
+	ClampTbb(SharedMultiImgPtr image, SharedMultiImgPtr minmax, bool includecache = true)
+		: BackgroundTask(), image(image),	minmax(minmax),
 		  includecache(includecache)
 	{}
 	virtual ~ClampTbb() {}

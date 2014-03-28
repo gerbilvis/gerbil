@@ -174,18 +174,18 @@ void ImageModel::spawn(representation::t type, const cv::Rect &newROI, int bands
 
 		// perform spectral rescaling
 		BackgroundTaskPtr taskRescale(new RescaleTbb(
-			scoped_image, image, bands, roi));
+			scoped_image, image, bands));
 		queue.push(taskRescale);
 	}
 
 	if (type == representation::GRAD) {
 		if (HAVE_CUDA_GPU  && USE_CUDA_GRADIENT) {
 			BackgroundTaskPtr taskGradient(new GradientCuda(
-				image, gradient, roi));
+				image, gradient));
 			queue.push(taskGradient);
 		} else {
 			BackgroundTaskPtr taskGradient(new GradientTbb(
-				image, gradient, roi));
+				image, gradient));
 			queue.push(taskGradient);
 		}
 	}
@@ -207,11 +207,11 @@ void ImageModel::spawn(representation::t type, const cv::Rect &newROI, int bands
 
 		if (HAVE_CUDA_GPU && USE_CUDA_DATARANGE) {
 			BackgroundTaskPtr taskNormRange(new NormRangeCuda(
-				target, range, mode, isGRAD, min, max, true, roi));
+				target, range, mode, isGRAD, min, max, true));
 			queue.push(taskNormRange);
 		} else {
 			BackgroundTaskPtr taskNormRange(new NormRangeTbb(
-				target, range, mode, isGRAD, min, max, true, roi));
+				target, range, mode, isGRAD, min, max, true));
 			queue.push(taskNormRange);
 		}
 	}
@@ -233,7 +233,7 @@ void ImageModel::spawn(representation::t type, const cv::Rect &newROI, int bands
 #endif /* WITH_GRADPCA */
 
 	// emit signal after all tasks are finished and fully updated data available
-	BackgroundTaskPtr taskEpilog(new BackgroundTask(roi));
+	BackgroundTaskPtr taskEpilog(new BackgroundTask());
 	QObject::connect(taskEpilog.get(), SIGNAL(finished(bool)),
 					 map[type], SLOT(processImageDataTaskFinished(bool)));
 	queue.push(taskEpilog);

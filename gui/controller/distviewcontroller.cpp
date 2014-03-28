@@ -277,7 +277,7 @@ void DistViewController::toggleIgnoreLabels(bool toggle)
 		p->model.toggleLabels(toggle);
 	}
 
-	chief->enableGUILater(false);
+	chief->enableGUILater();
 }
 
 void DistViewController::addHighlightToLabel()

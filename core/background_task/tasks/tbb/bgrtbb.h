@@ -7,9 +7,8 @@
 
 class BgrTbb : public BackgroundTask {
 public:
-	BgrTbb(SharedMultiImgPtr multi, mat3f_ptr bgr,
-		cv::Rect targetRoi = cv::Rect())
-		: BackgroundTask(targetRoi), multi(multi), bgr(bgr) {}
+	BgrTbb(SharedMultiImgPtr multi, mat3f_ptr bgr)
+		: BackgroundTask(), multi(multi), bgr(bgr) {}
 	virtual ~BgrTbb() {}
 	virtual bool run();
 

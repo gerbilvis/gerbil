@@ -4,8 +4,8 @@
 class IlluminantTbb : public BackgroundTask {
 public:
 	IlluminantTbb(SharedMultiImgPtr multi, const Illuminant& il, bool remove,
-		cv::Rect targetRoi = cv::Rect(), bool includecache = true)
-		: BackgroundTask(targetRoi), multi(multi),
+		   bool includecache = true)
+		: BackgroundTask(), multi(multi),
 		il(il), remove(remove), includecache(includecache) {}
 	virtual ~IlluminantTbb() {}
 	virtual bool run();

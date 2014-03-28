@@ -214,12 +214,13 @@ void Controller::invalidateROI(cv::Rect roi)
 
 void Controller::rescaleSpectrum(int bands)
 {
-	queue.cancelTasks(im->getROI());
+	// TODO: this was cancelTasks with current ROI. Now all tasks cancelled.
+	queue.cancelTasks();
 	disableGUI(TT_BAND_COUNT);
 
 	updateROI(false, cv::Rect(), bands);
 
-	enableGUILater(true);
+	enableGUILater();
 }
 
 void Controller::doSpawnROI(bool reuse, const cv::Rect &roi)
@@ -233,7 +234,8 @@ void Controller::doSpawnROI(bool reuse, const cv::Rect &roi)
 	 * in use for this cancel and nothing else?
 	 */
 	if (!queue.isIdle()) {
-		queue.cancelTasks(im->getROI());
+		// TODO: this was cancelTasks with current ROI. Now all tasks cancelled.
+		queue.cancelTasks();
 		/* as we cancelled any tasks, we expect the image data not to reflect
 		 * desired configuration, so we will recompute from scratch */
 		reuse = false;
@@ -242,7 +244,7 @@ void Controller::doSpawnROI(bool reuse, const cv::Rect &roi)
 
 	updateROI(reuse, roi);
 
-	enableGUILater(true);
+	enableGUILater();
 }
 
 void Controller::updateROI(bool reuse, cv::Rect roi, int bands)
@@ -321,10 +323,12 @@ void Controller::setGUIEnabled(bool enable, TaskType tt)
 
 /** Tasks and queue thread management */
 
-void Controller::enableGUILater(bool withROI)
+void Controller::enableGUILater()
 {
-	BackgroundTask *t = (withROI ? new BackgroundTask(im->getROI())
-								 : new BackgroundTask());
+    // TODO: old:
+    //	BackgroundTask *t = (withROI ? new BackgroundTask(im->getROI())
+    //								 : new BackgroundTask()
+    BackgroundTask *t = new BackgroundTask();
 	BackgroundTaskPtr taskEpilog(t);
 	QObject::connect(taskEpilog.get(), SIGNAL(finished(bool)),
 		this, SLOT(enableGUINow(bool)), Qt::QueuedConnection);

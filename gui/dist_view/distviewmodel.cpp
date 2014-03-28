@@ -171,7 +171,7 @@ sets_ptr DistViewModel::subImage(const std::vector<cv::Rect> &regions,
 	BackgroundTaskPtr taskBins(new DistviewBinsTbb(
 		image, labels, labelColors, illuminant, args, context, binsets,
 		temp, regions,
-		std::vector<cv::Rect>(), cv::Mat1b(), false, false, roi));
+		std::vector<cv::Rect>(), cv::Mat1b(), false, false));
 	queue->push(taskBins);
 
 	return temp;
@@ -193,7 +193,7 @@ void DistViewModel::addImage(sets_ptr temp,const std::vector<cv::Rect> &regions,
 	BackgroundTaskPtr taskBins(new DistviewBinsTbb(
 		image, labels, labelColors, illuminant, args, context,
 		binsets, temp, std::vector<cv::Rect>(), regions,
-		cv::Mat1b(), false, true, roi));
+		cv::Mat1b(), false, true));
 	// connect to propagateBinningRange as this operation can change range
 	QObject::connect(taskBins.get(), SIGNAL(finished(bool)),
 					 this, SLOT(propagateBinningRange(bool)));
@@ -224,7 +224,7 @@ void DistViewModel::setImage(SharedMultiImgPtr img, cv::Rect roi, int bins)
 		image, labels, labelColors, illuminant, args, context, binsets,
 		sets_ptr(new SharedData<std::vector<BinSet> >(NULL)),
 		std::vector<cv::Rect>(), std::vector<cv::Rect>(),
-		cv::Mat1b(), false, true, roi));
+		cv::Mat1b(), false, true));
 	// connect to propagateBinningRange, new image may have new range
 	QObject::connect(taskBins.get(), SIGNAL(finished(bool)),
 					 this, SLOT(propagateBinningRange(bool)));

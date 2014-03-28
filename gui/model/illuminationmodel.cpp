@@ -45,7 +45,7 @@ void IllumModel::applyIllum()
 	i1 = i2;
 
 	/* trigger re-calculation of dependent data */
-	BackgroundTaskPtr taskEpilog(new BackgroundTask(roi));
+	BackgroundTaskPtr taskEpilog(new BackgroundTask());
 	QObject::connect(taskEpilog.get(), SIGNAL(finished(bool)),
 		this, SLOT(finishTask(bool)), Qt::QueuedConnection);
 	queue->push(taskEpilog);
@@ -112,11 +112,11 @@ void IllumModel::submitRemoveOldIllumTask()
 		const Illuminant &il = getIlluminant(i1);
 		if (HAVE_CUDA_GPU && USE_CUDA_ILLUMINANT) {
 			BackgroundTaskPtr taskIllum(new IlluminantCuda(
-				image, il, true, roi, false));
+				image, il, true, false));
 			queue->push(taskIllum);
 		} else {
 			BackgroundTaskPtr taskIllum(new IlluminantTbb(
-				image, il, true, roi, false));
+				image, il, true, false));
 			queue->push(taskIllum);
 		}
 	}
@@ -130,11 +130,11 @@ void IllumModel::submitAddNewIllumTask()
 
 		if (HAVE_CUDA_GPU && USE_CUDA_ILLUMINANT) {
 			BackgroundTaskPtr taskIllum(new IlluminantCuda(
-				image, il, false, roi, false));
+				image, il, false, false));
 			queue->push(taskIllum);
 		} else {
 			BackgroundTaskPtr taskIllum(new IlluminantTbb(
-				image, il, false, roi, false));
+				image, il, false, false));
 			queue->push(taskIllum);
 		}
 	}

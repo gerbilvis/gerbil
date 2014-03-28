@@ -38,9 +38,4 @@ bool BackgroundTask::wait()
 	return success;
 }
 
-cv::Rect BackgroundTask::roi()
-{
-	return targetRoi;
-}
-
 #endif

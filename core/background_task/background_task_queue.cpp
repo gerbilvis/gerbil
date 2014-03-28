@@ -54,18 +54,11 @@ void BackgroundTaskQueue::push(BackgroundTaskPtr &task)
 	future.notify_all();
 }
 
-void BackgroundTaskQueue::cancelTasks(const cv::Rect &roi) 
+void BackgroundTaskQueue::cancelTasks()
 {
 	Lock lock(mutex);
-	std::deque<BackgroundTaskPtr>::iterator it = taskQueue.begin();
-	while (it != taskQueue.end()) {
-		if ((*it)->roi() == roi) {
-			it = taskQueue.erase(it);
-		} else {
-			++it;
-		}
-	}
-	if (currentTask && currentTask->roi() == roi) {
+	taskQueue.clear();
+	if (currentTask) {
 		cancelled = true;
 		currentTask->cancel();
 	}

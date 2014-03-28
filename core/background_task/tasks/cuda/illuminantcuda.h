@@ -9,9 +9,8 @@
 
 class IlluminantCuda : public BackgroundTask {
 public:
-	IlluminantCuda(SharedMultiImgPtr multi, const Illuminant& il, bool remove,
-		cv::Rect targetRoi = cv::Rect(), bool includecache = true)
-		: BackgroundTask(targetRoi), multi(multi),
+	IlluminantCuda(SharedMultiImgPtr multi, const Illuminant& il, bool remove, bool includecache = true)
+		: BackgroundTask(), multi(multi),
 		il(il), remove(remove), includecache(includecache) {}
 	virtual ~IlluminantCuda() {}
 	virtual bool run();

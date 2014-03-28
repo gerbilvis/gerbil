@@ -80,7 +80,7 @@ public slots:
 	 * roi-bound. If somebody cancels all tasks with that roi, our task should
 	 * be cancelled as-well, and re-enable not take place.
 	 */
-	void enableGUILater(bool withROI = false);
+	void enableGUILater();
 	// the other side of enableGUILater
 	void enableGUINow(bool forreal);
 	void disableGUI(TaskType tt = TT_NONE);

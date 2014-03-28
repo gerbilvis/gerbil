@@ -35,8 +35,8 @@ class BackgroundTask {
 #endif
 
 public:
-	BackgroundTask(cv::Rect targetRoi = cv::Rect()) 
-		: terminated(false), success(false), targetRoi(targetRoi) {}
+	BackgroundTask()
+		: terminated(false), success(false) {}
 	virtual ~BackgroundTask() {}
 
 	/** Task-specific algorithm implemented in the inheritor. It depends
@@ -54,9 +54,6 @@ public:
 	/** Passivelly and synchronously wait for task completion. Task success is 
 	    reported via return value. */
 	bool wait();
-	/** Retrieve ROI associated with this task. Returned ROI might be empty
-	    (zero width and height) if the task is not associated with any ROI. */
-	cv::Rect roi();
 
 #ifdef WITH_QT
 signals:
@@ -81,9 +78,6 @@ protected:
 	bool success;
 	/** Short description of task for GUI progress updates. */
 	std::string description; 
-	/** Either target ROI for this calculation or empty ROI (zero width and height)
-	    for non-ROI calculations. */
-	cv::Rect targetRoi; 
 };
 
 typedef boost::shared_ptr<BackgroundTask> BackgroundTaskPtr;

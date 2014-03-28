@@ -7,10 +7,14 @@
 
 class GradientCuda : public BackgroundTask {
 public:
-	GradientCuda(SharedMultiImgPtr source, SharedMultiImgPtr current,
-		cv::Rect targetRoi = cv::Rect(), bool includecache = true)
-		: BackgroundTask(targetRoi), source(source),
-		current(current), includecache(includecache) {}
+	GradientCuda(SharedMultiImgPtr source,
+				 SharedMultiImgPtr current,
+				 bool includecache = true)
+		: BackgroundTask(),
+		  source(source),
+		  current(current),
+		  includecache(includecache)
+	{}
 	virtual ~GradientCuda() {}
 	virtual bool run();
 	virtual void cancel() { stopper.cancel_group_execution(); }
