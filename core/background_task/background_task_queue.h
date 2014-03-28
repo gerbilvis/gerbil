@@ -39,6 +39,12 @@ protected:
 	/** Fetch task from queue or passivelly wait on empty queue. */
 	bool pop();
 
+	/** Print queue content to stdout. 
+	 *
+	 * Locking the queue mutex is responsibility of the caller. 
+	 */
+	void print();
+
 private:
 	// do not implement
 	BackgroundTaskQueue(const BackgroundTaskQueue &other);

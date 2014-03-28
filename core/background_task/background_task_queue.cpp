@@ -8,8 +8,11 @@
 
 #ifdef WITH_BOOST_THREAD
 
+#define BACKGROUND_TASK_QUEUE_DEBUG
+
 #include "background_task_queue.h"
 #include <iostream>
+#include <iomanip>
 
 bool BackgroundTaskQueue::isIdle()
 {
@@ -42,14 +45,34 @@ bool BackgroundTaskQueue::pop()
 	}
 	currentTask = taskQueue.front(); // Fetch the task.
 	taskQueue.pop_front();
+#ifdef BACKGROUND_TASK_QUEUE_DEBUG
+	std::cout << "BackgroundTaskQueue pop():" << std::endl;
+	print();
+#endif /* BACKGROUND_TASK_QUEUE_DEBUG */
 	cancelled = false;
 	return true;
+}
+
+void BackgroundTaskQueue::print()
+{
+	int row = 0;
+	for(std::deque<BackgroundTaskPtr>::const_iterator it = taskQueue.begin();
+		it != taskQueue.end();
+		++it, ++row)
+	{
+		std::string name = typeid(**it).name();
+		std::cout << std::setw(4) << row << " " << name << std::endl;
+	}
 }
 
 void BackgroundTaskQueue::push(BackgroundTaskPtr &task) 
 {
 	Lock lock(mutex);
 	taskQueue.push_back(task);
+#ifdef BACKGROUND_TASK_QUEUE_DEBUG
+	std::cout << "BackgroundTaskQueue push():" << std::endl;
+	print();
+#endif /* BACKGROUND_TASK_QUEUE_DEBUG */
 	lock.unlock(); // Unlock to prevent deadlock when signalling the condition.
 	future.notify_all();
 }
