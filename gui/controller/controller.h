@@ -1,12 +1,17 @@
 #ifndef CONTROLLER_H
 #define CONTROLLER_H
 
+#include <model/representation.h>
+#include <shared_data.h>
 #include <background_task/background_task.h>
 #include <background_task/background_task_queue.h>
 
 #include <QObject>
 #include <QMap>
 #include <boost/thread.hpp>
+
+
+// forward declarations
 
 class DockController;
 class DistViewController;
@@ -18,6 +23,22 @@ class IllumModel;
 class ImageModel;
 class MainWindow;
 
+class BandDock;
+class LabelingDock;
+class NormDock;
+class RoiDock;
+class FalseColorDock;
+class IllumDock;
+class GraphSegWidget;
+class ClusteringDock;
+class LabelDock;
+
+namespace vole
+{
+	class GraphSegConfig;
+}
+
+/** Controller class. */
 class Controller : public QObject
 {
 	Q_OBJECT
@@ -50,6 +71,18 @@ signals:
 	/* pass-through from our other controller friends */
 	void requestOverlay(const cv::Mat1b&);
 
+/// DOCKS
+
+	// these are send to the graphSegModel
+	void requestGraphseg(representation::t type,
+						 cv::Mat1s seedMap,
+						 const vole::GraphSegConfig &config,
+						 bool resetLabel);
+	void requestGraphsegBand(representation::t type, int bandId,
+							 cv::Mat1s seedMap,
+							 const vole::GraphSegConfig &config,
+							 bool resetLabel);
+
 public slots:
 	// for debugging, activate by connecting it in main.cpp
 	void focusChange(QWidget * old, QWidget * now);
@@ -71,6 +104,7 @@ public slots:
 	 * cancel the ongoing calculations and re-start with the new user input.
 	 */
 	void setGUIEnabled(bool enable, TaskType tt = TT_NONE);
+	void setGUIEnabledDocks(bool enable, TaskType tt = TT_NONE);
 
 	/** internal management (maybe make protected) */
 	/* this function enqueues an empty task that will signal when all previous
@@ -85,6 +119,15 @@ public slots:
 	void enableGUINow(bool forreal);
 	void disableGUI(TaskType tt = TT_NONE);
 
+protected slots:
+	// these are requested by the graphSegWidget
+	void requestGraphseg(representation::t,
+						 const vole::GraphSegConfig &config,
+						 bool resetLabel);
+	void requestGraphsegCurBand(const vole::GraphSegConfig &config,
+								bool resetLabel);
+	void highlightSingleLabel(short label, bool highlight);
+
 protected:
 	// connect models with gui
 	void initImage();
@@ -92,6 +135,12 @@ protected:
 	void initIlluminant();
 	void initGraphSegmentation();
 	void initLabeling(cv::Rect dimensions);
+
+	/** Create and setup docks. */
+	void initDocks();
+	void createDocks();
+	/** Setup signal/slot connections. */
+	void setupDocks();
 
 	// create background thread that processes BackgroundTaskQueue
 	void startQueue();
@@ -132,6 +181,17 @@ protected:
 	ClusteringModel *cm;
 #endif /* WITH_SEG_MEANSHIFT */
 
+/// DOCKS
+
+	BandDock *bandDock;
+	LabelingDock *labelingDock;
+	NormDock *normDock;
+	RoiDock *roiDock;
+	FalseColorDock *falseColorDock;
+	IllumDock *illumDock;
+	ClusteringDock *clusteringDock;
+	LabelDock *labelDock;
+
 /// OTHER CONTROLLERS
 
 	// setup dock widgets and manage interaction with models
@@ -139,7 +199,6 @@ protected:
 
 	// setup distribution views and manage them and their models
 	DistViewController *dvc;
-
 
 /// QUEUE
 

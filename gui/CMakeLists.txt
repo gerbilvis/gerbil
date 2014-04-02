@@ -24,7 +24,7 @@ vole_compile_library(
 	widgets/sizegripitem/sizegripitem
 	
 	controller/controller
-	controller/dockcontroller
+	controller/controller_docks
 	controller/distviewcontroller
 
 	dist_view/compute
@@ -76,7 +76,6 @@ vole_moc_library(
 	widgets/sizegripitem/sizegripitem.h
 
 	controller/controller.h
-	controller/dockcontroller.h
 	controller/distviewcontroller.h
 
 	dist_view/distviewmodel.h

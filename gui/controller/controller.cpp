@@ -1,5 +1,4 @@
 #include "controller.h"
-#include "dockcontroller.h"
 #include "controller/distviewcontroller.h"
 #include <imginput.h>
 #include <rectangles.h>
@@ -32,7 +31,7 @@ Controller::Controller(const std::string &filename, bool limited_mode,
 #ifdef WITH_SEG_MEANSHIFT
 	  cm(0),
 #endif
-	  dc(0), dvc(0),
+	  dvc(0),
 	  queuethread(0)
 {
 	// start background task queue thread
@@ -64,9 +63,10 @@ Controller::Controller(const std::string &filename, bool limited_mode,
 	cm->setMultiImage(im->getImage(representation::IMG));
 #endif /* WITH_SEG_MEANSHIFT */
 
+	// init dock widgets
+	initDocks();
+
 	// initialize sub-controllers (after initializing the models...)
-	dc = new DockController(this);
-	dc->init();
 	dvc = new DistViewController(this, &queue);
 	dvc->init();
 
@@ -74,12 +74,8 @@ Controller::Controller(const std::string &filename, bool limited_mode,
 	window->initSignals(this, dvc);
 
 	/* TODO: better place. But do not use init model functions:
-	 * dc, dvc are created after these are called
+	 * dvc are created after these are called
 	 */
-	connect(dc, SIGNAL(toggleSingleLabel(bool)),
-			this, SIGNAL(toggleSingleLabel(bool)));
-	connect(dc, SIGNAL(singleLabelSelected(int)),
-			this, SIGNAL(singleLabelSelected(int)));
 	connect(dvc, SIGNAL(bandSelected(representation::t, int)),
 			im, SLOT(computeBand(representation::t, int)));
 	connect(dvc, SIGNAL(requestOverlay(cv::Mat1b)),
@@ -131,7 +127,6 @@ Controller::~Controller()
 {
 	delete window;
 
-	delete dc;
 	delete dvc;
 
 	delete im;
@@ -317,9 +312,13 @@ void Controller::setGUIEnabled(bool enable, TaskType tt)
 	window->setGUIEnabled(enable, tt);
 
 	// tell other controllers
-	dc->setGUIEnabled(enable, tt);
 	dvc->setGUIEnabled(enable, tt);
+
+/// DOCKS
+
+    setGUIEnabledDocks(enable, tt);
 }
+
 
 /** Tasks and queue thread management */
 
