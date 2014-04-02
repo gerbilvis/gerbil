@@ -6,6 +6,9 @@
 #include <background_task/background_task.h>
 #include <background_task/background_task_queue.h>
 
+#include <utility>
+#include <unordered_set>
+
 #include <QObject>
 #include <QMap>
 #include <boost/thread.hpp>
@@ -128,6 +131,21 @@ protected slots:
 								bool resetLabel);
 	void highlightSingleLabel(short label, bool highlight);
 
+	void processImageUpdate(representation::t repr);
+
+/// SUBSCRIPTIONS
+
+	/** Subscribe for image band bandId of representation repr.
+	 *
+	 * If a GUI element (subscriber) is subscribed for an image band, i.e. the
+	 * grayscale image of one spectral band, the controller requests a
+	 * computation for the band from the image model whenever necessary, e.g.
+	 * when the image data changes. 
+	 * A subscriber receives updates via the ImageModel::bandUpdate() signal.
+	 */
+	void processSubscribeImageBand(QObject *subscriber, representation::t repr, int bandId);
+	void processUnsubscribeImageBand(QObject *subscriber, representation::t repr, int bandId);
+
 protected:
 	// connect models with gui
 	void initImage();
@@ -204,6 +222,26 @@ protected:
 
 	BackgroundTaskQueue queue;
 	boost::thread *queuethread;
+
+/// SUBSCRIPTIONS
+
+	typedef std::tuple<QObject*, representation::t, int> ImageBandSubscription;
+
+	// Hash function for ImageBandSubscription
+	struct ImageBandSubscriptionHash {
+		typedef ImageBandSubscription argument_type;
+		typedef std::size_t result_type;
+
+		result_type operator()(argument_type const& s) const {
+			return std::hash<void*>()(std::get<0>(s)) ^
+					(std::hash<int>()(std::get<1>(s)) << 1) ^
+					(std::hash<int>()(std::get<2>(s)) << 3);
+		}
+	};
+	typedef std::unordered_set<ImageBandSubscription, ImageBandSubscriptionHash>
+			ImageBandSubscriptionHashSet;
+
+	ImageBandSubscriptionHashSet imageBandSubs;
 };
 
 #endif // CONTROLLER_H

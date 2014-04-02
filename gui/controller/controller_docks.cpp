@@ -1,5 +1,6 @@
 
 #include "controller.h"
+#include "distviewcontroller.h"
 
 #include "widgets/mainwindow.h"
 #include "widgets/graphsegwidget.h"
@@ -81,13 +82,19 @@ void Controller::setupDocks()
 	/* Band Dock */
 	connect(labelingModel(), SIGNAL(partialLabelUpdate(const cv::Mat1s&,const cv::Mat1b&)),
 			bandDock, SLOT(processLabelingChange(cv::Mat1s,cv::Mat1b)));
-	connect(imageModel(), SIGNAL(imageUpdate(representation::t,SharedMultiImgPtr)),
-			bandDock, SLOT(processImageUpdate(representation::t)));
 	connect(labelingModel(), SIGNAL(newLabeling(cv::Mat1s,QVector<QColor>,bool)),
 			bandDock, SLOT(processLabelingChange(cv::Mat1s,QVector<QColor>,bool)));
 
-	connect(bandDock, SIGNAL(bandRequested(representation::t, int)),
-			imageModel(), SLOT(computeBand(representation::t, int)));
+// old -> subscription
+//	connect(bandDock, SIGNAL(bandRequested(representation::t, int)),
+//			imageModel(), SLOT(computeBand(representation::t, int)));
+	connect(dvc, SIGNAL(bandSelected(representation::t, int)),
+			bandDock, SLOT(processBandSelected(representation::t,int)));
+	connect(bandDock, SIGNAL(subscribeImageBand(QObject *,representation::t,int)),
+			this, SLOT(processSubscribeImageBand(QObject *,representation::t,int)));
+	connect(bandDock, SIGNAL(unsubscribeImageBand(QObject *,representation::t,int)),
+			this, SLOT(processUnsubscribeImageBand(QObject *,representation::t,int)));
+
 	connect(bandDock->bandView(), SIGNAL(alteredLabels(cv::Mat1s,cv::Mat1b)),
 			labelingModel(), SLOT(alterPixels(cv::Mat1s,cv::Mat1b)));
 	connect(bandDock->bandView(), SIGNAL(newLabeling(cv::Mat1s)),

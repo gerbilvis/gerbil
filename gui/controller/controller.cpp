@@ -63,12 +63,12 @@ Controller::Controller(const std::string &filename, bool limited_mode,
 	cm->setMultiImage(im->getImage(representation::IMG));
 #endif /* WITH_SEG_MEANSHIFT */
 
-	// init dock widgets
-	initDocks();
-
 	// initialize sub-controllers (after initializing the models...)
 	dvc = new DistViewController(this, &queue);
 	dvc->init();
+
+	// init dock widgets
+	initDocks();
 
 	// connect slots/signals
 	window->initSignals(this, dvc);
@@ -76,8 +76,6 @@ Controller::Controller(const std::string &filename, bool limited_mode,
 	/* TODO: better place. But do not use init model functions:
 	 * dvc are created after these are called
 	 */
-	connect(dvc, SIGNAL(bandSelected(representation::t, int)),
-			im, SLOT(computeBand(representation::t, int)));
 	connect(dvc, SIGNAL(requestOverlay(cv::Mat1b)),
 			this, SIGNAL(requestOverlay(cv::Mat1b)));
 	connect(lm,
@@ -148,6 +146,8 @@ Controller::~Controller()
 // connect all signals between model and other parties
 void Controller::initImage()
 {
+	connect(im, SIGNAL(imageUpdate(representation::t,SharedMultiImgPtr)),
+			this, SLOT(processImageUpdate(representation::t)));
 }
 
 // depends on ImageModel
@@ -347,6 +347,22 @@ void Controller::disableGUI(TaskType tt)
 	setGUIEnabled(false, tt);
 }
 
+void Controller::processSubscribeImageBand(QObject *subscriber, representation::t repr, int bandId)
+{
+	typedef std::pair<ImageBandSubscriptionHashSet::const_iterator, bool> InsertResult;
+	InsertResult r = imageBandSubs.insert(ImageBandSubscription(subscriber, repr, bandId));
+	bool inserted = r.second;
+	// if not inserted, the subscription already exists -> no need to update
+	if (inserted) {
+		im->computeBand(repr, bandId);
+	}
+}
+
+void Controller::processUnsubscribeImageBand(QObject *subscriber, representation::t repr, int bandId)
+{
+	imageBandSubs.erase(ImageBandSubscription(subscriber, repr, bandId));
+}
+
 void Controller::startQueue()
 {
 	// start worker thread
@@ -371,4 +387,34 @@ void Controller::focusChange(QWidget *old, QWidget *now)
 		return;
 	std::cerr << "Focus changed from " << old->objectName().toStdString()
 			  << " to " << now->objectName().toStdString() << std::endl;
+}
+
+
+void Controller::processImageUpdate(representation::t repr)
+{
+	typedef std::pair<representation::t, int> ImageBand;
+	// Hash function for ImageBand
+	struct ImageBandHash {
+		typedef ImageBand argument_type;
+		typedef std::size_t result_type;
+
+		result_type operator()(argument_type const& s) const {
+			return std::hash<int>()(std::get<0>(s)) ^
+					(std::hash<int>()(std::get<1>(s)) << 1);
+		}
+	};
+	typedef std::unordered_set<ImageBand, ImageBandHash> ImageBandSet;
+
+	ImageBandSet updates;
+
+	for (auto const& sub : imageBandSubs) {
+		if(repr == std::get<1>(sub))	 {
+			updates.insert(ImageBand(std::get<1>(sub), std::get<2>(sub)));
+		}
+	}
+	for (auto const& ib : updates) {
+		GGDBGM("requesting band " << ib.first << " " << ib.second << endl);
+		im->computeBand(ib.first, ib.second);
+	}
+
 }

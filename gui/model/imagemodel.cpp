@@ -135,7 +135,7 @@ void ImageModel::spawn(representation::t type, const cv::Rect &newROI, int bands
 		oldRoi = roi;
 	}
 
-	GGDBGM("oldRoi "<< oldRoi << " newROI " << newROI << endl);
+	GGDBGM(type << " oldRoi "<< oldRoi << " newROI " << newROI << endl);
 
 	// one ROI for all, effectively
 	roi = newROI;
@@ -241,6 +241,7 @@ void ImageModel::spawn(representation::t type, const cv::Rect &newROI, int bands
 
 void ImageModel::computeBand(representation::t type, int dim)
 {
+	GGDBGM(type << " " << dim << endl);
 	QMap<int, QPixmap> &m = map[type]->bands;
 	SharedMultiImgPtr src = map[type]->image;
 	assert(src);

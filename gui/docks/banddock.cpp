@@ -80,10 +80,13 @@ void BandDock::initUi()
 void BandDock::changeBand(representation::t repr, int bandId,
 						  QPixmap band, QString desc)
 {
-	curRepr = repr;
-	curBandId = bandId;
+	GGDBGM("received image band update " << repr << " " << bandId << endl);
+	if(curRepr != repr || curBandId != bandId) {
+		GGDBGM("we did not subscribe for (" << curRepr << " " << curBandId <<  ")"
+			   << std::endl);
+		return;
+	}
 
-//TODO	bv->setEnabled(true);
 	bv->setPixmap(band);
 	setWindowTitle(desc);
 }
@@ -93,21 +96,17 @@ void BandDock::processBandSelected(representation::t repr, int bandId)
 	if (repr == curRepr && bandId == curBandId) {
 		return;
 	}
-	emit unsubscribeImageBand(curRepr, curBandId);
+	if(isVisible()) {
+		GGDBGM("UNsubscribing image band "<< curRepr << " " << curBandId << endl);
+		emit unsubscribeImageBand(this, curRepr, curBandId);
+	}
 	curRepr = repr;
 	curBandId = bandId;
 	if(isVisible()) {
-		emit subscribeImageBand(curRepr, curBandId);
+		GGDBGM("subscribing image band "<< curRepr << " " << curBandId << endl);
+		emit subscribeImageBand(this, curRepr, curBandId);
 	}
 }
-
-//void BandDock::processImageUpdate(representation::t type)
-//{
-//	if (type == curRepr) {
-//		// our view became invalid. fetch new one.
-//		emit bandRequested(curRepr, curBandId);
-//	}
-//}
 
 void BandDock::clearLabel()
 {
@@ -154,15 +153,17 @@ void BandDock::showEvent(QShowEvent *event)
 {
 	QDockWidget::showEvent(event);
 
-	std::cout << "BandDock showEvent visible = " << isVisible() << std::endl;
-	emit subscribeImageBand(curRepr, curBandId);
+	GGDBGM("subscribing image band "<< curRepr << " " << curBandId << endl);
+	emit subscribeImageBand(this, curRepr, curBandId);
 }
 
 void BandDock::hideEvent(QHideEvent *event)
 {
 	QDockWidget::hideEvent(event);
-	std::cout << "BandDock hideEvent visible = " << isVisible() << std::endl;
-	emit unsubscribeImageBand(curRepr, curBandId);
+	GGDBGM("UNsubscribing image band "<< curRepr << " " << curBandId << endl);
+	emit unsubscribeImageBand(this, curRepr, curBandId);
+	// see FS#62
+	setWindowTitle("Band View");
 }
 
 void BandDock::processLabelingChange(const cv::Mat1s &labels,
