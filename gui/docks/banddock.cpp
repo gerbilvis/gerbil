@@ -80,10 +80,10 @@ void BandDock::initUi()
 void BandDock::changeBand(representation::t repr, int bandId,
 						  QPixmap band, QString desc)
 {
-	GGDBGM("received image band update " << repr << " " << bandId << endl);
+	//GGDBGM("received image band update " << repr << " " << bandId << endl);
 	if(curRepr != repr || curBandId != bandId) {
-		GGDBGM("we did not subscribe for (" << curRepr << " " << curBandId <<  ")"
-			   << std::endl);
+		//GGDBGM("we did not subscribe for (" << curRepr << " " << curBandId <<  ")"
+		//	   << std::endl);
 		return;
 	}
 
@@ -97,13 +97,13 @@ void BandDock::processBandSelected(representation::t repr, int bandId)
 		return;
 	}
 	if(isVisible()) {
-		GGDBGM("UNsubscribing image band "<< curRepr << " " << curBandId << endl);
+		//GGDBGM("UNsubscribing image band "<< curRepr << " " << curBandId << endl);
 		emit unsubscribeImageBand(this, curRepr, curBandId);
 	}
 	curRepr = repr;
 	curBandId = bandId;
 	if(isVisible()) {
-		GGDBGM("subscribing image band "<< curRepr << " " << curBandId << endl);
+		//GGDBGM("subscribing image band "<< curRepr << " " << curBandId << endl);
 		emit subscribeImageBand(this, curRepr, curBandId);
 	}
 }
@@ -153,14 +153,14 @@ void BandDock::showEvent(QShowEvent *event)
 {
 	QDockWidget::showEvent(event);
 
-	GGDBGM("subscribing image band "<< curRepr << " " << curBandId << endl);
+	//GGDBGM("subscribing image band "<< curRepr << " " << curBandId << endl);
 	emit subscribeImageBand(this, curRepr, curBandId);
 }
 
 void BandDock::hideEvent(QHideEvent *event)
 {
 	QDockWidget::hideEvent(event);
-	GGDBGM("UNsubscribing image band "<< curRepr << " " << curBandId << endl);
+	//GGDBGM("UNsubscribing image band "<< curRepr << " " << curBandId << endl);
 	emit unsubscribeImageBand(this, curRepr, curBandId);
 	// see FS#62
 	setWindowTitle("Band View");

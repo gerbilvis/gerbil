@@ -241,7 +241,7 @@ void ImageModel::spawn(representation::t type, const cv::Rect &newROI, int bands
 
 void ImageModel::computeBand(representation::t type, int dim)
 {
-	GGDBGM(type << " " << dim << endl);
+	//GGDBGM(type << " " << dim << endl);
 	QMap<int, QPixmap> &m = map[type]->bands;
 	SharedMultiImgPtr src = map[type]->image;
 	assert(src);

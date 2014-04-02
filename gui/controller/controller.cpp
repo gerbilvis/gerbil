@@ -413,7 +413,7 @@ void Controller::processImageUpdate(representation::t repr)
 		}
 	}
 	for (auto const& ib : updates) {
-		GGDBGM("requesting band " << ib.first << " " << ib.second << endl);
+		//GGDBGM("requesting band " << ib.first << " " << ib.second << endl);
 		im->computeBand(ib.first, ib.second);
 	}
 
