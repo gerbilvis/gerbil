@@ -17,6 +17,10 @@ if(WIN32)
 	add_definitions(-DNOMINMAX) # prevents min- and max-macro brainf*ck in VS 2003
 endif(WIN32)
 
+# Set C++ standard to C++11
+# TODO FIXME make this work for MSVC/CLANG/GCC/... that is for all compilers.
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11")
+
 include(EnableSSE2)
 
 # Global options
