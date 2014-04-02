@@ -119,6 +119,8 @@ Controller::Controller(const std::string &filename, bool limited_mode,
 	//GGDBGM("roi " << roi << endl);
 	spawnROI(roi);
 
+	GGDBGM("init done, showing mainwindow" << endl);
+
 	// we're done! show window
 	window->show();
 }

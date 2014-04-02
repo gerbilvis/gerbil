@@ -44,7 +44,7 @@ struct representation {
 		return str[r];
 	}
 
-	static bool valid(t r) { return 0 < r && r < REPSIZE; }
+	static bool valid(t r) { return 0 <= r && r < REPSIZE; }
 
 private:
 	representation() {

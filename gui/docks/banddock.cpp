@@ -137,6 +137,21 @@ bool BandDock::eventFilter(QObject *obj, QEvent *event)
 	return QObject::eventFilter(obj, event);
 }
 
+void BandDock::showEvent(QShowEvent *event)
+{
+	QDockWidget::showEvent(event);
+
+	std::cout << "BandDock showEvent visible = " << isVisible() << std::endl;
+	// TODO subscribe
+}
+
+void BandDock::hideEvent(QHideEvent *event)
+{
+	QDockWidget::hideEvent(event);
+	std::cout << "BandDock hideEvent visible = " << isVisible() << std::endl;
+	// TODO unsubscribe
+}
+
 void BandDock::processLabelingChange(const cv::Mat1s &labels,
 									   const QVector<QColor> &colors,
 									   bool colorsChanged)

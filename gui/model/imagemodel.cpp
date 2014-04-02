@@ -135,7 +135,7 @@ void ImageModel::spawn(representation::t type, const cv::Rect &newROI, int bands
 		oldRoi = roi;
 	}
 
-	// GGDBGM("oldRoi "<< oldRoi << " newROI " << newROI << endl);
+	GGDBGM("oldRoi "<< oldRoi << " newROI " << newROI << endl);
 
 	// one ROI for all, effectively
 	roi = newROI;
@@ -243,6 +243,7 @@ void ImageModel::computeBand(representation::t type, int dim)
 {
 	QMap<int, QPixmap> &m = map[type]->bands;
 	SharedMultiImgPtr src = map[type]->image;
+	assert(src);
 
 	SharedDataLock hlock(src->mutex);
 
@@ -252,8 +253,10 @@ void ImageModel::computeBand(representation::t type, int dim)
 		dim = 0;
 
 	// retrieve wavelength metadata
-	std::string banddesc = (*src)->meta[dim].str();
-
+	std::string banddesc;
+	if((*src)->meta.size() > 0) {
+		banddesc = (*src)->meta[dim].str();
+	}
 	hlock.unlock();
 
 	// compute image data if necessary

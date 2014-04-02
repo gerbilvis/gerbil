@@ -62,6 +62,9 @@ protected:
 	// event filter to intercept enter()/leave() on our view
 	bool eventFilter(QObject *obj, QEvent *event);
 
+	void showEvent ( QShowEvent * event ) override;
+	void hideEvent ( QHideEvent * event ) override;
+
 	void initUi();
 
 	// local copies

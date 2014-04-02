@@ -8,7 +8,7 @@
 
 #ifdef WITH_BOOST_THREAD
 
-#define BACKGROUND_TASK_QUEUE_DEBUG
+//#define BACKGROUND_TASK_QUEUE_DEBUG
 
 #include "background_task_queue.h"
 #include <iostream>
