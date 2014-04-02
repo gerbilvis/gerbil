@@ -29,8 +29,15 @@ public:
 	int getCurBandId() {return curBandId;}
 
 signals:
+	// image band (un-)subscription -> Controller
+	void subscribeImageBand(representation::t repr, int bandId);
+	void unsubscribeImageBand(representation::t repr, int bandId);
+
+	// We don't need this anymore, controller handles subscription:
 	// request pixmap update as our current data became invalid
-	void bandRequested(representation::t, int);
+	//void bandRequested(representation::t, int);
+
+	// TODO label subscriptions
 	/* The label being edited by the user has changed. */
 	void currentLabelChanged(int);
 	// FIXME short -> int (affects LabelModel)
@@ -52,7 +59,11 @@ public slots:
 	 *  This way BandDock can subscribe to the current representation and band on demand.
 	 */
 	void processBandSelected(representation::t repr, int bandId);
-	void processImageUpdate(representation::t);
+
+	// We don't need this anymore: controller handles subscription:
+	//void processImageUpdate(representation::t);
+
+	// TODO label subscriptions
 	void processLabelingChange(const cv::Mat1s &labels,
 							   const QVector<QColor> &colors,
 							   bool colorsChanged);
@@ -61,6 +72,7 @@ public slots:
 
 protected slots:
 	void clearLabel();
+	// TODO label subscriptions
 	void processMarkerSelectorIndexChanged(int index);
 
 protected:

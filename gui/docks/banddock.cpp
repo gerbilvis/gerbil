@@ -91,23 +91,23 @@ void BandDock::changeBand(representation::t repr, int bandId,
 void BandDock::processBandSelected(representation::t repr, int bandId)
 {
 	if (repr == curRepr && bandId == curBandId) {
-		break;
+		return;
 	}
 	emit unsubscribeImageBand(curRepr, curBandId);
 	curRepr = repr;
 	curBandId = bandId;
-	if(visible()) {
+	if(isVisible()) {
 		emit subscribeImageBand(curRepr, curBandId);
 	}
 }
 
-void BandDock::processImageUpdate(representation::t type)
-{
-	if (type == curRepr) {
-		// our view became invalid. fetch new one.
-		emit bandRequested(curRepr, curBandId);
-	}
-}
+//void BandDock::processImageUpdate(representation::t type)
+//{
+//	if (type == curRepr) {
+//		// our view became invalid. fetch new one.
+//		emit bandRequested(curRepr, curBandId);
+//	}
+//}
 
 void BandDock::clearLabel()
 {
@@ -155,14 +155,14 @@ void BandDock::showEvent(QShowEvent *event)
 	QDockWidget::showEvent(event);
 
 	std::cout << "BandDock showEvent visible = " << isVisible() << std::endl;
-	// TODO subscribe
+	emit subscribeImageBand(curRepr, curBandId);
 }
 
 void BandDock::hideEvent(QHideEvent *event)
 {
 	QDockWidget::hideEvent(event);
 	std::cout << "BandDock hideEvent visible = " << isVisible() << std::endl;
-	// TODO unsubscribe
+	emit unsubscribeImageBand(curRepr, curBandId);
 }
 
 void BandDock::processLabelingChange(const cv::Mat1s &labels,
