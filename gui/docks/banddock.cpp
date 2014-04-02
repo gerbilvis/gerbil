@@ -88,6 +88,19 @@ void BandDock::changeBand(representation::t repr, int bandId,
 	setWindowTitle(desc);
 }
 
+void BandDock::processBandSelected(representation::t repr, int bandId)
+{
+	if (repr == curRepr && bandId == curBandId) {
+		break;
+	}
+	emit unsubscribeImageBand(curRepr, curBandId);
+	curRepr = repr;
+	curBandId = bandId;
+	if(visible()) {
+		emit subscribeImageBand(curRepr, curBandId);
+	}
+}
+
 void BandDock::processImageUpdate(representation::t type)
 {
 	if (type == curRepr) {

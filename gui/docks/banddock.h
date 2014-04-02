@@ -47,6 +47,11 @@ public slots:
 	void changeBand(representation::t repr, int bandId,
 					QPixmap band, QString desc);
 
+	/** Remember which representation and band are currently selected by the spectral views (viewports).
+	 *
+	 *  This way BandDock can subscribe to the current representation and band on demand.
+	 */
+	void processBandSelected(representation::t repr, int bandId);
 	void processImageUpdate(representation::t);
 	void processLabelingChange(const cv::Mat1s &labels,
 							   const QVector<QColor> &colors,
