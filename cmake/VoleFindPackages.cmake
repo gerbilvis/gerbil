@@ -18,13 +18,10 @@ if(OpenCV_FOUND)
 	else()
 		message(SEND_ERROR "Unsupported OpenCV version: "
 			"${OpenCV_VERSION} (minimum required: ${VOLE_MINIMUM_OPENCV_VERSION})")
-		# cmake configure will fail after SEND_ERROR,
-		# no need to set OpenCV_FOUND FALSE.
+		# cmake configure will fail after SEND_ERROR
 	endif()
 	add_definitions(-DOPENCV_VERSION=${OpenCV_VERSION})
 	add_definitions(-DWITH_OPENCV2)
-else()
-	# OpenCV_FOUND==FALSE is handled by vole_check_package
 endif()
 vole_check_package(OPENCV
 	"OpenCV"
