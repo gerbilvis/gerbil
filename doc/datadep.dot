@@ -1,0 +1,18 @@
+// This is a preliminary attemt to document data dependencies in the gerbil
+// GUI.
+
+digraph datadep {
+node [shape=record];
+
+ImageModel [label="{ImageModel | <image> image | <band> imageBand}"]; 
+BandDock;
+Controller;
+
+// image band updates
+ImageModel:band -> ImageModel:image;
+BandDock -> Controller[label="(un)subscribeImageBand(QObject *subscriber, representation::t repr, int bandId)"];
+Controller -> ImageModel:band [label="computeBand(representation::t type, int dim)"];
+ImageModel:band -> BandDock [label="bandUpdate(representation::t repr, int bandId,
+					QPixmap band, QString description)"]
+
+}
