@@ -30,11 +30,12 @@ Viewport::Viewport(representation::t type, QGLWidget *target)
 	  selection(0), hover(-1), limiterMode(false),
 	  active(false), useralpha(1.f),
 	  showLabeled(true), showUnlabeled(true),
-	  overlayMode(false), highlightLabel(-1), illuminant_correction(false),
+	  overlayMode(false), highlightLabel(-1),
+	  illuminant_show(true),
 	  zoom(1.), shift(0), lasty(-1), holdSelection(false), activeLimiter(0),
-	  drawMeans(true), drawRGB(false), drawHQ(true), drawingState(HIGH_QUALITY),
-	  yaxisWidth(0), vb(QGLBuffer::VertexBuffer),
-	  multisampleBlit(0), controlItem(0)
+	  drawLog(true), drawMeans(true), drawRGB(false), drawHQ(true),
+	  bufferFormat(RGBA16F),
+	  drawingState(HIGH_QUALITY), yaxisWidth(0), vb(QGLBuffer::VertexBuffer)
 {
 	(*ctx)->wait = 1;
 	(*ctx)->reset = 1;
@@ -46,21 +47,13 @@ Viewport::Viewport(representation::t type, QGLWidget *target)
 Viewport::~Viewport()
 {
 	target->makeCurrent();
-	delete buffers[0].fbo;
-	delete buffers[1].fbo;
-	delete multisampleBlit;
+	for (int i = 0; i < 2; ++i) {
+		delete buffers[i].fbo;
+		delete buffers[i].blit;
+	}
 }
 
 /********* I N I T **************/
-
-QGraphicsProxyWidget* Viewport::createControlProxy()
-{
-	// proxy for control widget
-	controlItem = new QGraphicsProxyWidget();
-	addItem(controlItem);
-
-	return controlItem;
-}
 
 void Viewport::initTimers()
 {
@@ -68,7 +61,7 @@ void Viewport::initTimers()
 	connect(&resizeTimer, SIGNAL(timeout()), this, SLOT(resizeScene()));
 
 	scrollTimer.setSingleShot(true);
-	connect(&scrollTimer, SIGNAL(timeout()), this, SLOT(updateTextures()));
+	connect(&scrollTimer, SIGNAL(timeout()), this, SLOT(updateBuffers()));
 
 	QSignalMapper *mapper = new QSignalMapper();
 	for (int i = 0; i < 2; ++i) {
@@ -87,41 +80,70 @@ void Viewport::initBuffers()
 	/* (re)set framebuffers */
 	target->makeCurrent();
 
-	QGLFramebufferObjectFormat format[2];
-	format[0].setAttachment(QGLFramebufferObject::NoAttachment);
+	if(!tryInitBuffers()) {
+		// tryInitBuffers() fails if the buffer format is not supported by the
+		// GL driver. RGBA8 is the default and should be supported by all
+		// drivers.
 
-	/* multisampling. 0 deactivates. 2 or 4 should be reasonable values.
-	 * TODO: make this configurable and/or test with cheap GPUs */
-	format[0].setSamples(4);
+		// TODO: write operator<<
+		const char* bfs;
+		switch(bufferFormat) {
+		case RGBA8: bfs = "RGBA8"; break;
+		case RGBA16F: bfs = "RGBA16F"; break;
+		case RGBA32F: bfs = "RGBA32F"; break;
+		default:
+			bfs = "UNKNOWN_BUFFER_FORMAT"; break;
+		}
 
-	// same settings for both
-	format[1] = format[0];
+		std::cerr << "Viewport: Warning: Failed to init framebuffer "
+				  << "with format " << bfs << ". "
+				  << "Falling back to RGBA8. Drawing quality reduced."
+				  << std::endl;
 
-	/* use floating point for better alpha accuracy in back buffer! */
-	// TODO RGBA32F yet looks better, make configurable!
-	format[0].setInternalTextureFormat(0x881A); // GL_RGBA16F
-
-	// initialize buffers
-	for (int i = 0; i < 2; ++i) {
-		delete buffers[i].fbo;
-		buffers[i].fbo = new QGLFramebufferObject(width, height, format[i]);
-		buffers[i].dirty = true;
+		bufferFormat = RGBA8;
+		// try again
+		if(!tryInitBuffers()) {
+			std::cerr << "Viewport: Error: Failed to init framebuffer "
+					  << "with format RGBA8. Aborting."
+					  << std::endl;
+			std::abort();
+		}
 	}
-
-	// initialize intermediate buffer
-	delete multisampleBlit;
-	multisampleBlit = new QGLFramebufferObject(width, height);
 }
 
-bool Viewport::event(QEvent *event)
+bool Viewport::tryInitBuffers()
 {
-	// we only deal with leaveEvent
-	if (event->type() == QEvent::Leave) {
-		emit scrollOutControl();
-		return true;
-	}
+	for (int i = 0; i < 2; ++i) {
+		// first: formats
+		QGLFramebufferObjectFormat format_buf, format_blit;
 
-	return QGraphicsScene::event(event);
+		/* use floating point for better alpha accuracy in back buffer! */
+		if (i == 0)
+			format_blit.setInternalTextureFormat(bufferFormat);
+
+		// strict: format_buf must be format_blit + multisampling! OGL spec!
+		format_buf = format_blit;
+
+		/* multisampling. 0 deactivates. 2 or 4 should be reasonable values.
+		 * TODO: make this configurable and/or test with cheap GPUs */
+		format_buf.setSamples(4);
+
+		// second: buffer
+		delete buffers[i].fbo;
+		buffers[i].fbo = new QGLFramebufferObject(width, height, format_buf);
+		if(!buffers[i].fbo->isValid()) {
+			return false;
+		}
+		buffers[i].dirty = true;
+
+		// third: blit buffer
+		delete buffers[i].blit;
+		buffers[i].blit = new QGLFramebufferObject(width, height, format_blit);
+		if(!buffers[i].blit->isValid()) {
+			return false;
+		}
+	}
+	return true;
 }
 
 /********* S T A T E ********/
@@ -141,9 +163,6 @@ void Viewport::drawBackground(QPainter *painter, const QRectF &rect)
 		// defer buffer update (do not hinder resizing with slow update)
 		buffers[0].dirty = buffers[1].dirty = true;
 		resizeTimer.start(150);
-
-		// update control widget
-		controlItem->setMinimumHeight(height);
 	}
 
 	// draw
@@ -156,7 +175,7 @@ void Viewport::resizeScene()
 	initBuffers();
 
 	// update buffers
-	updateTextures();
+	updateBuffers();
 }
 
 void Viewport::reset()
@@ -181,12 +200,8 @@ void Viewport::rebuild()
 	SharedDataLock ctxlock(ctx->mutex);
 	SharedDataLock setslock(sets->mutex);
 
-	// TODO: is this the right place?
-	if (selection > (*ctx)->dimensionality)
-		selection = 0;
-
-	prepareLines();
-	updateTextures();
+	prepareLines(); // will also call reset() if indicated by ctx
+	updateBuffers();
 }
 
 void Viewport::prepareLines()
@@ -204,8 +219,7 @@ void Viewport::prepareLines()
 	// second step (cpu -> gpu)
 	target->makeCurrent();
 	int success = Compute::storeVertices(**ctx, **sets, shuffleIdx, vb,
-										 drawMeans, illuminant_correction,
-										 illuminant);
+										 drawMeans, illuminantAppl);
 
 	// gracefully fail if there is a problem with VBO support
 	switch (success) {
@@ -222,7 +236,7 @@ void Viewport::prepareLines()
 			QString("Drawing spectra cannot be continued. "
 					"Please notify us about this problem, state error code %1 "
 					"and what actions led up to this error. Send an email to"
-			" johannes.jordan@cs.fau.de. Thank you for your help!").arg(success));
+			" report@gerbilvis.org. Thank you for your help!").arg(success));
 		return;
 	}
 }
@@ -255,37 +269,25 @@ void Viewport::insertPixelOverlay(const QPolygonF &points)
 	update();
 }
 
-void Viewport::changeIlluminant(cv::Mat1f illum)
+void Viewport::changeIlluminantCurve(QVector<multi_img::Value> illum)
 {
-	illuminant = illum;
-
-	if (!illuminant_correction) { // vertices need to change
-		// TODO: should this not call prepareLines() also?
-		updateTextures();
-	} else {
+	illuminantCurve = illum;
+	if (illuminant_show)
 		update();
-	}
 }
-
-void Viewport::setIlluminantIsApplied(bool applied)
-{
-	// only set it to true, never to false again (you cannot unapply)
-	if (applied) {
-		illuminant_correction = true;
-	}
-}
-
 
 void Viewport::setIlluminationCurveShown(bool show)
 {
-	if (show) {
-		// HACK
-		// nothing, illuminant is always drawn if coefficients viewport->illuminant
-		// non-empty. Should really be a bool in viewport.
-	} else {
-		cv::Mat1f empty;
-		changeIlluminant(empty);
-	}
+	illuminant_show = show;
+	update();
+}
+
+void Viewport::setAppliedIlluminant(QVector<multi_img_base::Value> illum)
+{
+	//bool change = (applied != illuminant_apply);
+	illuminantAppl = illum.toStdVector();
+/*	if (change) TODO: I assume this is already triggered by invalidated ROI
+		rebuild();*/
 }
 
 void Viewport::setLimiters(int label)
@@ -303,7 +305,8 @@ void Viewport::setLimiters(int label)
 		SharedDataLock setslock(sets->mutex);
 		if ((int)(*sets)->size() > label && (**sets)[label].totalweight > 0) {
 			// use range from this label
-			const std::vector<std::pair<int, int> > &b = (**sets)[label].boundary;
+			const std::vector<std::pair<int, int> > &b =
+					(**sets)[label].boundary;
 			limiters.assign(b.begin(), b.end());
 		} else {
 			setLimiters(0);
@@ -314,19 +317,20 @@ void Viewport::setLimiters(int label)
 void Viewport::highlightSingleLabel(int index)
 {
 	highlightLabel = index;
-	updateTextures();
+	updateBuffers(Viewport::RM_STEP,
+				   (highlightLabel > -1 ? RM_SKIP : RM_STEP));
 }
 
 void Viewport::setAlpha(float alpha)
 {
 	useralpha = alpha;
-	updateTextures(Viewport::RM_STEP, Viewport::RM_SKIP);
+	updateBuffers(Viewport::RM_STEP, Viewport::RM_SKIP);
 }
 
 void Viewport::setLimitersMode(bool enabled)
 {
 	limiterMode = enabled;
-	updateTextures(Viewport::RM_SKIP, Viewport::RM_STEP);
+	updateBuffers(Viewport::RM_SKIP, Viewport::RM_STEP);
 	if (!active) {
 		activate(); // will call requestOverlay()
 	} else {
@@ -355,7 +359,7 @@ bool Viewport::endNoHQ(RenderMode spectrum, RenderMode highlight)
 
 	drawingState = (drawHQ ? HIGH_QUALITY : QUICK);
 	if (dirty)
-		updateTextures(spectrum, highlight);
+		updateBuffers(spectrum, highlight);
 	return dirty;
 }
 
@@ -382,20 +386,20 @@ bool Viewport::updateLimiter(int dim, int bin)
 void Viewport::toggleLabeled(bool enabled)
 {
 	showLabeled = enabled;
-	updateTextures();
+	updateBuffers();
 }
 
 void Viewport::toggleUnlabeled(bool enabled)
 {
 	showUnlabeled = enabled;
-	updateTextures();
+	updateBuffers();
 }
 
 void Viewport::screenshot()
 {
 	// ensure high quality
 	drawingState = HIGH_QUALITY;
-	updateTextures(RM_FULL, RM_FULL);
+	updateBuffers(RM_FULL, RM_FULL);
 
 	// render into our buffer
 	QGLFramebufferObject b(width, height);
@@ -415,3 +419,5 @@ void Viewport::screenshot()
 	IOGui io("Screenshot File", "screenshot", target);
 	io.writeFile(QString(), output);
 }
+
+

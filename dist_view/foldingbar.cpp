@@ -65,11 +65,13 @@ void FoldingBar::mouseReleaseEvent(QMouseEvent *ev)
 void FoldingBar::changeEvent(QEvent *e)
 {
     QWidget::changeEvent(e);
-    switch (e->type()) {
+	switch (e->type()) {
     case QEvent::LanguageChange:
-        retranslateUi(this);
+		/* strange behavior: when a dialog is opened, this is performed, and
+		 * it will reset the text we customly set in the titleLabel! */
+		// retranslateUi(this);
         break;
     default:
         break;
-    }
+	}
 }

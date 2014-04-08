@@ -6,7 +6,7 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>256</width>
+    <width>800</width>
     <height>214</height>
    </rect>
   </property>
@@ -34,12 +34,18 @@
     </widget>
    </item>
    <item>
-    <widget class="GraphicsView" name="gv">
+    <widget class="AutohideView" name="gv">
      <property name="sizePolicy">
-      <sizepolicy hsizetype="MinimumExpanding" vsizetype="Preferred">
+      <sizepolicy hsizetype="Expanding" vsizetype="Preferred">
        <horstretch>0</horstretch>
        <verstretch>0</verstretch>
       </sizepolicy>
+     </property>
+     <property name="baseSize">
+      <size>
+       <width>1000</width>
+       <height>200</height>
+      </size>
      </property>
      <property name="frameShape">
       <enum>QFrame::NoFrame</enum>
@@ -62,9 +68,9 @@
    <container>1</container>
   </customwidget>
   <customwidget>
-   <class>GraphicsView</class>
+   <class>AutohideView</class>
    <extends>QGraphicsView</extends>
-   <header>autohidewidget.h</header>
+   <header>widgets/autohideview.h</header>
   </customwidget>
  </customwidgets>
  <resources/>

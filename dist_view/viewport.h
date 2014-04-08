@@ -16,7 +16,6 @@
 #include <vector>
 #include <QLabel>
 #include <QTimer>
-#include <QResizeEvent>
 
 class Viewport : public QGraphicsScene
 {
@@ -24,8 +23,6 @@ class Viewport : public QGraphicsScene
 public:
 	Viewport(representation::t type, QGLWidget *target);
 	~Viewport();
-
-	QGraphicsProxyWidget* createControlProxy();
 
 	void prepareLines();
 	void setLimiters(int label);
@@ -47,7 +44,7 @@ public slots:
 
 	void highlightSingleLabel(int index);
 
-	void toggleRGB(bool enabled) { drawRGB = enabled; updateTextures(); }
+	void toggleRGB(bool enabled) { drawRGB = enabled; updateBuffers(); }
 
 	void setAlpha(float alpha);
 
@@ -72,10 +69,9 @@ public slots:
 	void insertPixelOverlay(const QPolygonF &points);
 
 	// illuminant correction
-	void changeIlluminant(cv::Mat1f illum);
-	void setIlluminantIsApplied(bool applied);
+	void changeIlluminantCurve(QVector<multi_img::Value> illum);
 	void setIlluminationCurveShown(bool show);
-
+	void setAppliedIlluminant(QVector<multi_img::Value> illum);
 
 protected slots:
 
@@ -86,7 +82,8 @@ protected slots:
 	void resizeScene();
 
 	// triggered by scrollTimer and manually
-	void updateTextures(RenderMode spectrum = RM_STEP, RenderMode highlight = RM_STEP);
+	void updateBuffers(RenderMode spectrum = RM_STEP,
+					   RenderMode highlight = RM_STEP);
 
 signals:
 	// we are the active viewer
@@ -103,14 +100,11 @@ signals:
 	void addSelectionRequested();
 	void remSelectionRequested();
 
-	// mouse movement triggers showing/hiding control widget
-	void scrollInControl();
-	void scrollOutControl();
-
 protected:
 	void initTimers();
 	// called on resize
 	void initBuffers();
+	bool tryInitBuffers();
 
 	void reset();
 	// handles both resize and drawing
@@ -121,9 +115,6 @@ protected:
 	void mouseReleaseEvent(QGraphicsSceneMouseEvent*);
 	void wheelEvent(QGraphicsSceneWheelEvent *);
 	void keyPressEvent(QKeyEvent *);
-
-	// to intercept leaveEvent
-	bool event(QEvent *event);
 
 	// helper function that updates Y-axis labels
 	void updateYAxis();
@@ -161,22 +152,31 @@ private:
 	int width, height;
 
 	struct renderbuffer {
-		renderbuffer() : fbo(0), dirty(true),
+		renderbuffer() : fbo(0), blit(0), dirty(true),
 			renderStep(10000), renderedLines(0) {}
 
+		// buffer to render to
 		QGLFramebufferObject *fbo;
-		// fbo is not initialized, or was not drawn-to yet.
+		// buffer for blitting
+		QGLFramebufferObject *blit;
+		// true: fbo is not initialized, or was not drawn-to yet.
 		bool dirty;
+		// how many elements to render per step
 		const unsigned int renderStep;
-		QTimer renderTimer;
+		// how many elements were already rendered
 		unsigned int renderedLines;
+		// timer for incremental rendering
+		QTimer renderTimer;
 	};
 
 	renderbuffer buffers[2];
-	QGLFramebufferObject *multisampleBlit;
 
-	bool illuminant_correction;
-	std::vector<multi_img::Value> illuminant;
+	// normalized illuminant spectrum for drawing the curve
+	QVector<multi_img::Value> illuminantCurve;
+	// draw the illuminant curve
+	bool illuminant_show;
+	// draw vectors skewed according to illuminant
+	std::vector<multi_img::Value> illuminantAppl;
 
 	int selection, hover;
 	bool limiterMode;
@@ -208,17 +208,25 @@ private:
 	bool holdSelection;
 	int *activeLimiter;
 
+	// draw with log weights vs. linear weights
+	bool drawLog;
 	// drawing mode mean vs. bin center
 	bool drawMeans;
 	// drawing mode labelcolor vs. sRGB color
 	bool drawRGB;
 	// draw with antialiasing
 	bool drawHQ;
+	// texture buffer format
+	enum {
+		RGBA8 = 0x8058,  // GL_RGBA8, constants not defined on windows
+		RGBA16F = 0x881A,// GL_RGBA16F
+		RGBA32F = 0x8814 // GL_RGBA32F
+	} bufferFormat;
 
 	enum {
 		HIGH_QUALITY,        // drawing HQ as usual
 		HIGH_QUALITY_QUICK,  // last update was HQ, quick updates requested
-		QUICK,               // last update not HQ, quick updates requested
+		QUICK                // last update not HQ, quick updates requested
 	} drawingState;
 
 	// this timer will resize the scene after resize/folding
@@ -231,9 +239,6 @@ private:
 
 	// single label to be highlighted
 	int highlightLabel;
-
-	// item in the scene that holds the control widget
-	QGraphicsProxyWidget* controlItem;
 };
 
 #endif // VIEWPORT_H

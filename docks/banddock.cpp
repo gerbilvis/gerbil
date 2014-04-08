@@ -1,6 +1,7 @@
 #include "banddock.h"
+#include "../widgets/bandview.h"
+#include "../widgets/graphsegwidget.h"
 #include "../iogui.h"
-#include "ui_banddock.h"
 
 #include "../gerbil_gui_debug.h"
 
@@ -26,11 +27,27 @@ BandDock::~BandDock()
 
 void BandDock::initUi()
 {
+	// initialize band view
+	view->installEventFilter(this); // needed for enter/leave events
+	view->init();
+	bv = new BandView();
+	view->setScene(bv);
+	connect(bv, SIGNAL(newContentRect(QRect)),
+			view, SLOT(fitContentRect(QRect)));
+
+	// add graphseg control widget
+	gs = new GraphSegWidget(view);
+	bv->offBottom = AutohideWidget::OutOffset;
+	view->addWidget(AutohideWidget::BOTTOM, gs);
+
+	connect(bv, SIGNAL(newSizeHint(QSize)),
+			view, SLOT(updateSizeHint(QSize)));
+
 	connect(gs, SIGNAL(requestLoadSeeds()),
 			this, SLOT(loadSeeds()));
+	connect(gs, SIGNAL(requestClearSeeds()),
+			bv, SLOT(clearSeeds()));
 
-	connect(markerSelector, SIGNAL(currentIndexChanged(int)),
-			bv, SLOT(changeCurrentLabel(int)));
 	connect(markerSelector, SIGNAL(currentIndexChanged(int)),
 			this, SLOT(processMarkerSelectorIndexChanged(int)));
 
@@ -38,13 +55,9 @@ void BandDock::initUi()
 			bv, SLOT(applyLabelAlpha(int)));
 
 	connect(clearButton, SIGNAL(clicked()),
-			this, SLOT(clearLabelOrSeeds()));
-
-	// -> DockController
-	//	connect(bandView, SIGNAL(alteredLabels(const cv::Mat1s&, const cv::Mat1b&)),
-	//			this, SIGNAL(alterLabelingRequested(cv::Mat1s,cv::Mat1b)));
-	//	connect(bandView, SIGNAL(newLabeling(const cv::Mat1s&)),
-	//			this, SIGNAL(newLabelingRequested(cv::Mat1s)));
+			this, SLOT(clearLabel()));
+	connect(bv, SIGNAL(clearRequested()),
+			this, SLOT(clearLabel()));
 
 	/* when applybutton is pressed, bandView commits full label matrix */
 	connect(applyButton, SIGNAL(clicked()),
@@ -53,74 +66,104 @@ void BandDock::initUi()
 	// label update is triggered by timer. Hide it for now.
 	applyButton->setVisible(false);
 
-	connect(graphsegButton, SIGNAL(toggled(bool)),
+	connect(gs, SIGNAL(requestToggleSeedMode(bool)),
 			this, SLOT(graphSegModeToggled(bool)));
-	connect(graphsegButton, SIGNAL(toggled(bool)),
+	connect(gs, SIGNAL(requestToggleSeedMode(bool)),
 			bv, SLOT(toggleSeedMode(bool)));
 
+	connect(this, SIGNAL(currentLabelChanged(int)),
+			bv, SLOT(setCurrentLabel(int)));
+
 	bv->initUi();
-	gs->setVisible(false);
 }
 
 void BandDock::changeBand(representation::t repr, int bandId,
 						  QPixmap band, QString desc)
 {
-	curRepr = repr;
-	curBandId = bandId;
+	//GGDBGM("received image band update " << repr << " " << bandId << endl);
+	if(curRepr != repr || curBandId != bandId) {
+		//GGDBGM("we did not subscribe for (" << curRepr << " " << curBandId <<  ")"
+		//	   << std::endl);
+		return;
+	}
 
-	bv->setEnabled(true);
 	bv->setPixmap(band);
 	setWindowTitle(desc);
 }
 
-void BandDock::processImageUpdate(representation::t type)
+void BandDock::processBandSelected(representation::t repr, int bandId)
 {
-	if (type == curRepr) {
-		// our view became invalid. fetch new one.
-		emit bandRequested(curRepr, curBandId);
+	if (repr == curRepr && bandId == curBandId) {
+		return;
+	}
+	if(isVisible()) {
+		//GGDBGM("UNsubscribing image band "<< curRepr << " " << curBandId << endl);
+		emit unsubscribeImageBand(this, curRepr, curBandId);
+	}
+	curRepr = repr;
+	curBandId = bandId;
+	if(isVisible()) {
+		//GGDBGM("subscribing image band "<< curRepr << " " << curBandId << endl);
+		emit subscribeImageBand(this, curRepr, curBandId);
 	}
 }
 
-void BandDock::processSeedingDone()
-{
-	graphsegButton->setChecked(false);
-}
-
-void BandDock::clearLabelOrSeeds()
+void BandDock::clearLabel()
 {
 	// FIXME need to stop label timer of bandview
-
-	if (bv->isSeedModeEnabled()) {
-		bv->clearSeeds();
-	} else {
-		emit clearLabelRequested(bv->getCurLabel());
-	}
+	emit clearLabelRequested(bv->getCurrentLabel());
 }
 
-void BandDock::processMarkerSelectorIndexChanged(int idx)
+void BandDock::processMarkerSelectorIndexChanged(int index)
 {
-	// notify other parties
-	emit currentLabelChanged(idx);
-
-	///GGDBGM(format("idx=%1%")%idx<<endl);
-	if (idx < 0)	// empty selection, during initialization
+	if (index < 0)	// empty selection, during initialization
 		return;
-	idx += 1; // we start with 1, combobox with 0
+
+	index += 1; // we start with 1, combobox with 0
 
 	int nlabels = labelColors.count();
 
-	if (nlabels && idx == nlabels) {
-		// new label requested
+	if (nlabels && index == nlabels) {	// new label requested
 
 		// commit uncommitted label changes in the bandview
 		bv->commitLabelChanges();
+		// issue creation of a new label
 		emit newLabelRequested();
 
-		// will not loop.
-		markerSelector->setCurrentIndex(idx-1);
+		// select that label, will return back here into the else() case
+		markerSelector->setCurrentIndex(index-1);
 	} else {
-		bv->changeCurrentLabel(idx);
+		// propagate label change
+		emit currentLabelChanged(index);
 	}
+}
+
+bool BandDock::eventFilter(QObject *obj, QEvent *event)
+{
+	if (event->type() == QEvent::Enter)
+		bv->enterEvent();
+	if (event->type() == QEvent::Leave)
+		bv->leaveEvent();
+
+	// continue with standard event processing
+	return QObject::eventFilter(obj, event);
+}
+
+void BandDock::showEvent(QShowEvent *event)
+{
+	QDockWidget::showEvent(event);
+
+	//GGDBGM("subscribing image band "<< curRepr << " " << curBandId << endl);
+	emit subscribeImageBand(this, curRepr, curBandId);
+}
+
+void BandDock::hideEvent(QHideEvent *event)
+{
+	QDockWidget::hideEvent(event);
+	//GGDBGM("UNsubscribing image band "<< curRepr << " " << curBandId << endl);
+	emit unsubscribeImageBand(this, curRepr, curBandId);
+	// see FS#62
+	setWindowTitle("Band View");
 }
 
 void BandDock::processLabelingChange(const cv::Mat1s &labels,
@@ -128,16 +171,26 @@ void BandDock::processLabelingChange(const cv::Mat1s &labels,
 									   bool colorsChanged)
 {
 	if (!colors.empty()) {
-		//GGDBGM("colors.size()=" << colors.size() << endl);
 		// store a local copy of the color array
 		labelColors = colors;
-		// use colors for our awesome label menu (rebuild everything)
+		/* use colors for our awesome label menu (rebuild everything) */
+		// block signals to not fire spurious label changed events
+		markerSelector->blockSignals(true);
 		markerSelector->clear();
 		for (int i = 1; i < colors.size(); ++i) // 0 is index for unlabeled
 		{
 			markerSelector->addItem(colorIcon(colors.at(i)), "");
 		}
-		markerSelector->addItem(QIcon(":/toolbar/add"), "");
+		markerSelector->addItem(QIcon::fromTheme("list-add"), "");
+		markerSelector->setCurrentIndex(bv->getCurrentLabel() - 1);
+		markerSelector->blockSignals(false);
+
+		/* make sure our current label fits -> this does not only affect bv! */
+		int oldindex = bv->getCurrentLabel();
+		if (oldindex < 1 || oldindex >= labelColors.count()) {
+			// set to the always valid default (propagates to bv)
+			markerSelector->setCurrentIndex(0);
+		}
 	}
 
 	// tell bandview about the update as well
@@ -147,13 +200,11 @@ void BandDock::processLabelingChange(const cv::Mat1s &labels,
 void BandDock::processLabelingChange(const cv::Mat1s &labels,
 									   const cv::Mat1b &mask)
 {
-	//GGDBG_CALL();
 	bv->updateLabeling(labels, mask);
 }
 
-void BandDock::graphSegModeToggled(bool enable)
+void BandDock::graphSegModeToggled(bool)
 {
-	gs->setVisible(enable);
 }
 
 void BandDock::loadSeeds()
@@ -165,11 +216,6 @@ void BandDock::loadSeeds()
 		return;
 
 	bv->setSeedMap(seeding);
-
-	// now make sure we are in seed mode
-	if (!graphsegButton->isChecked()) {
-		graphsegButton->toggle();
-	}
 }
 
 

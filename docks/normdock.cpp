@@ -18,6 +18,13 @@ double max(double a, double b) {
 		return b;
 }
 
+// for DEBUG
+std::ostream &operator<<(std::ostream& os, const multi_img::Range& r)
+{
+	os << boost::format("[%1%,%2%]") % r.min % r.max;
+	return os;
+}
+
 NormDock::NormDock(QWidget *parent) :
 	QDockWidget(parent)
 {
@@ -157,8 +164,14 @@ void NormDock::updateGUI()
 		normMaxBox->setEnabled(true);
 	} else if (modes[normTarget] == multi_img::NORM_THEORETICAL) {
 		// FIXME assuming image depth is 8-bit always.
-		normMinBox->setValue(0.);
-		normMaxBox->setValue(255.);
+		// HACK
+		if(representation::GRAD == normTarget) {
+			normMinBox->setValue(-5.54);
+			normMaxBox->setValue(5.54);
+		} else { // IMG
+			normMinBox->setValue(0.);
+			normMaxBox->setValue(255.);
+		}
 	} else { // OBSERVED
 		// nothing
 	}

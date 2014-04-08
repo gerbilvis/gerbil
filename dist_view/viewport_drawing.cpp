@@ -5,6 +5,8 @@
 #include <QMessageBox>
 #include <limits>
 
+#include <gerbil_gui_debug.h>
+
 bool Viewport::drawScene(QPainter *painter, bool withDynamics)
 {
 	/*
@@ -57,6 +59,8 @@ bool Viewport::drawScene(QPainter *painter, bool withDynamics)
 	drawHighlight = drawHighlight && (hover > -1 || limiterMode);
 	// do not draw when in single pixel overlay mode
 	drawHighlight = drawHighlight && (!overlayMode);
+	// do not draw when in single label mode
+	drawHighlight = drawHighlight && (highlightLabel < 0);
 
 	for (int i = 0; i < (drawHighlight ? 2 : 1); ++i) {
 
@@ -68,10 +72,9 @@ bool Viewport::drawScene(QPainter *painter, bool withDynamics)
 			break;
 		}
 
-		// blit first to get from multisample to regular fbo. then draw that
-		QGLFramebufferObject::blitFramebuffer(multisampleBlit,
-											  rect, b.fbo, rect);
-		target->drawTexture(rect, multisampleBlit->texture());
+		// blit first to get from multisample to regular buffer. then draw that
+		QGLFramebufferObject::blitFramebuffer(b.blit, rect, b.fbo, rect);
+		target->drawTexture(rect, b.blit->texture());
 	}
 
 	// foreground axes are a dynamic part
@@ -89,7 +92,7 @@ bool Viewport::drawScene(QPainter *painter, bool withDynamics)
 	return !disabled;
 }
 
-void Viewport::updateTextures(RenderMode spectrum, RenderMode highlight)
+void Viewport::updateBuffers(RenderMode spectrum, RenderMode highlight)
 {
 	if (!buffers[0].fbo || !buffers[1].fbo)
 		return;
@@ -125,6 +128,16 @@ void Viewport::updateTextures(RenderMode spectrum, RenderMode highlight)
 
 		b.renderTimer.stop();
 		b.renderedLines = 0;
+
+		if (!(b.fbo->isValid() && b.blit->isValid())) {
+			QMessageBox::critical(target, "Drawing Error",
+				"Drawing spectra cannot be continued. "
+				"Please notify us about this problem, state error code 4 "
+				"and what actions led up to this error. Send an email to"
+				" report@gerbilvis.org. Thank you for your help!");
+			return;
+		}
+
 		QPainter painter(b.fbo);
 
 		painter.setCompositionMode(QPainter::CompositionMode_Source);
@@ -203,7 +216,8 @@ void Viewport::updateModelview()
 	int htp = yaxisWidth - 6; // left padding for text (legend)
 
 	// if gradient, we discard one unit space intentionally for centering
-	int d = (*ctx)->dimensionality - ((*ctx)->type == representation::GRAD ? 0 : 1);
+	int d = (int)(*ctx)->dimensionality
+			- ((*ctx)->type == representation::GRAD ? 0 : 1);
 	qreal w = (wwidth  - 2*hp - htp)/(qreal)(d); // width of one unit
 	qreal h = (wheight - 2*vp - vtp)/(qreal)((*ctx)->nbins); // height of one unit
 	int t = ((*ctx)->type == representation::GRAD ? w/2 : 0); // moving half a unit for centering
@@ -236,26 +250,26 @@ void Viewport::drawBins(QPainter &painter, QTimer &renderTimer,
 			"Drawing spectra cannot be continued. "
 			"Please notify us about this problem, state error code 3 "
 			"and what actions led up to this error. Send an email to"
-			" johannes.jordan@cs.fau.de. Thank you for your help!");
+			" report@gerbilvis.org. Thank you for your help!");
 		painter.endNativePainting();
 		return;
 	}
 	glEnableClientState(GL_VERTEX_ARRAY);
 	glVertexPointer(2, GL_FLOAT, 0, 0);
-	int iD = renderedLines * (*ctx)->dimensionality;
+    size_t iD = renderedLines * (*ctx)->dimensionality;
 
 	/* determine drawing range. could be expanded to only draw spec. labels */
 	// make sure that viewport draws "unlabeled" data in ignore-label case
 	int start = ((showUnlabeled || (*ctx)->ignoreLabels == 1) ? 0 : 1);
-	int end = (showLabeled ? (*sets)->size() : 1);
+    int end = (showLabeled ? (int)(*sets)->size() : 1);
 	int single = ((*ctx)->ignoreLabels ? -1 : highlightLabel);
 
-	unsigned int total = shuffleIdx.size();
-	unsigned int first = renderedLines;
-	unsigned int last = std::min(renderedLines + renderStep, total);
+    size_t total = shuffleIdx.size();
+    size_t first = renderedLines;
+    size_t last = std::min((size_t)(renderedLines + renderStep), total);
 
 	// loop over all elements in vertex index, update element and vector indices
-	for (unsigned int i = first; i < last;
+    for (size_t i = first; i < last;
 		 ++i, iD += (*ctx)->dimensionality) {
 		std::pair<int, BinSet::HashKey> &idx = shuffleIdx[i];
 
@@ -305,13 +319,13 @@ void Viewport::drawBins(QPainter &painter, QTimer &renderTimer,
 		target->qglColor(color);
 
 		// draw polyline
-		glDrawArrays(GL_LINE_STRIP, iD, (*ctx)->dimensionality);
+		glDrawArrays(GL_LINE_STRIP, (GLsizei)iD, (GLint)(*ctx)->dimensionality);
 	}
 	vb.release();
 	painter.endNativePainting();
 
 	// setup succeeding incremental drawing
-	renderedLines += (last - first);
+	renderedLines += (unsigned int)(last - first);
 	if (renderedLines < total) {
 		if (renderedLines <= renderStep) {
 			renderTimer.start(150);
@@ -332,10 +346,11 @@ QColor Viewport::determineColor(const QColor &basecolor,
 	   the view with too much low-weight information */
 	/* logarithm is used to prevent single data points to get lost.
 	   this should be configurable. */
-	alpha = useralpha *
-			(0.01 + 0.99*(std::log(weight+1) / std::log(totalweight)));
-	//	TODO: option
-	//      (0.01 + 0.99*(weight / totalweight));
+	alpha = useralpha;
+	if (drawLog)
+		alpha *= (0.01 + 0.99*(std::log(weight+1) / std::log(totalweight)));
+	else
+		alpha *= (0.01 + 0.99*(weight / totalweight));
 	color.setAlphaF(std::min(alpha, 1.)); // cap at 1
 
 	if (highlighted) {
@@ -402,8 +417,8 @@ void Viewport::drawAxesFg(QPainter *painter)
 	else
 		painter->setPen(Qt::gray);
 	qreal top = ((*ctx)->nbins);
-	if (!illuminant.empty())
-		top *= illuminant.at(selection);
+	if (illuminant_show && !illuminantCurve.empty())
+		top *= illuminantCurve.at(selection);
 	painter->drawLine(QPointF(selection, 0.), QPointF(selection, top));
 
 	// draw limiters
@@ -411,9 +426,9 @@ void Viewport::drawAxesFg(QPainter *painter)
 		painter->setPen(Qt::red);
 		for (int i = 0; i < (*ctx)->dimensionality; ++i) {
 			qreal y1 = limiters[i].first, y2 = limiters[i].second + 1;
-			if (!illuminant.empty()) {
-				y1 *= illuminant.at(selection);
-				y2 *= illuminant.at(selection);
+			if (!illuminantAppl.empty()) {
+				y1 *= illuminantAppl.at(i);
+				y2 *= illuminantAppl.at(i);
 			}
 			qreal h = (*ctx)->nbins*0.01;
 			if (h > y2 - y1)	// don't let them overlap, looks uncool
@@ -439,46 +454,54 @@ void Viewport::drawAxesBg(QPainter *painter)
 
 	// draw axes in background
 	painter->setPen(QColor(64, 64, 64));
-	QPolygonF poly;
-	if (!illuminant.empty()) {
-		for (int i = 0; i < (*ctx)->dimensionality; ++i) {
-			qreal top = ((*ctx)->nbins-1) * illuminant.at(i);
-			painter->drawLine(QPointF(i, 0.), QPointF(i, top));
-			poly << QPointF(i, top);
-		}
-		poly << QPointF((*ctx)->dimensionality-1, (*ctx)->nbins-1);
-		poly << QPointF(0, (*ctx)->nbins-1);
-	} else {
+
+	/* without illuminant */
+	if (!illuminant_show || illuminantCurve.empty()) {
 		for (int i = 0; i < (*ctx)->dimensionality; ++i)
 			painter->drawLine(i, 0, i, (*ctx)->nbins);
+		return;
 	}
 
-	// visualize illuminant
-	if (!illuminant.empty()) {
-		QPolygonF poly2 = modelview.map(poly);
-		poly2.translate(0., -5.);
-		painter->restore();
-		QBrush brush(QColor(32, 32, 32), Qt::Dense3Pattern);
-		painter->setBrush(brush);
-		painter->setPen(Qt::NoPen);
-		painter->drawPolygon(poly2);
-		painter->setPen(Qt::white);
-		poly2.remove((*ctx)->dimensionality, 2);
-		painter->drawPolyline(poly2);
-		painter->save();
-		painter->setWorldTransform(modelview);
+	/* now instead with illuminant */
+
+	// polygon describing illuminant
+	QPolygonF poly;
+	for (int i = 0; i < (*ctx)->dimensionality; ++i) {
+		qreal top = ((*ctx)->nbins-1) * illuminantCurve.at(i);
+		painter->drawLine(QPointF(i, 0.), QPointF(i, top));
+		poly << QPointF(i, top);
 	}
+	poly << QPointF((*ctx)->dimensionality-1, (*ctx)->nbins-1);
+	poly << QPointF(0, (*ctx)->nbins-1);
+
+	// visualize illuminant
+	QPolygonF poly2 = modelview.map(poly);
+	poly2.translate(0., -5.);
+	painter->restore();
+	QBrush brush(QColor(32, 32, 32), Qt::Dense3Pattern);
+	painter->setBrush(brush);
+	painter->setPen(Qt::NoPen);
+	painter->drawPolygon(poly2);
+	painter->setPen(Qt::white);
+	poly2.remove((int)(*ctx)->dimensionality, 2);
+	painter->drawPolyline(poly2);
+	painter->save();
+	painter->setWorldTransform(modelview);
 }
 
 void Viewport::drawLegend(QPainter *painter, int sel)
 {
+//	GGDBGM("drawing legend, representation " << (*ctx)->type <<
+//		   ", nbins: " << (*ctx)->dimensionality << endl);
 	SharedDataLock ctxlock(ctx->mutex);
 
-	assert((*ctx)->labels.size() == (unsigned int)(*ctx)->dimensionality);
+	assert((*ctx)->xlabels.size() == (unsigned int)(*ctx)->dimensionality);
 
 	painter->setPen(Qt::white);
-	/// x-axis
+	// x-axis
 	for (int i = 0; i < (*ctx)->dimensionality; ++i) {
+//		GGDBGM((format("label %1%: '%2%'")
+//		 %i % ((*ctx)->labels[i].toStdString()))  << endl);
 		QPointF l = modelview.map(QPointF(i - 1.f, 0.f));
 		QPointF r = modelview.map(QPointF(i + 1.f, 0.f));
 		QRectF rect(l, r);
@@ -500,7 +523,7 @@ void Viewport::drawLegend(QPainter *painter, int sel)
 		bool highlight = (i == sel);
 		if (highlight)
 			painter->setPen(Qt::red);
-		painter->drawText(rect, Qt::AlignCenter, (*ctx)->labels[i]);
+		painter->drawText(rect, Qt::AlignCenter, (*ctx)->xlabels[i]);
 		if (highlight)	// revert back color
 			painter->setPen(Qt::white);
 	}
@@ -521,7 +544,7 @@ void Viewport::drawOverlay(QPainter *painter)
 {
 	painter->save();
 	QPolygonF poly = modelview.map(overlayPoints);
-	QPen pen(Qt::black);
+	QPen pen(QColor(0, 0, 0, 127));
 	pen.setWidth(5);
 	painter->setPen(pen);
 	painter->drawPolyline(poly);

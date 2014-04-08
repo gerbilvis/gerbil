@@ -2,27 +2,32 @@ vole_module_name("gerbil_gui")
 vole_module_description("GUI for multispectral images")
 vole_module_variable("Gerbil_GUI")
 
-vole_add_required_dependencies("BOOST" "BOOST_PROGRAM_OPTIONS" "BOOST_THREAD" "BOOST_DATE_TIME" "TBB" "OPENCV" "QT" "QT_OPENGL" "OPENGL")
-vole_add_required_dependencies("GLEW")
+vole_add_required_dependencies("BOOST" "BOOST_PROGRAM_OPTIONS" "TBB" "OPENCV" "QT" "QT_OPENGL" "OPENGL")
+vole_add_required_dependencies("BOOST_THREAD" "BOOST_CHRONO" "BOOST_DATE_TIME")
 vole_add_required_modules("rgb" "seg_graphs")
 vole_add_optional_modules("seg_meanshift" "seg_medianshift" "seg_probshift" "edge_detect")
 
 vole_compile_library(
-	stopwatchgpu
-
-	autohidewidget
-	mainwindow
-	scaledview
-	bandview
-	roiview
-	commandrunner
+	main
 	iogui
+	commandrunner
+
+	widgets/mainwindow
+	widgets/autohidewidget
+	widgets/autohideview
+	widgets/ahcombobox
+	widgets/scaledview
+	widgets/bandview
+	widgets/roiview
+	widgets/graphsegwidget
+
+	widgets/sizegripitem/sizegripitem
 	
-	controller
-	dockcontroller
+	controller/controller
+	controller/controller_docks
+	controller/distviewcontroller
 
 	dist_view/compute
-	dist_view/distviewcontroller
 	dist_view/distviewmodel
 	dist_view/viewer_tasks
 	dist_view/foldingbar
@@ -33,12 +38,15 @@ vole_compile_library(
 	dist_view/distviewbinstbb
 
 	model/representation
-	model/image
-	model/labeling
-	model/falsecolor
-	model/illumination
-	model/graphsegmentation
-	model/ussegmentationmodel
+	model/imagemodel
+	model/labelingmodel
+	model/falsecolormodel
+	model/falsecolor/falsecoloring
+	model/falsecolor/falsecolormodelpayload
+	model/illuminationmodel
+	model/graphsegmentationmodel
+	model/clusteringmodel
+	model/labels/icontask
 
 
 	docks/banddock
@@ -46,27 +54,32 @@ vole_compile_library(
 	docks/normdock
 	docks/roidock
 	docks/illumdock
-	docks/rgbdock
-	docks/graphsegwidget
-	docks/ussegmentationdock
+	docks/falsecolordock
+	docks/clusteringdock
 	docks/labeldock
 
 	gerbil_gui_debug
+	stopwatchgpu
 )
 
 vole_moc_library(
-	mainwindow.h
-	autohidewidget.h
-	scaledview.h
-	bandview.h
-	roiview.h
 	commandrunner.h
 
-	controller.h
-	dockcontroller.h
+	widgets/mainwindow.h
+	widgets/autohidewidget.h
+	widgets/autohideview.h
+	widgets/ahcombobox.h
+	widgets/scaledview.h
+	widgets/bandview.h
+	widgets/roiview.h
+	widgets/graphsegwidget.h
+
+	widgets/sizegripitem/sizegripitem.h
+
+	controller/controller.h
+	controller/distviewcontroller.h
 
 	dist_view/distviewmodel.h
-	dist_view/distviewcontroller.h
 	dist_view/distviewgui.h
 	dist_view/foldingbar.h
 	dist_view/viewport.h
@@ -76,32 +89,34 @@ vole_moc_library(
 	docks/normdock.h
 	docks/roidock.h
 	docks/illumdock.h
-	docks/rgbdock.h
-	docks/graphsegwidget.h
-	docks/ussegmentationdock.h
+	docks/falsecolordock.h
+	docks/clusteringdock.h
 	docks/labeldock.h
 
-	model/image.h
-	model/labeling.h
-	model/falsecolor.h
-	model/illumination.h
-	model/graphsegmentation.h
-	model/ussegmentationmodel.h
+	model/imagemodel.h
+	model/labelingmodel.h
+	model/labels/icontask.h
+	model/falsecolormodel.h
+	model/falsecolor/falsecolormodelpayload.h
+	model/illuminationmodel.h
+	model/graphsegmentationmodel.h
+	model/clusteringmodel.h
 )
 
 vole_ui_library(
-	mainwindow.ui
+	widgets/mainwindow.ui
+	widgets/graphsegwidget.ui
 	dist_view/distviewgui.ui
 	dist_view/foldingbar.ui
 	dist_view/viewportcontrol.ui
 	docks/roidock.ui
+	docks/roidock_buttons.ui
 	docks/illumdock.ui
-	docks/graphsegwidget.ui
-	docks/ussegmentationdock.ui
+	docks/clusteringdock.ui
 	docks/banddock.ui
 	docks/labelingdock.ui
 	docks/normdock.ui
-	docks/rgbdock.ui
+	docks/falsecolordock_sel.ui
 	docks/labeldock.ui
 )
 

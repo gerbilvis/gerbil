@@ -30,6 +30,7 @@ signals:
 
 public slots:
 	void terminate();
+	void deleteLater();
 };
 
 #endif // COMMANDRUNNER_H

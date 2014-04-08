@@ -1,21 +1,23 @@
-#ifndef MODEL_REPRESENTATION_H
-#define MODEL_REPRESENTATION_H
+#ifndef REPRESENTATION_H
+#define REPRESENTATION_H
 
 #include <QMap>
 
-#define WITH_IMGPCA
-#define WITH_GRADPCA
-#define REPSIZE 4 // depends on the variables above
+// FIXME These macro defs are a temporary workaround to get the upcoming relase
+// functioning. We need to get task processing more efficient in the future.
+//#define WITH_IMGPCA
+//#define WITH_GRADPCA
+#define REPSIZE 2 // depends on the variables above
 struct representation {
 
 	enum t {
 		IMG = 0,
-		GRAD = 1,
+		GRAD = 1
 #ifdef WITH_IMGPCA
-		IMGPCA = 2,
+		,IMGPCA = 2
 #endif
 #ifdef WITH_GRADPCA
-		GRADPCA = 3
+		,GRADPCA = 3
 #endif
 		// if you add a repres., also change operator<< and private constructor!
 	};
@@ -42,6 +44,8 @@ struct representation {
 		return str[r];
 	}
 
+	static bool valid(t r) { return 0 <= r && r < REPSIZE; }
+
 private:
 	representation() {
 		for (int i = 0; i < REPSIZE; ++i)
@@ -58,4 +62,4 @@ private:
 // representation in debug output
 std::ostream &operator<<(std::ostream& os, const representation::t& r);
 
-#endif // MODEL_REPRESENTATION_H
+#endif // REPRESENTATION_H

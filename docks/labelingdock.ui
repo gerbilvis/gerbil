@@ -6,8 +6,8 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>297</width>
-    <height>76</height>
+    <width>190</width>
+    <height>67</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -23,6 +23,9 @@
       <property name="text">
        <string>Load</string>
       </property>
+      <property name="icon">
+       <iconset theme="document-open"/>
+      </property>
      </widget>
     </item>
     <item row="0" column="1">
@@ -33,6 +36,9 @@
       <property name="text">
        <string>Save</string>
       </property>
+      <property name="icon">
+       <iconset theme="document-save"/>
+      </property>
      </widget>
     </item>
     <item row="0" column="2">
@@ -42,8 +48,8 @@
       </property>
       <property name="sizeHint" stdset="0">
        <size>
-        <width>23</width>
-        <height>20</height>
+        <width>0</width>
+        <height>0</height>
        </size>
       </property>
      </spacer>
@@ -55,7 +61,7 @@
       </property>
       <property name="sizeHint" stdset="0">
        <size>
-        <width>17</width>
+        <width>0</width>
         <height>0</height>
        </size>
       </property>

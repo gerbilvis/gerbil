@@ -15,7 +15,7 @@
 
 // FIXME normalization functionality
 //
-// * range is initialized incorrectly from ImageModel::dataRangeUdpate().
+// * range is initialized incorrectly from ImageModel::observedDataRangeUdpate().
 //   This appears to be a bug in CommonTbb::DetermineRange ?
 //
 // * What is the purpose and desired semantics of the different normalization

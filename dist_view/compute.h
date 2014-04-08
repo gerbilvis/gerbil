@@ -118,44 +118,26 @@ typedef boost::shared_ptr<SharedData<std::vector<BinSet> > > sets_ptr;
 typedef tbb::concurrent_vector<std::pair<int, BinSet::HashKey> > binindex;
 
 struct ViewportCtx {
-	ViewportCtx &operator=(const ViewportCtx &other) {
-		wait = other.wait;
-		reset = other.reset;
-		dimensionality = other.dimensionality;
-		dimensionalityValid = other.dimensionalityValid;
-		type = other.type;
-		meta = other.meta;
-		metaValid = other.metaValid;
-		labels = other.labels;
-		labelsValid = other.labelsValid;
-		ignoreLabels = other.ignoreLabels;
-		nbins = other.nbins;
-		binsize = other.binsize;
-		binsizeValid = other.binsizeValid;
-		minval = other.minval;
-		minvalValid = other.minvalValid;
-		maxval = other.maxval;
-		maxvalValid = other.maxvalValid;
-		return *this;
-	}
-
-	tbb::atomic<int> wait;
-	tbb::atomic<int> reset;
-	size_t dimensionality;
-	bool dimensionalityValid;
 	representation::t type;
+
+	// true if viewport has freshly computed data, but not on GPU yet
+	tbb::atomic<int> wait;
+	// true if viewport needs a full reset
+	tbb::atomic<int> reset;
+
+	/* metadata depending on image data */
+	size_t dimensionality;
 	std::vector<multi_img::BandDesc> meta;
-	bool metaValid;
-	std::vector<QString> labels;
-	bool labelsValid;
+	std::vector<QString> xlabels; 	// x-axis labels
 	bool ignoreLabels;
-	int nbins;
 	multi_img::Value binsize;
-	bool binsizeValid;
 	multi_img::Value minval;
-	bool minvalValid;
 	multi_img::Value maxval;
-	bool maxvalValid;
+	// true if metadata reflects current image information
+	bool valid;
+
+	/* metadata depending on display configuration */
+	int nbins;
 };
 
 typedef boost::shared_ptr<SharedData<ViewportCtx> > vpctx_ptr;
@@ -170,7 +152,8 @@ public:
 	static multi_img::Value curpos(const multi_img::Value &val, int dim,
 								   const multi_img::Value &minval,
 								   const multi_img::Value &binsize,
-							  const std::vector<multi_img::Value> &illuminant);
+							  const std::vector<multi_img::Value> &illuminant
+								   = std::vector<multi_img::Value>());
 
 	/* method and helper class to preprocess bins before vertex generation */
 	static void preparePolylines(const ViewportCtx &context,
@@ -206,16 +189,16 @@ public:
 	static int storeVertices(const ViewportCtx &context,
 							 const std::vector<BinSet> &sets,
 							 const binindex& index, QGLBuffer &vb,
-							 bool drawMeans, bool illuminant_correction,
+							 bool drawMeans,
 							 const std::vector<multi_img::Value> &illuminant);
 
 	class GenerateVertices {
 	public:
 		GenerateVertices(bool drawMeans, size_t dimensionality, multi_img::Value minval, multi_img::Value binsize,
-			bool illuminant_correction, const std::vector<multi_img::Value> &illuminant, const std::vector<BinSet> &sets,
+			const std::vector<multi_img::Value> &illuminant, const std::vector<BinSet> &sets,
 			const binindex &index, GLfloat *varr)
 			: drawMeans(drawMeans), dimensionality(dimensionality), minval(minval), binsize(binsize),
-			illuminant_correction(illuminant_correction), illuminant(illuminant), sets(sets),
+			illuminant(illuminant), sets(sets),
 			index(index), varr(varr) {}
 		void operator()(const tbb::blocked_range<size_t> &r) const;
 	private:
@@ -223,14 +206,11 @@ public:
 		size_t dimensionality;
 		multi_img::Value minval;
 		multi_img::Value binsize;
-		bool illuminant_correction;
 		const std::vector<multi_img::Value> &illuminant;
 		const std::vector<BinSet> &sets;
 		const binindex &index;
 		GLfloat *varr;
 	};
-
-	Compute();
 };
 
 #endif // COMPUTE_H

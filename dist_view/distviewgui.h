@@ -47,6 +47,7 @@ public slots:
 
 	// from our GUI
 	void setAlpha(int alpha);
+	void setBinLabel(int n);
 	void setBinCount(int n);
 	void showLimiterMenu();
 
@@ -62,15 +63,15 @@ signals:
 	void requestBinCount(representation::t type, int bins);
 
 	// from controller to GUI elements
-	void newIlluminant(cv::Mat1f illum);
+	void newIlluminantCurve(QVector<multi_img::Value>);
 	void toggleIlluminationShown(bool show);
-	void toggleIlluminantApplied(bool applied);
+	void newIlluminantApplied(QVector<multi_img::Value>);
 
 protected:
 	// initialize target, vp, ui::gv
-	QGraphicsProxyWidget *initVP();
+	void initVP();
 	// initialize vc, uivc
-	void initVC(QGraphicsProxyWidget *proxy, representation::t type);
+	void initVC(representation::t type);
 	// initialize topbar, title
 	void initTop();
 	// (re-)create the menu according to labels
@@ -83,7 +84,6 @@ protected:
 	Ui::ViewportControl *uivc;
 	Viewport *vp;
 	AutohideWidget *vc;
-	QGLWidget *target;
 
 	QVector<QColor> labelColors;
 	QMenu limiterMenu;

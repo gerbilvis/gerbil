@@ -1,15 +1,19 @@
-#include "controller.h"
+#include "controller/controller.h"
+#include "multi_img.h"
 
 #include <opencv2/gpu/gpu.hpp>
 #include <opencv2/core/core.hpp>
 #include <opencv2/imgproc/imgproc.hpp>
 #include <opencv2/highgui/highgui.hpp>
 
+#include <QApplication>
+#include <QIcon>
 #include <QGLFormat>
 #include <QGLFramebufferObject>
 #include <QMessageBox>
-#include <QApplication>
 #include <QFileDialog>
+#include <QPushButton>
+
 #include <iostream>
 #include <string>
 
@@ -261,11 +265,16 @@ int main(int argc, char **argv)
 {
 	// start qt before we try showing dialogs or use QGLFormat
 	QApplication app(argc, argv);
+
+	// setup our custom icon theme if there is no system theme (OS X, Windows)
+	if (QIcon::themeName().isEmpty())
+		QIcon::setThemeName("Gerbil");
+
 	init_opencv();
 	init_cuda();
 	if (!test_compatibility()) {
 		// TODO: window?
-		std::cerr << "Unfortunately the machine does not meet minimal"
+		std::cerr << "Unfortunately the machine does not meet minimal "
 					 "requirements to launch Gerbil." << std::endl;
 		return 3;
 	}
@@ -297,6 +306,11 @@ int main(int argc, char **argv)
 
 	// create controller
 	Controller chief(filename, limited_mode, labelfile);
+
+	/* debug focus
+	app.connect(&app, SIGNAL(focusChanged(QWidget*, QWidget*)),
+			&chief, SLOT(focusChange(QWidget*, QWidget*)));
+	*/
 
 	// run Qt event loop
 	return app.exec();

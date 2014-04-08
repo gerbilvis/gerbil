@@ -10,6 +10,8 @@
 #include <tbb/partitioner.h>
 #include <tbb/parallel_for.h>
 
+#include <gerbil_gui_debug.h>
+
 #define REUSE_THRESHOLD 0.1
 
 
@@ -35,18 +37,19 @@ private:
 	std::vector<BinSet> &sets;
 };
 
-#include <opencv2/highgui/highgui.hpp>
-
 bool DistviewBinsTbb::run()
 {
 	vole::Stopwatch watch;
 
-	//cv::imwrite("/tmp/mask.png", mask);
+	// usable for debugging: cv::imwrite("/tmp/mask.png", mask);
 	bool reuse = ((!add.empty() || !sub.empty()) && !inplace);
-	bool keepOldContext = false;
+	bool keepOldContext = args.valid;
 	if (reuse) {
-		keepOldContext = ((fabs(args.minval) * REUSE_THRESHOLD) >= (fabs(args.minval - (*multi)->minval))) &&
-			((fabs(args.maxval) * REUSE_THRESHOLD) >= (fabs(args.maxval - (*multi)->maxval)));
+		/* test if minval / maxval differ too much to re-use data */
+		keepOldContext = ((fabs(args.minval) * REUSE_THRESHOLD) >=
+						  (fabs(args.minval - (*multi)->minval))) &&
+			((fabs(args.maxval) * REUSE_THRESHOLD) >=
+			 (fabs(args.maxval - (*multi)->maxval)));
 		if (!keepOldContext) {
 			reuse = false;
 			add.clear();
@@ -58,84 +61,51 @@ bool DistviewBinsTbb::run()
 	SharedDataSwapLock current_lock(current->mutex, boost::defer_lock_t());
 	if (reuse) {
 		SharedDataSwapLock temp_wlock(temp->mutex);
-		assert(multi);
-		result = temp->swap(NULL);
+		result = &(**temp);
+		// make sure we own the data now
+		temp->release();
 		if (!result) {
+			// copy-over current binset for editing
 			result = new std::vector<BinSet>(**current);
-		} else {
-			for (int i = result->size(); i < colors.size(); ++i) {
-				result->push_back(BinSet(colors[i], (*multi)->size()));
-			}
 		}
 	} else if (inplace) {
 		current_lock.lock();
-		assert(multi);
+		// operate on current binset
 		result = &(**current);
-		for (int i = result->size(); i < colors.size(); ++i) {
-			result->push_back(BinSet(colors[i], (*multi)->size()));
-		}
 	} else {
+		// we start fresh, so empty binset, add all pixels
 		result = new std::vector<BinSet>();
-		assert(multi);
-		for (int i = 0; i < colors.size(); ++i) {
-			result->push_back(BinSet(colors[i], (*multi)->size()));
-		}
 		add.push_back(cv::Rect(0, 0, (*multi)->width, (*multi)->height));
 	}
 
-	if (!args.dimensionalityValid) {
-		if (!keepOldContext)
-			args.dimensionality = (*multi)->size();
-		args.dimensionalityValid = true;
+	// create (additional) binsets
+	for (int i = result->size(); i < colors.size(); ++i) {
+		result->push_back(BinSet(colors[i], (*multi)->size()));
 	}
 
-	if (!args.metaValid) {
-		if (!keepOldContext)
-			args.meta = (*multi)->meta;
-		args.metaValid = true;
-	}
-
-	if (!args.labelsValid) {
-		if (!keepOldContext) {
-			args.labels.resize((*multi)->size());
-			for (unsigned int i = 0; i < (*multi)->size(); ++i) {
-				if (!(*multi)->meta[i].empty)
-					args.labels[i].setNum((*multi)->meta[i].center);
-			}
-		}
-		args.labelsValid = true;
-	}
-
-	if (!args.binsizeValid) {
-		if (!keepOldContext)
-			args.binsize = ((*multi)->maxval - (*multi)->minval) / (multi_img::Value)(args.nbins - 1);
-		args.binsizeValid = true;
-	}
-
-	if (!args.minvalValid) {
-		if (!keepOldContext)
-			args.minval = (*multi)->minval;
-		args.minvalValid = true;
-	}
-
-	if (!args.maxvalValid) {
-		if (!keepOldContext)
-			args.maxval = (*multi)->maxval;
-		args.maxvalValid = true;
-	}
+	// ensure up-to-date image metadata in context
+	if (!keepOldContext)
+		updateContext();
 
 	std::vector<cv::Rect>::iterator it;
+	/* substract pixels from bins */
 	for (it = sub.begin(); it != sub.end(); ++it) {
-		Accumulate substract(true, **multi, labels, mask, args.nbins, args.binsize, args.minval, args.ignoreLabels, illuminant, *result);
+		Accumulate substract(true, **multi, labels, mask, args.nbins,
+							 args.binsize, args.minval, args.ignoreLabels,
+							 illuminant, *result);
 		tbb::parallel_for(
-			tbb::blocked_range2d<int>(it->y, it->y + it->height, it->x, it->x + it->width),
+			tbb::blocked_range2d<int>(it->y, it->y + it->height,
+									  it->x, it->x + it->width),
 				substract, tbb::auto_partitioner(), stopper);
 	}
+	/* add pixels to bins */
 	for (it = add.begin(); it != add.end(); ++it) {
 		Accumulate add(
-			false, **multi, labels, mask, args.nbins, args.binsize, args.minval, args.ignoreLabels, illuminant, *result);
+			false, **multi, labels, mask, args.nbins, args.binsize,
+					args.minval, args.ignoreLabels, illuminant, *result);
 		tbb::parallel_for(
-			tbb::blocked_range2d<int>(it->y, it->y + it->height, it->x, it->x + it->width),
+			tbb::blocked_range2d<int>(it->y, it->y + it->height,
+									  it->x, it->x + it->width),
 				add, tbb::auto_partitioner(), stopper);
 	}
 
@@ -143,23 +113,45 @@ bool DistviewBinsTbb::run()
 				.arg(representation::str(args.type))
 				.arg(args.nbins).toStdString());
 
+	/* throwaway result if something wrong */
 	if (stopper.is_group_execution_cancelled()) {
-		delete result;
+		if (!inplace)
+			delete result; // TODO
 		return false;
-	} else {
-		if (reuse && !apply) {
-			SharedDataSwapLock temp_wlock(temp->mutex);
-			temp->swap(result);
-		} else if (inplace) {
-			current_lock.unlock();
-		} else {
-			SharedDataSwapLock context_wlock(context->mutex);
-			SharedDataSwapLock current_wlock(current->mutex);
-			**context = args;
-			delete current->swap(result);
-		}
-		return true;
 	}
+
+	if (reuse && !apply) {
+		SharedDataSwapLock temp_wlock(temp->mutex);
+		temp->replace(result);
+	} else if (inplace) {
+		current_lock.unlock();
+	} else {
+		SharedDataSwapLock context_wlock(context->mutex);
+		SharedDataSwapLock current_wlock(current->mutex);
+		**context = args;
+		current->replace(result);
+	}
+	return true;
+}
+
+void DistviewBinsTbb::updateContext()
+{
+	args.dimensionality = (*multi)->size();
+	args.meta = (*multi)->meta;
+	args.xlabels.resize((*multi)->size());
+	for (unsigned int i = 0; i < (*multi)->size(); ++i) {
+		if (!(*multi)->meta[i].empty) {
+			args.xlabels[i].setNum((*multi)->meta[i].center, 'g', 4);
+		} else {
+			//GGDBGM(i << " meta is empty. "<< args.type << endl);
+		}
+	}
+	args.binsize = ((*multi)->maxval - (*multi)->minval)
+					/ (multi_img::Value)(args.nbins - 1);
+	args.minval = (*multi)->minval;
+	args.maxval = (*multi)->maxval;
+
+	args.valid = true;
 }
 
 void Accumulate::operator()(const tbb::blocked_range2d<int> &r) const
@@ -177,7 +169,7 @@ void Accumulate::operator()(const tbb::blocked_range2d<int> &r) const
 			BinSet &s = sets[label];
 
 			BinSet::HashKey hashkey(boost::extents[multi.size()]);
-			for (int d = 0; d < multi.size(); ++d) {
+            for (unsigned int d = 0; d < multi.size(); ++d) {
 				int pos = floor(Compute::curpos(
 									pixel[d], d, minval, binsize, illuminant));
 				pos = std::max(pos, 0); pos = std::min(pos, nbins-1);

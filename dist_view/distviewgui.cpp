@@ -1,6 +1,6 @@
 #include "distviewgui.h"
-#include "distviewcontroller.h"
-#include "autohidewidget.h"
+#include "controller/distviewcontroller.h"
+#include "widgets/autohidewidget.h"
 
 DistViewGUI::DistViewGUI(representation::t type)
 	: type(type)
@@ -13,47 +13,38 @@ DistViewGUI::DistViewGUI(representation::t type)
 	ui->setupUi(frame);
 
 	// create viewport
-	QGraphicsProxyWidget *proxy = initVP();
+	initVP();
 
 	// create controller widget that will reside inside viewport
-	initVC(proxy, type);
+	initVC(type);
 
 	// connect and initialize topBar
 	initTop();
 }
 
-QGraphicsProxyWidget* DistViewGUI::initVP()
+void DistViewGUI::initVP()
 {
-	// create target widget that is rendered into (handled by ui->gv)
-	target = new QGLWidget(QGLFormat(QGL::SampleBuffers));
+	// create target widget
+	QGLWidget *target = ui->gv->init();
 
 	// create viewport. The viewport is a GraphicsScene
 	vp = new Viewport(type, target);
-	QGraphicsProxyWidget *proxy = vp->createControlProxy();
-
-	// attach everything to our member widget == QGraphicsView
-	ui->gv->setViewport(target);
-	ui->gv->setViewportUpdateMode(QGraphicsView::FullViewportUpdate);
 	ui->gv->setScene(vp);
-
-	return proxy;
 }
 
-void DistViewGUI::initVC(QGraphicsProxyWidget *proxy, representation::t type)
+void DistViewGUI::initVC(representation::t type)
 {
+	/* create VC, apply UI to it, then add to GV */
 	vc = new AutohideWidget();
 	uivc = new Ui::ViewportControl();
 	uivc->setupUi(vc);
-
-	// connect widget with graphicsscene
-	vc->initProxy(proxy);
+	ui->gv->addWidget(AutohideWidget::LEFT, vc);
 
 	/* we are ready to connect signals/slots */
-	connect(vp, SIGNAL(scrollInControl()),
-			vc, SLOT(scrollIn()));
-	connect(vp, SIGNAL(scrollOutControl()),
-			vc, SLOT(scrollOut()));
 
+	// let user see how many bins he will end up with
+	connect(uivc->binSlider, SIGNAL(sliderMoved(int)),
+			this, SLOT(setBinLabel(int)));
 	connect(uivc->binSlider, SIGNAL(valueChanged(int)),
 			this, SLOT(setBinCount(int)));
 	connect(uivc->alphaSlider, SIGNAL(valueChanged(int)),
@@ -130,13 +121,14 @@ void DistViewGUI::initSignals(DistViewController *chief)
 	connect(vp, SIGNAL(remSelectionRequested()),
 			chief, SLOT(remHighlightFromLabel()));
 
+
 	// illumination correction
-	connect(chief, SIGNAL(newIlluminant(cv::Mat1f)),
-			vp, SLOT(changeIlluminant(cv::Mat1f)));
-	connect(chief, SIGNAL(toggleIlluminantApplied(bool)),
-			vp, SLOT(setIlluminantIsApplied(bool)));
-	connect(chief, SIGNAL(toggleIlluminationShown(bool)),
+	connect(this, SIGNAL(newIlluminantCurve(QVector<multi_img::Value>)),
+			vp, SLOT(changeIlluminantCurve(QVector<multi_img::Value>)));
+	connect(this, SIGNAL(toggleIlluminationShown(bool)),
 			vp, SLOT(setIlluminationCurveShown(bool)));
+	connect(this, SIGNAL(newIlluminantApplied(QVector<multi_img::Value>)),
+			vp, SLOT(setAppliedIlluminant(QVector<multi_img::Value>)));
 }
 
 void DistViewGUI::setEnabled(bool enabled)
@@ -170,7 +162,7 @@ void DistViewGUI::toggleFold()
 		/** SHOW **/
 
 		// unfold GUI and set size policy for proper arrangement
-		ui->gv->setShown(true);
+        ui->gv->setVisible(true);
 		ui->topBar->unfold();
 		QSizePolicy pol(QSizePolicy::Preferred, QSizePolicy::Expanding);
 		pol.setVerticalStretch(1);
@@ -204,9 +196,14 @@ void DistViewGUI::setAlpha(int alpha)
 	vp->setAlpha(realalpha);
 }
 
-void DistViewGUI::setBinCount(int n)
+void DistViewGUI::setBinLabel(int n)
 {
 	uivc->binLabel->setText(QString("%1 bins").arg(n));
+}
+
+void DistViewGUI::setBinCount(int n)
+{
+	setBinLabel(n);
 	emit requestBinCount(type, n);
 }
 
@@ -241,7 +238,7 @@ void DistViewGUI::showLimiterMenu()
 	// map to scene coordinates
 	QPoint scenepoint = uivc->limiterMenuButton->mapToGlobal(QPoint(0, 0));
 	// map to screen coordinates
-	QPoint screenpoint = target->mapToGlobal(scenepoint);
+	QPoint screenpoint = ui->gv->mapToGlobal(scenepoint);
 
 	QAction *a = limiterMenu.exec(screenpoint);
 	if (!a)

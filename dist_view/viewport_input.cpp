@@ -33,8 +33,8 @@ bool Viewport::updateXY(int sel, int bin)
 	/* second: handle bin -> intensity highlight */
 
 	/* correct y for illuminant */
-	if (!illuminant.empty() && illuminant_correction)
-		bin = std::floor(bin / illuminant.at(sel) + 0.5f);
+	if (!illuminantAppl.empty())
+		bin = std::floor(bin / illuminantAppl.at(sel) + 0.5f);
 
 	if (bin >= 0 && bin < (*ctx)->nbins) {
 		if (!limiterMode && (hover != bin)) {
@@ -87,20 +87,11 @@ void Viewport::mouseMoveEvent(QGraphicsSceneMouseEvent *event)
 		buffers[0].renderTimer.stop();
 		buffers[1].renderTimer.stop();
 		scrollTimer.start(10);
-
-	} else {
-		/* access to control widget */
-		if (event->scenePos().x() < 20) {
-			emit scrollInControl();
-		} else if (event->scenePos().x() >
-				 controlItem->boundingRect().right() + 10) {
-			emit scrollOutControl();
-		}
 	}
 
 	if (needTextureUpdate) {
 		// calls update()
-		updateTextures(RM_SKIP, limiterMode ? RM_STEP : RM_FULL);
+		updateBuffers(RM_SKIP, limiterMode ? RM_STEP : RM_FULL);
 	} else if (needUpdate) {
 		update();
 	}
@@ -167,7 +158,7 @@ void Viewport::wheelEvent(QGraphicsSceneWheelEvent *event)
 	/* TODO: make sure that we use full space */
 
 	updateModelview();
-	updateTextures();
+	updateBuffers();
 }
 
 void Viewport::keyPressEvent(QKeyEvent *event)
@@ -241,15 +232,27 @@ void Viewport::keyPressEvent(QKeyEvent *event)
 		} else {
 			startNoHQ();
 			// deliberately make display worse for user to see effect
-			updateTextures();
+			updateBuffers();
 		}
+		break;
+	case Qt::Key_L:
+		drawLog = !drawLog;
+		updateBuffers();
+	case Qt::Key_F:
+		switch (bufferFormat) {
+		case RGBA8: bufferFormat = RGBA16F; break;
+		case RGBA16F: bufferFormat = RGBA32F; break;
+		case RGBA32F: bufferFormat = RGBA8; break;
+		}
+		resizeScene(); // will init and update buffers
 		break;
 	case Qt::Key_M:
 		drawMeans = !drawMeans;
 		rebuild();
+		break;
 	}
 
 	if (highlightAltered) {
-		updateTextures(RM_SKIP, RM_FULL);
+		updateBuffers(RM_SKIP, RM_FULL);
 	}
 }

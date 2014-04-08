@@ -1,4 +1,6 @@
 #include "roidock.h"
+#include "../widgets/roiview.h"
+#include "../widgets/autohidewidget.h"
 
 #include <iostream>
 #include "../gerbil_gui_debug.h"
@@ -18,9 +20,9 @@ RoiDock::RoiDock(QWidget *parent) :
 	initUi();
 }
 
-const QRect& RoiDock::getRoi() const
+QRect RoiDock::getRoi() const
 {
-	return roiView->roi;
+	return roiView->roi();
 }
 
 void RoiDock::setRoi(const cv::Rect &roi)
@@ -30,26 +32,64 @@ void RoiDock::setRoi(const cv::Rect &roi)
 		return;
 	}
 
-	curRoi = CVRect2QRect(roi);
+	// set curRoi, reflect it in GUI
+	processNewSelection(CVRect2QRect(roi), true);
+
+	// remember old selection for reset
 	oldRoi = curRoi;
-	roiView->roi = CVRect2QRect(roi);
-	roiView->update();
-	processNewSelection(CVRect2QRect(roi));
+}
+
+void RoiDock::setMaxBands(int bands)
+{
+	/* init bandsSlider according to maximum */
+	bandsSlider->setMinimum(3);
+	bandsSlider->setMaximum(bands);
+	// default is no interpolation
+	bandsSlider->setValue(bands);
 }
 
 void RoiDock::initUi()
 {
-	connect(roiButtons, SIGNAL(clicked(QAbstractButton*)),
+	// initialize ROI view
+	view->init();
+	roiView = new ROIView();
+	view->setScene(roiView);
+	connect(roiView, SIGNAL(newContentRect(QRect)),
+			view, SLOT(fitContentRect(QRect)));
+
+	// initialize button row
+	btn = new AutohideWidget();
+	uibtn = new Ui::RoiDockButtonUI();
+	uibtn->setupUi(btn);
+	roiView->offBottom = AutohideWidget::OutOffset;
+	view->addWidget(AutohideWidget::BOTTOM, btn);
+
+	/* init signals */
+	connect(roiView, SIGNAL(newSizeHint(QSize)),
+			view, SLOT(updateSizeHint(QSize)));
+
+	connect(uibtn->roiButtons, SIGNAL(clicked(QAbstractButton*)),
 			 this, SLOT(processRoiButtonsClicked(QAbstractButton*)));
 	connect(roiView, SIGNAL(newSelection(const QRect&)),
 			this, SLOT(processNewSelection(const QRect&)));
+	connect(bandsSlider, SIGNAL(valueChanged(int)),
+			this, SLOT(processBandsSliderChange(int)));
+	connect(bandsSlider, SIGNAL(sliderMoved(int)),
+			this, SLOT(processBandsSliderChange(int)));
 }
 
+void RoiDock::processBandsSliderChange(int b)
+{
+	bandsLabel->setText(QString("%1 bands").arg(b));
+	if (!bandsSlider->isSliderDown()) {
+		emit specRescaleRequested(b);
+	}
+}
 
 void RoiDock::processRoiButtonsClicked(QAbstractButton *sender)
 {
-	QDialogButtonBox::ButtonRole role = roiButtons->buttonRole(sender);
-	roiButtons->setDisabled(true);
+	QDialogButtonBox::ButtonRole role = uibtn->roiButtons->buttonRole(sender);
+	uibtn->roiButtons->setDisabled(true);
 	if (role == QDialogButtonBox::ResetRole) {
 		resetRoi();
 	} else if (role == QDialogButtonBox::ApplyRole) {
@@ -57,10 +97,16 @@ void RoiDock::processRoiButtonsClicked(QAbstractButton *sender)
 	}
 }
 
-void RoiDock::processNewSelection(const QRect &roi)
+void RoiDock::processNewSelection(const QRect &roi, bool internal)
 {
 	curRoi = roi;
-	roiButtons->setEnabled(true);
+	if (internal) {
+		// also update the roiView
+		roiView->setROI(roi);
+	} else {
+		// we have something to apply / reset from
+		uibtn->roiButtons->setEnabled(true);
+	}
 
 	QString title("<b>ROI:</b> %1, %2 - %3, %4 (%5x%6)");
 	title = title.arg(roi.x()).arg(roi.y()).arg(roi.right()).arg(roi.bottom())
@@ -80,9 +126,7 @@ void RoiDock::applyRoi()
 void RoiDock::resetRoi()
 {
 	curRoi = oldRoi;
-	roiView->roi = curRoi;
-	processNewSelection(curRoi);
-	roiView->update();
+	processNewSelection(curRoi, true);
 }
 
 
