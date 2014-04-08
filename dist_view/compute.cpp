@@ -61,6 +61,7 @@ void Compute::binTester(const multi_img &image, const BinSet &set,
 					multi_img::Pixel(image.size()),
 					multi_img::Pixel(image.size()) };
 				*/
+				double rmse[2] = { 0., 0. };
 				for (int d = 0; d < image.size(); ++d) {
 					double val[2];
 					val[0] = b.means[d] / b.weight;
@@ -69,9 +70,12 @@ void Compute::binTester(const multi_img &image, const BinSet &set,
 					for (int i = 0; i < 2; ++i) {
 						double dist = std::fabs(val[i] - p[d]);
 						accum_mad[i] = std::max(accum_mad[i], dist);
-						accum_rmse[i] += dist;//*dist;
+						rmse[i] += dist*dist;
 					}
 				}
+				for (int i = 0; i < 2; ++i)
+					accum_rmse[i] += std::sqrt(rmse[i] / image.size());
+
 				//double dist = distfun->getSimilarity(p2, response[i]);
 			} else {
 				std::cerr << "Pixel " << x << "." << y << " not found!"
@@ -80,17 +84,18 @@ void Compute::binTester(const multi_img &image, const BinSet &set,
 			ac.release();
 		}
 	}
+	const char* str[] = { "avg", "bin" };
 	for (int i = 0; i < 2; ++i) {
-		accum_rmse[i] /= (double)(image.width*image.height*image.size());
+		accum_rmse[i] /= (double)(image.width*image.height);
 		//accum_rmse[i] = std::sqrt(accum_rmse[i]);
 
 		// normalize with theoretical bounds -- NRMSE, AAD
 		double factor = 1./(image.maxval - image.minval);
 		accum_mad[i] *= factor;
 		accum_rmse[i] *= factor;
-		std::cerr << "Accumulated NMAD(" << i <<"):  " << accum_mad[i]*100.
+		std::cerr << "Accumulated NMAD(" << str[i] <<"):  " << accum_mad[i]*100.
 				  << " %" << std::endl;
-		std::cerr << "Accumulated NRMSE(" << i <<"): " << accum_rmse[i]*100.
+		std::cerr << "Accumulated NRMSE(" << str[i] <<"): " << accum_rmse[i]*100.
 				  << " %" << std::endl;
 	}
 }

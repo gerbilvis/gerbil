@@ -146,6 +146,8 @@ protected slots:
 	void processSubscribeImageBand(QObject *subscriber, representation::t repr, int bandId);
 	void processUnsubscribeImageBand(QObject *subscriber, representation::t repr, int bandId);
 
+	void benchmark();
+
 protected:
 	// connect models with gui
 	void initImage();

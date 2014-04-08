@@ -15,6 +15,7 @@
 #include "gerbil_gui_debug.h"
 
 #include <boost/ref.hpp>
+#include <QShortcut>
 #include <cstdlib> // for exit()
 
 // for DEBUG
@@ -47,6 +48,10 @@ Controller::Controller(const std::string &filename, bool limited_mode,
 	// create gui (perform initUI before connecting signals!)
 	window = new MainWindow(limited_mode);
 	window->initUI(filename);
+
+	// start benchmarking process by shortcut
+	QShortcut *scr = new QShortcut(Qt::CTRL + Qt::Key_B, window);
+	connect(scr, SIGNAL(activated()), this, SLOT(benchmark()));
 
 	// initialize models
 	initImage();
@@ -361,6 +366,24 @@ void Controller::processSubscribeImageBand(QObject *subscriber, representation::
 void Controller::processUnsubscribeImageBand(QObject *subscriber, representation::t repr, int bandId)
 {
 	imageBandSubs.erase(ImageBandSubscription(subscriber, repr, bandId));
+}
+
+void Controller::benchmark()
+{
+	static int binCount = 0;
+
+	if (binCount == 0) {
+		std::cout << " ======== Starting tests ========== " << std::endl;
+		binCount = 255;
+	} else if (binCount == 2) {
+		std::cout << " ======== Stopping tests ========== " << std::endl;
+		return;
+	} else {
+		binCount--;
+	}
+	std::cout << " ======== binCount = " << binCount << std::endl;
+	dvc->changeBinCount(representation::IMG, binCount);
+	QTimer::singleShot(1000, this, SLOT(benchmark()));
 }
 
 void Controller::startQueue()
