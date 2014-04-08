@@ -1,6 +1,6 @@
 #include "compute.h"
 
-#include <sm_factory.h>
+//#include <sm_factory.h>
 #include <stopwatch.h>
 #include <QString>
 
@@ -33,12 +33,13 @@ void Compute::binTester(const multi_img &image, const BinSet &set,
 	// hack: don't use this with enabled illuminant
 	std::vector<multi_img::Value> illuminant;
 
-	vole::SMConfig distconfig;
+/*	vole::SMConfig distconfig;
 	distconfig.measure = vole::EUCLIDEAN;
 	vole::SimilarityMeasure<multi_img::Value> *distfun;
 	distfun = vole::SMFactory<multi_img::Value>::spawn(distconfig);
+*/
 
-	double accum_mad[2] = {}, accum_rmse[2] = {};
+	double accum_mad[2] = { 0., 0. }, accum_rmse[2] = { 0., 0. };
 	for (int y = 0; y < image.height; ++y) {
 		for (int x = 0; x < image.width; ++x) {
 			const multi_img::Pixel &p = image(y, x);
@@ -52,29 +53,26 @@ void Compute::binTester(const multi_img &image, const BinSet &set,
 				hashkey[d] = (unsigned char)pos;
 			}
 
-			/* align surrogate pixel */
-			multi_img::Pixel p2 = p;
-			for (int d = 0; d < image.size(); ++d) {
-				p2[d] = (p2[d] - ctx.minval) / ctx.binsize;
-			}
-
 			/* now find in binset */
 			BinSet::HashMap::accessor ac;
 			if (set.bins.find(ac, hashkey)) {
 				const Bin &b = ac->second;
-				multi_img::Pixel response[2] = {
+				/*multi_img::Pixel response[2] = {
 					multi_img::Pixel(image.size()),
 					multi_img::Pixel(image.size()) };
+				*/
 				for (int d = 0; d < image.size(); ++d) {
-					response[0][d] = ((b.means[d] / b.weight) - ctx.minval)
-									  / ctx.binsize;
-					response[1][d] = (unsigned char)hashkey[d] + 0.5;
+					double val[2];
+					val[0] = b.means[d] / b.weight;
+					val[1] = ((double)hashkey[d] + 0.5 + ctx.minval)
+							* ctx.binsize;
+					for (int i = 0; i < 2; ++i) {
+						double dist = std::fabs(val[i] - p[d]);
+						accum_mad[i] = std::max(accum_mad[i], dist);
+						accum_rmse[i] += dist;//*dist;
+					}
 				}
-				for (int i = 0; i < 2; ++i) {
-					double dist = distfun->getSimilarity(p2, response[i]);
-					accum_mad[i] = std::max(accum_mad[i], dist);
-					accum_rmse[i] += dist;
-				}
+				//double dist = distfun->getSimilarity(p2, response[i]);
 			} else {
 				std::cerr << "Pixel " << x << "." << y << " not found!"
 						  << std::endl;
@@ -83,15 +81,16 @@ void Compute::binTester(const multi_img &image, const BinSet &set,
 		}
 	}
 	for (int i = 0; i < 2; ++i) {
-		accum_rmse[i] /= (double)(image.width*image.height);
+		accum_rmse[i] /= (double)(image.width*image.height*image.size());
+		//accum_rmse[i] = std::sqrt(accum_rmse[i]);
 
 		// normalize with theoretical bounds -- NRMSE, AAD
-		double factor = 1./((image.maxval - image.minval) / ctx.binsize);
+		double factor = 1./(image.maxval - image.minval);
 		accum_mad[i] *= factor;
 		accum_rmse[i] *= factor;
-		std::cerr << "Accumulated MAD(" << i <<"):  " << accum_mad[i]*100.
+		std::cerr << "Accumulated NMAD(" << i <<"):  " << accum_mad[i]*100.
 				  << " %" << std::endl;
-		std::cerr << "Accumulated RMSE(" << i <<"): " << accum_rmse[i]*100.
+		std::cerr << "Accumulated NRMSE(" << i <<"): " << accum_rmse[i]*100.
 				  << " %" << std::endl;
 	}
 }
