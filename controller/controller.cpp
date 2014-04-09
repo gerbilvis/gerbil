@@ -370,18 +370,19 @@ void Controller::processUnsubscribeImageBand(QObject *subscriber, representation
 
 void Controller::benchmark()
 {
-	static int binCount = 0;
+	static int binCount = 1;
 
-	if (binCount == 0) {
+	if (binCount == 1) {
 		std::cout << " ======== Starting tests ========== " << std::endl;
-		binCount = 255;
-	} else if (binCount == 2) {
+		binCount = 7;
+	} else if (binCount == 255) {
 		std::cout << " ======== Stopping tests ========== " << std::endl;
 		return;
 	} else {
-		binCount--;
+		binCount++;
 	}
 	std::cout << " ======== binCount = " << binCount << std::endl;
+	std::cerr << " ======== binCount = " << binCount << std::endl;
 	dvc->changeBinCount(representation::IMG, binCount);
 	QTimer::singleShot(1000, this, SLOT(benchmark()));
 }

@@ -93,10 +93,12 @@ void Compute::binTester(const multi_img &image, const BinSet &set,
 		double factor = 1./(image.maxval - image.minval);
 		accum_mad[i] *= factor;
 		accum_rmse[i] *= factor;
-		std::cerr << "Accumulated NMAD(" << str[i] <<"):  " << accum_mad[i]*100.
-				  << " %" << std::endl;
-		std::cerr << "Accumulated NRMSE(" << str[i] <<"): " << accum_rmse[i]*100.
-				  << " %" << std::endl;
+		std::cerr << "Accumulated NMAD(" << str[i] <<"):  " << accum_mad[i];
+				//*100.  << " %"
+		std::cerr << std::endl;
+		std::cerr << "Accumulated NRMSE(" << str[i] <<"): " << accum_rmse[i];
+				//*100.  << " %"
+		std::cerr << std::endl;
 	}
 }
 
