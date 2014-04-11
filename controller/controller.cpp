@@ -370,11 +370,11 @@ void Controller::processUnsubscribeImageBand(QObject *subscriber, representation
 
 void Controller::benchmark()
 {
-	static int binCount = 1;
+	static int binCount = 0;
 
-	if (binCount == 1) {
+	if (binCount == 0) {
 		std::cout << " ======== Starting tests ========== " << std::endl;
-		binCount = 7;
+		binCount = 8;
 	} else if (binCount == 255) {
 		std::cout << " ======== Stopping tests ========== " << std::endl;
 		return;

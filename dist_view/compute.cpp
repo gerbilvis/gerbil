@@ -33,12 +33,6 @@ void Compute::binTester(const multi_img &image, const BinSet &set,
 	// hack: don't use this with enabled illuminant
 	std::vector<multi_img::Value> illuminant;
 
-/*	vole::SMConfig distconfig;
-	distconfig.measure = vole::EUCLIDEAN;
-	vole::SimilarityMeasure<multi_img::Value> *distfun;
-	distfun = vole::SMFactory<multi_img::Value>::spawn(distconfig);
-*/
-
 	double accum_mad[2] = { 0., 0. }, accum_rmse[2] = { 0., 0. };
 	for (int y = 0; y < image.height; ++y) {
 		for (int x = 0; x < image.width; ++x) {
@@ -75,8 +69,6 @@ void Compute::binTester(const multi_img &image, const BinSet &set,
 				}
 				for (int i = 0; i < 2; ++i)
 					accum_rmse[i] += std::sqrt(rmse[i] / image.size());
-
-				//double dist = distfun->getSimilarity(p2, response[i]);
 			} else {
 				std::cerr << "Pixel " << x << "." << y << " not found!"
 						  << std::endl;
@@ -87,12 +79,12 @@ void Compute::binTester(const multi_img &image, const BinSet &set,
 	const char* str[] = { "avg", "bin" };
 	for (int i = 0; i < 2; ++i) {
 		accum_rmse[i] /= (double)(image.width*image.height);
-		//accum_rmse[i] = std::sqrt(accum_rmse[i]);
 
-		// normalize with theoretical bounds -- NRMSE, AAD
+		// normalization factor
 		double factor = 1./(image.maxval - image.minval);
 		accum_mad[i] *= factor;
 		accum_rmse[i] *= factor;
+
 		std::cerr << "Accumulated NMAD(" << str[i] <<"):  " << accum_mad[i];
 				//*100.  << " %"
 		std::cerr << std::endl;
