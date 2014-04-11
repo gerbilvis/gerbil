@@ -33,7 +33,9 @@ struct FalseColoring {
 			break;
 		case PCAGRAD:
 		case SOMGRAD:
+#ifdef WITH_GRAD
 			return type == representation::GRAD;
+#endif
 			break;
 		default:
             assert(false); // this should not happen

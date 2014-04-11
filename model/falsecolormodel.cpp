@@ -44,12 +44,16 @@ void FalseColorModel::setMultiImg(representation::t type,
 {
 	// in the future, we might be interested in the other ones as well.
 	// currently, we don't process other types, so "warn" the caller
+#ifdef WITH_GRAD
 	assert(type == representation::IMG || type == representation::GRAD);
+#endif
 
 	if (type == representation::IMG)
 		this->shared_img = shared_img;
+#ifdef WITH_GRAD
 	else if (type == representation::GRAD)
 		this->shared_grad = shared_img;
+#endif
 
 	resetCache();
 }
@@ -95,7 +99,9 @@ void FalseColorModel::requestColoring(FalseColoring::Type coloringType, bool rec
 	bool abort = false;
 	{
 		SharedDataLock  lock_img(shared_img->mutex);
+#ifdef WITH_GRAD
 		SharedDataLock  lock_grad(shared_grad->mutex);
+#endif
 		if (!shared_img || !shared_grad ||
 			(**shared_img).empty() || (**shared_grad).empty())
 			abort = true;

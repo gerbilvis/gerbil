@@ -159,7 +159,9 @@ void Controller::initImage()
 void Controller::initFalseColor()
 {
 	fm->setMultiImg(representation::IMG, im->getImage(representation::IMG));
+#ifdef WITH_GRAD
 	fm->setMultiImg(representation::GRAD, im->getImage(representation::GRAD));
+#endif;
 
 	connect(im, SIGNAL(imageUpdate(representation::t,SharedMultiImgPtr)),
 			fm, SLOT(processImageUpdate(representation::t,SharedMultiImgPtr)));
@@ -182,7 +184,9 @@ void Controller::initIlluminant()
 void Controller::initGraphSegmentation()
 {
 	gsm->setMultiImage(representation::IMG, im->getImage(representation::IMG));
+#ifdef WITH_GRAD
 	gsm->setMultiImage(representation::GRAD, im->getImage(representation::GRAD));
+#endif
 
 	connect(gsm, SIGNAL(alterLabelRequested(short,cv::Mat1b,bool)),
 			lm, SLOT(alterLabel(short,cv::Mat1b,bool)));

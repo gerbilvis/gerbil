@@ -5,14 +5,17 @@
 
 // FIXME These macro defs are a temporary workaround to get the upcoming relase
 // functioning. We need to get task processing more efficient in the future.
+//#define WITH_GRAD
 //#define WITH_IMGPCA
 //#define WITH_GRADPCA
-#define REPSIZE 2 // depends on the variables above
+#define REPSIZE 1 // depends on the variables above
 struct representation {
 
 	enum t {
-		IMG = 0,
-		GRAD = 1
+		IMG = 0
+#ifdef WITH_GRAD
+		,GRAD = 1
+#endif
 #ifdef WITH_IMGPCA
 		,IMGPCA = 2
 #endif

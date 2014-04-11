@@ -216,11 +216,18 @@ void Viewport::updateModelview()
 	int htp = yaxisWidth - 6; // left padding for text (legend)
 
 	// if gradient, we discard one unit space intentionally for centering
-	int d = (int)(*ctx)->dimensionality
-			- ((*ctx)->type == representation::GRAD ? 0 : 1);
+	int d = (int)(*ctx)->dimensionality;
+#ifdef WITH_GRAD
+	d -= ((*ctx)->type == representation::GRAD ? 0 : 1);
+#endif
 	qreal w = (wwidth  - 2*hp - htp)/(qreal)(d); // width of one unit
 	qreal h = (wheight - 2*vp - vtp)/(qreal)((*ctx)->nbins); // height of one unit
+
+#ifdef WITH_GRAD
 	int t = ((*ctx)->type == representation::GRAD ? w/2 : 0); // moving half a unit for centering
+#else
+	int t = 0;
+#endif
 
 	modelview.reset();
 	modelview.translate(hp + htp + t, vp + vshift);

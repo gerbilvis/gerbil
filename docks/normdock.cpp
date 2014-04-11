@@ -30,10 +30,14 @@ NormDock::NormDock(QWidget *parent) :
 {
 	// init with zero ranges
 	ranges.insert(representation::IMG, multi_img::Range());
+#ifdef WITH_GRAD
 	ranges.insert(representation::GRAD, multi_img::Range());
+#endif
 
 	modes.insert(representation::IMG, multi_img::NORM_OBSERVED);
+#ifdef WITH_GRAD
 	modes.insert(representation::GRAD, multi_img::NORM_OBSERVED);
+#endif
 
 	setupUi(this);
 	initUi();
@@ -100,9 +104,11 @@ void NormDock::setGuiEnabled(bool enable, TaskType tt)
 
 void NormDock::setNormRange(representation::t type, const multi_img::Range& range)
 {
+#ifdef WITH_GRAD
 	//GGDBGM(type << " " << range << endl);
 	if(!(representation::IMG == type || representation::GRAD == type ))
 		return;
+#endif
 	ranges[type] = range;
 	// update GUI with new values
 	updateGUI();
@@ -110,8 +116,10 @@ void NormDock::setNormRange(representation::t type, const multi_img::Range& rang
 
 void NormDock::setNormMode(representation::t type,multi_img::NormMode mode)
 {
+#ifdef WITH_GRAD
 	if(!(representation::IMG == type || representation::GRAD == type ))
 		return;
+#endif
 	modes[type] = mode;
 	// update GUI with new values
 	updateGUI();
@@ -119,8 +127,10 @@ void NormDock::setNormMode(representation::t type,multi_img::NormMode mode)
 
 void NormDock::setNormTarget(representation::t type)
 {
+#ifdef WITH_GRAD
 	if(!(representation::IMG == type || representation::GRAD == type ))
 		return;
+#endif
 	if(representation::IMG == type) {
 		normIButton->toggle();
 	} else { // GRAD
@@ -143,8 +153,10 @@ void NormDock::updateGUI()
 {
 	if(normIButton->isChecked()) {
 		normTarget = representation::IMG;
+#ifdef WITH_GRAD
 	} else {
 		normTarget = representation::GRAD;
+#endif
 	}
 
 	normModeBox->blockSignals(true);
@@ -165,10 +177,14 @@ void NormDock::updateGUI()
 	} else if (modes[normTarget] == multi_img::NORM_THEORETICAL) {
 		// FIXME assuming image depth is 8-bit always.
 		// HACK
+#ifdef WITH_GRAD
 		if(representation::GRAD == normTarget) {
 			normMinBox->setValue(-5.54);
 			normMaxBox->setValue(5.54);
 		} else { // IMG
+#else
+		{
+#endif
 			normMinBox->setValue(0.);
 			normMaxBox->setValue(255.);
 		}

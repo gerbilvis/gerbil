@@ -142,8 +142,10 @@ void ImageModel::spawn(representation::t type, const cv::Rect &newROI, int bands
 
 	// shortcuts for convenience
 	SharedMultiImgPtr image = map[representation::IMG]->image;
-	SharedMultiImgPtr gradient = map[representation::GRAD]->image;
 // for macro defs see representation.h
+#ifdef WITH_GRAD
+	SharedMultiImgPtr gradient = map[representation::GRAD]->image;
+#endif
 #ifdef WITH_IMGPCA
 	SharedMultiImgPtr imagepca = map[representation::IMGPCA]->image;
 #endif /* WITH_IMGPCA */
@@ -178,6 +180,7 @@ void ImageModel::spawn(representation::t type, const cv::Rect &newROI, int bands
 		queue.push(taskRescale);
 	}
 
+#ifdef WITH_GRAD
 	if (type == representation::GRAD) {
 		if (HAVE_CUDA_GPU  && USE_CUDA_GRADIENT) {
 			BackgroundTaskPtr taskGradient(new GradientCuda(
@@ -189,15 +192,24 @@ void ImageModel::spawn(representation::t type, const cv::Rect &newROI, int bands
 			queue.push(taskGradient);
 		}
 	}
+#endif
 
 	// user-customizable norm range calculation, sets minval/maxval of the image
+#ifdef WITH_GRAD
 	if (type == representation::IMG || type == representation::GRAD)
+#else
+	if (type == representation::IMG)
+#endif
 	{
 		SharedMultiImgPtr target = map[type]->image;
 		SharedMultiImgRangePtr range = map[type]->normRange;
 		multi_img::NormMode mode =  map[type]->normMode;
 		// TODO: a small hack in NormRangeTBB to determine theoretical range
-		int isGRAD = (type == representation::GRAD ? 1 : 0);
+		int isGRAD = 0;
+#ifdef WITH_GRAD
+		if (type == representation::GRAD)
+			isGRAD = 1;
+#endif
 
 		SharedDataLock hlock(range->mutex);
 		//GGDBGM(format("%1% range %2%") %type %**range << endl);
@@ -318,9 +330,11 @@ void ImageModel::processNewImageData(representation::t type, SharedMultiImgPtr i
 	if (representation::IMG == type) {
 		SharedDataLock lock(image->mutex);
 		nBands = (*image)->size();
+#ifdef WITH_GRAD
 	} else if (representation::GRAD == type) {
 		// check consistency of gradient
 		assert((*image)->size() == nBands-1);
+#endif
 	}
 	if (nBandsOld != nBands) {
 		emit numBandsROIChanged(nBands);

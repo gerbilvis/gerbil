@@ -72,7 +72,9 @@ void GraphSegWidget::startGraphseg()
 	if (src == 0) {
 		emit requestGraphseg(representation::IMG, conf, resetLabel);
 	} else if (src == 1) {
+#ifdef WITH_GRAD
 		emit requestGraphseg(representation::GRAD, conf, resetLabel);
+#endif
 	} else {
 		emit requestGraphsegCurBand(conf, resetLabel); // currently shown band
 	}
