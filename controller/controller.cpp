@@ -379,7 +379,7 @@ void Controller::benchmark()
 	if (binCount == 0) {
 		std::cout << " ======== Starting tests ========== " << std::endl;
 		binCount = 8;
-	} else if (binCount == 255) {
+	} else if (binCount == 256) {
 		std::cout << " ======== Stopping tests ========== " << std::endl;
 		return;
 	} else {
