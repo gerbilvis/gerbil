@@ -277,11 +277,11 @@ unsigned int FAMS::DoMSAdaptiveIteration(
 	int    i, j;
 	double dist;
 	std::vector<double> rr(d_, 0.);
-	int nel = (config.use_LSH ? res->size() : n_);
+	int nel = (res ? res->size() : n_);
 	unsigned int crtH = 0;
 	double       hmdist = 1e100;
 	for (i = 0; i < nel; i++) {
-		fams_point &ptp = (config.use_LSH ? points_[(*res)[i]] : points_[i]);
+		fams_point &ptp = (res ? points_[(*res)[i]] : points_[i]);
 		if (DistL1Data(old, ptp, ptp.window_, dist)) {
 			double x = 1.0 - (dist / ptp.window_);
 			double w = ptp.weightdp2_ * x * x;
