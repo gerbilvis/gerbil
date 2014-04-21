@@ -109,7 +109,10 @@ void multi_img_offloaded::getBand(size_t band, Band &data) const
 		case CV_16U: { srcmaxval = 65535.; break; }
 		case CV_32F:
 		case CV_64F: { srcmaxval = 1.; break; }
-		default:	assert(42 == 0);	// we don't handle other formats so far!
+		default:	// we don't handle other formats!
+		std::cerr << "Input data type of " << bands[band].first
+				  << " is not compatible!" << std::endl;
+		return;
 	}
 
 	// convert to right datatype, scaling

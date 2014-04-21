@@ -419,7 +419,6 @@ bool FAMS::FinishFAMS() {
 
 
 void FAMS::PruneModes() {
-	int hprune = FAMS_PRUNE_WINDOW;
 	int npmin = config.pruneMinN;
 	// compute jump
 	int jm = (int)ceil(((double)nsel_) / FAMS_PRUNE_MAXP);
@@ -430,14 +429,12 @@ void FAMS::PruneModes() {
 	bgLog("            pass 1");
 	if (nsel_ < 1)
 		return;
-	hprune *= d_;
 
 	int            *mcount, *mcount2, *mycount, *mcountsp;
 	float          *cmodes, *ctmodes, *cmodes2;
 	unsigned short *pmodes;
 	double         cminDist, cdist;
 	int            iminDist, cref;
-	int            oldmaxm;
 	unsigned char  *invalidm;
 	invalidm = new unsigned char[nsel_];
 	mcount   = new int[nsel_];
@@ -450,12 +447,7 @@ void FAMS::PruneModes() {
 	tmpmymodes  = new float[d_ * nsel_];
 	indmymodes  = new int[nsel_];
 
-	int i, j, k, cd, cm, maxm, idx, idx1, idx2, idx3, cd1, cd2;
-	idx  = 0;
-	idx1 = 0;
-	idx2 = 0;
-	idx3 = 0;
-
+	int i, j, k, cd, cm, maxm, idx, cd1, cd2;
 
 	memset(mcount, 0, nsel_ * sizeof(int));
 	memset(mcountsp, 0, nsel_ * sizeof(int));
@@ -465,6 +457,7 @@ void FAMS::PruneModes() {
 
 
 	// copy the image data before mode pruning.
+	idx = 0;
 	for (j = 0; j < nsel_; j++) {
 		for (i = 0; i < d_; i++) {
 			mymodes[idx] = modes_[idx];
@@ -512,7 +505,7 @@ void FAMS::PruneModes() {
 		// good & cheap indicator for serious failure in DoFAMS()
 		assert(hmodes_[cm] > 0);
 
-		hprune = hmodes_[cm] >> FAMS_PRUNE_HDIV;
+		int hprune = hmodes_[cm] >> FAMS_PRUNE_HDIV; // maybe *d_?
 
 		if (cminDist < hprune) {
 			// already in, just add
@@ -558,7 +551,6 @@ void FAMS::PruneModes() {
 		}
 	}
 
-	oldmaxm = maxm;
 	bgLog("done (%d modes left, %d of them have been invalidated)\n", maxm,
 		  invalidc);
 	bgLog("            pass 2");
@@ -608,9 +600,7 @@ void FAMS::PruneModes() {
 
 	//Computation of the closet mode for pixel zero
 	bool flag;
-	int  num;
 	flag     = false;
-	num      = 1;
 	pmodes   = &modes_[0];
 	cminDist = d_ * 1e7;
 	iminDist = -1;
@@ -653,9 +643,8 @@ void FAMS::PruneModes() {
 			}
 		}
 		// join
-		hprune = hmodes_[cm] >> FAMS_PRUNE_HDIV;
 		/* if the closet mode is found, the avg pixel value for that mode is
-		 * calculated by divding mymodes with mcount(the number of pixels
+		 * calculated by dividing mymodes with mcount(the number of pixels
 		 * having that mode)*/
 		if (iminDist >= 0) {
 			// aready in, just add
@@ -677,11 +666,12 @@ void FAMS::PruneModes() {
 
 	/*Copy the current values all the pixels as per their mode to array
 	 *'testmymodes'*/
+	idx = 0;
 	for (j = 0; j < nsel_; j++) {
 		for (i = 0; i < d_; i++) {
-			testmymodes[idx3] = mymodes[idx3];
-			tmpmymodes[idx3]  = 0.0;
-			idx3++;
+			testmymodes[idx] = mymodes[idx];
+			tmpmymodes[idx]  = 0.0;
+			idx++;
 		}
 	}
 	/*For all the pixels having same mode, an average value of that mode is
@@ -772,10 +762,8 @@ std::pair<int,int> FAMS::FindKL() {
 		return make_pair(0, 0);
 	}
 
-	bool adaptive = true;
 	int hWidth   = 0;
 	if (width > 0.f) {
-		adaptive = false;
 		hWidth   = (int)(65535.0 * (width) / (maxVal_ - minVal_));
 	}
 	epsilon += 1;

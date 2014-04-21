@@ -256,7 +256,7 @@ cv::Mat1b Graph::MSF_Kruskal() {
 	free(Mrk);
 	free(Rnk);
 	free(Fullseeds);
-	delete Es;
+	delete[] Es;
 	free(Map);
 	free(Map2);
 	free(Fth);
