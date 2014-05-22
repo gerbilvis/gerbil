@@ -5,9 +5,10 @@
 #include <sm_factory.h>
 
 #include <boost/filesystem.hpp>
-
 #include <opencv2/highgui/highgui.hpp>
 
+#include <tbb/blocked_range2d.h>
+#include <boost/make_shared.hpp>
 
 namespace vole {
 
@@ -33,88 +34,88 @@ int EdgeDetection::execute()
 		throw std::runtime_error(ss.str());
 	}
 
-	typedef boost::shared_ptr<multi_img> multi_img_ptr;
-
-	multi_img_ptr img;
+	multi_img::ptr img;
 	vole::ImgInput ii(config.imgInputCfg);
 
 	img = ii.execute();
 	if (img->empty()) {
-		throw std::runtime_error("EdgeDetection::execute: imginput module failed to read image.");
+		throw std::runtime_error
+				("EdgeDetection::execute: imginput module failed to read image.");
 	}
 	img->rebuildPixels(false);
 
-	typedef boost::shared_ptr<GenSOM> GenSOMPtr;
-	GenSOMPtr genSom;
-
 	// load or train SOM
-	genSom = GenSOMPtr(GenSOM::create(config.somCfg, *img));
+	boost::shared_ptr<GenSOM> genSom(GenSOM::create(config.somCfg, *img));
 
-	typedef boost::shared_ptr<SOMClosestN> SOMClosestNPtr;
-	SOMClosestNPtr  closestn = SOMClosestNPtr(new SOMClosestN(*genSom,
-							*img,
-							1));
+	// build lookup table
+	boost::shared_ptr<SOMClosestN> lookup =
+			boost::make_shared<SOMClosestN>(*genSom, *img, 1);
 
 	cv::Mat1f dx = cv::Mat1f::zeros(img->height, img->width);
 	cv::Mat1f dy = cv::Mat1f::zeros(img->height, img->width);
 
-	typedef boost::shared_ptr<SimilarityMeasure<float> > SimilarityMeasurePtr;
-	SimilarityMeasurePtr simfun = SimilarityMeasurePtr(
-				SMFactory<float>::spawn(config.somCfg.similarity));
+	boost::shared_ptr<SimilarityMeasure<float> >
+			simfun(SMFactory<float>::spawn(config.somCfg.similarity));
 
 	/* TODO: parallelize with TBB */
 
 	for (int y = 1; y < img->height-1; ++y) {
 		for (int x = 1; x < img->width-1; ++x) {
-			// access closestn results
-			const SOMClosestN::resultAccess ranw = closestn->closestN(cv::Point2i(x-1,y-1));
-			const SOMClosestN::resultAccess ran = closestn->closestN(cv::Point2i(x,y-1));
-			const SOMClosestN::resultAccess rane = closestn->closestN(cv::Point2i(x+1,y-1));
-			const SOMClosestN::resultAccess rae = closestn->closestN(cv::Point2i(x+1,y));
-			const SOMClosestN::resultAccess rase = closestn->closestN(cv::Point2i(x+1,y+1));
-			const SOMClosestN::resultAccess ras = closestn->closestN(cv::Point2i(x,y+1));
-			const SOMClosestN::resultAccess rasw = closestn->closestN(cv::Point2i(x-1,y+1));
-			const SOMClosestN::resultAccess raw = closestn->closestN(cv::Point2i(x-1,y));
+			// access closestn results; *n*orth, *w*est, *e*ast, *s*outh,
+			SOMClosestN::resultAccess ranw, ran, rane, raw, rae,
+					rase, ras, rasw;
+			ranw = lookup->closestN(cv::Point2i(x-1,y-1));
+			ran  = lookup->closestN(cv::Point2i(x,y-1));
+			rane = lookup->closestN(cv::Point2i(x+1,y-1));
+			raw  = lookup->closestN(cv::Point2i(x-1,y));
+			rae  = lookup->closestN(cv::Point2i(x+1,y));
+			rasw = lookup->closestN(cv::Point2i(x-1,y+1));
+			ras  = lookup->closestN(cv::Point2i(x,y+1));
+			rase = lookup->closestN(cv::Point2i(x+1,y+1));
 
-			// euclidian SOM locations of neurons (n-D som)
+			// SOM locations of neurons (n-D som)
 			const std::vector<float> pnw = genSom->getCoord(ranw.first->index);
-			const std::vector<float> pn = genSom->getCoord(ran.first->index);
+			const std::vector<float> pn  = genSom->getCoord(ran.first->index);
 			const std::vector<float> pne = genSom->getCoord(rane.first->index);
-			const std::vector<float> pe = genSom->getCoord(rae.first->index);
-			const std::vector<float> pse = genSom->getCoord(rase.first->index);
-			const std::vector<float> ps = genSom->getCoord(ras.first->index);
+			const std::vector<float> pw  = genSom->getCoord(raw.first->index);
+			const std::vector<float> pe  = genSom->getCoord(rae.first->index);
 			const std::vector<float> psw = genSom->getCoord(rasw.first->index);
-			const std::vector<float> pw = genSom->getCoord(raw.first->index);
+			const std::vector<float> ps  = genSom->getCoord(ras.first->index);
+			const std::vector<float> pse = genSom->getCoord(rase.first->index);
 
-			std::vector<float> hv = std::vector<float>(pnw.size());
-			std::vector<float> vv = std::vector<float>(pnw.size());
-			std::vector<float> nv = std::vector<float>(pnw.size()); // null vector
+			std::vector<float> west(pnw.size()), east(pnw.size());
+			std::vector<float> north(pnw.size()), south(pnw.size());
 
 			for (size_t i=0; i < pnw.size(); ++i) {
-				hv[i] = .25 * (pnw[i] - 2*pw[i] - psw[i]) -
-						.25 * (pne[i] - 2*pe[i] - pse[i]);
+				west[i] = .25 * (pnw[i] - 2*pw[i] - psw[i]);
+				east[i] = .25 * (pne[i] - 2*pe[i] - pse[i]);
 
-				vv[i] = .25 * (pnw[i] - 2*pn[i] - pne[i]) -
-						.25 * (psw[i] - 2*ps[i] - pse[i]);
-				nv[i] = 0.f;
+				north[i] = .25 * (pnw[i] - 2*pn[i] - pne[i]);
+				south[i] = .25 * (psw[i] - 2*ps[i] - pse[i]);
 			}
-			dx[y][x] = simfun->getSimilarity(nv, hv);
-			dy[y][x] = simfun->getSimilarity(nv, vv);
+			dx(y, x) = simfun->getSimilarity(west, east);
+			dy(y, x) = simfun->getSimilarity(north, south);
 
-			/* TODO: use absolute position hack for signed output. */
+			if (!config.absolute) {
+				std::vector<float> origin(west.size(), 0.f);
+				if (simfun->getSimilarity(east, origin)
+					> simfun->getSimilarity(west, origin))
+					dx(y, x) = -dx(y, x);
+				if (simfun->getSimilarity(south, origin)
+					> simfun->getSimilarity(north, origin))
+					dy(y, x) = -dy(y, x);
+			}
 		}
 	}
 
 
-	cv::Mat dxout;
-	dx.convertTo(dxout, CV_8UC1, 255.);
-	std::string dxfname = (boost::filesystem::path(config.outputDir) / "dx.png").native();
-	cv::imwrite(dxfname, dxout);
+	std::string dxfname = (boost::filesystem::path(config.outputDir)
+						   / "dx.png").native();
+	cv::imwrite(dxfname, (config.absolute ? dx : (dx + 0.5f)) * 255.f);
 
-	cv::Mat dyout;
-	dy.convertTo(dyout, CV_8UC1, 255.);
-	std::string dyfname = (boost::filesystem::path(config.outputDir) / "dy.png").native();
-	cv::imwrite(dyfname, dyout);
+	std::string dyfname = (boost::filesystem::path(config.outputDir)
+						   / "dy.png").native();
+	cv::imwrite(dyfname, (config.absolute ? dy : (dy + 0.5f)) * 255.f);
 
 	return 0;
 }
@@ -127,7 +128,10 @@ void EdgeDetection::printShortHelp() const
 void EdgeDetection::printHelp() const
 {
 	std::cout << "Edge detection in multispectral images using SOM." << std::endl;
-
+	std::cout << std::endl;
+	std::cout << "Please read \"Jordan, J., Angelopoulou E.: Edge Detection in Multispectral\n"
+				 "Images Using the N-Dimensional Self-Organizing Map.\" (ICIP 2011)"
+			  << std::endl;
 }
 
 } // namespace vole

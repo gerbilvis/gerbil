@@ -1,19 +1,15 @@
 #include "edge_detection_config.h"
 
-
-
 #ifdef WITH_BOOST
 using namespace boost::program_options;
 #endif
 
 namespace vole {
 
-namespace desc {
-}
-
 EdgeDetectionConfig::EdgeDetectionConfig(const std::string &p)
 	: Config(p),
-	  outputDir("out"),
+	  absolute(false),
+	  outputDir("/tmp/"),
 	  imgInputCfg(prefix + "input"),
 	  somCfg(prefix + "som")
 {
@@ -22,19 +18,26 @@ EdgeDetectionConfig::EdgeDetectionConfig(const std::string &p)
 #endif // WITH_BOOST
 }
 
+// descriptions of configuration options
+namespace desc {
+DESC_OPT(absolute, "Write out absolute edge map (no sign)")
+DESC_OPT(outputDir, "Directory to store dx and dy edge maps")
+}
 
 #ifdef WITH_BOOST
 void EdgeDetectionConfig::initBoostOptions()
 {
-	options.add(imgInputCfg.options);
+	options.add_options()
+		BOOST_OPT(absolute)
+		;
 	options.add(somCfg.options);
 
 	if (prefix_enabled)	// skip input/output options
 		return;
 
+	options.add(imgInputCfg.options);
 	options.add_options()
-		(key("output,O"), value(&outputDir)->default_value("/tmp/"),
-		 "Output directory")
+		BOOST_OPT_S(outputDir, O)
 		;
 }
 
@@ -43,9 +46,9 @@ std::string EdgeDetectionConfig::getString() const {
 	if (prefix_enabled) {
 		s << "[" << prefix << "]" << std::endl;
 	} else {
-		s << "output=" << outputDir << " # Working directory" << std::endl;
+		s << imgInputCfg.getString();
+		COMMENT_OPT(s, outputDir);
 	}
-	s << imgInputCfg.getString();
 	s << somCfg.getString();
 	return s.str();
 }

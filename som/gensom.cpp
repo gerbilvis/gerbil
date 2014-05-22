@@ -143,7 +143,7 @@ int GenSOM::trainSingle(const multi_img::Pixel &input, int iter, int max)
 				(double)iter/(double)max);
 
 	// find best matching unit to given input vector
-	size_t index  = findBMU(input).index;
+	size_t index = findBMU(input).index;
 
 	// increase winning count of neuron
 	//m_bmuMap(pos) += 1.0;

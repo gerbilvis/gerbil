@@ -16,7 +16,10 @@ public:
 	virtual ~EdgeDetectionConfig() {}
 
 	// knn to use in SOM for edge image generation
-	int knn;
+	// int knn;
+
+	// print out signed edgemap
+	bool absolute;
 
 	// output directory for edge_detection result
 	std::string outputDir;

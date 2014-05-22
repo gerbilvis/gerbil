@@ -23,6 +23,8 @@
 #ifdef WITH_BOOST
 #define DESC_OPT(opt, s) const char * opt = s;
 #define BOOST_OPT(opt) (key(#opt), value(&opt)->default_value(opt), desc::opt)
+// option with one digit shortcut (shopt)
+#define BOOST_OPT_S(opt,shopt) (key(#opt","#shopt), value(&opt)->default_value(opt), desc::opt)
 #define BOOST_BOOL(opt) (key(#opt), bool_switch(&opt)->default_value(opt), desc::opt)
 #endif
 #define COMMENT_OPT(s, opt) s << #opt "=" << opt  \
