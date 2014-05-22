@@ -110,7 +110,7 @@ inline double LNorm<float>::getSimilarity(const std::vector<float> &v1, const st
 		ret += *((float*)&vret + 1);
 		ret += *((float*)&vret + 2);
 		ret += *((float*)&vret + 3);
-		for (; i < v1.size(); i++) {
+		for (; i < int(v1.size()); i++) {
 			float diff = v1[i] - v2[i];
 			ret += diff * diff;
 		}
@@ -163,7 +163,7 @@ inline double LNorm<double>::getSimilarity(const std::vector<double> &v1, const 
 		}
 		ret += *((double*)&vret + 0);
 		ret += *((double*)&vret + 1);
-		for (; i < v1.size(); i++) {
+		for (; i < int(v1.size()); i++) {
 			double diff = *x1 - *x2;
 			ret += diff * diff;
 			x1++;

@@ -48,7 +48,7 @@ void Compute::PreprocessBins::operator()(const BinSet::HashMap::range_type &r)
 			range.second = std::max<int>(range.second, (int)(it->first)[d]);
 		}
 		// TODO: calculate colors for all pixels BEFORE this step with functor
-		color = multi_img::bgr(pixel, dimensionality, meta, maxval);
+		color = multi_img::bgr(pixel, meta, maxval);
 		b.rgb = QColor(color[2]*255, color[1]*255, color[0]*255);
 		index.push_back(make_pair(label, it->first));
 	}

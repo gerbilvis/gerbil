@@ -213,11 +213,11 @@ cv::Vec3f multi_img::bgr(const Pixel &p) const
 	return ret;
 }
 
-cv::Vec3f multi_img::bgr(const Pixel &p, size_t dim, 
+cv::Vec3f multi_img::bgr(const Pixel &p,
 	const std::vector<BandDesc> &meta, Value maxval)
 {
 	cv::Vec3f xyz, ret;
-	pixel2xyz(p, xyz, dim, meta, maxval);
+	pixel2xyz(p, xyz, p.size(), meta, maxval);
 	xyz2bgr(xyz, ret);
 	return ret;
 }
