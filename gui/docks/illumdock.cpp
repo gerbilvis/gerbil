@@ -29,7 +29,7 @@ void IllumDock::initUi()
 	connect(illum2Box, SIGNAL(currentIndexChanged(int)),
 			this, SLOT(onIllum2Selected(int)));
 	/* This indicates if the user wants the illumination curve
-	/* to be shown in the viewer. */
+	 * to be shown in the viewer. */
 	connect(showCheck, SIGNAL(toggled(bool)),
 			this, SLOT(onShowToggled(bool)));
 	showCheck->setVisible(false);

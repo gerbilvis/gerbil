@@ -219,7 +219,7 @@ void ImageModel::spawn(representation::t type, const cv::Rect &newROI, int bands
 #ifdef WITH_IMGPCA
 	if (type == representation::IMGPCA && imagepca.get()) {
 		BackgroundTaskPtr taskPca(new PcaTbb(
-			image, imagepca, 0, roi));
+			image, imagepca, 10));
 		queue.push(taskPca);
 	}
 #endif /* WITH_IMGPCA */
@@ -227,7 +227,7 @@ void ImageModel::spawn(representation::t type, const cv::Rect &newROI, int bands
 #ifdef WITH_GRADPCA
 	if (type == representation::GRADPCA && gradpca.get()) {
 		BackgroundTaskPtr taskPca(new PcaTbb(
-			gradient, gradpca, 0, roi));
+			gradient, gradpca, 0));
 		queue.push(taskPca);
 	}
 #endif /* WITH_GRADPCA */
