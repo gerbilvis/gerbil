@@ -392,29 +392,22 @@ void Controller::focusChange(QWidget *old, QWidget *now)
 
 void Controller::processImageUpdate(representation::t repr)
 {
-	typedef std::pair<representation::t, int> ImageBand;
-	// Hash function for ImageBand
-	struct ImageBandHash {
-		typedef ImageBand argument_type;
-		typedef std::size_t result_type;
-
-		result_type operator()(argument_type const& s) const {
-			return std::hash<int>()(std::get<0>(s)) ^
-					(std::hash<int>()(std::get<1>(s)) << 1);
-		}
-	};
-	typedef std::unordered_set<ImageBand, ImageBandHash> ImageBandSet;
-
 	ImageBandSet updates;
 
-	for (auto const& sub : imageBandSubs) {
-		if(repr == std::get<1>(sub))	 {
-			updates.insert(ImageBand(std::get<1>(sub), std::get<2>(sub)));
+	for (ImageBandSubscriptionHashSet::iterator it = imageBandSubs.begin();
+		 it != imageBandSubs.end();
+		 ++it)
+	{
+		if(repr == std::tr1::get<1>(*it))	 {
+			updates.insert(ImageBand(std::tr1::get<1>(*it), std::tr1::get<2>(*it)));
 		}
 	}
-	for (auto const& ib : updates) {
+	for (ImageBandSet::const_iterator it = updates.begin();
+		 it != updates.end();
+		 ++it)
+	{
 		//GGDBGM("requesting band " << ib.first << " " << ib.second << endl);
-		im->computeBand(ib.first, ib.second);
+		im->computeBand(it->first, it->second);
 	}
 
 }

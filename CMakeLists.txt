@@ -30,9 +30,9 @@ if(WIN32)
 	add_definitions(-DNOMINMAX) # prevents min- and max-macro brainf*ck in VS 2003
 endif(WIN32)
 
-# Set C++ standard to C++11
-# TODO FIXME make this work for MSVC/CLANG/GCC/... that is for all compilers.
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11")
+# No C++11, we want to be compatible with older MSVC.
+# We use boost tr1 instead.
+# http://www.boost.org/doc/libs/1_55_0/doc/html/boost_tr1.html
 
 include(EnableSSE2)
 

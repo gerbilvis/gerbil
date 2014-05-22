@@ -6,8 +6,12 @@
 #include <background_task/background_task.h>
 #include <background_task/background_task_queue.h>
 
-#include <utility>
-#include <unordered_set>
+// Use boost TR1 headers for cross platform compatibility.
+// See http://www.boost.org/doc/libs/1_55_0/doc/html/boost_tr1.html#boost_tr1.intro
+#include <boost/tr1/utility.hpp>
+#include <boost/tr1/unordered_set.hpp>
+// for std::tr1::hash
+#include <boost/tr1/functional.hpp>
 
 #include <QObject>
 #include <QMap>
@@ -225,7 +229,7 @@ protected:
 
 /// SUBSCRIPTIONS
 
-	typedef std::tuple<QObject*, representation::t, int> ImageBandSubscription;
+	typedef std::tr1::tuple<QObject*, representation::t, int> ImageBandSubscription;
 
 	// Hash function for ImageBandSubscription
 	struct ImageBandSubscriptionHash {
@@ -233,15 +237,28 @@ protected:
 		typedef std::size_t result_type;
 
 		result_type operator()(argument_type const& s) const {
-			return std::hash<void*>()(std::get<0>(s)) ^
-					(std::hash<int>()(std::get<1>(s)) << 1) ^
-					(std::hash<int>()(std::get<2>(s)) << 3);
+			return std::tr1::hash<void*>()(std::tr1::get<0>(s)) ^
+					(std::tr1::hash<int>()(std::tr1::get<1>(s)) << 1) ^
+					(std::tr1::hash<int>()(std::tr1::get<2>(s)) << 3);
 		}
 	};
-	typedef std::unordered_set<ImageBandSubscription, ImageBandSubscriptionHash>
+	typedef std::tr1::unordered_set<ImageBandSubscription, ImageBandSubscriptionHash>
 			ImageBandSubscriptionHashSet;
 
 	ImageBandSubscriptionHashSet imageBandSubs;
+
+	typedef std::pair<representation::t, int> ImageBand;
+	// Hash function for ImageBand
+	struct ImageBandHash {
+		typedef ImageBand argument_type;
+		typedef std::size_t result_type;
+
+		result_type operator()(argument_type const& s) const {
+			return std::tr1::hash<int>()(std::tr1::get<0>(s)) ^
+					(std::tr1::hash<int>()(std::tr1::get<1>(s)) << 1);
+		}
+	};
+	typedef std::tr1::unordered_set<ImageBand, ImageBandHash> ImageBandSet;
 };
 
 #endif // CONTROLLER_H
