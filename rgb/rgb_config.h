@@ -3,9 +3,7 @@
 
 #include <vole_config.h>
 #include <imginput.h>
-#ifdef WITH_EDGE_DETECT
-#include <edge_detection_config.h>
-#endif
+#include <som_config.h>
 #include <multi_img.h>
 
 namespace gerbil {
@@ -45,8 +43,8 @@ public:
 	/// linear mixing instead of power-of-two weighting scheme
 	bool som_linear;
 
-#ifdef WITH_EDGE_DETECT
-	vole::EdgeDetectionConfig som;
+#ifdef WITH_SOM
+	SOMConfig som;
 #endif
 
 	virtual std::string getString() const;

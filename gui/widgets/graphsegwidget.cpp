@@ -62,7 +62,7 @@ void GraphSegWidget::startGraphseg()
 	conf.algo = vole::PRIM;
 	conf.similarity.measure = (vole::similarity_fun)
 		  similarityBox->itemData(similarityBox->currentIndex()).value<int>();
-#ifdef WITH_EDGE_DETECT
+#ifdef WITH_SOM
 	conf.som_similarity = false;
 #endif
 	conf.geodesic = false;

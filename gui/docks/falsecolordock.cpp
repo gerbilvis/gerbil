@@ -130,12 +130,13 @@ void FalseColorDock::initUi()
 					   FalseColoring::PCA);
 	uisel->sourceBox->addItem(prettyFalseColorNames[FalseColoring::PCAGRAD],
 					   FalseColoring::PCAGRAD);
-#ifdef WITH_EDGE_DETECT
+
+#ifdef WITH_SOM
 	uisel->sourceBox->addItem(prettyFalseColorNames[FalseColoring::SOM],
 					   FalseColoring::SOM);
 	uisel->sourceBox->addItem(prettyFalseColorNames[FalseColoring::SOMGRAD],
 					   FalseColoring::SOMGRAD);
-#endif // WITH_EDGE_DETECT
+#endif // WITH_SOM
 	uisel->sourceBox->setCurrentIndex(0);
 
 	updateTheButton();

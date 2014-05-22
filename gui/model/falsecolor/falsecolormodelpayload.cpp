@@ -3,6 +3,8 @@
 #include "rgb.h"
 #include "qtopencv.h"
 
+#include <som_config.h>
+
 void FalseColorModelPayload::run()
 {
 	runner = new CommandRunner();
@@ -25,7 +27,7 @@ void FalseColorModelPayload::run()
 	case FalseColoring::PCAGRAD:
 		cmd->config.algo = gerbil::COLOR_PCA;
 		break;
-#ifdef WITH_EDGE_DETECT
+#ifdef WITH_SOM
 	case FalseColoring::SOM:
 	case FalseColoring::SOMGRAD:
 		// default parameters for false coloring (different to regular defaults)
@@ -34,15 +36,15 @@ void FalseColorModelPayload::run()
 		cmd->config.som.seed = time(NULL);
 
 		// CUBE parameters
-		cmd->config.som.type        = vole::SOM_CUBE;
-		cmd->config.som.sidelength  = 10;
+		cmd->config.som.type        = SOM_CUBE;
+		cmd->config.som.dsize       = 10;
 		cmd->config.som.sigmaStart  = 4;
 		cmd->config.som.sigmaEnd    = 1;
 		cmd->config.som.learnStart  = 0.75;
 		cmd->config.som.learnEnd    = 0.01;
 
 		break;
-#endif /* WITH_EDGE_DETECT */
+#endif /* WITH_SOM */
 	default:
 		assert(false);
 	}

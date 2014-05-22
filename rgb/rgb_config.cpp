@@ -16,7 +16,7 @@ ENUM_MAGIC(rgbalg)
 
 RGBConfig::RGBConfig(const std::string& p)
  : vole::Config(p), input(prefix + "input")
-#ifdef WITH_EDGE_DETECT
+#ifdef WITH_SOM
  , som(prefix + "som")
 #endif
 {
@@ -47,7 +47,7 @@ void RGBConfig::initBoostOptions() {
 		                   "Use linear BMU mixing instead of weighting scheme")
 		;
 
-#ifdef WITH_EDGE_DETECT
+#ifdef WITH_SOM
 	options.add(som.options);
 #endif
 
@@ -78,7 +78,7 @@ std::string RGBConfig::getString() const {
 		<< "somDepth=" << som_depth << "\t# SOM depth" << std::endl
 		<< "somLinear=" << (som_linear ? "true" : "false") << std::endl
 		;
-#ifdef WITH_EDGE_DETECT
+#ifdef WITH_SOM
 	s << som.getString();
 #endif
 	return s.str();

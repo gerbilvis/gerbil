@@ -1,4 +1,4 @@
-/*	
+/*
 	Copyright(c) 2012 Ralph Muessig	and Johannes Jordan
 	<johannes.jordan@cs.fau.de>.
 
@@ -9,6 +9,8 @@
 
 #ifndef NEURON_H
 #define NEURON_H
+
+#include <similarity_measure.h>
 
 #include <multi_img.h>
 #include <vector>
@@ -41,13 +43,12 @@ public:
 	  * Update vector by shifting it to new vector with a weight,
 	  * this = this + (input - this)*weight;
 	  */
-	void update(const multi_img::Pixel input, double weight) {
-		// let OpenCV do the work for us
-		cv::Mat_<multi_img::Value> in(input, false);
-		cv::Mat_<multi_img::Value> out(*this, false);
-		out += (in - out)*weight;
+	inline void update(const multi_img::Pixel &input, double weight) {
+		Neuron::iterator o = begin();
+		multi_img::Pixel::const_iterator i = input.begin();
+		for (; o != end(); ++o, ++i)
+			*o += (*i - *o) * weight;
 	}
 };
-
 
 #endif // NEURON_H

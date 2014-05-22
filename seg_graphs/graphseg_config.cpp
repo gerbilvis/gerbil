@@ -16,7 +16,7 @@ ENUM_MAGIC(graphsegalg)
 
 GraphSegConfig::GraphSegConfig(const std::string& p)
  : Config(p), similarity(prefix + "similarity")
-#ifdef WITH_EDGE_DETECT
+#ifdef WITH_SOM
  , som(prefix + "som")
 #endif
 {
@@ -37,7 +37,7 @@ void GraphSegConfig::initBoostOptions() {
 
 	options.add(similarity.options);
 
-#ifdef WITH_EDGE_DETECT
+#ifdef WITH_SOM
 	options.add_options()
 		(key("som_similarity"), bool_switch(&som_similarity)->default_value(false),
 							 "Set to true to use SOM as input to edge weights");
@@ -77,7 +77,7 @@ std::string GraphSegConfig::getString() const {
 	  << "geodesic=" << (geodesic ? "true" : "false") << std::endl  
 		;
 	s << similarity.getString();
-#ifdef WITH_EDGE_DETECT
+#ifdef WITH_SOM
 	s << "som_similarity=" << (som_similarity? "true" : "false") << std::endl;
 	s << som.getString();
 #endif

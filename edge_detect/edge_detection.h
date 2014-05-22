@@ -1,28 +1,27 @@
 #ifndef EDGE_DETECTION_H
 #define EDGE_DETECTION_H
 
-#include "som.h"
-#include "edge_detection_config.h"
 #include <command.h>
+#include "edge_detection_config.h"
+
+namespace vole {
 
 
-class EdgeDetection : public vole::Command {
+class EdgeDetection : public  Command
+{
+public:
+	EdgeDetection();
+	virtual ~EdgeDetection();
+	virtual int execute();
 
-	public:
-		EdgeDetection();
-		// use only with pre-filled config!
-		EdgeDetection(const vole::EdgeDetectionConfig &config);
-		int execute();
+	void printShortHelp() const;
+	void printHelp() const;
 
-		void printShortHelp() const;
-		void printHelp() const;
 
-	protected:
-		int executeSimple();
-
-		vole::EdgeDetectionConfig config;
-
+protected:
+	vole::EdgeDetectionConfig config;
 };
 
+} // namespace vole
 
-#endif
+#endif // EDGE_DETECTION_H

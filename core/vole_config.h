@@ -19,6 +19,15 @@
 #include <iostream>
 #include <string>
 
+/* some helpful macros */
+#ifdef WITH_BOOST
+#define DESC_OPT(opt, s) const char * opt = s;
+#define BOOST_OPT(opt) (key(#opt), value(&opt)->default_value(opt), desc::opt)
+#define BOOST_BOOL(opt) (key(#opt), bool_switch(&opt)->default_value(opt), desc::opt)
+#endif
+#define COMMENT_OPT(s, opt) s << #opt "=" << opt  \
+	<< " # " <<  desc::opt << std::endl
+
 namespace vole {
 
 	/* base class that exposes configuration handling */

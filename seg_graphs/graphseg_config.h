@@ -3,8 +3,8 @@
 
 #include <vole_config.h>
 #include <sm_config.h>
-#ifdef WITH_EDGE_DETECT
-#include <edge_detection_config.h>
+#ifdef WITH_SOM
+#include <som_config.h>
 #endif
 #include <multi_img.h>
 
@@ -44,10 +44,10 @@ public:
 	/// similarity measure for edge weighting
 	SMConfig similarity;
 
-#ifdef WITH_EDGE_DETECT
+#ifdef WITH_SOM
 	/// use SOM similarity instead
 	bool som_similarity;
-	EdgeDetectionConfig som;
+	SOMConfig som;
 #endif
 
 	virtual std::string getString() const;

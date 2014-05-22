@@ -27,7 +27,7 @@ public:
 	void abort() { abortFlag = true; }
 protected:
 	cv::Mat3f executePCA(const multi_img& src);
-#ifdef WITH_EDGE_DETECT
+#ifdef WITH_SOM
 	cv::Mat3f executeSOM(const multi_img& src);
 #endif
 

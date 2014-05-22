@@ -8,16 +8,18 @@
 
 #include "rgb.h"
 
-#ifdef WITH_EDGE_DETECT
+#ifdef WITH_SOM
 #include <sm_config.h>
 #include <sm_factory.h>
-#include <som_trainer.h>
-#endif
+#include <gensom.h>
+#include <som_cache.h>
+#endif // WITH_SOM
 
 #include <stopwatch.h>
 #include <multi_img.h>
 #include <opencv2/highgui/highgui.hpp>
 #include <tbb/parallel_for.h>
+#include <tbb/blocked_range2d.h>
 #include <iostream>
 #include <vector>
 #include <algorithm>
@@ -44,14 +46,14 @@ private:
 
 
 RGB::RGB()
- : Command(
+ :  Command(
 		"rgb",
 		config,
 		"Johannes Jordan",
 		"johannes.jordan@informatik.uni-erlangen.de"),
-   calcPo(new SOMProgressObserver(this)),
-   srcimg(NULL),
-   abortFlag(false)
+	srcimg(NULL),
+	calcPo(new SOMProgressObserver(this)),
+	abortFlag(false)
 {}
 
 RGB::~RGB()
@@ -121,14 +123,14 @@ cv::Mat3f RGB::execute(const multi_img& src, vole::ProgressObserver *po)
 		bgr = executePCA(src);
 		break;
 	case COLOR_SOM:
-#ifdef WITH_EDGE_DETECT
+#ifdef WITH_SOM
 		bgr = executeSOM(src);
-		break;
 #else
-		std::cerr << "FATAL: SOM functionality missing!" << std::endl;
+		throw std::runtime_error("RGB::execute(): SOM module not available.");
 #endif
+		break;
 	default:
-		true;
+		throw std::runtime_error("RGB::execute(): bad config.algo");
 	}
 
 	this->po = NULL;
@@ -165,87 +167,92 @@ cv::Mat3f RGB::executePCA(const multi_img& src)
 	return bgr;
 }
 
-#ifdef WITH_EDGE_DETECT
-struct SOMTBB {
+#ifdef WITH_SOM
 
-	SOMTBB (const multi_img& src, SOM *som, const std::vector<double>& w,
-			cv::Mat3f &dst)
-		: src(src), som(som), weight(w), dst(dst) {}
+// Compute weighted coordinates of multi_img pixels in SOM with dimensionality <= 3.
+//
+// For posToBGR == true, swap coordinates for false color result.
+template <bool posToBGR>
+class SomRgbTbb {
+public:
+	typedef cv::Mat_<cv::Vec<GenSOM::value_type, 3> > Mat3;
 
-	void operator()(const tbb::blocked_range<int>& r) const
+	SomRgbTbb(RGB &o, multi_img const& img, GenSOM *som, Mat3& weightedPos)
+		: o(o),
+		  som(som),
+		  weightedPos(weightedPos),
+		  weigths(o.config.som_depth),
+		  closestN(*som, img, o.config.som_depth)
 	{
-		// (we just need the correct length,
-		// values will be overwritten in closestN)
-		std::vector<std::pair<double, SOM::iterator> > coords(
-			weight.size(), std::make_pair(0.0, som->end()));
-		for (int i = r.begin(); i != r.end(); ++i) {
-			som->closestN(src.atIndex(i), coords);
+		neuronWeightsGeometric(weigths);
+	}
 
-			// set color values
-			cv::Point3d avg(0., 0., 0.);
-			for (int j = 0; j < coords.size(); ++j) {
-				cv::Point3d pos = coords[j].second.get3dPos();
-				avg += weight[j] * pos;
+	void operator()(const tbb::blocked_range2d<int> &r) const
+	{
+		typedef cv::Point3_<GenSOM::value_type> Point3;
+
+		// iterate over all pixels in range
+		for(int j=r.rows().begin(); j<r.rows().end(); ++j) {
+			for(int i=r.cols().begin(); i<r.cols().end(); ++i) {
+				SOMClosestN::resultAccess closest =
+						closestN.closestN(cv::Point2i(i,j));
+				Point3 weighted(0,0,0);
+				for (int k = 0; k < o.config.som_depth; ++k) {
+					size_t somidx = (closest.first+k)->index;
+					Point3 pos = vec2Point3(som->getCoord(somidx));
+					weighted += weigths[k] * pos;
+				}
+				if (posToBGR) { // 3D coord -> BGR color
+					// for 2D SOM: weighted.z == 0 -> use only G and R
+					Point3 tmp = weighted;
+					weighted.x = tmp.z;  // B
+					weighted.y = tmp.y;  // G
+					weighted.z = tmp.x;  // R
+				}
+				weightedPos(j,i) = weighted;
 			}
-			cv::Vec3f &pixel = dst(i / dst.cols, i % dst.cols);
-			pixel = som->getColor(avg);
 		}
 	}
 
-	const multi_img& src;
-	SOM *const som;
-	const std::vector<double> &weight;
-	cv::Mat3f &dst;
+private:
+	RGB &o;
+	GenSOM *som;
+	Mat3& weightedPos;
+	std::vector<float> weigths;
+	SOMClosestN closestN;
 };
 
 // TODO: call progressUpdate
 cv::Mat3f RGB::executeSOM(const multi_img &img)
 {
+	typedef cv::Mat_<cv::Vec<GenSOM::value_type, 3> > Mat3;
+
 	vole::Stopwatch total("Total runtime of SOM generation");
 
 	img.rebuildPixels(false);
 
-	SOM *som = SOMTrainer::train(config.som, img, abortFlag, calcPo);
-	if (som == NULL)
-		return cv::Mat3f();
+	typedef boost::shared_ptr<GenSOM> GenSOMPtr;
+	GenSOMPtr som(GenSOM::create(config.som, img));
 
-	if (config.som.output_som || config.som.verbosity >= 3) {
-		multi_img somimg = som->export_2d();
-		somimg.write_out(config.output_file + "_som");
-	}
+	//  false color image
+	Mat3 bgr(img.height, img.width);
 
-	cv::Mat3f bgr(img.height, img.width);
-	cv::Mat3f::iterator it = bgr.begin();
-
-	int N = config.som_depth;
-
-	// calculate weights
-	std::vector<double> weights;
-	// (for N == 1, the lower weight calculation would divide by zero)
-	if (config.som_linear || N == 1) {
-		for (int i = 0; i < N; ++i)
-			weights.push_back(1./(double)N);
-	} else {
-		/* each weight is half of the preceeding weight in the ranking
-		   examples; N=2: 0.667, 0.333; N=4: 0.533, 0.267, 0.133, 0.067 */
-		double normalization = (double)((1 << N) - 1); // 2^N - 1
-		for (int i = 0; i < N; ++i) {
-			// (2^[N-1..0]) / normalization
-			weights.push_back((double)(1 << (N - i - 1)) / normalization);
-		}
-	}
-
-	// set RGB pixels
 	{
 		vole::Stopwatch watch("False Color Image Generation");
-		tbb::parallel_for(tbb::blocked_range<int>(0, img.height*img.width),
-		                  SOMTBB(img, som, weights, bgr));
+		// compute weighted coordinates of multi_img pixels in 3D SOM
+		tbb::parallel_for(tbb::blocked_range2d<int>(0, img.height, // row range
+													0, img.width), // column range
+						  SomRgbTbb<true>(*this, img, som.get(), bgr));
+
+		// DEBUG: run sequentially
+//		SomRgbTbb<true> somRgbTbb(*this, img, som.get(), bgr);
+//		somRgbTbb(tbb::blocked_range2d<int>(0, img.height, 0, img.width));
 	}
 
-	delete som;
+
 	return bgr;
 }
-#endif
+#endif // WITH_SOM
 
 void RGB::printShortHelp() const {
 	std::cout << "RGB image creation (true-color or false-color)" << std::endl;

@@ -2,56 +2,33 @@
 #define EDGE_DETECTION_CONFIG_H
 
 #include <vole_config.h>
-#include <sm_config.h>
-#include <multi_img.h>
+#include <imginput_config.h>
+#include <som_config.h>
+
 
 namespace vole {
 
-enum somtype {
-	SOM_LINE,
-	SOM_SQUARE,
-	SOM_CUBE
-};
-#define somtypeString {"line", "square", "cube"}
-
-class EdgeDetectionConfig : public Config {
-
+class EdgeDetectionConfig : public Config
+{
 public:
-	EdgeDetectionConfig(const std::string& prefix = std::string());
+	EdgeDetectionConfig(const std::string& p = std::string());
 
 	virtual ~EdgeDetectionConfig() {}
 
-	// input image filename
-	std::string input_file;
-	// working directory
-	std::string output_dir;
+	// knn to use in SOM for edge image generation
+	int knn;
 
-	// som file input
-	std::string som_file;
+	// output directory for edge_detection result
+	std::string outputDir;
 
-	// random seed
-	uint64 seed;
-	
-	// SOM features
-	int sidelength;
-	somtype type;
+	// input is handled by imginput module
+	ImgInputConfig imgInputCfg;
 
-	// export SOM?
-	bool output_som;
-
-	// Training features 
-	int maxIter;								// number of iterations
-	double learnStart;							// start value for learning rate (fades off with sigma)
-	double learnEnd;							// start value for learning rate (fades off with sigma)
-	double sigmaStart;							// start value for neighborhood radius
-	double sigmaEnd;							// start value for neighborhood radius
-
-	/// similarity measure for model vector search in SOM
-	SMConfig similarity;
+	SOMConfig somCfg;
 
 	virtual std::string getString() const;
 
-	protected:
+protected:
 
 	#ifdef WITH_BOOST
 		virtual void initBoostOptions();
