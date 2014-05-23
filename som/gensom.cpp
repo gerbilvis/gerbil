@@ -21,12 +21,8 @@ namespace vole {
 class ProgressObserver;
 }
 
-void GenSOM::train(const multi_img &input)
+void GenSOM::train(const multi_img &input, vole::ProgressObserver *po)
 {
-	// TODO: these need to be passed along or be members of GenSom
-	volatile bool* abort = NULL;
-	vole::ProgressObserver *po = NULL;
-
 	std::cout << "Start feeding" << std::endl;
 
 	// matrices hold shuffled sequences of the input for number of iterations
@@ -55,23 +51,21 @@ void GenSOM::train(const multi_img &input)
 	cv::MatConstIterator_<int> itX = shuffledX.begin();
 	for (int curIter = 0; curIter < maxIter; ++curIter, ++itX, ++itY)
 	{
-		// user cancel request
-		if (abort != NULL && *abort == true) {
-			std::cerr << "Aborting training" << std::endl;
-			break;
-		}
-
 		// feed one sample
 		const multi_img::Pixel &vec = input(*itY, *itX);
 		sumOfUpdates += trainSingle(vec, curIter, maxIter);
 
-		// print progress
-		if ((config.verbosity > 0) && (config.maxIter > 100)
+		// print progress (and maybe exit)
+		if ((config.verbosity > 0 || po) && (config.maxIter > 100)
 			&& ((curIter % hundred) == 0) && (percent < 100)) {
 
 			// send progress updates to observer or stdout
 			if (po) {
-				po->update(percent);
+				bool cont = po->update(percent);
+				if (!cont) {
+					std::cerr << "Aborting training" << std::endl;
+					return;
+				}
 			} else {
 				std::cout << "\r " << (percent < 10 ? " " : "")
 						  << percent << " %";
@@ -235,7 +229,8 @@ GenSOM::~GenSOM()
 	delete distfun;
 }
 
-GenSOM *GenSOM::create(const SOMConfig &conf, const multi_img &img)
+GenSOM *GenSOM::create(const SOMConfig &conf, const multi_img &img,
+					   vole::ProgressObserver *po)
 {
 	GenSOM *som;
 
@@ -257,7 +252,7 @@ GenSOM *GenSOM::create(const SOMConfig &conf, const multi_img &img)
 					  << std::endl;
 		}
 		som = create(conf, img.size(), /* randomize */ true);
-		som->train(img);
+		som->train(img, po);
 	}
 	return som;
 }

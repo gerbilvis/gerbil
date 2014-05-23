@@ -9,6 +9,9 @@
 #include "som_neuron.h"
 #include "som_config.h"
 
+namespace vole {
+	class ProgressObserver;
+}
 
 struct DistIndexPair {
 	typedef Neuron::value_type value_type; // TODO: inconsistent usage
@@ -83,11 +86,12 @@ public:
 	 *
 	 * @param img multi_img to train the SOM on.
 	 */
-	static GenSOM* create(const SOMConfig& conf, const multi_img& img);
+	static GenSOM* create(const SOMConfig& conf, const multi_img& img,
+						  vole::ProgressObserver *po = 0);
 
 	/** Train SOM on multi_img.
 	*/
-	void train(const multi_img & input);
+	void train(const multi_img & input, vole::ProgressObserver *po = 0);
 
 	size_t size() const { return neurons.size(); }
 	virtual cv::Size size2D() const = 0;

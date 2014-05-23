@@ -37,9 +37,6 @@ void CommandRunner::terminate() {
 	// QThread::terminate() is dangerous and doesn't clean up anything
 	// this is the safe way to abort
 	abort = true;
-	if(cmd) {
-		cmd->abort();
-	}
 	//std::cerr << "CommandRunner aborting" << std::endl;
 }
 

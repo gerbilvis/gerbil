@@ -70,7 +70,7 @@ void FalseColorModelPayload::cancel()
 
 void FalseColorModelPayload::processRunnerProgress(int percent)
 {
-	if(canceled) {
+	if (canceled) {
 		return;
 	}
 	emit progressChanged(coloringType, percent);

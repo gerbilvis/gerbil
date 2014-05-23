@@ -30,37 +30,13 @@
 
 namespace gerbil {
 
-
-/* Forward progress information from SOMTrainer to RGB command. */
-class SOMProgressObserver : public vole::ProgressObserver {
-public:
-	SOMProgressObserver(RGB *rgbCmd) : rgbCmd(rgbCmd) {}
-    virtual bool update(int percent)
-    {
-        rgbCmd->setSomProgress(percent);
-        return true; // if false: cancel job
-    }
-private:
-	RGB *const rgbCmd;
-};
-
-
 RGB::RGB()
- :  Command(
+ : Command(
 		"rgb",
 		config,
 		"Johannes Jordan",
-		"johannes.jordan@informatik.uni-erlangen.de"),
-	srcimg(NULL),
-	calcPo(new SOMProgressObserver(this)),
-	abortFlag(false)
+		"johannes.jordan@informatik.uni-erlangen.de")
 {}
-
-RGB::~RGB()
-{
-	delete calcPo;
-	delete srcimg;
-}
 
 int RGB::execute()
 {
@@ -82,24 +58,28 @@ int RGB::execute()
 }
 
 #ifdef WITH_BOOST
-std::map<std::string, boost::any> RGB::execute(std::map<std::string, boost::any> &input, vole::ProgressObserver *po)
+std::map<std::string, boost::any> RGB::execute(
+		std::map<std::string, boost::any> &input, vole::ProgressObserver *po)
 {
+	// BUG BUG BUG
+	// we need to copy the source image, because the pointer stored in the
+	// shared data object may be deleted.
+	// FIXME TODO gerbil's SharedData concept is broken.
+	multi_img *srcimg;
 	{
-		SharedMultiImgPtr src = boost::any_cast<SharedMultiImgPtr>(input["multi_img"]);
+		SharedMultiImgPtr src =
+				boost::any_cast<SharedMultiImgPtr>(input["multi_img"]);
 		SharedDataLock lock(src->mutex);
 		if ((**src).empty())
 			assert(false);
 
-		// BUG BUG BUG
-		// we need to copy the source image, because the pointer stored in the
-		// shared data object may be deleted.
-		// FIXME TODO gerbil's SharedData concept is broken.
-
-		// copy
+		// copy, see above
 		srcimg = new multi_img(**src);
 	}
 
 	cv::Mat3f bgr = execute(*srcimg, po);
+	delete srcimg;
+
 	if (bgr.empty())
 		assert(false);
 
@@ -113,18 +93,16 @@ cv::Mat3f RGB::execute(const multi_img& src, vole::ProgressObserver *po)
 {
 	cv::Mat3f bgr;
 
-	this->po = po;
-
 	switch (config.algo) {
 	case COLOR_XYZ:
-		bgr = src.bgr(); // updateProgress is not called in XYZ calculation
+		bgr = src.bgr(); // progress observer is not used in XYZ calculation
 		break;
 	case COLOR_PCA:
-		bgr = executePCA(src);
+		bgr = executePCA(src, po);
 		break;
 	case COLOR_SOM:
 #ifdef WITH_SOM
-		bgr = executeSOM(src);
+		bgr = executeSOM(src, po);
 #else
 		throw std::runtime_error("RGB::execute(): SOM module not available.");
 #endif
@@ -133,17 +111,16 @@ cv::Mat3f RGB::execute(const multi_img& src, vole::ProgressObserver *po)
 		throw std::runtime_error("RGB::execute(): bad config.algo");
 	}
 
-	this->po = NULL;
 	return bgr;
 }
 
-cv::Mat3f RGB::executePCA(const multi_img& src)
+cv::Mat3f RGB::executePCA(const multi_img& src, vole::ProgressObserver *po)
 {
 	// cover cases of lt 3 channels
 	unsigned int components = std::min(3u, src.size());
 	multi_img pca3 = src.project(src.pca(components));
 
-	bool cont = progressUpdate(70.0f, po); // TODO: values
+	bool cont = (!po) || po->update(70); // TODO: values
 	if (!cont) return cv::Mat3f();
 
 	if (config.pca_stretch)
@@ -151,7 +128,7 @@ cv::Mat3f RGB::executePCA(const multi_img& src)
 	else
 		pca3.data_rescale(0., 1.);
 
-	cont = progressUpdate(80.0f, po); // TODO: values
+	cont = (!po) || po->update(80); // TODO: values
 	if (!cont) return cv::Mat3f();
 
 	std::vector<cv::Mat> vec(3);
@@ -222,32 +199,36 @@ private:
 	SOMClosestN closestN;
 };
 
-// TODO: call progressUpdate
-cv::Mat3f RGB::executeSOM(const multi_img &img)
+cv::Mat3f RGB::executeSOM(const multi_img &img, vole::ProgressObserver *po)
 {
 	typedef cv::Mat_<cv::Vec<GenSOM::value_type, 3> > Mat3;
 
-	vole::Stopwatch total("Total runtime of SOM generation");
+	vole::Stopwatch total("Total runtime of false-color image generation");
 
 	img.rebuildPixels(false);
 
-	boost::shared_ptr<GenSOM> som(GenSOM::create(config.som, img));
+	vole::ProgressObserver *calcPo;
+	calcPo = (po ? new vole::ChainedProgressObserver(po, .8f) : 0);
+	boost::shared_ptr<GenSOM> som(GenSOM::create(config.som, img, calcPo));
+	delete calcPo;
+	if (po && !po->update(80))
+		return Mat3();
+
+	// TODO: we lack progress updates from this point on
 
 	//  false color image
 	Mat3 bgr(img.height, img.width);
 
-	{
-		vole::Stopwatch watch("False Color Image Generation");
-		// compute weighted coordinates of multi_img pixels in 3D SOM
-		tbb::parallel_for(tbb::blocked_range2d<int>(0, img.height, // row range
-													0, img.width), // column range
-						  SomRgbTbb<true>(*this, img, som.get(), bgr));
 
-		// DEBUG: run sequentially
-//		SomRgbTbb<true> somRgbTbb(*this, img, som.get(), bgr);
-//		somRgbTbb(tbb::blocked_range2d<int>(0, img.height, 0, img.width));
-	}
+	vole::Stopwatch watch("Pixel color mapping");
+	// compute weighted coordinates of multi_img pixels in 3D SOM
+	tbb::parallel_for(tbb::blocked_range2d<int>(0, img.height, // row range
+												0, img.width), // column range
+					  SomRgbTbb<true>(*this, img, som.get(), bgr));
 
+	// DEBUG: run sequentially
+	//		SomRgbTbb<true> somRgbTbb(*this, img, som.get(), bgr);
+	//		somRgbTbb(tbb::blocked_range2d<int>(0, img.height, 0, img.width));
 
 	return bgr;
 }
@@ -266,18 +247,4 @@ void RGB::printHelp() const {
 	std::cout << std::endl;
 }
 
-void RGB::setSomProgress(int percent)
-{
-	// assuming som training done == our progress 100%,
-	// which appears to be a good estimate.
-	po && po->update(percent);
-}
-
-bool RGB::progressUpdate(float percent, vole::ProgressObserver *po)
-{
-	if (po == NULL)
-		return true;
-
-	return po->update(percent);
-}
-}
+} // namespace gerbil
