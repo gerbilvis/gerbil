@@ -97,13 +97,15 @@ public:
 	}
 
 	/** Return neuron at linear index idx. */
-	Neuron neuron(size_t idx) const;
+	Neuron const& neuron(size_t idx) const {
+		return neurons.at(idx);
+	}
 
 	/** Find best matching unit for inputVec.
 	 *
 	 * @return Pair of distance and linear index into the SOM's neuron array.
 	 */
-	DistIndexPair findBMU(const multi_img::Pixel &inputVec);
+	DistIndexPair findBMU(const multi_img::Pixel &inputVec) const;
 
 	/** Find closest n neurons for inputVec.
 	 *

@@ -263,7 +263,7 @@ GenSOM *GenSOM::create(const SOMConfig &conf, const multi_img &img)
 }
 
 DistIndexPair
-GenSOM::findBMU(const multi_img::Pixel &inputVec)
+GenSOM::findBMU(const multi_img::Pixel &inputVec) const
 {
 	// the best matching unit (index and distance to input) we want to find
 	DistIndexPair bmu;

@@ -13,7 +13,6 @@ public:
 
 	void operator()(const tbb::blocked_range2d<int> &r) const
 	{
-		/* TODO: handle case n == 1 specifically for speed improvement? */
 		// iterate over all pixels in range
 		for(int y=r.rows().begin(); y<r.rows().end(); ++y) {
 			for(int x=r.cols().begin(); x<r.cols().end(); ++x) {
