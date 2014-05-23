@@ -192,10 +192,10 @@ public:
 		typedef cv::Point3_<GenSOM::value_type> Point3;
 
 		// iterate over all pixels in range
-		for(int j=r.rows().begin(); j<r.rows().end(); ++j) {
-			for(int i=r.cols().begin(); i<r.cols().end(); ++i) {
+		for (int y = r.rows().begin(); y < r.rows().end(); ++y) {
+			for (int x = r.cols().begin(); x < r.cols().end(); ++x) {
 				SOMClosestN::resultAccess closest =
-						closestN.closestN(cv::Point2i(i,j));
+						closestN.closestN(cv::Point2i(x, y));
 				Point3 weighted(0,0,0);
 				for (int k = 0; k < o.config.som_depth; ++k) {
 					size_t somidx = (closest.first+k)->index;
@@ -209,7 +209,7 @@ public:
 					weighted.y = tmp.y;  // G
 					weighted.z = tmp.x;  // R
 				}
-				weightedPos(j,i) = weighted;
+				weightedPos(y, x) = weighted;
 			}
 		}
 	}
@@ -231,8 +231,7 @@ cv::Mat3f RGB::executeSOM(const multi_img &img)
 
 	img.rebuildPixels(false);
 
-	typedef boost::shared_ptr<GenSOM> GenSOMPtr;
-	GenSOMPtr som(GenSOM::create(config.som, img));
+	boost::shared_ptr<GenSOM> som(GenSOM::create(config.som, img));
 
 	//  false color image
 	Mat3 bgr(img.height, img.width);
