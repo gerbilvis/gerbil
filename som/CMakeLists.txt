@@ -22,6 +22,7 @@ vole_compile_library(
 	isosom_4d
 
 	som_cache
+	som_distance
 
 	#	som_test
 )

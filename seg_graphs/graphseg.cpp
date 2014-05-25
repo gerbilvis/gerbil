@@ -13,6 +13,7 @@
 #include <sm_factory.h>
 #ifdef WITH_SOM
 #include <gensom.h>
+#include <som_distance.h>
 #endif
 
 #include <stopwatch.h>
@@ -64,17 +65,14 @@ cv::Mat1b GraphSeg::execute(const multi_img& input,
 
 	// edge weights
 	SimilarityMeasure<multi_img::Value> *distfun;
-//#ifdef WITH_SOM
-// FIXME need SOMDistance<>
-#if 0
-	typedef boost::shared_ptr<GenSOM> GenSOMPtr;
-	GenSOMPtr som = NULL;
+#ifdef WITH_SOM
+	boost::shared_ptr<GenSOM> som; // create in this scope so that it survives
 	if (!config.som_similarity) {
 		distfun = SMFactory<multi_img::Value>::spawn(config.similarity);
 	} else {
 		input.rebuildPixels();
-		som = GenSOM::create(config.som, input.size());
-		distfun = new SOMDistance<multi_img::Value>(som, input.height, input.width);
+		som = boost::shared_ptr<GenSOM>(GenSOM::create(config.som, input));
+		distfun = new SOMDistance<multi_img::Value>(*som, input);
 	}
 #else
 	distfun = SMFactory<multi_img::Value>::spawn(config.similarity);

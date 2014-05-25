@@ -276,7 +276,8 @@ GenSOM::findBMU(const multi_img::Pixel &inputVec) const
 void GenSOM::saveFile(std::ostream &os) const
 {
 	if (!os) {
-		throw std::runtime_error("GenSOM::saveFile(): could not write to stream.");
+		throw std::runtime_error("GenSOM::saveFile(): "
+								 "could not write to stream.");
 	}
 
 	os << "gerbilsom\x20\x20\x20\x20\x20\x20\x20";  // 16 byte "magic"
@@ -294,7 +295,8 @@ void GenSOM::saveFile(std::ostream &os) const
 
 
 	if (!os) {
-		throw std::runtime_error("GenSOM::saveFile(): could not write to stream.");
+		throw std::runtime_error("GenSOM::saveFile(): "
+								 "could not write to stream.");
 	}
 
 	// write out neurons
@@ -311,7 +313,8 @@ void GenSOM::saveFile(std::ostream &os) const
 	}
 
 	if (!os) {
-		throw std::runtime_error("GenSOM::saveFile(): could not write to stream.");
+		throw std::runtime_error("GenSOM::saveFile(): "
+								 "could not write to stream.");
 	}
 }
 
@@ -418,7 +421,8 @@ GenSOM *GenSOM::loadFile(const std::string &fileName, const SOMConfig& config)
 	return som;
 }
 
-cv::Mat3f GenSOM::bgr(const std::vector<multi_img_base::BandDesc> &meta, multi_img_base::Value maxval)
+cv::Mat3f GenSOM::bgr(const std::vector<multi_img_base::BandDesc> &meta,
+					  multi_img_base::Value maxval)
 {
 	cv::Mat3f ret(size2D());
 	for (size_t i = 0; i < neurons.size(); ++i) {
