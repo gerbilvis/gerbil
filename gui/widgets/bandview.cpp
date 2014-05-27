@@ -311,33 +311,38 @@ void BandView::cursorAction(QGraphicsSceneMouseEvent *ev, bool click)
 
 	//GGDBGM(boost::format("lastcursor %1%, cursor %2%, clicked %3%")%lastcursor%cursor%click << endl);
 
-	// invalidate lastcursor
-	if (click) {
-		lastcursor = QPoint(-1, -1);
-	}
-
-	// nothing new after all..
-	if (cursor == lastcursor)
-		return;
-
-	// lastcursor invalid -> begin drawing at cursor
-	if (QPoint(-1, -1) == lastcursor) {
-		lastcursor = cursor;
-	}
-
 	// test for dimension match
 	if (!pixmap.rect().contains(cursor)) {
 		lastcursor = QPoint(-1,-1);
 		return;
 	}
 
-	int x = cursor.x(), y = cursor.y();
+	if (click) {
+		// invalidate lastcursor
+		lastcursor = QPoint(-1, -1);
+	} else {
+		// no click and no significant movement
+		if (cursor == lastcursor)
+			return;
+	}
+
+	// lastcursor invalid -> begin drawing at cursor
+	if (QPoint(-1, -1) == lastcursor) {
+		lastcursor = cursor;
+	}
+
+	// overlay in spectral views but not during pixel labeling (reduce lag)
+	if (ev->buttons() == Qt::NoButton)
+		emit pixelOverlay(cursor.y(), cursor.x());
+
+	/// single label case
 	if (singleLabel && showLabels) {
+		short cursorLabel = labels(cursor.y(), cursor.x());
 		if (ev->buttons() & Qt::LeftButton) {
 			holdLabel = !holdLabel;
 		}
-		if (!holdLabel && (labels(y, x) != curLabel)) {
-			curLabel = labels(y, x);
+		if (!holdLabel && (cursorLabel != curLabel)) {
+			curLabel = cursorLabel;
 			curMask = cv::Mat1b(labels.rows, labels.cols, (uchar)0);
 			curMask.setTo(1, (labels == curLabel));
 			drawOverlay(curMask);
@@ -346,16 +351,10 @@ void BandView::cursorAction(QGraphicsSceneMouseEvent *ev, bool click)
 			if (overlay != &curMask)
 				drawOverlay(curMask);
 		}
-		emit pixelOverlay(y, x);
 		return;
 	}
-
 	/// end of function for singleLabel case. no manipulations,
 	/// destroying overlay etc.
-
-	// overlay in spectral views but not during pixel labeling (reduce lag)
-	if (ev->buttons() == Qt::NoButton)
-		emit pixelOverlay(y, x);
 
 	if (ev->buttons() != Qt::NoButton) {
 		/* alter all pixels on the line between previous and current position.
@@ -363,7 +362,7 @@ void BandView::cursorAction(QGraphicsSceneMouseEvent *ev, bool click)
 		 * every pixel the mouse moved over. this is a good approximation. */
 		QLineF line(lastcursor, cursor);
 		qreal step = 1 / line.length();
-		for (qreal t = 0.0; t < 1.0; t += step) {
+		for (qreal t = 0.0; t <= 1.0; t += step) {
 			QPointF point = line.pointAt(t);
 			int x = point.x();
 			int y = point.y();
@@ -376,7 +375,6 @@ void BandView::cursorAction(QGraphicsSceneMouseEvent *ev, bool click)
 					uncommitedLabels(y, x) = 1;
 					labels(y, x) = curLabel;
 					updateCache(y, x, curLabel);
-					labelTimer.start();
 				} else {
 					seedMap(y, x) = 0;
 					updateCache(y, x);
@@ -388,9 +386,6 @@ void BandView::cursorAction(QGraphicsSceneMouseEvent *ev, bool click)
 						uncommitedLabels(y, x) = 1;
 						labels(y, x) = 0;
 						updateCache(y, x, 0);
-						labelTimer.start();
-						if (!grandupdate)
-							updatePoint(cursor);
 					}
 				} else {
 					seedMap(y, x) = 255;
@@ -398,10 +393,12 @@ void BandView::cursorAction(QGraphicsSceneMouseEvent *ev, bool click)
 				}
 			}
 		}
+		if (!seedMode) // we must have updated something in the labeling
+			labelTimer.start();
 	}
 
 	if (!grandupdate)
-		updatePoint(lastcursor);
+		updatePoint(lastcursor); // show change. Why is lastcursor enough?
 	lastcursor = cursor;
 
 	if (grandupdate) {
