@@ -101,7 +101,7 @@ public:
 
 			// transform mask into icon
 			cv::Mat1b masktrf = cv::Mat1b::zeros(iconSizecv);
-			cv::warpAffine(mask, masktrf, trafo, iconSizecv, CV_INTER_NN);
+			cv::warpAffine(mask, masktrf, trafo, iconSizecv, CV_INTER_LINEAR);
 
 			if(tbb::task::self().is_cancelled()) {
 				//GGDBGM("aborted through tbb cancel." << endl);
