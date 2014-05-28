@@ -34,14 +34,6 @@ endif(WIN32)
 # We use boost tr1 instead.
 # http://www.boost.org/doc/libs/1_55_0/doc/html/boost_tr1.html
 
-#
-################################
-# FIXME TODO REMOVE TODO FIXME #
-################################
-#
-# enable C++11, temporary for merging old code
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11")
-
 include(EnableSSE2)
 
 # Global options

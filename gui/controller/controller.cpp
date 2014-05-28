@@ -16,6 +16,7 @@
 #include "gerbil_gui_debug.h"
 
 #include <boost/ref.hpp>
+#include <boost/foreach.hpp>
 #include <cstdlib> // for exit()
 
 // for DEBUG
@@ -384,11 +385,14 @@ void Controller::processUnSubscribeFalseColor(QObject *subscriber, FalseColoring
 {
 	assert(subs);
 	subs->falseColor.erase(FalseColorSubscription(subscriber,coloring));
-	if (std::find_if(subs->falseColor.cbegin(), subs->falseColor.cend(),
-			[coloring] (const FalseColorSubscription& sub) 	{
-				return sub.second == coloring;
-			}) == subs->falseColor.cend() )
-	{
+	bool anysubs = false;
+	BOOST_FOREACH(FalseColorSubscription const & sub, subs->falseColor) {
+		if (sub.second == coloring) {
+			anysubs = true;
+			break;
+		}
+	}
+	if (!anysubs) {
 		// no more subscriptions for coloring,
 		// cancel computation if any.
 		fm->cancelComputation(coloring);
@@ -421,41 +425,39 @@ void Controller::focusChange(QWidget *old, QWidget *now)
 			  << " to " << now->objectName().toStdString() << std::endl;
 }
 
+typedef std::pair<representation::t, int> ImageBand;
+// Hash function for ImageBand
+typedef pair_hash<representation::t, int, int, int> ImageBandHash;
+typedef std::tr1::unordered_set<ImageBand, ImageBandHash> ImageBandSet;
 
 void Controller::processImageUpdate(representation::t repr)
 {
 	// image band updates
 
-	typedef std::pair<representation::t, int> ImageBand;
-	// Hash function for ImageBand
-	typedef pair_hash<representation::t, int, int, int> ImageBandHash;
-	typedef std::unordered_set<ImageBand, ImageBandHash> ImageBandSet;
-
 	ImageBandSet bandUpdates;
 
 	assert(subs);
-	for (auto const& sub : subs->imageBand) {
-		if(repr == std::get<1>(sub))	 {
-			bandUpdates.insert(ImageBand(std::get<1>(sub), std::get<2>(sub)));
+	BOOST_FOREACH (ImageBandSubscription const& sub, subs->imageBand) {
+		if(repr == std::tr1::get<1>(sub))	 {
+			bandUpdates.insert(ImageBand(std::tr1::get<1>(sub), std::tr1::get<2>(sub)));
 		}
 	}
-	for (auto const& ib : bandUpdates) {
+	BOOST_FOREACH (ImageBandSet::value_type const& ib, bandUpdates) {
 		//GGDBGM("requesting band " << ib.first << " " << ib.second << endl);
 		im->computeBand(ib.first, ib.second);
 	}
 
 	// false color updates
 
-	typedef std::unordered_set<FalseColoring::Type, std::hash<int>> FalseColoringSet;
+	typedef std::tr1::unordered_set<FalseColoring::Type, std::tr1::hash<int> > FalseColoringSet;
 	FalseColoringSet fcUpdates;
-
-	for (auto const& ct : subs->falseColor) {
+	BOOST_FOREACH (FalseColorSubscriptionHashSet::value_type const& ct, subs->falseColor) {
 		FalseColoring::Type coloring = ct.second;
 		if (FalseColoring::isBasedOn(coloring, repr)) {
 			fcUpdates.insert(coloring);
 		}
 	}
-	for (auto const& coloring : fcUpdates) {
+	BOOST_FOREACH (FalseColoringSet::value_type const& coloring, fcUpdates) {
 		fm->requestColoring(coloring);
 	}
 

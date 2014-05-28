@@ -10,17 +10,18 @@
 #include <model/representation.h>
 #include <model/falsecolor/falsecoloring.h>
 
-#include <tuple>
-#include <utility>
-#include <unordered_set>
-#include <functional>
+#include <boost/tr1/tuple.hpp>
+#include <boost/tr1/utility.hpp>
+#include <boost/tr1/unordered_set.hpp>
+#include <boost/tr1/functional.hpp>
 
 class QObject;
 
 template<typename T>
+
 std::size_t make_hash(const T& v)
 {
-    return std::hash<T>()(v);
+	return std::tr1::hash<T>()(v);
 }
 
 /** General std::hash hash functor for std::pair.
@@ -49,23 +50,23 @@ template<typename First, typename Second, typename Third,
 		 typename FirstHashT = First, typename SecondHashT = Second,
 		 typename ThirdHashT = Third>
 struct triple_hash {
-	typedef std::tuple<First,Second, Third> argument_type;
+	typedef std::tr1::tuple<First,Second, Third> argument_type;
 	typedef std::size_t result_type;
 
 	result_type operator()(argument_type const& t) const {
-		return make_hash<FirstHashT>(std::get<0>(t)) ^
-				(make_hash<SecondHashT>(std::get<1>(t)) << 1) ^
-				(make_hash<ThirdHashT>(std::get<2>(t)) << 3);
+		return make_hash<FirstHashT>(std::tr1::get<0>(t)) ^
+				(make_hash<SecondHashT>(std::tr1::get<1>(t)) << 1) ^
+				(make_hash<ThirdHashT>(std::tr1::get<2>(t)) << 3);
 	}
 };
 
 /// Image Band
-typedef std::tuple<QObject*, representation::t, int> ImageBandSubscription;
+typedef std::tr1::tuple<QObject*, representation::t, int> ImageBandSubscription;
 
 // Hash function for ImageBandSubscription
 typedef triple_hash<QObject*, representation::t, int, QObject*, int, int>
 	ImageBandSubscriptionHash;
-typedef std::unordered_set<ImageBandSubscription, ImageBandSubscriptionHash>
+typedef std::tr1::unordered_set<ImageBandSubscription, ImageBandSubscriptionHash>
 		ImageBandSubscriptionHashSet;
 
 /// False Color
@@ -73,7 +74,7 @@ typedef std::pair<QObject*, FalseColoring::Type> FalseColorSubscription;
 
 // Hash function for FalseColorSubscription
 typedef pair_hash<QObject*, FalseColoring::Type, QObject*, int> FalseColorSubscriptionHash;
-typedef std::unordered_set<FalseColorSubscription, FalseColorSubscriptionHash>
+typedef std::tr1::unordered_set<FalseColorSubscription, FalseColorSubscriptionHash>
 		FalseColorSubscriptionHashSet;
 
 struct Subscriptions {
