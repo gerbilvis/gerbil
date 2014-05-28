@@ -371,12 +371,19 @@ void Controller::processUnsubscribeImageBand(QObject *subscriber, representation
 
 void Controller::processSubscribeFalseColor(QObject *subscriber, FalseColoring::Type coloring, bool newSom)
 {
-	// TODO
+	assert(subs);
+	typedef std::pair<FalseColorSubscriptionHashSet::const_iterator, bool> InsertResult;
+	InsertResult r = subs->falseColor.insert(FalseColorSubscription(subscriber, coloring));
+	bool inserted = r.second;
+	if(inserted || (newSom && !FalseColoring::isDeterministic(coloring))) {
+		fm->requestColoring(coloring);
+	}
 }
 
 void Controller::processUnSubscribeFalseColor(QObject *subscriber, FalseColoring::Type coloring)
 {
-	// TODO
+	assert(subs);
+	subs->falseColor.erase(FalseColorSubscription(subscriber,coloring));
 }
 
 void Controller::startQueue()
@@ -408,22 +415,39 @@ void Controller::focusChange(QWidget *old, QWidget *now)
 
 void Controller::processImageUpdate(representation::t repr)
 {
+	// image band updates
+
 	typedef std::pair<representation::t, int> ImageBand;
 	// Hash function for ImageBand
 	typedef pair_hash<representation::t, int, int, int> ImageBandHash;
 	typedef std::unordered_set<ImageBand, ImageBandHash> ImageBandSet;
 
-	ImageBandSet updates;
+	ImageBandSet bandUpdates;
 
 	assert(subs);
 	for (auto const& sub : subs->imageBand) {
 		if(repr == std::get<1>(sub))	 {
-			updates.insert(ImageBand(std::get<1>(sub), std::get<2>(sub)));
+			bandUpdates.insert(ImageBand(std::get<1>(sub), std::get<2>(sub)));
 		}
 	}
-	for (auto const& ib : updates) {
+	for (auto const& ib : bandUpdates) {
 		//GGDBGM("requesting band " << ib.first << " " << ib.second << endl);
 		im->computeBand(ib.first, ib.second);
+	}
+
+	// false color updates
+
+	typedef std::unordered_set<FalseColoring::Type, std::hash<int>> FalseColoringSet;
+	FalseColoringSet fcUpdates;
+
+	for (auto const& ct : subs->falseColor) {
+		FalseColoring::Type coloring = ct.second;
+		if (FalseColoring::isBasedOn(coloring, repr)) {
+			fcUpdates.insert(coloring);
+		}
+	}
+	for (auto const& coloring : fcUpdates) {
+		fm->requestColoring(coloring);
 	}
 
 }
