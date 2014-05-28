@@ -1,4 +1,5 @@
 #include "controller.h"
+#include "subscriptions.h"
 #include "controller/distviewcontroller.h"
 #include <imginput.h>
 #include <rectangles.h>
@@ -32,7 +33,8 @@ Controller::Controller(const std::string &filename, bool limited_mode,
 	  cm(0),
 #endif
 	  dvc(0),
-	  queuethread(0)
+	  queuethread(0),
+	  subs(new Subscriptions)
 {
 	// start background task queue thread
 	startQueue();
@@ -135,6 +137,8 @@ Controller::~Controller()
 	delete illumm;
 	delete gsm;
 	delete cm;
+
+	delete subs;
 
 	// stop background task queue thread
 	stopQueue();
@@ -349,8 +353,9 @@ void Controller::disableGUI(TaskType tt)
 
 void Controller::processSubscribeImageBand(QObject *subscriber, representation::t repr, int bandId)
 {
+	assert(subs);
 	typedef std::pair<ImageBandSubscriptionHashSet::const_iterator, bool> InsertResult;
-	InsertResult r = imageBandSubs.insert(ImageBandSubscription(subscriber, repr, bandId));
+	InsertResult r = subs->imageBand.insert(ImageBandSubscription(subscriber, repr, bandId));
 	bool inserted = r.second;
 	// if not inserted, the subscription already exists -> no need to update
 	if (inserted) {
@@ -360,7 +365,18 @@ void Controller::processSubscribeImageBand(QObject *subscriber, representation::
 
 void Controller::processUnsubscribeImageBand(QObject *subscriber, representation::t repr, int bandId)
 {
-	imageBandSubs.erase(ImageBandSubscription(subscriber, repr, bandId));
+	assert(subs);
+	subs->imageBand.erase(ImageBandSubscription(subscriber, repr, bandId));
+}
+
+void Controller::processSubscribeFalseColor(QObject *subscriber, FalseColoring::Type coloring, bool newSom)
+{
+	// TODO
+}
+
+void Controller::processUnSubscribeFalseColor(QObject *subscriber, FalseColoring::Type coloring)
+{
+	// TODO
 }
 
 void Controller::startQueue()
@@ -392,22 +408,22 @@ void Controller::focusChange(QWidget *old, QWidget *now)
 
 void Controller::processImageUpdate(representation::t repr)
 {
+	typedef std::pair<representation::t, int> ImageBand;
+	// Hash function for ImageBand
+	typedef pair_hash<representation::t, int, int, int> ImageBandHash;
+	typedef std::unordered_set<ImageBand, ImageBandHash> ImageBandSet;
+
 	ImageBandSet updates;
 
-	for (ImageBandSubscriptionHashSet::iterator it = imageBandSubs.begin();
-		 it != imageBandSubs.end();
-		 ++it)
-	{
-		if(repr == std::tr1::get<1>(*it))	 {
-			updates.insert(ImageBand(std::tr1::get<1>(*it), std::tr1::get<2>(*it)));
+	assert(subs);
+	for (auto const& sub : subs->imageBand) {
+		if(repr == std::get<1>(sub))	 {
+			updates.insert(ImageBand(std::get<1>(sub), std::get<2>(sub)));
 		}
 	}
-	for (ImageBandSet::const_iterator it = updates.begin();
-		 it != updates.end();
-		 ++it)
-	{
+	for (auto const& ib : updates) {
 		//GGDBGM("requesting band " << ib.first << " " << ib.second << endl);
-		im->computeBand(it->first, it->second);
+		im->computeBand(ib.first, ib.second);
 	}
 
 }

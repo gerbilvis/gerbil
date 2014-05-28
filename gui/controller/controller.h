@@ -5,13 +5,7 @@
 #include <shared_data.h>
 #include <background_task/background_task.h>
 #include <background_task/background_task_queue.h>
-
-// Use boost TR1 headers for cross platform compatibility.
-// See http://www.boost.org/doc/libs/1_55_0/doc/html/boost_tr1.html#boost_tr1.intro
-#include <boost/tr1/utility.hpp>
-#include <boost/tr1/unordered_set.hpp>
-// for std::tr1::hash
-#include <boost/tr1/functional.hpp>
+#include <model/falsecolor/falsecoloring.h>
 
 #include <QObject>
 #include <QMap>
@@ -44,6 +38,8 @@ namespace vole
 {
 	class GraphSegConfig;
 }
+
+class Subscriptions;
 
 /** Controller class. */
 class Controller : public QObject
@@ -150,6 +146,19 @@ protected slots:
 	void processSubscribeImageBand(QObject *subscriber, representation::t repr, int bandId);
 	void processUnsubscribeImageBand(QObject *subscriber, representation::t repr, int bandId);
 
+	/** Subscribe for false color image.
+	 *
+	 * Subscribes a subscriber for false color image updates from FalseColorModel.
+	 * A subscriber may subscribe to SOM based false color representation
+	 * multiple times with newSom = true. This triggers a forced
+	 * re-calculation.
+	 *
+	 *  @param newSom Re-calculate a SOM based false color image even if an
+	 *  up-to-date cached instance exists (SOM is non-deterministic).
+	 */
+	void processSubscribeFalseColor(QObject *subscriber, FalseColoring::Type coloring, bool newSom = false);
+	void processUnSubscribeFalseColor(QObject *subscriber, FalseColoring::Type coloring);
+
 protected:
 	// connect models with gui
 	void initImage();
@@ -229,36 +238,9 @@ protected:
 
 /// SUBSCRIPTIONS
 
-	typedef std::tr1::tuple<QObject*, representation::t, int> ImageBandSubscription;
+	// see subscriptions.h
+	Subscriptions *subs;
 
-	// Hash function for ImageBandSubscription
-	struct ImageBandSubscriptionHash {
-		typedef ImageBandSubscription argument_type;
-		typedef std::size_t result_type;
-
-		result_type operator()(argument_type const& s) const {
-			return std::tr1::hash<void*>()(std::tr1::get<0>(s)) ^
-					(std::tr1::hash<int>()(std::tr1::get<1>(s)) << 1) ^
-					(std::tr1::hash<int>()(std::tr1::get<2>(s)) << 3);
-		}
-	};
-	typedef std::tr1::unordered_set<ImageBandSubscription, ImageBandSubscriptionHash>
-			ImageBandSubscriptionHashSet;
-
-	ImageBandSubscriptionHashSet imageBandSubs;
-
-	typedef std::pair<representation::t, int> ImageBand;
-	// Hash function for ImageBand
-	struct ImageBandHash {
-		typedef ImageBand argument_type;
-		typedef std::size_t result_type;
-
-		result_type operator()(argument_type const& s) const {
-			return std::tr1::hash<int>()(std::tr1::get<0>(s)) ^
-					(std::tr1::hash<int>()(std::tr1::get<1>(s)) << 1);
-		}
-	};
-	typedef std::tr1::unordered_set<ImageBand, ImageBandHash> ImageBandSet;
 };
 
 #endif // CONTROLLER_H
