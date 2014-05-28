@@ -70,10 +70,10 @@ public:
 	virtual ~Labeling() {}
 
 	/// Get label matrix, index 0 means "empty" label, indices are subsequent.
-	const cv::Mat1s operator()() const { return labels; }
+	const cv::Mat1s &operator()() const { return labels; }
 
 	/// Get label matrix, index 0 means "empty" label, indices are subsequent.
-	const cv::Mat1s getLabels() const { return labels; }
+	const cv::Mat1s &getLabels() const { return labels; }
 
 	/// return number of label indices (including 0 -- background label)
 	int getCount() const { return labelcount; }
