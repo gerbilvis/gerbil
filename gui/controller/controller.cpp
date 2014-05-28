@@ -384,6 +384,15 @@ void Controller::processUnSubscribeFalseColor(QObject *subscriber, FalseColoring
 {
 	assert(subs);
 	subs->falseColor.erase(FalseColorSubscription(subscriber,coloring));
+	if (std::find_if(subs->falseColor.cbegin(), subs->falseColor.cend(),
+			[coloring] (const FalseColorSubscription& sub) 	{
+				return sub.second == coloring;
+			}) == subs->falseColor.cend() )
+	{
+		// no more subscriptions for coloring,
+		// cancel computation if any.
+		fm->cancelComputation(coloring);
+	}
 }
 
 void Controller::startQueue()
