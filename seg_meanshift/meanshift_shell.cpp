@@ -33,12 +33,15 @@ MeanShiftShell::~MeanShiftShell() {}
 
 int MeanShiftShell::execute() {
 	multi_img::ptr input, input_grad;
+#ifdef WITH_SEG_FELZENSZWALB
 	if (config.sp_withGrad) {
 		input = ImgInput(config.input).execute();
 		input_grad = multi_img::ptr(new multi_img(*input, true));
 		input_grad->apply_logarithm();
 		*input_grad = input_grad->spec_gradient();
-	} else {
+	} else
+#endif
+    {
 		input = ImgInput(config.input).execute();
 	}
 	if (input->empty())
@@ -46,9 +49,11 @@ int MeanShiftShell::execute() {
 
 	// rebuild before stopwatch for fair comparison
 	input->rebuildPixels(false);
+#ifdef WITH_SEG_FELZENSZWALB
 	if (config.sp_withGrad) {
 		input_grad->rebuildPixels(false);
 	}
+#endif
 
 	Labeling labels;
 	{
@@ -58,7 +63,11 @@ int MeanShiftShell::execute() {
 		if (config.findKL) {
 		// find K, L
 			std::pair<int, int> ret = ms.findKL(
+#ifdef WITH_SEG_FELZENSZWALB
 						(config.sp_withGrad ? *input_grad : *input));
+#else
+						*input);
+#endif
 			config.K = ret.first; config.L = ret.second;
 			std::cout << "Found K = " << config.K
 				      << "\tL = " << config.L << std::endl;
@@ -72,10 +81,13 @@ int MeanShiftShell::execute() {
 	#endif
 
 		cv::Mat1s labels_mask;
+#ifdef WITH_SEG_FELZENSZWALB
 		if (config.sp_withGrad) {
 			// mean shift on grad, but SP on image
 			labels_mask = ms.execute(*input_grad, NULL, NULL, *input);
-		} else {
+		} else
+#endif
+		{
 			labels_mask = ms.execute(*input, NULL, NULL, *input);
 		}
 		if (labels_mask.empty())
@@ -99,22 +111,31 @@ std::map<std::string, boost::any> MeanShiftShell::execute(std::map<std::string, 
 
 	boost::shared_ptr<multi_img> inputimg = boost::any_cast<boost::shared_ptr<multi_img> >(input["multi_img"]);
 	boost::shared_ptr<multi_img> inputgrad;
+#ifdef WITH_SEG_FELZENSZWALB
 	if (config.sp_withGrad) {
 		inputgrad =
 			boost::any_cast<boost::shared_ptr<multi_img> >(input["multi_grad"]);
 	}
+#endif
 
 	// make sure pixel caches are built
 	inputimg->rebuildPixels(true);
+
+#ifdef WITH_SEG_FELZENSZWALB
 	if (config.sp_withGrad)
 		inputgrad->rebuildPixels(true);
+#endif
 
 	MeanShift ms(config);
 	std::map<std::string, boost::any> output;
 	if (config.findKL) {
 	// find K, L
 		std::pair<int, int> ret = ms.findKL(
+#ifdef WITH_SEG_FELZENSZWALB
 					(config.sp_withGrad ? *inputgrad : *inputimg));
+#else
+					*inputimg);
+#endif
 		config.K = ret.first; config.L = ret.second;
 		std::cout << "Found K = " << config.K
 				  << "\tL = " << config.L << std::endl;
@@ -123,7 +144,12 @@ std::map<std::string, boost::any> MeanShiftShell::execute(std::map<std::string, 
 		output["findKL.L"] = ret.second;
 	} else {
 		boost::shared_ptr<cv::Mat1s> labels_mask(new cv::Mat1s(
-			  ms.execute((config.sp_withGrad ? *inputgrad : *inputimg),
+			  ms.execute(
+#ifdef WITH_SEG_FELZENSZWALB
+						(config.sp_withGrad ? *inputgrad : *inputimg),
+#else
+						*inputimg,
+#endif
 						 progress, NULL, *inputimg)));
 		output["labels"] = labels_mask;
 	}

@@ -102,7 +102,7 @@ void multi_img_offloaded::getBand(size_t band, Band &data) const
 
 	// find original data range, we assume minimum is 0
 	Value srcminval = 0.;
-	Value srcmaxval;
+	Value srcmaxval = 0.;
 	// we expect CV_8U, CV_16U or floating point in [0..1]
 	switch (src.depth()) {
 	case CV_8U:	 { srcmaxval = 255.; break; }

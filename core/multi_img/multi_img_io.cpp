@@ -52,8 +52,8 @@ QImage multi_img::export_qt(unsigned int band) const
 // read image part (what fits into one cv::Mat)
 int multi_img::read_mat(const cv::Mat &src)
 {
-	// find original data range, we assume minimum is 0
-	Value srcmaxval;
+	// find maximum of original data range, while we assume minimum is 0
+	Value srcmaxval = 0.;
 	// we expect CV_8U, CV_16U or floating point in [0..1]
 	switch (src.depth()) {
 		case CV_8U:	 { srcmaxval = 255.; break; }

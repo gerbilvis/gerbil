@@ -12,9 +12,9 @@ namespace vole {
 enum ms_sampling {
 	ALL,
 	JUMP,
-	PERCENT,
+	PERCENT
 #ifdef WITH_SEG_FELZENSZWALB
-	SUPERPIXEL,
+	,SUPERPIXEL
 #endif
 };
 #ifdef WITH_SEG_FELZENSZWALB
@@ -49,9 +49,6 @@ public:
 
 	/// file prefix
 	std::string output_prefix;
-
-	/// write out the total coverage (FALSE) or only label (index) image (TRUE)
-	bool batch;
 
 	/// use locality sensitive hashing
 	bool use_LSH;

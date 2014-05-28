@@ -113,7 +113,7 @@ cv::Mat1s MeanShift::execute(const multi_img& input, ProgressObserver *progress,
 	// postprocess: prune modes
 	cfams.PruneModes();
 
-	if (!config.batch) {
+	if (config.verbosity > 1) {
 		// save the data
 		cfams.SaveModeImg(config.output_directory + "/"
 						  + config.output_prefix + "modes", input.meta);

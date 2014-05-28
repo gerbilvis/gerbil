@@ -62,7 +62,6 @@ void ClusteringDock::startUnsupervisedSeg()
 				static_cast<vole::MeanShiftShell*>(cmd)->config;
 
 		// fixed settings
-		config.batch = true;
 		if (method == 3) {
 			/* if combination of gradient and PSPMS requested, we assume that
 			   the user wants our best-working method in paper (sp_withGrad)
@@ -85,7 +84,6 @@ void ClusteringDock::startUnsupervisedSeg()
 				static_cast<vole::MeanShiftSP*>(cmd)->config;
 
 		// fixed settings
-		config.batch = true;
 		/* see method == 3
 		 */
 		config.sp_withGrad = usGradientCheckBox->isChecked();

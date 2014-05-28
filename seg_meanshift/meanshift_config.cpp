@@ -40,7 +40,6 @@ MeanShiftConfig::MeanShiftConfig(const std::string& prefix)
 	pruneMinN = 50;
 
 	output_directory = "/tmp";
-	batch = false;
 	findKL = false;
 
 	initBoostOptions();
@@ -132,8 +131,6 @@ void MeanShiftConfig::initBoostOptions() {
 			 "Working directory")
 			(key("prefix"), value(&output_prefix)->default_value(output_prefix),
 			 "Prefix to all output filenames")
-			("batchmode", bool_switch(&batch)->default_value(batch),
-			 "write out the total coverage (FALSE) or only label (index) image (TRUE)")
 			("doFindKL", bool_switch(&findKL)->default_value(findKL),
 			 "empirically determine optimal K, L values (1 < L < lsh.L)")
 			("Kmin", value(&Kmin)->default_value(Kmin),
