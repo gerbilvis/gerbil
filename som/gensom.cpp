@@ -421,6 +421,19 @@ GenSOM *GenSOM::loadFile(const std::string &fileName, const SOMConfig& config)
 	return som;
 }
 
+multi_img GenSOM::img(const std::vector<multi_img_base::BandDesc> &meta,
+					  const multi_img_base::Range &range)
+{
+	cv::Size size = size2D();
+	multi_img ret(size.height, size.width, neurons[0].size());
+	ret.meta = meta;
+	ret.minval = range.min; ret.maxval = range.max;
+	for (size_t i = 0; i < neurons.size(); ++i) {
+		ret.setPixel(getCoord2D(i), neurons[i]);
+	}
+	return ret;
+}
+
 cv::Mat3f GenSOM::bgr(const std::vector<multi_img_base::BandDesc> &meta,
 					  multi_img_base::Value maxval)
 {

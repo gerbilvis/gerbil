@@ -161,7 +161,11 @@ public:
 	static GenSOM* loadFile(std::istream &is, const SOMConfig& config);
 	static GenSOM* loadFile(const std::string &fileName, const SOMConfig& config);
 
-	/** Write out RGB representation of SOM (useful for debugging) */
+	/** Compose multi_img based on SOM values ordered in a 2D structure */
+	multi_img img(const std::vector<multi_img_base::BandDesc> &meta,
+				  const multi_img_base::Range &range);
+
+	/** Compute RGB representation of SOM in 2D (useful for debugging) */
 	cv::Mat3f bgr(const std::vector<multi_img::BandDesc> &meta,
 				  multi_img::Value maxval);
 
