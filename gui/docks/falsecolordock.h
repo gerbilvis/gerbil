@@ -12,7 +12,7 @@ class ScaledView;
 class AutohideWidget;
 
 struct FalseColoringState {
-	enum Type {FINISHED=0, CALCULATING, ABORTING};
+	enum Type {UNKNOWN=0,FINISHED, CALCULATING, ABORTING};
 };
 std::ostream &operator<<(std::ostream& os, const FalseColoringState::Type& state);
 

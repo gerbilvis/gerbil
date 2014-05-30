@@ -11,13 +11,15 @@
 
 std::ostream &operator<<(std::ostream& os, const FalseColoringState::Type& state)
 {
-	if (state < 0 || state >= 3) {
+	if (state < 0 || state >= 4) {
 		os << "INVALID";
 		return os;
 	}
-	const char * const str[] = { "FINISHED",
-								 "CALCULATING",
-								 "ABORTING"};
+	const char * const str[] = {
+		"UNKNOWN",
+		"FINISHED",
+		"CALCULATING",
+		"ABORTING"};
 	os << str[state];
 	return os;
 }
@@ -69,11 +71,11 @@ void FalseColorDock::processComputationCancelled(FalseColoring::Type coloringTyp
 	if(coloringState[coloringType] == FalseColoringState::ABORTING) {
 		coloringProgress[coloringType] = 0;
 		//GGDBGM("enterState():"<<endl);
-		enterState(coloringType, FalseColoringState::FINISHED);
+		enterState(coloringType, FalseColoringState::UNKNOWN);
 		updateTheButton();
 		updateProgressBar();
 	} else if(coloringState[coloringType] == FalseColoringState::CALCULATING) {
-		enterState(coloringType, FalseColoringState::FINISHED);
+		enterState(coloringType, FalseColoringState::UNKNOWN);
 		//GGDBGM("restarting cancelled computation"<<endl);
 		requestColoring(coloringType);
 	}
@@ -169,9 +171,11 @@ FalseColoring::Type FalseColorDock::selectedColoring()
 
 void FalseColorDock::requestColoring(FalseColoring::Type coloringType, bool recalc)
 {
-	//GGDBGM("enterState():"<<endl);
-	enterState(coloringType, FalseColoringState::CALCULATING);
-	updateTheButton();
+	if(coloringState[coloringType] != FalseColoringState::FINISHED || recalc) {
+			//GGDBGM("enterState():"<<endl);
+			enterState(coloringType, FalseColoringState::CALCULATING);
+			updateTheButton();
+	}
 	if (recalc) {
 		emit falseColoringRecalcRequested(coloringType);
 	} else {
