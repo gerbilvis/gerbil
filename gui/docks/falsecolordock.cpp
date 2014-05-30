@@ -241,19 +241,11 @@ void FalseColorDock::enterState(FalseColoring::Type coloringType, FalseColoringS
 void FalseColorDock::processVisibilityChanged(bool visible)
 {
 	//GGDBG_CALL();
-	dockVisible = visible;
-
 	if (visible) {
 		requestColoring(selectedColoring());
 	} else {
 		emit unsubscribeFalseColoring(this, selectedColoring());
 	}
-
-	// Causes infinite signal loop if uncommented, because FalseColorModel not
-	// properly initialized yet.
-	//if(dockVisible) {
-	//	requestColoring(selectedColoring());
-	//}
 }
 
 

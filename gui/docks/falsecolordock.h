@@ -60,10 +60,6 @@ protected:
 
 	void enterState(FalseColoring::Type coloringType, FalseColoringState::Type state);
 
-	// True if the dock is visible (that is tab is selected or top level).
-	// Note: This is not the same as QWidget::isVisible()!
-	bool dockVisible;
-
 	// State of the FalseColorings
 	QMap<FalseColoring::Type, FalseColoringState::Type> coloringState;
 	// Calculation progress percentage for progressbar for each FalseColoring
