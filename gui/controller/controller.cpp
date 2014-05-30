@@ -355,11 +355,10 @@ void Controller::disableGUI(TaskType tt)
 void Controller::processSubscribeImageBand(QObject *subscriber, representation::t repr, int bandId)
 {
 	assert(subs);
-	typedef std::pair<ImageBandSubscriptionHashSet::const_iterator, bool> InsertResult;
-	InsertResult r = subs->imageBand.insert(ImageBandSubscription(subscriber, repr, bandId));
-	bool inserted = r.second;
+	std::pair<Subscription<ImageBandId>::Set::const_iterator, bool> insertResult =
+			subs->imageBand.insert(Subscription<ImageBandId>(subscriber, ImageBandId(repr, bandId)));
 	// if not inserted, the subscription already exists -> no need to update
-	if (inserted) {
+	if (insertResult.second) {
 		im->computeBand(repr, bandId);
 	}
 }
@@ -367,16 +366,15 @@ void Controller::processSubscribeImageBand(QObject *subscriber, representation::
 void Controller::processUnsubscribeImageBand(QObject *subscriber, representation::t repr, int bandId)
 {
 	assert(subs);
-	subs->imageBand.erase(ImageBandSubscription(subscriber, repr, bandId));
+	subs->imageBand.erase(Subscription<ImageBandId>(subscriber, ImageBandId(repr, bandId)));
 }
 
 void Controller::processSubscribeFalseColor(QObject *subscriber, FalseColoring::Type coloring, bool newSom)
 {
 	assert(subs);
-	typedef std::pair<FalseColorSubscriptionHashSet::const_iterator, bool> InsertResult;
-	InsertResult r = subs->falseColor.insert(FalseColorSubscription(subscriber, coloring));
-	bool inserted = r.second;
-	if(inserted || (newSom && !FalseColoring::isDeterministic(coloring))) {
+	std::pair<Subscription<FalseColoring::Type>::Set::const_iterator, bool> insertResult =
+			subs->falseColor.insert(Subscription<FalseColoring::Type>(subscriber, coloring));
+	if(insertResult.second || (newSom && !FalseColoring::isDeterministic(coloring))) {
 		fm->requestColoring(coloring);
 	}
 }
@@ -384,10 +382,10 @@ void Controller::processSubscribeFalseColor(QObject *subscriber, FalseColoring::
 void Controller::processUnSubscribeFalseColor(QObject *subscriber, FalseColoring::Type coloring)
 {
 	assert(subs);
-	subs->falseColor.erase(FalseColorSubscription(subscriber,coloring));
+	subs->falseColor.erase(Subscription<FalseColoring::Type>(subscriber, coloring));
 	bool anysubs = false;
-	BOOST_FOREACH(FalseColorSubscription const & sub, subs->falseColor) {
-		if (sub.second == coloring) {
+	BOOST_FOREACH(Subscription<FalseColoring::Type> const & sub, subs->falseColor) {
+		if (sub.subsid == coloring) {
 			anysubs = true;
 			break;
 		}
@@ -425,34 +423,29 @@ void Controller::focusChange(QWidget *old, QWidget *now)
 			  << " to " << now->objectName().toStdString() << std::endl;
 }
 
-typedef std::pair<representation::t, int> ImageBand;
-// Hash function for ImageBand
-typedef pair_hash<representation::t, int, int, int> ImageBandHash;
-typedef std::tr1::unordered_set<ImageBand, ImageBandHash> ImageBandSet;
-
 void Controller::processImageUpdate(representation::t repr)
 {
 	// image band updates
 
-	ImageBandSet bandUpdates;
+	Subscription<ImageBandId>::IdTypeSet bandUpdates;
 
 	assert(subs);
-	BOOST_FOREACH (ImageBandSubscription const& sub, subs->imageBand) {
-		if(repr == std::tr1::get<1>(sub))	 {
-			bandUpdates.insert(ImageBand(std::tr1::get<1>(sub), std::tr1::get<2>(sub)));
+	BOOST_FOREACH (Subscription<ImageBandId> const& sub, subs->imageBand) {
+		if(repr == sub.subsid.repr)	 {
+			bandUpdates.insert(sub.subsid);
 		}
 	}
-	BOOST_FOREACH (ImageBandSet::value_type const& ib, bandUpdates) {
+	BOOST_FOREACH (ImageBandId const& ib, bandUpdates) {
 		//GGDBGM("requesting band " << ib.first << " " << ib.second << endl);
-		im->computeBand(ib.first, ib.second);
+		im->computeBand(ib.repr, ib.bandx);
 	}
 
 	// false color updates
 
 	typedef std::tr1::unordered_set<FalseColoring::Type, std::tr1::hash<int> > FalseColoringSet;
 	FalseColoringSet fcUpdates;
-	BOOST_FOREACH (FalseColorSubscriptionHashSet::value_type const& ct, subs->falseColor) {
-		FalseColoring::Type coloring = ct.second;
+	BOOST_FOREACH (Subscription<FalseColoring::Type> const& sub, subs->falseColor) {
+		FalseColoring::Type coloring = sub.subsid;
 		if (FalseColoring::isBasedOn(coloring, repr)) {
 			fcUpdates.insert(coloring);
 		}

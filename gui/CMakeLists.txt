@@ -26,6 +26,7 @@ vole_compile_library(
 	controller/controller
 	controller/controller_docks
 	controller/distviewcontroller
+	controller/subscriptions.h
 
 	dist_view/compute
 	dist_view/distviewmodel
