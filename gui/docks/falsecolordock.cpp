@@ -81,6 +81,7 @@ void FalseColorDock::processComputationCancelled(FalseColoring::Type coloringTyp
 
 void FalseColorDock::processSelectedColoring()
 {
+	emit unsubscribeFalseColoring(this, lastShown);
 	//GGDBGM( "requesting false color image " << selectedColoring() << endl);
 	requestColoring(selectedColoring());
 	updateTheButton();
@@ -92,7 +93,9 @@ void FalseColorDock::processApplyClicked()
 	if(coloringState[selectedColoring()] == FalseColoringState::CALCULATING) {
 		//GGDBGM("enterState():"<<endl);
 		enterState(selectedColoring(), FalseColoringState::ABORTING);
-		emit cancelComputationRequested(selectedColoring());
+		//emit cancelComputationRequested(selectedColoring());
+		emit unsubscribeFalseColoring(this, selectedColoring());
+
 		// go back to last shown coloring
 		if(coloringUpToDate[lastShown]) {
 			uisel->sourceBox->setCurrentIndex(int(lastShown));
@@ -103,6 +106,7 @@ void FalseColorDock::processApplyClicked()
 		}
 	} else if(coloringState[selectedColoring()] == FalseColoringState::FINISHED) {
 		requestColoring(selectedColoring(), /* recalc */ true);
+
 	}
 }
 
@@ -168,7 +172,12 @@ void FalseColorDock::requestColoring(FalseColoring::Type coloringType, bool reca
 	//GGDBGM("enterState():"<<endl);
 	enterState(coloringType, FalseColoringState::CALCULATING);
 	updateTheButton();
-	emit falseColoringRequested(coloringType, recalc);
+	if (recalc) {
+		emit falseColoringRecalcRequested(coloringType);
+	} else {
+		emit subscribeFalseColoring(this, coloringType);
+	}
+
 }
 
 void FalseColorDock::updateProgressBar()
@@ -230,6 +239,12 @@ void FalseColorDock::processVisibilityChanged(bool visible)
 	//GGDBG_CALL();
 	dockVisible = visible;
 
+	if (visible) {
+		requestColoring(selectedColoring());
+	} else {
+		emit unsubscribeFalseColoring(this, selectedColoring());
+	}
+
 	// Causes infinite signal loop if uncommented, because FalseColorModel not
 	// properly initialized yet.
 	//if(dockVisible) {
@@ -237,14 +252,6 @@ void FalseColorDock::processVisibilityChanged(bool visible)
 	//}
 }
 
-void FalseColorDock::processColoringOutOfDate(FalseColoring::Type coloringType)
-{
-	//GGDBG_CALL();
-	coloringUpToDate[coloringType] = false;
-	if(dockVisible) {
-		requestColoring(selectedColoring());
-	}
-}
 
 void FalseColorDock::processCalculationProgressChanged(FalseColoring::Type coloringType, int percent)
 {

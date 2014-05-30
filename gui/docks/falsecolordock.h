@@ -32,11 +32,14 @@ signals:
 	/** Requests the model to cancel the previously requested calculation for
 	 * coloringType */
 	void cancelComputationRequested(FalseColoring::Type coloringType);
+	/** Request re-calculation of non-determinitstic representation (e.g. SOM). */
+	void falseColoringRecalcRequested(FalseColoring::Type coloringType);
+
+	void subscribeFalseColoring(QObject* subscriber, FalseColoring::Type coloringType);
+	void unsubscribeFalseColoring(QObject* subscriber, FalseColoring::Type coloringType);
 
 public slots:
 	void processVisibilityChanged(bool visible);
-	// from model: our displayed coloringType may be out of date
-	void processColoringOutOfDate(FalseColoring::Type coloringType);
 	void processCalculationProgressChanged(FalseColoring::Type coloringType, int percent);
 	void processColoringComputed(FalseColoring::Type coloringType, QPixmap p);
 	void processComputationCancelled(FalseColoring::Type coloringType);

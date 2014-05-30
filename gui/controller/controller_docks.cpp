@@ -152,13 +152,13 @@ void Controller::setupDocks()
 			bandDock->bandView(), SLOT(toggleSingleLabel(bool)));
 
 	/* FalseColor Dock */
-	connect(falseColorDock, SIGNAL(falseColoringRequested(FalseColoring::Type,bool)),
-			falseColorModel(), SLOT(requestColoring(FalseColoring::Type,bool)));
-	connect(falseColorDock, SIGNAL(cancelComputationRequested(FalseColoring::Type)),
-			falseColorModel(), SLOT(cancelComputation(FalseColoring::Type)));
+	connect(falseColorDock, SIGNAL(subscribeFalseColoring(QObject*, FalseColoring::Type)),
+			this, SLOT(processSubscribeFalseColor(QObject*, FalseColoring::Type)));
+	connect(falseColorDock, SIGNAL(unsubscribeFalseColoring(QObject*, FalseColoring::Type)),
+			this, SLOT(processUnsubscribeFalseColor(QObject*,FalseColoring::Type)));
+	connect(falseColorDock, SIGNAL(falseColoringRecalcRequested(FalseColoring::Type)),
+			this, SLOT(processRecalcFalseColor(FalseColoring::Type)));
 
-	connect(falseColorModel(), SIGNAL(coloringOutOfDate(FalseColoring::Type)),
-			falseColorDock, SLOT(processColoringOutOfDate(FalseColoring::Type)));
 	connect(falseColorModel(), SIGNAL(progressChanged(FalseColoring::Type,int)),
 			falseColorDock, SLOT(processCalculationProgressChanged(FalseColoring::Type,int)));
 	connect(falseColorModel(), SIGNAL(coloringComputed(FalseColoring::Type,QPixmap)),

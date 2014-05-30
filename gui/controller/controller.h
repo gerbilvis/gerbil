@@ -135,6 +135,19 @@ protected slots:
 
 /// SUBSCRIPTIONS
 
+	// Subscriptions help manage data dependencies between GUI elements. GUI
+	// elements subscribe for computation results they need to display. The
+	// controller triggers a re-calculation of results if the input data,
+	// usually the selected ROI, changes for subscribed results.
+	// Subscription is usually triggered by GUI-element visibility and user
+	// selection of results. GUI elements are _not_ responsible to chache
+	// result data but the model is. Subscribing to existing results is
+	// expected to be fast. Usually this is achieved by caching results on the
+	// model end.
+	// This structure simplifies GUI and model logic since the controller
+	// takes care of who is subscribed to what and neither the models nor the
+	// GUI widgets have to track ROI changes and data dependencies.
+
 	/** Subscribe for image band bandId of representation repr.
 	 *
 	 * If a GUI element (subscriber) is subscribed for an image band, i.e. the
@@ -146,18 +159,12 @@ protected slots:
 	void processSubscribeImageBand(QObject *subscriber, representation::t repr, int bandId);
 	void processUnsubscribeImageBand(QObject *subscriber, representation::t repr, int bandId);
 
-	/** Subscribe for false color image.
-	 *
-	 * Subscribes a subscriber for false color image updates from FalseColorModel.
-	 * A subscriber may subscribe to SOM based false color representation
-	 * multiple times with newSom = true. This triggers a forced
-	 * re-calculation.
-	 *
-	 *  @param newSom Re-calculate a SOM based false color image even if an
-	 *  up-to-date cached instance exists (SOM is non-deterministic).
-	 */
-	void processSubscribeFalseColor(QObject *subscriber, FalseColoring::Type coloring, bool newSom = false);
-	void processUnSubscribeFalseColor(QObject *subscriber, FalseColoring::Type coloring);
+	/** Subscribes a subscriber for false color image updates from FalseColorModel. */
+	void processSubscribeFalseColor(QObject *subscriber, FalseColoring::Type coloring);
+	void processUnsubscribeFalseColor(QObject *subscriber, FalseColoring::Type coloring);
+	/** Re-calculate a SOM based false color image even if an  up-to-date
+	 * cached instance exists (SOM is non-deterministic). */
+	void processRecalcFalseColor(FalseColoring::Type coloringType);
 
 protected:
 	// connect models with gui

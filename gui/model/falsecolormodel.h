@@ -58,16 +58,6 @@ public slots:
 	void cancelComputation(FalseColoring::Type coloringType);
 
 signals:
-	/** The false coloring image is not up-to-date anymore.
-	 *
-	 * Updated image data was received and the last false color rendering of
-	 * coloringType does not match the new image data. A new false coloring
-	 * will be computed on request.
-	 *
-	 * @param coloringType The false coloring type that has become invalid.
-	 */
-	void coloringOutOfDate(FalseColoring::Type coloringType);
-
 	void coloringComputed(FalseColoring::Type coloringType, QPixmap p);
 
 	/** The computation was cancelled as requested.
@@ -100,9 +90,16 @@ private:
 	SharedMultiImgPtr shared_img, shared_grad;
 	FalseColorModelPayloadMap payloads;
 
-	// this is were we store results
+	// Cache for false color results
 	typedef QMap<FalseColoring::Type, FalseColoringCacheItem> FalseColoringCache;
 	FalseColoringCache cache;
+
+	// Remember pending requests we could not fulfill because of missing data.
+	QMap<FalseColoring::Type, bool> pendingRequests;
+
+	// Remember if we got imageUpdate signal for representation. Until then
+	// all requests are deferred.
+	QMap<representation::t, bool> representationInit;
 };
 
 #endif // FALSECOLOR_MODEL_H

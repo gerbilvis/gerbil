@@ -1,5 +1,6 @@
 #include <QImage>
 #include <QPixmap>
+#include <QSet>
 #include <opencv2/core/core.hpp>
 
 #include <shared_data.h>
@@ -32,6 +33,14 @@ FalseColorModel::FalseColorModel()
 	if (type == 0 || !QMetaType::isRegistered(type))
 		qRegisterMetaType< std::map<std::string, boost::any> >(
 					"std::map<std::string, boost::any>");
+
+	foreach(FalseColoring::Type c, FalseColoring::all()) {
+		pendingRequests[c] = false;
+	}
+	foreach(representation::t type, representation::all()) {
+		representationInit[type] = false;
+	}
+
 	resetCache();
 }
 
@@ -69,22 +78,24 @@ void FalseColorModel::processImageUpdate(representation::t type,
 		}
 	}
 
-	QList<FalseColoring::Type> outOfDateList;
-	outOfDateList.reserve(FalseColoring::size());
-
 	// invalidate affected cache entries:
 	FalseColoringCache::iterator it;
 	for (it=cache.begin(); it != cache.end(); it++) {
 		FalseColoring::Type coloringType = it.key();
 		if(FalseColoring::isBasedOn(coloringType, type)) {
 			it.value().invalidate();
-			outOfDateList.append(coloringType);
 		}
 	}
-	foreach(FalseColoring::Type coloringType, outOfDateList) {
-		//GGDBGM("emit coloringOutOfDate " << coloringType << endl);
-		emit coloringOutOfDate(coloringType);
+
+	foreach(FalseColoring::Type c, FalseColoring::all()) {
+		if (FalseColoring::isBasedOn(c, type) && pendingRequests[c]) {
+			//GGDBGM("processing pending request for " << c << endl);
+			pendingRequests[c] = false;
+			computeColoring(c);
+		}
 	}
+
+	representationInit[type] = true;
 }
 
 void FalseColorModel::requestColoring(FalseColoring::Type coloringType, bool recalc)
@@ -92,18 +103,13 @@ void FalseColorModel::requestColoring(FalseColoring::Type coloringType, bool rec
 	//GGDBG_CALL();
 
 	// check if we are already initialized and should deal with that request
-	bool abort = false;
-	{
-		SharedDataLock  lock_img(shared_img->mutex);
-		SharedDataLock  lock_grad(shared_grad->mutex);
-		if (!shared_img || !shared_grad ||
-			(**shared_img).empty() || (**shared_grad).empty())
-			abort = true;
-	}
-	if(abort) {
-		// DO NOT emit computationCancelled(coloringType);
-		//GGDBGM("shared image data not ininitialized, aborting" << endl);
-		return;
+	foreach(representation::t repr, representation::all()) {
+		if (FalseColoring::isBasedOn(coloringType, repr) && !representationInit[repr]) {
+			//GGDBGM("request for " << coloringType <<
+			//	   ": representation " << repr << " not initialized, deferring request"<< endl);
+			pendingRequests[coloringType] = true;
+			return;
+		}
 	}
 
 
@@ -132,10 +138,12 @@ void FalseColorModel::computeColoring(FalseColoring::Type coloringType)
 {
 	FalseColorModelPayloadMap::iterator payloadIt = payloads.find(coloringType);
 	if (payloadIt != payloads.end()) {
+		//GGDBGM("computation in progress for "<< coloringType << endl);
 		// computation in progress
 		return;
 	}
 
+	//GGDBGM("computation starts for "<< coloringType << endl);
 	FalseColorModelPayload *payload =
 			new FalseColorModelPayload(coloringType, shared_img, shared_grad);
 	payloads.insert(coloringType, payload);
@@ -184,6 +192,7 @@ void FalseColorModel::processComputationFinished(FalseColoring::Type coloringTyp
 	}
 	payload->deleteLater();
 	if(success) {
+		//GGDBGM("emitting coloringComputed " << coloringType<<endl);
 		emit coloringComputed(coloringType, pixmap);
 	} else {
 		//GGDBGM("emitting computationCancelled " << coloringType<<endl);

@@ -16,7 +16,6 @@
 #include "gerbil_gui_debug.h"
 
 #include <boost/ref.hpp>
-#include <boost/foreach.hpp>
 #include <cstdlib> // for exit()
 
 // for DEBUG
@@ -369,22 +368,25 @@ void Controller::processUnsubscribeImageBand(QObject *subscriber, representation
 	subs->imageBand.erase(Subscription<ImageBandId>(subscriber, ImageBandId(repr, bandId)));
 }
 
-void Controller::processSubscribeFalseColor(QObject *subscriber, FalseColoring::Type coloring, bool newSom)
+void Controller::processSubscribeFalseColor(QObject *subscriber, FalseColoring::Type coloring)
 {
+	//GGDBGM(coloring << endl);
 	assert(subs);
 	std::pair<Subscription<FalseColoring::Type>::Set::const_iterator, bool> insertResult =
 			subs->falseColor.insert(Subscription<FalseColoring::Type>(subscriber, coloring));
-	if(insertResult.second || (newSom && !FalseColoring::isDeterministic(coloring))) {
+	if (insertResult.second) {
+		//GGDBGM("requesting from fm " << coloring << endl);
 		fm->requestColoring(coloring);
 	}
 }
 
-void Controller::processUnSubscribeFalseColor(QObject *subscriber, FalseColoring::Type coloring)
+void Controller::processUnsubscribeFalseColor(QObject *subscriber, FalseColoring::Type coloring)
 {
+	//GGDBGM(coloring << endl);
 	assert(subs);
 	subs->falseColor.erase(Subscription<FalseColoring::Type>(subscriber, coloring));
 	bool anysubs = false;
-	BOOST_FOREACH(Subscription<FalseColoring::Type> const & sub, subs->falseColor) {
+	foreach(Subscription<FalseColoring::Type> const & sub, subs->falseColor) {
 		if (sub.subsid == coloring) {
 			anysubs = true;
 			break;
@@ -394,6 +396,21 @@ void Controller::processUnSubscribeFalseColor(QObject *subscriber, FalseColoring
 		// no more subscriptions for coloring,
 		// cancel computation if any.
 		fm->cancelComputation(coloring);
+	}
+}
+
+void Controller::processRecalcFalseColor(FalseColoring::Type coloringType)
+{
+	assert(subs);
+	bool anysubs = false;
+	foreach(Subscription<FalseColoring::Type> const & sub, subs->falseColor) {
+		if (sub.subsid == coloringType) {
+			anysubs = true;
+			break;
+		}
+	}
+	if (anysubs) {
+		fm->requestColoring(coloringType, /* recalc */ true);
 	}
 }
 
@@ -425,17 +442,18 @@ void Controller::focusChange(QWidget *old, QWidget *now)
 
 void Controller::processImageUpdate(representation::t repr)
 {
+	//GGDBGM(repr << endl);
 	// image band updates
 
 	Subscription<ImageBandId>::IdTypeSet bandUpdates;
 
 	assert(subs);
-	BOOST_FOREACH (Subscription<ImageBandId> const& sub, subs->imageBand) {
+	foreach (Subscription<ImageBandId> const& sub, subs->imageBand) {
 		if(repr == sub.subsid.repr)	 {
 			bandUpdates.insert(sub.subsid);
 		}
 	}
-	BOOST_FOREACH (ImageBandId const& ib, bandUpdates) {
+	foreach (ImageBandId const& ib, bandUpdates) {
 		//GGDBGM("requesting band " << ib.first << " " << ib.second << endl);
 		im->computeBand(ib.repr, ib.bandx);
 	}
@@ -444,13 +462,15 @@ void Controller::processImageUpdate(representation::t repr)
 
 	typedef std::tr1::unordered_set<FalseColoring::Type, std::tr1::hash<int> > FalseColoringSet;
 	FalseColoringSet fcUpdates;
-	BOOST_FOREACH (Subscription<FalseColoring::Type> const& sub, subs->falseColor) {
+	foreach (Subscription<FalseColoring::Type> const& sub, subs->falseColor) {
 		FalseColoring::Type coloring = sub.subsid;
 		if (FalseColoring::isBasedOn(coloring, repr)) {
+			//GGDBGM("found subscriber for " << coloring << " based on " << repr << endl);
 			fcUpdates.insert(coloring);
 		}
 	}
-	BOOST_FOREACH (FalseColoringSet::value_type const& coloring, fcUpdates) {
+	foreach (FalseColoringSet::value_type const& coloring, fcUpdates) {
+		//GGDBGM("requesting from fm " << coloring << endl);
 		fm->requestColoring(coloring);
 	}
 
