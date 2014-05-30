@@ -67,13 +67,11 @@ protected slots:
 	void clearLabel();
 	// TODO label subscriptions
 	void processMarkerSelectorIndexChanged(int index);
+	void processVisibilityChanged(bool visible);
 
 protected:
 	// event filter to intercept enter()/leave() on our view
 	bool eventFilter(QObject *obj, QEvent *event);
-
-	void showEvent(QShowEvent * event);
-	void hideEvent(QHideEvent * event);
 
 	void initUi();
 

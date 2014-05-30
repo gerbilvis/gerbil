@@ -74,6 +74,9 @@ void BandDock::initUi()
 	connect(this, SIGNAL(currentLabelChanged(int)),
 			bv, SLOT(setCurrentLabel(int)));
 
+	connect(this, SIGNAL(visibilityChanged(bool)),
+			this, SLOT(processVisibilityChanged(bool)));
+
 	bv->initUi();
 }
 
@@ -138,6 +141,18 @@ void BandDock::processMarkerSelectorIndexChanged(int index)
 	}
 }
 
+void BandDock::processVisibilityChanged(bool visible)
+{
+	if (visible) {
+		emit subscribeImageBand(this, curRepr, curBandId);
+	} else {
+		emit unsubscribeImageBand(this, curRepr, curBandId);
+		// see FS#62
+		setWindowTitle("Band View");
+	}
+
+}
+
 bool BandDock::eventFilter(QObject *obj, QEvent *event)
 {
 	if (event->type() == QEvent::Enter)
@@ -147,23 +162,6 @@ bool BandDock::eventFilter(QObject *obj, QEvent *event)
 
 	// continue with standard event processing
 	return QObject::eventFilter(obj, event);
-}
-
-void BandDock::showEvent(QShowEvent *event)
-{
-	QDockWidget::showEvent(event);
-
-	//GGDBGM("subscribing image band "<< curRepr << " " << curBandId << endl);
-	emit subscribeImageBand(this, curRepr, curBandId);
-}
-
-void BandDock::hideEvent(QHideEvent *event)
-{
-	QDockWidget::hideEvent(event);
-	//GGDBGM("UNsubscribing image band "<< curRepr << " " << curBandId << endl);
-	emit unsubscribeImageBand(this, curRepr, curBandId);
-	// see FS#62
-	setWindowTitle("Band View");
 }
 
 void BandDock::processLabelingChange(const cv::Mat1s &labels,
