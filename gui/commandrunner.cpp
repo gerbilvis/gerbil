@@ -3,7 +3,7 @@
 //#include "gerbil_gui_debug.h"
 
 CommandRunner::CommandRunner()
-	: abort(false), cmd(NULL) {}
+	: cmd(0), abort(false), progress(0.f), percent(0) {}
 
 CommandRunner::~CommandRunner()
 {
@@ -11,10 +11,16 @@ CommandRunner::~CommandRunner()
 	delete cmd;
 }
 
-bool CommandRunner::update(int percent)
+bool CommandRunner::update(float report, bool incremental)
 {
 	//GGDBGM("CommandRunner object " << this << endl);
-	emit progressChanged(percent);
+	progress = (incremental ? progress + report : report);
+
+	// propagate if percentage changed, don't heat up GUI unnecessarily
+	if ((progress * 100) > percent) {
+		percent = progress * 100;
+		emit progressChanged(percent);
+	}
 	return !abort;
 }
 

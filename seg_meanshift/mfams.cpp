@@ -33,7 +33,7 @@ using namespace std;
 
 FAMS::FAMS(const vole::MeanShiftConfig &cfg, vole::ProgressObserver *po)
 	: hasPoints_(0), nsel_(0), npm_(0), config(cfg),
-	  progressObserver(po), progress(0.f), progress_old(0.f), lsh_(NULL)
+	  po(po), progress(0.f), progress_old(0.f), lsh_(NULL)
 {}
 
 FAMS::~FAMS() {
@@ -931,7 +931,7 @@ bool FAMS::PrepareFAMS(vector<double> *bandwidths) {
 
 bool FAMS::progressUpdate(float percent, bool absolute)
 {
-	if (progressObserver == NULL && config.verbosity < 1)
+	if (!po && config.verbosity < 1)
 		return true;
 
 	tbb::mutex::scoped_lock(progressMutex);
@@ -945,9 +945,9 @@ bool FAMS::progressUpdate(float percent, bool absolute)
 		progress_old = progress;
 	}
 
-	if (progressObserver == NULL)
+	if (!po)
 		return true;
-	bool cont = progressObserver->update((int)progress);
+	bool cont = po->update(progress / 100);
 	if (!cont)
 		progress = -1.f;
 	return cont;

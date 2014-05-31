@@ -38,18 +38,17 @@ inline bool cmpDist(
 /** Compute geometric series neuron weights.
  * w_i = 2 w_(i+1)
  * where w_0 is the weight of the best matching neuron.
- * @param w std::vector<T> of size n, with n being the number of best
- *			matching neurons.
+ * @param n the number of best matching neurons.
  */
 template <typename T>
-void neuronWeightsGeometric(std::vector<T> & w)
+std::vector<T> neuronWeightsGeometric(size_t n)
 {
-	const int n = w.size();
+	std::vector<T> w(n);
 	if (0 == n) {
-		throw std::runtime_error("neuronWeightsGeometric(): w.size() == 0");
+		throw std::runtime_error("neuronWeightsGeometric(): n == 0");
 	} else if (1 == n) {
 		w[0] = 1.0;
-		return;
+		return w;
 	}
 
 	// geometric series sum sn = 2^n - 1
@@ -63,6 +62,7 @@ void neuronWeightsGeometric(std::vector<T> & w)
 		ws += w[i];
 	}
 	assert(std::abs(ws-1.0) < std::numeric_limits<T>::epsilon() * 100.0);
+	return w;
 }
 
 /** Abstract n-dimensional SOM class.

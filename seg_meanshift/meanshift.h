@@ -17,8 +17,9 @@ class MeanShift {
 public:
 	MeanShift(const MeanShiftConfig& config) : config(config) {}
 
-	std::pair<int, int> findKL(const multi_img& input, ProgressObserver *progress = NULL);
-	cv::Mat1s execute(const multi_img& input, ProgressObserver *progress = NULL,
+	std::pair<int, int> findKL(const multi_img& input,
+							   ProgressObserver *po = 0);
+	cv::Mat1s execute(const multi_img& input, ProgressObserver *po = 0,
 					  vector<double> *bandwidths = NULL,
 					  const multi_img& spinput = multi_img());
 

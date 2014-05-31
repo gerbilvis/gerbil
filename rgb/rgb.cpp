@@ -120,7 +120,7 @@ cv::Mat3f RGB::executePCA(const multi_img& src, vole::ProgressObserver *po)
 	unsigned int components = std::min(3u, src.size());
 	multi_img pca3 = src.project(src.pca(components));
 
-	bool cont = (!po) || po->update(70); // TODO: values
+	bool cont = (!po) || po->update(.7f); // TODO: values
 	if (!cont) return cv::Mat3f();
 
 	if (config.pca_stretch)
@@ -128,7 +128,7 @@ cv::Mat3f RGB::executePCA(const multi_img& src, vole::ProgressObserver *po)
 	else
 		pca3.data_rescale(0., 1.);
 
-	cont = (!po) || po->update(80); // TODO: values
+	cont = (!po) || po->update(.8f); // TODO: values
 	if (!cont) return cv::Mat3f();
 
 	std::vector<cv::Mat> vec(3);
@@ -148,36 +148,33 @@ cv::Mat3f RGB::executePCA(const multi_img& src, vole::ProgressObserver *po)
 
 // Compute weighted coordinates of multi_img pixels in SOM with dimensionality <= 3.
 //
-// For posToBGR == true, swap coordinates for false color result.
+// For posToBGR == true, swap coordinates for false-color result.
 template <bool posToBGR>
 class SomRgbTbb {
 public:
 	typedef cv::Mat_<cv::Vec<GenSOM::value_type, 3> > Mat3;
 
-	SomRgbTbb(RGB &o, multi_img const& img, GenSOM *som, Mat3& weightedPos)
-		: o(o),
-		  som(som),
-		  weightedPos(weightedPos),
-		  weigths(o.config.som_depth),
-		  closestN(*som, img, o.config.som_depth)
-	{
-		neuronWeightsGeometric(weigths);
-	}
+	SomRgbTbb(const SOMClosestN &lookup, const std::vector<float> &weights,
+			  Mat3& output, vole::ProgressObserver *po = 0)
+		: lookup(lookup), weights(weights), output(output), po(po) {}
 
 	void operator()(const tbb::blocked_range2d<int> &r) const
 	{
 		typedef cv::Point3_<GenSOM::value_type> Point3;
 
 		// iterate over all pixels in range
+		float done = 0;
+		float total = (lookup.height * lookup.width);
 		for (int y = r.rows().begin(); y < r.rows().end(); ++y) {
 			for (int x = r.cols().begin(); x < r.cols().end(); ++x) {
 				SOMClosestN::resultAccess closest =
-						closestN.closestN(cv::Point2i(x, y));
-				Point3 weighted(0,0,0);
-				for (int k = 0; k < o.config.som_depth; ++k) {
-					size_t somidx = (closest.first+k)->index;
-					Point3 pos = vec2Point3(som->getCoord(somidx));
-					weighted += weigths[k] * pos;
+						lookup.closestN(cv::Point2i(x, y));
+				Point3 weighted(0, 0, 0);
+				std::vector<DistIndexPair>::const_iterator it = closest.first;
+				for (int k = 0; it != closest.last; ++k, ++it) {
+					size_t somidx = it->index;
+					Point3 pos = vec2Point3(lookup.som.getCoord(somidx));
+					weighted += weights[k] * pos;
 				}
 				if (posToBGR) { // 3D coord -> BGR color
 					// for 2D SOM: weighted.z == 0 -> use only G and R
@@ -186,17 +183,24 @@ public:
 					weighted.y = tmp.y;  // G
 					weighted.z = tmp.x;  // R
 				}
-				weightedPos(y, x) = weighted;
+				output(y, x) = weighted;
+				done++;
+				if (po && ((int)done % 1000 == 0)) {
+					if (!po->update(done / total, true))
+						return; // abort if told so. This is thread-save.
+					done = 0;
+				}
 			}
 		}
+		if (po)
+			po->update(done / total, true);
 	}
 
 private:
-	RGB &o;
-	GenSOM *som;
-	Mat3& weightedPos;
-	std::vector<float> weigths;
-	SOMClosestN closestN;
+	const SOMClosestN &lookup;
+	const std::vector<float> &weights;
+	Mat3 &output;
+	vole::ProgressObserver *po;
 };
 
 cv::Mat3f RGB::executeSOM(const multi_img &img, vole::ProgressObserver *po)
@@ -208,27 +212,32 @@ cv::Mat3f RGB::executeSOM(const multi_img &img, vole::ProgressObserver *po)
 	img.rebuildPixels(false);
 
 	vole::ProgressObserver *calcPo;
-	calcPo = (po ? new vole::ChainedProgressObserver(po, .8f) : 0);
+	calcPo = (po ? new vole::ChainedProgressObserver(po, .6f) : 0);
 	boost::shared_ptr<GenSOM> som(GenSOM::create(config.som, img, calcPo));
 	delete calcPo;
-	if (po && !po->update(80))
+	if (po && !po->update(.6f))
 		return Mat3();
 
-	// TODO: we lack progress updates from this point on
-
-	//  false color image
-	Mat3 bgr(img.height, img.width);
-
-
 	vole::Stopwatch watch("Pixel color mapping");
+	// compute lookup cache
+	calcPo = (po ? new vole::ChainedProgressObserver(po, .35f) : 0);
+	SOMClosestN lookup(*som, img, config.som_depth, calcPo);
+	delete calcPo;
+	if (po && !po->update(.95f))
+		return Mat3();
+
 	// compute weighted coordinates of multi_img pixels in 3D SOM
+	Mat3 bgr(img.height, img.width);
+	calcPo = (po ? new vole::ChainedProgressObserver(po, .05f) : 0);
+	std::vector<float> weights =
+			neuronWeightsGeometric<float>(config.som_depth);
+	SomRgbTbb<true> comp(lookup, weights, bgr, calcPo);
 	tbb::parallel_for(tbb::blocked_range2d<int>(0, img.height, // row range
 												0, img.width), // column range
-					  SomRgbTbb<true>(*this, img, som.get(), bgr));
-
-	// DEBUG: run sequentially
-	//		SomRgbTbb<true> somRgbTbb(*this, img, som.get(), bgr);
-	//		somRgbTbb(tbb::blocked_range2d<int>(0, img.height, 0, img.width));
+					  comp);
+	// DEBUG: run sequentially (BTW currently it is too fast to profit from TBB)
+	// comp(tbb::blocked_range2d<int>(0, img.height, 0, img.width));
+	delete calcPo;
 
 	return bgr;
 }

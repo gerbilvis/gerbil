@@ -108,7 +108,7 @@ public:
 	friend struct ComputePilotPoint;
 	friend struct MeanShiftPoint;
 
-	FAMS(const vole::MeanShiftConfig& config, vole::ProgressObserver* po=NULL);
+	FAMS(const vole::MeanShiftConfig &config, vole::ProgressObserver *po = 0);
 	~FAMS();
 
 	int getDimensionality() const { return d_; }
@@ -260,7 +260,7 @@ protected:
 	const vole::MeanShiftConfig &config;
 
 	// observer for progress tracking
-	vole::ProgressObserver *progressObserver;
+	vole::ProgressObserver *po;
 	float progress, progress_old;
 	tbb::mutex progressMutex;
 

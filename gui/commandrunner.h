@@ -13,11 +13,9 @@ public:
 	// FIXME: Missing parent parameter
 	CommandRunner();
 	~CommandRunner();
-	bool update(int percent);
+	bool update(float report, bool incremental = false);
 	void run();
 
-	// volatile to ensure worker thread reads changes done by controller thread
-	volatile bool abort;
 	vole::Command *cmd;
 	std::map<std::string, boost::any> input;
 	std::map<std::string, boost::any> output;
@@ -31,6 +29,14 @@ signals:
 public slots:
 	void terminate();
 	void deleteLater();
+
+private:
+	// volatile to ensure worker thread reads changes done by controller thread
+	volatile bool abort;
+	// progress cached for incremental updates (not threadsafe)
+	float progress;
+	// progress in percent
+	int percent;
 };
 
 #endif // COMMANDRUNNER_H

@@ -22,15 +22,16 @@
 
 namespace vole {
 
-std::pair<int, int> MeanShift::findKL(const multi_img& input, ProgressObserver *progress)
+std::pair<int, int> MeanShift::findKL(const multi_img& input,
+									  ProgressObserver *po)
 {
 	// load points
-	FAMS cfams(config, progress);
+	FAMS cfams(config, po);
 	cfams.ImportPoints(input);
 	return cfams.FindKL();
 }
 
-cv::Mat1s MeanShift::execute(const multi_img& input, ProgressObserver *progress,
+cv::Mat1s MeanShift::execute(const multi_img& input, ProgressObserver *po,
 							 vector<double> *bandwidths,
 							 const multi_img& spinput) {
 	std::cout << "Mean Shift Segmentation" << std::endl;
@@ -44,7 +45,7 @@ cv::Mat1s MeanShift::execute(const multi_img& input, ProgressObserver *progress,
 		srand((unsigned int) tt);
 	}
 
-	FAMS cfams(config, progress);
+	FAMS cfams(config, po);
 
 	// HACK it's a shame
 	cfams.spsizes = spsizes;

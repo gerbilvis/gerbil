@@ -61,7 +61,7 @@ void GenSOM::train(const multi_img &input, vole::ProgressObserver *po)
 
 			// send progress updates to observer or stdout
 			if (po) {
-				bool cont = po->update(percent);
+				bool cont = po->update(curIter / (float)config.maxIter);
 				if (!cont) {
 					std::cerr << "Aborting training" << std::endl;
 					return;
@@ -71,7 +71,7 @@ void GenSOM::train(const multi_img &input, vole::ProgressObserver *po)
 						  << percent << " %";
 				std::cout.flush();
 			}
-			if(config.verbosity >= 2) {
+			if (config.verbosity >= 2) {
 				std::cout << " Feed #" << curIter
 						  << ", avg. updates per iteration in the last "
 						  << (maxIter / hundred) << " iterations: "

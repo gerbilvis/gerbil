@@ -14,15 +14,25 @@ public:
 	void operator()(const tbb::blocked_range2d<int> &r) const
 	{
 		// iterate over all pixels in range
-		for(int y=r.rows().begin(); y<r.rows().end(); ++y) {
-			for(int x=r.cols().begin(); x<r.cols().end(); ++x) {
+		float done = 0;
+		float total = (o.height * o.width);
+		for (int y = r.rows().begin(); y < r.rows().end(); ++y) {
+			for (int x = r.cols().begin(); x < r.cols().end(); ++x) {
 				const multi_img::Pixel& pixel = img(y,x);
 				const size_t roff = o.roff(x,y);
 				o.som.findClosestN(pixel,
 									o.results.begin() + roff,
 									o.results.begin() + roff + o.n);
+				done++;
+				if (o.po && ((int)done % 1000 == 0)) {
+					if (!o.po->update(done / total, true))
+						return;
+					done = 0;
+				}
 			}
 		}
+		if (o.po)
+			o.po->update(done / total, true);
 	}
 private:
 	SOMClosestN &o;
@@ -30,12 +40,14 @@ private:
 };
 
 
-SOMClosestN::SOMClosestN(GenSOM const& som, multi_img const& img, int n)
+SOMClosestN::SOMClosestN(GenSOM const& som, multi_img const& img, int n,
+						 vole::ProgressObserver *po)
 	: som(som),
 	  height(img.height),
 	  width(img.width),
 	  n(n > 0 ? n : throw std::runtime_error("SOMClosestN bad n")),
-	  results(height * width * n)
+	  results(height * width * n),
+	  po(po)
 {
 	tbb::parallel_for(tbb::blocked_range2d<int>(0, img.height, // row range
 												0, img.width), // column range
