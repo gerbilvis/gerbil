@@ -54,11 +54,14 @@ public:
 	Labeling(const cv::Mat &labeling, bool binary);
 	Labeling(const std::string &filename, bool binary);
 
-	/// Construct from label matrix. See setLabels.
-	Labeling(const cv::Mat &labeling)
+	/// Construct from existing label matrix. See setLabels and setColors.
+	Labeling(const cv::Mat &labeling,
+			 const std::vector<cv::Vec3b>& colors = std::vector<cv::Vec3b>())
 		: yellowcursor(true), shuffle(false), shuffleV(false)
 	{
 		setLabels(labeling);
+		if (!colors.empty())
+			setColors(colors);
 	}
 
 	/// Set label matrix. See setLabels.
@@ -92,6 +95,9 @@ public:
 			 interpreted as label 1.
 	**/
 	void read(const cv::Mat &labeling, bool binary);
+	void read(const cv::Mat3b &src);
+	void read(const cv::Mat1w &src, int bins);
+	void readBinary(const cv::Mat &src);
 
 	cv::Mat1b grayscale() const;
 	cv::Mat3b bgr() const;

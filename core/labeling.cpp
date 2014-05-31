@@ -15,6 +15,7 @@
 #include <string>
 #include <vector>
 #include <algorithm>
+#include <map>
 
 using namespace std;
 
@@ -29,7 +30,7 @@ namespace vole {
 Labeling::Labeling(const string &filename, bool binary)
 	: yellowcursor(true), shuffle(false), shuffleV(false)
 {
-	cv::Mat src = cv::imread(filename, -1); // flag -1: preserve format
+	cv::Mat src = cv::imread(filename, cv::IMREAD_UNCHANGED);
 	if (src.empty()) {
 		cerr << "ERROR: Failed to load " << filename << endl;
 		return;
@@ -50,122 +51,137 @@ void Labeling::setLabels(const cv::Mat &src)
 void Labeling::read(const cv::Mat &src, bool binary)
 {
 	if (binary) {
-		// treat all values != 0 as 1
-		if (src.channels() > 1) {
-			vector<cv::Mat> array;
-			cv::split(src, array);
-			for (size_t i = 1; i < array.size(); ++i)
-				cv::max(array[i], array[0], array[0]);
-			labels = array[0];
-		} else {
-			labels = src;
-		}
-		labels = labels > 0;
-		labelColors.clear();
-		labelColors.push_back(cv::Vec3b(  0,   0,   0));
-		labelColors.push_back(cv::Vec3b(255, 255, 255));
-		labelcount = 2;
-	} else {
-		float maxv = (src.depth() == CV_16S ? 32767.f : 255.f);
-		if (src.depth() != CV_8U) {
-			double tmp1, tmp2;
-			cv::minMaxLoc(src, &tmp1, &tmp2);
-			maxv = tmp2;
-		}
-		int bins = maxv + 1;
-		if (src.channels() == 1) {
-			vector<int> indices(bins, 0);
-			for (int y = 0; y < src.rows; ++y) {
-				for (int x = 0; x < src.cols; ++x) {
-					int intensity;
-					if (src.depth() == CV_16S)
-						intensity = src.at<short>(y, x);
-					else if (src.depth() == CV_8U)
-						intensity = src.at<uchar>(y, x);
-					else
-						intensity = src.at<int>(y, x);
-					indices[intensity]++;
-				}
-			}
-			int index = 0;
-			for (int i = 0; i < bins; ++i) {
-				if (indices[i] > 0) {
-					indices[i] = index;
-					index++;
-				}
-			}
-			labelcount = index;
-			if (labelColors.size() < (size_t)labelcount)
-				labelColors.clear();
-			labels = cv::Mat1s(src.rows, src.cols);
-			for (int y = 0; y < src.rows; ++y) {
-				for (int x = 0; x < src.cols; ++x) {
-					int intensity;
-					if (src.depth() == CV_16S)
-						intensity = src.at<short>(y, x);
-					else if (src.depth() == CV_8U)
-						intensity = src.at<uchar>(y, x);
-					else
-						intensity = src.at<int>(y, x);
-					labels(y, x) = indices[intensity];
-				}
-			}
-		} else { // rgb images
-			assert((src.channels() == 3 || src.channels() == 4)
-				   && bins == 256);
-			cv::Mat3b src3b;
-			if (src.channels() == 4) { // RGBA case (no sense, but they exist!)
-				// only take first three channels
-				src3b.create(src.rows, src.cols); // allocation mandatory!
-				int pairing[] = { 0,0, 1,1, 2,2 };
-				cv::mixChannels(&src, 1, &src3b, 1, pairing, 3);
-			} else {
-				src3b = src;
-			}
-
-			// calculate histogram of the image colors, stored in indices[b,g,r]
-			vector<vector<vector<int> > > indices
-					(bins, vector<vector<int> >(bins, vector<int>(bins, 0)));
-			cv::Mat3b::iterator its;
-			for (its = src3b.begin(); its != src3b.end(); ++its) {
-				const cv::Vec3b &v = *its;
-				indices[v[0]][v[1]][v[2]]++;
-			}
-
-			// find colors in the rgb image and add them as label colors
-			// at the same time, replace the frequency of the color by its index
-			// FIXME: 256^3 iterations for adding 1 - 10 label colors?
-			//		  use map or similar structure instead -> bugtracker #26
-			labelColors.clear();
-			int index = 0;
-			for (int b = 0; b < bins; ++b) {
-				for (int g = 0; g < bins; ++g) {
-					for (int r = 0; r < bins; ++r) {
-						if (indices[b][g][r] > 0) {
-							indices[b][g][r] = index;
-							labelColors.push_back(cv::Vec3b(b, g, r));
-							index++;
-						}
-					}
-				}
-			}
-			labelcount = index;
-
-			// assign the color indices to the label matrix
-			labels = cv::Mat1s(src3b.rows, src3b.cols);
-			cv::Mat1s::iterator itl;
-			for (its = src3b.begin(), itl = labels.begin();
-				 its != src3b.end(); ++its, ++itl) {
-				const cv::Vec3b &v = *its;
-				*itl = indices[v[0]][v[1]][v[2]];
-			}
-			/* Special case: only one white label stored in RGB image (stupid).
-			   We don't want to use white color, it confuses the user. */
-			if ((labelcount == 2) && (labelColors[1][0] == labelColors[1][1])
-			                      && (labelColors[1][1] == labelColors[1][2]))
-				labelColors[1] = cv::Vec3b(0, 255, 0);
-		}
+		readBinary(src);
+		return;
 	}
+
+	if (src.channels() > 1) { // RGB(A) input
+		assert((src.channels() == 3 || src.channels() == 4)
+			   && src.depth() == CV_8U);
+		cv::Mat3b src3b;
+		if (src.channels() == 4) { // RGBA case (no sense, but they exist!)
+			// only take first three channels
+			src3b.create(src.rows, src.cols); // allocation mandatory!
+			int pairing[] = { 0,0, 1,1, 2,2 };
+			cv::mixChannels(&src, 1, &src3b, 1, pairing, 3);
+		} else {
+			src3b = src;
+		}
+		read(src3b);
+		return;
+	}
+
+	/** one-channel case **/
+
+	// determine highest possible intensity
+	int bins = 256;
+	if (src.depth() != CV_8U) {
+		double tmp1, tmp2;
+		cv::minMaxLoc(src, &tmp1, &tmp2);
+		bins = tmp2 + 1;
+	}
+	// convert to a strict format for convenience -- we don't expect >16 bit
+	cv::Mat1w src1w = src;
+	read(src1w, bins);
+}
+
+struct Vec3bCompare {
+	bool operator() (const cv::Vec3b &a, const cv::Vec3b &b) const
+	{
+		if (a[0] == b[0]) {
+			if (a[1] == b[1]) {
+				return (a[2] < b[2]);
+			}
+			return a[1] < b[1];
+		}
+		return a[0] < b[0];
+	}
+};
+
+void Labeling::read(const cv::Mat3b &src)
+{
+	std::map<cv::Vec3b, short, Vec3bCompare> palette;
+	palette[cv::Vec3b(0, 0, 0)] = -1; // always have black background label
+
+	// find all colors
+	cv::Mat3b::const_iterator its;
+	for (its = src.begin(); its != src.end(); ++its)
+		palette[*its] = -1;
+
+	// assign labelColors based on map order (somewhat canonical label indices)
+	labelColors.clear();
+	std::map<cv::Vec3b, short>::iterator itp;
+	for (itp = palette.begin(); itp != palette.end(); ++itp)
+	{
+		itp->second = labelColors.size(); // index into labelColors
+		labelColors.push_back(itp->first);
+	}
+	labelcount = labelColors.size();
+
+	// assign the color indices to the label matrix
+	labels = cv::Mat1s(src.rows, src.cols);
+	cv::Mat1s::iterator itl;
+	for (its = src.begin(), itl = labels.begin();
+		 its != src.end(); ++its, ++itl) {
+		*itl = palette[*its];
+	}
+
+	/* Special case: only one white label stored in RGB image (stupid).
+	   We don't want to use white color, it confuses the user. */
+	if ((labelcount == 2) && (labelColors[1][0] == labelColors[1][1])
+						  && (labelColors[1][1] == labelColors[1][2]))
+		labelColors[1] = cv::Vec3b(0, 255, 0);
+}
+
+void Labeling::read(const cv::Mat1w &src, int bins)
+{
+	/* find all used intensities */
+	vector<int> indices(bins, 0);
+	// always have a background label
+	indices[0] = -1;
+	cv::Mat1w::const_iterator its;
+	for (its = src.begin(); its != src.end(); ++its)
+		indices[*its] = -1;
+
+	/* assign indices */
+	labelcount = 0;
+	for (int i = 0; i < bins; ++i) {
+		if (indices[i] == -1)
+			indices[i] = labelcount++;
+	}
+
+	/* if needed, clear labelColors */
+	if (labelColors.size() < (size_t)labelcount)
+		labelColors.clear();
+
+	/* assign the intensity indices to the label matrix */
+	labels = cv::Mat1s(src.rows, src.cols);
+	cv::Mat1s::iterator itl;
+	for (its = src.begin(), itl = labels.begin();
+		 its != src.end(); ++its, ++itl) {
+		*itl = indices[*its];
+	}
+}
+
+void Labeling::readBinary(const cv::Mat &src)
+{
+	if (src.channels() > 1) {
+		vector<cv::Mat> array;
+		cv::split(src, array);
+		for (size_t i = 1; i < array.size(); ++i)
+			cv::max(array[i], array[0], array[0]);
+		labels = array[0]; // implicit conversion to Mat1s
+	} else {
+		labels = src; // implicit conversion to Mat1s
+	}
+
+	// treat all values != 0 as 1
+	labels = labels > 0;
+
+	labelColors.clear();
+	labelColors.push_back(cv::Vec3b(  0,   0,   0));
+	labelColors.push_back(cv::Vec3b(  0, 255,   0));
+	labelcount = 2;
 }
 
 void Labeling::setColors(const vector<cv::Vec3b> &colors)
