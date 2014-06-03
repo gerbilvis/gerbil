@@ -9,7 +9,7 @@
 
 #include "modules.h"
 
-namespace vole {
+namespace shell {
 
 Modules::Modules() {
 	Command *c;

@@ -1,8 +1,6 @@
 #ifndef PROGRESS_OBSERVER_H
 #define PROGRESS_OBSERVER_H
 
-namespace vole {
-
 class ProgressObserver
 {
 public:
@@ -45,7 +43,5 @@ public:
 	float fraction;
 	float reported;
 };
-
-}
 
 #endif // PROGRESS_OBSERVER_H

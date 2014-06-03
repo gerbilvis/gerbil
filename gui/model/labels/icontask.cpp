@@ -132,7 +132,7 @@ public:
 			// 4 input matrices, 1 dest, 1 mix-pair
 			cv::mixChannels(in,4, &icon,1, mix,1);
 			// convert the result to a QImage
-			QImage qimage = vole::Mat2QImage(icon);
+			QImage qimage = Mat2QImage(icon);
 
 			// draw a border (alternative: the icon view could do this)
 			QPainter p(&qimage);

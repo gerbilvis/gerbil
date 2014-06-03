@@ -289,7 +289,7 @@ void BandView::updateCache(int y, int x, short label)
 
 void BandView::drawOverlay(const cv::Mat1b &mask)
 {
-	//vole::Stopwatch s("Overlay drawing");
+	//Stopwatch s("Overlay drawing");
 	overlay = &mask;
 	update();
 }

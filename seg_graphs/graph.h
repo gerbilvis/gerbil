@@ -13,7 +13,9 @@
 #include <multi_img.h>
 #include <vector>
 
-namespace powerwaterseg {
+namespace seg_graphs {
+
+typedef similarity_measures::SimilarityMeasure<multi_img::Value> SimMeasure;
 
 struct Edge {
 	int nodes[2];
@@ -32,7 +34,8 @@ struct Graph {
 	int bucket(float weight);
 
 	/* graph coloring */
-	void color_standard_weights(const multi_img &image, vole::SimilarityMeasure<multi_img::Value> *distfun, bool geodesic);
+	void color_standard_weights(const multi_img &image, SimMeasure *distfun,
+								bool geodesic);
 
 	/* graph algorithms: geodesic reconstruction */
 	void element_link_geod_dilate(int n, int p, int *Fth);

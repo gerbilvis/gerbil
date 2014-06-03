@@ -4,24 +4,26 @@
 #include <vole_config.h>
 #include <sm_config.h>
 
+namespace som {
+
 // SomType
-enum SomType {
+enum Type {
 	// n-dimensional isometric
 	SOM_SQUARE = 0x1,
 	SOM_CUBE = 0x2,
 	SOM_TESSERACT = 0x4
 };
 // note: the string works with values 0, 1, 2.. so no gaps!
-#define SomTypeString {"none", "square", "cube", "tesseract"}
+#define som_TypeString {"none", "square", "cube", "tesseract"}
 
-class SOMConfig : public vole::Config {
+class SOMConfig : public Config {
 
 public:
 	SOMConfig(const std::string& prefix = std::string());
 
 	virtual ~SOMConfig() {}
 
-	SomType type;
+	Type type;
 
 	// size of the dimensions
 	int dsize;
@@ -46,7 +48,7 @@ public:
 	std::string somFile;
 
 	/// similarity measure for model vector search in SOM
-	vole::SMConfig similarity;
+	similarity_measures::SMConfig similarity;
 
 	virtual std::string getString() const;
 
@@ -57,4 +59,5 @@ protected:
 #endif // WITH_BOOST
 };
 
+}
 #endif

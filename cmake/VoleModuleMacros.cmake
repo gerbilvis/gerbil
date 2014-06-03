@@ -234,10 +234,10 @@ macro(vole_add_module)
 					${CMAKE_CURRENT_BINARY_DIR}/${command_name}/modules.h
 				)
 
-				set(vole_include_header "/* ${vole_module_description} */\n#include \"${command_header}\"")
-				set(vole_include_command "/* ${vole_module_description} */\n	c = new ${command_class}(); insert(std::make_pair(c->getName(), c));")
-#				set(vole_include_header "${vole_include_header}\n/* ${vole_module_description} */\n#include \"${command_header}\"")
-#				set(vole_include_command "${vole_include_command}\n	/* ${vole_module_description} */\n	c = new ${command_class}(); insert(std::make_pair(c->getName(), c));")
+				set(shell_include_header "/* ${vole_module_description} */\n#include \"${command_header}\"")
+				set(shell_include_command "/* ${vole_module_description} */\n	c = new ${command_class}(); insert(std::make_pair(c->getName(), c));")
+#				set(shell_include_header "${shell_include_header}\n/* ${vole_module_description} */\n#include \"${command_header}\"")
+#				set(shell_include_command "${shell_include_command}\n	/* ${vole_module_description} */\n	c = new ${command_class}(); insert(std::make_pair(c->getName(), c));")
 
 				configure_file(${CMAKE_SOURCE_DIR}/shell/modules.cpp.in ${command_name}/${command_name}_modules.cpp)
 				configure_file(${CMAKE_SOURCE_DIR}/shell/modules.h.in ${command_name}/modules.h)

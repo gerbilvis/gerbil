@@ -5,7 +5,9 @@
 using namespace boost::program_options;
 #endif
 
-ENUM_MAGIC(SomType)
+namespace som {
+
+ENUM_MAGIC(som, Type)
 
 SOMConfig::SOMConfig(const std::string& p)
 	: Config(p),
@@ -98,3 +100,4 @@ std::string SOMConfig::getString() const {
 	return s.str();
 }
 
+}

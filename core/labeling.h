@@ -16,8 +16,6 @@
 #include <sstream>
 #include <iostream>
 
-namespace vole {
-
 /** Class for per-pixel label processing.
 
 This class provides methods to import and export pixel masks or labels as
@@ -145,8 +143,6 @@ protected:
 	cv::Mat1s labels;
 	int labelcount;
 };
-
-}
 
 #endif // WITH_OPENCV2
 #endif // LABELING_H

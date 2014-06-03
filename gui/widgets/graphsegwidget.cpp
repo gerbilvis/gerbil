@@ -12,6 +12,8 @@ GraphSegWidget::~GraphSegWidget() { }
 
 void GraphSegWidget::initUi(AutohideView *view)
 {
+	using namespace similarity_measures;
+
 	sourceBox->setAHView(view);
 	sourceBox->addItem("Image", 0);
 	sourceBox->addItem("Gradient", 1); // TODO PCA
@@ -19,16 +21,16 @@ void GraphSegWidget::initUi(AutohideView *view)
 	sourceBox->setCurrentIndex(0);
 
 	similarityBox->setAHView(view);
-	similarityBox->addItem("Manhattan distance (L1)", vole::MANHATTAN);
-	similarityBox->addItem("Euclidean distance (L2)", vole::EUCLIDEAN);
+	similarityBox->addItem("Manhattan distance (L1)", MANHATTAN);
+	similarityBox->addItem("Euclidean distance (L2)", EUCLIDEAN);
 	similarityBox->addItem(QString::fromUtf8("Chebyshev distance (L∞)"),
-								   vole::CHEBYSHEV);
-	similarityBox->addItem("Spectral Angle", vole::MOD_SPEC_ANGLE);
+								   CHEBYSHEV);
+	similarityBox->addItem("Spectral Angle", MOD_SPEC_ANGLE);
 	similarityBox->addItem("Spectral Information Divergence",
-								   vole::SPEC_INF_DIV);
-	similarityBox->addItem("SID+SAM I", vole::SIDSAM1);
-	similarityBox->addItem("SID+SAM II", vole::SIDSAM2);
-	similarityBox->addItem("Normalized L2", vole::NORM_L2);
+								   SPEC_INF_DIV);
+	similarityBox->addItem("SID+SAM I", SIDSAM1);
+	similarityBox->addItem("SID+SAM II", SIDSAM2);
+	similarityBox->addItem("Normalized L2", NORM_L2);
 	similarityBox->setCurrentIndex(3);
 
 	seedModeWidget->setHidden(true);
@@ -58,9 +60,9 @@ void GraphSegWidget::startGraphseg()
 {
 	bool resetLabel = (sender() == replaceButton);
 
-	vole::GraphSegConfig conf("graphseg");
-	conf.algo = vole::PRIM;
-	conf.similarity.measure = (vole::similarity_fun)
+	seg_graphs::GraphSegConfig conf("graphseg");
+	conf.algo = seg_graphs::PRIM;
+	conf.similarity.function = (similarity_measures::measure)
 		  similarityBox->itemData(similarityBox->currentIndex()).value<int>();
 #ifdef WITH_SOM
 	conf.som_similarity = false;

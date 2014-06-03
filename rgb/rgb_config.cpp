@@ -10,12 +10,12 @@
 
 using namespace boost::program_options;
 
-namespace gerbil {
+namespace rgb {
 
-ENUM_MAGIC(rgbalg)
+ENUM_MAGIC(rgb, algorithm)
 
 RGBConfig::RGBConfig(const std::string& p)
- : vole::Config(p), input(prefix + "input")
+ : Config(p), input(prefix + "input")
 #ifdef WITH_SOM
  , som(prefix + "som")
 #endif
@@ -31,7 +31,15 @@ RGBConfig::RGBConfig(const std::string& p)
 }
 
 #ifdef WITH_BOOST_PROGRAM_OPTIONS
-void RGBConfig::initBoostOptions() {
+void RGBConfig::initBoostOptions()
+{
+	if (!prefix_enabled) { // input/output options only with prefix
+		options.add(input.options);
+		options.add_options()
+			(key("output,O"), value(&output_file)->default_value("output_rgb.png"),
+			 "Output file name")
+			;
+	}
 	options.add_options()
 		(key("algo"), value(&algo)->default_value(algo),
 		                   "Algorithm to employ: XYZ true color,\n"
@@ -50,16 +58,6 @@ void RGBConfig::initBoostOptions() {
 #ifdef WITH_SOM
 	options.add(som.options);
 #endif
-
-	if (prefix_enabled)	// skip input/output options
-		return;
-
-	options.add(input.options);
-
-	options.add_options()
-		(key("output,O"), value(&output_file)->default_value("output_rgb.png"),
-		 "Output file name")
-		;
 }
 #endif // WITH_BOOST
 

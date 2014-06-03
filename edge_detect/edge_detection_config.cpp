@@ -4,14 +4,14 @@
 using namespace boost::program_options;
 #endif
 
-namespace vole {
+namespace edge_detect {
 
 EdgeDetectionConfig::EdgeDetectionConfig(const std::string &p)
 	: Config(p),
 	  absolute(false),
 	  outputDir("/tmp/"),
-	  imgInputCfg(prefix + "input"),
-	  somCfg(prefix + "som")
+	  input(prefix + "input"),
+	  som(prefix + "som")
 {
 #ifdef WITH_BOOST
 	initBoostOptions();
@@ -27,18 +27,16 @@ DESC_OPT(outputDir, "Directory to store dx and dy edge maps")
 #ifdef WITH_BOOST
 void EdgeDetectionConfig::initBoostOptions()
 {
+	if (!prefix_enabled) { // input/output options only with prefix
+		options.add(input.options);
+		options.add_options()
+			BOOST_OPT_S(outputDir, O)
+			;
+	}
 	options.add_options()
 		BOOST_OPT(absolute)
 		;
-	options.add(somCfg.options);
-
-	if (prefix_enabled)	// skip input/output options
-		return;
-
-	options.add(imgInputCfg.options);
-	options.add_options()
-		BOOST_OPT_S(outputDir, O)
-		;
+	options.add(som.options);
 }
 
 std::string EdgeDetectionConfig::getString() const {
@@ -46,12 +44,12 @@ std::string EdgeDetectionConfig::getString() const {
 	if (prefix_enabled) {
 		s << "[" << prefix << "]" << std::endl;
 	} else {
-		s << imgInputCfg.getString();
+		s << input.getString();
 		COMMENT_OPT(s, outputDir);
 	}
-	s << somCfg.getString();
+	s << som.getString();
 	return s.str();
 }
 
-} // namespace vole
+} // module namespace
 #endif // WITH_BOOST

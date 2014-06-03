@@ -12,12 +12,10 @@
 #include <string>
 #include <vector>
 
-using namespace std;
-
 const float multi_img_base::ValueMin = -FLT_MAX;
 const float multi_img_base::ValueMax = FLT_MAX;
 
-multi_img::multi_img(const string& filename)
+multi_img::multi_img(const std::string& filename)
  : multi_img_base()
 {
 	read_image(filename);
@@ -149,7 +147,7 @@ void multi_img::rebuildPixels(bool optimistic) const
 	if (!anydirt || (optimistic && countNonZero(dirty) == 0))
 		return;
 
-	cerr << "multi_img: complete rebuild" << endl;
+	std::cerr << "multi_img: complete rebuild" << std::endl;
 	Band::const_iterator it;
 	register unsigned int d, i;
 	for (d = 0; d < size(); ++d) {
@@ -163,7 +161,7 @@ void multi_img::rebuildPixels(bool optimistic) const
 
 void multi_img::rebuildPixel(unsigned int row, unsigned int col) const
 {
-	cerr << "multi_img: rebuild pixel " << row << "." << col << endl;
+	std::cerr << "multi_img: rebuild pixel " << row << "." << col << std::endl;
 	Pixel &p = pixels[row*width + col];
 	for (size_t i = 0; i < size(); ++i)
 		p[i] = bands[i](row, col);

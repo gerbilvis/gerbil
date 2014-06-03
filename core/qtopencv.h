@@ -18,8 +18,6 @@
 #include <QVector>
 #include <QColor>
 
-namespace vole {
-
 /**
 	Helper functions for interoperation between Qt and OpenCV.
 **/
@@ -58,8 +56,6 @@ inline QVector<QColor> Vec2QColor(const std::vector<cv::Vec3b> & src)
 	for (size_t i = 0; i < src.size(); ++i)
 		dest[i] = Vec2QColor(src[i]);
 	return dest;
-}
-
 }
 
 #endif

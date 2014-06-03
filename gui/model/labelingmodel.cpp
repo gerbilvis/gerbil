@@ -43,7 +43,7 @@ void LabelingModel::updateROI(const cv::Rect &roi)
 	// mask icons are on full image, no update required
 }
 
-void LabelingModel::setLabels(const vole::Labeling &labeling, bool full)
+void LabelingModel::setLabels(const Labeling &labeling, bool full)
 {
 	// check for implicit full update
 	full = full ||
@@ -78,7 +78,7 @@ void LabelingModel::setLabels(const vole::Labeling &labeling, bool full)
 	// ensure there is always one foreground color
 	if (labeling.colors().size() < 2) {
 		// set label colors, but do not emit signal (we need combined signal)
-		setLabelColors(vole::Labeling::colors(2, true), false);
+		setLabelColors(Labeling::colors(2, true), false);
 	} else {
 		// set label colors, but do not emit signal (we need combined signal)
 		setLabelColors(labeling.colors(), false);
@@ -95,14 +95,14 @@ void LabelingModel::setLabels(const cv::Mat1s &labeling)
 	// create vole labeling object (build colors) and
 	// note: this iterates over the whole label matrix without concurrency.
 	// OPTIMIZE
-	vole::Labeling vl(labeling, false);
+	Labeling vl(labeling, false);
 	setLabels(vl, false);
 }
 
 void LabelingModel::setLabelColors(const std::vector<cv::Vec3b> &newColors,
 								   bool emitSignal)
 {
-	QVector<QColor> col = vole::Vec2QColor(newColors);
+	QVector<QColor> col = Vec2QColor(newColors);
 	col[0] = Qt::white; // override black for label 0
 
 	colors.swap(col); // set colors, but also keep old ones around for below
@@ -132,7 +132,7 @@ void LabelingModel::addLabel()
 
 	// increment colors by 1 (add label)
 	labelcount++;
-	setLabelColors(vole::Labeling::colors(labelcount, true));
+	setLabelColors(Labeling::colors(labelcount, true));
 }
 
 void LabelingModel::alterLabel(short index, cv::Mat1b mask,
@@ -176,13 +176,13 @@ void LabelingModel::loadLabeling(const QString &filename)
 	if (input.empty())
 		return;
 
-	vole::Labeling labeling(input, false);
+	Labeling labeling(input, false);
 	setLabels(labeling, true);
 }
 
 void LabelingModel::saveLabeling(const QString &filename)
 {
-	vole::Labeling labeling(full_labels);
+	Labeling labeling(full_labels);
 	cv::Mat3b output = labeling.bgr();
 
 	IOGui io("Labeling As Image File", "labeling image");
@@ -251,10 +251,10 @@ void LabelingModel::consolidate()
 	 * it only does this if it gets rgb input
 	 * TODO: write a real consolidate function in core/labeling class!
 	 */
-	vole::Labeling newfull(full_labels);
+	Labeling newfull(full_labels);
 	newfull.consolidate();
 	// get rid of old colors
-	//newfull.setColors(vole::Labeling::colors(newfull.colors().size(), true));
+	//newfull.setColors(Labeling::colors(newfull.colors().size(), true));
 	// set it
 	setLabels(newfull, true);
 }

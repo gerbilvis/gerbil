@@ -17,15 +17,15 @@
 using namespace boost::program_options;
 #endif
 
-namespace vole {
+namespace similarity_measures {
 
-ENUM_MAGIC(similarity_fun)
+ENUM_MAGIC(similarity_measures, measure)
 
 SMConfig::SMConfig(const std::string& prefix)
 	: Config(prefix) {
 
 	// default parameters
-	measure = EUCLIDEAN;
+	function = EUCLIDEAN;
 
 #ifdef WITH_BOOST
 	initBoostOptions();
@@ -38,7 +38,7 @@ std::string SMConfig::getString() const {
 	if (prefix_enabled)
 		s << "[" << prefix << "]" << std::endl;
 
-	s << "measure=" << measure << "\t# Measurement function" << std::endl
+	s << "measure=" << function << "\t# Measurement function" << std::endl
 		 ;
 
 	return s.str();
@@ -47,12 +47,12 @@ std::string SMConfig::getString() const {
 #ifdef WITH_BOOST
 void SMConfig::initBoostOptions() {
 	std::string measuredesc = "Similarity measurement function. Available are: ";
-	measuredesc += similarity_funStr[0];
-	for (unsigned int i = 1; i < sizeof(similarity_funStr)/sizeof(char*); ++i) {
-		measuredesc += ", "; measuredesc += similarity_funStr[i];
+	measuredesc += measureStr[0];
+	for (unsigned int i = 1; i < sizeof(measureStr)/sizeof(char*); ++i) {
+		measuredesc += ", "; measuredesc += measureStr[i];
 	}
 	options.add_options()
-	    (key("measure"), value(&measure)->default_value(measure),
+		(key("measure"), value(&function)->default_value(function),
 	     measuredesc.c_str())
 	;
 

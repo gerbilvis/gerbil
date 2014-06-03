@@ -3,7 +3,7 @@
 
 #include "vole_config.h"
 
-namespace vole {
+namespace imginput {
 
 /**
  * Configuration parameters

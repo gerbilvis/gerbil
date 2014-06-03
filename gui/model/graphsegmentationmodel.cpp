@@ -29,7 +29,7 @@ void GraphSegmentationModel::setCurLabel(int curLabel)
 
 void GraphSegmentationModel::runGraphseg(representation::t type,
 							   cv::Mat1s seedMap,
-							   const vole::GraphSegConfig &config,
+							   const seg_graphs::GraphSegConfig &config,
 							   bool resetLabel)
 {
 	SharedMultiImgPtr input = map.value(type);
@@ -41,7 +41,8 @@ void GraphSegmentationModel::runGraphseg(representation::t type,
 
 void GraphSegmentationModel::runGraphsegBand(representation::t type, int bandId,
 											 cv::Mat1s seedMap,
-											 const vole::GraphSegConfig &config,
+											 const seg_graphs::GraphSegConfig
+											 &config,
 											 bool resetLabel)
 {
 	SharedMultiImgPtr img = map.value(type);
@@ -52,7 +53,8 @@ void GraphSegmentationModel::runGraphsegBand(representation::t type, int bandId,
 
 void GraphSegmentationModel::startGraphseg(SharedMultiImgPtr input,
 										   cv::Mat1s seedMap,
-										   const vole::GraphSegConfig &config,
+										   const seg_graphs::GraphSegConfig
+										   &config,
 										   bool resetLabel)
 {
 	emit setGUIEnabledRequested(false, TT_NONE);

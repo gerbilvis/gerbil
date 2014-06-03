@@ -11,7 +11,7 @@
 
 bool DataRangeCuda::run()
 {
-	vole::Stopwatch s;
+	Stopwatch s;
 
 	double tmp1, tmp2;
 	multi_img::Value min = multi_img::ValueMax;

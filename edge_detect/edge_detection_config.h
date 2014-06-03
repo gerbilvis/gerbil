@@ -6,7 +6,7 @@
 #include <som_config.h>
 
 
-namespace vole {
+namespace edge_detect {
 
 class EdgeDetectionConfig : public Config
 {
@@ -25,9 +25,9 @@ public:
 	std::string outputDir;
 
 	// input is handled by imginput module
-	ImgInputConfig imgInputCfg;
+	imginput::ImgInputConfig input;
 
-	SOMConfig somCfg;
+	som::SOMConfig som;
 
 	virtual std::string getString() const;
 

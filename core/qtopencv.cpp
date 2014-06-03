@@ -11,8 +11,6 @@
 
 #include "qtopencv.h"
 
-namespace vole {
-
 cv::Mat3b QImage2Mat(const QImage &src) {
 	unsigned int height = src.height();
 	unsigned int width = src.width();
@@ -104,8 +102,6 @@ QImage Mat2QImage(const cv::Mat4b &src)
 		}
 	}
 	return dest;
-}
-
 }
 
 #endif

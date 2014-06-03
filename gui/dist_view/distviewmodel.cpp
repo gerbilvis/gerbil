@@ -17,8 +17,6 @@
 #include <opencv2/core/core.hpp>
 #include <iostream>
 
-using namespace std;
-
 DistViewModel::DistViewModel(representation::t type)
 	: type(type), queue(NULL),
 	  ignoreLabels(false),

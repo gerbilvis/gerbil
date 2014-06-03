@@ -7,8 +7,7 @@
 #include "vole_config.h"
 #include "progress_observer.h"
 
-namespace vole {
-
+namespace shell {
 
 class Command {
 

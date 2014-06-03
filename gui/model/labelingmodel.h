@@ -22,7 +22,7 @@ public:
 public slots:
 	void setDimensions(unsigned int height, unsigned int width);
 	void updateROI(const cv::Rect &roi);
-	void setLabels(const vole::Labeling &labeling, bool full);
+	void setLabels(const Labeling &labeling, bool full);
 	void setLabels(const cv::Mat1s &labeling);
 	// FIXME should _NOT_ be part of the public API (emitSignal)
 	void setLabelColors(const std::vector<cv::Vec3b> &newColors,

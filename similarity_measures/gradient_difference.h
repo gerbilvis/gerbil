@@ -12,7 +12,7 @@
 
 #include "similarity_measure.h"
 
-namespace vole {
+namespace similarity_measures {
 
 template<typename T>
 class GradientDifference : public SimilarityMeasure<T> {

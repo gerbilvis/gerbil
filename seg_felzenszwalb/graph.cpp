@@ -20,8 +20,7 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307 USA
 #include <algorithm>
 #include <cmath>
 
-namespace gerbil {
-  namespace felzenszwalb {
+namespace seg_felzenszwalb {
 
 // threshold function
 #define THRESHOLD(size, c) (c/size)
@@ -108,4 +107,4 @@ universe* segment_graph(int num_vertices, int num_edges, edge *edges, float c)
   return u;
 }
 
-} } // namespace
+} // namespace

@@ -1,9 +1,8 @@
 #include "multi_img_offloaded.h"
 #include <opencv2/highgui/highgui.hpp>
 
-using namespace std;
-
-multi_img_offloaded::multi_img_offloaded(const vector<string> &files, const vector<BandDesc> &descs)
+multi_img_offloaded::multi_img_offloaded(const std::vector<std::string> &files,
+										 const std::vector<BandDesc> &descs)
 {
 	int channels = 0;
 	width = 0;
@@ -13,13 +12,14 @@ multi_img_offloaded::multi_img_offloaded(const vector<string> &files, const vect
 		cv::Mat src = cv::imread(files[fi], -1); // flag -1: preserve format
 
 		if (src.empty()) {
-			cerr << "ERROR: Failed to load " << files[fi] << endl;
+			std::cerr << "ERROR: Failed to load " << files[fi] << std::endl;
 			continue;
 		}
 
 		// test spatial size
 		if (width > 0 && (src.cols != width || src.rows != height)) {
-			cerr << "ERROR: Size mismatch for image " << files[fi] << endl;
+			std::cerr << "ERROR: Size mismatch for image "
+					  << files[fi] << std::endl;
 			continue;
 		}
 
@@ -36,19 +36,19 @@ multi_img_offloaded::multi_img_offloaded(const vector<string> &files, const vect
 		if (channels > 1) {
 			std::vector<cv::Mat> splitted(channels);
 			cv::split(src, splitted);
-			for (int c = 0; c < splitted.size(); ++c)
-				bands.push_back(make_pair(files[fi], c));
+			for (size_t c = 0; c < splitted.size(); ++c)
+				bands.push_back(std::make_pair(files[fi], c));
 		} else {
-			bands.push_back(make_pair(files[fi], 0));
+			bands.push_back(std::make_pair(files[fi], 0));
 		}
 
-		cout << "Added " << files[fi] << ":\t" << channels
+		std::cout << "Added " << files[fi] << ":\t" << channels
 			 << (channels == 1 ? " channel, " : " channels, ")
 			 << (src.depth() == CV_16U ? 16 : 8) << " bits";
 		if (descs.empty() || descs[fi].empty)
-			cout << endl;
+			std::cout << std::endl;
 		else
-			cout << ", " << descs[fi].center << " nm" << endl;
+			std::cout << ", " << descs[fi].center << " nm" << std::endl;
 	}
 
 	/* add meta information if present. */
@@ -70,9 +70,10 @@ multi_img_offloaded::multi_img_offloaded(const vector<string> &files, const vect
 	}
 
 	if (bands.size())
-		cout << "Total of " << bands.size() << " bands. "
+		std::cout << "Total of " << bands.size() << " bands. "
 			 << "Spatial size: " << width << "x" << height
-			 << "   (" << bands.size()*width*height*sizeof(Value)/1048576. << " MB)" << endl;
+			 << "   (" << bands.size()*width*height*sizeof(Value)/1048576.
+			 << " MB)" << std::endl;
 }
 
 unsigned int multi_img_offloaded::size() const
@@ -96,7 +97,7 @@ void multi_img_offloaded::getBand(size_t band, Band &data) const
 	cv::Mat src = cv::imread(bands[band].first, -1); // flag -1: preserve format
 
 	if (src.empty()) {
-		cerr << "ERROR: Failed to load " << bands[band].first << endl;
+		std::cerr << "ERROR: Failed to load " << bands[band].first << std::endl;
 		return;
 	}
 

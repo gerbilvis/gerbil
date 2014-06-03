@@ -9,12 +9,12 @@
 #include "graphseg_shell.h"
 #include "graphseg.h"
 
-#include <multi_img.h>
+#include <imginput.h>
 #include <labeling.h>
 #include <opencv2/highgui/highgui.hpp>
 #include <iostream>
 
-namespace vole {
+namespace seg_graphs {
 
 GraphSegShell::GraphSegShell()
  : Command(
@@ -25,9 +25,15 @@ GraphSegShell::GraphSegShell()
 {}
 
 int GraphSegShell::execute() {
-	multi_img input(config.input_file);
-	if (input.empty())
-		return -1;
+	multi_img::ptr input;
+	imginput::ImgInput ii(config.input);
+
+	input = ii.execute();
+	if (input->empty()) {
+		throw std::runtime_error
+				("EdgeDetection::execute: imginput module failed to read image.");
+	}
+	input->rebuildPixels(false);
 
 	// Read the seed image
 	cv::Mat1b seeds;
@@ -40,11 +46,11 @@ int GraphSegShell::execute() {
 
 	GraphSeg seg(config);
 	cv::Mat1b proba_map;
-	cv::Mat1b result = seg.execute(input, seeds, &proba_map);
+	cv::Mat1b result = seg.execute(*input, seeds, &proba_map);
 	if (result.empty())
 		return -1;
 	
-	vole::Labeling output;
+	Labeling output;
 	output.yellowcursor = false;
 	output.setLabels(result);
 

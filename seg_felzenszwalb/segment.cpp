@@ -21,16 +21,16 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307 USA
 #include <cstdlib>
 #include <boost/unordered_map.hpp>
 
-namespace gerbil {
-  namespace felzenszwalb {
+namespace seg_felzenszwalb {
 
 void equalizeHist(cv::Mat_<float> &target, int bins);
 
 std::pair<cv::Mat1i, segmap> segment_image(const multi_img &im,
 							 const FelzenszwalbConfig &config)
 {
-	vole::SimilarityMeasure<multi_img::Value> *distfun;
-	distfun = vole::SMFactory<multi_img::Value>::spawn(config.similarity);
+	similarity_measures::SimilarityMeasure<multi_img::Value> *distfun;
+	distfun = similarity_measures::SMFactory<multi_img::Value>
+			::spawn(config.similarity);
 	assert(distfun);
 
 	int width = im.width;
@@ -51,7 +51,8 @@ std::pair<cv::Mat1i, segmap> segment_image(const multi_img &im,
 				edges[num].b = y * width + (x+1);
 				cv::Point coord2(x+1, y);
 				const multi_img::Pixel &p2 = im(coord2);
-				weights.push_back((float)distfun->getSimilarity(p1, p2, coord1, coord2));
+				weights.push_back((float)distfun->
+								  getSimilarity(p1, p2, coord1, coord2));
 				num++;
 			}
 
@@ -170,4 +171,4 @@ void equalizeHist(cv::Mat_<float> &target, int bins)
 	}
 }
 
-} } // namespace
+} // namespace

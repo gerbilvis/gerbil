@@ -5,7 +5,7 @@
 #include <multi_img.h>
 #include <vector>
 
-namespace vole {
+namespace imginput {
 
 class ImgInput {
 public:

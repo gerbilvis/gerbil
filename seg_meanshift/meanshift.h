@@ -9,9 +9,7 @@
 #include <felzenszwalb.h>
 #endif
 
-namespace vole {
-
-using std::vector;
+namespace seg_meanshift {
 
 class MeanShift {
 public:
@@ -25,7 +23,7 @@ public:
 
 #ifdef WITH_SEG_FELZENSZWALB
 	static std::vector<fams_point> prepare_sp_points(const FAMS &fams,
-									  const gerbil::felzenszwalb::segmap &map);
+									  const seg_felzenszwalb::segmap &map);
 	static void cleanup_sp_points(std::vector<fams_point> &points);
 	static cv::Mat1s segmentImage(const FAMS &fams, const cv::Mat1i &lookup);
 #endif

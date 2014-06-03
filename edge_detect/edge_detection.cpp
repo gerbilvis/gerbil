@@ -12,7 +12,9 @@
 #include <tbb/parallel_for.h>
 #include <boost/make_shared.hpp>
 
-namespace vole {
+using namespace som;
+
+namespace edge_detect {
 
 EdgeDetection::EdgeDetection()
 	: Command("edge_detect",
@@ -29,7 +31,7 @@ EdgeDetection::~EdgeDetection()
 class EdgeTBB {
 public:
 	EdgeTBB(const GenSOM *som, const SOMClosestN *lookup,
-			SimilarityMeasure<float> *simfun,
+			similarity_measures::SimilarityMeasure<float> *simfun,
 			cv::Mat1f &dx, cv::Mat1f &dy, bool absolute)
 		: som(som), lookup(lookup), simfun(simfun), dx(dx), dy(dy),
 		  absolute(absolute)
@@ -90,7 +92,7 @@ public:
 private:
 	const GenSOM *som;
 	const SOMClosestN *lookup;
-	SimilarityMeasure<float> *simfun;
+	similarity_measures::SimilarityMeasure<float> *simfun;
 	cv::Mat1f &dx, &dy;
 	bool absolute;
 };
@@ -106,7 +108,7 @@ int EdgeDetection::execute()
 	}
 
 	multi_img::ptr img;
-	vole::ImgInput ii(config.imgInputCfg);
+	imginput::ImgInput ii(config.input);
 
 	img = ii.execute();
 	if (img->empty()) {
@@ -116,9 +118,9 @@ int EdgeDetection::execute()
 	img->rebuildPixels(false);
 
 	// load or train SOM
-	boost::shared_ptr<GenSOM> som(GenSOM::create(config.somCfg, *img));
+	boost::shared_ptr<GenSOM> som(GenSOM::create(config.som, *img));
 
-	vole::Stopwatch watch("Edge Map Generation");
+	Stopwatch watch("Edge Map Generation");
 
 	// build lookup table
 	boost::shared_ptr<SOMClosestN> lookup =
@@ -127,8 +129,9 @@ int EdgeDetection::execute()
 	cv::Mat1f dx = cv::Mat1f::zeros(img->height, img->width);
 	cv::Mat1f dy = cv::Mat1f::zeros(img->height, img->width);
 
-	boost::shared_ptr<SimilarityMeasure<float> >
-			simfun(SMFactory<float>::spawn(config.somCfg.similarity));
+	boost::shared_ptr<similarity_measures::SimilarityMeasure<float> >
+			simfun(similarity_measures::SMFactory<float>
+				   ::spawn(config.som.similarity));
 
 	tbb::parallel_for(tbb::blocked_range2d<int>(1, img->height - 1, // row range
 												1, img->width - 1), // column range
@@ -160,4 +163,4 @@ void EdgeDetection::printHelp() const
 			  << std::endl;
 }
 
-} // namespace vole
+} // module namespace

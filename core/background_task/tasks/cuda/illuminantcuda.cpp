@@ -26,7 +26,7 @@ bool IlluminantCuda::run()
 	target->minval = source->minval;
 	target->maxval = source->maxval;
 
-	vole::Stopwatch s;
+	Stopwatch s;
 
 	cv::gpu::GpuMat band(source->height, source->width, multi_img::ValueType);
 	if (remove) {

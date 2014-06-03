@@ -17,22 +17,18 @@
 #include <algorithm>
 #include <map>
 
-using namespace std;
-
-namespace vole {
-
-	Labeling::Labeling(const cv::Mat &labeling, bool binary)
-		: yellowcursor(true), shuffle(false), shuffleV(false)
+Labeling::Labeling(const cv::Mat &labeling, bool binary)
+	: yellowcursor(true), shuffle(false), shuffleV(false)
 {
 	read(labeling, binary);
 }
 
-Labeling::Labeling(const string &filename, bool binary)
+Labeling::Labeling(const std::string &filename, bool binary)
 	: yellowcursor(true), shuffle(false), shuffleV(false)
 {
 	cv::Mat src = cv::imread(filename, cv::IMREAD_UNCHANGED);
 	if (src.empty()) {
-		cerr << "ERROR: Failed to load " << filename << endl;
+		std::cerr << "ERROR: Failed to load " << filename << std::endl;
 		return;
 	}
 	read(src, binary);
@@ -136,7 +132,7 @@ void Labeling::read(const cv::Mat3b &src)
 void Labeling::read(const cv::Mat1w &src, int bins)
 {
 	/* find all used intensities */
-	vector<int> indices(bins, 0);
+	std::vector<int> indices(bins, 0);
 	// always have a background label
 	indices[0] = -1;
 	cv::Mat1w::const_iterator its;
@@ -166,7 +162,7 @@ void Labeling::read(const cv::Mat1w &src, int bins)
 void Labeling::readBinary(const cv::Mat &src)
 {
 	if (src.channels() > 1) {
-		vector<cv::Mat> array;
+		std::vector<cv::Mat> array;
 		cv::split(src, array);
 		for (size_t i = 1; i < array.size(); ++i)
 			cv::max(array[i], array[0], array[0]);
@@ -184,13 +180,13 @@ void Labeling::readBinary(const cv::Mat &src)
 	labelcount = 2;
 }
 
-void Labeling::setColors(const vector<cv::Vec3b> &colors)
+void Labeling::setColors(const std::vector<cv::Vec3b> &colors)
 {
 	assert(colors.size() >= (size_t)labelcount);
 	labelColors = colors;
 }
 
-const vector<cv::Vec3b>& Labeling::colors() const
+const std::vector<cv::Vec3b>& Labeling::colors() const
 {
 	if (labelColors.empty())
 		buildColors();
@@ -253,9 +249,10 @@ void Labeling::buildColors() const
 	}
 }
 
-vector<cv::Vec3b> Labeling::colors(int count, bool yellowcursor, bool shuffleV)
+std::vector<cv::Vec3b> Labeling::colors(int count, bool yellowcursor,
+										bool shuffleV)
 {
-	vector<cv::Vec3b> ret;
+	std::vector<cv::Vec3b> ret;
 	if (count <= (yellowcursor ? 6 : 7)) {
 		// standard set of label colors
 		const cv::Vec3b standard[] =
@@ -303,5 +300,4 @@ vector<cv::Vec3b> Labeling::colors(int count, bool yellowcursor, bool shuffleV)
 	return ret;
 }
 
-}
 #endif // opencv

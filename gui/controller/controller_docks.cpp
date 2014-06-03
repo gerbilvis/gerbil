@@ -116,26 +116,26 @@ void Controller::setupDocks()
 	// Controller adds missing information and resends the signal
 	connect(bandDock->graphSegWidget(),
 			SIGNAL(requestGraphseg(representation::t,
-								   vole::GraphSegConfig,bool)),
+								   seg_graphs::GraphSegConfig,bool)),
 			this,
 			SLOT(requestGraphseg(representation::t,
-							 vole::GraphSegConfig,bool)));
+								 seg_graphs::GraphSegConfig,bool)));
 	connect(this,
 			SIGNAL(requestGraphseg(representation::t,cv::Mat1s,
-								   vole::GraphSegConfig,bool)),
+								   seg_graphs::GraphSegConfig,bool)),
 			graphSegmentationModel(),
 			SLOT(runGraphseg(representation::t,cv::Mat1s,
-							 vole::GraphSegConfig,bool)));
+							 seg_graphs::GraphSegConfig,bool)));
 	connect(bandDock->graphSegWidget(),
-			SIGNAL(requestGraphsegCurBand(const vole::GraphSegConfig &,bool)),
+			SIGNAL(requestGraphsegCurBand(const seg_graphs::GraphSegConfig &,bool)),
 			this,
-			SLOT(requestGraphsegCurBand(const vole::GraphSegConfig &,bool)));
+			SLOT(requestGraphsegCurBand(const seg_graphs::GraphSegConfig &,bool)));
 	connect(this,
 			SIGNAL(requestGraphsegBand(representation::t,int,cv::Mat1s,
-									   const vole::GraphSegConfig &,bool)),
+									   const seg_graphs::GraphSegConfig &,bool)),
 			graphSegmentationModel(),
 			SLOT(runGraphsegBand(representation::t,int,cv::Mat1s,
-								 const vole::GraphSegConfig &,bool)));
+								 const seg_graphs::GraphSegConfig &,bool)));
 
 	// GraphSegModel -> BandDock
 	connect(bandDock, SIGNAL(currentLabelChanged(int)),
@@ -213,8 +213,9 @@ void Controller::setupDocks()
 			clusteringDock, SLOT(updateProgress(int)));
 	connect(cm, SIGNAL(segmentationCompleted()),
 			clusteringDock, SLOT(processSegmentationCompleted()));
-	connect(clusteringDock, SIGNAL(segmentationRequested(vole::Command*,int,bool)),
-			cm, SLOT(startSegmentation(vole::Command*,int,bool)));
+	connect(clusteringDock,
+			SIGNAL(segmentationRequested(shell::Command*,int,bool)),
+			cm, SLOT(startSegmentation(shell::Command*,int,bool)));
 	connect(clusteringDock, SIGNAL(cancelSegmentationRequested()),
 			cm, SLOT(cancel()));
 	connect(cm, SIGNAL(setLabelsRequested(cv::Mat1s)),
@@ -291,14 +292,14 @@ void Controller::setGUIEnabledDocks(bool enable, TaskType tt)
 }
 
 void Controller::requestGraphseg(representation::t repr,
-									 const vole::GraphSegConfig &config,
+									 const seg_graphs::GraphSegConfig &config,
 									 bool resetLabel)
 {
 	cv::Mat1s seedMap = bandDock->bandView()->getSeedMap();
 	emit requestGraphseg(repr, seedMap, config, resetLabel);
 }
 
-void Controller::requestGraphsegCurBand(const vole::GraphSegConfig &config,
+void Controller::requestGraphsegCurBand(const seg_graphs::GraphSegConfig &config,
 											bool resetLabel)
 {
 	representation::t repr = bandDock->getCurRepresentation();

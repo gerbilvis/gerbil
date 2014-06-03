@@ -6,19 +6,19 @@
 #include <som_config.h>
 #include <multi_img.h>
 
-namespace gerbil {
+namespace rgb {
 
-enum rgbalg {
+enum algorithm {
 	COLOR_XYZ,
 	COLOR_PCA,
 	COLOR_SOM
 };
-#define rgbalgString {"XYZ", "PCA", "SOM"}
+#define rgb_algorithmString {"XYZ", "PCA", "SOM"}
 
 /**
  * Configuration parameters for the graph cut / power watershed segmentation
  */
-class RGBConfig : public vole::Config {
+class RGBConfig : public Config {
 
 public:
 	RGBConfig(const std::string& prefix = std::string());
@@ -26,13 +26,13 @@ public:
 	virtual ~RGBConfig() {}
 
 	// input configuration
-	vole::ImgInputConfig input;
+	imginput::ImgInputConfig input;
 
 	/// output file name
 	std::string output_file;
 
 	/// algorithm to be employed
-	rgbalg algo;
+	algorithm algo;
 	
 	/// maximize PCA contrast
 	bool pca_stretch;
@@ -44,7 +44,7 @@ public:
 	bool som_linear;
 
 #ifdef WITH_SOM
-	SOMConfig som;
+	som::SOMConfig som;
 #endif
 
 	virtual std::string getString() const;

@@ -4,14 +4,16 @@
 #include "meanshift_config.h"
 #include <command.h>
 
-namespace vole {
+namespace seg_meanshift {
 
-class MeanShiftShell : public Command {
+class MeanShiftShell : public shell::Command {
 public:
 	MeanShiftShell();
 	~MeanShiftShell();
 	int execute();
-	std::map<std::string, boost::any> execute(std::map<std::string, boost::any> &input, ProgressObserver *progress);
+	std::map<std::string, boost::any>
+	execute(std::map<std::string, boost::any> &input,
+			ProgressObserver *progress);
 
 	void printShortHelp() const;
 	void printHelp() const;

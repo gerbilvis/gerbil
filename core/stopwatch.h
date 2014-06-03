@@ -16,8 +16,6 @@
 #include <sstream>
 #include <iostream>
 
-namespace vole {
-
 /** Class for easy CPU time measurement using OpenCV functions.
 
 Use this class to easily track the running time of your algorithm. It will
@@ -81,8 +79,6 @@ struct Stopwatch {
 	bool verbose;
 	int64 time;
 };
-
-}
 
 #endif // WITH_OPENCV2
 #endif // STOPWATCH_H

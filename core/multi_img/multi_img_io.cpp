@@ -17,8 +17,6 @@
 #include <string>
 #include <vector>
 
-using namespace std;
-
 unsigned short* multi_img::export_interleaved(bool useDataRange) const
 {
 	rebuildPixels();
@@ -33,7 +31,8 @@ unsigned short* multi_img::export_interleaved(bool useDataRange) const
 	int length = size(), i = 0, d;
 	unsigned short *ret = new unsigned short[length*width*height];
 
-	for (vector<Pixel>::const_iterator it = pixels.begin(); it != pixels.end(); ++it)
+	std::vector<Pixel>::const_iterator it;
+	for (it = pixels.begin(); it != pixels.end(); ++it)
 		for (d = 0; d < length; ++d)
 			ret[i++] = ((*it)[d] - range.min) * scale;
 
@@ -45,7 +44,7 @@ unsigned short* multi_img::export_interleaved(bool useDataRange) const
 QImage multi_img::export_qt(unsigned int band) const
 {
 	assert(band < size());
-	return vole::Band2QImage(bands[band], minval, maxval);
+	return Band2QImage(bands[band], minval, maxval);
 }
 #endif
 
@@ -105,7 +104,8 @@ int multi_img::read_mat(const cv::Mat &src, Value srcminval, Value srcmaxval)
 }
 
 // read multires. image into vector
-void multi_img::read_image(const vector<string> &files, const vector<BandDesc> &descs)
+void multi_img::read_image(const std::vector<std::string> &files,
+						   const std::vector<BandDesc> &descs)
 {
 	int channels = 0;
 	
@@ -113,25 +113,26 @@ void multi_img::read_image(const vector<string> &files, const vector<BandDesc> &
 	    cv::Mat src = cv::imread(files[fi], -1); // flag -1: preserve format
 
 		if (src.empty()) {
-			cerr << "ERROR: Failed to load " << files[fi] << endl;
+			std::cerr << "ERROR: Failed to load " << files[fi] << std::endl;
 			continue;
 		}
 
 		// test spatial size
 		if (width > 0 && (src.cols != width || src.rows != height)) {
-			cerr << "ERROR: Size mismatch for image " << files[fi] << endl;
+			std::cerr << "ERROR: Size mismatch for image " << files[fi]
+						 << std::endl;
 			continue;
 		}
 
 		channels = read_mat(src);
 		
-		cerr << "Added " << files[fi] << ":\t" << channels
+		std::cerr << "Added " << files[fi] << ":\t" << channels
              << (channels == 1 ? " channel, " : " channels, ")
 			 << (src.depth() == CV_16U ? 16 : 8) << " bits";
 		if (descs.empty() || descs[fi].empty)
-			cerr << endl;
+			std::cerr << std::endl;
 		else
-			cerr << ", " << descs[fi].center << " nm" << endl;
+			std::cerr << ", " << descs[fi].center << " nm" << std::endl;
 	}
 
 	/* invalidate pixel cache as pixel length has changed
@@ -158,9 +159,10 @@ void multi_img::read_image(const vector<string> &files, const vector<BandDesc> &
 	}
 
 	if (size())
-		cout << "Total of " << size() << " bands. "
+		std::cout << "Total of " << size() << " bands. "
 			 << "Spatial size: " << width << "x" << height
-			 << "   (" << size()*width*height*sizeof(Value)/1048576. << " MB)" << endl;
+			 << "   (" << size()*width*height*sizeof(Value)/1048576. <<
+				" MB)" << std::endl;
 }
 
 #endif // opencv

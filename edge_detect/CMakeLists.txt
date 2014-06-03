@@ -10,7 +10,7 @@ vole_compile_library(
 	edge_detection
 )
 
-vole_add_command(edge_detect edge_detection.h EdgeDetection)
+vole_add_command(edge_detect edge_detection.h edge_detect::EdgeDetection)
 
 vole_compile_library(
 	edge_detection

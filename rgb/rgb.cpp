@@ -28,7 +28,7 @@
 #include <shared_data.h>
 #endif
 
-namespace gerbil {
+namespace rgb {
 
 RGB::RGB()
  : Command(
@@ -40,7 +40,7 @@ RGB::RGB()
 
 int RGB::execute()
 {
-	multi_img::ptr src = vole::ImgInput(config.input).execute();
+	multi_img::ptr src = imginput::ImgInput(config.input).execute();
 	if (src->empty())
 		return 1;
 
@@ -59,7 +59,7 @@ int RGB::execute()
 
 #ifdef WITH_BOOST
 std::map<std::string, boost::any> RGB::execute(
-		std::map<std::string, boost::any> &input, vole::ProgressObserver *po)
+		std::map<std::string, boost::any> &input, ProgressObserver *po)
 {
 	// BUG BUG BUG
 	// we need to copy the source image, because the pointer stored in the
@@ -89,7 +89,7 @@ std::map<std::string, boost::any> RGB::execute(
 }
 #endif
 
-cv::Mat3f RGB::execute(const multi_img& src, vole::ProgressObserver *po)
+cv::Mat3f RGB::execute(const multi_img& src, ProgressObserver *po)
 {
 	cv::Mat3f bgr;
 
@@ -114,7 +114,7 @@ cv::Mat3f RGB::execute(const multi_img& src, vole::ProgressObserver *po)
 	return bgr;
 }
 
-cv::Mat3f RGB::executePCA(const multi_img& src, vole::ProgressObserver *po)
+cv::Mat3f RGB::executePCA(const multi_img& src, ProgressObserver *po)
 {
 	// cover cases of lt 3 channels
 	unsigned int components = std::min(3u, src.size());
@@ -145,6 +145,7 @@ cv::Mat3f RGB::executePCA(const multi_img& src, vole::ProgressObserver *po)
 }
 
 #ifdef WITH_SOM
+using namespace som;
 
 // Compute weighted coordinates of multi_img pixels in SOM with dimensionality <= 3.
 //
@@ -155,7 +156,7 @@ public:
 	typedef cv::Mat_<cv::Vec<GenSOM::value_type, 3> > Mat3;
 
 	SomRgbTbb(const SOMClosestN &lookup, const std::vector<float> &weights,
-			  Mat3& output, vole::ProgressObserver *po = 0)
+			  Mat3& output, ProgressObserver *po = 0)
 		: lookup(lookup), weights(weights), output(output), po(po) {}
 
 	void operator()(const tbb::blocked_range2d<int> &r) const
@@ -200,27 +201,27 @@ private:
 	const SOMClosestN &lookup;
 	const std::vector<float> &weights;
 	Mat3 &output;
-	vole::ProgressObserver *po;
+	ProgressObserver *po;
 };
 
-cv::Mat3f RGB::executeSOM(const multi_img &img, vole::ProgressObserver *po)
+cv::Mat3f RGB::executeSOM(const multi_img &img, ProgressObserver *po)
 {
 	typedef cv::Mat_<cv::Vec<GenSOM::value_type, 3> > Mat3;
 
-	vole::Stopwatch total("Total runtime of false-color image generation");
+	Stopwatch total("Total runtime of false-color image generation");
 
 	img.rebuildPixels(false);
 
-	vole::ProgressObserver *calcPo;
-	calcPo = (po ? new vole::ChainedProgressObserver(po, .6f) : 0);
+	ProgressObserver *calcPo;
+	calcPo = (po ? new ChainedProgressObserver(po, .6f) : 0);
 	boost::shared_ptr<GenSOM> som(GenSOM::create(config.som, img, calcPo));
 	delete calcPo;
 	if (po && !po->update(.6f))
 		return Mat3();
 
-	vole::Stopwatch watch("Pixel color mapping");
+	Stopwatch watch("Pixel color mapping");
 	// compute lookup cache
-	calcPo = (po ? new vole::ChainedProgressObserver(po, .35f) : 0);
+	calcPo = (po ? new ChainedProgressObserver(po, .35f) : 0);
 	SOMClosestN lookup(*som, img, config.som_depth, calcPo);
 	delete calcPo;
 	if (po && !po->update(.95f))
@@ -228,7 +229,7 @@ cv::Mat3f RGB::executeSOM(const multi_img &img, vole::ProgressObserver *po)
 
 	// compute weighted coordinates of multi_img pixels in 3D SOM
 	Mat3 bgr(img.height, img.width);
-	calcPo = (po ? new vole::ChainedProgressObserver(po, .05f) : 0);
+	calcPo = (po ? new ChainedProgressObserver(po, .05f) : 0);
 	std::vector<float> weights =
 			neuronWeightsGeometric<float>(config.som_depth);
 	SomRgbTbb<true> comp(lookup, weights, bgr, calcPo);
@@ -256,4 +257,4 @@ void RGB::printHelp() const {
 	std::cout << std::endl;
 }
 
-} // namespace gerbil
+} // module namespace

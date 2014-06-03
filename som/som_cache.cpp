@@ -4,6 +4,7 @@
 #include <tbb/parallel_for.h>
 #include <algorithm>
 
+namespace som {
 
 class ClosestNTbb {
 public:
@@ -41,7 +42,7 @@ private:
 
 
 SOMClosestN::SOMClosestN(GenSOM const& som, multi_img const& img, int n,
-						 vole::ProgressObserver *po)
+						 ProgressObserver *po)
 	: som(som),
 	  height(img.height),
 	  width(img.width),
@@ -68,4 +69,6 @@ SOMClosestN::resultAccess SOMClosestN::closestN(const cv::Point2i &p) const
 	ret.last = ret.first + n;
 	assert(ret.last <= results.end());
 	return ret;
+}
+
 }

@@ -17,8 +17,6 @@
 using namespace boost::program_options;
 #endif // WITH_BOOST_PROGRAM_OPTIONS
 
-namespace vole {
-
 Config::Config(const std::string& p) :
 	prefix_enabled(!p.empty()),
 	prefix(prefix_enabled ? p + "." : p),
@@ -62,7 +60,7 @@ bool Config::storeConfig(const char *filename) {
 	return true;
 }
 
-unsigned long int Config::configHash(vole::HashMethod method) {
+unsigned long int Config::configHash(Hashes::Method method) {
 	// collect string from relevant parameters, hash it
 	std::string current_config = getString();
 	return Hashes::getHash(current_config.c_str(), method);
@@ -106,5 +104,3 @@ bool Config::parseOptionsDescription(const char *filename, variables_map *vm)
 }
 #endif // WITH_BOOST_PROGRAM_OPTIONS
 
-
-}

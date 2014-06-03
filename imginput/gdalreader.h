@@ -8,7 +8,7 @@
 #include "imginput.h"
 #include "imginput_config.h"
 
-namespace vole {
+namespace imginput {
 
 class GdalReader {
 public:

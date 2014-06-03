@@ -14,6 +14,8 @@
 #include <l_norm.h>
 #include <similarity_measure.h>
 
+namespace som {
+
 /**
 * @class SOMDistance
 *
@@ -21,7 +23,7 @@
 *
 */
 template<typename T>
-class SOMDistance : public vole::SimilarityMeasure<T> {
+class SOMDistance : public similarity_measures::SimilarityMeasure<T> {
 
 public:
 
@@ -42,7 +44,7 @@ public:
 	const GenSOM &som;
 	const multi_img &img;
 	SOMClosestN cache;
-	vole::LNorm<T> l2;
+	similarity_measures::LNorm<T> l2;
 };
 
 template<typename T>
@@ -73,4 +75,5 @@ inline double SOMDistance<T>::getSimilarity(const std::vector<T> &v1,
 	return l2.getSimilarity(n1, n2);
 }
 
+}
 #endif

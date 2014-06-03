@@ -6,7 +6,7 @@
 #include <command.h>
 #include <progress_observer.h>
 
-class CommandRunner : public QThread, public vole::ProgressObserver
+class CommandRunner : public QThread, public ProgressObserver
 {
     Q_OBJECT
 public:
@@ -16,7 +16,7 @@ public:
 	bool update(float report, bool incremental = false);
 	void run();
 
-	vole::Command *cmd;
+	shell::Command *cmd;
 	std::map<std::string, boost::any> input;
 	std::map<std::string, boost::any> output;
 	const std::string base;

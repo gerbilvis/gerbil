@@ -52,7 +52,7 @@ bool GradientTbb::run()
 		}
 	}
 
-	vole::Stopwatch s;
+	Stopwatch s;
 
 	multi_img temp((*source)->height, (*source)->width, (*source)->size());
 	for (std::vector<cv::Rect>::iterator it = calc.begin(); it != calc.end(); ++it) {

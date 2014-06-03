@@ -3,6 +3,8 @@
 
 #include "gensom.h"
 
+namespace som {
+
 template <size_t N>
 class IsoSOM : public GenSOM
 {
@@ -57,4 +59,5 @@ protected:
 #include "isosom_3d.h"
 #include "isosom_4d.h"
 
+}
 #endif // ISOSOM_H

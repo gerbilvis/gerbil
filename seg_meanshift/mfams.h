@@ -29,6 +29,8 @@
 #include <tbb/mutex.h>
 #include <emmintrin.h>
 
+namespace seg_meanshift {
+
 // Algorithm constants
 
 /* Find K L */
@@ -108,7 +110,7 @@ public:
 	friend struct ComputePilotPoint;
 	friend struct MeanShiftPoint;
 
-	FAMS(const vole::MeanShiftConfig &config, vole::ProgressObserver *po = 0);
+	FAMS(const MeanShiftConfig &config, ProgressObserver *po = 0);
 	~FAMS();
 
 	int getDimensionality() const { return d_; }
@@ -257,19 +259,15 @@ protected:
 	// LSH used during ordinary run
 	LSH *lsh_;
 	// alg params
-	const vole::MeanShiftConfig &config;
+	const MeanShiftConfig &config;
 
 	// observer for progress tracking
-	vole::ProgressObserver *po;
+	ProgressObserver *po;
 	float progress, progress_old;
 	tbb::mutex progressMutex;
 
 	tbb::task_scheduler_init tbbinit;
 };
 
-
+}
 #endif
-
-
-
-

@@ -123,7 +123,7 @@ void MainWindow::screenshot()
 	QPixmap shot = QPixmap::grabWindow(this->winId());
 
 	// we use OpenCV so the user can expect the same data type support
-	cv::Mat output = vole::QImage2Mat(shot.toImage());
+	cv::Mat output = QImage2Mat(shot.toImage());
 
 	IOGui io("Screenshot File", "screenshot", this);
 	io.writeFile(QString(), output);

@@ -227,7 +227,7 @@ void Viewport::drawBins(QPainter &painter, QTimer &renderTimer,
 	// TODO: this also locks shuffleIdx implicitely, better do it explicitely?
 	SharedDataLock setslock(sets->mutex);
 
-	// vole::Stopwatch watch("drawBins");
+	// Stopwatch watch("drawBins");
 
 	/* initialize painting in GL, vertex buffer */
 	painter.beginNativePainting();

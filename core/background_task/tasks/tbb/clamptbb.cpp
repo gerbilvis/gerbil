@@ -23,7 +23,7 @@ bool ClampTbb::run()
 	target->minval = (*minmax)->minval;
 	target->maxval = (*minmax)->maxval;
 
-	vole::Stopwatch s;
+	Stopwatch s;
 
 	Clamp computeClamp(*source, *target);
 	tbb::parallel_for(tbb::blocked_range<size_t>(0, target->size()),

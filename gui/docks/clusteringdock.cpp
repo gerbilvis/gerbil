@@ -54,12 +54,13 @@ void ClusteringDock::unsupervisedSegCancelled() {
 
 void ClusteringDock::startUnsupervisedSeg()
 {
+	using namespace seg_meanshift;
+
 	int method = usMethodBox->itemData(usMethodBox->currentIndex()).value<int>();
-	vole::Command *cmd;
+	shell::Command *cmd;
 	if (method == 0 || method == 3) { // Meanshift
-		cmd = new vole::MeanShiftShell();
-		vole::MeanShiftConfig &config =
-				static_cast<vole::MeanShiftShell*>(cmd)->config;
+		cmd = new MeanShiftShell();
+		MeanShiftConfig &config = static_cast<MeanShiftShell*>(cmd)->config;
 
 		// fixed settings
 		if (method == 3) {
@@ -69,19 +70,19 @@ void ClusteringDock::startUnsupervisedSeg()
 			 */
 			config.sp_withGrad = usGradientCheckBox->isChecked();
 
-			config.starting = vole::SUPERPIXEL;
+			config.starting = SUPERPIXEL;
 
 			config.superpixel.eqhist=1;
 			config.superpixel.c=0.05f;
 			config.superpixel.min_size=5;
-			config.superpixel.similarity.measure=vole::SPEC_INF_DIV;
+			config.superpixel.similarity.function
+					= similarity_measures::SPEC_INF_DIV;
 		}
 
 		config.use_LSH = usLshCheckBox->isChecked();
 	} else if (method == 4) { // FSPMS
-		cmd = new vole::MeanShiftSP();
-		vole::MeanShiftConfig &config =
-				static_cast<vole::MeanShiftSP*>(cmd)->config;
+		cmd = new MeanShiftSP();
+		MeanShiftConfig &config = static_cast<MeanShiftSP*>(cmd)->config;
 
 		// fixed settings
 		/* see method == 3
@@ -90,7 +91,8 @@ void ClusteringDock::startUnsupervisedSeg()
 		config.superpixel.eqhist=1;
 		config.superpixel.c=0.05f;
 		config.superpixel.min_size=5;
-		config.superpixel.similarity.measure=vole::SPEC_INF_DIV;
+		config.superpixel.similarity.function
+				= similarity_measures::SPEC_INF_DIV;
 		config.sp_weight = 2;
 
 		config.use_LSH = usLshCheckBox->isChecked();

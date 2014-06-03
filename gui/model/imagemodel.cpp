@@ -85,9 +85,9 @@ cv::Rect ImageModel::loadImage(const std::string &filename)
 				(new multi_img_offloaded(filelist.first, filelist.second));
 	} else {
 		// create using ImgInput
-		vole::ImgInputConfig inputConfig;
+		imginput::ImgInputConfig inputConfig;
 		inputConfig.file = filename;
-		multi_img::ptr img = vole::ImgInput(inputConfig).execute();
+		multi_img::ptr img = imginput::ImgInput(inputConfig).execute();
 		image_lim = boost::make_shared<SharedMultiImgBase>(img);
 	}
 

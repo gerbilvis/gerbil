@@ -1,7 +1,7 @@
 #ifndef GRAPH_ALG_H
 #define GRAPH_ALG_H
 
-namespace powerwaterseg {
+namespace seg_graphs {
 
 // union find (maybe improve performance with re-assign operators)
 /*================================================*/

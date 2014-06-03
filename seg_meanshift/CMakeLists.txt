@@ -5,10 +5,10 @@ vole_module_variable("Gerbil_Seg_MeanShift")
 vole_add_required_dependencies("OPENCV" "BOOST" "BOOST_PROGRAM_OPTIONS" "BOOST_FILESYSTEM" "TBB")
 vole_add_required_dependencies("BOOST_THREAD" "BOOST_DATE_TIME" "BOOST_CHRONO")
 vole_add_required_modules("imginput" "lsh")
-vole_add_optional_modules("seg_felzenszwalb" "edge_detect")
+vole_add_optional_modules("seg_felzenszwalb")
 
-vole_add_command("meanshift" "meanshift_shell.h" "vole::MeanShiftShell")
-vole_add_command("meanshiftsp" "meanshift_sp.h" "vole::MeanShiftSP")
+vole_add_command("meanshift" "meanshift_shell.h" "seg_meanshift::MeanShiftShell")
+vole_add_command("meanshiftsp" "meanshift_sp.h" "seg_meanshift::MeanShiftSP")
 
 vole_compile_library(
 	"io" "mfams"

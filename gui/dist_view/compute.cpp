@@ -6,7 +6,6 @@
 
 // altmann, debugging helper function
 void assertBinSetsKeyDim(const std::vector<BinSet> &v, const ViewportCtx &ctx) {
-	using namespace std;
 	assert(v.size() > 0);
 
 	foreach(BinSet set, v) {
@@ -15,7 +14,7 @@ void assertBinSetsKeyDim(const std::vector<BinSet> &v, const ViewportCtx &ctx) {
 			if (ctx.dimensionality != key.size()) {
 				GGDBGP(boost::format("failure: type=%1% ,  (key.size()==%2%  != dim==%3%)")
 				   %ctx.type %key.size() %ctx.dimensionality
-				   << endl);
+				   << std::endl);
 				assert(ctx.dimensionality == key.size());
 			}
 		}

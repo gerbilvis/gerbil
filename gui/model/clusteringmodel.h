@@ -9,10 +9,10 @@
 #include <shared_data.h>
 #include "representation.h"
 
-class CommandRunner;
-namespace vole {
+namespace shell {
 	class Command;
 }
+class CommandRunner;
 
 /* Model class for unsupervised segmenation.
  *
@@ -34,7 +34,7 @@ signals:
 public slots:
 	// can numbands and gradient be moved to cmd->config?
 	void startSegmentation(
-			vole::Command *cmd,
+			shell::Command *cmd,
 			int numbands,
 			bool gradient);
 	void cancel();

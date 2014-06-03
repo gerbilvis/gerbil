@@ -61,7 +61,7 @@ extern "C" {
 #include "graph_alg.h"
 #include "sorting.h"
 
-namespace powerwaterseg {
+namespace seg_graphs {
 
 /*===============================*/
 bool fill_A(cs   * A,               /* matrix A to fill */

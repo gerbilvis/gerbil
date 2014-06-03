@@ -14,9 +14,9 @@
 
 using namespace boost::program_options;
 
-namespace vole {
+namespace seg_meanshift {
 
-ENUM_MAGIC(ms_sampling)
+ENUM_MAGIC(seg_meanshift, sampling)
 
 MeanShiftConfig::MeanShiftConfig(const std::string& prefix)
 	: Config(prefix), input("input")
@@ -82,7 +82,26 @@ std::string MeanShiftConfig::getString() const {
 }
 
 #ifdef WITH_BOOST
-void MeanShiftConfig::initBoostOptions() {
+void MeanShiftConfig::initBoostOptions()
+{
+	if (!prefix_enabled) { // input/output and special command options
+		options.add(input.options);
+		options.add_options()
+				(key("output,O"),
+				 value(&output_directory)->default_value(output_directory),
+				 "Working directory")
+				(key("prefix"), value(&output_prefix)->default_value(output_prefix),
+				 "Prefix to all output filenames")
+				("doFindKL", bool_switch(&findKL)->default_value(findKL),
+				 "empirically determine optimal K, L values (1 < L < lsh.L)")
+				("Kmin", value(&Kmin)->default_value(Kmin),
+				 "minimum value of K to be tested (findKL only)")
+				("Kjump", value(&Kjump)->default_value(Kjump),
+				 "test every Kmin:Kjump:K values for K (findKL only)")
+				("epsilon", value(&epsilon)->default_value(epsilon),
+				 "error threshold (findKL only)")
+		;
+	}
 	options.add_options()
 			("useLSH", bool_switch(&use_LSH)->default_value(use_LSH),
 			 "use locality-sensitive hashing")
@@ -120,26 +139,6 @@ void MeanShiftConfig::initBoostOptions() {
 #ifdef WITH_SEG_FELZENSZWALB
 	options.add(superpixel.options);
 #endif
-
-	if (prefix_enabled)	// skip input/output options
-		return;
-
-	options.add(input.options);
-
-	options.add_options()
-			(key("output,O"), value(&output_directory)->default_value(output_directory),
-			 "Working directory")
-			(key("prefix"), value(&output_prefix)->default_value(output_prefix),
-			 "Prefix to all output filenames")
-			("doFindKL", bool_switch(&findKL)->default_value(findKL),
-			 "empirically determine optimal K, L values (1 < L < lsh.L)")
-			("Kmin", value(&Kmin)->default_value(Kmin),
-			 "minimum value of K to be tested (findKL only)")
-			("Kjump", value(&Kjump)->default_value(Kjump),
-			 "test every Kmin:Kjump:K values for K (findKL only)")
-			("epsilon", value(&epsilon)->default_value(epsilon),
-			 "error threshold (findKL only)")
-	;
 }
 #endif // WITH_BOOST
 

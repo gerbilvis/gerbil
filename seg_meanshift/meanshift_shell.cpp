@@ -18,7 +18,7 @@
 
 using namespace boost::program_options;
 
-namespace vole {
+namespace seg_meanshift {
 
 MeanShiftShell::MeanShiftShell()
  : Command(
@@ -35,14 +35,14 @@ int MeanShiftShell::execute() {
 	multi_img::ptr input, input_grad;
 #ifdef WITH_SEG_FELZENSZWALB
 	if (config.sp_withGrad) {
-		input = ImgInput(config.input).execute();
+		input = imginput::ImgInput(config.input).execute();
 		input_grad = multi_img::ptr(new multi_img(*input, true));
 		input_grad->apply_logarithm();
 		*input_grad = input_grad->spec_gradient();
 	} else
 #endif
     {
-		input = ImgInput(config.input).execute();
+		input = imginput::ImgInput(config.input).execute();
 	}
 	if (input->empty())
 		return -1;

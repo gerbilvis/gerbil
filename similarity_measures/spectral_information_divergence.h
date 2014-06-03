@@ -14,7 +14,7 @@
 #include <iostream>
 #include <limits>
 
-namespace vole {
+namespace similarity_measures {
 
 /**
 * @class Spectral Information Divergence

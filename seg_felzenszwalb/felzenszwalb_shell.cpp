@@ -9,15 +9,16 @@
 #include "felzenszwalb_shell.h"
 #include "felzenszwalb.h"
 
+#include <imginput.h>
 #include <sm_factory.h>
 #include <labeling.h>
 #include <opencv2/highgui/highgui.hpp>
 #include <iostream>
 
-namespace gerbil {
+namespace seg_felzenszwalb {
 
 FelzenszwalbShell::FelzenszwalbShell()
- : vole::Command(
+ : Command(
 		"felzenszwalb",
 		config,
 		"Johannes Jordan",
@@ -25,21 +26,23 @@ FelzenszwalbShell::FelzenszwalbShell()
 {}
 
 int FelzenszwalbShell::execute() {
-	multi_img input(config.input_file);
-	if (input.empty())
-		return -1;
+	multi_img::ptr input;
+	imginput::ImgInput ii(config.input);
 
-	/* TODO: optional smoothing, and/or using imginput */
-
-	input.rebuildPixels(false);
-	std::pair<cv::Mat1i, felzenszwalb::segmap> result =
-		 felzenszwalb::segment_image(input, config);
+	input = ii.execute();
+	if (input->empty()) {
+		throw std::runtime_error
+				("EdgeDetection::execute: imginput module failed to read image.");
+	}
+	input->rebuildPixels(false);
+	std::pair<cv::Mat1i, seg_felzenszwalb::segmap> result =
+		 segment_image(*input, config);
 
 	if (config.verbosity > 0) {	// statistical output
-		const felzenszwalb::segmap &segmap = result.second;
+		const segmap &segmap = result.second;
 		cv::Mat1i sizes((int)segmap.size(), 1);
 		cv::Mat1i::iterator sit = sizes.begin();
-		felzenszwalb::segmap::const_iterator mit = segmap.begin();
+		segmap::const_iterator mit = segmap.begin();
 		for (; mit != segmap.end(); ++sit, ++mit)
 			*sit = (int)mit->size();
 		cv::Scalar mean, stddev;
@@ -49,7 +52,7 @@ int FelzenszwalbShell::execute() {
 				  << " (± " << stddev[0] << ")." << std::endl;
 	}
 
-	vole::Labeling output;
+	Labeling output;
 	output.yellowcursor = false;
 	output.shuffle = true;
 	output.read(result.first, false); // TODO: we get consecutive index now!

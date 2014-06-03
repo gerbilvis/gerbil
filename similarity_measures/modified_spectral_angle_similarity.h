@@ -18,7 +18,7 @@
 #define M_PI	3.14159265358979323846264338327950288419716939937f
 #endif
 
-namespace vole {
+namespace similarity_measures {
 
 template<typename T>
 class ModifiedSpectralAngleSimilarity : public SimilarityMeasure<T> {

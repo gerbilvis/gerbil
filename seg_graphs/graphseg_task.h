@@ -5,18 +5,19 @@
 
 class GraphSegTask : public BackgroundTask {
 public:
-	GraphSegTask(const vole::GraphSegConfig &config, SharedMultiImgPtr input,
-		const cv::Mat1s &seedMap, boost::shared_ptr<cv::Mat1s> result)
+	GraphSegTask(const seg_graphs::GraphSegConfig &config,
+				 SharedMultiImgPtr input,
+				 const cv::Mat1s &seedMap, boost::shared_ptr<cv::Mat1s> result)
 		: config(config), input(input), seedMap(seedMap), result(result) {}
 	virtual ~GraphSegTask() {}
 	virtual bool run()	{
-		vole::GraphSeg seg(config);
+		seg_graphs::GraphSeg seg(config);
 		*(result.get()) = seg.execute(**input, seedMap);
 		return true;
 	}
 
 protected:
-	vole::GraphSegConfig config;
+	seg_graphs::GraphSegConfig config;
 	SharedMultiImgPtr input;
 	cv::Mat1s seedMap;
 	boost::shared_ptr<cv::Mat1s> result;

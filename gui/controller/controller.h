@@ -34,7 +34,7 @@ class GraphSegWidget;
 class ClusteringDock;
 class LabelDock;
 
-namespace vole
+namespace seg_graphs
 {
 	class GraphSegConfig;
 }
@@ -79,11 +79,11 @@ signals:
 	// these are send to the graphSegModel
 	void requestGraphseg(representation::t type,
 						 cv::Mat1s seedMap,
-						 const vole::GraphSegConfig &config,
+						 const seg_graphs::GraphSegConfig &config,
 						 bool resetLabel);
 	void requestGraphsegBand(representation::t type, int bandId,
 							 cv::Mat1s seedMap,
-							 const vole::GraphSegConfig &config,
+							 const seg_graphs::GraphSegConfig &config,
 							 bool resetLabel);
 
 public slots:
@@ -125,9 +125,9 @@ public slots:
 protected slots:
 	// these are requested by the graphSegWidget
 	void requestGraphseg(representation::t,
-						 const vole::GraphSegConfig &config,
+						 const seg_graphs::GraphSegConfig &config,
 						 bool resetLabel);
-	void requestGraphsegCurBand(const vole::GraphSegConfig &config,
+	void requestGraphsegCurBand(const seg_graphs::GraphSegConfig &config,
 								bool resetLabel);
 	void highlightSingleLabel(short label, bool highlight);
 

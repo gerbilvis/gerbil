@@ -1,8 +1,6 @@
 #include "hashes.h"
 
-namespace vole {
-
-unsigned long Hashes::getHash(const char *str, HashMethod m) {
+unsigned long Hashes::getHash(const char *str, Method m) {
 	if (m == HASH_djb2) return Hashes::djb2(str);
 	if (m == HASH_sdbm) return Hashes::sdbm(str);
 	return 0;
@@ -36,6 +34,3 @@ unsigned long Hashes::sdbm(const char *str)
 
 	return hash;
 }
-
-}
-

@@ -14,7 +14,7 @@
 
 using std::vector;
 
-namespace vole {
+namespace imginput {
 
 // structure and compare-function to sort band metadata by wavelength
 // maybe just copy the center value out, shorter than BandDesc struct...

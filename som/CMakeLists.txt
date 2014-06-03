@@ -7,7 +7,7 @@ vole_add_optional_dependencies(BOOST_PROGRAM_OPTIONS)
 vole_add_required_modules(imginput similarity_measures)
 
 # Command for simple testing, do not expose by default
-# vole_add_command("somtest" "som_test.h" "SOMTest")
+# vole_add_command("somtest" "som_test.h" "som::SOMTest")
 
 vole_compile_library(
 	som_neuron.h

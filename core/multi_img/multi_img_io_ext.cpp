@@ -19,11 +19,9 @@
 
 #include <fstream>
 
-using namespace std;
-
-void multi_img::read_image(const string& filename)
+void multi_img::read_image(const std::string& filename)
 {
-	pair<vector<string>, vector<BandDesc> > bands;
+	std::pair<std::vector<std::string>, std::vector<BandDesc> > bands;
 
 	// try to read in file list first
 	bands = parse_filelist(filename);
@@ -32,7 +30,7 @@ void multi_img::read_image(const string& filename)
 		if (read_image_lan(filename))
 			return;
 		// maybe we got a single image as argument
-		read_image(vector<string>(1, filename));
+		read_image(std::vector<std::string>(1, filename));
 	} else {
 		// read in multispectral image data
 		read_image(bands.first, bands.second);
@@ -40,7 +38,8 @@ void multi_img::read_image(const string& filename)
 }
 
 struct hackstream : public std::ifstream {
-	hackstream(const char* in, std::ios_base::openmode mode)	: ifstream(in, mode) {}
+	hackstream(const char* in, std::ios_base::openmode mode)
+		: std::ifstream(in, mode) {}
 	void readus(unsigned short &d)
 	{	read((char*)&d, sizeof(unsigned short));	}
 	void readui(unsigned int &d)
@@ -51,7 +50,7 @@ struct hackstream : public std::ifstream {
 	{	read((char*)a, sizeof(unsigned short)*num);	}
 };
 
-void multi_img::fill_bil(ifstream &in, unsigned short depth)
+void multi_img::fill_bil(std::ifstream &in, unsigned short depth)
 {
 	/* read data in BIL (band interleaved by line) format */
 
@@ -87,7 +86,7 @@ void multi_img::fill_bil(ifstream &in, unsigned short depth)
 	}
 }
 
-bool multi_img::read_image_lan(const string& filename)
+bool multi_img::read_image_lan(const std::string& filename)
 {
 	// we omit checks for data consistency
 	assert(empty());
@@ -95,7 +94,7 @@ bool multi_img::read_image_lan(const string& filename)
 	// parse header
 	unsigned short depth, size;
 	unsigned int rows, cols;
-	hackstream in(filename.c_str(), ios::in | ios::binary);
+	hackstream in(filename.c_str(), std::ios::in | std::ios::binary);
 	char buf[7] = "123456"; // enforce trailing \0
 	in.read(buf, 6);
 	if (strcmp(buf, "HEADER") && strcmp(buf, "HEAD74")) {
@@ -129,7 +128,8 @@ bool multi_img::read_image_lan(const string& filename)
 	return true;
 }
 
-void multi_img::write_out(const string& base, bool normalize, bool in16bit) const
+void multi_img::write_out(const std::string& base,
+						  bool normalize, bool in16bit) const
 {
 	// create directory
 #ifdef WITH_BOOST_FILESYSTEM
@@ -164,7 +164,7 @@ void multi_img::write_out(const string& base, bool normalize, bool in16bit) cons
 #endif
 
 	// header of text file
-	ofstream txtfile((base + ".txt").c_str());
+	std::ofstream txtfile((base + ".txt").c_str());
 	txtfile << size() << "\n";
 	txtfile << dir << "\n";
 
@@ -175,7 +175,7 @@ void multi_img::write_out(const string& base, bool normalize, bool in16bit) cons
 	Value shift = (!normalize ? 0.f : -scale*minval);
 
 	// parameters to image writer
-	vector<int> flags;
+	std::vector<int> flags;
 	flags.push_back(CV_IMWRITE_PNG_COMPRESSION);
 	flags.push_back(9);  // [0-9] 9 being max compression, default is 3
 
@@ -202,17 +202,17 @@ void multi_img::write_out(const string& base, bool normalize, bool in16bit) cons
 }
 
 // parse file list
-pair<vector<string>, vector<multi_img::BandDesc> >
-		multi_img::parse_filelist(const string& filename)
+std::pair<std::vector<std::string>, std::vector<multi_img::BandDesc> >
+		multi_img::parse_filelist(const std::string& filename)
 {
-	pair<vector<string>, vector<BandDesc> > empty;
+	std::pair<std::vector<std::string>, std::vector<BandDesc> > empty;
 
-	ifstream in(filename.c_str());
+	std::ifstream in(filename.c_str());
 	if (in.fail())
 		return empty;
 
 	unsigned int count;
-	string base;
+	std::string base;
 	in >> count;
 	in >> base;
 	if (in.fail())
@@ -234,17 +234,17 @@ pair<vector<string>, vector<multi_img::BandDesc> >
 	std::cerr << "Warning: only absolute file paths accepted." << std::endl;
 #endif
 	base.append("/"); // TODO: check if o.k. in Windows
-	stringstream in2;
-	string fn; float a, b;
-	vector<string> files;
-	vector<BandDesc> descs;
-	in >> ws;
+	std::stringstream in2;
+	std::string fn; float a, b;
+	std::vector<std::string> files;
+	std::vector<BandDesc> descs;
+	in >> std::ws;
 	for (; count > 0; count--) {
 		in2.clear();
-		in.get(*in2.rdbuf()); in >> ws;
+		in.get(*in2.rdbuf()); in >> std::ws;
 		in2 >> fn;
 		if (in2.fail()) {
-			cerr << "fail!" << endl;
+			std::cerr << "fail!" << std::endl;
 			return empty;	 // file inconsistent -> screw it!
 		}
 		files.push_back(base + fn);
@@ -261,5 +261,5 @@ pair<vector<string>, vector<multi_img::BandDesc> >
 		}
 	}
 	in.close();
-	return make_pair(files, descs);
+	return std::make_pair(files, descs);
 }

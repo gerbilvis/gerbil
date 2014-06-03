@@ -19,49 +19,47 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307 USA
 #ifndef FELZENSZWALB_H
 #define FELZENSZWALB_H
 
-#include "felzenszwalb2_config.h"
+#include "felzenszwalb_config.h"
 #include <multi_img.h>
 
-namespace gerbil {
-  namespace felzenszwalb {
+namespace seg_felzenszwalb {
 
-	typedef std::vector<std::vector<int> > segmap;
+typedef std::vector<std::vector<int> > segmap;
 
-	// disjoint-set forests using union-by-rank and path compression (sort of).
-	struct uni_elt {
-		int rank;
-		int p;
-		int size;
-	};
+// disjoint-set forests using union-by-rank and path compression (sort of).
+struct uni_elt {
+	int rank;
+	int p;
+	int size;
+};
 
-	class universe {
-	public:
-		universe(int elements);
-		~universe();
-		int find(int x);
-		void join(int x, int y);
-		int size(int x) const { return elts[x].size; }
-		int num_sets() const { return num; }
+class universe {
+public:
+	universe(int elements);
+	~universe();
+	int find(int x);
+	void join(int x, int y);
+	int size(int x) const { return elts[x].size; }
+	int num_sets() const { return num; }
 
-	private:
-		uni_elt *elts;
-		int num;
-	};
+private:
+	uni_elt *elts;
+	int num;
+};
 
-	// graph
-	struct edge {
-		float w;
-		int a, b;
-	};
+// graph
+struct edge {
+	float w;
+	int a, b;
+};
 
-	inline bool operator<(const edge &a, const edge &b) {
-		return a.w < b.w;
-	}
+inline bool operator<(const edge &a, const edge &b) {
+	return a.w < b.w;
+}
 
-	universe* segment_graph(int n_vertices, int n_edges, edge *edges, float c);
-	std::pair<cv::Mat1i, segmap> segment_image(const multi_img &im,
-	                                          const FelzenszwalbConfig &config);
-  }
+universe* segment_graph(int n_vertices, int n_edges, edge *edges, float c);
+std::pair<cv::Mat1i, segmap> segment_image(const multi_img &im,
+										   const FelzenszwalbConfig &config);
 }
 
 #endif

@@ -23,7 +23,7 @@ bool ClampCuda::run()
 	target->minval = (*minmax)->minval;
 	target->maxval = (*minmax)->maxval;
 
-	vole::Stopwatch s;
+	Stopwatch s;
 
 	cv::gpu::GpuMat band(source->height, source->width, multi_img::ValueType);
 	for (size_t d = 0; d != target->size(); ++d) {

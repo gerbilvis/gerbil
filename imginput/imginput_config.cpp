@@ -15,7 +15,7 @@
 
 using namespace boost::program_options;
 
-namespace vole {
+namespace imginput {
 
 ImgInputConfig::ImgInputConfig(const std::string& prefix)
 	: Config(prefix) {

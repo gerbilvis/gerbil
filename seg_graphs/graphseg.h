@@ -4,7 +4,7 @@
 #include "graphseg_config.h"
 #include <multi_img.h>
 
-namespace vole {
+namespace seg_graphs {
 
 class GraphSeg {
 public:

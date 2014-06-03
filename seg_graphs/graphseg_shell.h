@@ -4,9 +4,9 @@
 #include "graphseg_config.h"
 #include <command.h>
 
-namespace vole {
+namespace seg_graphs {
 
-class GraphSegShell : public Command {
+class GraphSegShell : public shell::Command {
 public:
 	GraphSegShell();
 	int execute();

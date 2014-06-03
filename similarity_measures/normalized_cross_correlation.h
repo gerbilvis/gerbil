@@ -12,7 +12,7 @@
 
 #include "similarity_measure.h"
 
-namespace vole {
+namespace similarity_measures {
 
 /** 
 * @class NormalizedCrossCorrelation 

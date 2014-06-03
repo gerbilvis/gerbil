@@ -14,7 +14,7 @@
 #include <xmmintrin.h>
 #include <emmintrin.h>
 
-namespace vole {
+namespace similarity_measures {
 
 /**
 * @class LNorm

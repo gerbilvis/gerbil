@@ -48,7 +48,7 @@ bool GradientCuda::run()
 		}
 	}
 
-	vole::Stopwatch s;
+	Stopwatch s;
 
 	for (std::vector<cv::Rect>::iterator it = calc.begin(); it != calc.end(); ++it) {
 		if (it->width > 0 && it->height > 0) {

@@ -3,19 +3,19 @@
 
 #include <vole_config.h>
 #include <sm_config.h>
-#include <multi_img.h>
+#include <imginput_config.h>
 
-namespace gerbil {
+namespace seg_felzenszwalb {
 
-class FelzenszwalbConfig : public vole::Config {
+class FelzenszwalbConfig : public Config {
 
 public:
 	FelzenszwalbConfig(const std::string& prefix = std::string());
 
 	virtual ~FelzenszwalbConfig() {}
 
-	/// input file name
-	std::string input_file;
+	// input is handled by imginput module
+	imginput::ImgInputConfig input;
 	/// output file name
 	std::string output_file;
 
@@ -24,7 +24,7 @@ public:
 	bool eqhist;
 
 	/// similarity measure for edge weighting
-	vole::SMConfig similarity;
+	similarity_measures::SMConfig similarity;
 
 	virtual std::string getString() const;
 

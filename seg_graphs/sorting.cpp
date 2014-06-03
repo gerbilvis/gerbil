@@ -79,7 +79,7 @@
 #include <algorithm>
 #include <vector>
 
-namespace powerwaterseg {
+namespace seg_graphs {
 
 /* =============================================================== */
 int32_t Partitionner(int *A, int * I, int32_t p, int32_t r) {

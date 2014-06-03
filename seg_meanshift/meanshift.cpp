@@ -20,7 +20,7 @@
 #include <iostream>
 #include <cstdio>
 
-namespace vole {
+namespace seg_meanshift {
 
 std::pair<int, int> MeanShift::findKL(const multi_img& input,
 									  ProgressObserver *po)
@@ -55,17 +55,17 @@ cv::Mat1s MeanShift::execute(const multi_img& input, ProgressObserver *po,
 #ifdef WITH_SEG_FELZENSZWALB
 	// superpixel setup
 	cv::Mat1i sp_translate;
-	gerbil::felzenszwalb::segmap sp_map;
+	seg_felzenszwalb::segmap sp_map;
 	std::vector<fams_point> sp_points; // initialize in right scope!
 	if (config.starting == SUPERPIXEL) {
-		std::pair<cv::Mat1i, gerbil::felzenszwalb::segmap> result =
-			 gerbil::felzenszwalb::segment_image(spinput, config.superpixel);
+		std::pair<cv::Mat1i, seg_felzenszwalb::segmap> result =
+			 seg_felzenszwalb::segment_image(spinput, config.superpixel);
 		sp_translate = result.first;
 		std::swap(sp_map, result.second);
 
 		// note: remove output afterwards
 		std::cout << "SP: " << sp_map.size() << " segments" << std::endl;
-		vole::Labeling output;
+		Labeling output;
 		output.yellowcursor = false;
 		output.shuffle = true;
 		output.read(result.first, false);
@@ -142,7 +142,7 @@ cv::Mat1s MeanShift::execute(const multi_img& input, ProgressObserver *po,
 
 #ifdef WITH_SEG_FELZENSZWALB
 std::vector<fams_point> MeanShift::prepare_sp_points(const FAMS &fams,
-								  const gerbil::felzenszwalb::segmap &map)
+								  const seg_felzenszwalb::segmap &map)
 {
 	int D = fams.d_;
 	const fams_point *points = fams.getPoints();
@@ -153,8 +153,8 @@ std::vector<fams_point> MeanShift::prepare_sp_points(const FAMS &fams,
 	*/
 
 	std::vector<int> accum(D);
-	gerbil::felzenszwalb::segmap::const_iterator mit = map.begin();
-	for (; mit != map.end(); ++mit) {
+	seg_felzenszwalb::segmap::const_iterator mit;
+	for (mit = map.begin(); mit != map.end(); ++mit) {
 		// initialize new point with zero
 		fams_point p;
 		p.data_ = new unsigned short[D];

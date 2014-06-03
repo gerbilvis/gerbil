@@ -30,48 +30,46 @@
 #define COMMENT_OPT(s, opt) s << #opt "=" << opt  \
 	<< " # " <<  desc::opt << std::endl
 
-namespace vole {
+/* base class that exposes configuration handling */
+class Config {
+public:
+	Config(const std::string &prefix = std::string());
 
-	/* base class that exposes configuration handling */
-	class Config {
-	public:
-		Config(const std::string &prefix = std::string());
+	virtual ~Config() {}
 
-		virtual ~Config() {}
+	virtual bool readConfig(const char *filename);
 
-		virtual bool readConfig(const char *filename);
+	bool storeConfig(const char *filename);
+	virtual std::string getString() const = 0;
 
-		bool storeConfig(const char *filename);
-		virtual std::string getString() const = 0;
+	virtual unsigned long int
+	configHash(Hashes::Method method = Hashes::HASH_djb2);
 
-		virtual unsigned long int configHash(vole::HashMethod method = vole::HASH_djb2);
+#ifdef WITH_BOOST_PROGRAM_OPTIONS
+	// takes a variables_map as optional argument, because there may be already one in use
+	bool parseOptionsDescription(const char *filename,
+								 boost::program_options::variables_map *vm = NULL);
 
-		#ifdef WITH_BOOST_PROGRAM_OPTIONS
-			// takes a variables_map as optional argument, because there may be already one in use
-			bool parseOptionsDescription(const char *filename,
-				boost::program_options::variables_map *vm = NULL);
+	boost::program_options::options_description options;
+#endif // WITH_BOOST_PROGRAM_OPTIONS
 
-			boost::program_options::options_description options;
-		#endif // WITH_BOOST_PROGRAM_OPTIONS
+	/// helper function to be used in initBoostOptions
+	const char* key(const char *key) const;
 
-		/// helper function to be used in initBoostOptions
-		const char* key(const char *key) const;
+	/// verbosity level: 0 = silent, 1 = normal, 2 = a lot, 3 = insane
+	int verbosity;
+	/// cache for faster operation (declare this _before_ prefix!)
+	bool prefix_enabled;
+	/// config option prefix (may be empty)
+	std::string prefix;
 
-		/// verbosity level: 0 = silent, 1 = normal, 2 = a lot, 3 = insane
-		int verbosity;
-		/// cache for faster operation (declare this _before_ prefix!)
-		bool prefix_enabled;
-		/// config option prefix (may be empty)
-		std::string prefix;
+protected:
 
-	protected:
+#ifdef WITH_BOOST_PROGRAM_OPTIONS
+	virtual void initMandatoryBoostOptions();
+#endif // WITH_BOOST_PROGRAM_OPTIONS
 
-		#ifdef WITH_BOOST_PROGRAM_OPTIONS
-			virtual void initMandatoryBoostOptions();
-		#endif // WITH_BOOST_PROGRAM_OPTIONS
-	
-	};
-}
+};
 
 
 /* this is some macro trickery (just leave it as is) to make ENUMs
@@ -97,8 +95,8 @@ namespace vole {
 	std::ostream& operator<<(std::ostream& o, ENUM e)  \
 	{	o << ENUM ## Str[e]; return o;  }
 #else	// only the exception throw is changed
-#define ENUM_MAGIC(ENUM) \
-	const char* ENUM ## Str[] = ENUM ## String;\
+#define ENUM_MAGIC(NAMESPACE, ENUM) \
+	const char* ENUM ## Str[] = NAMESPACE ## _ ## ENUM ## String;\
 	void validate(boost::any& v, const std::vector<std::string>& values, \
 	               ENUM* target_type, int) \
 	{ \

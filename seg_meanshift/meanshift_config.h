@@ -3,13 +3,13 @@
 
 #include "vole_config.h"
 #ifdef WITH_SEG_FELZENSZWALB
-#include <felzenszwalb2_config.h>
+#include <felzenszwalb_config.h>
 #endif
 #include <imginput.h>
 
-namespace vole {
+namespace seg_meanshift {
 
-enum ms_sampling {
+enum sampling {
 	ALL,
 	JUMP,
 	PERCENT
@@ -18,9 +18,9 @@ enum ms_sampling {
 #endif
 };
 #ifdef WITH_SEG_FELZENSZWALB
-#define ms_samplingString {"ALL", "JUMP", "PERCENT", "SUPERPIXEL"}
+#define seg_meanshift_samplingString {"ALL", "JUMP", "PERCENT", "SUPERPIXEL"}
 #else
-#define ms_samplingString {"ALL", "JUMP", "PERCENT"}
+#define seg_meanshift_samplingString {"ALL", "JUMP", "PERCENT"}
 #endif
 
 /**
@@ -32,11 +32,11 @@ public:
 	MeanShiftConfig(const std::string& prefix = std::string());
 
 	// input configuration
-	ImgInputConfig input;
+	imginput::ImgInputConfig input;
 
 #ifdef WITH_SEG_FELZENSZWALB
 	// superpixel configuration for SUPERPIXEL sampling
-	gerbil::FelzenszwalbConfig superpixel;
+	seg_felzenszwalb::FelzenszwalbConfig superpixel;
 
 	// compute superpixels on original image, mean shift on spectral gradient
 	bool sp_withGrad;
@@ -58,7 +58,7 @@ public:
 	float k; // k * sqrt(N) is number of neighbors used for construction
 	
 	/// starting points, i.e. sampling
-	ms_sampling starting;
+	sampling starting;
 	int jump;
 	float percent; 
 	float bandwidth;

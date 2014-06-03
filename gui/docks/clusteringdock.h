@@ -7,7 +7,7 @@
 #include <map>
 #include <boost/any.hpp>
 
-namespace vole {
+namespace shell {
 	class Command;
 }
 class CommandRunner;
@@ -24,7 +24,7 @@ public:
 
 signals:
 	void cancelSegmentationRequested();
-	void segmentationRequested(vole::Command *cmd,
+	void segmentationRequested(shell::Command *cmd,
 								   int numbands,
 								   bool gradient);
 public slots:

@@ -27,7 +27,7 @@ void ClusteringModel::setMultiImage(SharedMultiImgPtr image)
 }
 
 void ClusteringModel::startSegmentation(
-		vole::Command* cmd, int numbands, bool gradient)
+		shell::Command* cmd, int numbands, bool gradient)
 {
 	// get rid of previous command runner  (HACK)
 	if(NULL != cmdr) {
@@ -57,8 +57,8 @@ void ClusteringModel::startSegmentation(
 		input = input_tmp;
 	}
 
-	vole::MeanShiftConfig &config =
-			static_cast<vole::MeanShiftShell*>(cmd)->config;
+	seg_meanshift::MeanShiftConfig &config =
+			static_cast<seg_meanshift::MeanShiftShell*>(cmd)->config;
 	if (gradient) {
 		// copy needed here (TODO: only in sp_withGrad case)
 		multi_img loginput(*input, true);

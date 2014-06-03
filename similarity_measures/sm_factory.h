@@ -8,14 +8,14 @@
 #include "sidsam.h"
 #include "normalized_l2.h"
 
-namespace vole {
+namespace similarity_measures {
 
 template<typename T>
 class SMFactory {
 
 public:
 	/* factory method to spawn a specific similarity measure object */
-	static SimilarityMeasure<T> *spawn(const similarity_fun &smft) {
+	static SimilarityMeasure<T> *spawn(const measure &smft) {
 		switch (smft) {
 		case MANHATTAN:
 			return new LNorm<T>(cv::NORM_L1);
@@ -39,7 +39,7 @@ public:
 	}
 
 	static SimilarityMeasure<T> *spawn(const SMConfig &c) {
-		return spawn(c.measure);
+		return spawn(c.function);
 	}
 };
 

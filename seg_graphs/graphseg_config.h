@@ -3,19 +3,20 @@
 
 #include <vole_config.h>
 #include <sm_config.h>
+#include <imginput_config.h>
 #ifdef WITH_SOM
 #include <som_config.h>
 #endif
 #include <multi_img.h>
 
-namespace vole {
+namespace seg_graphs {
 
-enum graphsegalg {
+enum algorithm {
 	KRUSKAL,
 	PRIM,
 	WATERSHED2
 };
-#define graphsegalgString {"KRUSKAL", "PRIM", "WATERSHED2"}
+#define seg_graphs_algorithmString {"KRUSKAL", "PRIM", "WATERSHED2"}
 
 /**
  * Configuration parameters for the graph cut / power watershed segmentation
@@ -27,8 +28,8 @@ public:
 
 	virtual ~GraphSegConfig() {}
 
-	/// input file name
-	std::string input_file;
+	// input is handled by imginput module
+	imginput::ImgInputConfig input;
 	/// seed input filename
 	std::string seed_file;
 	/// output file name
@@ -37,17 +38,17 @@ public:
 	/// seed file contains fore/background labels (false) or >2 labels (true)
 	bool multi_seed;
 	/// algorithm to be employed
-	graphsegalg algo;
+	algorithm algo;
 	/// use geodesic reconstruction of the weights
 	bool geodesic;
 
 	/// similarity measure for edge weighting
-	SMConfig similarity;
+	similarity_measures::SMConfig similarity;
 
 #ifdef WITH_SOM
 	/// use SOM similarity instead
 	bool som_similarity;
-	SOMConfig som;
+	som::SOMConfig som;
 #endif
 
 	virtual std::string getString() const;

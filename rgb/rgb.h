@@ -8,26 +8,26 @@
 #include <boost/any.hpp>
 #endif
 
-namespace gerbil {
+namespace rgb {
 
-class RGB : public vole::Command {
+class RGB : public shell::Command {
 public:
 	RGB();
 	int execute();
 #ifdef WITH_BOOST
 	std::map<std::string, boost::any>
 	execute(std::map<std::string, boost::any> &input,
-			vole::ProgressObserver *po);
+			ProgressObserver *po);
 #endif
-	cv::Mat3f execute(const multi_img& src, vole::ProgressObserver *po = NULL);
+	cv::Mat3f execute(const multi_img& src, ProgressObserver *po = NULL);
 
 	void printShortHelp() const;
 	void printHelp() const;
 
 protected:
-	cv::Mat3f executePCA(const multi_img& src, vole::ProgressObserver *po);
+	cv::Mat3f executePCA(const multi_img& src, ProgressObserver *po);
 #ifdef WITH_SOM
-	cv::Mat3f executeSOM(const multi_img& src, vole::ProgressObserver *po);
+	cv::Mat3f executeSOM(const multi_img& src, ProgressObserver *po);
 #endif
 
 public:

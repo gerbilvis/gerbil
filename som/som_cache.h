@@ -4,6 +4,8 @@
 #include "gensom.h"
 #include <progress_observer.h>
 
+namespace som {
+
 /** Compute closest n neurons in SOM for each multi_img pixel.
  *
  * The results are computed on construction.
@@ -16,7 +18,7 @@ public:
 	SOMClosestN(GenSOM const& som,
 				multi_img const& img,
 				int n,
-				vole::ProgressObserver *po = 0);
+				ProgressObserver *po = 0);
 
 	/** Copy closest n result for pixel with coordinates p.
 	 *
@@ -60,9 +62,9 @@ protected:
 	// neuron distances and SOM indices
 	// size = width * height * n
 	std::vector<DistIndexPair> results;
-	vole::ProgressObserver *po;
+	ProgressObserver *po;
 	friend class ClosestNTbb;
 };
 
-
+}
 #endif // SOM_CACHE_H

@@ -1,7 +1,7 @@
 #ifndef SORTING_H
 #define SORTING_H
 
-namespace powerwaterseg {
+namespace seg_graphs {
 
 void TriRapideStochastique(int * A, int *I, int p, int r);
 void TriRapideStochastique_dec(unsigned int * A, int *I, int p, int r);

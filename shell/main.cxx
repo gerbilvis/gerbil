@@ -8,6 +8,8 @@
 using namespace std;
 using namespace boost::program_options;
 
+using namespace shell;
+
 /* NOTE: use #define SINGLE to build the single-command version! */
 
 void printVoleOnce() {
@@ -44,15 +46,15 @@ void printGeneralHelp(const char *program_name, bool withLogo, bool single) {
 	cout << endl << endl;
 }
 
-void printAvailableCommands(const vole::Modules &m) {
+void printAvailableCommands(const Modules &m) {
 	cout << "Available commands:" << endl;
-	for (vole::Modules::const_iterator it = m.begin(); it != m.end(); it++) {
+	for (Modules::const_iterator it = m.begin(); it != m.end(); it++) {
 		cout << "  " << it->first << ":\t";
 		it->second->printShortHelp();
 	}
 }
 
-void printSpecificHelp(vole::Command *cmd, bool single) {
+void printSpecificHelp(Command *cmd, bool single) {
 	cout << "-------------------------------------------------------------------------------" << endl;
 	cmd->printHelp();
 	cout << "-------------------------------------------------------------------------------" << endl;
@@ -62,7 +64,7 @@ void printSpecificHelp(vole::Command *cmd, bool single) {
 	cout << cmd->getConfig().options;
 }
 
-vole::Command* grab_command(int argc, char** argv, const vole::Modules &m) {
+Command* grab_command(int argc, char** argv, const Modules &m) {
 	bool firsthelp = false;
 	if (argc > 1)
 		firsthelp = ((strncmp(argv[1], "--help", 6) == 0) || (strncmp(argv[1], "-H", 2) == 0));
@@ -75,8 +77,8 @@ vole::Command* grab_command(int argc, char** argv, const vole::Modules &m) {
 	string command = (firsthelp ? argv[2] : argv[1]);
 
 	// fetch command object
-	vole::Command *cmd = NULL;
-	vole::Modules::const_iterator it = m.find(command);
+	Command *cmd = NULL;
+	Modules::const_iterator it = m.find(command);
 	if (it != m.end())
 		cmd = it->second;
 
@@ -87,9 +89,9 @@ vole::Command* grab_command(int argc, char** argv, const vole::Modules &m) {
 	return cmd;
 }
 
-bool parse_opts(int argc, char** argv, vole::Command *cmd, bool single) {
+bool parse_opts(int argc, char** argv, Command *cmd, bool single) {
 	string configfile, placeholder;
-	vole::Config& config = cmd->getConfig();
+	Config& config = cmd->getConfig();
 
 	try {
 		variables_map vm;
@@ -143,9 +145,9 @@ int main(int argc, char *argv[]) {
 #else
 	bool single = false;
 #endif
-	vole::Modules m;
+	Modules m;
 	assert(!m.empty());
-	vole::Command *c = (single ? m.begin()->second : grab_command(argc, argv, m));
+	Command *c = (single ? m.begin()->second : grab_command(argc, argv, m));
 	if (!c || !parse_opts(argc, argv, c, single)) return 1;
 	if (c->getConfig().verbosity > 0)
 		printVoleOnce();

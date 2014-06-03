@@ -28,10 +28,11 @@
 #include "mfams.h"
 #include <lshreader.h>
 
-
 using namespace std;
 
-FAMS::FAMS(const vole::MeanShiftConfig &cfg, vole::ProgressObserver *po)
+namespace seg_meanshift {
+
+FAMS::FAMS(const MeanShiftConfig &cfg, ProgressObserver *po)
 	: hasPoints_(0), nsel_(0), npm_(0), config(cfg),
 	  po(po), progress(0.f), progress_old(0.f), lsh_(NULL)
 {}
@@ -951,4 +952,6 @@ bool FAMS::progressUpdate(float percent, bool absolute)
 	if (!cont)
 		progress = -1.f;
 	return cont;
+}
+
 }

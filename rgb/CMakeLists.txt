@@ -7,7 +7,7 @@ vole_add_optional_dependencies("BOOST")
 vole_add_required_modules(imginput)
 vole_add_optional_modules(som)
 
-vole_add_command("rgb" "rgb.h" "gerbil::RGB")
+vole_add_command("rgb" "rgb.h" "rgb::RGB")
 
 vole_compile_library(
 	"rgb"

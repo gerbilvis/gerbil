@@ -4,7 +4,7 @@ ${vole_include_header}
 #include <string>
 #include <map>
 
-namespace vole {
+namespace shell {
 
 class Modules : public std::map<const std::string, Command *> {
 

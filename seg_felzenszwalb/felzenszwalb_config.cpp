@@ -6,14 +6,16 @@
 	find it here: http://www.gnu.org/licenses/gpl.html
 */
 
-#include "felzenszwalb2_config.h"
+#include "felzenszwalb_config.h"
 
 using namespace boost::program_options;
 
-namespace gerbil {
+namespace seg_felzenszwalb {
 
 FelzenszwalbConfig::FelzenszwalbConfig(const std::string& p)
- : vole::Config(p), similarity(prefix + "similarity")
+ : Config(p),
+   input(prefix + "input"),
+   similarity(prefix + "similarity")
 {
 	#ifdef WITH_BOOST
 		initBoostOptions();
@@ -21,7 +23,15 @@ FelzenszwalbConfig::FelzenszwalbConfig(const std::string& p)
 }
 
 #ifdef WITH_BOOST
-void FelzenszwalbConfig::initBoostOptions() {
+void FelzenszwalbConfig::initBoostOptions()
+{
+	if (!prefix_enabled) { // input/output options only with prefix
+		options.add(input.options);
+		options.add_options()
+			(key("output,O"), value(&output_file)->default_value("output.png"),
+			 "Output file name")
+			;
+	}
 	options.add_options()
 		(key("tc,c"), value(&c)->default_value(500),
 						   "Threshold value c within sim. measure range")
@@ -32,16 +42,6 @@ void FelzenszwalbConfig::initBoostOptions() {
 		;
 
 	options.add(similarity.options);
-
-	if (prefix_enabled)	// skip input/output options
-		return;
-
-	options.add_options()
-		(key("input,I"), value(&input_file)->default_value("input.png"),
-		 "Image to process")
-		(key("output,O"), value(&output_file)->default_value("output.png"),
-		 "Output file name")
-		;
 }
 #endif // WITH_BOOST
 
@@ -51,8 +51,8 @@ std::string FelzenszwalbConfig::getString() const {
 	if (prefix_enabled) {
 		s << "[" << prefix << "]" << std::endl;
 	} else {
-		s << "input=" << input_file << "\t# Image to process" << std::endl
-		  << "output=" << output_file << "\t# Working directory" << std::endl
+		s << input.getString();
+		s << "output=" << output_file << "\t# Working directory" << std::endl
 			;
 	}
 	s << "c=" << c << std::endl

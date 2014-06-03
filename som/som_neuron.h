@@ -16,6 +16,8 @@
 #include <vector>
 #include <cmath>
 
+namespace som {
+
 class Neuron : public multi_img::Pixel {
 
 public:
@@ -51,4 +53,5 @@ public:
 	}
 };
 
+}
 #endif // NEURON_H

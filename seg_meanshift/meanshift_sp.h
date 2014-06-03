@@ -4,9 +4,9 @@
 #include "meanshift_config.h"
 #include <command.h>
 
-namespace vole {
+namespace seg_meanshift {
 
-class MeanShiftSP : public Command {
+class MeanShiftSP : public shell::Command {
 public:
 	MeanShiftSP();
 	~MeanShiftSP();

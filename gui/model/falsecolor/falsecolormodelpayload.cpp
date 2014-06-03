@@ -16,27 +16,27 @@ void FalseColorModelPayload::run()
 		input["multi_img"] = grad;
 	}
 	runner->input = input;
-	gerbil::RGB *cmd = new gerbil::RGB(); // object owned by CommandRunner
+	rgb::RGB *cmd = new rgb::RGB(); // object owned by CommandRunner
 
 	switch (coloringType)
 	{
 	case FalseColoring::CMF:
-		cmd->config.algo = gerbil::COLOR_XYZ;
+		cmd->config.algo = rgb::COLOR_XYZ;
 		break;
 	case FalseColoring::PCA:
 	case FalseColoring::PCAGRAD:
-		cmd->config.algo = gerbil::COLOR_PCA;
+		cmd->config.algo = rgb::COLOR_PCA;
 		break;
 #ifdef WITH_SOM
 	case FalseColoring::SOM:
 	case FalseColoring::SOMGRAD:
 		// default parameters for false coloring (different to regular defaults)
-		cmd->config.algo = gerbil::COLOR_SOM;
+		cmd->config.algo = rgb::COLOR_SOM;
 		cmd->config.som.maxIter = 50000;
 		cmd->config.som.seed = time(NULL);
 
 		// CUBE parameters
-		cmd->config.som.type        = SOM_CUBE;
+		cmd->config.som.type        = som::SOM_CUBE;
 		cmd->config.som.dsize       = 10;
 		cmd->config.som.sigmaStart  = 4;
 		cmd->config.som.sigmaEnd    = 1;
@@ -84,7 +84,7 @@ void FalseColorModelPayload::processRunnerSuccess(std::map<std::string, boost::a
 		return;
 	}
 	cv::Mat3f mat = boost::any_cast<cv::Mat3f>(output["multi_img"]);
-	result.convertFromImage(vole::Mat2QImage((cv::Mat3b)mat));
+	result.convertFromImage(Mat2QImage((cv::Mat3b)mat));
 	emit finished(coloringType, true); // success
 }
 

@@ -20,9 +20,9 @@
 	measurement function chosen by the user.
 **/
 
-namespace vole {
+namespace similarity_measures {
 
-enum similarity_fun {
+enum measure {
 	MANHATTAN,
 	EUCLIDEAN,
 	CHEBYSHEV,
@@ -32,7 +32,8 @@ enum similarity_fun {
 	SIDSAM2,
 	NORM_L2
 };
-#define similarity_funString {"MANHATTAN", "EUCLIDEAN", "CHEBYSHEV", \
+#define similarity_measures_measureString \
+	{"MANHATTAN", "EUCLIDEAN", "CHEBYSHEV", \
 	"MOD_SPEC_ANGLE", "SPEC_INF_DIV", "SIDSAM1", "SIDSAM2", "NORM_L2"}
 
 class SMConfig: public Config {
@@ -41,7 +42,7 @@ public:
 	SMConfig(const std::string& prefix = std::string());
 
 	// similarity measure selection
-	similarity_fun measure;
+	measure function;
 
 	virtual std::string getString() const;
 

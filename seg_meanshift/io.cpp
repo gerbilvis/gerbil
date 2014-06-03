@@ -10,6 +10,8 @@
 
 using namespace std;
 
+namespace seg_meanshift {
+
 bool FAMS::LoadPoints(char* filename) {
 	bgLog("Load data points from P3 NetPBM file %s... ", filename);
 	CleanPoints();
@@ -305,4 +307,6 @@ void FAMS::SavePrunedModes(const std::string& filebase) {
 	}
 	fclose(fd);
 	bgLog("done\n");
+}
+
 }

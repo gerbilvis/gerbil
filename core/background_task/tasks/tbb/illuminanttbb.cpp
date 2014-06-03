@@ -25,7 +25,7 @@ bool IlluminantTbb::run()
 	target->minval = source->minval;
 	target->maxval = source->maxval;
 
-	vole::Stopwatch s;
+	Stopwatch s;
 
 	Illumination computeIllumination(*source, *target, il, remove);
 	tbb::parallel_for(tbb::blocked_range<size_t>(0, target->size()),

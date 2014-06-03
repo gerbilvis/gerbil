@@ -31,7 +31,7 @@
 *
 */
 
-namespace vole {
+namespace similarity_measures {
 
 /** 
 * @class SimilarityMeasure 

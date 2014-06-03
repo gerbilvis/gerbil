@@ -4,10 +4,10 @@
 #include <command.h>
 #include "edge_detection_config.h"
 
-namespace vole {
+namespace edge_detect {
 
 
-class EdgeDetection : public  Command
+class EdgeDetection : public shell::Command
 {
 public:
 	EdgeDetection();
@@ -19,9 +19,9 @@ public:
 
 
 protected:
-	vole::EdgeDetectionConfig config;
+	edge_detect::EdgeDetectionConfig config;
 };
 
-} // namespace vole
+} // module namespace
 
 #endif // EDGE_DETECTION_H

@@ -415,7 +415,7 @@ void Viewport::screenshot()
 	QImage img = b.toImage();
 
 	// write out
-	cv::Mat output = vole::QImage2Mat(img);
+	cv::Mat output = QImage2Mat(img);
 	IOGui io("Screenshot File", "screenshot", target);
 	io.writeFile(QString(), output);
 }

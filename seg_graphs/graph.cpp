@@ -59,7 +59,7 @@
 #include "graph.h"
 #include "graph_alg.h" // for geodesic
 
-namespace powerwaterseg {
+namespace seg_graphs {
 
 Graph::Graph(int width, int height) : width(width), height(height)
 {
@@ -265,7 +265,7 @@ int Graph::neighbor_edge(int i,  /* edge index */
 
 /* ================================================================================================= */
 void Graph::color_standard_weights(const multi_img & image,
-						vole::SimilarityMeasure<multi_img::Value> *distfun,
+						SimMeasure *distfun,
 						bool geodesic) {
 /* ================================================================================================== */
 /* Computes weights inversely proportional to the image gradient for 2D images */

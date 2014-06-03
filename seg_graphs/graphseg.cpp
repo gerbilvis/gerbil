@@ -22,14 +22,12 @@
 #include <iostream>
 #include <cstdio>
 
-using namespace powerwaterseg;
-
-namespace vole {
+namespace seg_graphs {
 
 cv::Mat1b GraphSeg::execute(const multi_img& input,
                                   const cv::Mat1b& seeds,
                                   cv::Mat1b *proba_map) {
-	vole::Stopwatch running_time("Total Running Time");
+	Stopwatch running_time("Total Running Time");
 	cv::Mat1b output;
 	int i;
 
@@ -64,15 +62,17 @@ cv::Mat1b GraphSeg::execute(const multi_img& input,
 	}
 
 	// edge weights
-	SimilarityMeasure<multi_img::Value> *distfun;
+	similarity_measures::SimilarityMeasure<multi_img::Value> *distfun;
 #ifdef WITH_SOM
-	boost::shared_ptr<GenSOM> som; // create in this scope so that it survives
+	boost::shared_ptr<som::GenSOM> som; // create in this scope for survival
 	if (!config.som_similarity) {
-		distfun = SMFactory<multi_img::Value>::spawn(config.similarity);
+		distfun = similarity_measures::SMFactory<multi_img::Value>
+				::spawn(config.similarity);
 	} else {
 		input.rebuildPixels();
-		som = boost::shared_ptr<GenSOM>(GenSOM::create(config.som, input));
-		distfun = new SOMDistance<multi_img::Value>(*som, input);
+		som = boost::shared_ptr<som::GenSOM>(
+					som::GenSOM::create(config.som, input));
+		distfun = new som::SOMDistance<multi_img::Value>(*som, input);
 	}
 #else
 	distfun = SMFactory<multi_img::Value>::spawn(config.similarity);
@@ -80,8 +80,10 @@ cv::Mat1b GraphSeg::execute(const multi_img& input,
 
 	assert(distfun);
 
-	vole::Stopwatch watch;
-	if (config.algo == WATERSHED2) { // Kruskal & RW on plateaus multiseeds linear time
+	Stopwatch watch;
+	if (config.algo == WATERSHED2) {
+		/* Kruskal & RW on plateaus multiseeds linear time */
+
 		graph.color_standard_weights(input, distfun, true);
 		watch.print_reset("Graph coloring");
 		// for PW, color_standard_weights is always called with geodesic = true

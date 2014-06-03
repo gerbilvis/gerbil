@@ -64,7 +64,7 @@
 #include <stack>
 #include <cstdio>
 
-namespace powerwaterseg {
+namespace seg_graphs {
 
 #define epsilon std::numeric_limits<float>::epsilon()
 #define SIZE_MAX_PLATEAU 1000000

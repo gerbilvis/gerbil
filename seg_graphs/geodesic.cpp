@@ -62,7 +62,7 @@
 #include <algorithm>
 #include <cstdlib>
 
-namespace powerwaterseg {
+namespace seg_graphs {
 
 /*================================================*/
 void Graph::element_link_geod_dilate(int      n,

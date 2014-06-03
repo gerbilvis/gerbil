@@ -14,7 +14,7 @@
 #include <iostream>
 #include <limits>
 
-namespace vole {
+namespace similarity_measures {
 
 /**
 * @class Normalized Euclidean Distance by S. A. Robila 2005

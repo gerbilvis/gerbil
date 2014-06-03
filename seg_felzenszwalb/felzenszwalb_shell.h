@@ -1,12 +1,12 @@
 #ifndef FELZENSZWALB_SHELL_H
 #define FELZENSZWALB_SHELL_H
 
-#include "felzenszwalb2_config.h"
+#include "felzenszwalb_config.h"
 #include <command.h>
 
-namespace gerbil {
+namespace seg_felzenszwalb {
 
-class FelzenszwalbShell : public vole::Command {
+class FelzenszwalbShell : public shell::Command {
 public:
 	FelzenszwalbShell();
 	int execute();

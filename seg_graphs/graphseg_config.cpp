@@ -10,12 +10,14 @@
 
 using namespace boost::program_options;
 
-namespace vole {
+namespace seg_graphs {
 
-ENUM_MAGIC(graphsegalg)
+ENUM_MAGIC(seg_graphs, algorithm)
 
 GraphSegConfig::GraphSegConfig(const std::string& p)
- : Config(p), similarity(prefix + "similarity")
+ : Config(p),
+   input(prefix + "input"),
+   similarity(prefix + "similarity")
 #ifdef WITH_SOM
  , som(prefix + "som")
 #endif
@@ -26,7 +28,20 @@ GraphSegConfig::GraphSegConfig(const std::string& p)
 }
 
 #ifdef WITH_BOOST
-void GraphSegConfig::initBoostOptions() {
+void GraphSegConfig::initBoostOptions()
+{
+	if (!prefix_enabled) { // input/output options only with prefix
+		options.add(input.options);
+		options.add_options()
+			(key("seeds,S"), value(&seed_file)->default_value("seeds.png"),
+			 "Seed map (grayscale image)")
+			(key("output,O"), value(&output_file)->default_value("output_mask.png"),
+			 "Output file name")
+			(key("multi_seed"), bool_switch(&multi_seed)->default_value(false),
+							   "Set to true for multi-label seed file, "
+							   "false for foreground/background seeds")
+			;
+	}
 	options.add_options()
 		(key("algo"), value(&algo)->default_value(WATERSHED2),
 		                   "Algorithm to employ: KRUSKAL, PRIM or\n"
@@ -43,21 +58,6 @@ void GraphSegConfig::initBoostOptions() {
 							 "Set to true to use SOM as input to edge weights");
 	options.add(som.options);
 #endif
-
-	if (prefix_enabled)	// skip input/output options
-		return;
-
-	options.add_options()
-		(key("input,I"), value(&input_file)->default_value("input.png"),
-		 "Image to process")
-		(key("seeds,S"), value(&seed_file)->default_value("seeds.png"),
-		 "Seed map (grayscale image)")
-		(key("output,O"), value(&output_file)->default_value("output_mask.png"),
-		 "Output file name")
-		(key("multi_seed"), bool_switch(&multi_seed)->default_value(false),
-		                   "Set to true for multi-label seed file, "
-		                   "false for foreground/background seeds")
-		;
 }
 #endif // WITH_BOOST
 
@@ -67,8 +67,8 @@ std::string GraphSegConfig::getString() const {
 	if (prefix_enabled) {
 		s << "[" << prefix << "]" << std::endl;
 	} else {
-		s << "input=" << input_file << "\t# Image to process" << std::endl
-		  << "seeds=" << seed_file << "\t# Seed map" << std::endl
+		s << input.getString();
+		s << "seeds=" << seed_file << "\t# Seed map" << std::endl
 		  << "output=" << output_file << "\t# Working directory" << std::endl
 			;
 	}

@@ -1,15 +1,6 @@
 #ifndef VOLE_HASHES_H
 #define VOLE_HASHES_H
 
-/** Core classes and core modules of the vole framework. Everything tagged as 'vole' should be application independent code.
- */
-namespace vole {
-
-enum HashMethod {
-	HASH_djb2,
-	HASH_sdbm
-};
-
 /** Taken from http://www.cse.yorku.ca/~oz/hash.html
  * Description:
  * A comprehensive collection of hash functions, a hash visualiser and some
@@ -22,11 +13,17 @@ enum HashMethod {
  * for graphing hash functions. 
  */
 class Hashes {
+
 public:
+
+	enum Method {
+		HASH_djb2,
+		HASH_sdbm
+	};
 
 	/** interface method to the hash algorithms
 	 */
-	static unsigned long getHash(const char *str, HashMethod m);
+	static unsigned long getHash(const char *str, Method m);
 
 	/** this algorithm (k=33) was first reported by dan bernstein many years
 	 * ago in comp.lang.c. another version of this algorithm (now favored by
@@ -49,7 +46,5 @@ public:
 	 */
 	static unsigned long sdbm(const char *str);
 };
-
-}
 
 #endif // VOLE_HASHES_H

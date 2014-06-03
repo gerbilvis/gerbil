@@ -23,7 +23,7 @@
 
 using namespace boost::program_options;
 
-namespace vole {
+namespace seg_meanshift {
 
 MeanShiftSP::MeanShiftSP()
  : Command(
@@ -40,12 +40,12 @@ int MeanShiftSP::execute()
 #ifdef WITH_SEG_FELZENSZWALB
 	multi_img::ptr input, input_grad;
 	if (config.sp_withGrad) {
-		input = ImgInput(config.input).execute();
+		input = imginput::ImgInput(config.input).execute();
 		input_grad = multi_img::ptr(new multi_img(*input, true));
 		input_grad->apply_logarithm();
 		*input_grad = input_grad->spec_gradient();
 	} else {
-		input = ImgInput(config.input).execute();
+		input = imginput::ImgInput(config.input).execute();
 	}
 	if (input->empty())
 		return -1;
@@ -107,18 +107,18 @@ cv::Mat1s MeanShiftSP::execute(multi_img::ptr input,  multi_img::ptr input_grad)
 	Labeling labels;
 	// superpixel setup
 	cv::Mat1i sp_translate;
-	gerbil::felzenszwalb::segmap sp_map;
+	seg_felzenszwalb::segmap sp_map;
 
 	// run superpixel pre-segmentation
-	std::pair<cv::Mat1i, gerbil::felzenszwalb::segmap> result =
-		 gerbil::felzenszwalb::segment_image(*input, config.superpixel);
+	std::pair<cv::Mat1i, seg_felzenszwalb::segmap> result =
+		 seg_felzenszwalb::segment_image(*input, config.superpixel);
 	sp_translate = result.first;
 	std::swap(sp_map, result.second);
 
 	std::cout << "SP: " << sp_map.size() << " segments" << std::endl;
 	if (config.verbosity > 1) {
 		std::string output_name;
-		vole::Labeling output;
+		Labeling output;
 		output.yellowcursor = false;
 		output.shuffle = true;
 		output.read(result.first, false);
@@ -137,7 +137,7 @@ cv::Mat1s MeanShiftSP::execute(multi_img::ptr input,  multi_img::ptr input_grad)
 	msinput.meta = in->meta;
 	vector<double> weights(sp_map.size());
 	std::vector<int> spsizes; // HACK
-	gerbil::felzenszwalb::segmap::const_iterator mit = sp_map.begin();
+	seg_felzenszwalb::segmap::const_iterator mit = sp_map.begin();
 	for (int ii = 0; mit != sp_map.end(); ++ii, ++mit) {
 		// initialize new pixel with zero
 		multi_img::Pixel p(D, 0.f);

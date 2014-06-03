@@ -29,9 +29,9 @@ signals:
 	void requestClearSeeds();
 	void requestLoadSeeds();
 	void requestGraphseg(representation::t type,
-						 const vole::GraphSegConfig &config,
+						 const seg_graphs::GraphSegConfig &config,
 						 bool resetLabel);
-	void requestGraphsegCurBand(const vole::GraphSegConfig &config,
+	void requestGraphsegCurBand(const seg_graphs::GraphSegConfig &config,
 								bool resetLabel);
 
 public slots:

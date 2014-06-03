@@ -12,16 +12,11 @@
 #include <similarity_measure.h>
 #include <sm_factory.h>
 
-const int GENSOM_MAX_DIMS        = 8;
+namespace som {
 
 /** Training **/
 
-// forward declaration
-namespace vole {
-class ProgressObserver;
-}
-
-void GenSOM::train(const multi_img &input, vole::ProgressObserver *po)
+void GenSOM::train(const multi_img &input, ProgressObserver *po)
 {
 	std::cout << "Start feeding" << std::endl;
 
@@ -190,7 +185,8 @@ void writeLittle(std::ostream &os, const T& x)
 
 GenSOM::GenSOM(const SOMConfig &config)
 	: config(config),
-	  distfun(vole::SMFactory<value_type>::spawn(config.similarity))
+	  distfun(similarity_measures::SMFactory<value_type>::
+			  spawn(config.similarity))
 {}
 
 void GenSOM::init(size_t nneurons, size_t nbands, bool randomize)
@@ -230,7 +226,7 @@ GenSOM::~GenSOM()
 }
 
 GenSOM *GenSOM::create(const SOMConfig &conf, const multi_img &img,
-					   vole::ProgressObserver *po)
+					   ProgressObserver *po)
 {
 	GenSOM *som;
 
@@ -386,7 +382,7 @@ GenSOM *GenSOM::loadFile(std::istream &is, const SOMConfig& config)
 	GenSOM* som = create(config, nbands, /* randomize */ false);
 	size_t nneurons = som->neurons.size();
 
-	if (nneurons != size) {
+	if (nneurons != (size_t)size) {
 		std::stringstream ss;
 		ss << "GenSom::loadFile(): "
 		   << "stored SOM dimension size "
@@ -444,9 +440,4 @@ cv::Mat3f GenSOM::bgr(const std::vector<multi_img_base::BandDesc> &meta,
 	return ret;
 }
 
-
-
-
-
-
-
+}

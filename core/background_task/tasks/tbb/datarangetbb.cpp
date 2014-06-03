@@ -16,7 +16,7 @@
 
 bool DataRangeTbb::run()
 {
-	vole::Stopwatch s;
+	Stopwatch s;
 
 	DetermineRange determineRange(**multi);
 	tbb::parallel_reduce(tbb::blocked_range<size_t>(0, (*multi)->size()),

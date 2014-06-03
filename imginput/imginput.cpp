@@ -2,10 +2,9 @@
 #include "gdalreader.h"
 #include <string>
 #include <vector>
+#include <boost/make_shared.hpp>
 
-using std::vector;
-
-namespace vole {
+namespace imginput {
 
 multi_img::ptr ImgInput::execute()
 {
@@ -97,9 +96,10 @@ bool ImgInput::parseROIString(const std::string &str, std::vector<int> &vals)
 	return ctr == 3;
 }
 
-void ImgInput::applyROI(multi_img::ptr &img_ptr, vector<int>& vals)
+void ImgInput::applyROI(multi_img::ptr &img_ptr, std::vector<int>& vals)
 {
-	img_ptr = multi_img::ptr(new multi_img(*img_ptr, cv::Rect(vals[0], vals[1], vals[2], vals[3])));
+	img_ptr = boost::make_shared<multi_img>
+			(*img_ptr, cv::Rect(vals[0], vals[1], vals[2], vals[3]));
 }
 
 void ImgInput::cropSpectrum(multi_img::ptr &img_ptr)
