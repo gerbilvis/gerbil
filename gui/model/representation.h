@@ -5,9 +5,9 @@
 
 // FIXME These macro defs are a temporary workaround to get the upcoming relase
 // functioning. We need to get task processing more efficient in the future.
-#define WITH_IMGPCA
+//#define WITH_IMGPCA
 //#define WITH_GRADPCA
-#define REPSIZE 3 // depends on the variables above
+#define REPSIZE 2 // depends on the variables above
 struct representation {
 
 	enum t {

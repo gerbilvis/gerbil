@@ -52,14 +52,14 @@ vole_check_package(OPENGL
 )
 
 # GLEW
-find_package(GLEW)
-vole_check_package(GLEW
-	"GLEW"
-	"Please install GLEW."
-	GLEW_FOUND
-	"${GLEW_INCLUDE_PATH}"
-	"${GLEW_LIBRARIES}"
-)
+#find_package(GLEW)
+#vole_check_package(GLEW
+#	"GLEW"
+#	"Please install GLEW."
+#	GLEW_FOUND
+#	"${GLEW_INCLUDE_PATH}"
+#	"${GLEW_LIBRARIES}"
+#)
 
 ## We are not quite there yet to support Qt5 in the code (run-time problems)
 ## QtWidgets 5
