@@ -78,6 +78,7 @@ int MeanShiftSP::execute()
 }
 
 std::map<std::string, boost::any> MeanShiftSP::execute(std::map<std::string, boost::any> &input, ProgressObserver *progress) {
+#ifdef WITH_SEG_FELZENSZWALB
 	// XXX: for now, gradient/rescale is expected to be done by caller
 
 	boost::shared_ptr<multi_img> inputimg =
@@ -98,6 +99,9 @@ std::map<std::string, boost::any> MeanShiftSP::execute(std::map<std::string, boo
 	std::map<std::string, boost::any> output;
 	output["labels"] = labels_mask;
 	return output;
+#else
+	throw std::runtime_error("Module seg_felzenszwalb needed, but missing!");
+#endif
 }
 
 cv::Mat1s MeanShiftSP::execute(multi_img::ptr input,  multi_img::ptr input_grad)

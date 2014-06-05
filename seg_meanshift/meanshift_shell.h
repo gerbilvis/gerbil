@@ -13,7 +13,7 @@ public:
 	int execute();
 	std::map<std::string, boost::any>
 	execute(std::map<std::string, boost::any> &input,
-			ProgressObserver *progress);
+			ProgressObserver *po);
 
 	void printShortHelp() const;
 	void printHelp() const;

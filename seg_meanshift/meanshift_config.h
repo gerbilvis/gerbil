@@ -5,6 +5,9 @@
 #ifdef WITH_SEG_FELZENSZWALB
 #include <felzenszwalb_config.h>
 #endif
+#ifdef WITH_SOM
+#include <som_config.h>
+#endif
 #include <imginput.h>
 
 namespace seg_meanshift {
@@ -40,8 +43,15 @@ public:
 
 	// compute superpixels on original image, mean shift on spectral gradient
 	bool sp_withGrad;
-	// how to weight superpixel sizes: 0 do not weight, 1 fixed bandwidths, 2 alter weightdp2
+#endif
+	
+#if defined(WITH_SOM) || defined(WITH_SEG_FELZENSZWALB)
+	// how to weight superpixel sizes or neuron influence: 0 do not weight, 1 fixed bandwidths, 2 alter weightdp2
 	int sp_weight;
+#endif
+
+#ifdef WITH_SOM
+	som::SOMConfig som;
 #endif
 
 	/// working directory

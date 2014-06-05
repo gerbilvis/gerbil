@@ -22,7 +22,13 @@ MeanShiftConfig::MeanShiftConfig(const std::string& prefix)
 	: Config(prefix), input("input")
 #ifdef WITH_SEG_FELZENSZWALB
 	, superpixel("superpixel"),
-	sp_withGrad(false), sp_weight(0)
+	sp_withGrad(false)
+#endif
+#if defined(WITH_SOM) || defined(WITH_SEG_FELZENSZWALB)
+	, sp_weight(0)
+#endif
+#ifdef WITH_SOM
+	, som("som")
 #endif
 {
 	use_LSH = false;
@@ -67,6 +73,9 @@ std::string MeanShiftConfig::getString() const {
 	s << superpixel.getString();
 	s << "sp_withGrad=" << (sp_withGrad ? "true" : "false") << std::endl;
 	s << "sp_weight=" << sp_weight << std::endl;
+#endif
+#ifdef WITH_SOM
+	s << som.getString();
 #endif
 	s << "useLSH=" << (use_LSH ? "true" : "false") << std::endl
 	  << "K=" << K << std::endl
@@ -124,6 +133,8 @@ void MeanShiftConfig::initBoostOptions()
 			("sp_withGrad", bool_switch(&sp_withGrad)->default_value
 																  (sp_withGrad),
 			 "compute gradient as input to mean shift step (after superpixels)")
+#endif
+#if defined(WITH_SOM) || defined(WITH_SEG_FELZENSZWALB)
 			("sp_weight", value(&sp_weight)->default_value(sp_weight),
 			 "how to weight superpixel sizes: 0 do not weight, 1 fixed bandwidths,"
 			 " 2 alter weight")
@@ -138,6 +149,9 @@ void MeanShiftConfig::initBoostOptions()
 	;
 #ifdef WITH_SEG_FELZENSZWALB
 	options.add(superpixel.options);
+#endif
+#ifdef WITH_SOM
+	options.add(som.options);
 #endif
 }
 #endif // WITH_BOOST

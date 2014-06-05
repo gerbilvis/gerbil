@@ -3,7 +3,9 @@
 
 #include <vole_config.h>
 #include <imginput.h>
+#ifdef WITH_SOM
 #include <som_config.h>
+#endif
 #include <multi_img.h>
 
 namespace rgb {
