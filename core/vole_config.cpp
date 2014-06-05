@@ -18,9 +18,10 @@ using namespace boost::program_options;
 #endif // WITH_BOOST_PROGRAM_OPTIONS
 
 Config::Config(const std::string& p) :
+	verbosity(0),
 	prefix_enabled(!p.empty()),
-	prefix(prefix_enabled ? p + "." : p),
-	verbosity(0)
+	prefix(prefix_enabled ? p + "." : p)
+
 {
 #ifdef WITH_BOOST_PROGRAM_OPTIONS
 	initMandatoryBoostOptions();
