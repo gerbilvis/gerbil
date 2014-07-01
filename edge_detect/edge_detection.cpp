@@ -126,12 +126,12 @@ int EdgeDetection::execute()
 	boost::shared_ptr<SOMClosestN> lookup =
 			boost::make_shared<SOMClosestN>(*som, *img, 1);
 
-	cv::Mat1f dx = cv::Mat1f::zeros(img->height, img->width);
-	cv::Mat1f dy = cv::Mat1f::zeros(img->height, img->width);
+	cv::Mat1f dx(img->height, img->width, 0.f);
+	cv::Mat1f dy(img->height, img->width, 0.f);
 
 	boost::shared_ptr<similarity_measures::SimilarityMeasure<float> >
 			simfun(similarity_measures::SMFactory<float>
-				   ::spawn(config.som.similarity));
+				   ::spawn(similarity_measures::EUCLIDEAN));
 
 	tbb::parallel_for(tbb::blocked_range2d<int>(1, img->height - 1, // row range
 												1, img->width - 1), // column range
