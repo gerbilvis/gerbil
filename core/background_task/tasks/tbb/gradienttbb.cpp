@@ -54,8 +54,9 @@ bool GradientTbb::run()
 
 	Stopwatch s;
 
+	std::vector<cv::Rect>::iterator it;
 	multi_img temp((*source)->height, (*source)->width, (*source)->size());
-	for (std::vector<cv::Rect>::iterator it = calc.begin(); it != calc.end(); ++it) {
+	for (it = calc.begin(); it != calc.end(); ++it) {
 		if (it->width > 0 && it->height > 0) {
 			multi_img srcScope(**source, *it);
 			multi_img tmpScope(temp, *it);
@@ -71,7 +72,7 @@ bool GradientTbb::run()
 	temp.maxval = log((*source)->maxval);
 	temp.roi = (*source)->roi;
 
-	for (std::vector<cv::Rect>::iterator it = calc.begin(); it != calc.end(); ++it) {
+	for (it = calc.begin(); it != calc.end(); ++it) {
 		if (it->width > 0 && it->height > 0) {
 			multi_img tmpScope(temp, *it);
 			multi_img tgtScope(*target, *it);

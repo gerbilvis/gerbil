@@ -21,6 +21,17 @@ void RebuildPixels::operator()(const tbb::blocked_range<size_t> &r) const
 	}
 }
 
+void RebuildPixels::operator()(const tbb::blocked_range2d<int> &r) const
+{
+	for (int row = r.rows().begin(); row != r.rows().end(); ++row) {
+		int loc = row * multi.width;
+		for (int col = r.cols().begin(); col != r.cols().end(); ++col) {
+			for (size_t d = 0; d < multi.size(); ++d)
+				multi.pixels[loc + col][d] = multi.bands[d](row, col);
+		}
+	}
+}
+
 void ApplyCache::operator()(const tbb::blocked_range<size_t> &r) const
 {
 	for (size_t d = r.begin(); d != r.end(); ++d) {
@@ -28,6 +39,17 @@ void ApplyCache::operator()(const tbb::blocked_range<size_t> &r) const
 		multi_img::Band::iterator it; size_t i;
 		for (it = dst.begin(), i = 0; it != dst.end(); ++it, ++i)
 			*it = multi.pixels[i][d];
+	}
+}
+
+void ApplyCache::operator()(const tbb::blocked_range2d<int> &r) const
+{
+	for (int row = r.rows().begin(); row != r.rows().end(); ++row) {
+		int loc = row * multi.width;
+		for (int col = r.cols().begin(); col != r.cols().end(); ++col) {
+			for (size_t d = 0; d < multi.size(); ++d)
+				multi.bands[d](row, col) = multi.pixels[loc + col][d];
+		}
 	}
 }
 
@@ -54,7 +76,8 @@ void Xyz::operator()(const tbb::blocked_range2d<int> &r) const
 {
 	float intensity;
 	float factor = 1.f / multi.maxval;
-	__m128 cie_reg = _mm_setr_ps(CIEObserver::x[cie], 0.f, CIEObserver::y[cie], CIEObserver::z[cie]);
+	__m128 cie_reg = _mm_setr_ps(CIEObserver::x[cie], 0.f,
+	                             CIEObserver::y[cie], CIEObserver::z[cie]);
 
 	for (int i = r.rows().begin(); i != r.rows().end(); ++i) {
 		for (int j = r.cols().begin(); j != r.cols().end(); ++j) {
@@ -69,7 +92,9 @@ void Xyz::operator()(const tbb::blocked_range2d<int> &r) const
 			cv::Vec3f &v = xyz(i, j);
 			intensity = band(i, j) * factor;
 			__m128 v_reg = _mm_loadh_pi(_mm_load_ss(&v[0]), (__m64*)&v[1]);
-			__m128 res_reg = _mm_add_ps(v_reg, _mm_mul_ps(cie_reg, _mm_load1_ps(&intensity)));
+			__m128 res_reg = _mm_add_ps(v_reg,
+			                            _mm_mul_ps(cie_reg,
+			                                       _mm_load1_ps(&intensity)));
 			_mm_storeh_pi((__m64*)&v[1], res_reg);
 			_mm_store_ss(&v[0], res_reg);
 		}
@@ -126,6 +151,22 @@ void Log::operator ()(const tbb::blocked_range<size_t> &r) const
 	}
 }
 
+void NormL2::operator()(const tbb::blocked_range2d<int> &r) const
+{
+	for (int row = r.rows().begin(); row != r.rows().end(); ++row) {
+		for (int col = r.cols().begin(); col != r.cols().end(); ++col) {
+			cv::Mat_<multi_img::Value> src(
+						source.pixels[row * source.width + col], false);
+			cv::Mat_<multi_img::Value> dst(
+						target.pixels[row * source.width + col], false);
+			double n = cv::norm(src, cv::NORM_L2);
+			if (n == 0.)
+				n = 1.;
+			dst = src / n;
+		}
+	}
+}
+
 void Clamp::operator ()(const tbb::blocked_range<size_t> &r) const
 {
 	for (size_t d = r.begin(); d != r.end(); ++d) {
@@ -178,8 +219,10 @@ void Resize::operator()(const tbb::blocked_range2d<int> &r) const
 {
 	for (int row = r.rows().begin(); row != r.rows().end(); ++row) {
 		for (int col = r.cols().begin(); col != r.cols().end(); ++col) {
-			cv::Mat_<multi_img::Value> src(source.pixels[row * source.width + col], false);
-			cv::Mat_<multi_img::Value> dst(target.pixels[row * source.width + col], false);
+			cv::Mat_<multi_img::Value> src(
+			            source.pixels[row * source.width + col], false);
+			cv::Mat_<multi_img::Value> dst(
+			            target.pixels[row * source.width + col], false);
 			cv::resize(src, dst, cv::Size(1, newsize));
 		}
 	}

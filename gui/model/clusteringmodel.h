@@ -24,7 +24,6 @@ class ClusteringModel : public QObject
 public:
 	explicit ClusteringModel();
 	~ClusteringModel();
-	void setMultiImage(SharedMultiImgPtr image);
 
 signals:
 	void progressChanged(int); // passed on from CommandRunner

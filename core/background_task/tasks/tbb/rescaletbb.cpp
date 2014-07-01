@@ -30,7 +30,8 @@ bool RescaleTbb::run()
 		target->maxval = temp->maxval;
 		target->roi = temp->roi;
 		Resize computeResize(*temp, *target, newsize);
-		tbb::parallel_for(tbb::blocked_range2d<int>(0, temp->height, 0, temp->width),
+		tbb::parallel_for(tbb::blocked_range2d<int>(0, temp->height,
+		                                            0, temp->width),
 			computeResize, tbb::auto_partitioner(), stopper);
 
 		ApplyCache applyCache(*target);
@@ -59,7 +60,7 @@ bool RescaleTbb::run()
 		target = temp;
 	}
 
-	if (!includecache)
+	if (!includecache) // TODO: this absolutely makes no sense? remove param.?
 		target->resetPixels();
 
 	if (stopper.is_group_execution_cancelled()) {

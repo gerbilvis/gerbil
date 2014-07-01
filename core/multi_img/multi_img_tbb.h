@@ -7,6 +7,8 @@ class RebuildPixels {
 public:
 	RebuildPixels(multi_img &multi) : multi(multi) {}
 	void operator()(const tbb::blocked_range<size_t> &r) const;
+	// second way to do it that can also be run on a specific region
+	void operator()(const tbb::blocked_range2d<int> &r) const;
 private:
 	multi_img &multi;
 };
@@ -16,6 +18,8 @@ class ApplyCache {
 public:
 	ApplyCache(multi_img &multi) : multi(multi) {}
 	void operator()(const tbb::blocked_range<size_t> &r) const;
+	// second way to do it that can also be run on a specific region
+	void operator()(const tbb::blocked_range2d<int> &r) const;
 private:
 	multi_img &multi;
 };
@@ -75,13 +79,24 @@ private:
 	multi_img &target;
 };
 
-
 // TODO doc
 class Log {
 public:
 	Log(multi_img &source, multi_img &target)
 		: source(source), target(target) {}
 	void operator()(const tbb::blocked_range<size_t> &r) const;
+
+private:
+	multi_img &source;
+	multi_img &target;
+};
+
+// TODO doc
+class NormL2 {
+public:
+	NormL2(multi_img &source, multi_img &target)
+		: source(source), target(target) {}
+	void operator()(const tbb::blocked_range2d<int> &r) const;
 
 private:
 	multi_img &source;

@@ -6,6 +6,7 @@
 #include <background_task/tasks/tbb/band2qimagetbb.h>
 #include <background_task/tasks/tbb/datarangetbb.h>
 #include <background_task/tasks/tbb/gradienttbb.h>
+#include <background_task/tasks/tbb/norml2tbb.h>
 #include <background_task/tasks/tbb/normrangetbb.h>
 #include <background_task/tasks/tbb/pcatbb.h>
 #include <background_task/tasks/tbb/rescaletbb.h>
@@ -44,9 +45,12 @@ ImageModel::ImageModel(BackgroundTaskQueue &queue, bool lm)
 
 	foreach (payload *p, map) {
 		connect(p, SIGNAL(newImageData(representation::t,SharedMultiImgPtr)),
-				this, SLOT(processNewImageData(representation::t,SharedMultiImgPtr)));
+				this,
+				SLOT(processNewImageData(representation::t,SharedMultiImgPtr)));
 		connect(p, SIGNAL(dataRangeUpdate(representation::t,multi_img::Range)),
-				this, SIGNAL(observedDataRangeUdpate(representation::t,multi_img::Range)));
+				this,
+				SIGNAL(observedDataRangeUdpate(representation::t,
+											   multi_img::Range)));
 	}
 }
 
@@ -142,6 +146,9 @@ void ImageModel::spawn(representation::t type, const cv::Rect &newROI, int bands
 
 	// shortcuts for convenience
 	SharedMultiImgPtr image = map[representation::IMG]->image;
+#ifdef WITH_IMGNORM
+	SharedMultiImgPtr imagenorm = map[representation::NORM]->image;
+#endif /* WITH_IMGPCA */
 	SharedMultiImgPtr gradient = map[representation::GRAD]->image;
 // for macro defs see representation.h
 #ifdef WITH_IMGPCA
@@ -177,6 +184,14 @@ void ImageModel::spawn(representation::t type, const cv::Rect &newROI, int bands
 			scoped_image, image, bands));
 		queue.push(taskRescale);
 	}
+
+#ifdef WITH_IMGNORM
+	if (type == representation::NORM) {
+		BackgroundTaskPtr taskNorm(new NormL2Tbb(
+			image, imagenorm));
+		queue.push(taskNorm);
+	}
+#endif
 
 	if (type == representation::GRAD) {
 		if (HAVE_CUDA_GPU  && USE_CUDA_GRADIENT) {
@@ -275,12 +290,11 @@ void ImageModel::computeBand(representation::t type, int dim)
 	}
 
 	QString desc;
-	const char * const str[] =
-		{ "Image", "Gradient", "Image PCA", "Gradient PCA" };
+	const char * const typestr = representation::str(type);
 	if (banddesc.empty())
-		desc = QString("%1 Band #%2").arg(str[type]).arg(dim+1);
+		desc = QString("%1 Band #%2").arg(typestr).arg(dim+1);
 	else
-		desc = QString("%1 Band %2").arg(str[type]).arg(banddesc.c_str());
+		desc = QString("%1 Band %2").arg(typestr).arg(banddesc.c_str());
 
 	emit bandUpdate(type, dim, m[dim], desc);
 }

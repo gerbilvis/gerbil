@@ -21,11 +21,6 @@ ClusteringModel::~ClusteringModel()
 	}
 }
 
-void ClusteringModel::setMultiImage(SharedMultiImgPtr image)
-{
-	this->image = image;
-}
-
 void ClusteringModel::startSegmentation(
 		shell::Command* cmd, int numbands, bool gradient)
 {
@@ -86,12 +81,23 @@ void ClusteringModel::cancel()
 	cmdr->terminate();
 }
 
-void ClusteringModel::processImageUpdate(representation::t type, SharedMultiImgPtr image)
+void ClusteringModel::processImageUpdate(representation::t type,
+										 SharedMultiImgPtr image)
 {
-	//GGDBGM("type " << type << endl);
-	if(representation::IMG == type && NULL != cmdr) {
+	// check if the change affects us
+#ifdef WITH_IMGNORM // HACK: we prefer the normed version if we have it.
+	if (type != representation::NORM)
+#else
+	if (type != representation::IMG)
+#endif
+		return;
+
+	// set the image (important for the initial update)
+	this->image = image;
+
+	// Get rid of currently running CommandRunner.
+	if (cmdr) {
 		//GGDBGM("canceling running segmentation"<< endl);
-		// Get rid of currently running CommandRunner.
 		silenceCommandRunner();
 		// reset GUI
 		emit progressChanged(100);

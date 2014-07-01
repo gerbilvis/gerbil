@@ -105,6 +105,7 @@ public:
 
 	/** @return dimensions of the image as a rectangle */
 	cv::Rect loadImage(const std::string &filename);
+
 	/** @arg bands number of bands needed (only effective for IMG type) */
 	void spawn(representation::t type, const cv::Rect& roi, int bands = -1);
 
@@ -166,12 +167,14 @@ signals:
 protected slots:
 	// payload background task has finished
 	void processNewImageData(representation::t type, SharedMultiImgPtr image);
+
 private:
 	// helper to spawn()
 	bool checkProfitable(const cv::Rect& oldROI, const cv::Rect& newROI);
 
 	// FIXME rename
 	SharedMultiImgPtr image_lim; // big one
+
 	// small ones (ROI) and their companion data:
 	QMap<representation::t, payload*> map;
 

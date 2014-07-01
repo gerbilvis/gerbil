@@ -62,7 +62,6 @@ Controller::Controller(const std::string &filename, bool limited_mode,
 	initGraphSegmentation(); // depends on ImageModel / initImage()
 #ifdef WITH_SEG_MEANSHIFT
 	cm = new ClusteringModel();
-	cm->setMultiImage(im->getImage(representation::IMG));
 #endif /* WITH_SEG_MEANSHIFT */
 
 	// initialize sub-controllers (after initializing the models...)

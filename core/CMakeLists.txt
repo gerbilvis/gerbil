@@ -28,6 +28,7 @@ vole_compile_library(
 	background_task/tasks/cuda/illuminantcuda
 	background_task/tasks/cuda/normrangecuda
 	background_task/tasks/tbb/gradienttbb
+	background_task/tasks/tbb/norml2tbb
 	background_task/tasks/tbb/clamptbb
 	background_task/tasks/tbb/datarangetbb
 	background_task/tasks/tbb/illuminanttbb

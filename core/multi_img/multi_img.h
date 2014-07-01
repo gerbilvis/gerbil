@@ -33,12 +33,14 @@ class Illuminant;
 // FIXME what a mess
 class Grad;
 class Log;
+class NormL2;
 class Clamp;
 class Illumination;
 class PcaProjection;
 class MultiImg2BandMat;
 class GradientCuda;
 class GradientTbb;
+class NormL2Tbb;
 class ClampTbb;
 class ClampCuda;
 class IlluminantTbb;
@@ -56,12 +58,14 @@ class PcaTbb;
 	friend class Resize; \
 	friend class Grad;\
 	friend class Log;\
+	friend class NormL2;\
 	friend class Clamp;\
 	friend class Illumination;\
 	friend class PcaProjection;\
 	friend class MultiImg2BandMat;\
 	friend class GradientCuda;\
 	friend class GradientTbb;\
+	friend class NormL2Tbb;\
 	friend class ClampTbb;\
 	friend class ClampCuda;\
 	friend class IlluminantTbb;\
@@ -231,10 +235,10 @@ public:
 	*/
 	multi_img(const multi_img &, bool omitCache = false);
 
-	/// copy a spatial region of interest
+	/// reference (!!) a spatial region of interest (with own cache!)
 	multi_img(const multi_img_base &a, const cv::Rect &roi);
 
-	/// copy a subrange of the spectrum (including both ends)
+	/// reference (!!) a band subrange including both ends (with own cache!)
 	multi_img(const multi_img &a, unsigned int start, unsigned int end);
 
 	/// assignment operator
