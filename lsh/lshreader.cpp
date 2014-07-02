@@ -1,5 +1,6 @@
 #include "lshreader.h"
 #include <cmath>
+#include <cstdlib> // for int abs(int)
 #include <algorithm>
 
 LSHReader::LSHReader(const LSH& master)

@@ -51,7 +51,7 @@ private:
 
 	protected:
 		virtual QVariant itemChange(GraphicsItemChange change,
-									const QVariant &value);
+		                            const QVariant &value);
 
 	private:
 		QPointF restrictPosition(const QPointF& newPos);
@@ -63,16 +63,17 @@ private:
 public:
 	struct Resizer
 	{
+		virtual ~Resizer() {}
 		virtual void operator()(QGraphicsItem* item,
-								const QRectF& rect) = 0;
+		                        const QRectF& rect) = 0;
 	};
 
 	SizeGripItem(Resizer* resizer = 0, QGraphicsItem* parent = 0);
 	virtual ~SizeGripItem();
 	virtual QRectF boundingRect() const;
 	virtual void paint(QPainter* painter,
-					   const QStyleOptionGraphicsItem* option,
-					   QWidget* widget = 0);
+	                   const QStyleOptionGraphicsItem* option,
+	                   QWidget* widget = 0);
 	void setTopLeft(const QPointF& pos);
 	void setTop(qreal y);
 	void setTopRight(const QPointF& pos);

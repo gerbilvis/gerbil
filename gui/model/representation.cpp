@@ -1,4 +1,5 @@
 #include "representation.h"
+#include <ostream>
 
 std::ostream &operator<<(std::ostream& os, const representation::t& r)
 {

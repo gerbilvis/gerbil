@@ -111,7 +111,7 @@ void ImgInput::cropSpectrum(multi_img::ptr &img_ptr)
 		int bandhigh = (config.bandhigh == 0) ? (img_ptr->size() - 1) : config.bandhigh;
 
 		// correct input?
-		if (config.bandlow > bandhigh || bandhigh > img_ptr->size() - 1)
+		if (config.bandlow > bandhigh || bandhigh > (int)img_ptr->size() - 1)
 		{
 			std::cerr << "config.bandlow > config.bandhigh || bandhigh > dataset->GetRasterCount() - 1" << std::endl;
 			img_ptr = multi_img::ptr(new multi_img());
