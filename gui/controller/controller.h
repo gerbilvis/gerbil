@@ -86,6 +86,10 @@ signals:
 							 const seg_graphs::GraphSegConfig &config,
 							 bool resetLabel);
 
+	/** Let GUI elements know we have requested a FalseColor update
+	 * for coloringType. */
+	void pendingFalseColorUpdate(FalseColoring::Type coloringType);
+
 public slots:
 	// for debugging, activate by connecting it in main.cpp
 	void focusChange(QWidget * old, QWidget * now);

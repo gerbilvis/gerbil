@@ -73,8 +73,10 @@ void FalseColorModel::processImageUpdate(representation::t type,
 	for (payloadIt = payloads.begin(); payloadIt != payloads.end(); payloadIt++) {
 		FalseColoring::Type coloringType = payloadIt.key();
 		if(FalseColoring::isBasedOn(coloringType, type)) {
-			//GGDBGM("canceling " << coloringType << endl);
-			cancelComputation(coloringType);
+			GGDBGM("abandoning payload " << coloringType << endl);
+			abandonPayload(coloringType);
+			// remeber to restart the calculation
+			pendingRequests[coloringType] = true;
 		}
 	}
 
@@ -83,14 +85,14 @@ void FalseColorModel::processImageUpdate(representation::t type,
 	for (it=cache.begin(); it != cache.end(); it++) {
 		FalseColoring::Type coloringType = it.key();
 		if(FalseColoring::isBasedOn(coloringType, type)) {
-			//GGDBGM("invalidate cache for " << type << endl);
+			GGDBGM("invalidate cache for " << type << endl);
 			it.value().invalidate();
 		}
 	}
 
 	foreach(FalseColoring::Type c, FalseColoring::all()) {
 		if (FalseColoring::isBasedOn(c, type) && pendingRequests[c]) {
-			//GGDBGM("processing pending request for " << c << endl);
+			GGDBGM("processing pending request for " << c << endl);
 			pendingRequests[c] = false;
 			computeColoring(c);
 		}
@@ -101,18 +103,17 @@ void FalseColorModel::processImageUpdate(representation::t type,
 
 void FalseColorModel::requestColoring(FalseColoring::Type coloringType, bool recalc)
 {
-	//GGDBG_CALL();
+	GGDBG_CALL();
 
 	// check if we are already initialized and should deal with that request
 	foreach(representation::t repr, representation::all()) {
 		if (FalseColoring::isBasedOn(coloringType, repr) && !representationInit[repr]) {
-			//GGDBGM("request for " << coloringType <<
-			//	   ": representation " << repr << " not initialized, deferring request"<< endl);
+			GGDBGM("request for " << coloringType <<
+				   ": representation " << repr << " not initialized, deferring request"<< endl);
 			pendingRequests[coloringType] = true;
 			return;
 		}
 	}
-
 
 	FalseColoringCache::iterator cacheIt = cache.find(coloringType);
 	if(cacheIt != cache.end() && cacheIt->valid()) {
@@ -121,16 +122,17 @@ void FalseColorModel::requestColoring(FalseColoring::Type coloringType, bool rec
 				// are deterministic -> no need to recompute
 				!FalseColoring::isDeterministic(coloringType))
 		{
-			//GGDBGM("have valid cached image, but re-calc requested for "
-			//	   << coloringType << ", computing" << endl);
+			GGDBGM("have valid cached image, but re-calc requested for "
+				   << coloringType << ", computing" << endl);
+			cache[coloringType].invalidate();
 			computeColoring(coloringType);
 		} else {
-			//GGDBGM("have valid cached image for " << coloringType
-			//	   << ", emitting coloringComputed" << endl);
+			GGDBGM("have valid cached image for " << coloringType
+				   << ", emitting coloringComputed" << endl);
 			emit coloringComputed(coloringType, cacheIt->pixmap());
 		}
 	} else {
-		//GGDBGM("invalid cache for "<< coloringType << ", computing." << endl);
+		GGDBGM("invalid cache for "<< coloringType << ", computing." << endl);
 		computeColoring(coloringType);
 	}
 }
@@ -157,6 +159,19 @@ void FalseColorModel::computeColoring(FalseColoring::Type coloringType)
 	payload->run();
 }
 
+void FalseColorModel::abandonPayload(FalseColoring::Type coloringType) {
+	FalseColorModelPayload *payload = NULL;
+	FalseColorModelPayloadMap::iterator payloadIt = payloads.find(coloringType);
+	if(payloadIt != payloads.end()) {
+		payload = *payloadIt;
+		assert(payload);
+		disconnect(payload, 0, this, 0);
+		payload->cancel();
+		payload->deleteLater();
+		payloads.erase(payloadIt);
+	}
+}
+
 void FalseColorModel::resetCache()
 {
 	foreach (FalseColoring::Type coloringType, FalseColoring::all()) {
@@ -166,7 +181,8 @@ void FalseColorModel::resetCache()
 
 void FalseColorModel::cancelComputation(FalseColoring::Type coloringType)
 {
-	//GGDBGM(coloringType<<endl);
+	GGDBGM(coloringType<<endl);
+	//cache[coloringType].invalidate();
 	FalseColorModelPayload *payload = NULL;
 	FalseColorModelPayloadMap::iterator payloadIt = payloads.find(coloringType);
 	if(payloadIt != payloads.end()) {

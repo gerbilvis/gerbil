@@ -80,6 +80,10 @@ private:
 	 * no effect.
 	 */
 	void computeColoring(FalseColoring::Type coloringType);
+
+	/** Disconnect all signals from the payload object and set the cancel flag. */
+	void abandonPayload(FalseColoring::Type coloringType);
+
 	/** Allocate and reset all cache entries. */
     void resetCache();
 

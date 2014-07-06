@@ -43,6 +43,12 @@ public slots:
 	void processCalculationProgressChanged(FalseColoring::Type coloringType, int percent);
 	void processColoringComputed(FalseColoring::Type coloringType, QPixmap p);
 	void processComputationCancelled(FalseColoring::Type coloringType);
+
+	/** Inform the FalseColorDock an update of the FalseColoring coloringType is pending.
+	 *
+	 * This triggers the display of a progress bar.
+	 */
+	void setCalculationInProgress(FalseColoring::Type coloringType);
 protected slots:
 	void processSelectedColoring(); // the selection in the combo box changed
 	void processApplyClicked();

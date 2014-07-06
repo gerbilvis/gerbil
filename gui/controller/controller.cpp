@@ -475,6 +475,7 @@ void Controller::processImageUpdate(representation::t repr)
 	}
 	foreach (FalseColoringSet::value_type const& coloring, fcUpdates) {
 		//GGDBGM("requesting from fm " << coloring << endl);
+		emit pendingFalseColorUpdate(coloring);
 		fm->requestColoring(coloring);
 	}
 

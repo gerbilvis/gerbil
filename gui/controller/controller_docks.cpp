@@ -166,6 +166,9 @@ void Controller::setupDocks()
 	connect(falseColorModel(), SIGNAL(computationCancelled(FalseColoring::Type)),
 			falseColorDock, SLOT(processComputationCancelled(FalseColoring::Type)));
 
+	connect(this, SIGNAL(pendingFalseColorUpdate(FalseColoring::Type)),
+			falseColorDock, SLOT(setCalculationInProgress(FalseColoring::Type)));
+
 	// needed for ROI dock, clustering dock
 	int nbands = imageModel()->getNumBandsFull();
 

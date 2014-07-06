@@ -19,7 +19,8 @@ std::ostream &operator<<(std::ostream& os, const FalseColoringState::Type& state
 		"UNKNOWN",
 		"FINISHED",
 		"CALCULATING",
-		"ABORTING"};
+		"ABORTING"
+	};
 	os << str[state];
 	return os;
 }
@@ -50,8 +51,8 @@ FalseColorDock::FalseColorDock(QWidget *parent)
 
 void FalseColorDock::processColoringComputed(FalseColoring::Type coloringType, QPixmap p)
 {
-	//GGDBGM("enterState():"<<endl);
-	//GGDBGM("receiving coloring " << coloringType << endl);
+	GGDBGM("enterState():"<<endl);
+	GGDBGM("receiving coloring " << coloringType << endl);
 	enterState(coloringType, FalseColoringState::FINISHED);
 	coloringUpToDate[coloringType] = true;
 	updateTheButton();
@@ -72,21 +73,30 @@ void FalseColorDock::processComputationCancelled(FalseColoring::Type coloringTyp
 {
 	if(coloringState[coloringType] == FalseColoringState::ABORTING) {
 		coloringProgress[coloringType] = 0;
-		//GGDBGM("enterState():"<<endl);
+		GGDBGM("enterState():"<<endl);
 		enterState(coloringType, FalseColoringState::UNKNOWN);
 		updateTheButton();
 		updateProgressBar();
 	} else if(coloringState[coloringType] == FalseColoringState::CALCULATING) {
 		enterState(coloringType, FalseColoringState::UNKNOWN);
-		//GGDBGM("restarting cancelled computation"<<endl);
+		GGDBGM("restarting cancelled computation"<<endl);
 		requestColoring(coloringType);
+	}
+}
+
+void FalseColorDock::setCalculationInProgress(FalseColoring::Type coloringType)
+{
+	if (selectedColoring() == coloringType) {
+		enterState(selectedColoring(), FalseColoringState::CALCULATING);
+		updateTheButton();
+		updateProgressBar();
 	}
 }
 
 void FalseColorDock::processSelectedColoring()
 {
 	emit unsubscribeFalseColoring(this, lastShown);
-	//GGDBGM( "requesting false color image " << selectedColoring() << endl);
+	GGDBGM( "requesting false color image " << selectedColoring() << endl);
 	requestColoring(selectedColoring());
 	updateTheButton();
 	updateProgressBar();
@@ -95,20 +105,31 @@ void FalseColorDock::processSelectedColoring()
 void FalseColorDock::processApplyClicked()
 {
 	if(coloringState[selectedColoring()] == FalseColoringState::CALCULATING) {
-		//GGDBGM("enterState():"<<endl);
+		GGDBGM("enterState():"<<endl);
 		enterState(selectedColoring(), FalseColoringState::ABORTING);
-		//emit cancelComputationRequested(selectedColoring());
-		emit unsubscribeFalseColoring(this, selectedColoring());
 
-		// go back to last shown coloring
-		if(coloringUpToDate[lastShown]) {
-			uisel->sourceBox->setCurrentIndex(int(lastShown));
-			requestColoring(lastShown);
-		} else { // or fall back to CMF, e.g. after ROI change
-			uisel->sourceBox->setCurrentIndex(FalseColoring::CMF);
-			requestColoring(FalseColoring::CMF);
+		if (lastShown == selectedColoring()) {
+			// Cancel after re-calc
+			enterState(selectedColoring(), FalseColoringState::UNKNOWN);
+			emit unsubscribeFalseColoring(this, selectedColoring());
+			updateProgressBar();
+			updateTheButton();
+		} else {
+			//emit cancelComputationRequested(selectedColoring());
+			emit unsubscribeFalseColoring(this, selectedColoring());
+
+			// go back to last shown coloring
+			if(coloringUpToDate[lastShown]) {
+				uisel->sourceBox->setCurrentIndex(int(lastShown));
+				requestColoring(lastShown);
+			} else { // or fall back to CMF, e.g. after ROI change
+				uisel->sourceBox->setCurrentIndex(FalseColoring::CMF);
+				requestColoring(FalseColoring::CMF);
+			}
 		}
-	} else if(coloringState[selectedColoring()] == FalseColoringState::FINISHED) {
+	} else if( coloringState[selectedColoring()] == FalseColoringState::FINISHED ||
+			  coloringState[selectedColoring()] == FalseColoringState::UNKNOWN )
+	{
 		requestColoring(selectedColoring(), /* recalc */ true);
 
 	}
@@ -173,17 +194,21 @@ FalseColoring::Type FalseColorDock::selectedColoring()
 
 void FalseColorDock::requestColoring(FalseColoring::Type coloringType, bool recalc)
 {
-	if(coloringState[coloringType] != FalseColoringState::FINISHED || recalc) {
-			//GGDBGM("enterState():"<<endl);
+	if (coloringState[coloringType] != FalseColoringState::FINISHED || recalc) {
+			GGDBGM("enterState():"<<endl);
 			enterState(coloringType, FalseColoringState::CALCULATING);
 			updateTheButton();
 	}
 	if (recalc) {
+		GGDBGM("recalc " << coloringType << endl);
+		emit subscribeFalseColoring(this, coloringType);
 		emit falseColoringRecalcRequested(coloringType);
 	} else {
+		GGDBGM("subscribe " << coloringType << endl);
 		emit subscribeFalseColoring(this, coloringType);
 	}
-
+	updateProgressBar();
+	updateTheButton();
 }
 
 void FalseColorDock::updateProgressBar()
@@ -229,7 +254,10 @@ void FalseColorDock::updateTheButton()
 		uisel->theButton->setVisible(true);
 		break;
 	case FalseColoringState::UNKNOWN:
-		// do nothing
+		uisel->theButton->setIcon(QIcon::fromTheme("view-refresh"));
+		uisel->theButton->setText("Calculate");
+		uisel->theButton->setToolTip("Start calculation");
+		uisel->theButton->setVisible(true);
 		break;
 	default:
 		throw std::runtime_error("FalseColorDock::updateTheButton(): bad coloringState");
@@ -239,7 +267,7 @@ void FalseColorDock::updateTheButton()
 
 void FalseColorDock::enterState(FalseColoring::Type coloringType, FalseColoringState::Type state)
 {
-	//GGDBGM(coloringType << " entering state " << state << endl);
+	GGDBGM(coloringType << " entering state " << state << endl);
 	coloringState[coloringType] = state;
 }
 
