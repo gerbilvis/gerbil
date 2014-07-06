@@ -37,9 +37,6 @@ void ggdb_print_method(const char *clsname, const char *funname)
 	std::cerr << ggdb_method_string(clsname, funname);
 }
 
-// Gerbil Gui DeBuG
-#ifdef GGDBG
-
 GGDBGEnterLeavePrint::GGDBGEnterLeavePrint(std::string method_string)
 	:method_string(method_string)
 {
@@ -52,5 +49,3 @@ GGDBGEnterLeavePrint::~GGDBGEnterLeavePrint()
 	std::cerr << method_string << " leave" << std::endl;
 	std::cerr.flush();
 }
-
-#endif /* GGDBG */

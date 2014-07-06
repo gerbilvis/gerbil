@@ -14,6 +14,7 @@
 #include "falsecolormodel.h"
 #include "falsecolor/falsecolormodelpayload.h"
 
+//#define GGDBG_MODULE
 #include <gerbil_gui_debug.h>
 
 QList<FalseColoring::Type> FalseColoring::allList = QList<FalseColoring::Type>()

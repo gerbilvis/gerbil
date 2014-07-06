@@ -19,11 +19,13 @@ double max(double a, double b) {
 }
 
 // for DEBUG
+#ifdef GGDBG_MODULE
 std::ostream &operator<<(std::ostream& os, const multi_img::Range& r)
 {
 	os << boost::format("[%1%,%2%]") % r.min % r.max;
 	return os;
 }
+#endif // GGDBG
 
 NormDock::NormDock(QWidget *parent) :
 	QDockWidget(parent)

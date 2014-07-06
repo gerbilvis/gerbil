@@ -19,11 +19,13 @@
 #include <cstdlib> // for exit()
 
 // for DEBUG
+#ifdef GGDBG_MODULE
 std::ostream &operator<<(std::ostream& os, const cv::Rect& r)
 {
 	os << boost::format("%1%x%2%+%3%+%4%") % r.x % r.y % r.width % r.height;
 	return os;
 }
+#endif // GGDBG
 
 Controller::Controller(const std::string &filename, bool limited_mode,
 	const QString &labelfile)

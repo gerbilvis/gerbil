@@ -1,12 +1,47 @@
+/*****************************************************************************
+ * Gerbil GUI debug macros.
+ *
+ * This file provides simple debug macros for the gerbil GUI. String
+ * formatting depends on boost::format, included in this file.
+ * These macros generate code depending on two macro definitions:
+ *
+ *  GGDBG: If not defined no debug code is generated. This is currently
+ *  defined in this file and thus has no effect.
+ *  GGDBG_MODULE: Same as above, but needs to be defined prior to including
+ *  this file. Thus allows enabling/disabling debug per compilation unit.
+ *
+ *  Class and function name demangling
+ *  ----------------------------------
+ *
+ *  The defined macros try to demangle class and function names. This is
+ *  currently implemented for GCC.
+ *
+ *
+ * Macros
+ * -------
+ *
+ * GGDBG_CALL()		Just print the class and function name, i.e.
+ *                  Class::function()
+ * GGDBGM(expr)     Forward expr to std::cerr like
+ *                  std::cerr << expr;
+ *                  prepended with the current class and function name.
+ *                  Namespace std is imported by default for convenience. I.e.
+ *                  it is possible to write
+ *					GGDBGM("hello world" << endl);
+ * GGDBG_ENTER_LEAVE()
+ *                  prints "enter" and "leave" prepended by class and function
+ *                  name when the macro is called (enter) and when the
+ *                  function returns (leave). The latter is accomplished using
+ *                  a RAII object which guaranteed to be destructed by the
+ *                  compiler.
+ *
+ */
 #ifndef GERBIL_GUI_DEBUG_H
 #define GERBIL_GUI_DEBUG_H
 
 #include <string>
 
-/*! \brief Append <class>::<method>() to cerr (no return type, no parameters)
- *
- * Tested on gcc 4.4.5 x64 (debian)
- */
+// Helper functions used by GGDBG_PRINT_METHOD
 void ggdb_print_method(const char *clsname, const char *funname);
 std::string ggdb_method_string(const char *clsname, const char *funname);
 
@@ -14,7 +49,7 @@ std::string ggdb_method_string(const char *clsname, const char *funname);
 #define GGDBG
 
 // Gerbil Gui DeBuG
-#ifdef GGDBG
+#if defined(GGDBG) and defined(GGDBG_MODULE)
 
 #include <boost/format.hpp>
 
@@ -54,6 +89,21 @@ std::string ggdb_method_string(const char *clsname, const char *funname);
 		std::cerr  << " type=" << getType() << " " << expr; \
 		std::cerr.flush(); \
 	}
+
+#define GGDBG_ENTER_LEAVE() \
+	GGDBGEnterLeavePrint _ggdbg_enterLeaveObj(ggdb_method_string(typeid(this).name(), __func__))
+
+#else /* GGDBG */
+
+#define GGDBG_PRINT_METHOD() do {} while (false)
+#define GGDBG_CALL()         do {} while (false)
+#define GGDBG_ENTER_LEAVE()  do {} while (false)
+#define GGDBGM(expr)         do {} while (false)
+#define GGDBGP(expr)         do {} while (false)
+#define GGDBGM_VT(expr)      do {} while (false)
+
+#endif /* GGDBG */
+
 class GGDBGEnterLeavePrint {
 	std::string method_string;
 public:
@@ -61,19 +111,5 @@ public:
 	~GGDBGEnterLeavePrint();
 };
 
-#define GGDBG_ENTER_LEAVE() \
-	GGDBGEnterLeavePrint _ggdbg_enterLeaveObj(ggdb_method_string(typeid(this).name(), __func__))
-
-#else /* GGDBG */
-
-#define GGDBG_PRINT_METHOD()
-#define GGDBG_CALL()
-#define GGDBG_ENTER_LEAVE()
-#define GGDBGM(expr)
-
-class GGDBGLeavePrint {
-	// does nothing
-};
-#endif /* GGDBG */
 
 #endif // GERBIL_GUI_DEBUG_H
