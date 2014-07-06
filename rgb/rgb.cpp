@@ -80,9 +80,9 @@ std::map<std::string, boost::any> RGB::execute(
 	cv::Mat3f bgr = execute(*srcimg, po);
 	delete srcimg;
 
-	if (bgr.empty())
-		assert(false);
-
+	if (bgr.empty()) {
+		std::cerr << "RGB::execute(): empty result";
+	}
 	std::map<std::string, boost::any> output;
 	output["multi_img"] = (cv::Mat3f)(bgr*255.0f);
 	return output;

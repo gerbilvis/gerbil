@@ -54,6 +54,15 @@ Controller::Controller(const std::string &filename, bool limited_mode,
 	initImage();
 	fm = new FalseColorModel();
 	initFalseColor(); // depends on ImageModel / initImage()
+
+	// The order of connection is crucial for fm and Controller.
+	// fm needs to get the signal first. Otherwise it will
+	// hand out invalid cached data.
+	connect(im, SIGNAL(imageUpdate(representation::t,SharedMultiImgPtr)),
+			fm, SLOT(processImageUpdate(representation::t,SharedMultiImgPtr)));
+	connect(im, SIGNAL(imageUpdate(representation::t,SharedMultiImgPtr)),
+			this, SLOT(processImageUpdate(representation::t)));
+
 	lm = new LabelingModel();
 	initLabeling(dimensions);
 	illumm = new IllumModel(&queue);
@@ -149,8 +158,7 @@ Controller::~Controller()
 // connect all signals between model and other parties
 void Controller::initImage()
 {
-	connect(im, SIGNAL(imageUpdate(representation::t,SharedMultiImgPtr)),
-			this, SLOT(processImageUpdate(representation::t)));
+   // nothing
 }
 
 // depends on ImageModel
@@ -158,9 +166,6 @@ void Controller::initFalseColor()
 {
 	fm->setMultiImg(representation::IMG, im->getImage(representation::IMG));
 	fm->setMultiImg(representation::GRAD, im->getImage(representation::GRAD));
-
-	connect(im, SIGNAL(imageUpdate(representation::t,SharedMultiImgPtr)),
-			fm, SLOT(processImageUpdate(representation::t,SharedMultiImgPtr)));
 }
 
 void Controller::initIlluminant()

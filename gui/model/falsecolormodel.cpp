@@ -83,6 +83,7 @@ void FalseColorModel::processImageUpdate(representation::t type,
 	for (it=cache.begin(); it != cache.end(); it++) {
 		FalseColoring::Type coloringType = it.key();
 		if(FalseColoring::isBasedOn(coloringType, type)) {
+			//GGDBGM("invalidate cache for " << type << endl);
 			it.value().invalidate();
 		}
 	}

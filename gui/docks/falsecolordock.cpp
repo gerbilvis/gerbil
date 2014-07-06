@@ -51,11 +51,13 @@ FalseColorDock::FalseColorDock(QWidget *parent)
 void FalseColorDock::processColoringComputed(FalseColoring::Type coloringType, QPixmap p)
 {
 	//GGDBGM("enterState():"<<endl);
+	//GGDBGM("receiving coloring " << coloringType << endl);
 	enterState(coloringType, FalseColoringState::FINISHED);
 	coloringUpToDate[coloringType] = true;
 	updateTheButton();
 	updateProgressBar();
 	if (coloringType == selectedColoring()) {
+		//GGDBGM("updating " << coloringType << endl);
 		view->setEnabled(true);
 		scene->setPixmap(p);
 		view->update();
@@ -226,8 +228,11 @@ void FalseColorDock::updateTheButton()
 	case FalseColoringState::ABORTING:
 		uisel->theButton->setVisible(true);
 		break;
+	case FalseColoringState::UNKNOWN:
+		// do nothing
+		break;
 	default:
-		assert(false);
+		throw std::runtime_error("FalseColorDock::updateTheButton(): bad coloringState");
 		break;
 	}
 }
