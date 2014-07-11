@@ -82,44 +82,40 @@ void DistViewGUI::initTop()
 	setTitle(type);
 }
 
-void DistViewGUI::initSignals(DistViewController *chief)
+void DistViewGUI::initSignals(DistViewController *dvctrl)
 {
 	// signals from controller
-	connect(chief, SIGNAL(pixelOverlayInvalid()),
+	connect(dvctrl, SIGNAL(pixelOverlayInvalid()),
 			 vp, SLOT(removePixelOverlay()));
-	connect(chief, SIGNAL(toggleLabeled(bool)),
+	connect(dvctrl, SIGNAL(toggleLabeled(bool)),
 			vp, SLOT(toggleLabeled(bool)));
-	connect(chief, SIGNAL(toggleUnlabeled(bool)),
+	connect(dvctrl, SIGNAL(toggleUnlabeled(bool)),
 			vp, SLOT(toggleUnlabeled(bool)));
 
-	connect(chief, SIGNAL(singleLabelSelected(int)),
+	connect(dvctrl, SIGNAL(singleLabelSelected(int)),
 			vp, SLOT(highlightSingleLabel(int)));
 
 	// signals to controller
 	connect(this, SIGNAL(requestBinCount(representation::t, int)),
-			chief, SLOT(changeBinCount(representation::t, int)));
+			dvctrl, SLOT(changeBinCount(representation::t, int)));
 
-	/* propagate folding signal from our dist view to ALL of them,
-	 * including us (back-connection) */
-	connect(this, SIGNAL(folding()),
-			chief, SIGNAL(folding()));
 
 	// viewport action
 	connect(vp, SIGNAL(activated(representation::t)),
-			chief, SLOT(setActiveViewer(representation::t)));
+			dvctrl, SLOT(setActiveViewer(representation::t)));
 	connect(vp, SIGNAL(activated(representation::t)),
 			this, SIGNAL(activated()));
 	connect(vp, SIGNAL(bandSelected(int)),
-			chief, SLOT(propagateBandSelection(int)));
+			dvctrl, SLOT(propagateBandSelection(int)));
 	connect(vp, SIGNAL(requestOverlay(int,int)),
-			chief, SLOT(drawOverlay(int,int)));
+			dvctrl, SLOT(drawOverlay(int,int)));
 	connect(vp, SIGNAL(requestOverlay(std::vector<std::pair<int,int> >,int)),
-			chief, SLOT(drawOverlay(std::vector<std::pair<int,int> >,int)));
+			dvctrl, SLOT(drawOverlay(std::vector<std::pair<int,int> >,int)));
 
 	connect(vp, SIGNAL(addSelectionRequested()),
-			chief, SLOT(addHighlightToLabel()));
+			dvctrl, SLOT(addHighlightToLabel()));
 	connect(vp, SIGNAL(remSelectionRequested()),
-			chief, SLOT(remHighlightFromLabel()));
+			dvctrl, SLOT(remHighlightFromLabel()));
 
 
 	// illumination correction
@@ -139,8 +135,6 @@ void DistViewGUI::setEnabled(bool enabled)
 
 void DistViewGUI::toggleFold()
 {
-	emit folding();
-
 	if (!ui->gv->isHidden()) {
 		/** HIDE **/
 

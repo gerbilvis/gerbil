@@ -23,7 +23,7 @@ class DistViewController : public QObject
 	};
 
 public:
-	explicit DistViewController(Controller *chief,
+	explicit DistViewController(Controller *ctrl,
 								BackgroundTaskQueue *taskQueue);
 	void init();
 
@@ -74,9 +74,6 @@ signals:
 	void toggleSingleLabel(bool toggle);
 	void singleLabelSelected(int);
 
-	void setViewportActive(int);
-	void folding();
-
 	void viewportAddSelection();
 	void viewportRemSelection();
 
@@ -102,7 +99,7 @@ signals:
 protected:
 	QMap<representation::t, payload*> map;
 	representation::t activeView;
-	Controller *chief;
+	Controller *ctrl;
 
 	// needed for add/rem to/from label functionality
 	int currentLabel;

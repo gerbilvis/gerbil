@@ -14,7 +14,7 @@ class DistViewGUI : public QObject
 	Q_OBJECT
 public:
 	explicit DistViewGUI(representation::t type);
-	void initSignals(DistViewController *chief);
+	void initSignals(DistViewController *dvctrl);
 
 	QWidget* getFrame() { return frame; }
 
@@ -54,7 +54,6 @@ public slots:
 signals:
 	// from GUI elements to controller
 	void activated();
-	void folding();
 	void bandSelected(int dim);
 	void requestOverlay(int dim, int bin);
 	void requestOverlay(const std::vector<std::pair<int, int> >& limiters,

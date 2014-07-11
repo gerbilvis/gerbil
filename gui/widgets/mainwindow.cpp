@@ -49,7 +49,7 @@ void MainWindow::initUI(std::string filename)
 	setWindowTitle(QString("Gerbil - %1").arg(fi.completeBaseName()));
 }
 
-void MainWindow::initSignals(Controller *chief, DistViewController *chief2)
+void MainWindow::initSignals(Controller *ctrl, DistViewController *dvctrl)
 {
 	/* slots & signals: GUI only */
 	connect(docksButton, SIGNAL(clicked()),
@@ -68,20 +68,20 @@ void MainWindow::initSignals(Controller *chief, DistViewController *chief2)
 			singleButton, SLOT(setDisabled(bool)));
 
 	connect(ignoreButton, SIGNAL(toggled(bool)),
-			chief, SIGNAL(toggleIgnoreLabels(bool)));
+			ctrl, SIGNAL(toggleIgnoreLabels(bool)));
 	connect(singleButton, SIGNAL(toggled(bool)),
-			chief, SIGNAL(toggleSingleLabel(bool)));
+			ctrl, SIGNAL(toggleSingleLabel(bool)));
 
 	// label manipulation from current dist_view
 	connect(addButton, SIGNAL(clicked()),
-			chief2, SLOT(addHighlightToLabel()));
+			dvctrl, SLOT(addHighlightToLabel()));
 	connect(remButton, SIGNAL(clicked()),
-			chief2, SLOT(remHighlightFromLabel()));
+			dvctrl, SLOT(remHighlightFromLabel()));
 
 	connect(markButton, SIGNAL(toggled(bool)),
-			chief2, SIGNAL(toggleLabeled(bool)));
+			dvctrl, SIGNAL(toggleLabeled(bool)));
 	connect(nonmarkButton, SIGNAL(toggled(bool)),
-			chief2, SIGNAL(toggleUnlabeled(bool)));
+			dvctrl, SIGNAL(toggleUnlabeled(bool)));
 
 //	connect(chief2, SIGNAL(normTargetChanged(bool)),
 //			this, SLOT(normTargetChanged(bool)));
