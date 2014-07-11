@@ -17,6 +17,9 @@
 #include <opencv2/core/core.hpp>
 #include <iostream>
 
+#define GGDBG_MODULE
+#include <gerbil_gui_debug.h>
+
 DistViewModel::DistViewModel(representation::t type)
 	: type(type), queue(NULL),
 	  ignoreLabels(false),
@@ -289,6 +292,15 @@ void DistViewModel::updateMaskLimiters(
 
 QPolygonF DistViewModel::getPixelOverlay(int y, int x)
 {
+	if (!image) {
+		GGDBGM("no image" << endl);
+		return QPolygonF();
+	}
+	if (!context){
+		GGDBGM("no context" << endl);
+		return QPolygonF();
+	}
+
 	SharedDataLock imagelock(image->mutex);
 	SharedDataLock ctxlock(context->mutex);
 	if (y >= (*image)->height ||

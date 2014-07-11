@@ -170,6 +170,12 @@ protected slots:
 	 * cached instance exists (SOM is non-deterministic). */
 	void processRecalcFalseColor(FalseColoring::Type coloringType);
 
+	// representation subscriptions
+
+	void processSubscribeRepresentation(QObject *subscriber, representation::t repr);
+	void processUnsubscribeRepresentation(QObject *subscriber, representation::t repr);
+
+
 protected:
 	// connect models with gui
 	void initImage();
@@ -194,6 +200,12 @@ protected:
 
 	// update ROI, or its contents
 	void updateROI(bool reuse, cv::Rect roi = cv::Rect(), int bands = -1);
+
+	/** Return true if there is a subscriber for the given representation, otherwise false.
+	 *
+	 * This depends on subscriptions for representation and bands.
+	 */
+	bool haveSubscriber(representation::t type);
 
 /// VIEWERS
 
@@ -251,6 +263,14 @@ protected:
 
 	// see subscriptions.h
 	Subscriptions *subs;
+
+	// TODO This is not enough
+	// Set of representation types for which the next ROI update needs to be a
+	// full update.
+	// This is nececcary when a representation was unsubscribed.  In this case
+	// we do not know if an ROI change was missed and we assume image data is
+	// out of sync.
+	std::set<representation::t> initROI;
 
 };
 

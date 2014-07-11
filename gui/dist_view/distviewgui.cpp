@@ -2,6 +2,9 @@
 #include "controller/distviewcontroller.h"
 #include "widgets/autohidewidget.h"
 
+#define GGDBG_MODULE
+#include <gerbil_gui_debug.h>
+
 DistViewGUI::DistViewGUI(representation::t type)
 	: type(type)
 {	
@@ -100,7 +103,7 @@ void DistViewGUI::initSignals(DistViewController *dvctrl)
 			dvctrl, SLOT(changeBinCount(representation::t, int)));
 
 
-	// viewport action
+	//   viewport action
 	connect(vp, SIGNAL(activated(representation::t)),
 			dvctrl, SLOT(setActiveViewer(representation::t)));
 	connect(vp, SIGNAL(activated(representation::t)),
@@ -117,6 +120,12 @@ void DistViewGUI::initSignals(DistViewController *dvctrl)
 	connect(vp, SIGNAL(remSelectionRequested()),
 			dvctrl, SLOT(remHighlightFromLabel()));
 
+	//    subscriptions
+	connect(this, SIGNAL(subscribeRepresentation(QObject*,representation::t)),
+			dvctrl, SIGNAL(subscribeRepresentation(QObject*,representation::t)));
+	connect(this, SIGNAL(unsubscribeRepresentation(QObject*,representation::t)),
+			dvctrl, SIGNAL(unsubscribeRepresentation(QObject*,representation::t)));
+
 
 	// illumination correction
 	connect(this, SIGNAL(newIlluminantCurve(QVector<multi_img::Value>)),
@@ -125,6 +134,13 @@ void DistViewGUI::initSignals(DistViewController *dvctrl)
 			vp, SLOT(setIlluminationCurveShown(bool)));
 	connect(this, SIGNAL(newIlluminantApplied(QVector<multi_img::Value>)),
 			vp, SLOT(setAppliedIlluminant(QVector<multi_img::Value>)));
+}
+
+void DistViewGUI::initSubscriptions()
+{
+	if (!ui->gv->isHidden()) {
+		emit subscribeRepresentation(this, type);
+	}
 }
 
 void DistViewGUI::setEnabled(bool enabled)
@@ -137,6 +153,10 @@ void DistViewGUI::toggleFold()
 {
 	if (!ui->gv->isHidden()) {
 		/** HIDE **/
+		GGDBGM(type << " hiding" << endl);
+
+		// let the controller know we do not need our image representation
+		emit unsubscribeRepresentation(this, type);
 
 		// fold GUI and set size policy for proper arrangement
 		ui->gv->setHidden(true);
@@ -154,6 +174,10 @@ void DistViewGUI::toggleFold()
 		//viewport->vb.destroy();
 	} else {
 		/** SHOW **/
+		GGDBGM(type << " showing" << endl);
+
+		// let the controller know we need our image representation
+		emit subscribeRepresentation(this, type);
 
 		// unfold GUI and set size policy for proper arrangement
         ui->gv->setVisible(true);

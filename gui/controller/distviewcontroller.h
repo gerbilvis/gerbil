@@ -26,6 +26,11 @@ public:
 	explicit DistViewController(Controller *ctrl,
 								BackgroundTaskQueue *taskQueue);
 	void init();
+	/** Initialize subscriptions.
+	 *
+	 * This needs to be called when all subscription signals/slots have been connected.
+	 */
+	void initSubscriptions();
 
 	sets_ptr subImage(representation::t type,
 					  const std::vector<cv::Rect> &regions, cv::Rect roi);
@@ -94,6 +99,10 @@ signals:
 
 	// distviewmodel/viewport recognition of applied illuminant (only IMG)
 	void newIlluminantApplied(QVector<multi_img::Value>);
+
+	// SUBSCRIPTION FORWARDING
+	void subscribeRepresentation(QObject *subscriber, representation::t repr);
+	void unsubscribeRepresentation(QObject *subscriber, representation::t repr);
 
 
 protected:
