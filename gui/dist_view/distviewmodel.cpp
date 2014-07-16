@@ -293,11 +293,11 @@ void DistViewModel::updateMaskLimiters(
 QPolygonF DistViewModel::getPixelOverlay(int y, int x)
 {
 	if (!image) {
-		GGDBGM("no image" << endl);
+		GGDBGM(type << " no image" << endl);
 		return QPolygonF();
 	}
 	if (!context){
-		GGDBGM("no context" << endl);
+		GGDBGM(type << " no context" << endl);
 		return QPolygonF();
 	}
 

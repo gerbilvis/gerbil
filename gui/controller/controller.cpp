@@ -115,8 +115,6 @@ Controller::Controller(const std::string &filename, bool limited_mode,
 		lm->loadLabeling(labelfile);
 	}
 
-	dvc->initSubscriptions();
-
 	/* Initial ROI images spawning. Do it before showing the window but after
 	 * all signals were connected! */
 	//GGDBGM("dimensions " << dimensions << endl);
@@ -129,8 +127,12 @@ Controller::Controller(const std::string &filename, bool limited_mode,
 		roi.y = 0.5*(dimensions.height - roi.height);
 	}
 
-	//GGDBGM("roi " << roi << endl);
+	GGDBGM("init distview subscriptions" << endl);
+	dvc->initSubscriptions();
+
+	GGDBGM("roi " << roi << endl);
 	spawnROI(roi);
+
 
 	GGDBGM("init done, showing mainwindow" << endl);
 
@@ -243,18 +245,22 @@ void Controller::doSpawnROI(bool reuse, const cv::Rect &roi)
 	 * TODO: talk to petr about why we need the ROI state it seems to be only
 	 * in use for this cancel and nothing else?
 	 */
-	if (!queue.isIdle()) {
-		// TODO: this was cancelTasks with current ROI. Now all tasks cancelled.
-		queue.cancelTasks();
-		/* as we cancelled any tasks, we expect the image data not to reflect
-		 * desired configuration, so we will recompute from scratch */
-		reuse = false;
-	}
-	disableGUI(TT_SELECT_ROI);
+//	if (!queue.isIdle()) {
+//		// TODO: this was cancelTasks with current ROI. Now all tasks cancelled.
+//		queue.cancelTasks();
+//		/* as we cancelled any tasks, we expect the image data not to reflect
+//		 * desired configuration, so we will recompute from scratch */
+//		reuse = false;
+//	}
+
+//	disableGUI(TT_SELECT_ROI);
+
+	// FIXME
+	// Get rid of all the mess (disable GUI, cancelTasks, etc.).
 
 	updateROI(reuse, roi);
 
-	enableGUILater();
+//	enableGUILater();
 }
 
 void Controller::updateROI(bool reuse, cv::Rect roi, int bands)

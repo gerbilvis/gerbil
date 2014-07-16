@@ -291,3 +291,8 @@ QIcon DistViewGUI::colorIcon(const QColor &color)
 	pm.fill(color);
 	return QIcon(pm);
 }
+
+bool DistViewGUI::isVisible()
+{
+	return !ui->gv->isHidden();
+}
