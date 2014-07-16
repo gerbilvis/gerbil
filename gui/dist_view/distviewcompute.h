@@ -1,31 +1,5 @@
-#ifndef COMPUTE_H
-#define COMPUTE_H
-
-// Boost multi_array has portability problems (at least for Boost 1.51 and below).
-#ifndef __GNUC__
-#pragma warning(disable:4996) // disable MSVC Checked Iterators warnings
-#endif
-#ifndef Q_MOC_RUN
-#include <boost/multi_array.hpp> // ensure that multi_array is not visible to Qt MOC
-#endif
-
-// TODO: ask petr what this is all about
-inline size_t tbb_size_t_select(unsigned u, unsigned long long ull) {
-	return (sizeof(size_t) == sizeof(u)) ? size_t(u) : size_t(ull);
-}
-static const size_t tbb_hash_multiplier = tbb_size_t_select(2654435769U, 11400714819323198485ULL);
-
-namespace tbb {
-
-template<typename T>
-inline size_t tbb_hasher(const boost::multi_array<T, 1> &a) {
-	size_t h = 0;
-	for (size_t i = 0; i < a.size(); ++i)
-		h = static_cast<size_t>(a[i]) ^ (h * tbb_hash_multiplier);
-	return h;
-}
-
-}
+#ifndef DISTVIEWCOMPUTE_H
+#define DISTVIEWCOMPUTE_H
 
 #include "../model/representation.h"
 
@@ -46,6 +20,7 @@ inline size_t tbb_hasher(const boost::multi_array<T, 1> &a) {
 #include <tbb/parallel_for.h>
 #include <tbb/parallel_reduce.h>
 #include <tbb/tbb_allocator.h>
+#include <boost/functional/hash.hpp>
 
 /* N: number of bands,
  * D: number of bins per band (discretization steps)
@@ -91,18 +66,37 @@ struct BinSet {
 	BinSet(const QColor &c, int size)
 		: label(c), boundary(size, std::make_pair((int)255, (int)0))
 	{ totalweight = 0; }
+
+	// Hash function for tbb::concurrent_hash_map
+	struct vector_char_hash_compare {
+		size_t hash( const  std::vector<unsigned char> & a ) const
+		{
+			// large random init
+			size_t seed = 1878709926690269970;
+			boost::hash_range(seed, a.begin(), a.end());
+			return seed;
+		}
+		// compare vectors by value
+		bool equal( std::vector<unsigned char> const &a,
+					std::vector<unsigned char> const &b ) const
+		{
+			return a == b;
+		}
+	};
+
+
 	/* each BinSet represents a label and has the label color
 	 */
 	QColor label;
-	// FIXME Why boost::multi_array?
 	/* each entry is a N-dimensional vector, discretized by one char per band
 	 * this means that we can have at most D = 256
 	 */
-	typedef boost::multi_array<unsigned char, 1> HashKey;
+	typedef std::vector<unsigned char> HashKey;
 	/* the hash map holds all representative vectors (of size N)
 	 * the hash realizes a sparse histogram
 	 */
-	typedef tbb::concurrent_hash_map<HashKey, Bin> HashMap;
+	typedef tbb::concurrent_hash_map<HashKey, Bin, vector_char_hash_compare>
+			HashMap;
 	HashMap bins;
 	/* to set opacity value we normalize by total weight == sum of bin weights
 	 * this is atomic to allow multi-threaded adding of vectors into the hash
@@ -210,4 +204,4 @@ public:
 	};
 };
 
-#endif // COMPUTE_H
+#endif // DISTVIEWCOMPUTE_H
