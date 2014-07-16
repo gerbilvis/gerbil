@@ -105,13 +105,13 @@ void DistViewController::initSubscriptions()
 	}
 }
 
-void DistViewController::setGUIEnabled(bool enable, TaskType tt)
-{
-	foreach (payload *p, map) {
-		p->gui.setEnabled(enable
-						  || tt == TT_BIN_COUNT || tt == TT_TOGGLE_VIEWER);
-	}
-}
+//void DistViewController::setGUIEnabled(bool enable, TaskType tt)
+//{
+//	foreach (payload *p, map) {
+//		p->gui.setEnabled(enable
+//						  || tt == TT_BIN_COUNT || tt == TT_TOGGLE_VIEWER);
+//	}
+//}
 
 sets_ptr DistViewController::subImage(representation::t type,
 							   const std::vector<cv::Rect> &regions,
@@ -167,11 +167,11 @@ void DistViewController::changeBinCount(representation::t type, int bins)
 	// TODO: might be called on initialization, which might be nasty
 	// TODO: too harsh
 	//queue->cancelTasks();
-	ctrl->disableGUI(TT_BIN_COUNT);
+//	ctrl->disableGUI(TT_BIN_COUNT);
 
 	map[type]->model.updateBinning(bins);
 
-	ctrl->enableGUILater();
+//	ctrl->enableGUILater();
 }
 
 void DistViewController::updateLabels(const cv::Mat1s& labels,
@@ -189,13 +189,13 @@ void DistViewController::updateLabels(const cv::Mat1s& labels,
 	if (labels.empty() && (!colorsChanged))
 		return;
 
-	ctrl->disableGUI();
+//	ctrl->disableGUI();
 
 	foreach (payload *p, map) {
 		p->model.updateLabels(labels, colors);
 	}
 
-	ctrl->enableGUILater();
+//	ctrl->enableGUILater();
 }
 
 void DistViewController::updateLabelsPartially(const cv::Mat1s &labels,
@@ -207,13 +207,13 @@ void DistViewController::updateLabelsPartially(const cv::Mat1s &labels,
 	bool profitable = ((2 * cv::countNonZero(mask)) < mask.total());
 	if (profitable) {
 
-		ctrl->disableGUI();
+//		ctrl->disableGUI();
 
 		foreach (payload *p, map) {
 			p->model.updateLabelsPartially(labels, mask);
 		}
 
-		ctrl->enableGUILater();
+//		ctrl->enableGUILater();
 	} else {
 		// just update the whole thing
 		updateLabels(labels);
@@ -289,13 +289,13 @@ void DistViewController::finishNormRangeGradChange(bool success)
 void DistViewController::toggleIgnoreLabels(bool toggle)
 {
 	// TODO: cancel previous toggleignorelabel tasks here!
-	ctrl->disableGUI(TT_TOGGLE_LABELS);
+//	ctrl->disableGUI(TT_TOGGLE_LABELS);
 
 	foreach (payload *p, map) {
 		p->model.toggleLabels(toggle);
 	}
 
-	ctrl->enableGUILater();
+//	ctrl->enableGUILater();
 }
 
 void DistViewController::addHighlightToLabel()

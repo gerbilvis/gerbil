@@ -185,8 +185,8 @@ void Controller::initIlluminant()
 	/* TODO: models should not request this! the controller of the model has
 	 * to guard its operations!
 	 */
-	connect(illumm, SIGNAL(setGUIEnabledRequested(bool,TaskType)),
-			this, SLOT(setGUIEnabled(bool, TaskType)), Qt::DirectConnection);
+//	connect(illumm, SIGNAL(setGUIEnabledRequested(bool,TaskType)),
+//			this, SLOT(setGUIEnabled(bool, TaskType)), Qt::DirectConnection);
 }
 
 void Controller::initGraphSegmentation()
@@ -197,8 +197,8 @@ void Controller::initGraphSegmentation()
 	connect(gsm, SIGNAL(alterLabelRequested(short,cv::Mat1b,bool)),
 			lm, SLOT(alterLabel(short,cv::Mat1b,bool)));
 
-	connect(gsm, SIGNAL(setGUIEnabledRequested(bool,TaskType)),
-			this, SLOT(setGUIEnabled(bool, TaskType)));
+//	connect(gsm, SIGNAL(setGUIEnabledRequested(bool,TaskType)),
+//			this, SLOT(setGUIEnabled(bool, TaskType)));
 
 	// (gsm seedingDone <-> bandDock seedingDone connection in initDocks)
 }
@@ -228,11 +228,11 @@ void Controller::rescaleSpectrum(int bands)
 {
 	// TODO: this was cancelTasks with current ROI. Now all tasks cancelled.
 	queue.cancelTasks();
-	disableGUI(TT_BAND_COUNT);
+//	disableGUI(TT_BAND_COUNT);
 
 	updateROI(false, cv::Rect(), bands);
 
-	enableGUILater();
+//	enableGUILater();
 }
 
 void Controller::doSpawnROI(bool reuse, const cv::Rect &roi)
@@ -369,48 +369,48 @@ bool Controller::haveSubscriber(representation::t type)
 	return isSubscribed;
 }
 
-void Controller::setGUIEnabled(bool enable, TaskType tt)
-{
-	/** for enable, this just re-enables everything
-	 * for disable, this typically disables everything except the sender, so
-	 * that the user can re-decide on that aspect or sth.
-	 * it is a bit strange
-	 */
-	window->setGUIEnabled(enable, tt);
+//void Controller::setGUIEnabled(bool enable, TaskType tt)
+//{
+//	/** for enable, this just re-enables everything
+//	 * for disable, this typically disables everything except the sender, so
+//	 * that the user can re-decide on that aspect or sth.
+//	 * it is a bit strange
+//	 */
+//	window->setGUIEnabled(enable, tt);
 
-	// tell other controllers
-	dvc->setGUIEnabled(enable, tt);
+//	// tell other controllers
+//	dvc->setGUIEnabled(enable, tt);
 
-/// DOCKS
+///// DOCKS
 
-    setGUIEnabledDocks(enable, tt);
-}
+//    setGUIEnabledDocks(enable, tt);
+//}
 
 
 /** Tasks and queue thread management */
 
-void Controller::enableGUILater()
-{
-    // TODO: old:
-    //	BackgroundTask *t = (withROI ? new BackgroundTask(im->getROI())
-    //								 : new BackgroundTask()
-    BackgroundTask *t = new BackgroundTask();
-	BackgroundTaskPtr taskEpilog(t);
-	QObject::connect(taskEpilog.get(), SIGNAL(finished(bool)),
-		this, SLOT(enableGUINow(bool)), Qt::QueuedConnection);
-	queue.push(taskEpilog);
-}
+//void Controller::enableGUILater()
+//{
+//    // TODO: old:
+//    //	BackgroundTask *t = (withROI ? new BackgroundTask(im->getROI())
+//    //								 : new BackgroundTask()
+//    BackgroundTask *t = new BackgroundTask();
+//	BackgroundTaskPtr taskEpilog(t);
+//	QObject::connect(taskEpilog.get(), SIGNAL(finished(bool)),
+//		this, SLOT(enableGUINow(bool)), Qt::QueuedConnection);
+//	queue.push(taskEpilog);
+//}
 
-void Controller::enableGUINow(bool forreal)
-{
-	if (forreal)
-		setGUIEnabled(true);
-}
+//void Controller::enableGUINow(bool forreal)
+//{
+//	if (forreal)
+//		setGUIEnabled(true);
+//}
 
-void Controller::disableGUI(TaskType tt)
-{
-	setGUIEnabled(false, tt);
-}
+//void Controller::disableGUI(TaskType tt)
+//{
+//	setGUIEnabled(false, tt);
+//}
 
 void Controller::processSubscribeImageBand(QObject *subscriber, representation::t repr, int bandId)
 {

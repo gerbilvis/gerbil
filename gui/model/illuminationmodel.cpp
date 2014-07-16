@@ -37,7 +37,7 @@ void IllumModel::applyIllum()
 	queue->cancelTasks();
 	// FIXME re-apply illuminant while calculation in progess is currently
 	// not implemented (?) and probably broken.
-	emit setGUIEnabledRequested(false, TT_APPLY_ILLUM);
+//	emit setGUIEnabledRequested(false, TT_APPLY_ILLUM);
 
 	submitRemoveOldIllumTask();
 	submitAddNewIllumTask();

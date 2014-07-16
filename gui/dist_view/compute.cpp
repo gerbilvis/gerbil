@@ -6,7 +6,7 @@
 #include <QGLBuffer>
 
 // altmann, debugging helper function
-void assertBinSetsKeyDim(const std::vector<BinSet> &v, const ViewportCtx &ctx) {
+bool assertBinSetsKeyDim(const std::vector<BinSet> &v, const ViewportCtx &ctx) {
 	assert(v.size() > 0);
 
 	foreach(BinSet set, v) {
@@ -16,10 +16,11 @@ void assertBinSetsKeyDim(const std::vector<BinSet> &v, const ViewportCtx &ctx) {
 				GGDBGP(boost::format("failure: type=%1% ,  (key.size()==%2%  != dim==%3%)")
 				   %ctx.type %key.size() %ctx.dimensionality
 				   << std::endl);
-				assert(ctx.dimensionality == key.size());
+				return false;
 			}
 		}
 	}
+	return true;
 }
 
 /* translate image value to value in binning coordinate system */
@@ -67,7 +68,9 @@ void Compute::PreprocessBins::join(PreprocessBins &toJoin)
 void Compute::preparePolylines(const ViewportCtx &ctx,
 							   std::vector<BinSet> &sets, binindex &index)
 {
-	assertBinSetsKeyDim(sets, ctx);
+	if (!assertBinSetsKeyDim(sets, ctx)) {
+		return;
+	}
 
 	assert(sets.size()>0);
 	index.clear();
@@ -167,9 +170,21 @@ void Compute::GenerateVertices::operator()(const tbb::blocked_range<size_t> &r) 
 {
 	for (size_t i = r.begin(); i != r.end(); ++i) {
 		const std::pair<int, BinSet::HashKey> &idx = index[i];
+		if ( !(0 <= idx.first || idx.first < sets.size())) {
+			GGDBGM("bad sets index"<< endl);
+			return;
+		}
 		const BinSet &s = sets[idx.first];
 		const BinSet::HashKey &K = idx.second;
-		const Bin &b = s.bins.equal_range(K).first->second;
+		// FIXME concurrent_hash_map::equal_range MAY NOT BE USED CONCURRENTLY
+		// see http://www.threadingbuildingblocks.org/docs/help/reference/containers_overview/concurrent_hash_map_cls.htm
+		std::pair<BinSet::HashMap::const_iterator, BinSet::HashMap::const_iterator> binitp =
+				s.bins.equal_range(K);
+		if (s.bins.end() == binitp.first) {
+			GGDBGM("no bin"<< endl);
+			return;
+		}
+		const Bin &b = binitp.first->second;
 		int vidx = i * 2 * dimensionality;
 		for (int d = 0; d < dimensionality; ++d) {
 			qreal curpos;

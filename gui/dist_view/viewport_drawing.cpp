@@ -299,7 +299,13 @@ void Viewport::drawBins(QPainter &painter, QTimer &renderTimer,
 
 		// grab binset and bin according to key
 		BinSet &s = (**sets)[idx.first];
-		Bin &b = s.bins.equal_range(K).first->second;
+		std::pair<BinSet::HashMap::const_iterator, BinSet::HashMap::const_iterator> binitp =
+				s.bins.equal_range(K);
+		if (s.bins.end() == binitp.first) {
+			GGDBGM("no bin"<< endl);
+			return;
+		}
+		Bin const &b = binitp.first->second;
 
 		// set color
 		QColor color = determineColor((drawRGB ? b.rgb : s.label),

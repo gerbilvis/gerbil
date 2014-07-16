@@ -57,7 +57,7 @@ void GraphSegmentationModel::startGraphseg(SharedMultiImgPtr input,
 										   &config,
 										   bool resetLabel)
 {
-	emit setGUIEnabledRequested(false, TT_NONE);
+//	emit setGUIEnabledRequested(false, TT_NONE);
 
 	// clear current label
 	if (resetLabel) {
@@ -85,6 +85,6 @@ void GraphSegmentationModel::finishGraphSeg(bool success)
 		// leave seeding mode for convenience
 		emit seedingDone();
 
-		emit setGUIEnabledRequested(true, TT_NONE);
+//		emit setGUIEnabledRequested(true, TT_NONE);
 	}
 }
