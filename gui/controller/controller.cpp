@@ -118,21 +118,20 @@ Controller::Controller(const std::string &filename, bool limited_mode,
 	/* Initial ROI images spawning. Do it before showing the window but after
 	 * all signals were connected! */
 	//GGDBGM("dimensions " << dimensions << endl);
-	cv::Rect roi = dimensions; // initial ROI is image size, except:
-	if (roi.area() > 262144) {
+	m_roi = dimensions; // initial ROI is image size, except:
+	if (m_roi.area() > 262144) {
 		// image is bigger than 512x512, start with a smaller ROI in center
-		roi.width = std::min(roi.width, 512);
-		roi.height = std::min(roi.height, 512);
-		roi.x = 0.5*(dimensions.width - roi.width);
-		roi.y = 0.5*(dimensions.height - roi.height);
+		m_roi.width = std::min(m_roi.width, 512);
+		m_roi.height = std::min(m_roi.height, 512);
+		m_roi.x = 0.5*(dimensions.width - m_roi.width);
+		m_roi.y = 0.5*(dimensions.height - m_roi.height);
 	}
+
+	GGDBGM("roi " << m_roi  << endl);
+	spawnROI();
 
 	GGDBGM("init distview subscriptions" << endl);
 	dvc->initSubscriptions();
-
-	GGDBGM("roi " << roi << endl);
-	spawnROI(roi);
-
 
 	GGDBGM("init done, showing mainwindow" << endl);
 
@@ -215,13 +214,13 @@ void Controller::initLabeling(cv::Rect dimensions)
 void Controller::spawnROI(cv::Rect roi)
 {
 	const bool reuse = true;
-	doSpawnROI(reuse, roi);
+	updateROI(reuse, roi);
 }
 
 void Controller::invalidateROI(cv::Rect roi)
 {
 	const bool reuse = false;
-	doSpawnROI(reuse, roi);
+	updateROI(reuse, roi);
 }
 
 void Controller::rescaleSpectrum(int bands)
@@ -235,47 +234,18 @@ void Controller::rescaleSpectrum(int bands)
 //	enableGUILater();
 }
 
-void Controller::doSpawnROI(bool reuse, const cv::Rect &roi)
-{
-	// TODO: make a method cancelAllComputation that does following two steps
-	/* TODO: this results in huge computation burden even if none of the
-	 * running tasks would interfere. We could think of a more fine-grained
-	 * method here. Previous was to keep track of "running task type"
-	 *
-	 * TODO: talk to petr about why we need the ROI state it seems to be only
-	 * in use for this cancel and nothing else?
-	 */
-//	if (!queue.isIdle()) {
-//		// TODO: this was cancelTasks with current ROI. Now all tasks cancelled.
-//		queue.cancelTasks();
-//		/* as we cancelled any tasks, we expect the image data not to reflect
-//		 * desired configuration, so we will recompute from scratch */
-//		reuse = false;
-//	}
-
-//	disableGUI(TT_SELECT_ROI);
-
-	// FIXME
-	// Get rid of all the mess (disable GUI, cancelTasks, etc.).
-
-	updateROI(reuse, roi);
-
-//	enableGUILater();
-}
-
 void Controller::updateROI(bool reuse, cv::Rect roi, int bands)
 {
 	// no new ROI provided
-	if (roi == cv::Rect())
-		roi = im->getROI();
-
-	// TODO: This is not enough.
-	// Crude hack: If any representation got out of sync we do a full update.
-	// This is uneccessary and we need to work on a more fine grained model later.
-	if (!initROI.empty()) {
-		GGDBGM("re-init ROI: new subscriber for a representation" << endl);
-		reuse = false;
+	if (cv::Rect() == roi) {
+		roi = m_roi ;
+	} else {
+		m_roi = roi;
 	}
+	GGDBGM("bands=" << bands << ", roi=" << roi << endl);
+
+	GGDBGM("no-reuse HACK active" << endl);
+	reuse = false;
 
 	// prepare incremental update and test worthiness
 	std::vector<cv::Rect> sub, add;
@@ -296,7 +266,7 @@ void Controller::updateROI(bool reuse, cv::Rect roi, int bands)
 	if (reuse) {
 		foreach (representation::t type, representation::all()) {
 			if (haveSubscriber(type)) {
-				//sets[type] = dvc->subImage(type, sub, roi);
+				sets[type] = dvc->subImage(type, sub, roi);
 			}
 		}
 	}
@@ -328,16 +298,13 @@ void Controller::updateROI(bool reuse, cv::Rect roi, int bands)
 
 			/* tasks to (incrementally) update distribution view */
 			if (reuse) {
-				// FIXME
-				//dvc->addImage(type, sets[type], add, roi);
+				dvc->addImage(type, sets[type], add, roi);
 			} else {
-				// FIXME
-				//dvc->setImage(type, im->getImage(type), roi);
+				dvc->setImage(type, im->getImage(type), roi);
 			}
 		}
 	}
 
-	initROI.clear();
 
 	// TODO: better method to make sure values in normalizationDock are correct
 	// that means as soon as we have these values, report them directly to the
@@ -418,7 +385,6 @@ void Controller::processSubscribeImageBand(QObject *subscriber, representation::
 	// if not inserted, the subscription already exists -> no need to update
 	if (subscribe(subscriber, ImageBandId(repr, bandId), subs->imageBand)) {
 		im->computeBand(repr, bandId);
-		initROI.insert(repr);
 	}
 }
 
@@ -462,9 +428,9 @@ void Controller::processSubscribeRepresentation(QObject *subscriber, representat
 {
 	assert(subs);
 	if (subscribe(subscriber, repr, subs->repr)) {
-		GGDBGM("new subscription, spawning ROI for " << repr << endl);
-		im->spawn(repr, im->getROI(), -1);
-		dvc->setImage(repr, im->getImage(repr), im->getROI());
+		GGDBGM("new subscription, spawning ROI "<< m_roi << " for " << repr << endl);
+		im->spawn(repr, m_roi, -1);
+		dvc->setImage(repr, im->getImage(repr), m_roi);
 	}
 }
 
