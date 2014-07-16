@@ -28,7 +28,7 @@ vole_compile_library(
 	controller/distviewcontroller
 	controller/subscriptions.h
 
-	dist_view/compute
+	dist_view/distviewcompute
 	dist_view/distviewmodel
 	dist_view/viewer_tasks
 	dist_view/foldingbar

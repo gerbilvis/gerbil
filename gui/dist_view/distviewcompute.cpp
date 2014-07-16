@@ -1,4 +1,4 @@
-#include "compute.h"
+#include "distviewcompute.h"
 
 #define GGDBG_MODULE
 #include "../gerbil_gui_debug.h"

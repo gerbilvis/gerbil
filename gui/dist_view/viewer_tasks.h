@@ -1,7 +1,7 @@
 #ifndef MULTI_IMG_VIEWER_TASKS_H
 #define MULTI_IMG_VIEWER_TASKS_H
 
-#include "compute.h"
+#include "distviewcompute.h"
 
 #include <multi_img.h>
 
