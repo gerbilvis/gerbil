@@ -39,6 +39,13 @@
       <item>
        <layout class="QHBoxLayout" name="toolbarLayout">
         <item>
+         <widget class="QPushButton" name="subscriptionsDebugButton">
+          <property name="text">
+           <string>debug subscriptions</string>
+          </property>
+         </widget>
+        </item>
+        <item>
          <widget class="QPushButton" name="nonmarkButton">
           <property name="toolTip">
            <string>draw vectors of unlabeled pixels</string>
@@ -126,7 +133,9 @@
            <string/>
           </property>
           <property name="icon">
-           <iconset theme="list-add"/>
+           <iconset theme="list-add">
+            <normaloff/>
+           </iconset>
           </property>
           <property name="iconSize">
            <size>
@@ -145,7 +154,9 @@
            <string/>
           </property>
           <property name="icon">
-           <iconset theme="list-remove"/>
+           <iconset theme="list-remove">
+            <normaloff/>
+           </iconset>
           </property>
           <property name="iconSize">
            <size>
@@ -171,7 +182,9 @@
            <string/>
           </property>
           <property name="icon">
-           <iconset theme="preferences-system-windows"/>
+           <iconset theme="preferences-system-windows">
+            <normaloff/>
+           </iconset>
           </property>
           <property name="iconSize">
            <size>

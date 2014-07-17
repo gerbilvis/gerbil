@@ -134,6 +134,7 @@ void ImageModel::spawn(representation::t type, const cv::Rect &newROI, int bands
 	// store previous states
 	// FIXME altmann: this a bit of a HACK. However there is no possibility to spawn a
 	// ROI without spawning it for IMG, is there?
+	// FIXME: well, there actually is now, but there is a hardcoded IMG subscription.
 	if (representation::IMG == type) {
 		nBandsOld = nBands;
 		oldRoi = roi;

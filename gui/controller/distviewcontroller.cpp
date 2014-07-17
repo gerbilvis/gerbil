@@ -135,12 +135,6 @@ void DistViewController::addImage(representation::t type, sets_ptr temp,
 void DistViewController::setImage(representation::t type, SharedMultiImgPtr image,
 							   cv::Rect roi)
 {
-	{
-		SharedDataLock lock(image->mutex);
-		GGDBGM("roi=" << roi << ", "
-			   << "image: (" << (*image)->height << "x"
-				<< (*image)->width << ")" << endl);
-	}
 	int bins = map[type]->gui.getBinCount();
 	map[type]->model.setImage(image, roi, bins);
 }

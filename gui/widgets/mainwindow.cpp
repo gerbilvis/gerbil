@@ -86,6 +86,11 @@ void MainWindow::initSignals(Controller *ctrl, DistViewController *dvctrl)
 //	connect(chief2, SIGNAL(normTargetChanged(bool)),
 //			this, SLOT(normTargetChanged(bool)));
 
+	subscriptionsDebugButton->hide();
+
+	connect(subscriptionsDebugButton, SIGNAL(clicked()),
+			ctrl, SLOT(debugSubscriptions()));
+
 	/// global shortcuts
 	QShortcut *scr = new QShortcut(Qt::CTRL + Qt::Key_S, this);
 	connect(scr, SIGNAL(activated()), this, SLOT(screenshot()));

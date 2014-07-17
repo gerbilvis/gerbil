@@ -3,14 +3,16 @@
 
 #include <cassert>
 #include <ostream>
+#include <stdexcept>
+#include <QSet>
 #include <QMetaClassInfo>
 
 #include "../representation.h"
 
 /** Encapsulated enum representing the different false coloring types. */
 struct FalseColoring {
-	/* if this is changed, also update static member FalseColoring::allList
-	 * and prettyFalseColorNames in falsecolordock.cpp */
+	/* This enum is fragile: If changed, update all static member functions,
+	 * allList init andand prettyFalseColorNames in falsecolordock.cpp. */
 	enum Type {
 		CMF=0,
 		PCA,
@@ -36,8 +38,26 @@ struct FalseColoring {
 			return type == representation::GRAD;
 			break;
 		default:
-            assert(false); // this should not happen
-            return false; // prevent compiler warning
+			throw(std::runtime_error("FalseColoring::isBasedOn():"
+									 "invalid FalseColoring::Type"));
+		}
+	}
+
+	/** Maps a false coloring to the representation it is based on. */
+	static representation::t basis(Type coloringType) {
+		switch (coloringType) {
+		case CMF:
+		case PCA:
+		case SOM:
+			return representation::IMG;
+			break;
+		case PCAGRAD:
+		case SOMGRAD:
+			return representation::GRAD;
+			break;
+		default:
+			throw(std::runtime_error("FalseColoring::basis():"
+									 "invalid FalseColoring::Type"));
 		}
 	}
 
