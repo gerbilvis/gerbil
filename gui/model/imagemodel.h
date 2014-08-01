@@ -109,6 +109,12 @@ public:
 	/** @arg bands number of bands needed (only effective for IMG type) */
 	void spawn(representation::t type, const cv::Rect& roi, int bands = -1);
 
+	/** Re-spawn current ROI for representation type.
+	 *
+	 *  Emits imageUpdate() with duplicate = true. It is the responsibility of
+	 *  the caller to make sure image data is up-to-date.
+	 */
+	void respawn(representation::t type);
 public slots:
 	void computeBand(representation::t type, int dim);
 	/** Compute rgb representation of full image.
@@ -139,8 +145,12 @@ signals:
 	 * spawn().
 	 * See observedDataRangeUdpate, numBandsROIChanged and roiRectChanged for more
 	 * specific signals.
+	 * @param duplicate If true this is a duplicate signal, i.e. exactly the
+	 * same data has already been signalled before and thus needs not to be
+	 * processed by clients. This is necessary for initializing new subscribers
+	 * (ROI re-spawn).
 	 */
-	void imageUpdate(representation::t type, SharedMultiImgPtr image);
+	void imageUpdate(representation::t type, SharedMultiImgPtr image, bool duplicate);
 
 	/** The observed data range for representation type has changed. */
 	void observedDataRangeUdpate(representation::t type, const multi_img::Range& range);

@@ -39,6 +39,9 @@ Controller::Controller(const std::string &filename, bool limited_mode,
 	  queuethread(0),
 	  subs(new Subscriptions)
 {
+	// reset internal ROI state tracking
+	resetROISpawned();
+
 	// start background task queue thread
 	startQueue();
 
@@ -61,10 +64,10 @@ Controller::Controller(const std::string &filename, bool limited_mode,
 	// The order of connection is crucial for fm and Controller.
 	// fm needs to get the signal first. Otherwise it will
 	// hand out invalid cached data.
-	connect(im, SIGNAL(imageUpdate(representation::t,SharedMultiImgPtr)),
-			fm, SLOT(processImageUpdate(representation::t,SharedMultiImgPtr)));
-	connect(im, SIGNAL(imageUpdate(representation::t,SharedMultiImgPtr)),
-			this, SLOT(processImageUpdate(representation::t)));
+	connect(im, SIGNAL(imageUpdate(representation::t,SharedMultiImgPtr,bool)),
+			fm, SLOT(processImageUpdate(representation::t,SharedMultiImgPtr,bool)));
+	connect(im, SIGNAL(imageUpdate(representation::t,SharedMultiImgPtr,bool)),
+			this, SLOT(processImageUpdate(representation::t,SharedMultiImgPtr,bool)));
 
 	lm = new LabelingModel();
 	initLabeling(dimensions);
@@ -103,8 +106,8 @@ Controller::Controller(const std::string &filename, bool limited_mode,
 	connect(illumm, SIGNAL(newIlluminantApplied(QVector<multi_img::Value>)),
 			dvc, SIGNAL(newIlluminantApplied(QVector<multi_img::Value>)));
 
-	connect(im, SIGNAL(imageUpdate(representation::t,SharedMultiImgPtr)),
-			cm, SLOT(processImageUpdate(representation::t,SharedMultiImgPtr)));
+	connect(im, SIGNAL(imageUpdate(representation::t,SharedMultiImgPtr,bool)),
+			cm, SLOT(processImageUpdate(representation::t,SharedMultiImgPtr,bool)));
 
 	/* start with initial label or provided labeling
 	 * Do this after all signals are connected, and before initial ROI spawn!
@@ -250,7 +253,6 @@ void Controller::debugSubscriptions()
 		}
 		std::cerr << std::endl;
 	}
-
 }
 
 void Controller::updateROI(bool reuse, cv::Rect roi, int bands)
@@ -261,6 +263,7 @@ void Controller::updateROI(bool reuse, cv::Rect roi, int bands)
 	} else {
 		m_roi = roi;
 	}
+	resetROISpawned();
 	GGDBGM("bands=" << bands << ", roi=" << roi << endl);
 
 	//GGDBGM("no-reuse HACK active" << endl);
@@ -443,8 +446,16 @@ void Controller::processSubscribeRepresentation(QObject *subscriber, representat
 {
 	assert(subs);
 	if (subscribe(subscriber, repr, subs->repr)) {
-		GGDBGM("new subscription, spawning ROI "<< m_roi << " for " << repr << endl);
+		GGDBGM("new subscription, ");
 		im->spawn(repr, m_roi, -1);
+		if (m_ROISpawned[repr]) {
+			GGDBGP("RE-spawning ROI "<< m_roi << " for " << repr << endl);
+			im->respawn(repr);
+		} else {
+			GGDBGP("   spawning ROI "<< m_roi << " for " << repr << endl);
+			im->spawn(repr, m_roi, -1);
+		}
+
 		dvc->setImage(repr, im->getImage(repr), m_roi);
 	}
 }
@@ -482,10 +493,22 @@ void Controller::focusChange(QWidget *old, QWidget *now)
 			  << " to " << now->objectName().toStdString() << std::endl;
 }
 
-void Controller::processImageUpdate(representation::t repr)
+void Controller::processImageUpdate(representation::t repr,
+									SharedMultiImgPtr image,
+									bool duplicate)
 {
-	//GGDBGM(repr << endl);
-	// image band updates
+	// Handle duplicate.
+	// TODO FIXME
+	// This probably introduces more state tracking
+	// for subscriptions handled here?
+	// Yes, currently a cascade of image udates is triggered.
+
+	if (duplicate) {
+		GGDBGM("duplicate update, ignoring" << endl);
+		return;
+	}
+
+	m_ROISpawned[repr] = true;
 
 	Subscription<ImageBandId>::IdTypeSet bandUpdates;
 
@@ -515,5 +538,12 @@ void Controller::processImageUpdate(representation::t repr)
 		//GGDBGM("requesting from fm " << coloring << endl);
 		emit pendingFalseColorUpdate(coloring);
 		fm->requestColoring(coloring);
+	}
+}
+
+void Controller::resetROISpawned()
+{
+	foreach (representation::t repr, representation::all()) {
+		m_ROISpawned[repr] = false;
 	}
 }

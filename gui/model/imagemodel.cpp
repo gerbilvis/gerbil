@@ -255,6 +255,16 @@ void ImageModel::spawn(representation::t type, const cv::Rect &newROI, int bands
 	queue.push(taskEpilog);
 }
 
+void ImageModel::respawn(representation::t type)
+{
+	if ((*map[type]->image)->empty()) {
+		std::cerr << "ImageModel::respawn(): bad call, no payload available."
+					 << std::endl;
+		return;
+	}
+	emit imageUpdate(type, map[type]->image, /* duplicate */ true);
+}
+
 void ImageModel::computeBand(representation::t type, int dim)
 {
 	//GGDBGM(type << " " << dim << endl);
@@ -325,7 +335,8 @@ void ImageModel::setNormalizationParameters(representation::t type,
 }
 
 
-void ImageModel::processNewImageData(representation::t type, SharedMultiImgPtr image)
+void ImageModel::processNewImageData(representation::t type,
+									 SharedMultiImgPtr image)
 {
 	// invalidate band caches
 	map[type]->bands.clear();
@@ -344,5 +355,5 @@ void ImageModel::processNewImageData(representation::t type, SharedMultiImgPtr i
 		//GGDBGM("oldRoi "<< oldRoi << " cur roi " << roi << endl);
 		emit roiRectChanged(roi);
 	}
-	emit imageUpdate(type, image);
+	emit imageUpdate(type, image, /* duplicate */ false);
 }

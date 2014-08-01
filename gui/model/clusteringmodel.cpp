@@ -82,8 +82,12 @@ void ClusteringModel::cancel()
 }
 
 void ClusteringModel::processImageUpdate(representation::t type,
-										 SharedMultiImgPtr image)
+										 SharedMultiImgPtr image,
+										 bool duplicate)
 {
+	if (duplicate) {
+		return;
+	}
 	// check if the change affects us
 #ifdef WITH_IMGNORM // HACK: we prefer the normed version if we have it.
 	if (type != representation::NORM)
