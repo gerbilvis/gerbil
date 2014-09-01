@@ -73,6 +73,44 @@ signals:
 	/* pass-through from our other controller friends */
 	void requestOverlay(const cv::Mat1b&);
 
+	/** This signal is emitted before the controller spawns a new ROI.
+	 *
+	 * The data supplied as arguments is useful for efficiently recycle image
+	 * payload that is computed on a ROI basis.
+	 * oldroi and newroi contain the old and new ROI areas as a cv::Rect
+	 * respectively.
+	 * sub and add vectors cointain the areas that need to be subtracted and
+	 * added to create the new ROI from the old roi.
+	 * reuse is true if the total area changed is smaller than the new ROI and
+	 * the old ROI data may be recycled, i.e. it is true if it is less work to
+	 * compute the differential update from the old to the new ROI and it is
+	 * false when it is cheaper or mandatory to compute the new ROI data from
+	 * scratch.
+	 * If reuse is false, any data MUST be recomputed from scratch. This
+	 * is due to operations changing data in the ROI, e.g. spectral rescaling
+	 * or lighting.
+	 */
+	void preROISpawn(cv::Rect const & oldroi,
+					 cv::Rect const & newroi,
+					 std::vector<cv::Rect> const & sub,
+					 std::vector<cv::Rect> const & add,
+					 bool profitable
+					 );
+
+	/** This signal is emitted after he controller has spawned a new ROI. 
+	 *
+	 * The parameters are the same as with preROISpawn. Be aware that any
+	 * image data in the image model for the old ROI may already have been
+	 * invalidated. To access old ROI data the preROISpawn signal must be used.
+	 */
+	void postROISpawn(cv::Rect const & oldroi,
+					  cv::Rect const & newroi,
+					  std::vector<cv::Rect> const & sub,
+					  std::vector<cv::Rect> const & add,
+					  bool profitable
+					  );
+
+
 /// DOCKS
 
 	// these are send to the graphSegModel
@@ -205,7 +243,13 @@ protected:
 	// (we did not test consecutive start/stop of the queue)
 	void stopQueue();
 
-	// update ROI, or its contents
+	/** Update ROI geometry or update data in current ROI.
+	 *
+	 * This changes the geometry of the ROI if a new rect is given as
+	 * argument. Additionaly, if the bands parameter is set, this follows a
+	 * spectral rescale and the image data in the ROI is re-computed
+	 * accordingly.
+	 */
 	void updateROI(bool reuse, cv::Rect roi = cv::Rect(), int bands = -1);
 
 	/** Return true if there is a subscriber for the given representation, otherwise false.
@@ -270,7 +314,7 @@ protected:
 	boost::thread *queuethread;
 
 /// SUBSCRIPTIONS
-
+	// The current ROI.
 	cv::Rect m_roi;
 
 	// see subscriptions.h

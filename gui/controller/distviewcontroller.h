@@ -11,6 +11,8 @@
 // TODO
 // * check if bands can be removed from MainWindow altogether
 
+struct ReprSubscriptions;
+
 class DistViewController : public QObject
 {
     Q_OBJECT
@@ -24,7 +26,11 @@ class DistViewController : public QObject
 
 public:
 	explicit DistViewController(Controller *ctrl,
-								BackgroundTaskQueue *taskQueue);
+								BackgroundTaskQueue *taskQueue,
+								ImageModel *im);
+
+	~DistViewController();
+
 	void init();
 	/** Initialize subscriptions.
 	 *
@@ -82,6 +88,24 @@ public slots:
 
 	void processDistviewNeedsBinning(representation::t repr);
 
+	void processPreROISpawn(cv::Rect const & oldroi,
+							cv::Rect const & newroi,
+							std::vector<cv::Rect> const & sub,
+							std::vector<cv::Rect> const & add,
+							bool profitable
+							);
+
+	void processPostROISpawn(cv::Rect const & oldroi,
+							 cv::Rect const & newroi,
+							 std::vector<cv::Rect> const & sub,
+							 std::vector<cv::Rect> const & add,
+							 bool profitable
+							 );
+
+
+	void processDistviewSubscribeRepresentation(QObject *subscriber, representation::t repr);
+	void processDistviewUnsubscribeRepresentation(QObject *subscriber, representation::t repr);
+
 signals:
 	void toggleLabeled(bool);
 	void toggleUnlabeled(bool);
@@ -113,13 +137,13 @@ signals:
 	void subscribeRepresentation(QObject *subscriber, representation::t repr);
 	void unsubscribeRepresentation(QObject *subscriber, representation::t repr);
 
-
 protected:
 	void updateBinning(representation::t repr, SharedMultiImgPtr image);
 
 	QMap<representation::t, payload*> map;
 	representation::t activeView;
 	Controller *ctrl;
+	ImageModel *m_im;
 
 	// needed for add/rem to/from label functionality
 	int currentLabel;
@@ -128,6 +152,15 @@ protected:
 	cv::Rect m_roi;
 
 	bool m_distviewNeedsBinning[representation::REPSIZE];
+
+	// Subscription state of distiviews.
+	// There is no other means for the DistViewController to determine
+	// wether or not to do BinSet sub/add in ROI change.
+	ReprSubscriptions* m_distviewSubs;
+
+	// Pointer to map of vectors of binsets: BinSets that are recycled
+	// during a ROI spawn.
+	boost::shared_ptr<QMap<representation::t, sets_ptr> > m_roiSets;
 };
 
 #endif // DISTVIEWCONTROLLER_H

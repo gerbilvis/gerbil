@@ -8,14 +8,20 @@
 #include <boost/format.hpp>
 #include <QDebug>
 
+#include "subscriptions.h"
+
 #define GGDBG_MODULE
 #include <gerbil_gui_debug.h>
 
 #define GGDBG_REPR(type) GGDBGM(format("%1%")%type << endl)
 
+struct ReprSubscriptions {
+	Subscription<representation::t>::Set	repr;
+};
+
 DistViewController::DistViewController(Controller *ctrl,
-									   BackgroundTaskQueue *taskQueue)
- : ctrl(ctrl)
+									   BackgroundTaskQueue *taskQueue, ImageModel *im)
+ : ctrl(ctrl), m_im(im), m_distviewSubs(new ReprSubscriptions)
 {
 	/* Create all viewers. Only one viewer per representation type is supported.
 	 */
@@ -30,6 +36,11 @@ DistViewController::DistViewController(Controller *ctrl,
 	foreach (representation::t i, representation::all()) {
 		m_distviewNeedsBinning[i] = false;
 	}
+}
+
+DistViewController::~DistViewController()
+{
+	delete m_distviewSubs;
 }
 
 void DistViewController::init()
@@ -79,6 +90,12 @@ void DistViewController::init()
 
 		connect(g, SIGNAL(needBinning(representation::t)),
 				this, SLOT(processDistviewNeedsBinning(representation::t)));
+
+
+		connect(g, SIGNAL(subscribeRepresentation(QObject*,representation::t)),
+				this, SLOT(processDistviewSubscribeRepresentation(QObject*,representation::t)));
+		connect(g, SIGNAL(unsubscribeRepresentation(QObject*,representation::t)),
+				this, SLOT(processDistviewUnsubscribeRepresentation(QObject*,representation::t)));
 	}
 
 	/* connect pass-throughs / signals we process */
@@ -185,26 +202,23 @@ void DistViewController::processROIChage(cv::Rect roi)
 }
 
 void DistViewController::processImageUpdate(representation::t repr,
-									   SharedMultiImgPtr image,
-									   bool duplicate)
+											SharedMultiImgPtr image,
+											bool duplicate)
 {
+
 	if (cv::Rect() == m_roi) {
 		std::cerr << "DistViewController::processImageUpdate() error: "
 				  << "DVC internal ROI is empty" << std::endl;
 	}
 	if (duplicate) {
-		GGDBGM("is re-spawn -- ");
-		if (m_distviewNeedsBinning[repr]) {
-			m_distviewNeedsBinning[repr] = false;
-			GGDBGP("following distview " << repr << " request for new binning" << endl);
-			updateBinning(repr, image);
-		} else {
-			GGDBGP("ignoring" << endl)
-		}
-	} else {
-		GGDBGM("full spawn" << endl);
+		GGDBGM(repr  << " is re-spawn" << endl);
+	}
+	if (m_distviewNeedsBinning[repr]) {
 		m_distviewNeedsBinning[repr] = false;
+		GGDBGM("following distview " << repr << " request for new binning" << endl);
 		updateBinning(repr, image);
+	} else {
+		GGDBGP("ignoring" << endl)
 	}
 }
 
@@ -212,6 +226,60 @@ void DistViewController::processDistviewNeedsBinning(representation::t repr)
 {
 	GGDBGM(repr << " needs binning" << endl);
 	m_distviewNeedsBinning[repr] = true;
+}
+
+void DistViewController::processPreROISpawn(const cv::Rect &oldroi, const cv::Rect &newroi, const std::vector<cv::Rect> &sub, const std::vector<cv::Rect> &add, bool profitable)
+{
+	// recycle existing distview payload
+	m_roiSets = boost::shared_ptr<QMap<representation::t, sets_ptr> > (
+				new QMap<representation::t, sets_ptr>() );
+	if (profitable) {
+		GGDBGM("INCREMENTAL distview update" << endl);
+		foreach (representation::t repr, representation::all()) {
+			if (isSubscribed(repr, m_distviewSubs->repr)) {
+				GGDBGM("   BEGIN " << repr <<" distview update" << endl);
+				(*m_roiSets)[repr] = subImage(repr, sub, newroi);
+				GGDBGM("   END " << repr <<" distview update" << endl);
+			}
+		}
+	} else {
+		GGDBGM("FULL distview update" << endl);
+		// nothing to do, distview payload will be reset in processPostROISpawn
+	}
+}
+
+void DistViewController::processPostROISpawn(const cv::Rect &oldroi, const cv::Rect &newroi, const std::vector<cv::Rect> &sub, const std::vector<cv::Rect> &add, bool profitable)
+{
+	if (profitable && ! m_roiSets) {
+		std::cerr << "DistViewController::processPostROISpawn error: "
+					 "profitable && ! m_roiSets)" << std::endl;
+	}
+	if (profitable) {
+		GGDBGM("INCREMENTAL distview update" << endl);
+	} else {
+		GGDBGM("FULL distview update" << endl);
+	}
+	foreach (representation::t repr, representation::all()) {
+		if (isSubscribed(repr, m_distviewSubs->repr)) {
+			if (profitable && m_roiSets) {
+				addImage(repr, (*m_roiSets)[repr], add, newroi);
+			} else {
+				updateBinning(repr, m_im->getImage(repr));
+			}
+		}
+	}
+	// free sets map
+	m_roiSets = boost::shared_ptr<QMap<representation::t, sets_ptr> > ();
+}
+
+void DistViewController::processDistviewSubscribeRepresentation(QObject *subscriber, representation::t repr)
+{
+	subscribe(subscriber, repr, m_distviewSubs->repr);
+}
+
+void DistViewController::processDistviewUnsubscribeRepresentation(QObject *subscriber, representation::t repr)
+{
+	unsubscribe(subscriber, repr, m_distviewSubs->repr);
 }
 
 void DistViewController::updateBinning(representation::t repr, SharedMultiImgPtr image)
@@ -262,7 +330,7 @@ void DistViewController::updateLabelsPartially(const cv::Mat1s &labels,
 	/* test: is it worth it to do it incrementally
 	 * (2 updates for each positive entry)
 	 */
-	bool profitable = ((2 * cv::countNonZero(mask)) < mask.total());
+	bool profitable = (size_t(2 * cv::countNonZero(mask)) < mask.total());
 	if (profitable) {
 
 //		ctrl->disableGUI();

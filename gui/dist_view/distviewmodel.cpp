@@ -170,6 +170,15 @@ sets_ptr DistViewModel::subImage(const std::vector<cv::Rect> &regions,
 	GGDBG_CALL();
 	sets_ptr temp(new SharedData<std::vector<BinSet> >(NULL));
 	inbetween = true;
+	// FIXME need proper check if subImage is a valid operation in current state.
+	if (!context) {
+		GGDBGM(type << " no context" << endl);
+		return temp;
+	}
+	if (!image || (**image).empty()) {
+		GGDBGM(type << " no image" << endl);
+		return temp;
+	}
 	SharedDataLock ctxlock(context->mutex);
 	ViewportCtx args = **context;
 	ctxlock.unlock();
@@ -188,6 +197,15 @@ void DistViewModel::addImage(sets_ptr temp,const std::vector<cv::Rect> &regions,
 {
 	GGDBG_CALL();
 	inbetween = false;
+	// FIXME need proper check if addImage is a valid operation in current state.
+	if (!context) {
+		GGDBGM(type << " no context" << endl);
+		return;
+	}
+	if (!image || (**image).empty()) {
+		GGDBGM(type << " no image" << endl);
+		return;
+	}
 	SharedDataLock ctxlock(context->mutex);
 	ViewportCtx args = **context;
 	ctxlock.unlock();
@@ -299,7 +317,8 @@ void DistViewModel::updateMaskLimiters(
 
 QPolygonF DistViewModel::getPixelOverlay(int y, int x)
 {
-	if (!image) {
+	// FIXME need proper check if getPixelOverlay is a valid operation in current state.
+	if (!image || (**image).empty()) {
 		GGDBGM(type << " no image" << endl);
 		return QPolygonF();
 	}
@@ -312,7 +331,9 @@ QPolygonF DistViewModel::getPixelOverlay(int y, int x)
 	SharedDataLock ctxlock(context->mutex);
 	if (y >= (*image)->height ||
 		x >= (*image)->width)
+	{
 		return QPolygonF();
+	}
 
 	const multi_img::Pixel &pixel = (**image)(y, x);
 	QPolygonF points((*image)->size());

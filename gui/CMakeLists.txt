@@ -26,7 +26,9 @@ vole_compile_library(
 	controller/controller
 	controller/controller_docks
 	controller/distviewcontroller
-	controller/subscriptions.h
+	controller/subscriptions
+	# Huh? module not compiled otherwise... weird.
+	controller/subscriptions.cpp
 
 	dist_view/distviewcompute
 	dist_view/distviewmodel
