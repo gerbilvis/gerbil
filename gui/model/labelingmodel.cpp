@@ -3,9 +3,10 @@
 
 #include <qtopencv.h>
 
-#include "../gerbil_gui_debug.h"
-
 #include "labels/icontask.h"
+
+#define GGDBG_MODULE
+#include "../gerbil_gui_debug.h"
 
 // for DEBUG, FIXME defined in controller.cpp, all operator<<s should go in one module.
 std::ostream &operator<<(std::ostream& os, const cv::Rect& r);
@@ -17,7 +18,7 @@ static std::ostream &operator<<(std::ostream& os, const QSize& s) {
 
 
 LabelingModel::LabelingModel()
-	: iconSize(QSize(32,32)), iconTaskp(NULL)
+	: iconSize(QSize(32,32)), applyROI(true), iconTaskp(NULL)
 {
 	qRegisterMetaType<QVector<QImage> >("QVector<QImage>");
 	//qRegisterMetaType<const QVector<QImage>& >("const QVector<QImage>&");
@@ -40,7 +41,7 @@ void LabelingModel::updateROI(const cv::Rect &roi)
 	// signal new matrix
 	emit newLabeling(labels, colors);
 
-	// mask icons are on full image, no update required
+	invalidateMaskIcons();
 }
 
 void LabelingModel::setLabels(const Labeling &labeling, bool full)
@@ -271,11 +272,18 @@ void LabelingModel::setLabelIconSize(const QSize& size)
 	invalidateMaskIcons();
 }
 
+void LabelingModel::setApplyROI(bool applyROI)
+{
+	this->applyROI = applyROI;
+}
+
 void LabelingModel::computeLabelIcons()
 {
 	//GGDBG_CALL();
-	if(iconTaskp != NULL) {
-		if(iconSize != iconTaskp->getIconSize()) {
+	if (iconTaskp != NULL) {
+		if (iconSize != iconTaskp->getIconSize() ||
+				applyROI != iconTaskp->getApplyROI())
+		{
 			//GGDBGM("running IconTask is using old icon size, restarting." << endl);
 			discardIconTask();
 			startIconTask();
@@ -286,7 +294,6 @@ void LabelingModel::computeLabelIcons()
 		startIconTask();
 	}
 }
-
 
 void LabelingModel::processLabelIconsComputed(const QVector<QImage> &icons)
 {
@@ -331,7 +338,9 @@ void LabelingModel::startIconTask()
 	IconTaskCtxPtr ctxp(new IconTaskCtx(
 				colors.size(),
 				full_labels,
+				labels,
 				iconSize,
+				applyROI,
 				colors));
 
 	assert(NULL == iconTaskp);

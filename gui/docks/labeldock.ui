@@ -6,8 +6,8 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>304</width>
-    <height>270</height>
+    <width>379</width>
+    <height>377</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -15,6 +15,19 @@
   </property>
   <widget class="QWidget" name="dockWidgetContents">
    <layout class="QGridLayout" name="gridLayout">
+    <item row="0" column="0">
+     <widget class="QCheckBox" name="applyROI">
+      <property name="toolTip">
+       <string>Show label mask icons for ROI.</string>
+      </property>
+      <property name="text">
+       <string>apply ROI</string>
+      </property>
+      <property name="checked">
+       <bool>true</bool>
+      </property>
+     </widget>
+    </item>
     <item row="1" column="0">
      <layout class="QHBoxLayout" name="horizontalLayout_2">
       <item>
@@ -186,7 +199,9 @@
           <string>&amp;Merge</string>
          </property>
          <property name="icon">
-          <iconset theme="edit-copy"/>
+          <iconset theme="edit-copy">
+           <normaloff/>
+          </iconset>
          </property>
         </widget>
        </item>
