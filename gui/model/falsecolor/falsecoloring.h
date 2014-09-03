@@ -12,7 +12,7 @@
 /** Encapsulated enum representing the different false coloring types. */
 struct FalseColoring {
 	/* This enum is fragile: If changed, update all static member functions,
-	 * allList init andand prettyFalseColorNames in falsecolordock.cpp. */
+	 * allList init and prettyFalseColorNames in falsecolordock.cpp. */
 	enum Type {
 		CMF=0,
 		PCA,
