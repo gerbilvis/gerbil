@@ -53,7 +53,7 @@ Controller::Controller(const std::string &filename, bool limited_mode,
 	}
 
 	// create gui (perform initUI before connecting signals!)
-	window = new MainWindow(limited_mode);
+	window = new MainWindow();
 	window->initUI(filename);
 
 	// initialize models

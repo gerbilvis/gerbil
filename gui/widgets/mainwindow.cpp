@@ -34,9 +34,8 @@
 #include <QShortcut>
 #include <QFileInfo>
 
-MainWindow::MainWindow(bool limitedMode)
-	: limitedMode(limitedMode),
-	  contextMenu(NULL)
+MainWindow::MainWindow()
+	: contextMenu(NULL)
 {
 	// create all objects
 	setupUi(this);
