@@ -112,6 +112,7 @@ QVariant SizeGripItem::HandleItem::itemChange(GraphicsItemChange change,
 QPointF SizeGripItem::HandleItem::restrictPosition(const QPointF& newPos)
 {
 	QPointF retVal = pos();
+	const int min = 10; // minimum width/height we allow
 
 	if (positionFlags_ & Top || positionFlags_ & Bottom)
 		retVal.setY(newPos.y());
@@ -119,15 +120,15 @@ QPointF SizeGripItem::HandleItem::restrictPosition(const QPointF& newPos)
 	if (positionFlags_ & Left || positionFlags_ & Right)
 		retVal.setX(newPos.x());
 
-	if (positionFlags_ & Top && retVal.y() > parent_->rect_.bottom())
-		retVal.setY(parent_->rect_.bottom());
-	else if (positionFlags_ & Bottom && retVal.y() < parent_->rect_.top())
-		retVal.setY(parent_->rect_.top());
+	if (positionFlags_ & Top && retVal.y() > parent_->rect_.bottom() - min)
+		retVal.setY(parent_->rect_.bottom() - min);
+	else if (positionFlags_ & Bottom && retVal.y() < parent_->rect_.top() + min)
+		retVal.setY(parent_->rect_.top() + min);
 
-	if (positionFlags_ & Left && retVal.x() > parent_->rect_.right())
-		retVal.setX(parent_->rect_.right());
-	else if (positionFlags_ & Right && retVal.x() < parent_->rect_.left())
-		retVal.setX(parent_->rect_.left());
+	if (positionFlags_ & Left && retVal.x() > parent_->rect_.right() - min)
+		retVal.setX(parent_->rect_.right() - min);
+	else if (positionFlags_ & Right && retVal.x() < parent_->rect_.left() + min)
+		retVal.setX(parent_->rect_.left() + min);
 
 	return retVal;
 }
