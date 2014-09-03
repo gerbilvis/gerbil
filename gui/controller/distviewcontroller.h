@@ -48,8 +48,6 @@ public:
 public slots:
 	void setActiveViewer(representation::t type);
 
-//	void setGUIEnabled(bool enable, TaskType tt);
-
 	// rebinning in model needs to be displayed by viewport
 	void processNewBinning(representation::t type);
 	// rebinning in model done, also changed the range

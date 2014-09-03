@@ -50,8 +50,6 @@ public:
 	// add distribution view widget to the appropr. container
 	void addDistView(QWidget *frame);
 
-//	void setGUIEnabled(bool enable, TaskType tt = TT_NONE);
-
 public slots:
 	void openContextMenu();
 
@@ -63,6 +61,7 @@ protected:
 private:
 	QMenu *contextMenu;
 
+	// FIXME This is obsolete in MainWindow.
 	// only limited full_image available
 	bool limitedMode;
 };

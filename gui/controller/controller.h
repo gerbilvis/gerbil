@@ -14,7 +14,6 @@
 
 // forward declarations
 
-class DockController;
 class DistViewController;
 class GraphSegmentationModel;
 class FalseColorModel;
@@ -138,30 +137,6 @@ public slots:
 	void invalidateROI(cv::Rect roi = cv::Rect());
 	// change number of bands, spawning new image data
 	void rescaleSpectrum(int bands);
-
-	/** Enable and disable GUI as indicated by enable flag.
-	 *
-	 * When disable is requested all GUI elements other than those involved
-	 * with the task indicated by TaskType whill be disabled. This is to enable
-	 * the user to trigger a new operation of the same TaskType before the
-	 * previous one is finished.  In this case the model in charge should
-	 * cancel the ongoing calculations and re-start with the new user input.
-	 */
-//	void setGUIEnabled(bool enable, TaskType tt = TT_NONE);
-//	void setGUIEnabledDocks(bool enable, TaskType tt = TT_NONE);
-
-	/** internal management (maybe make protected) */
-	/* this function enqueues an empty task that will signal when all previous
-	 * tasks are finished. the signal will trigger enableGUINow, and the
-	 * GUI gets re-enabled at the right time.
-	 * The roi argument is needed to specify if the other enqueued tasks are
-	 * roi-bound. If somebody cancels all tasks with that roi, our task should
-	 * be cancelled as-well, and re-enable not take place.
-	 */
-//	void enableGUILater();
-	// the other side of enableGUILater
-//	void enableGUINow(bool forreal);
-//	void disableGUI(TaskType tt = TT_NONE);
 
 	void debugSubscriptions();
 
@@ -300,10 +275,7 @@ protected:
 	ClusteringDock *clusteringDock;
 	LabelDock *labelDock;
 
-/// OTHER CONTROLLERS
-
-	// setup dock widgets and manage interaction with models
-	DockController *dc;
+/// DistViewController
 
 	// setup distribution views and manage them and their models
 	DistViewController *dvc;

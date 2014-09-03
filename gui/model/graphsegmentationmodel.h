@@ -43,9 +43,6 @@ protected slots:
 	void finishGraphSeg(bool success);
 
 signals:
-	/* effect: gerbil GUI enabled/disabled. */
-//	void setGUIEnabledRequested(bool enable, TaskType tt);
-
 	void alterLabelRequested(short index, const cv::Mat1b &mask, bool negative);
 	void seedingDone();
 

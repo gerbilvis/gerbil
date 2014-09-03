@@ -53,9 +53,8 @@ DistViewController::~DistViewController()
 void DistViewController::init()
 {
 	// start with IMG, hide IMGPCA, GRADPCA at the beginning
-	/* NOTE that we did not connect signals yet! This is actually good as we
-	 * will not get stray signals before the content is ready.
-	 */
+	// NOTE that we did not connect signals yet! This is actually good as we
+	// will not get stray signals before the content is ready.
 	activeView = representation::IMG;
 	payloadMap[activeView]->gui.setActive();
 #ifdef WITH_IMGPCA
@@ -144,14 +143,6 @@ void DistViewController::initSubscriptions()
 	}
 }
 
-//void DistViewController::setGUIEnabled(bool enable, TaskType tt)
-//{
-//	foreach (payload *p, map) {
-//		p->gui.setEnabled(enable
-//						  || tt == TT_BIN_COUNT || tt == TT_TOGGLE_VIEWER);
-//	}
-//}
-
 sets_ptr DistViewController::subImage(representation::t type,
 							   const std::vector<cv::Rect> &regions,
 							   cv::Rect roi)
@@ -167,13 +158,6 @@ void DistViewController::addImage(representation::t type, sets_ptr temp,
 	GGDBG_CALL();
 	payloadMap[type]->model.addImage(temp, regions, roi);
 }
-
-//void DistViewController::setImage(representation::t type, SharedMultiImgPtr image,
-//							   cv::Rect roi)
-//{
-//	int bins = map[type]->gui.getBinCount();
-//	map[type]->model.setImage(image, roi, bins);
-//}
 
 void DistViewController::setActiveViewer(representation::t type)
 {
@@ -226,7 +210,7 @@ void DistViewController::processImageUpdate(representation::t repr,
 			   " request for new binning" << endl);
 		updateBinning(repr, image);
 	} else {
-		GGDBGP("ignoring" << endl)
+		GGDBGM("no binning requests, ignoring update" << endl)
 	}
 }
 
@@ -311,14 +295,12 @@ void DistViewController::updateBinning(representation::t repr,
 
 void DistViewController::changeBinCount(representation::t type, int bins)
 {
-	// TODO: might be called on initialization, which might be nasty
-	// TODO: too harsh
+	// FIXME: we cannot queue->cancelTasks(): might be called on
+	// initialization -> nasty!
+	// We need a better way to replace active binning tasks.
 	//queue->cancelTasks();
-//	ctrl->disableGUI(TT_BIN_COUNT);
 
 	payloadMap[type]->model.updateBinning(bins);
-
-//	ctrl->enableGUILater();
 }
 
 void DistViewController::updateLabels(const cv::Mat1s& labels,
@@ -336,13 +318,9 @@ void DistViewController::updateLabels(const cv::Mat1s& labels,
 	if (labels.empty() && (!colorsChanged))
 		return;
 
-//	ctrl->disableGUI();
-
 	foreach (payload *p, payloadMap) {
 		p->model.updateLabels(labels, colors);
 	}
-
-//	ctrl->enableGUILater();
 }
 
 void DistViewController::updateLabelsPartially(const cv::Mat1s &labels,
@@ -353,14 +331,9 @@ void DistViewController::updateLabelsPartially(const cv::Mat1s &labels,
 	 */
 	bool profitable = (size_t(2 * cv::countNonZero(mask)) < mask.total());
 	if (profitable) {
-
-//		ctrl->disableGUI();
-
 		foreach (payload *p, payloadMap) {
 			p->model.updateLabelsPartially(labels, mask);
 		}
-
-//		ctrl->enableGUILater();
 	} else {
 		// just update the whole thing
 		updateLabels(labels);
@@ -436,13 +409,11 @@ void DistViewController::finishNormRangeGradChange(bool success)
 void DistViewController::toggleIgnoreLabels(bool toggle)
 {
 	// TODO: cancel previous toggleignorelabel tasks here!
-//	ctrl->disableGUI(TT_TOGGLE_LABELS);
 
 	foreach (payload *p, payloadMap) {
 		p->model.toggleLabels(toggle);
 	}
 
-//	ctrl->enableGUILater();
 }
 
 void DistViewController::addHighlightToLabel()
