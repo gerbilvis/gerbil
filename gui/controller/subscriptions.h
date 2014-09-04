@@ -53,18 +53,12 @@ struct ImageBandId {
 	int bandx;
 };
 
+// definition in cpp
 template <>
-std::size_t make_hash(ImageBandId const& t)
-{
-	// No XOR here, repr and bandx are both small and likely to collide.
-	return 65437 * // prime
-			make_hash<int>(t.repr + 7) +
-			make_hash<int>((t.bandx << 16) + 1031 );
-}
+std::size_t make_hash(ImageBandId const& t);
 
 template <typename IDTYPE>
 struct SubscriptionHash;
-
 
 /** Identifies a subscription by subscriber and target type IDTYPE.
  *
@@ -95,6 +89,9 @@ struct Subscription {
 				other.subsid == subsid;
 	}
 
+	// The subscribing object.
+	// WARNING: Never use this to access the pointed to object. The only purpose
+	// of this pointer is to serve as an identification key.
 	QObject const* const subscriber;
 	const IDTYPE subsid;
 };
@@ -148,5 +145,19 @@ bool subscribe(QObject* subscriber, IDTYPE const& id,
 			set.insert(Subscription<IDTYPE>(subscriber, id));
 	return insertResult.second;
 }
+
+/** Remove a subscriber with id id from subscription set set.
+ *
+ * Returns true if this is was an existing subscription, i.e. the Subscription
+ * was added removed the set, otherwise false.
+ */
+template <typename IDTYPE>
+bool unsubscribe(QObject* subscriber, IDTYPE const& id,
+		typename Subscription<IDTYPE>::Set & set)
+{
+	return 0 < set.erase(Subscription<representation::t>(subscriber, id));
+}
+
+
 
 #endif // SUBSCRIPTIONS_H

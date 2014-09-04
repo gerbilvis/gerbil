@@ -80,7 +80,7 @@ Controller::Controller(const std::string &filename, bool limited_mode,
 #endif /* WITH_SEG_MEANSHIFT */
 
 	// initialize sub-controllers (after initializing the models...)
-	dvc = new DistViewController(this, &queue);
+	dvc = new DistViewController(this, &queue, im);
 	dvc->init();
 
 	// init dock widgets
@@ -108,6 +108,10 @@ Controller::Controller(const std::string &filename, bool limited_mode,
 
 	connect(im, SIGNAL(imageUpdate(representation::t,SharedMultiImgPtr,bool)),
 			cm, SLOT(processImageUpdate(representation::t,SharedMultiImgPtr,bool)));
+	connect(this, SIGNAL(preROISpawn(cv::Rect,cv::Rect,std::vector<cv::Rect>,std::vector<cv::Rect>,bool)),
+			dvc, SLOT(processPreROISpawn(cv::Rect,cv::Rect,std::vector<cv::Rect>,std::vector<cv::Rect>,bool)));
+	connect(this, SIGNAL(postROISpawn(cv::Rect,cv::Rect,std::vector<cv::Rect>,std::vector<cv::Rect>,bool)),
+			dvc, SLOT(processPostROISpawn(cv::Rect,cv::Rect,std::vector<cv::Rect>,std::vector<cv::Rect>,bool)));
 
 	/* start with initial label or provided labeling
 	 * Do this after all signals are connected, and before initial ROI spawn!
@@ -264,6 +268,8 @@ void Controller::updateROI(bool reuse, cv::Rect roi, int bands)
 	// And IMHO the add/sub functionality is cancelled by DVC listening
 	// for imageUpdate()... Tricky.
 
+	const cv::Rect oldroi = m_roi;
+
 	// no new ROI provided
 	if (cv::Rect() == roi) {
 		roi = m_roi ;
@@ -283,24 +289,27 @@ void Controller::updateROI(bool reuse, cv::Rect roi, int bands)
 		 * instead of full recomputation, and retrieve corresponding regions
 		 */
 		bool profitable = rectTransform(im->getROI(), roi, sub, add);
-		if (!profitable)
-			reuse = false;
-	} else {
+		reuse = profitable;
+	}
+
+	emit preROISpawn(oldroi, m_roi, sub, add, reuse);
+
+	if (!reuse) {
 		// invalidate existing ROI information (to not re-use data)
 		im->invalidateROI();
 	}
 
-	/** FIRST STEP: recycle existing payload **/
-	QMap<representation::t, sets_ptr> sets;
-	if (reuse) {
-		foreach (representation::t type, representation::all()) {
-			if (haveSubscriber(type)) {
-				GGDBGM("     subscribed " << type <<
-					   " -> incremental update" << endl);
-				sets[type] = dvc->subImage(type, sub, roi);
-			}
-		}
-	}
+//	/** FIRST STEP: recycle existing payload **/
+//	QMap<representation::t, sets_ptr> sets;
+//	if (reuse) {
+//		foreach (representation::t type, representation::all()) {
+//			if (haveSubscriber(type)) {
+//				GGDBGM("     subscribed " << type <<
+//					   " -> incremental update" << endl);
+//				sets[type] = dvc->subImage(type, sub, roi);
+//			}
+//		}
+//	}
 
 	/** SECOND STEP: update metadata */
 
@@ -327,16 +336,17 @@ void Controller::updateROI(bool reuse, cv::Rect roi, int bands)
 			/* tasks to (incrementally) re-calculate image data */
 			im->spawn(type, roi, bands);
 
-			/* tasks to (incrementally) update distribution view */
-			if (reuse) {
-				dvc->addImage(type, sets[type], add, roi);
-			} else {
-				// FIXME, see top of this function.
-//				dvc->setImage(type, im->getImage(type), roi);
-			}
+//			/* tasks to (incrementally) update distribution view */
+//			if (reuse) {
+//				dvc->addImage(type, sets[type], add, roi);
+//			} else {
+//				// FIXME, see top of this function.
+////				dvc->setImage(type, im->getImage(type), roi);
+//			}
 		}
 	}
 
+	emit postROISpawn(oldroi, m_roi, sub, add, reuse);
 
 	// TODO: better method to make sure values in normalizationDock are correct
 	// that means as soon as we have these values, report them directly to the
