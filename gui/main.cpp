@@ -305,7 +305,7 @@ int main(int argc, char **argv)
 	}
 
 	// create controller
-	Controller chief(filename, limited_mode, labelfile);
+	Controller ctrl(filename, limited_mode, labelfile);
 
 	/* debug focus
 	app.connect(&app, SIGNAL(focusChanged(QWidget*, QWidget*)),

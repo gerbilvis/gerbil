@@ -10,9 +10,9 @@
 
 #define GGDBG_REPR(type) GGDBGM(format("%1%")%type << endl)
 
-DistViewController::DistViewController(Controller *chief,
+DistViewController::DistViewController(Controller *ctrl,
 									   BackgroundTaskQueue *taskQueue)
- : chief(chief)
+ : ctrl(ctrl)
 {
 	/* Create all viewers. Only one viewer per representation type is supported.
 	 */
@@ -43,7 +43,7 @@ void DistViewController::init()
 
 	foreach (payload *p, map) {
 		// fill GUI with distribution view
-		chief->mainWindow()->addDistView(p->gui.getFrame());
+		ctrl->mainWindow()->addDistView(p->gui.getFrame());
 	}
 
 	foreach (payload *p, map) {
@@ -59,21 +59,21 @@ void DistViewController::init()
 		g->initSignals(this);
 
 		// connect signals from outside to GUI
-		connect(chief, SIGNAL(showIlluminationCurve(bool)),
+		connect(ctrl, SIGNAL(showIlluminationCurve(bool)),
 				g, SIGNAL(toggleIlluminationShown(bool)));
 
-		connect(chief, SIGNAL(toggleSingleLabel(bool)),
+		connect(ctrl, SIGNAL(toggleSingleLabel(bool)),
 				g, SLOT(toggleSingleLabel(bool)));
 	}
 
 	/* connect pass-throughs / signals we process */
-	connect(chief, SIGNAL(currentLabelChanged(int)),
+	connect(ctrl, SIGNAL(currentLabelChanged(int)),
 			this, SLOT(setCurrentLabel(int)));
-	connect(chief, SIGNAL(requestPixelOverlay(int,int)),
+	connect(ctrl, SIGNAL(requestPixelOverlay(int,int)),
 			this, SLOT(pixelOverlay(int,int)));
-	connect(chief, SIGNAL(singleLabelSelected(int)),
+	connect(ctrl, SIGNAL(singleLabelSelected(int)),
 			this, SIGNAL(singleLabelSelected(int)));
-	connect(chief, SIGNAL(toggleIgnoreLabels(bool)),
+	connect(ctrl, SIGNAL(toggleIgnoreLabels(bool)),
 			this, SLOT(toggleIgnoreLabels(bool)));
 
 	/* connect illuminant correction stuff only to IMG distview */
@@ -149,11 +149,11 @@ void DistViewController::changeBinCount(representation::t type, int bins)
 	// TODO: might be called on initialization, which might be nasty
 	// TODO: too harsh
 	//queue->cancelTasks();
-	chief->disableGUI(TT_BIN_COUNT);
+	ctrl->disableGUI(TT_BIN_COUNT);
 
 	map[type]->model.updateBinning(bins);
 
-	chief->enableGUILater();
+	ctrl->enableGUILater();
 }
 
 void DistViewController::updateLabels(const cv::Mat1s& labels,
@@ -171,13 +171,13 @@ void DistViewController::updateLabels(const cv::Mat1s& labels,
 	if (labels.empty() && (!colorsChanged))
 		return;
 
-	chief->disableGUI();
+	ctrl->disableGUI();
 
 	foreach (payload *p, map) {
 		p->model.updateLabels(labels, colors);
 	}
 
-	chief->enableGUILater();
+	ctrl->enableGUILater();
 }
 
 void DistViewController::updateLabelsPartially(const cv::Mat1s &labels,
@@ -189,13 +189,13 @@ void DistViewController::updateLabelsPartially(const cv::Mat1s &labels,
 	bool profitable = ((2 * cv::countNonZero(mask)) < mask.total());
 	if (profitable) {
 
-		chief->disableGUI();
+		ctrl->disableGUI();
 
 		foreach (payload *p, map) {
 			p->model.updateLabelsPartially(labels, mask);
 		}
 
-		chief->enableGUILater();
+		ctrl->enableGUILater();
 	} else {
 		// just update the whole thing
 		updateLabels(labels);
@@ -271,13 +271,13 @@ void DistViewController::finishNormRangeGradChange(bool success)
 void DistViewController::toggleIgnoreLabels(bool toggle)
 {
 	// TODO: cancel previous toggleignorelabel tasks here!
-	chief->disableGUI(TT_TOGGLE_LABELS);
+	ctrl->disableGUI(TT_TOGGLE_LABELS);
 
 	foreach (payload *p, map) {
 		p->model.toggleLabels(toggle);
 	}
 
-	chief->enableGUILater();
+	ctrl->enableGUILater();
 }
 
 void DistViewController::addHighlightToLabel()
