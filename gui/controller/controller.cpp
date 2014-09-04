@@ -191,12 +191,6 @@ void Controller::initIlluminant()
 
 	connect(illumm, SIGNAL(requestInvalidateROI(cv::Rect)),
 			this, SLOT(invalidateROI(cv::Rect)));
-
-	/* TODO: models should not request this! the controller of the model has
-	 * to guard its operations!
-	 */
-//	connect(illumm, SIGNAL(setGUIEnabledRequested(bool,TaskType)),
-//			this, SLOT(setGUIEnabled(bool, TaskType)), Qt::DirectConnection);
 }
 
 void Controller::initGraphSegmentation()
@@ -206,10 +200,6 @@ void Controller::initGraphSegmentation()
 
 	connect(gsm, SIGNAL(alterLabelRequested(short,cv::Mat1b,bool)),
 			lm, SLOT(alterLabel(short,cv::Mat1b,bool)));
-
-//	connect(gsm, SIGNAL(setGUIEnabledRequested(bool,TaskType)),
-//			this, SLOT(setGUIEnabled(bool, TaskType)));
-
 	// (gsm seedingDone <-> bandDock seedingDone connection in initDocks)
 }
 
@@ -237,12 +227,10 @@ void Controller::invalidateROI(cv::Rect roi)
 void Controller::rescaleSpectrum(int bands)
 {
 	// TODO: this was cancelTasks with current ROI. Now all tasks cancelled.
+	// FIXME: This might break stuff!
 	queue.cancelTasks();
-//	disableGUI(TT_BAND_COUNT);
 
 	updateROI(false, cv::Rect(), bands);
-
-	//	enableGUILater();
 }
 
 void Controller::debugSubscriptions()
@@ -261,13 +249,6 @@ void Controller::debugSubscriptions()
 
 void Controller::updateROI(bool reuse, cv::Rect roi, int bands)
 {
-	// FIXME (galtmann): this needs to be re-thought for subscriptions.
-	// Do we still need to push the update to distview controller?
-	// Does incremental binning update still work?
-	// IMHO DVC should handle incremental update itself.
-	// And IMHO the add/sub functionality is cancelled by DVC listening
-	// for imageUpdate()... Tricky.
-
 	const cv::Rect oldroi = m_roi;
 
 	// no new ROI provided
@@ -279,19 +260,17 @@ void Controller::updateROI(bool reuse, cv::Rect roi, int bands)
 	resetROISpawned();
 	GGDBGM("bands=" << bands << ", roi=" << roi << endl);
 
-	//GGDBGM("no-reuse HACK active" << endl);
-	//reuse = false;
-
 	// prepare incremental update and test worthiness
 	std::vector<cv::Rect> sub, add;
 	if (reuse) {
-		/* compute if it is profitable to add/sub pixels given old and new ROI,
-		 * instead of full recomputation, and retrieve corresponding regions
-		 */
+		// Compute if it is profitable to add/sub pixels given old and new ROI,
+		// instead of full recomputation, and retrieve corresponding regions.
 		bool profitable = rectTransform(im->getROI(), roi, sub, add);
 		reuse = profitable;
 	}
 
+	/** FIRST STEP: recycle existing payload **/
+	// Give other objects a change to recycle old ROI image data.
 	emit preROISpawn(oldroi, m_roi, sub, add, reuse);
 
 	if (!reuse) {
@@ -299,31 +278,16 @@ void Controller::updateROI(bool reuse, cv::Rect roi, int bands)
 		im->invalidateROI();
 	}
 
-//	/** FIRST STEP: recycle existing payload **/
-//	QMap<representation::t, sets_ptr> sets;
-//	if (reuse) {
-//		foreach (representation::t type, representation::all()) {
-//			if (haveSubscriber(type)) {
-//				GGDBGM("     subscribed " << type <<
-//					   " -> incremental update" << endl);
-//				sets[type] = dvc->subImage(type, sub, roi);
-//			}
-//		}
-//	}
-
 	/** SECOND STEP: update metadata */
-
 	lm->updateROI(roi);
 	illumm->setRoi(roi);
 
 	/** THIRD STEP: update payload */
-	/* this has to be done in the right order!
-	 * IMG before all others, GRAD before GRADPCA
-	 * it is implicit here but we would like this knowledge to be part of
-	 * image model's logic
+	/* This has to be done in the right order!
+	 * IMG before all others, GRAD before GRADPCA it is implicit here but we
+	 * would like this knowledge to be part of image model's logic.
 	 */
 	foreach (representation::t type, representation::all()) {
-
 		bool sub = haveSubscriber(type);
 
 		if (sub) {
@@ -335,19 +299,12 @@ void Controller::updateROI(bool reuse, cv::Rect roi, int bands)
 		if (sub) {
 			/* tasks to (incrementally) re-calculate image data */
 			im->spawn(type, roi, bands);
-
-//			/* tasks to (incrementally) update distribution view */
-//			if (reuse) {
-//				dvc->addImage(type, sets[type], add, roi);
-//			} else {
-//				// FIXME, see top of this function.
-////				dvc->setImage(type, im->getImage(type), roi);
-//			}
 		}
 	}
 
 	emit postROISpawn(oldroi, m_roi, sub, add, reuse);
 
+	// FIXME: normTargetChanged() still necessary?
 	// TODO: better method to make sure values in normalizationDock are correct
 	// that means as soon as we have these values, report them directly to the
 	// GUI.
@@ -366,50 +323,9 @@ bool Controller::haveSubscriber(representation::t type)
 	return false;
 }
 
-//void Controller::setGUIEnabled(bool enable, TaskType tt)
-//{
-//	/** for enable, this just re-enables everything
-//	 * for disable, this typically disables everything except the sender, so
-//	 * that the user can re-decide on that aspect or sth.
-//	 * it is a bit strange
-//	 */
-//	window->setGUIEnabled(enable, tt);
-
-//	// tell other controllers
-//	dvc->setGUIEnabled(enable, tt);
-
-///// DOCKS
-
-//    setGUIEnabledDocks(enable, tt);
-//}
-
-
-/** Tasks and queue thread management */
-
-//void Controller::enableGUILater()
-//{
-//    // TODO: old:
-//    //	BackgroundTask *t = (withROI ? new BackgroundTask(im->getROI())
-//    //								 : new BackgroundTask()
-//    BackgroundTask *t = new BackgroundTask();
-//	BackgroundTaskPtr taskEpilog(t);
-//	QObject::connect(taskEpilog.get(), SIGNAL(finished(bool)),
-//		this, SLOT(enableGUINow(bool)), Qt::QueuedConnection);
-//	queue.push(taskEpilog);
-//}
-
-//void Controller::enableGUINow(bool forreal)
-//{
-//	if (forreal)
-//		setGUIEnabled(true);
-//}
-
-//void Controller::disableGUI(TaskType tt)
-//{
-//	setGUIEnabled(false, tt);
-//}
-
-void Controller::processSubscribeImageBand(QObject *subscriber, representation::t repr, int bandId)
+void Controller::processSubscribeImageBand(QObject *subscriber,
+										   representation::t repr,
+										   int bandId)
 {
 	assert(subs);
 	// also subscribe to the relevant representation
@@ -420,14 +336,18 @@ void Controller::processSubscribeImageBand(QObject *subscriber, representation::
 	}
 }
 
-void Controller::processUnsubscribeImageBand(QObject *subscriber, representation::t repr, int bandId)
+void Controller::processUnsubscribeImageBand(QObject *subscriber,
+											 representation::t repr,
+											 int bandId)
 {
 	assert(subs);
-	subs->imageBand.erase(Subscription<ImageBandId>(subscriber, ImageBandId(repr, bandId)));
+	subs->imageBand.erase(Subscription<ImageBandId>(subscriber,
+													ImageBandId(repr, bandId)));
 	processUnsubscribeRepresentation(subscriber, repr);
 }
 
-void Controller::processSubscribeFalseColor(QObject *subscriber, FalseColoring::Type coloring)
+void Controller::processSubscribeFalseColor(QObject *subscriber,
+											FalseColoring::Type coloring)
 {
 	//GGDBGM(coloring << endl);
 	assert(subs);
@@ -439,11 +359,13 @@ void Controller::processSubscribeFalseColor(QObject *subscriber, FalseColoring::
 	}
 }
 
-void Controller::processUnsubscribeFalseColor(QObject *subscriber, FalseColoring::Type coloring)
+void Controller::processUnsubscribeFalseColor(QObject *subscriber,
+											  FalseColoring::Type coloring)
 {
 	//GGDBGM(coloring << endl);
 	assert(subs);
-	subs->falseColor.erase(Subscription<FalseColoring::Type>(subscriber, coloring));
+	subs->falseColor.erase(Subscription<FalseColoring::Type>(subscriber,
+															 coloring));
 	if (!isSubscribed(coloring, subs->falseColor)) {
 		// no more subscriptions for coloring,
 		// cancel computation if any.
@@ -460,7 +382,8 @@ void Controller::processRecalcFalseColor(FalseColoring::Type coloringType)
 	}
 }
 
-void Controller::processSubscribeRepresentation(QObject *subscriber, representation::t repr)
+void Controller::processSubscribeRepresentation(QObject *subscriber,
+												representation::t repr)
 {
 	assert(subs);
 	if (subscribe(subscriber, repr, subs->repr)) {
@@ -479,7 +402,8 @@ void Controller::processSubscribeRepresentation(QObject *subscriber, representat
 	}
 }
 
-void Controller::processUnsubscribeRepresentation(QObject *subscriber, representation::t repr)
+void Controller::processUnsubscribeRepresentation(QObject *subscriber,
+												  representation::t repr)
 {
 	assert(subs);
 	GGDBGM("unsubscribe " << repr << endl);
@@ -516,12 +440,6 @@ void Controller::processImageUpdate(representation::t repr,
 									SharedMultiImgPtr image,
 									bool duplicate)
 {
-	// Handle duplicate.
-	// TODO FIXME
-	// This probably introduces more state tracking
-	// for subscriptions handled here?
-	// Yes, currently a cascade of image udates is triggered.
-
 	if (duplicate) {
 		GGDBGM("duplicate update, ignoring" << endl);
 		return;
@@ -544,12 +462,14 @@ void Controller::processImageUpdate(representation::t repr,
 
 	// false color updates
 
-	typedef std::tr1::unordered_set<FalseColoring::Type, std::tr1::hash<int> > FalseColoringSet;
+	typedef std::tr1::unordered_set<FalseColoring::Type, std::tr1::hash<int> >
+			FalseColoringSet;
 	FalseColoringSet fcUpdates;
 	foreach (Subscription<FalseColoring::Type> const& sub, subs->falseColor) {
 		FalseColoring::Type coloring = sub.subsid;
 		if (FalseColoring::isBasedOn(coloring, repr)) {
-			//GGDBGM("found subscriber for " << coloring << " based on " << repr << endl);
+			//GGDBGM("found subscriber for " << coloring <<
+			//       " based on " << repr << endl);
 			fcUpdates.insert(coloring);
 		}
 	}

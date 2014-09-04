@@ -108,13 +108,6 @@ void MainWindow::addDistView(QWidget *frame)
 	// vLayout->addStretch(); // align on top when all folded
 }
 
-//void MainWindow::setGUIEnabled(bool enable, TaskType tt)
-//{
-//	ignoreButton->setEnabled(enable || tt == TT_TOGGLE_LABELS);
-//	addButton->setEnabled(enable);
-//	remButton->setEnabled(enable);
-//}
-
 void MainWindow::openContextMenu()
 {
 	delete contextMenu;

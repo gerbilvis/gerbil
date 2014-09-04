@@ -85,9 +85,6 @@ void Controller::setupDocks()
 	connect(labelingModel(), SIGNAL(newLabeling(cv::Mat1s,QVector<QColor>,bool)),
 			bandDock, SLOT(processLabelingChange(cv::Mat1s,QVector<QColor>,bool)));
 
-// old -> subscription
-//	connect(bandDock, SIGNAL(bandRequested(representation::t, int)),
-//			imageModel(), SLOT(computeBand(representation::t, int)));
 	connect(dvc, SIGNAL(bandSelected(representation::t, int)),
 			bandDock, SLOT(processBandSelected(representation::t,int)));
 	connect(bandDock, SIGNAL(subscribeImageBand(QObject *,representation::t,int)),
@@ -268,33 +265,6 @@ void Controller::setupDocks()
 	connect(labelDock, SIGNAL(applyROIChanged(bool)),
 			labelingModel(), SLOT(setApplyROI(bool)));
 }
-
-//void Controller::setGUIEnabledDocks(bool enable, TaskType tt)
-//{
-//	bandDock->setEnabled(enable);
-////TODO	->bandView()->setEnabled(enable);
-
-//	if (tt == TT_SELECT_ROI && (!enable)) {
-//		/* TODO: check if this is enough to make sure no label changes
-//		 * happen during ROI recomputation */
-//		bandDock->bandView()->commitLabelChanges();
-//	}
-
-//	//TODO
-//	//	labelDock->setEnabled(enable);
-//	falseColorDock->setEnabled(enable);
-
-//	// TODO limitedMode - availabe from Controller?
-//	//illumDock->setEnabled((enable || tt == TT_APPLY_ILLUM) && !im->isLimitedMode());
-//	illumDock->setEnabled((enable || tt == TT_APPLY_ILLUM));
-
-//#ifdef WITH_SEG_MEANSHIFT
-//	clusteringDock->setEnabled(enable && !imageModel()->isLimitedMode());
-//#endif
-//	roiDock->setEnabled(enable || tt == TT_SELECT_ROI);
-//	labelDock->setEnabled(enable);
-
-//}
 
 void Controller::requestGraphseg(representation::t repr,
 									 const seg_graphs::GraphSegConfig &config,
