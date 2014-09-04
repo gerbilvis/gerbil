@@ -157,7 +157,7 @@ void Accumulate::operator()(const tbb::blocked_range2d<int> &r) const
 			const multi_img::Pixel& pixel = multi(y, x);
 			BinSet &s = sets[label];
 
-			BinSet::HashKey hashkey(boost::extents[multi.size()]);
+			BinSet::HashKey hashkey(multi.size());
             for (unsigned int d = 0; d < multi.size(); ++d) {
 				int pos = floor(Compute::curpos(
 									pixel[d], d, minval, binsize, illuminant));
