@@ -41,7 +41,9 @@ void LabelingModel::updateROI(const cv::Rect &roi)
 	// signal new matrix
 	emit newLabeling(labels, colors);
 
-	invalidateMaskIcons();
+	if (applyROI) {
+		invalidateMaskIcons();
+	}
 }
 
 void LabelingModel::setLabels(const Labeling &labeling, bool full)
