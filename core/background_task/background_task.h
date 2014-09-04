@@ -82,18 +82,18 @@ protected:
 
 typedef boost::shared_ptr<BackgroundTask> BackgroundTaskPtr;
 
-enum TaskType {
-	TT_NONE,
-	TT_BAND_COUNT,		// change/interpolate number of bands
-	TT_BIN_COUNT,		// change histogram binning
-	TT_TOGGLE_LABELS,	// single or multiple histograms based on labels
-	TT_APPLY_ILLUM,		// apply illuminant to the whole image
-	TT_NORM_RANGE,		// change data range (compute new histograms?)
-	TT_CLAMP_RANGE_IMG,	// clamp pixels in the whole image
-	TT_CLAMP_RANGE_GRAD,// clamp pixels in the whole gradient image
-	TT_SELECT_ROI,		// apply region of interest
-	TT_TOGGLE_VIEWER	// show/hide a distribution view
-};
+//enum TaskType {
+//	TT_NONE,
+//	TT_BAND_COUNT,		// change/interpolate number of bands
+//	TT_BIN_COUNT,		// change histogram binning
+//	TT_TOGGLE_LABELS,	// single or multiple histograms based on labels
+//	TT_APPLY_ILLUM,		// apply illuminant to the whole image
+//	TT_NORM_RANGE,		// change data range (compute new histograms?)
+//	TT_CLAMP_RANGE_IMG,	// clamp pixels in the whole image
+//	TT_CLAMP_RANGE_GRAD,// clamp pixels in the whole gradient image
+//	TT_SELECT_ROI,		// apply region of interest
+//	TT_TOGGLE_VIEWER	// show/hide a distribution view
+//};
 
 #endif
 #endif

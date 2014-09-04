@@ -267,32 +267,32 @@ void Controller::setupDocks()
 			labelDock, SLOT(processMaskIconsComputed(const QVector<QImage>&)));
 }
 
-void Controller::setGUIEnabledDocks(bool enable, TaskType tt)
-{
-	bandDock->setEnabled(enable);
-//TODO	->bandView()->setEnabled(enable);
+//void Controller::setGUIEnabledDocks(bool enable, TaskType tt)
+//{
+//	bandDock->setEnabled(enable);
+////TODO	->bandView()->setEnabled(enable);
 
-	if (tt == TT_SELECT_ROI && (!enable)) {
-		/* TODO: check if this is enough to make sure no label changes
-		 * happen during ROI recomputation */
-		bandDock->bandView()->commitLabelChanges();
-	}
+//	if (tt == TT_SELECT_ROI && (!enable)) {
+//		/* TODO: check if this is enough to make sure no label changes
+//		 * happen during ROI recomputation */
+//		bandDock->bandView()->commitLabelChanges();
+//	}
 
-	//TODO
-	//	labelDock->setEnabled(enable);
-	falseColorDock->setEnabled(enable);
+//	//TODO
+//	//	labelDock->setEnabled(enable);
+//	falseColorDock->setEnabled(enable);
 
-	// TODO limitedMode - availabe from Controller?
-	//illumDock->setEnabled((enable || tt == TT_APPLY_ILLUM) && !im->isLimitedMode());
-	illumDock->setEnabled((enable || tt == TT_APPLY_ILLUM));
+//	// TODO limitedMode - availabe from Controller?
+//	//illumDock->setEnabled((enable || tt == TT_APPLY_ILLUM) && !im->isLimitedMode());
+//	illumDock->setEnabled((enable || tt == TT_APPLY_ILLUM));
 
-#ifdef WITH_SEG_MEANSHIFT
-	clusteringDock->setEnabled(enable && !imageModel()->isLimitedMode());
-#endif
-	roiDock->setEnabled(enable || tt == TT_SELECT_ROI);
-	labelDock->setEnabled(enable);
+//#ifdef WITH_SEG_MEANSHIFT
+//	clusteringDock->setEnabled(enable && !imageModel()->isLimitedMode());
+//#endif
+//	roiDock->setEnabled(enable || tt == TT_SELECT_ROI);
+//	labelDock->setEnabled(enable);
 
-}
+//}
 
 void Controller::requestGraphseg(representation::t repr,
 									 const seg_graphs::GraphSegConfig &config,

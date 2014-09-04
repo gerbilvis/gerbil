@@ -34,7 +34,7 @@ public:
 	void setLimitedMode(bool limited);
 public slots:
 	// TODO connect
-	void setGuiEnabled(bool enable, TaskType tt);
+//	void setGuiEnabled(bool enable, TaskType tt);
 
 	void setNormRange(representation::t type, const multi_img::Range& range);
 

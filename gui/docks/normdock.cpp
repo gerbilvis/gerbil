@@ -74,31 +74,31 @@ void NormDock::initUi()
 }
 
 
-void NormDock::setGuiEnabled(bool enable, TaskType tt)
-{
-	// original code from MainWindow:
-	//	normDock->setEnabled((enable || tt == TT_NORM_RANGE || tt == TT_CLAMP_RANGE_IMG || tt == TT_CLAMP_RANGE_GRAD) && !limitedMode);
-	//	normIButton->setEnabled(enable || tt == TT_NORM_RANGE || tt == TT_CLAMP_RANGE_IMG);
-	//	normGButton->setEnabled(enable || tt == TT_NORM_RANGE || tt == TT_CLAMP_RANGE_GRAD);
-	//	normModeBox->setEnabled(enable);
-	//	normApplyButton->setEnabled(enable || tt == TT_NORM_RANGE);
-	//	normClampButton->setEnabled(enable || tt == TT_CLAMP_RANGE_IMG || tt == TT_CLAMP_RANGE_GRAD);
+//void NormDock::setGuiEnabled(bool enable, TaskType tt)
+//{
+//	// original code from MainWindow:
+//	//	normDock->setEnabled((enable || tt == TT_NORM_RANGE || tt == TT_CLAMP_RANGE_IMG || tt == TT_CLAMP_RANGE_GRAD) && !limitedMode);
+//	//	normIButton->setEnabled(enable || tt == TT_NORM_RANGE || tt == TT_CLAMP_RANGE_IMG);
+//	//	normGButton->setEnabled(enable || tt == TT_NORM_RANGE || tt == TT_CLAMP_RANGE_GRAD);
+//	//	normModeBox->setEnabled(enable);
+//	//	normApplyButton->setEnabled(enable || tt == TT_NORM_RANGE);
+//	//	normClampButton->setEnabled(enable || tt == TT_CLAMP_RANGE_IMG || tt == TT_CLAMP_RANGE_GRAD);
 
-	this->setEnabled( (enable ||
-					   tt == TT_NORM_RANGE ||
-					   tt == TT_CLAMP_RANGE_IMG ||
-					   tt == TT_CLAMP_RANGE_GRAD
-					  ) && !limitedMode);
+//	this->setEnabled( (enable ||
+//					   tt == TT_NORM_RANGE ||
+//					   tt == TT_CLAMP_RANGE_IMG ||
+//					   tt == TT_CLAMP_RANGE_GRAD
+//					  ) && !limitedMode);
 
-	normIButton->setEnabled(enable ||
-						 tt == TT_NORM_RANGE || tt == TT_CLAMP_RANGE_IMG);
-	normGButton->setEnabled(enable ||
-						 tt == TT_NORM_RANGE || tt == TT_CLAMP_RANGE_GRAD);
-	normModeBox->setEnabled(enable);
-	normApplyButton->setEnabled(enable || tt == TT_NORM_RANGE);
-	normClampButton->setEnabled(enable ||
-								tt == TT_CLAMP_RANGE_IMG || tt == TT_CLAMP_RANGE_GRAD);
-}
+//	normIButton->setEnabled(enable ||
+//						 tt == TT_NORM_RANGE || tt == TT_CLAMP_RANGE_IMG);
+//	normGButton->setEnabled(enable ||
+//						 tt == TT_NORM_RANGE || tt == TT_CLAMP_RANGE_GRAD);
+//	normModeBox->setEnabled(enable);
+//	normApplyButton->setEnabled(enable || tt == TT_NORM_RANGE);
+//	normClampButton->setEnabled(enable ||
+//								tt == TT_CLAMP_RANGE_IMG || tt == TT_CLAMP_RANGE_GRAD);
+//}
 
 void NormDock::setNormRange(representation::t type, const multi_img::Range& range)
 {

@@ -50,7 +50,7 @@ public:
 	// add distribution view widget to the appropr. container
 	void addDistView(QWidget *frame);
 
-	void setGUIEnabled(bool enable, TaskType tt = TT_NONE);
+//	void setGUIEnabled(bool enable, TaskType tt = TT_NONE);
 
 public slots:
 	void openContextMenu();
