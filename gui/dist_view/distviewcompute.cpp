@@ -23,6 +23,42 @@ bool assertBinSetsKeyDim(const std::vector<BinSet> &v, const ViewportCtx &ctx) {
 	return true;
 }
 
+/** RAII class to manage QGLBuffer. */
+class GLBufferHolder
+{
+public:
+	GLBufferHolder(QGLBuffer &vb)
+		: vb(vb)
+	{
+		const char* pfx = "GLBufferHolder::GLBufferHolder(): ";
+		msuccess = vb.create();
+		if (!msuccess) {
+			std::cerr << pfx << "QGLBuffer::create() failed" << std::endl;
+			return;
+		}
+		msuccess = vb.bind();
+		if (!msuccess) {
+			std::cerr << pfx << "QGLBuffer::bind() failed" << std::endl;
+			return;
+		}
+	}
+
+	bool success() {
+		return msuccess;
+	}
+
+	~GLBufferHolder() {
+		vb.unmap();
+		vb.release();
+	}
+
+
+private:
+	bool msuccess;
+	QGLBuffer &vb;
+};
+
+
 /* translate image value to value in binning coordinate system */
 multi_img::Value Compute::curpos(
 	const multi_img::Value& val, int dim,
@@ -92,41 +128,6 @@ void Compute::preparePolylines(const ViewportCtx &ctx,
 	// shuffle the index for clutter-reduction
 	std::random_shuffle(index.begin(), index.end());
 }
-
-
-// FIXME Move
-class GLBufferHolder
-{
-public:
-	GLBufferHolder(QGLBuffer &vb)
-		: m_vb(vb)
-	{
-		m_success = vb.create();
-		if (!m_success) {
-			std::cerr << "GLBufferHolder::GLBufferHolder(): QGLBuffer::create() failed" << std::endl;
-		} else {
-			m_success = vb.bind();
-		}
-
-		if (!m_success) {
-			std::cerr << "GLBufferHolder::GLBufferHolder(): QGLBuffer::bind() failed" << std::endl;
-		}
-	}
-
-	bool success() {
-		return m_success;
-	}
-
-	~GLBufferHolder() {
-		m_vb.unmap();
-		m_vb.release();
-	}
-
-
-private:
-	bool m_success;
-	QGLBuffer &m_vb;
-};
 
 void Compute::storeVertices(const ViewportCtx &ctx,
 						   const std::vector<BinSet> &sets,
