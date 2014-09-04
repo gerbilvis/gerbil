@@ -84,7 +84,7 @@ void Compute::preparePolylines(const ViewportCtx &ctx,
 		s.boundary = preprocess.GetRanges();
 	}
 
-	if (index.begin() < index.end()) {
+	if (index.begin() == index.end()) {
 		GGDBGP("Compute::preparePolylines(): error: empty index" << endl);
 		return;
 	}
