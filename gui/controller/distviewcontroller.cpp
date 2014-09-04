@@ -10,11 +10,12 @@
 
 #include "subscriptions.h"
 
-#define GGDBG_MODULE
+//#define GGDBG_MODULE
 #include <gerbil_gui_debug.h>
 
+#ifdef GGDBG_MODULE
 #define GGDBG_REPR(type) GGDBGM(format("%1%")%type << endl)
-
+#endif
 
 /** Holds a subscription set for representations.
  *
@@ -210,7 +211,7 @@ void DistViewController::processImageUpdate(representation::t repr,
 			   " request for new binning" << endl);
 		updateBinning(repr, image);
 	} else {
-		GGDBGM("no binning requests, ignoring update" << endl)
+		GGDBGM("no binning requests, ignoring update" << endl);
 	}
 }
 

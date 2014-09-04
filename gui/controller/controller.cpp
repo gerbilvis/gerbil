@@ -13,7 +13,7 @@
 
 #include "widgets/mainwindow.h"
 
-#define GGDBG_MODULE
+//#define GGDBG_MODULE
 #include "gerbil_gui_debug.h"
 
 #include <boost/ref.hpp>
@@ -388,11 +388,9 @@ void Controller::processSubscribeRepresentation(QObject *subscriber,
 	assert(subs);
 	if (subscribe(subscriber, repr, subs->repr)) {
 		GGDBGM("new subscription, ");
-//		im->spawn(repr, m_roi, -1);
 		if (m_ROISpawned[repr]) {
 			GGDBGP("RE-spawning ROI "<< m_roi << " for " << repr << endl);
 			im->respawn(repr);
-//			dvc->setImage(repr, im->getImage(repr), m_roi);
 		} else {
 			GGDBGP("   spawning ROI "<< m_roi << " for " << repr << endl);
 			im->spawn(repr, m_roi, -1);

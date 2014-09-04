@@ -17,7 +17,7 @@
 #include <opencv2/core/core.hpp>
 #include <iostream>
 
-#define GGDBG_MODULE
+//#define GGDBG_MODULE
 #include <gerbil_gui_debug.h>
 
 DistViewModel::DistViewModel(representation::t type)

@@ -2,7 +2,7 @@
 #include "controller/distviewcontroller.h"
 #include "widgets/autohidewidget.h"
 
-#define GGDBG_MODULE
+//#define GGDBG_MODULE
 #include <gerbil_gui_debug.h>
 
 DistViewGUI::DistViewGUI(representation::t type)
