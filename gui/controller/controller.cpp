@@ -130,6 +130,10 @@ Controller::Controller(const std::string &filename, bool limited_mode,
 	GGDBGM("roi " << m_roi  << endl);
 	spawnROI();
 
+	// The IMG representation must always be subscribed. Otherwise all the logic
+	// in ImageModel fails. So we subscribe the Controller forever.
+	processSubscribeRepresentation(this, representation::IMG);
+
 	GGDBGM("init distview subscriptions" << endl);
 	dvc->initSubscriptions();
 
@@ -231,7 +235,22 @@ void Controller::rescaleSpectrum(int bands)
 
 	updateROI(false, cv::Rect(), bands);
 
-//	enableGUILater();
+	//	enableGUILater();
+}
+
+void Controller::debugSubscriptions()
+{
+	//std::cerr << "** TYPE      subscribed flag" << std::endl;
+	foreach (representation::t type, representation::all()) {
+		std::cerr << "** " << std::left << std::setw(7) << type;
+		if (haveSubscriber(type)) {
+			 std::cerr << "    subscribed";
+		} else {
+			std::cerr <<  "not subscribed";
+		}
+		std::cerr << std::endl;
+	}
+
 }
 
 void Controller::updateROI(bool reuse, cv::Rect roi, int bands)
@@ -244,8 +263,8 @@ void Controller::updateROI(bool reuse, cv::Rect roi, int bands)
 	}
 	GGDBGM("bands=" << bands << ", roi=" << roi << endl);
 
-	GGDBGM("no-reuse HACK active" << endl);
-	reuse = false;
+	//GGDBGM("no-reuse HACK active" << endl);
+	//reuse = false;
 
 	// prepare incremental update and test worthiness
 	std::vector<cv::Rect> sub, add;
@@ -266,6 +285,8 @@ void Controller::updateROI(bool reuse, cv::Rect roi, int bands)
 	if (reuse) {
 		foreach (representation::t type, representation::all()) {
 			if (haveSubscriber(type)) {
+				GGDBGM("     subscribed " << type <<
+					   " -> incremental update" << endl);
 				sets[type] = dvc->subImage(type, sub, roi);
 			}
 		}
@@ -316,24 +337,12 @@ void Controller::updateROI(bool reuse, cv::Rect roi, int bands)
 
 bool Controller::haveSubscriber(representation::t type)
 {
-	bool isSubscribed = false;
-	// check for band subscriptions
-	foreach (Subscription<ImageBandId> const& sub, subs->imageBand) {
-		if (sub.subsid.repr == type) {
-			isSubscribed = true;
-			break;
+	foreach (Subscription<representation::t> const& sub, subs->repr) {
+		if (sub.subsid == type) {
+			return true;
 		}
 	}
-	// check for representation subscriptions
-	if (!isSubscribed) {
-		foreach (Subscription<representation::t> const& sub, subs->repr) {
-			if (sub.subsid == type) {
-				isSubscribed = true;
-
-			}
-		}
-	}
-	return isSubscribed;
+	return false;
 }
 
 //void Controller::setGUIEnabled(bool enable, TaskType tt)
@@ -382,6 +391,8 @@ bool Controller::haveSubscriber(representation::t type)
 void Controller::processSubscribeImageBand(QObject *subscriber, representation::t repr, int bandId)
 {
 	assert(subs);
+	// also subscribe to the relevant representation
+	processSubscribeRepresentation(subscriber, repr);
 	// if not inserted, the subscription already exists -> no need to update
 	if (subscribe(subscriber, ImageBandId(repr, bandId), subs->imageBand)) {
 		im->computeBand(repr, bandId);
@@ -392,12 +403,15 @@ void Controller::processUnsubscribeImageBand(QObject *subscriber, representation
 {
 	assert(subs);
 	subs->imageBand.erase(Subscription<ImageBandId>(subscriber, ImageBandId(repr, bandId)));
+	processUnsubscribeRepresentation(subscriber, repr);
 }
 
 void Controller::processSubscribeFalseColor(QObject *subscriber, FalseColoring::Type coloring)
 {
 	//GGDBGM(coloring << endl);
 	assert(subs);
+	// also subscribe to the relevant representation
+	processSubscribeRepresentation(subscriber, FalseColoring::basis(coloring));
 	if (subscribe(subscriber, coloring, subs->falseColor)) {
 		//GGDBGM("requesting from fm " << coloring << endl);
 		fm->requestColoring(coloring);
@@ -414,6 +428,7 @@ void Controller::processUnsubscribeFalseColor(QObject *subscriber, FalseColoring
 		// cancel computation if any.
 		fm->cancelComputation(coloring);
 	}
+	processUnsubscribeRepresentation(subscriber, FalseColoring::basis(coloring));
 }
 
 void Controller::processRecalcFalseColor(FalseColoring::Type coloringType)
@@ -440,7 +455,6 @@ void Controller::processUnsubscribeRepresentation(QObject *subscriber, represent
 	GGDBGM("unsubscribe " << repr << endl);
 	subs->repr.erase(Subscription<representation::t>(subscriber, repr));
 }
-
 
 void Controller::startQueue()
 {

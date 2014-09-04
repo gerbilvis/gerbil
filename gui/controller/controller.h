@@ -126,6 +126,8 @@ public slots:
 //	void enableGUINow(bool forreal);
 //	void disableGUI(TaskType tt = TT_NONE);
 
+	void debugSubscriptions();
+
 protected slots:
 	// these are requested by the graphSegWidget
 	void requestGraphseg(representation::t,
@@ -170,11 +172,17 @@ protected slots:
 	 * cached instance exists (SOM is non-deterministic). */
 	void processRecalcFalseColor(FalseColoring::Type coloringType);
 
-	// representation subscriptions
+	// Representation Subscriptions
+
+	// TODO: A new representation subscription causes a re-spawn of the ROI.
+	// We need some mechanism for the models which receive image updates to
+	// realize there is duplicate data being sent around.
+	// E.g. the false color model recomputes the SOM each time the IMG
+	// distview is opened. 
+	// Ideas: reswpawn flag, add a unique key to the imageupdate, ... ?
 
 	void processSubscribeRepresentation(QObject *subscriber, representation::t repr);
 	void processUnsubscribeRepresentation(QObject *subscriber, representation::t repr);
-
 
 protected:
 	// connect models with gui
@@ -200,8 +208,6 @@ protected:
 	void updateROI(bool reuse, cv::Rect roi = cv::Rect(), int bands = -1);
 
 	/** Return true if there is a subscriber for the given representation, otherwise false.
-	 *
-	 * This depends on subscriptions for representation and bands.
 	 */
 	bool haveSubscriber(representation::t type);
 
