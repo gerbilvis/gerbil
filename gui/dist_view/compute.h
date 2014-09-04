@@ -183,8 +183,7 @@ public:
 
 	/* method and helper class to extract and store vertice data from
 	 * preprocessed bins */
-	/// @returns error code or zero on success
-	static int storeVertices(const ViewportCtx &context,
+	static void storeVertices(const ViewportCtx &context,
 							 const std::vector<BinSet> &sets,
 							 const binindex& index, QGLBuffer &vb,
 							 bool drawMeans,

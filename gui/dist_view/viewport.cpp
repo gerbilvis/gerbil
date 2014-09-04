@@ -9,6 +9,8 @@
 
 #include "viewport.h"
 #include "../iogui.h"
+
+#define GGDBG_MODULE
 #include "../gerbil_gui_debug.h"
 
 #include <qtopencv.h>
@@ -206,6 +208,15 @@ void Viewport::rebuild()
 
 void Viewport::prepareLines()
 {
+	if (!ctx) {
+		GGDBGM("no ctx" << endl);
+		return;
+	}
+	if (!sets) {
+		GGDBGM("no sets" << endl);
+		return;
+	}
+
 	// lock context and sets
 	SharedDataLock ctxlock(ctx->mutex);
 	SharedDataLock setslock(sets->mutex);
@@ -213,32 +224,39 @@ void Viewport::prepareLines()
 	if ((*ctx)->reset.fetch_and_store(0)) // is true if it was 1 before
 		reset();
 
+//	foreach(BinSet const& s, **sets) {
+//		if (s.bins.empty()) {
+//			GGDBGM("empty BinSet, aborting" << endl);
+//			return;
+//		}
+//	}
+
 	// first step (cpu only)
 	Compute::preparePolylines(**ctx, **sets, shuffleIdx);
 
 	// second step (cpu -> gpu)
 	target->makeCurrent();
-	int success = Compute::storeVertices(**ctx, **sets, shuffleIdx, vb,
+	Compute::storeVertices(**ctx, **sets, shuffleIdx, vb,
 										 drawMeans, illuminantAppl);
 
-	// gracefully fail if there is a problem with VBO support
-	switch (success) {
-	case 0:
-		return;
-	case -1:
-		QMessageBox::critical(target, "Drawing Error",
-			"Vertex Buffer Objects not supported.\n"
-			"Make sure your graphics driver supports OpenGL 1.5 or later.");
-		QApplication::quit();
-		exit(1);
-	default:
-		QMessageBox::critical(target, "Drawing Error",
-			QString("Drawing spectra cannot be continued. "
-					"Please notify us about this problem, state error code %1 "
-					"and what actions led up to this error. Send an email to"
-			" report@gerbilvis.org. Thank you for your help!").arg(success));
-		return;
-	}
+//	// gracefully fail if there is a problem with VBO support
+//	switch (success) {
+//	case 0:
+//		return;
+//	case -1:
+//		QMessageBox::critical(target, "Drawing Error",
+//			"Vertex Buffer Objects not supported.\n"
+//			"Make sure your graphics driver supports OpenGL 1.5 or later.");
+//		QApplication::quit();
+//		exit(1);
+//	default:
+//		QMessageBox::critical(target, "Drawing Error",
+//			QString("Drawing spectra cannot be continued. "
+//					"Please notify us about this problem, state error code %1 "
+//					"and what actions led up to this error. Send an email to"
+//			" report@gerbilvis.org. Thank you for your help!").arg(success));
+//		return;
+//	}
 }
 
 void Viewport::activate()

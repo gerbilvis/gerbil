@@ -456,8 +456,9 @@ void Controller::processSubscribeRepresentation(QObject *subscriber, representat
 {
 	assert(subs);
 	if (subscribe(subscriber, repr, subs->repr)) {
-		GGDBGM("new subscription " << repr << endl);
-		initROI.insert(repr);
+		GGDBGM("new subscription, spawning ROI for " << repr << endl);
+		im->spawn(repr, im->getROI(), -1);
+		dvc->setImage(repr, im->getImage(repr), im->getROI());
 	}
 }
 

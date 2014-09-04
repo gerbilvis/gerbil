@@ -1,5 +1,6 @@
 #include "compute.h"
 
+#define GGDBG_MODULE
 #include "../gerbil_gui_debug.h"
 
 #include <QGLBuffer>
@@ -70,6 +71,7 @@ void Compute::preparePolylines(const ViewportCtx &ctx,
 
 	assert(sets.size()>0);
 	index.clear();
+	//GGDBGP("Compute::preparePolylines() sets.size() = " << sets.size() << endl);
 	for (unsigned int i = 0; i < sets.size(); ++i) {
 		BinSet &s = sets[i];
 		PreprocessBins preprocess(i, ctx.dimensionality,
@@ -79,45 +81,86 @@ void Compute::preparePolylines(const ViewportCtx &ctx,
 		s.boundary = preprocess.GetRanges();
 	}
 
-	assert(index.begin() < index.end()); // index is not empty
+	if (index.begin() < index.end()) {
+		GGDBGP("Compute::preparePolylines(): error: empty index" << endl);
+		return;
+	}
 
 	// shuffle the index for clutter-reduction
 	std::random_shuffle(index.begin(), index.end());
 }
 
-int Compute::storeVertices(const ViewportCtx &ctx,
+
+// FIXME Move
+class GLBufferHolder
+{
+public:
+	GLBufferHolder(QGLBuffer &vb)
+		: m_vb(vb)
+	{
+		m_success = vb.create();
+		if (!m_success) {
+			std::cerr << "GLBufferHolder::GLBufferHolder(): QGLBuffer::create() failed" << std::endl;
+		} else {
+			m_success = vb.bind();
+		}
+
+		if (!m_success) {
+			std::cerr << "GLBufferHolder::GLBufferHolder(): QGLBuffer::bind() failed" << std::endl;
+		}
+	}
+
+	bool success() {
+		return m_success;
+	}
+
+	~GLBufferHolder() {
+		m_vb.unmap();
+		m_vb.release();
+	}
+
+
+private:
+	bool m_success;
+	QGLBuffer &m_vb;
+};
+
+void Compute::storeVertices(const ViewportCtx &ctx,
 						   const std::vector<BinSet> &sets,
 						   const binindex& index, QGLBuffer &vb,
 						   bool drawMeans,
 						   const std::vector<multi_img::Value> &illuminant)
 {
 	vb.setUsagePattern(QGLBuffer::StaticDraw);
-	bool success = vb.create();
-	if (!success)
-		return -1;
-
-	success = vb.bind();
-	if (!success)
-		return 1;
+	GLBufferHolder vbh(vb);
+	if (!vbh.success()) {
+		return;
+	}
 
 	//GGDBGM(boost::format("shuffleIdx.size()=%1%, (*ctx)->dimensionality=%2%\n")
 	//	   %shuffleIdx.size() %(*ctx)->dimensionality)
-	vb.allocate(index.size() * ctx.dimensionality * sizeof(GLfloat) * 2);
+	if (index.size() == 0) {
+		std::cerr << "Compute::storeVertices(): error: empty binindex" << std::endl;
+		return;
+	}
+	const size_t nbytes = index.size() * ctx.dimensionality * sizeof(GLfloat) * 2;
+	//GGDBGP("Compute::storeVertices(): allocating "<< nbytes << " bytes" << endl);
+	vb.allocate(nbytes);
 	//GGDBGM("before vb.map()\n");
 	GLfloat *varr = (GLfloat*)vb.map(QGLBuffer::WriteOnly);
 	//GGDBGM("after vb.map()\n");
 
-	if (!varr)
-		return 2;
+	if (!varr) {
+		std::cerr << "Compute::storeVertices(): QGLBuffer::map() failed" << std::endl;
+		return;
+	}
 
 	GenerateVertices generate(drawMeans, ctx.dimensionality, ctx.minval,
 							  ctx.binsize, illuminant, sets, index, varr);
 	tbb::parallel_for(tbb::blocked_range<size_t>(0, index.size()),
 		generate, tbb::auto_partitioner());
 
-	vb.unmap();
-	vb.release();
-	return 0;
+	return;
 }
 
 void Compute::GenerateVertices::operator()(const tbb::blocked_range<size_t> &r) const
