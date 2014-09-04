@@ -5,7 +5,7 @@ if(CMAKE_VERSION VERSION_GREATER "2.8.11.100")
 	cmake_policy(SET CMP0022 NEW)
 endif()
 if(CMAKE_VERSION VERSION_GREATER "3.0")
-	cmake_policy(SET CMP0038 OLD) # ignore core lib linking to itself
+	cmake_policy(SET CMP0038 NEW)
 endif()
 
 project(Gerbil)

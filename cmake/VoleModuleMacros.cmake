@@ -167,7 +167,10 @@ macro(vole_add_module)
 				target_link_libraries(${vole_module_library} "${module}${VOLE_LIBRARY_SUFFIX}")
 			endforeach()
 
-			target_link_libraries(${vole_module_library} "core${VOLE_LIBRARY_SUFFIX}")
+			# Prevent core to depend on itself, CMake 3.0 policy CMP0038 
+			if (NOT ${vole_module_library} STREQUAL core${VOLE_LIBRARY_SUFFIX})
+				target_link_libraries(${vole_module_library} "core${VOLE_LIBRARY_SUFFIX}")
+			endif()
 
 			if(vole_module_optional_modules)
 				target_link_libraries(${vole_module_library} "${vole_module_name}${VOLE_OPTIONAL_LIBRARY_SUFFIX}")
