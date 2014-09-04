@@ -15,6 +15,13 @@
 
 #define GGDBG_REPR(type) GGDBGM(format("%1%")%type << endl)
 
+
+/** Holds a subscription set for representations.
+ *
+ * This is purely for avoiding the distviewcontroller.h -> subscriptions.h
+ * dependency. Forward declaration of Subscription<representation::t>::Set
+ * is impossible(?).
+ */
 struct ReprSubscriptions {
 	Subscription<representation::t>::Set	repr;
 };
