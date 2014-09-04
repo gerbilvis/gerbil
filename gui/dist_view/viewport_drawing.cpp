@@ -299,15 +299,13 @@ void Viewport::drawBins(QPainter &painter, QTimer &renderTimer,
 
 		// grab binset and bin according to key
 		BinSet &s = (**sets)[idx.first];
-		//
-		// debug code entfernen? oder wenn ernstes problem exception o.ä.?
 		std::pair<BinSet::HashMap::const_iterator, BinSet::HashMap::const_iterator> binitp =
 				s.bins.equal_range(K);
 		if (s.bins.end() == binitp.first) {
+			// FIXME this is an error and should be treated accordingly
 			GGDBGM("no bin"<< endl);
 			return;
 		}
-		//
 		Bin const &b = s.bins.equal_range(K).first->second;
 
 		// set color
