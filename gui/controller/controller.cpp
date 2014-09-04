@@ -257,6 +257,13 @@ void Controller::debugSubscriptions()
 
 void Controller::updateROI(bool reuse, cv::Rect roi, int bands)
 {
+	// FIXME (galtmann): this needs to be re-thought for subscriptions.
+	// Do we still need to push the update to distview controller?
+	// Does incremental binning update still work?
+	// IMHO DVC should handle incremental update itself.
+	// And IMHO the add/sub functionality is cancelled by DVC listening
+	// for imageUpdate()... Tricky.
+
 	// no new ROI provided
 	if (cv::Rect() == roi) {
 		roi = m_roi ;
@@ -324,7 +331,8 @@ void Controller::updateROI(bool reuse, cv::Rect roi, int bands)
 			if (reuse) {
 				dvc->addImage(type, sets[type], add, roi);
 			} else {
-				dvc->setImage(type, im->getImage(type), roi);
+				// FIXME, see top of this function.
+//				dvc->setImage(type, im->getImage(type), roi);
 			}
 		}
 	}
@@ -447,16 +455,17 @@ void Controller::processSubscribeRepresentation(QObject *subscriber, representat
 	assert(subs);
 	if (subscribe(subscriber, repr, subs->repr)) {
 		GGDBGM("new subscription, ");
-		im->spawn(repr, m_roi, -1);
+//		im->spawn(repr, m_roi, -1);
 		if (m_ROISpawned[repr]) {
 			GGDBGP("RE-spawning ROI "<< m_roi << " for " << repr << endl);
 			im->respawn(repr);
+//			dvc->setImage(repr, im->getImage(repr), m_roi);
 		} else {
 			GGDBGP("   spawning ROI "<< m_roi << " for " << repr << endl);
 			im->spawn(repr, m_roi, -1);
+			m_ROISpawned[repr] = true;
 		}
 
-		dvc->setImage(repr, im->getImage(repr), m_roi);
 	}
 }
 

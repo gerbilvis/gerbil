@@ -26,6 +26,10 @@ DistViewController::DistViewController(Controller *ctrl,
 		map[i]->model.setContext(map[i]->gui.getContext());
 		map[i]->model.setBinSets(map[i]->gui.getBinSets());
 	}
+
+	foreach (representation::t i, representation::all()) {
+		m_distviewNeedsBinning[i] = false;
+	}
 }
 
 void DistViewController::init()
@@ -42,6 +46,11 @@ void DistViewController::init()
 #ifdef WITH_GRADPCA
 	map[representation::GRADPCA]->gui.toggleFold();
 #endif /* WITH_GRADPCA */
+
+	connect(ctrl->imageModel(), SIGNAL(roiRectChanged(cv::Rect)),
+			this, SLOT(processROIChage(cv::Rect)));
+	connect(ctrl->imageModel(), SIGNAL(imageUpdate(representation::t,SharedMultiImgPtr,bool)),
+			this, SLOT(processImageUpdate(representation::t,SharedMultiImgPtr,bool)));
 
 
 	foreach (payload *p, map) {
@@ -67,6 +76,9 @@ void DistViewController::init()
 
 		connect(ctrl, SIGNAL(toggleSingleLabel(bool)),
 				g, SLOT(toggleSingleLabel(bool)));
+
+		connect(g, SIGNAL(needBinning(representation::t)),
+				this, SLOT(processDistviewNeedsBinning(representation::t)));
 	}
 
 	/* connect pass-throughs / signals we process */
@@ -132,12 +144,12 @@ void DistViewController::addImage(representation::t type, sets_ptr temp,
 	map[type]->model.addImage(temp, regions, roi);
 }
 
-void DistViewController::setImage(representation::t type, SharedMultiImgPtr image,
-							   cv::Rect roi)
-{
-	int bins = map[type]->gui.getBinCount();
-	map[type]->model.setImage(image, roi, bins);
-}
+//void DistViewController::setImage(representation::t type, SharedMultiImgPtr image,
+//							   cv::Rect roi)
+//{
+//	int bins = map[type]->gui.getBinCount();
+//	map[type]->model.setImage(image, roi, bins);
+//}
 
 void DistViewController::setActiveViewer(representation::t type)
 {
@@ -165,6 +177,47 @@ void DistViewController::pixelOverlay(int y, int x)
 				p->gui.insertPixelOverlay(overlay);
 		}
 	}
+}
+
+void DistViewController::processROIChage(cv::Rect roi)
+{
+	m_roi = roi;
+}
+
+void DistViewController::processImageUpdate(representation::t repr,
+									   SharedMultiImgPtr image,
+									   bool duplicate)
+{
+	if (cv::Rect() == m_roi) {
+		std::cerr << "DistViewController::processImageUpdate() error: "
+				  << "DVC internal ROI is empty" << std::endl;
+	}
+	if (duplicate) {
+		GGDBGM("is re-spawn -- ");
+		if (m_distviewNeedsBinning[repr]) {
+			m_distviewNeedsBinning[repr] = false;
+			GGDBGP("following distview " << repr << " request for new binning" << endl);
+			updateBinning(repr, image);
+		} else {
+			GGDBGP("ignoring" << endl)
+		}
+	} else {
+		GGDBGM("full spawn" << endl);
+		m_distviewNeedsBinning[repr] = false;
+		updateBinning(repr, image);
+	}
+}
+
+void DistViewController::processDistviewNeedsBinning(representation::t repr)
+{
+	GGDBGM(repr << " needs binning" << endl);
+	m_distviewNeedsBinning[repr] = true;
+}
+
+void DistViewController::updateBinning(representation::t repr, SharedMultiImgPtr image)
+{
+	int bins = map[repr]->gui.getBinCount();
+	map[repr]->model.setImage(image, m_roi, bins);
 }
 
 void DistViewController::changeBinCount(representation::t type, int bins)

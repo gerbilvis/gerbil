@@ -36,7 +36,9 @@ public:
 					  const std::vector<cv::Rect> &regions, cv::Rect roi);
 	void addImage(representation::t type, sets_ptr temp,
 				  const std::vector<cv::Rect> &regions, cv::Rect roi);
-	void setImage(representation::t type, SharedMultiImgPtr image, cv::Rect roi);
+
+	// Old, we now listen to imageUpdate from ImageModel
+	//void setImage(representation::t type, SharedMultiImgPtr image, cv::Rect roi);
 
 public slots:
 	void setActiveViewer(representation::t type);
@@ -73,6 +75,13 @@ public slots:
 
 	void pixelOverlay(int y, int x);
 
+	void processROIChage(cv::Rect roi);
+	void processImageUpdate(representation::t repr,
+										SharedMultiImgPtr image,
+										bool duplicate);
+
+	void processDistviewNeedsBinning(representation::t repr);
+
 signals:
 	void toggleLabeled(bool);
 	void toggleUnlabeled(bool);
@@ -106,12 +115,19 @@ signals:
 
 
 protected:
+	void updateBinning(representation::t repr, SharedMultiImgPtr image);
+
 	QMap<representation::t, payload*> map;
 	representation::t activeView;
 	Controller *ctrl;
 
 	// needed for add/rem to/from label functionality
 	int currentLabel;
+
+	// the current ROI
+	cv::Rect m_roi;
+
+	bool m_distviewNeedsBinning[representation::REPSIZE];
 };
 
 #endif // DISTVIEWCONTROLLER_H

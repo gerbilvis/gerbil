@@ -6,7 +6,7 @@
 #include <gerbil_gui_debug.h>
 
 DistViewGUI::DistViewGUI(representation::t type)
-	: type(type)
+	: type(type), m_needBinning(true)
 {	
 	// setup frame and its UI
 	frame = new QWidget();
@@ -139,6 +139,7 @@ void DistViewGUI::initSignals(DistViewController *dvctrl)
 void DistViewGUI::initSubscriptions()
 {
 	if (!ui->gv->isHidden()) {
+		emit needBinning(type);
 		emit subscribeRepresentation(this, type);
 	}
 }
@@ -176,6 +177,7 @@ void DistViewGUI::toggleFold()
 		/** SHOW **/
 		GGDBGM(type << " showing" << endl);
 
+		emit needBinning(type);
 		// let the controller know we need our image representation
 		emit subscribeRepresentation(this, type);
 

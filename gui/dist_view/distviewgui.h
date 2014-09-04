@@ -70,6 +70,9 @@ signals:
 	void toggleIlluminationShown(bool show);
 	void newIlluminantApplied(QVector<multi_img::Value>);
 
+	// Tell the DVC we need new binning prior to new representation subscription,
+	// so that he can handle the image update correctly.
+	void needBinning(representation::t type);
 	void subscribeRepresentation(QObject *subscriber, representation::t type);
 	void unsubscribeRepresentation(QObject *subscriber, representation::t type);
 
@@ -84,6 +87,7 @@ protected:
 	void createLimiterMenu();
 
 	representation::t type;
+	bool m_needBinning;
 
 	QWidget *frame;
 	Ui::DistViewGUI *ui;
