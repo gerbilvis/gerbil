@@ -1,7 +1,7 @@
 #ifndef DISTVIEWBINSTBB_H
 #define DISTVIEWBINSTBB_H
 
-#include "../dist_view/compute.h"
+#include "../dist_view/distviewcompute.h"
 
 #include <background_task/background_task.h>
 #include <shared_data.h>

@@ -11,7 +11,7 @@
 #define DISTVIEWMODEL_H
 
 #include "../model/representation.h"
-#include "compute.h"
+#include "distviewcompute.h"
 
 #include <multi_img.h>
 
