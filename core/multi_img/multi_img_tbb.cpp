@@ -15,6 +15,9 @@ void RebuildPixels::operator()(const tbb::blocked_range<size_t> &r) const
 {
 	for (size_t d = r.begin(); d != r.end(); ++d) {
 		multi_img::Band &src = multi.bands[d];
+		if (src.empty()) {
+			return;
+		}
 		multi_img::Band::const_iterator it; size_t i;
 		for (it = src.begin(), i = 0; it != src.end(); ++it, ++i)
 			multi.pixels[i][d] = *it;

@@ -153,9 +153,12 @@ void DistViewController::pixelOverlay(int y, int x)
 	}
 
 	foreach (payload *p, map) {
-		QPolygonF overlay = p->model.getPixelOverlay(y, x);
-		if (!overlay.empty())
-			p->gui.insertPixelOverlay(overlay);
+		// not visible -> not subscribed -> no data
+		if (p->gui.isVisible()) {
+			QPolygonF overlay = p->model.getPixelOverlay(y, x);
+			if (!overlay.empty())
+				p->gui.insertPixelOverlay(overlay);
+		}
 	}
 }
 

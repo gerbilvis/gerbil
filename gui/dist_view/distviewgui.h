@@ -33,6 +33,9 @@ public:
 
 	static QIcon colorIcon(const QColor &color);
 
+	/** True if the distview is unfolded, i.e. visible and subscribed. Otherwise false. */
+	bool isVisible();
+
 public slots:
 	void setActive()	{ vp->activate(); vp->update(); }
 	void setInactive()	{ vp->active = false; vp->update(); }
