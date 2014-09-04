@@ -8,6 +8,9 @@
 #include <boost/format.hpp>
 #include <QDebug>
 
+#define GGDBG_MODULE
+#include <gerbil_gui_debug.h>
+
 #define GGDBG_REPR(type) GGDBGM(format("%1%")%type << endl)
 
 DistViewController::DistViewController(Controller *ctrl,
@@ -117,6 +120,7 @@ sets_ptr DistViewController::subImage(representation::t type,
 							   const std::vector<cv::Rect> &regions,
 							   cv::Rect roi)
 {
+	GGDBG_CALL();
 	return map[type]->model.subImage(regions, roi);
 }
 
@@ -124,12 +128,19 @@ void DistViewController::addImage(representation::t type, sets_ptr temp,
 							   const std::vector<cv::Rect> &regions,
 							   cv::Rect roi)
 {
+	GGDBG_CALL();
 	map[type]->model.addImage(temp, regions, roi);
 }
 
 void DistViewController::setImage(representation::t type, SharedMultiImgPtr image,
 							   cv::Rect roi)
 {
+	{
+		SharedDataLock lock(image->mutex);
+		GGDBGM("roi=" << roi << ", "
+			   << "image: (" << (*image)->height << "x"
+				<< (*image)->width << ")" << endl);
+	}
 	int bins = map[type]->gui.getBinCount();
 	map[type]->model.setImage(image, roi, bins);
 }

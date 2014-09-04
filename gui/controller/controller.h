@@ -196,8 +196,6 @@ protected:
 	// (we did not test consecutive start/stop of the queue)
 	void stopQueue();
 
-	void doSpawnROI(bool reuse, const cv::Rect &roi);
-
 	// update ROI, or its contents
 	void updateROI(bool reuse, cv::Rect roi = cv::Rect(), int bands = -1);
 
@@ -261,16 +259,10 @@ protected:
 
 /// SUBSCRIPTIONS
 
+	cv::Rect m_roi;
+
 	// see subscriptions.h
 	Subscriptions *subs;
-
-	// TODO This is not enough
-	// Set of representation types for which the next ROI update needs to be a
-	// full update.
-	// This is nececcary when a representation was unsubscribed.  In this case
-	// we do not know if an ROI change was missed and we assume image data is
-	// out of sync.
-	std::set<representation::t> initROI;
 
 };
 
