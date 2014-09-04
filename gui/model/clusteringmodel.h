@@ -37,7 +37,9 @@ public slots:
 			int numbands,
 			bool gradient);
 	void cancel();
-	void processImageUpdate(representation::t type, SharedMultiImgPtr image);
+	void processImageUpdate(representation::t type,
+							SharedMultiImgPtr image,
+							bool duplicate);
 protected slots:
 	void onSegmentationCompleted(std::map<std::string,boost::any> output);
 protected:

@@ -14,7 +14,7 @@
 #include "falsecolormodel.h"
 #include "falsecolor/falsecolormodelpayload.h"
 
-//#define GGDBG_MODULE
+#define GGDBG_MODULE
 #include <gerbil_gui_debug.h>
 
 QList<FalseColoring::Type> FalseColoring::allList = QList<FalseColoring::Type>()
@@ -65,9 +65,14 @@ void FalseColorModel::setMultiImg(representation::t type,
 }
 
 void FalseColorModel::processImageUpdate(representation::t type,
-										 SharedMultiImgPtr)
+										 SharedMultiImgPtr,
+										 bool duplicate)
 {
-	//GGDBGM("representation " << type << endl);
+	GGDBGM("representation " << type << ", "
+		   << "duplicate: " << duplicate << endl);
+	if (duplicate) {
+		return;
+	}
 	// make sure no computations based on old image data make it into the
 	// cache
 	FalseColorModelPayloadMap::iterator payloadIt;

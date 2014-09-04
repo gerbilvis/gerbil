@@ -40,7 +40,9 @@ public:
 
 	void setMultiImg(representation::t repr, SharedMultiImgPtr img);
 public slots:
-	void processImageUpdate(representation::t type, SharedMultiImgPtr img);
+	void processImageUpdate(representation::t type,
+							SharedMultiImgPtr img,
+							bool duplicate);
 
 	/** Request a rendering of coloringType of the current image or
 	 * gradient and ROI.

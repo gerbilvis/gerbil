@@ -57,7 +57,6 @@ public:
 	IllumModel* illumModel() { return illumm; }
 	GraphSegmentationModel* graphSegmentationModel() { return gsm; }
 	ClusteringModel* clusteringModel() { return cm; }
-
 signals:
 
 	void currentLabelChanged(int);
@@ -137,7 +136,9 @@ protected slots:
 								bool resetLabel);
 	void highlightSingleLabel(short label, bool highlight);
 
-	void processImageUpdate(representation::t repr);
+	void processImageUpdate(representation::t repr,
+							SharedMultiImgPtr image,
+							bool duplicate);
 
 /// SUBSCRIPTIONS
 
@@ -211,6 +212,11 @@ protected:
 	 */
 	bool haveSubscriber(representation::t type);
 
+	/** Reset internal ROI state tracking: ROIs for all representation types
+	 * are set to non-spawned. That is a ROI spawn for each subscribed
+	 * representation is necessary for the GUI to become up-to-date.*/
+	void resetROISpawned();
+
 /// VIEWERS
 
 	// main window (or gui slave)
@@ -269,6 +275,12 @@ protected:
 
 	// see subscriptions.h
 	Subscriptions *subs;
+
+	// Track spawn state of ROIs for each representation.
+	// true -> ROI for this representation has been spawned. This makes
+	// it possible to decide between full ROI spawn or re-spawn. See
+	// ImageModel::imageUpdate() signal.
+	bool m_ROISpawned[representation::REPSIZE];
 
 };
 
