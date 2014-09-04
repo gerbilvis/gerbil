@@ -16,10 +16,18 @@
 // Context struct for label icon computation.
 // Bad style, but better than fiddling all parameters through constructors.
 struct IconTaskCtx {
-	explicit IconTaskCtx(int nlabels, const cv::Mat1s& full_labels,
-						 const QSize& iconSize, const QVector<QColor>& colors)
-			: nlabels(nlabels), full_labels(full_labels),
-			  iconSize(iconSize), colors(colors)
+	explicit IconTaskCtx(int nlabels,
+						 const cv::Mat1s& full_labels,
+						 const cv::Mat1s& roi_labels,
+						 const QSize& iconSize,
+						 bool applyROI,
+						 const QVector<QColor>& colors)
+			: nlabels(nlabels),
+			  full_labels(full_labels),
+			  roi_labels(roi_labels),
+			  iconSize(iconSize),
+			  applyROI(applyROI),
+			  colors(colors)
 	{}
 
 	// default copy constructor and assignment
@@ -28,7 +36,9 @@ struct IconTaskCtx {
 	// number of labels (including background == colors.size)
 	const int nlabels;
 	const cv::Mat1s full_labels;
+	const cv::Mat1s roi_labels;
 	const QSize iconSize;
+	const bool applyROI;
 	const QVector<QColor> colors;
 
 	// Result:
@@ -48,6 +58,7 @@ public:
 	enum {IconSizeMin = 32};
 	enum {IconSizeMax = 256};
 	QSize getIconSize() const { return ctxp->iconSize; }
+	bool getApplyROI() const { return ctxp->applyROI; }
 public slots:
 	/** Abort the computation.
 	 *

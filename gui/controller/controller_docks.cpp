@@ -265,6 +265,8 @@ void Controller::setupDocks()
 	connect(labelingModel(),
 			SIGNAL(labelIconsComputed(const QVector<QImage>&)),
 			labelDock, SLOT(processMaskIconsComputed(const QVector<QImage>&)));
+	connect(labelDock, SIGNAL(applyROIChanged(bool)),
+			labelingModel(), SLOT(setApplyROI(bool)));
 }
 
 //void Controller::setGUIEnabledDocks(bool enable, TaskType tt)

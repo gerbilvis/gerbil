@@ -59,6 +59,12 @@ public slots:
 	void setLabelIconSize(int width, int height);
 	void setLabelIconSize(const QSize& size);
 
+	/** If set true, icons are computed on the current ROI.
+	 *
+	 * @default true
+	*/
+	void setApplyROI(bool applyROI);
+
 	/** Compute the label mask icons for all labels.
 	 *
 	 * When the computation is complete, the result is signalled by
@@ -115,6 +121,8 @@ private:
 	// current size of label icons
 	QSize iconSize;
 
+	// compute icons on ROI?
+	bool applyROI;
 
 	// Label icons (colored alpha masks)
 	QVector<QImage> icons;

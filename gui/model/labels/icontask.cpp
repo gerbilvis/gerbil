@@ -12,6 +12,7 @@
 
 #include "icontask.h"
 
+#define GGDBG_MODULE
 #include <gerbil_gui_debug.h>
 
 
@@ -49,35 +50,46 @@ int clamp(const int& val, const int& min, const int& max)
 class ComputeIconMasks {
 public:
 	ComputeIconMasks(IconTaskCtx& ctx)
-		: ctx(ctx),
-		  // clamp the icon size
-		  iconSizecv(clamp(ctx.iconSize.width(),
-						   IconTask::IconSizeMin, IconTask::IconSizeMax),
-					 clamp(ctx.iconSize.height(),
-							 IconTask::IconSizeMin, IconTask::IconSizeMax)),
-		  // inner size = icon size without border
-		  innerSize(iconSizecv.width - 2,
-					iconSizecv.height - 2),
-		  innerSizecv(innerSize.width(), innerSize.height()),
-		  // compute scale
-		  scale(scaleToFit(ctx.full_labels.size(), innerSizecv)),
-		  // offset into icon rect
-		  dx(0.5 * (float(iconSizecv.width) - ctx.full_labels.cols*scale)),
-		  dy(0.5 * (float(iconSizecv.height) - ctx.full_labels.rows*scale)),
-		  // affine trafo matrix, init later
-		  trafo(cv::Mat1f::zeros(2,3)),
-		  // rect of the transformed mask in the icon
-		  drect(dx,dy,
-				ctx.full_labels.cols*scale,
-				ctx.full_labels.rows*scale),
-		  // rect of the border around the transformed mask
-		  brect(drect.left()-.5*scale, drect.top()-.5*scale,
-				drect.width()+.5*scale, drect.height()+.5*scale)
+		: ctx(ctx)
 	{
+		// clamp the icon size
+		iconSizecv = cv::Size(
+					clamp(ctx.iconSize.width(),
+						  IconTask::IconSizeMin, IconTask::IconSizeMax),
+					clamp(ctx.iconSize.height(),
+						  IconTask::IconSizeMin, IconTask::IconSizeMax));
+
+		// inner size = icon size without border
+		innerSize = QSize(iconSizecv.width - 2,
+						  iconSizecv.height - 2);
+
+		innerSizecv = cv::Size(innerSize.width(), innerSize.height());
+
+		if (ctx.applyROI) {
+			labels = ctx.roi_labels;
+		} else {
+			labels = ctx.full_labels;
+		}
+
+		scale = scaleToFit(labels.size(), innerSizecv);
+
+		// offset into icon rect
+		dx = 0.5 * (float(iconSizecv.width) - labels.cols*scale);
+		dy = 0.5 * (float(iconSizecv.height) - labels.rows*scale);
+
+		// affine trafo matrix
+		trafo = cv::Mat1f::zeros(2,3);
 		trafo(0,0) = scale;
 		trafo(1,1) = scale;
 		trafo(0,2) = dx;
 		trafo(1,2) = dy;
+
+		// rect of the transformed mask in the icon
+		drect = QRectF(dx, dy,
+					   labels.cols*scale, labels.rows*scale);
+		// rect of the border around the transformed mask
+		brect = QRectF(drect.left()-.5*scale, drect.top()-.5*scale,
+					   drect.width()+.5*scale, drect.height()+.5*scale);
 
 //		GGDBGM("desired icon size " << iconSizecv << endl);
 //		GGDBGM("scale " << scale << endl);
@@ -87,12 +99,12 @@ public:
 	}
 
 	void operator()(const tbb::blocked_range<short>& range) const {
-		for( short label=range.begin(); label!=range.end(); ++label ) {
+		for (short labelid=range.begin(); labelid!=range.end(); ++labelid) {
 			// Compute mask.
 			// For big images it might make sense to parallelize this on a
 			// smaller granularity (pixel ranges).
 			// And it might be a good idea to cache these.
-			cv::Mat1b mask = (ctx.full_labels == label);
+			cv::Mat1b mask(labels == labelid);
 
 			if(tbb::task::self().is_cancelled()) {
 				//GGDBGM("aborted through tbb cancel." << endl);
@@ -109,7 +121,7 @@ public:
 			}
 			// The rest is probably too fast to allow checking for cancellation.
 
-			QColor color = ctx.colors.at(label);
+			QColor color = ctx.colors.at(labelid);
 
 			// Fill icon with solid color in ARGB format.
 			cv::Vec4b argb(0, color.red(), color.green(), color.blue());
@@ -139,28 +151,31 @@ public:
 			p.setPen(color);
 			p.drawRect(brect);
 
-			ctx.icons[label] = qimage;
+			ctx.icons[labelid] = qimage;
 		}
 	}
 private:
 	IconTaskCtx& ctx;
+	//! The label matrix, either ctx.full_labels or ctx.roi_labels, depending
+	//! on ctx.applyROI.
+	cv::Mat1s labels;
 	//! Icon size as cv::Size
-	const cv::Size iconSizecv;
+	cv::Size iconSizecv;
 	//! Icon inner size without border
-	const QSize innerSize;
-	const cv::Size innerSizecv;
+	QSize innerSize;
+	cv::Size innerSizecv;
 	//! Scale factor from image to inner icon size
-	const float scale;
+	float scale;
 	//! icon offset in x-dir
-	const float dx;
+	float dx;
 	//! icon offset in y-dir
-	const float dy;
+	float dy;
 	//! Affine trafo using the above scale and offsets.
 	cv::Mat1f trafo;
 	//! Rect of the transformed mask.
-	const QRectF drect;
+	QRectF drect;
 	//! Rect of the border drawn around the transformed mask.
-	const QRectF brect;
+	QRectF brect;
 };
 
 IconTask::IconTask(IconTaskCtxPtr &ctxp, QObject *parent)
@@ -176,7 +191,7 @@ IconTask::~IconTask()
 
 void IconTask::abort()
 {
-	if(abortFlag)
+	if (abortFlag)
 		return;
 
 	// if no tasks are executing yet, remember not to start
@@ -211,7 +226,7 @@ void IconTask::run()
 
 	tbb::auto_partitioner partitioner;
 
-	if(abortFlag) {
+	if (abortFlag) {
 		emit taskAborted();
 		return;
 	}
@@ -219,11 +234,12 @@ void IconTask::run()
 	tbb::parallel_for(tbb::blocked_range<short>(0,ctx.nlabels),
 					  ComputeIconMasks(ctx), partitioner, tbbTaskGroupContext);
 
-	if(!abortFlag) {
+	if (!abortFlag) {
 		emit labelIconsComputed(ctx.icons);
 	} else {
 		emit taskAborted();
 	}
 	//GGDBGM("return" << endl);
 }
+
 

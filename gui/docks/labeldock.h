@@ -61,11 +61,16 @@ signals:
 
 	/** The user changed the mask icon size using the slider. */
 	void labelMaskIconSizeChanged(const QSize& size);
+
+	/** applyROI toggled. */
+	void applyROIChanged(bool applyROI);
 private slots:
 	void processSelectionChanged(const QItemSelection & selected,
 							const QItemSelection & deselected);
 	void processLabelItemEntered(QModelIndex midx);
 	void processLabelItemLeft();
+
+	void processApplyROIToggled(bool checked);
 
 	/** Icon size slider value changed. */
 	void processSliderValueChanged(int);
@@ -80,7 +85,7 @@ private:
 	Ui::LabelDock *ui;
 
 	// The Qt model for the label view.
-	// (Note: This is _not_ a gerbil model)
+	// Note: This is _not_ a gerbil model.
 	QStandardItemModel *labelModel;
 
 	bool hovering;
@@ -89,7 +94,6 @@ private:
 	// Label mask icons indexed by labelid
 	QVector<QImage> icons;
 
-//	cv::Mat1s labels;
 	QVector<QColor> colors;
 };
 

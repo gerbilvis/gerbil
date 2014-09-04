@@ -55,6 +55,9 @@ void LabelDock::init()
 	ui->sizeSlider->setMinimum(32);
 	ui->sizeSlider->setMaximum(256);
 	updateSliderToolTip();
+
+	connect(ui->applyROI, SIGNAL(toggled(bool)),
+			this, SLOT(processApplyROIToggled(bool)));
 }
 
 LabelDock::~LabelDock()
@@ -186,6 +189,13 @@ void LabelDock::processLabelItemLeft()
 		hovering = false;
 		emit highlightLabelRequested(hoverLabel, false);
 	}
+}
+
+void LabelDock::processApplyROIToggled(bool checked)
+{
+	const bool applyROI = checked;
+	emit applyROIChanged(applyROI);
+	emit labelMaskIconsRequested();
 }
 
 void LabelDock::processSliderValueChanged(int)
