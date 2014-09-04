@@ -113,9 +113,9 @@ struct SubscriptionHash {
 };
 
 struct Subscriptions {
-	Subscription<ImageBandId>::Set			imageBand;
-	Subscription<FalseColoring::Type>::Set  falseColor;
-	Subscription<representation::t>::Set	repr;
+	Subscription<ImageBandId>::Set         imageBand;
+	Subscription<FalseColoring::Type>::Set falseColor;
+	Subscription<representation::t>::Set   repr;
 };
 
 /** Check if there is a subscriber for id in set. */
@@ -149,7 +149,7 @@ bool subscribe(QObject* subscriber, IDTYPE const& id,
 /** Remove a subscriber with id id from subscription set set.
  *
  * Returns true if this is was an existing subscription, i.e. the Subscription
- * was added removed the set, otherwise false.
+ * was removed from the set, otherwise false.
  */
 template <typename IDTYPE>
 bool unsubscribe(QObject* subscriber, IDTYPE const& id,

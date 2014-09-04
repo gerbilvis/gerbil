@@ -153,9 +153,9 @@ protected:
 
 	bool m_distviewNeedsBinning[representation::REPSIZE];
 
-	// Subscription state of distiviews.
+	// Subscription state of distviews.
 	// There is no other means for the DistViewController to determine
-	// wether or not to do BinSet sub/add in ROI change.
+	// whether or not to do BinSet sub/add in ROI change.
 	ReprSubscriptions* m_distviewSubs;
 
 	// Pointer to map of vectors of binsets: BinSets that are recycled

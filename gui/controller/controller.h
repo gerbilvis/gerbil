@@ -57,8 +57,8 @@ public:
 	IllumModel* illumModel() { return illumm; }
 	GraphSegmentationModel* graphSegmentationModel() { return gsm; }
 	ClusteringModel* clusteringModel() { return cm; }
-signals:
 
+signals:
 	void currentLabelChanged(int);
 
 	/* pass-through to our other controller friends */
