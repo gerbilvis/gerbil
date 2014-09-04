@@ -16,7 +16,7 @@
 class QObject;
 
 template<typename T>
-std::size_t make_hash(const T& v)
+std::size_t make_hash(T const& v)
 {
 	return std::tr1::hash<T>()(v);
 }
@@ -54,7 +54,7 @@ struct ImageBandId {
 };
 
 template <>
-std::size_t make_hash(const ImageBandId& t)
+std::size_t make_hash(ImageBandId const& t)
 {
 	// No XOR here, repr and bandx are both small and likely to collide.
 	return 65437 * // prime
@@ -78,7 +78,7 @@ struct Subscription {
 	// Set type using Subscription<IDTYPE> as value_type.
 	typedef std::tr1::unordered_set<Subscription<IDTYPE>, SubscriptionHash<IDTYPE> > Set;
 
-	Subscription(QObject *subscriber, IDTYPE const& subsid)
+	Subscription(QObject const* subscriber, IDTYPE const& subsid)
 		: subscriber(subscriber), subsid(subsid)
 	{}
 
@@ -95,8 +95,8 @@ struct Subscription {
 				other.subsid == subsid;
 	}
 
-	QObject *subscriber;
-	IDTYPE subsid;
+	QObject const* const subscriber;
+	const IDTYPE subsid;
 };
 
 template <typename IDTYPE>
@@ -110,7 +110,7 @@ struct SubscriptionHash {
 		// http://stackoverflow.com/questions/5889238/why-is-xor-the-default-way-to-combine-hashes,
 		// XOR vs. ADD.
 		// We reserve 13 bits of at least 32 for the subscriber hash.
-		return make_hash<void*>(t.subscriber) ^
+		return make_hash<void*>((void *)t.subscriber) ^
 				(make_hash<IDTYPE>(t.subsid) << 13);
 	}
 };
@@ -118,6 +118,35 @@ struct SubscriptionHash {
 struct Subscriptions {
 	Subscription<ImageBandId>::Set			imageBand;
 	Subscription<FalseColoring::Type>::Set  falseColor;
+	Subscription<representation::t>::Set	repr;
 };
+
+/** Check if there is a subscriber for id in set. */
+template <typename IDTYPE>
+bool isSubscribed(IDTYPE const& id, typename Subscription<IDTYPE>::Set const& set)
+{
+	bool subscribed = false;
+	foreach(Subscription<IDTYPE> const & sub, set) {
+		if (sub.subsid == id) {
+			subscribed = true;
+			break;
+		}
+	}
+	return subscribed;
+}
+
+/** Add a subscriber with id id to subscription set set.
+ *
+ * Returns true if this is a new subscription, i.e. the Subscription was added
+ * to the set, otherwise false.
+ */
+template <typename IDTYPE>
+bool subscribe(QObject* subscriber, IDTYPE const& id,
+		typename Subscription<IDTYPE>::Set & set)
+{
+	std::pair<typename Subscription<IDTYPE>::Set::const_iterator, bool> insertResult =
+			set.insert(Subscription<IDTYPE>(subscriber, id));
+	return insertResult.second;
+}
 
 #endif // SUBSCRIPTIONS_H

@@ -15,6 +15,7 @@ class DistViewGUI : public QObject
 public:
 	explicit DistViewGUI(representation::t type);
 	void initSignals(DistViewController *dvctrl);
+	void initSubscriptions();
 
 	QWidget* getFrame() { return frame; }
 
@@ -65,6 +66,9 @@ signals:
 	void newIlluminantCurve(QVector<multi_img::Value>);
 	void toggleIlluminationShown(bool show);
 	void newIlluminantApplied(QVector<multi_img::Value>);
+
+	void subscribeRepresentation(QObject *subscriber, representation::t type);
+	void unsubscribeRepresentation(QObject *subscriber, representation::t type);
 
 protected:
 	// initialize target, vp, ui::gv

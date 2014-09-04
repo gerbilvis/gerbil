@@ -13,6 +13,7 @@
 
 #include "widgets/mainwindow.h"
 
+#define GGDBG_MODULE
 #include "gerbil_gui_debug.h"
 
 #include <boost/ref.hpp>
@@ -113,6 +114,8 @@ Controller::Controller(const std::string &filename, bool limited_mode,
 	} else {
 		lm->loadLabeling(labelfile);
 	}
+
+	dvc->initSubscriptions();
 
 	/* Initial ROI images spawning. Do it before showing the window but after
 	 * all signals were connected! */
@@ -260,6 +263,14 @@ void Controller::updateROI(bool reuse, cv::Rect roi, int bands)
 	if (roi == cv::Rect())
 		roi = im->getROI();
 
+	// TODO: This is not enough.
+	// Crude hack: If any representation got out of sync we do a full update.
+	// This is uneccessary and we need to work on a more fine grained model later.
+	if (!initROI.empty()) {
+		GGDBGM("re-init ROI: new subscriber for a representation" << endl);
+		reuse = false;
+	}
+
 	// prepare incremental update and test worthiness
 	std::vector<cv::Rect> sub, add;
 	if (reuse) {
@@ -277,8 +288,10 @@ void Controller::updateROI(bool reuse, cv::Rect roi, int bands)
 	/** FIRST STEP: recycle existing payload **/
 	QMap<representation::t, sets_ptr> sets;
 	if (reuse) {
-		foreach (representation::t i, representation::all()) {
-			sets[i] = dvc->subImage(i, sub, roi);
+		foreach (representation::t type, representation::all()) {
+			if (haveSubscriber(type)) {
+				//sets[type] = dvc->subImage(type, sub, roi);
+			}
 		}
 	}
 
@@ -293,18 +306,32 @@ void Controller::updateROI(bool reuse, cv::Rect roi, int bands)
 	 * it is implicit here but we would like this knowledge to be part of
 	 * image model's logic
 	 */
-	foreach (representation::t i, representation::all()) {
+	foreach (representation::t type, representation::all()) {
 
-		/* tasks to (incrementally) re-calculate image data */
-		im->spawn(i, roi, bands);
+		bool sub = haveSubscriber(type);
 
-		/* tasks to (incrementally) update distribution view */
-		if (reuse) {
-			dvc->addImage(i, sets[i], add, roi);
+		if (sub) {
+			GGDBGM("     subscribed " << type << endl);
 		} else {
-			dvc->setImage(i, im->getImage(i), roi);
+			GGDBGM("not  subscribed " << type << endl);
+		}
+
+		if (sub) {
+			/* tasks to (incrementally) re-calculate image data */
+			im->spawn(type, roi, bands);
+
+			/* tasks to (incrementally) update distribution view */
+			if (reuse) {
+				// FIXME
+				//dvc->addImage(type, sets[type], add, roi);
+			} else {
+				// FIXME
+				//dvc->setImage(type, im->getImage(type), roi);
+			}
 		}
 	}
+
+	initROI.clear();
 
 	// TODO: better method to make sure values in normalizationDock are correct
 	// that means as soon as we have these values, report them directly to the
@@ -312,6 +339,28 @@ void Controller::updateROI(bool reuse, cv::Rect roi, int bands)
 	/*if (type == GRAD) {
 		emit normTargetChanged(true);
 	}*/
+}
+
+bool Controller::haveSubscriber(representation::t type)
+{
+	bool isSubscribed = false;
+	// check for band subscriptions
+	foreach (Subscription<ImageBandId> const& sub, subs->imageBand) {
+		if (sub.subsid.repr == type) {
+			isSubscribed = true;
+			break;
+		}
+	}
+	// check for representation subscriptions
+	if (!isSubscribed) {
+		foreach (Subscription<representation::t> const& sub, subs->repr) {
+			if (sub.subsid == type) {
+				isSubscribed = true;
+
+			}
+		}
+	}
+	return isSubscribed;
 }
 
 void Controller::setGUIEnabled(bool enable, TaskType tt)
@@ -360,11 +409,10 @@ void Controller::disableGUI(TaskType tt)
 void Controller::processSubscribeImageBand(QObject *subscriber, representation::t repr, int bandId)
 {
 	assert(subs);
-	std::pair<Subscription<ImageBandId>::Set::const_iterator, bool> insertResult =
-			subs->imageBand.insert(Subscription<ImageBandId>(subscriber, ImageBandId(repr, bandId)));
 	// if not inserted, the subscription already exists -> no need to update
-	if (insertResult.second) {
+	if (subscribe(subscriber, ImageBandId(repr, bandId), subs->imageBand)) {
 		im->computeBand(repr, bandId);
+		initROI.insert(repr);
 	}
 }
 
@@ -378,9 +426,7 @@ void Controller::processSubscribeFalseColor(QObject *subscriber, FalseColoring::
 {
 	//GGDBGM(coloring << endl);
 	assert(subs);
-	std::pair<Subscription<FalseColoring::Type>::Set::const_iterator, bool> insertResult =
-			subs->falseColor.insert(Subscription<FalseColoring::Type>(subscriber, coloring));
-	if (insertResult.second) {
+	if (subscribe(subscriber, coloring, subs->falseColor)) {
 		//GGDBGM("requesting from fm " << coloring << endl);
 		fm->requestColoring(coloring);
 	}
@@ -391,14 +437,7 @@ void Controller::processUnsubscribeFalseColor(QObject *subscriber, FalseColoring
 	//GGDBGM(coloring << endl);
 	assert(subs);
 	subs->falseColor.erase(Subscription<FalseColoring::Type>(subscriber, coloring));
-	bool anysubs = false;
-	foreach(Subscription<FalseColoring::Type> const & sub, subs->falseColor) {
-		if (sub.subsid == coloring) {
-			anysubs = true;
-			break;
-		}
-	}
-	if (!anysubs) {
+	if (!isSubscribed(coloring, subs->falseColor)) {
 		// no more subscriptions for coloring,
 		// cancel computation if any.
 		fm->cancelComputation(coloring);
@@ -408,17 +447,27 @@ void Controller::processUnsubscribeFalseColor(QObject *subscriber, FalseColoring
 void Controller::processRecalcFalseColor(FalseColoring::Type coloringType)
 {
 	assert(subs);
-	bool anysubs = false;
-	foreach(Subscription<FalseColoring::Type> const & sub, subs->falseColor) {
-		if (sub.subsid == coloringType) {
-			anysubs = true;
-			break;
-		}
-	}
-	if (anysubs) {
+	if (isSubscribed(coloringType, subs->falseColor)) {
 		fm->requestColoring(coloringType, /* recalc */ true);
 	}
 }
+
+void Controller::processSubscribeRepresentation(QObject *subscriber, representation::t repr)
+{
+	assert(subs);
+	if (subscribe(subscriber, repr, subs->repr)) {
+		GGDBGM("new subscription " << repr << endl);
+		initROI.insert(repr);
+	}
+}
+
+void Controller::processUnsubscribeRepresentation(QObject *subscriber, representation::t repr)
+{
+	assert(subs);
+	GGDBGM("unsubscribe " << repr << endl);
+	subs->repr.erase(Subscription<representation::t>(subscriber, repr));
+}
+
 
 void Controller::startQueue()
 {
@@ -480,5 +529,4 @@ void Controller::processImageUpdate(representation::t repr)
 		emit pendingFalseColorUpdate(coloring);
 		fm->requestColoring(coloring);
 	}
-
 }

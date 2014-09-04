@@ -89,6 +89,20 @@ void DistViewController::init()
 	connect(this, SIGNAL(newIlluminantApplied(QVector<multi_img::Value>)),
 			&map[representation::IMG]->model,
 			SLOT(setIlluminant(QVector<multi_img::Value>)));
+
+	// forward representation subscriptions to controller
+	connect(this, SIGNAL(subscribeRepresentation(QObject*,representation::t)),
+			ctrl, SLOT(processSubscribeRepresentation(QObject*,representation::t)));
+	connect(this, SIGNAL(unsubscribeRepresentation(QObject*,representation::t)),
+			ctrl, SLOT(processUnsubscribeRepresentation(QObject*,representation::t)));
+}
+
+void DistViewController::initSubscriptions()
+{
+	foreach (payload *p, map) {
+		DistViewGUI *g = &p->gui;
+		g->initSubscriptions();
+	}
 }
 
 void DistViewController::setGUIEnabled(bool enable, TaskType tt)
@@ -132,6 +146,7 @@ void DistViewController::setActiveViewer(representation::t type)
 
 void DistViewController::pixelOverlay(int y, int x)
 {
+
 	if (y < 0 || x < 0) { // overlay became invalid
 		emit pixelOverlayInvalid();
 		return;
