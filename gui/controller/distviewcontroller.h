@@ -8,8 +8,6 @@
 
 #include <QObject>
 #include <QVector>
-// TODO
-// * check if bands can be removed from MainWindow altogether
 
 struct ReprSubscriptions;
 
@@ -34,7 +32,8 @@ public:
 	void init();
 	/** Initialize subscriptions.
 	 *
-	 * This needs to be called when all subscription signals/slots have been connected.
+	 * This needs to be called when all subscription signals/slots
+	 * have been connected.
 	 */
 	void initSubscriptions();
 
@@ -140,27 +139,27 @@ signals:
 protected:
 	void updateBinning(representation::t repr, SharedMultiImgPtr image);
 
-	QMap<representation::t, payload*> map;
+	QMap<representation::t, payload*> payloadMap;
 	representation::t activeView;
 	Controller *ctrl;
-	ImageModel *m_im;
+	ImageModel *im;
 
 	// needed for add/rem to/from label functionality
 	int currentLabel;
 
 	// the current ROI
-	cv::Rect m_roi;
+	cv::Rect curROI;
 
-	bool m_distviewNeedsBinning[representation::REPSIZE];
+	bool distviewNeedsBinning[representation::REPSIZE];
 
 	// Subscription state of distviews.
 	// There is no other means for the DistViewController to determine
 	// whether or not to do BinSet sub/add in ROI change.
-	ReprSubscriptions* m_distviewSubs;
+	ReprSubscriptions* distviewSubs;
 
 	// Pointer to map of vectors of binsets: BinSets that are recycled
 	// during a ROI spawn.
-	boost::shared_ptr<QMap<representation::t, sets_ptr> > m_roiSets;
+	boost::shared_ptr<QMap<representation::t, sets_ptr> > roiSets;
 };
 
 #endif // DISTVIEWCONTROLLER_H
