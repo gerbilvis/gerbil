@@ -43,7 +43,7 @@ class DistViewController;
 class MainWindow : public QMainWindow, private Ui::MainWindow {
     Q_OBJECT
 public:
-	MainWindow(bool limitedMode = false);
+	MainWindow();
 	void initUI(std::string filename);
 	void initSignals(Controller *ctrl, DistViewController *dvctrl);
 
@@ -60,10 +60,6 @@ protected:
 
 private:
 	QMenu *contextMenu;
-
-	// FIXME This is obsolete in MainWindow.
-	// only limited full_image available
-	bool limitedMode;
 };
 
 #endif // MAINWINDOW_H
