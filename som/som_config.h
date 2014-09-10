@@ -14,7 +14,7 @@ enum Type {
 	SOM_TESSERACT = 0x4
 };
 // note: the string works with values 0, 1, 2.. so no gaps!
-#define som_TypeString {"none", "square", "cube", "tesseract"}
+#define som_TypeString {"none", "square", "cube", "undef", "tesseract"}
 
 class SOMConfig : public Config {
 
