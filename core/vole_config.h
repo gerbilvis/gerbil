@@ -10,10 +10,15 @@
 #ifndef VOLE_CONFIG_H
 #define VOLE_CONFIG_H
 
+// Workaround for Qt 4 moc bug: moc fails to parse boost headers.
+// Fixed in Qt 5.
+// https://bugreports.qt-project.org/browse/QTBUG-22829
+#ifndef Q_MOC_RUN
 #ifdef WITH_BOOST_PROGRAM_OPTIONS
 #include <boost/version.hpp>
 #include <boost/program_options.hpp>
 #endif // WITH_BOOST_PROGRAM_OPTIONS
+#endif // Q_MOC_RUN
 
 #include "hashes.h"
 #include <iostream>

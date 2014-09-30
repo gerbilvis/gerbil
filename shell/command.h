@@ -3,7 +3,12 @@
 
 #include <vector>
 #include <iostream>
+// Workaround for Qt 4 moc bug: moc fails to parse boost headers.
+// Fixed in Qt 5.
+// https://bugreports.qt-project.org/browse/QTBUG-22829
+#ifndef Q_MOC_RUN
 #include <boost/program_options.hpp>
+#endif // Q_MOC_RUN
 #include "vole_config.h"
 #include "progress_observer.h"
 
