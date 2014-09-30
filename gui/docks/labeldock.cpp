@@ -4,8 +4,17 @@
 #include "ui_labeldock.h"
 
 #include <QStandardItemModel>
+#include <QGraphicsScene>
+#include <QGraphicsView>
+#include <QGraphicsWidget>
+#include <QGraphicsLayout>
+
+#include "../widgets/autohideview.h"
+#include "../widgets/autohidewidget.h"
 
 #include <iostream>
+
+//#define GGDBG_MODULE
 #include "../gerbil_gui_debug.h"
 
 
@@ -16,12 +25,24 @@ LabelDock::LabelDock(QWidget *parent) :
 	hovering(false),
 	hoverLabel(-1)
 {
-	ui->setupUi(this);
 	init();
 }
 
 void LabelDock::init()
 {
+	ahscene = new QGraphicsScene();
+
+	QWidget *mainUiWidgetTmp = new QWidget();
+	ui->setupUi(mainUiWidgetTmp);
+
+	mainUiWidgetTmp->layout()->setContentsMargins(0,0,0,0);
+	mainUiWidgetTmp->layout()->setSpacing(0);
+	ui->labelView->setFrameStyle(QFrame::NoFrame);
+	mainUiWidget = ahscene->addWidget(mainUiWidgetTmp);
+
+	// FIXME: HACK,  where to get the proper values?
+	mainUiWidget->translate(-10, 0);
+
 	ui->labelView->setModel(labelModel);
 
 	LeaveEventFilter *leaveFilter = new LeaveEventFilter(this);
@@ -40,7 +61,6 @@ void LabelDock::init()
 	connect(ui->labelView, SIGNAL(viewportEntered()),
 			this, SLOT(processLabelItemLeft()));
 
-
 	connect(ui->mergeBtn, SIGNAL(clicked()),
 			this, SLOT(mergeOrDeleteSelected()));
 	connect(ui->delBtn, SIGNAL(clicked()),
@@ -58,6 +78,48 @@ void LabelDock::init()
 
 	connect(ui->applyROI, SIGNAL(toggled(bool)),
 			this, SLOT(processApplyROIToggled(bool)));
+
+	this->setWindowTitle("Labels");
+	QWidget *contents = new QWidget(this);
+	QVBoxLayout *layout = new QVBoxLayout(contents);
+	ahview = new AutohideView(contents);
+	ahview->init();
+	ahview->setBaseSize(QSize(300, 245));
+	ahview->setFrameShape(QFrame::NoFrame);
+	ahview->setVerticalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
+	ahview->setHorizontalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
+	ahview->setScene(ahscene);
+	layout->addWidget(ahview);
+
+	// Setup autohide widgets.
+
+	ahwidgetTop = new AutohideWidget();
+	// snatch the layout from the placeholder widget
+	QLayout *ahwTopLayout = ui->autoHideTop->layout();
+	ahwidgetTop->setLayout(ahwTopLayout);
+	// remove note label
+	ui->ahwidgetTopNoteLabel->setParent(NULL);
+	ui->ahwidgetTopNoteLabel->deleteLater();
+	// remove placeholder widget
+	ui->autoHideTop->setParent(NULL);
+	ui->autoHideTop->deleteLater();
+	ahview->addWidget(AutohideWidget::TOP, ahwidgetTop);
+	// FIXME: has no effect.
+	ui->applyROI->setStyleSheet("color: white;");
+
+	ahwidgetBottom = new AutohideWidget();
+	// snatch the layout from the placeholder widget
+	QLayout *ahwBottomLayout = ui->autoHideBottom->layout();
+	ahwidgetBottom->setLayout(ahwBottomLayout);
+	// remove note label
+	ui->ahwidgetBottomNoteLabel->setParent(NULL);
+	ui->ahwidgetBottomNoteLabel->deleteLater();
+	// remove placeholder widget
+	ui->autoHideBottom->setParent(NULL);
+	ui->autoHideBottom->deleteLater();
+	ahview->addWidget(AutohideWidget::BOTTOM, ahwidgetBottom);
+
+	this->setWidget(contents);
 }
 
 LabelDock::~LabelDock()
@@ -159,6 +221,17 @@ void LabelDock::processMaskIconsComputed(const QVector<QImage> &icons)
 		QModelIndex idx = labelModel->index(i,0);
 
 		labelModel->setData(idx, icon ,Qt::DecorationRole);
+	}
+}
+
+void LabelDock::resizeEvent(QResizeEvent *event)
+{
+	//GGDBGM("mainUiWidget "<< mainUiWidget << ", ahview "<< ahview << endl);
+	if (mainUiWidget && ahview) {
+		QRect geom = ahview->geometry();
+		// FIXME: HACK
+		geom.adjust(0,0,0,-19);
+		mainUiWidget->setGeometry(geom);
 	}
 }
 

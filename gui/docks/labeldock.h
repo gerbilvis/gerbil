@@ -14,6 +14,11 @@ class QStandardItemModel;
 class QStandardItem;
 class QItemSelection;
 
+class AutohideView;
+class AutohideWidget;
+class QGraphicsScene;
+class QGraphicsProxyWidget;
+
 class LabelDock : public QDockWidget
 {
 	Q_OBJECT
@@ -64,6 +69,8 @@ signals:
 
 	/** applyROI toggled. */
 	void applyROIChanged(bool applyROI);
+protected:
+	void resizeEvent(QResizeEvent * event);
 private slots:
 	void processSelectionChanged(const QItemSelection & selected,
 							const QItemSelection & deselected);
@@ -81,8 +88,17 @@ private:
 
 	void init();
 
-
-	Ui::LabelDock *ui;
+	// UI with autohide widgets.
+	// The view and scene for this widget.
+	AutohideView   *ahview;
+	QGraphicsScene *ahscene;
+	// The Qt Designer generated UI of the dockwidget. The top and bottom autohide
+	// widgets are contained here-in but are reparented in init().
+	Ui::LabelDock  *ui;
+	// Widget in ahscene for main Ui (i.e. labelView).
+	QGraphicsProxyWidget *mainUiWidget;
+	AutohideWidget *ahwidgetTop;
+	AutohideWidget *ahwidgetBottom;
 
 	// The Qt model for the label view.
 	// Note: This is _not_ a gerbil model.
