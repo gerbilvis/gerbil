@@ -71,6 +71,7 @@ signals:
 	void applyROIChanged(bool applyROI);
 protected:
 	void resizeEvent(QResizeEvent * event);
+	void showEvent(QShowEvent *event);
 private slots:
 	void processSelectionChanged(const QItemSelection & selected,
 							const QItemSelection & deselected);
@@ -82,7 +83,11 @@ private slots:
 	/** Icon size slider value changed. */
 	void processSliderValueChanged(int);
 	void updateSliderToolTip();
+
+
 private:
+	/** Adjust view contents size. */
+	void resizeSceneContents();
 
 	enum { LabelIndexRole = Qt::UserRole };
 

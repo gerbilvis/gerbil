@@ -39,9 +39,7 @@ void LabelDock::init()
 	mainUiWidgetTmp->layout()->setSpacing(0);
 	ui->labelView->setFrameStyle(QFrame::NoFrame);
 	mainUiWidget = ahscene->addWidget(mainUiWidgetTmp);
-
-	// FIXME: HACK,  where to get the proper values?
-	mainUiWidget->translate(-10, 0);
+	mainUiWidget->translate(-AutohideWidget::OutOffset, 0);
 
 	ui->labelView->setModel(labelModel);
 
@@ -106,6 +104,9 @@ void LabelDock::init()
 	ahview->addWidget(AutohideWidget::TOP, ahwidgetTop);
 	// FIXME: has no effect.
 	ui->applyROI->setStyleSheet("color: white;");
+	ui->applyROI->setStyleSheet("background-color: white;");
+	// are you kidding me? if i use blue here, text is white... !?
+	ui->applyROI->setStyleSheet("background-color: none;");
 
 	ahwidgetBottom = new AutohideWidget();
 	// snatch the layout from the placeholder widget
@@ -234,21 +235,15 @@ void LabelDock::processMaskIconsComputed(const QVector<QImage> &icons)
 
 void LabelDock::resizeEvent(QResizeEvent *event)
 {
-	// FIXME: Missing initial resize for some reason. After manually resizing
-	// everything is fine. ???
-
-	//GGDBGM("mainUiWidget "<< mainUiWidget << ", ahview "<< ahview << endl);
-	if (mainUiWidget && ahview) {
-		// Resize labelView.
-		// Not sure where that -1 and +1 comes from --
-		// tested on Arch Linux 2014-10-01,
-		// qt4 4.8.6-1, xfwm4 4.10.1-1, xorg-server 1.16.1-1
-		QRect geom = ahview->geometry();
-		const int off = 2 * AutohideWidget::OutOffset - 1;
-		geom.adjust(0, 0, +1, -off);
-		mainUiWidget->setGeometry(geom);
-	}
+	resizeSceneContents();
 	QDockWidget::resizeEvent(event);
+}
+
+void LabelDock::showEvent(QShowEvent *event)
+{
+	QDockWidget::showEvent(event);
+	// Without this, the labelView (view contents) is not properly sized.
+	resizeSceneContents();
 }
 
 void LabelDock::processSelectionChanged(const QItemSelection &,
@@ -308,6 +303,22 @@ void LabelDock::updateSliderToolTip()
 	ui->sizeSlider->setToolTip(t);
 }
 
+void LabelDock::resizeSceneContents()
+{
+	if (!(mainUiWidget && ahview)) {
+		return;
+	}
+
+	// Resize labelView.
+	// Not sure where that -1 and +1 comes from --
+	// tested on Arch Linux 2014-10-01,
+	// qt4 4.8.6-1, xfwm4 4.10.1-1, xorg-server 1.16.1-1
+	QRect geom = ahview->geometry();
+	const int off = 2 * AutohideWidget::OutOffset - 1;
+	geom.adjust(0, 0, +1, -off);
+	mainUiWidget->setGeometry(geom);
+}
+
 bool LeaveEventFilter::eventFilter(QObject *obj, QEvent *event)
 {
 	if (event->type() == QEvent::Leave) {
@@ -317,3 +328,4 @@ bool LeaveEventFilter::eventFilter(QObject *obj, QEvent *event)
 	}
 	return false; // continue normal processing of this event
 }
+
