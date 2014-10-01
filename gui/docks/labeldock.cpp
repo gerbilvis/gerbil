@@ -119,6 +119,14 @@ void LabelDock::init()
 	ui->autoHideBottom->deleteLater();
 	ahview->addWidget(AutohideWidget::BOTTOM, ahwidgetBottom);
 
+	// debug cross-hair
+	if (false) {
+		const QPen pen(Qt::red);
+		const int llenh = 5;
+		ahscene->addLine(1,-llenh,1,llenh,pen);
+		ahscene->addLine(-llenh,1,llenh,1,pen);
+	}
+
 	this->setWidget(contents);
 }
 
@@ -226,13 +234,21 @@ void LabelDock::processMaskIconsComputed(const QVector<QImage> &icons)
 
 void LabelDock::resizeEvent(QResizeEvent *event)
 {
+	// FIXME: Missing initial resize for some reason. After manually resizing
+	// everything is fine. ???
+
 	//GGDBGM("mainUiWidget "<< mainUiWidget << ", ahview "<< ahview << endl);
 	if (mainUiWidget && ahview) {
+		// Resize labelView.
+		// Not sure where that -1 and +1 comes from --
+		// tested on Arch Linux 2014-10-01,
+		// qt4 4.8.6-1, xfwm4 4.10.1-1, xorg-server 1.16.1-1
 		QRect geom = ahview->geometry();
-		// FIXME: HACK
-		geom.adjust(0,0,0,-19);
+		const int off = 2 * AutohideWidget::OutOffset - 1;
+		geom.adjust(0, 0, +1, -off);
 		mainUiWidget->setGeometry(geom);
 	}
+	QDockWidget::resizeEvent(event);
 }
 
 void LabelDock::processSelectionChanged(const QItemSelection &,
