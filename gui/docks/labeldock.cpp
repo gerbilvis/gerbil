@@ -107,11 +107,6 @@ void LabelDock::init()
 	ui->autoHideTop->setParent(NULL);
 	ui->autoHideTop->deleteLater();
 	ahview->addWidget(AutohideWidget::TOP, ahwidgetTop);
-	// FIXME: has no effect.
-	ui->applyROI->setStyleSheet("color: white;");
-	ui->applyROI->setStyleSheet("background-color: white;");
-	// are you kidding me? if i use blue here, text is white... !?
-	ui->applyROI->setStyleSheet("background-color: none;");
 
 	ahwidgetBottom = new AutohideWidget();
 	// snatch the layout from the placeholder widget

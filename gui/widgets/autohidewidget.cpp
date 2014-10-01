@@ -13,7 +13,11 @@ AutohideWidget::AutohideWidget()
 	: location(LEFT), state(SCROLL_OUT), show_indicator(true)
 {
 	QString style = "AutohideWidget { background: rgba(63, 63, 63, 191); } ";
-	style.append("QLabel, QRadioButton, QCheckBox { color: white; }");
+	// warning: background: transparent is important, otherwise the stylesheet
+	// does not apply to QCheckBox. Maybe due to qt bug or actual stylesheet
+	// rules.
+	style.append("QLabel, QRadioButton, QCheckBox "
+				 "{ background: transparent; color: white; }");
 #ifdef _WIN32 // windows progress bars show the text next to the bar
 	style.append("QProgressBar { color: white; }");
 #endif
