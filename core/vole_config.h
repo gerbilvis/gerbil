@@ -105,6 +105,7 @@ protected:
 	void validate(boost::any& v, const std::vector<std::string>& values, \
 	               ENUM* target_type, int) \
 	{ \
+		using namespace boost::program_options; \
 		validators::check_first_occurrence(v); \
 		const std::string& s = validators::get_single_string(values); \
 		for (unsigned int i = 0; i < sizeof(ENUM ## Str)/sizeof(char*); ++i) { \
@@ -116,7 +117,33 @@ protected:
 		throw validation_error(validation_error::invalid_option_value); \
 	} \
 	std::ostream& operator<<(std::ostream& o, ENUM e)  \
-	{	o << ENUM ## Str[e]; return o;  }\
+	{	o << ENUM ## Str[e]; return o;  }
+
+// For enums defined inside class scope.
+#define ENUM_MAGIC_CLS(CLAZZ, ENUM) \
+	const char* CLAZZ ## _ ## ENUM ## _ ## Str[] = \
+		CLAZZ ## _ ## ENUM ## _ ## String;\
+	void validate(boost::any& v, const std::vector<std::string>& values, \
+				  CLAZZ::ENUM* target_type, int) \
+	{ \
+		using namespace boost::program_options; \
+		validators::check_first_occurrence(v); \
+		const std::string& s = \
+			validators::get_single_string(values); \
+		for (unsigned int i = 0; \
+			 i < sizeof(CLAZZ ## _ ## ENUM ## _ ## Str)/sizeof(char*);\
+			 ++i) \
+		{ \
+			if (strcmp(CLAZZ ## _ ## ENUM ## _ ## Str[i], s.c_str()) == 0) { \
+				v = boost::any((CLAZZ::ENUM)i); \
+				return; \
+			} \
+		} \
+		throw validation_error(validation_error::invalid_option_value); \
+	} \
+	std::ostream& operator<<(std::ostream& o, CLAZZ::ENUM e)  \
+	{	o << CLAZZ ## _ ## ENUM ## _ ## Str[e]; return o;  }
+
 //	
 //	Note: the method below was a poor attempt to get ENUM_MAGIC to work (see
 //	forensics/cmfd for a working example) for other modules as well.
