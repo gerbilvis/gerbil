@@ -2,13 +2,13 @@
 
 #include <tbb/task_group.h>
 
-#include "background_task/tasks/tbb/illuminanttbb.h"
-#include "background_task/tasks/cuda/illuminantcuda.h"
+#include <background_task/tasks/cuda/gerbil_cuda_util.h>
+#include <background_task/tasks/tbb/illuminanttbb.h>
+#include <background_task/tasks/cuda/illuminantcuda.h>
 
 #include <opencv2/gpu/gpu.hpp>
 
 #include "gerbil_gui_debug.h"
-#include "gerbil_config.h"
 
 #define USE_CUDA_ILLUMINANT     0
 
@@ -110,7 +110,7 @@ void IllumModel::submitRemoveOldIllumTask()
 	/* remove old illuminant */
 	if (i1 != 0) {
 		const Illuminant &il = getIlluminant(i1);
-		if (HAVE_CUDA_GPU && USE_CUDA_ILLUMINANT) {
+		if (haveCvCudaGpu() && USE_CUDA_ILLUMINANT) {
 			BackgroundTaskPtr taskIllum(new IlluminantCuda(
 				image, il, true, false));
 			queue->push(taskIllum);
@@ -128,7 +128,7 @@ void IllumModel::submitAddNewIllumTask()
 	if (i2 != 0) {
 		const Illuminant &il = getIlluminant(i2);
 
-		if (HAVE_CUDA_GPU && USE_CUDA_ILLUMINANT) {
+		if (haveCvCudaGpu() && USE_CUDA_ILLUMINANT) {
 			BackgroundTaskPtr taskIllum(new IlluminantCuda(
 				image, il, false, false));
 			queue->push(taskIllum);
