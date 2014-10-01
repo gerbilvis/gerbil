@@ -69,6 +69,12 @@ signals:
 
 	/** applyROI toggled. */
 	void applyROIChanged(bool applyROI);
+
+	/** Request open load labels from file dialog. */
+	void requestLoadLabeling();
+	/** Request open save labels to file dialog. */
+	void requestSaveLabeling();
+
 protected:
 	void resizeEvent(QResizeEvent * event);
 	void showEvent(QShowEvent *event);

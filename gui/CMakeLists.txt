@@ -53,7 +53,6 @@ vole_compile_library(
 
 
 	docks/banddock
-	docks/labelingdock
 	docks/normdock
 	docks/roidock
 	docks/illumdock
@@ -87,7 +86,6 @@ vole_moc_library(
 	dist_view/viewport.h
 
 	docks/banddock.h
-	docks/labelingdock.h
 	docks/normdock.h
 	docks/roidock.h
 	docks/illumdock.h
@@ -116,7 +114,6 @@ vole_ui_library(
 	docks/illumdock.ui
 	docks/clusteringdock.ui
 	docks/banddock.ui
-	docks/labelingdock.ui
 	docks/normdock.ui
 	docks/falsecolordock_sel.ui
 	docks/labeldock.ui

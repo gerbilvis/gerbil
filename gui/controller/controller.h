@@ -24,7 +24,6 @@ class ImageModel;
 class MainWindow;
 
 class BandDock;
-class LabelingDock;
 class NormDock;
 class RoiDock;
 class FalseColorDock;
@@ -267,7 +266,6 @@ protected:
 /// DOCKS
 
 	BandDock *bandDock;
-	LabelingDock *labelingDock;
 	NormDock *normDock;
 	RoiDock *roiDock;
 	FalseColorDock *falseColorDock;

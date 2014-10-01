@@ -77,6 +77,11 @@ void LabelDock::init()
 	connect(ui->applyROI, SIGNAL(toggled(bool)),
 			this, SLOT(processApplyROIToggled(bool)));
 
+	connect(ui->loadLabelingButton, SIGNAL(clicked()),
+			this, SIGNAL(requestLoadLabeling()));
+	connect(ui->saveLabelingButton, SIGNAL(clicked()),
+			this, SIGNAL(requestSaveLabeling()));
+
 	this->setWindowTitle("Labels");
 	QWidget *contents = new QWidget(this);
 	QVBoxLayout *layout = new QVBoxLayout(contents);

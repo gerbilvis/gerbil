@@ -7,7 +7,6 @@
 
 #include "docks/banddock.h"
 #include "widgets/bandview.h"
-#include "docks/labelingdock.h"
 #include "docks/normdock.h"
 #include "docks/falsecolordock.h"
 #include "docks/roidock.h"
@@ -36,7 +35,6 @@ void Controller::initDocks()
 #ifdef WITH_SEG_MEANSHIFT
 	mainWindow()->addDockWidget(Qt::LeftDockWidgetArea, clusteringDock);
 #endif
-	mainWindow()->addDockWidget(Qt::LeftDockWidgetArea, labelingDock);
 
 	/// right side
 	mainWindow()->addDockWidget(Qt::RightDockWidgetArea, bandDock);
@@ -59,7 +57,6 @@ void Controller::createDocks()
 
 	bandDock = new BandDock(imageModel()->getFullImageRect(),
 							mainWindow());
-	labelingDock = new LabelingDock(mainWindow());
 	normDock = new NormDock(mainWindow());
 	roiDock = new RoiDock(mainWindow());
 	illumDock = new IllumDock(mainWindow());
@@ -184,13 +181,6 @@ void Controller::setupDocks()
 	connect(roiDock, SIGNAL(specRescaleRequested(int)),
 			this, SLOT(rescaleSpectrum(int)));
 
-
-	/* Labeling Dock */
-	connect(labelingDock, SIGNAL(requestLoadLabeling()),
-			labelingModel(), SLOT(loadLabeling()));
-	connect(labelingDock, SIGNAL(requestSaveLabeling()),
-			labelingModel(), SLOT(saveLabeling()));
-
 	/* Illumination Dock */
 	connect(illumDock, SIGNAL(applyIllum()),
 			illumModel(), SLOT(applyIllum()));
@@ -264,6 +254,11 @@ void Controller::setupDocks()
 			labelDock, SLOT(processMaskIconsComputed(const QVector<QImage>&)));
 	connect(labelDock, SIGNAL(applyROIChanged(bool)),
 			labelingModel(), SLOT(setApplyROI(bool)));
+	/* Labeling Dock */
+	connect(labelDock, SIGNAL(requestLoadLabeling()),
+			labelingModel(), SLOT(loadLabeling()));
+	connect(labelDock, SIGNAL(requestSaveLabeling()),
+			labelingModel(), SLOT(saveLabeling()));
 }
 
 void Controller::requestGraphseg(representation::t repr,
