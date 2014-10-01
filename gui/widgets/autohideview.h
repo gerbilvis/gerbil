@@ -53,6 +53,13 @@ protected:
 	void mouseReleaseEvent(QMouseEvent *event)
 	{ suppressScroll = false; QGraphicsView::mouseReleaseEvent(event); }
 
+protected slots:
+
+	/** Trigger scrolling out of AutohideWidget s, e.g. after leave event. */
+	void triggerScollOut();
+
+protected:
+
 	// our target widget (we keep it as viewport() only returns a QWidget*)
 	QGLWidget *target;
 

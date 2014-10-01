@@ -1,7 +1,15 @@
 #include "autohideview.h"
 
+#include <QApplication>
+#include <QTimer>
 #include <QGLWidget>
 #include <cassert>
+#include <stdexcept>
+
+#include <boost/format.hpp>
+
+//#define GGDBG_MODULE
+#include <gerbil_gui_debug.h>
 
 AutohideView::AutohideView(QWidget *parent)
 	: QGraphicsView(parent), suppressScroll(false)
@@ -82,6 +90,9 @@ void AutohideView::fitContentRect(QRect rect)
 		case AutohideWidget::BOTTOM:
 			keepIn = (rect.bottom() < height() - w->height());
 			break;
+		default:
+			throw std::runtime_error("bad location in "
+									 "AutohideView::fitContentRect()");
 		}
 
 		if (keepIn) {
@@ -115,13 +126,48 @@ void AutohideView::mouseMoveEvent(QMouseEvent *event)
 	QGraphicsView::mouseMoveEvent(event);
 }
 
+std::ostream &operator<<(std::ostream& os, const QRect& r)
+{
+	return os << boost::format("%1%x%2%+%3%+%4%") % r.x() % r.y() % r.width() % r.height();
+}
+
 void AutohideView::leaveEvent(QEvent *event)
 {
-	// only let them know if cursor really moved out (no popup menu etc.)
-	if (!rect().contains(mapFromGlobal(QCursor::pos()))) {
-		foreach (AutohideWidget* w, widgets)
-			w->triggerScrolling(QPoint(-1, -1));
-	}
+	triggerScollOut();
+	// Call triggerScollOut() again because the modal dialog test does 
+	// not work when we get the leave event -- the dialog is not active yet.
+	// When the timer finishes, the dialog will be active or the mouse
+	// does or does not point at us. All cases are correctly handled.
+	QTimer::singleShot(500, this, SLOT(triggerScollOut()));
 
 	QGraphicsView::leaveEvent(event);
 }
+
+void AutohideView::triggerScollOut()
+{
+	// FIXME: Not sure if this works on all platforms. On Linux
+	// QApplication::activeWindow() == 0 if there is a modal dialog open.
+	const bool haveModalWindow = QApplication::activeWindow() == 0 ||
+			QApplication::activeWindow()->isModal();
+	const bool cursorInsideView = rect().contains(mapFromGlobal(QCursor::pos()));
+	const bool trigger = haveModalWindow || !cursorInsideView;
+
+	GGDBGM("windows: this " << this
+		   << ", active " << QApplication::activeWindow()
+		   << ", trigger " << trigger << " <- "
+		   << " haveModalWindow " << haveModalWindow
+		   << " || "
+		   << " !cursorInsideView " << !cursorInsideView
+		   << endl);
+
+	// only let them know if a modal dialog opened or
+	// cursor really moved out (no popup menu etc.).
+	if (trigger) {
+		foreach (AutohideWidget* w, widgets) {
+			GGDBGM("trigger " << w->getLocation() << endl);
+			w->triggerScrolling(QPoint(-1, -1));
+		}
+	}
+
+}
+

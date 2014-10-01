@@ -4,6 +4,11 @@
 #include <QTimer>
 #include <QPainter>
 
+#include <vole_config.h>
+#include <boost/program_options.hpp>
+
+ENUM_MAGIC_CLS(AutohideWidget, border)
+
 AutohideWidget::AutohideWidget()
 	: location(LEFT), state(SCROLL_OUT), show_indicator(true)
 {

@@ -12,6 +12,8 @@ public:
 		LEFT, RIGHT, TOP, BOTTOM
 	};
 
+#define AutohideWidget_border_String { "LEFT", "RIGHT", "TOP", "BOTTOM" }
+
 	// visibility state
 	enum scrollstate {
 		SCROLL_IN, // scrolling into/residing in view
@@ -44,6 +46,11 @@ public:
 	 * Whenever the widget gets a new size, we also have to reset its position.
 	 */
 	void adjust();
+
+	/** Returns the border where this widget resides. */
+	border getLocation() const {
+		return location;
+	}
 
 	// how many pixels the widget lurks into the view while scrolled out
 	static const int OutOffset = 10;
@@ -78,5 +85,7 @@ protected:
 	virtual void timerEvent(QTimerEvent *e);
 	virtual void changeEvent(QEvent *e);
 };
+
+std::ostream& operator<<(std::ostream& o, AutohideWidget::border e);
 
 #endif // AUTOHIDEWIDGET_H
