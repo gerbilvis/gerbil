@@ -253,7 +253,7 @@ void DistViewController::processPostROISpawn(const cv::Rect &oldroi,
 {
 	if (profitable && ! roiSets) {
 		std::cerr << "DistViewController::processPostROISpawn error: "
-					 "profitable && ! m_roiSets)" << std::endl;
+					 "profitable && ! roiSets)" << std::endl;
 	}
 	if (profitable) {
 		GGDBGM("INCREMENTAL distview update" << endl);
