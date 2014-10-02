@@ -6,7 +6,7 @@
 #include <gerbil_gui_debug.h>
 
 DistViewGUI::DistViewGUI(representation::t type)
-	: type(type), m_needBinning(true)
+	: type(type)
 {	
 	// setup frame and its UI
 	frame = new QWidget();

@@ -87,7 +87,6 @@ protected:
 	void createLimiterMenu();
 
 	representation::t type;
-	bool m_needBinning;
 
 	QWidget *frame;
 	Ui::DistViewGUI *ui;
