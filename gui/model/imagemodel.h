@@ -156,7 +156,7 @@ signals:
 	 * This signal is emitted whenever the ROI is set to a new rect or the
 	 * underlying image data has been altered. 
 	 * Objects requiring image data need to subscribe for it at the
-	 * Controller. See Controller::processSubscribeRepresentation().
+	 * Controller. See Controller::subscribeRepresentation().
 	 * See observedDataRangeUdpate, numBandsROIChanged and roiRectChanged for
 	 * more specific signals.
 	 * @param duplicate True if this is a duplicate signal, i.e. exactly the

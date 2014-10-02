@@ -131,9 +131,9 @@ void DistViewController::init()
 
 	// forward representation subscriptions to controller
 	connect(this, SIGNAL(subscribeRepresentation(QObject*,representation::t)),
-			ctrl, SLOT(processSubscribeRepresentation(QObject*,representation::t)));
+			ctrl, SLOT(subscribeRepresentation(QObject*,representation::t)));
 	connect(this, SIGNAL(unsubscribeRepresentation(QObject*,representation::t)),
-			ctrl, SLOT(processUnsubscribeRepresentation(QObject*,representation::t)));
+			ctrl, SLOT(unsubscribeRepresentation(QObject*,representation::t)));
 }
 
 void DistViewController::initSubscriptions()

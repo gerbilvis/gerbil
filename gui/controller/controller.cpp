@@ -139,7 +139,7 @@ Controller::Controller(const std::string &filename, bool limited_mode,
 
 	// The IMG representation must always be subscribed. Otherwise all the logic
 	// in ImageModel fails. So we subscribe the Controller forever.
-	processSubscribeRepresentation(this, representation::IMG);
+	subscribeRepresentation(this, representation::IMG);
 
 	GGDBGM("init distview subscriptions" << endl);
 	dvc->initSubscriptions();
@@ -323,44 +323,44 @@ bool Controller::haveSubscriber(representation::t type)
 	return false;
 }
 
-void Controller::processSubscribeImageBand(QObject *subscriber,
-										   representation::t repr,
-										   int bandId)
+void Controller::subscribeImageBand(QObject *subscriber,
+									representation::t repr,
+									int bandId)
 {
 	assert(subs);
 	// also subscribe to the relevant representation
-	processSubscribeRepresentation(subscriber, repr);
+	subscribeRepresentation(subscriber, repr);
 	// if not inserted, the subscription already exists -> no need to update
 	if (subscribe(subscriber, ImageBandId(repr, bandId), subs->imageBand)) {
 		im->computeBand(repr, bandId);
 	}
 }
 
-void Controller::processUnsubscribeImageBand(QObject *subscriber,
-											 representation::t repr,
-											 int bandId)
+void Controller::unsubscribeImageBand(QObject *subscriber,
+									  representation::t repr,
+									  int bandId)
 {
 	assert(subs);
 	subs->imageBand.erase(Subscription<ImageBandId>(subscriber,
 													ImageBandId(repr, bandId)));
-	processUnsubscribeRepresentation(subscriber, repr);
+	unsubscribeRepresentation(subscriber, repr);
 }
 
-void Controller::processSubscribeFalseColor(QObject *subscriber,
-											FalseColoring::Type coloring)
+void Controller::subscribeFalseColor(QObject *subscriber,
+									 FalseColoring::Type coloring)
 {
 	//GGDBGM(coloring << endl);
 	assert(subs);
 	// also subscribe to the relevant representation
-	processSubscribeRepresentation(subscriber, FalseColoring::basis(coloring));
+	subscribeRepresentation(subscriber, FalseColoring::basis(coloring));
 	if (subscribe(subscriber, coloring, subs->falseColor)) {
 		//GGDBGM("requesting from fm " << coloring << endl);
 		fm->requestColoring(coloring);
 	}
 }
 
-void Controller::processUnsubscribeFalseColor(QObject *subscriber,
-											  FalseColoring::Type coloring)
+void Controller::unsubscribeFalseColor(QObject *subscriber,
+									   FalseColoring::Type coloring)
 {
 	//GGDBGM(coloring << endl);
 	assert(subs);
@@ -371,10 +371,10 @@ void Controller::processUnsubscribeFalseColor(QObject *subscriber,
 		// cancel computation if any.
 		fm->cancelComputation(coloring);
 	}
-	processUnsubscribeRepresentation(subscriber, FalseColoring::basis(coloring));
+	unsubscribeRepresentation(subscriber, FalseColoring::basis(coloring));
 }
 
-void Controller::processRecalcFalseColor(FalseColoring::Type coloringType)
+void Controller::recalcFalseColor(FalseColoring::Type coloringType)
 {
 	assert(subs);
 	if (isSubscribed(coloringType, subs->falseColor)) {
@@ -382,8 +382,8 @@ void Controller::processRecalcFalseColor(FalseColoring::Type coloringType)
 	}
 }
 
-void Controller::processSubscribeRepresentation(QObject *subscriber,
-												representation::t repr)
+void Controller::subscribeRepresentation(QObject *subscriber,
+										 representation::t repr)
 {
 	assert(subs);
 	if (subscribe(subscriber, repr, subs->repr)) {
@@ -400,8 +400,8 @@ void Controller::processSubscribeRepresentation(QObject *subscriber,
 	}
 }
 
-void Controller::processUnsubscribeRepresentation(QObject *subscriber,
-												  representation::t repr)
+void Controller::unsubscribeRepresentation(QObject *subscriber,
+										   representation::t repr)
 {
 	assert(subs);
 	GGDBGM("unsubscribe " << repr << endl);

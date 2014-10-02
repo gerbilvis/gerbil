@@ -179,21 +179,21 @@ protected slots:
 	 * will be emitted. Any other object subscribed for the representation
 	 * will trigger the emission of the signal as well.
 	 */
-	void processSubscribeImageBand(QObject *subscriber,
-								   representation::t repr,
-								   int bandId);
+	void subscribeImageBand(QObject *subscriber,
+							representation::t repr,
+							int bandId);
 	/** Un-subscribe from image band from ImageModel.
 	 *
 	 * This signals to the controller that the subscriber does not depend on
 	 * the ImageModel::bandUpdate() signal for the given band anymore. The
 	 * signal may still be received due to other subscribed objects.
 	 */
-	void processUnsubscribeImageBand(QObject *subscriber,
-									 representation::t repr,
-									 int bandId);
+	void unsubscribeImageBand(QObject *subscriber,
+							  representation::t repr,
+							  int bandId);
 
 	/** Subscribe for false color image updates from FalseColorModel.
-	 * 
+	 *
 	 * A subscriber connected to FalseColorModel::coloringComputed() will
 	 * receive the signal for the given false color type at least until it
 	 * un-subscribes.  This does not imply that a non-subscribed object will
@@ -202,8 +202,8 @@ protected slots:
 	 * object subscribed for the representation will trigger the emission of
 	 * the signal as well.
 	 */
-	void processSubscribeFalseColor(QObject *subscriber,
-									FalseColoring::Type coloring);
+	void subscribeFalseColor(QObject *subscriber,
+							 FalseColoring::Type coloring);
 	/** Un-subscribe from false color representation from FalseColorModel.
 	 *
 	 * This signals to the controller that the subscriber does not depend on
@@ -211,12 +211,12 @@ protected slots:
 	 * color representation anymore. The signal may still be received due to
 	 * other subscribed objects.
 	 */
-	void processUnsubscribeFalseColor(QObject *subscriber,
+	void unsubscribeFalseColor(QObject *subscriber,
 									  FalseColoring::Type coloring);
 	/** Explicitly trigger a re-calculation of SOM based false color image,
 	 * even if an  up-to-date cached instance exists (SOM is
 	 * non-deterministic). */
-	void processRecalcFalseColor(FalseColoring::Type coloringType);
+	void recalcFalseColor(FalseColoring::Type coloringType);
 
 	/** Subscribe for image representation from ImageModel.
 	 *
@@ -228,8 +228,8 @@ protected slots:
 	 * subscribed for the representation will trigger the emission of the
 	 * signal as well. 
 	 */
-	void processSubscribeRepresentation(QObject *subscriber,
-										representation::t repr);
+	void subscribeRepresentation(QObject *subscriber,
+								 representation::t repr);
 	/** Un-subscribe from image representation from ImageModel.
 	 *
 	 * This signals to the controller that the subscriber does not depend on
@@ -237,8 +237,8 @@ protected slots:
 	 * anymore. The signal may still be received due to other subscribed
 	 * objects.
 	 */
-	void processUnsubscribeRepresentation(QObject *subscriber,
-										  representation::t repr);
+	void unsubscribeRepresentation(QObject *subscriber,
+								   representation::t repr);
 
 protected:
 	// connect models with gui

@@ -85,9 +85,9 @@ void Controller::setupDocks()
 	connect(dvc, SIGNAL(bandSelected(representation::t, int)),
 			bandDock, SLOT(processBandSelected(representation::t,int)));
 	connect(bandDock, SIGNAL(subscribeImageBand(QObject *,representation::t,int)),
-			this, SLOT(processSubscribeImageBand(QObject *,representation::t,int)));
+			this, SLOT(subscribeImageBand(QObject *,representation::t,int)));
 	connect(bandDock, SIGNAL(unsubscribeImageBand(QObject *,representation::t,int)),
-			this, SLOT(processUnsubscribeImageBand(QObject *,representation::t,int)));
+			this, SLOT(unsubscribeImageBand(QObject *,representation::t,int)));
 
 	connect(bandDock->bandView(), SIGNAL(alteredLabels(cv::Mat1s,cv::Mat1b)),
 			labelingModel(), SLOT(alterPixels(cv::Mat1s,cv::Mat1b)));
@@ -147,11 +147,11 @@ void Controller::setupDocks()
 
 	/* FalseColor Dock */
 	connect(falseColorDock, SIGNAL(subscribeFalseColoring(QObject*, FalseColoring::Type)),
-			this, SLOT(processSubscribeFalseColor(QObject*, FalseColoring::Type)));
+			this, SLOT(subscribeFalseColor(QObject*, FalseColoring::Type)));
 	connect(falseColorDock, SIGNAL(unsubscribeFalseColoring(QObject*, FalseColoring::Type)),
-			this, SLOT(processUnsubscribeFalseColor(QObject*,FalseColoring::Type)));
+			this, SLOT(unsubscribeFalseColor(QObject*,FalseColoring::Type)));
 	connect(falseColorDock, SIGNAL(falseColoringRecalcRequested(FalseColoring::Type)),
-			this, SLOT(processRecalcFalseColor(FalseColoring::Type)));
+			this, SLOT(recalcFalseColor(FalseColoring::Type)));
 
 	connect(falseColorModel(), SIGNAL(progressChanged(FalseColoring::Type,int)),
 			falseColorDock, SLOT(processCalculationProgressChanged(FalseColoring::Type,int)));

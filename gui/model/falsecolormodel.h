@@ -23,7 +23,7 @@ class FalseColorModelPayload;
  *
  * Generally GUI objects requiring a false color representation need to
  * subscribe for it at the Controller. See
- * Controller::processSubscribeFalseColor(). False color image updates are
+ * Controller::subscribeFalseColor(). False color image updates are
  * provided by the signal coloringComputed().
  *
  */
@@ -61,7 +61,7 @@ signals:
 	/** The false coloring of type coloringType has been updated.
 	 *
 	 * Objects requiring a false coloring need to subscribe for it at the
-	 * Controller using Controller::processSubscribeFalseColor(). */
+	 * Controller using Controller::subscribeFalseColor(). */
 	void coloringComputed(FalseColoring::Type coloringType, QPixmap p);
 
 	/** The computation was cancelled as requested.
