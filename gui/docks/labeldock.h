@@ -25,10 +25,12 @@ class LabelDock : public QDockWidget
 
 	friend class LeaveEventFilter;
 public:
+
 	explicit LabelDock(QWidget *parent = 0);
 	~LabelDock();
 	
 public slots:
+
 	void setLabeling(const cv::Mat1s &labels,
 					 const QVector<QColor>& colors,
 					 bool colorsChanged);
@@ -39,7 +41,9 @@ public slots:
 	void mergeOrDeleteSelected();
 
 	void processMaskIconsComputed(const QVector<QImage>& icons);
+
 signals:
+
 	/** The user has selected labels and wants them to be merged. */
 	void mergeLabelsRequested(const QVector<int>& labels);
 
@@ -76,9 +80,12 @@ signals:
 	void requestSaveLabeling();
 
 protected:
+
 	void resizeEvent(QResizeEvent * event);
 	void showEvent(QShowEvent *event);
+
 private slots:
+
 	void processSelectionChanged(const QItemSelection & selected,
 							const QItemSelection & deselected);
 	void processLabelItemEntered(QModelIndex midx);
@@ -89,12 +96,10 @@ private slots:
 	/** Icon size slider value changed. */
 	void processSliderValueChanged(int);
 	void updateSliderToolTip();
-
-
-private:
 	/** Adjust view contents size. */
 	void resizeSceneContents();
 
+private:
 	enum { LabelIndexRole = Qt::UserRole };
 
 	void init();
@@ -127,11 +132,15 @@ private:
 // utility class to filter leave event
 class LeaveEventFilter : public QObject {
 	Q_OBJECT
+
 public:
+
 	LeaveEventFilter(LabelDock *parent)
 		: QObject(parent)
 	{}
+
 protected:
+
 	bool eventFilter(QObject *obj, QEvent *event);
 };
 

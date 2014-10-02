@@ -82,6 +82,9 @@ void LabelDock::init()
 	connect(ui->saveLabelingButton, SIGNAL(clicked()),
 			this, SIGNAL(requestSaveLabeling()));
 
+	connect(this, SIGNAL(visibilityChanged(bool)),
+			this, SLOT(resizeSceneContents()));
+
 	this->setWindowTitle("Labels");
 	QWidget *contents = new QWidget(this);
 	QVBoxLayout *layout = new QVBoxLayout(contents);
