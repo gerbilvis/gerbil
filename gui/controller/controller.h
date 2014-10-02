@@ -131,9 +131,9 @@ public slots:
 
 	/** requests (from GUI) */
 	// change ROI, effectively spawning new image data, reusing cached ROI data
-	void spawnROI(cv::Rect roi = cv::Rect());
+	void spawnROI(cv::Rect newRoi = cv::Rect());
 	// change ROI, spawn new image data, rebuild everything from scratch.
-	void invalidateROI(cv::Rect roi = cv::Rect());
+	void invalidateROI(cv::Rect newRoi = cv::Rect());
 	// change number of bands, spawning new image data
 	void rescaleSpectrum(int bands);
 
@@ -224,7 +224,7 @@ protected:
 	 * spectral rescale and the image data in the ROI is re-computed
 	 * accordingly.
 	 */
-	void updateROI(bool reuse, cv::Rect roi = cv::Rect(), int bands = -1);
+	void updateROI(bool reuse, cv::Rect newRoi = cv::Rect(), int bands = -1);
 
 	/** Return true if there is a subscriber for the given representation, otherwise false.
 	 */
@@ -285,7 +285,7 @@ protected:
 
 /// SUBSCRIPTIONS
 	// The current ROI.
-	cv::Rect m_roi;
+	cv::Rect roi;
 
 	// see subscriptions.h
 	Subscriptions *subs;

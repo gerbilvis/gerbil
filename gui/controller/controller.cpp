@@ -125,16 +125,16 @@ Controller::Controller(const std::string &filename, bool limited_mode,
 	/* Initial ROI images spawning. Do it before showing the window but after
 	 * all signals were connected! */
 	//GGDBGM("dimensions " << dimensions << endl);
-	m_roi = dimensions; // initial ROI is image size, except:
-	if (m_roi.area() > 262144) {
+	roi = dimensions; // initial ROI is image size, except:
+	if (roi.area() > 262144) {
 		// image is bigger than 512x512, start with a smaller ROI in center
-		m_roi.width = std::min(m_roi.width, 512);
-		m_roi.height = std::min(m_roi.height, 512);
-		m_roi.x = 0.5*(dimensions.width - m_roi.width);
-		m_roi.y = 0.5*(dimensions.height - m_roi.height);
+		roi.width = std::min(roi.width, 512);
+		roi.height = std::min(roi.height, 512);
+		roi.x = 0.5*(dimensions.width - roi.width);
+		roi.y = 0.5*(dimensions.height - roi.height);
 	}
 
-	GGDBGM("roi " << m_roi  << endl);
+	GGDBGM("roi " << roi  << endl);
 	spawnROI();
 
 	// The IMG representation must always be subscribed. Otherwise all the logic
@@ -212,16 +212,16 @@ void Controller::initLabeling(cv::Rect dimensions)
 	lm->setDimensions(dimensions.height, dimensions.width);
 }
 
-void Controller::spawnROI(cv::Rect roi)
+void Controller::spawnROI(cv::Rect newRoi)
 {
 	const bool reuse = true;
-	updateROI(reuse, roi);
+	updateROI(reuse, newRoi);
 }
 
-void Controller::invalidateROI(cv::Rect roi)
+void Controller::invalidateROI(cv::Rect newRoi)
 {
 	const bool reuse = false;
-	updateROI(reuse, roi);
+	updateROI(reuse, newRoi);
 }
 
 void Controller::rescaleSpectrum(int bands)
@@ -247,31 +247,31 @@ void Controller::debugSubscriptions()
 	}
 }
 
-void Controller::updateROI(bool reuse, cv::Rect roi, int bands)
+void Controller::updateROI(bool reuse, cv::Rect newRoi, int bands)
 {
-	const cv::Rect oldroi = m_roi;
+	const cv::Rect oldRoi = roi;
 
 	// no new ROI provided
-	if (cv::Rect() == roi) {
-		roi = m_roi ;
+	if (cv::Rect() == newRoi) {
+		newRoi = roi ;
 	} else {
-		m_roi = roi;
+		roi = newRoi;
 	}
 	resetROISpawned();
-	GGDBGM("bands=" << bands << ", roi=" << roi << endl);
+	GGDBGM("bands=" << bands << ", newRoi=" << newRoi << endl);
 
 	// prepare incremental update and test worthiness
 	std::vector<cv::Rect> sub, add;
 	if (reuse) {
 		// Compute if it is profitable to add/sub pixels given old and new ROI,
 		// instead of full recomputation, and retrieve corresponding regions.
-		bool profitable = rectTransform(im->getROI(), roi, sub, add);
+		bool profitable = rectTransform(im->getROI(), newRoi, sub, add);
 		reuse = profitable;
 	}
 
 	/** FIRST STEP: recycle existing payload **/
 	// Give other objects a change to recycle old ROI image data.
-	emit preROISpawn(oldroi, m_roi, sub, add, reuse);
+	emit preROISpawn(oldRoi, roi, sub, add, reuse);
 
 	if (!reuse) {
 		// invalidate existing ROI information (to not re-use data)
@@ -279,8 +279,8 @@ void Controller::updateROI(bool reuse, cv::Rect roi, int bands)
 	}
 
 	/** SECOND STEP: update metadata */
-	lm->updateROI(roi);
-	illumm->setRoi(roi);
+	lm->updateROI(newRoi);
+	illumm->setRoi(newRoi);
 
 	/** THIRD STEP: update payload */
 	/* This has to be done in the right order!
@@ -298,11 +298,11 @@ void Controller::updateROI(bool reuse, cv::Rect roi, int bands)
 
 		if (sub) {
 			/* tasks to (incrementally) re-calculate image data */
-			im->spawn(type, roi, bands);
+			im->spawn(type, newRoi, bands);
 		}
 	}
 
-	emit postROISpawn(oldroi, m_roi, sub, add, reuse);
+	emit postROISpawn(oldRoi, roi, sub, add, reuse);
 
 	// FIXME: normTargetChanged() still necessary?
 	// TODO: better method to make sure values in normalizationDock are correct
@@ -389,11 +389,11 @@ void Controller::processSubscribeRepresentation(QObject *subscriber,
 	if (subscribe(subscriber, repr, subs->repr)) {
 		GGDBGM("new subscription, ");
 		if (m_ROISpawned[repr]) {
-			GGDBGP("RE-spawning ROI "<< m_roi << " for " << repr << endl);
+			GGDBGP("RE-spawning ROI "<< roi << " for " << repr << endl);
 			im->respawn(repr);
 		} else {
-			GGDBGP("   spawning ROI "<< m_roi << " for " << repr << endl);
-			im->spawn(repr, m_roi, -1);
+			GGDBGP("   spawning ROI "<< roi << " for " << repr << endl);
+			im->spawn(repr, roi, -1);
 			m_ROISpawned[repr] = true;
 		}
 
