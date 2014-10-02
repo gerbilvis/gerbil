@@ -294,7 +294,7 @@ protected:
 	// true -> ROI for this representation has been spawned. This makes
 	// it possible to decide between full ROI spawn or re-spawn. See
 	// ImageModel::imageUpdate() signal.
-	bool m_ROISpawned[representation::REPSIZE];
+	bool roiSpawned[representation::REPSIZE];
 
 };
 

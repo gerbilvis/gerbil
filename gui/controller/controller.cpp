@@ -388,13 +388,13 @@ void Controller::processSubscribeRepresentation(QObject *subscriber,
 	assert(subs);
 	if (subscribe(subscriber, repr, subs->repr)) {
 		GGDBGM("new subscription, ");
-		if (m_ROISpawned[repr]) {
+		if (roiSpawned[repr]) {
 			GGDBGP("RE-spawning ROI "<< roi << " for " << repr << endl);
 			im->respawn(repr);
 		} else {
 			GGDBGP("   spawning ROI "<< roi << " for " << repr << endl);
 			im->spawn(repr, roi, -1);
-			m_ROISpawned[repr] = true;
+			roiSpawned[repr] = true;
 		}
 
 	}
@@ -443,7 +443,7 @@ void Controller::processImageUpdate(representation::t repr,
 		return;
 	}
 
-	m_ROISpawned[repr] = true;
+	roiSpawned[repr] = true;
 
 	Subscription<ImageBandId>::IdTypeSet bandUpdates;
 
@@ -481,6 +481,6 @@ void Controller::processImageUpdate(representation::t repr,
 void Controller::resetROISpawned()
 {
 	foreach (representation::t repr, representation::all()) {
-		m_ROISpawned[repr] = false;
+		roiSpawned[repr] = false;
 	}
 }
