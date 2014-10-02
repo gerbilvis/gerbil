@@ -1,5 +1,4 @@
 #include "distviewgui.h"
-#include "controller/distviewcontroller.h"
 #include "widgets/autohidewidget.h"
 
 //#define GGDBG_MODULE
@@ -85,9 +84,9 @@ void DistViewGUI::initTop()
 	setTitle(type);
 }
 
-void DistViewGUI::initSignals(DistViewController *dvctrl)
+void DistViewGUI::initSignals(QObject *dvctrl)
 {
-	// signals from controller
+	// signals from DistviewController
 	connect(dvctrl, SIGNAL(pixelOverlayInvalid()),
 			 vp, SLOT(removePixelOverlay()));
 	connect(dvctrl, SIGNAL(toggleLabeled(bool)),

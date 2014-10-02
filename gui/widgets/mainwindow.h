@@ -45,7 +45,7 @@ class MainWindow : public QMainWindow, private Ui::MainWindow {
 public:
 	MainWindow();
 	void initUI(std::string filename);
-	void initSignals(Controller *ctrl, DistViewController *dvctrl);
+	void initSignals(QObject *ctrl, QObject *dvctrl);
 
 	// add distribution view widget to the appropr. container
 	void addDistView(QWidget *frame);

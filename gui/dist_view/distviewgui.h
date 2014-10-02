@@ -7,14 +7,12 @@
 #include "viewport.h"
 #include <QMenu>
 
-class DistViewController;
-
 class DistViewGUI : public QObject
 {
 	Q_OBJECT
 public:
 	explicit DistViewGUI(representation::t type);
-	void initSignals(DistViewController *dvctrl);
+	void initSignals(QObject *dvctrl);
 	void initSubscriptions();
 
 	QWidget* getFrame() { return frame; }

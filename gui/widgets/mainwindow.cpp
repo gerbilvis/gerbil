@@ -8,8 +8,6 @@
 */
 
 #include "widgets/mainwindow.h"
-#include "controller/controller.h"
-#include "controller/distviewcontroller.h"
 #include "iogui.h"
 
 /*#include "tasks/rgbtbb.h"
@@ -48,7 +46,7 @@ void MainWindow::initUI(std::string filename)
 	setWindowTitle(QString("Gerbil - %1").arg(fi.completeBaseName()));
 }
 
-void MainWindow::initSignals(Controller *ctrl, DistViewController *dvctrl)
+void MainWindow::initSignals(QObject *ctrl, QObject *dvctrl)
 {
 	/* slots & signals: GUI only */
 	connect(docksButton, SIGNAL(clicked()),
