@@ -22,16 +22,6 @@ public:
 	explicit FalseColorDock(QWidget *parent = 0);
 	
 signals:
-	/** Request a rendering for coloringType of the current image and ROI.
-	 *
-	 * @param recalc If set, the result shall be recalculated wether or not an
-	 *               up-to-date cached copy is available. Useful to request a
-	 *               new SOM.
-	 */
-	void falseColoringRequested(FalseColoring::Type coloringType, bool recalc = false);
-	/** Requests the model to cancel the previously requested calculation for
-	 * coloringType */
-	void cancelComputationRequested(FalseColoring::Type coloringType);
 	/** Request re-calculation of non-determinitstic representation (e.g. SOM). */
 	void falseColoringRecalcRequested(FalseColoring::Type coloringType);
 

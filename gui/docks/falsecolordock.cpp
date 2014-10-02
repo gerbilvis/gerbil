@@ -118,7 +118,6 @@ void FalseColorDock::processApplyClicked()
 			updateProgressBar();
 			updateTheButton();
 		} else {
-			//emit cancelComputationRequested(selectedColoring());
 			emit unsubscribeFalseColoring(this, selectedColoring());
 
 			// go back to last shown coloring
