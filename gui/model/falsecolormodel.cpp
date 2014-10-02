@@ -47,6 +47,7 @@ FalseColorModel::FalseColorModel()
 
 FalseColorModel::~FalseColorModel()
 {
+	// nothing to do
 }
 
 void FalseColorModel::setMultiImg(representation::t type,
@@ -81,7 +82,7 @@ void FalseColorModel::processImageUpdate(representation::t type,
 		if(FalseColoring::isBasedOn(coloringType, type)) {
 			GGDBGM("abandoning payload " << coloringType << endl);
 			abandonPayload(coloringType);
-			// remeber to restart the calculation
+			// remember to restart the calculation
 			pendingRequests[coloringType] = true;
 		}
 	}

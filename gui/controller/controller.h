@@ -154,48 +154,91 @@ protected slots:
 
 /// SUBSCRIPTIONS
 
-	// Subscriptions help manage data dependencies between GUI elements. GUI
-	// elements subscribe for computation results they need to display. The
-	// controller triggers a re-calculation of results if the input data,
-	// usually the selected ROI, changes for subscribed results.
-	// Subscription is usually triggered by GUI-element visibility and user
-	// selection of results. GUI elements are _not_ responsible to chache
-	// result data but the model is. Subscribing to existing results is
-	// expected to be fast. Usually this is achieved by caching results on the
-	// model end.
-	// This structure simplifies GUI and model logic since the controller
-	// takes care of who is subscribed to what and neither the models nor the
-	// GUI widgets have to track ROI changes and data dependencies.
+	// Subscriptions provide a way for GUI objects to tell the Controller
+	// what kind of data they currently require. Based on the received
+	// (un-)subscriptions the Controller computes the arising dependencies and
+	// makes sure all necessary data is computed on the model end. See the
+	// slots below for subscribable data.
+	// This concept is to efficiently handle dependencies between the
+	// different models and relieve GUI classes from this task.
+	// GUI objects should immediately un-subscribe data if they do not need
+	// it, i.e. when they are hidden or the user selects a different type of
+	// instance of the data to be displayed. Doing so only a minumum of
+	// required computations are done on the model end.
+	// Frequent subscriptions and unsubscriptions triggering requests on the
+	// model end are expected to be cheap. The models have to make sure valid
+	// results are cached and thus frequent reqests for the same data are
+	// cheap.
 
 	/** Subscribe for image band bandId of representation repr.
 	 *
-	 * If a GUI element (subscriber) is subscribed for an image band, i.e. the
-	 * grayscale image of one spectral band, the controller requests a
-	 * computation for the band from the image model whenever necessary, e.g.
-	 * when the image data changes. 
-	 * A subscriber receives updates via the ImageModel::bandUpdate() signal.
+	 * A subscriber connected to ImageModel::bandUpdate() will receive the
+	 * signal for the given representation and band at least until it
+	 * un-subscribes.  This does not imply that a non-subscribed object will
+	 * not receive the signal. The subscription just guarantees the signal
+	 * will be emitted. Any other object subscribed for the representation
+	 * will trigger the emission of the signal as well.
 	 */
-	void processSubscribeImageBand(QObject *subscriber, representation::t repr, int bandId);
-	void processUnsubscribeImageBand(QObject *subscriber, representation::t repr, int bandId);
+	void processSubscribeImageBand(QObject *subscriber,
+								   representation::t repr,
+								   int bandId);
+	/** Un-subscribe from image band from ImageModel.
+	 *
+	 * This signals to the controller that the subscriber does not depend on
+	 * the ImageModel::bandUpdate() signal for the given band anymore. The
+	 * signal may still be received due to other subscribed objects.
+	 */
+	void processUnsubscribeImageBand(QObject *subscriber,
+									 representation::t repr,
+									 int bandId);
 
-	/** Subscribes a subscriber for false color image updates from FalseColorModel. */
-	void processSubscribeFalseColor(QObject *subscriber, FalseColoring::Type coloring);
-	void processUnsubscribeFalseColor(QObject *subscriber, FalseColoring::Type coloring);
-	/** Re-calculate a SOM based false color image even if an  up-to-date
-	 * cached instance exists (SOM is non-deterministic). */
+	/** Subscribe for false color image updates from FalseColorModel.
+	 * 
+	 * A subscriber connected to FalseColorModel::coloringComputed() will
+	 * receive the signal for the given false color type at least until it
+	 * un-subscribes.  This does not imply that a non-subscribed object will
+	 * not receive the signal. The subscription just guarantees the
+	 * computation will be done and the signal will be emitted. Any other
+	 * object subscribed for the representation will trigger the emission of
+	 * the signal as well.
+	 */
+	void processSubscribeFalseColor(QObject *subscriber,
+									FalseColoring::Type coloring);
+	/** Un-subscribe from false color representation from FalseColorModel.
+	 *
+	 * This signals to the controller that the subscriber does not depend on
+	 * the FalseColorModel::coloringComputed() signal for the given false
+	 * color representation anymore. The signal may still be received due to
+	 * other subscribed objects.
+	 */
+	void processUnsubscribeFalseColor(QObject *subscriber,
+									  FalseColoring::Type coloring);
+	/** Explicitly trigger a re-calculation of SOM based false color image,
+	 * even if an  up-to-date cached instance exists (SOM is
+	 * non-deterministic). */
 	void processRecalcFalseColor(FalseColoring::Type coloringType);
 
-	// Representation Subscriptions
-
-	// TODO: A new representation subscription causes a re-spawn of the ROI.
-	// We need some mechanism for the models which receive image updates to
-	// realize there is duplicate data being sent around.
-	// E.g. the false color model recomputes the SOM each time the IMG
-	// distview is opened. 
-	// Ideas: reswpawn flag, add a unique key to the imageupdate, ... ?
-
-	void processSubscribeRepresentation(QObject *subscriber, representation::t repr);
-	void processUnsubscribeRepresentation(QObject *subscriber, representation::t repr);
+	/** Subscribe for image representation from ImageModel.
+	 *
+	 * A subscriber connected to ImageModel::imageUpdate() will receive this
+	 * signal for the subscribed representation at least until it
+	 * un-subscribes. This does not imply that a non-subscribed object will
+	 * not receive the signal. The subscription just guarantees the
+	 * computation will be done signal will be emitted. Any other object
+	 * subscribed for the representation will trigger the emission of the
+	 * signal as well. 
+	 */
+	void processSubscribeRepresentation(QObject *subscriber,
+										representation::t repr);
+	/** Un-subscribe from image representation from ImageModel.
+	 *
+	 * This signals to the controller that the subscriber does not depend on
+	 * the ImageModel::imageUpdate() signal for the given representation
+	 * anymore. The signal may still be received due to other subscribed
+	 * objects.
+	 */
+	void processUnsubscribeRepresentation(QObject *subscriber,
+										  representation::t repr);
 
 protected:
 	// connect models with gui
@@ -226,7 +269,8 @@ protected:
 	 */
 	void updateROI(bool reuse, cv::Rect newRoi = cv::Rect(), int bands = -1);
 
-	/** Return true if there is a subscriber for the given representation, otherwise false.
+	/** Returns true if there is a subscriber for the given representation,
+	 * otherwise returns false.
 	 */
 	bool haveSubscriber(representation::t type);
 
@@ -242,7 +286,8 @@ protected:
 
 /// MODELS
 
-	// image model stores all multispectral image representations (IMG, GRAD, …)
+	// image model stores all multispectral image representations (IMG, GRAD,
+	// ...)
 	ImageModel *im;
 
 	/* labeling model stores pixel/label associations and label color codes */

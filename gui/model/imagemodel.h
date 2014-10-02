@@ -54,6 +54,7 @@ class ImageModel : public QObject
 	Q_OBJECT
 
 public:
+
 	typedef ImageModelPayload payload;
 
 	explicit ImageModel(BackgroundTaskQueue &queue, bool limitedMode);
@@ -70,7 +71,8 @@ public:
 	 * used as ROI. */
 	int getNumBandsROI();
 
-	/** Returns the Region of Interest (ROI) of the stored image representations. */
+	/** Returns the Region of Interest (ROI) of the stored image
+	 * representations. */
 	const cv::Rect& getROI() { return roi; }
 
 	/** Returns a SharedMultiImgPtr to the image data with representation type.
@@ -79,9 +81,11 @@ public:
 	 * object will remain in-place during runtime. The multi_img managed by it
 	 * will be replaced on ROI changes and other operations.  The
 	 * SharedMultiImgBase provides a mutex that needs to be locked for
-	 * concurrent access.
+	 * concurrent access. Locking the mutex blocks all tasks in the
+	 * BackgroundTaskQueue working on the respective representation!
 	 */
-	SharedMultiImgPtr getImage(representation::t type) { return map[type]->image; }
+	SharedMultiImgPtr getImage(representation::t type)
+	{ return map[type]->image; }
 
 	/** Returns a SharedMultiImgPtr to the input image data.
 	 *
@@ -112,10 +116,13 @@ public:
 	/** Re-spawn current ROI for representation type.
 	 *
 	 *  Emits imageUpdate() with duplicate = true. It is the responsibility of
-	 *  the caller to make sure image data is up-to-date.
+	 *  the caller to make sure image data is up-to-date, i.e. spawn() must
+	 *  have been called first.
 	 */
 	void respawn(representation::t type);
+
 public slots:
+
 	void computeBand(representation::t type, int dim);
 	/** Compute rgb representation of full image.
 	 *
@@ -132,7 +139,13 @@ public slots:
 			multi_img::Range targetRange);
 
 signals:
-	/** The data of the currently selected band has changed. */
+
+	/** Single band bandId for representation repr has been computed.
+	 *
+	 * This signal is emitted after the computation has been requested by
+	 * callig computeBand(). GUI objects requiring a single band should
+	 * subscribe for it at the Controller, see
+	 * Controller::processSubscribeImageBand().*/
 	void bandUpdate(representation::t repr, int bandId,
 					QPixmap band, QString description);
 
@@ -141,23 +154,28 @@ signals:
 	/** The ROI image data for representation type has changed.
 	 *
 	 * This signal is emitted whenever the ROI is set to a new rect or the
-	 * underlying data has been altered. Basically it is emitted after every
-	 * spawn().
-	 * See observedDataRangeUdpate, numBandsROIChanged and roiRectChanged for more
-	 * specific signals.
-	 * @param duplicate If true this is a duplicate signal, i.e. exactly the
-	 * same data has already been signalled before and thus needs not to be
-	 * processed by clients. This is necessary for initializing new subscribers
-	 * (ROI re-spawn).
+	 * underlying image data has been altered. 
+	 * Objects requiring image data need to subscribe for it at the
+	 * Controller. See Controller::processSubscribeRepresentation().
+	 * See observedDataRangeUdpate, numBandsROIChanged and roiRectChanged for
+	 * more specific signals.
+	 * @param duplicate True if this is a duplicate signal, i.e. exactly the
+	 * same data has already been signalled before. Objects connected to this
+	 * signal must handle this accordingly. New representation subscribers
+	 * receive this signal with duplicate==true.
 	 */
-	void imageUpdate(representation::t type, SharedMultiImgPtr image, bool duplicate);
+	void imageUpdate(representation::t type,
+					 SharedMultiImgPtr image,
+					 bool duplicate);
 
 	/** The observed data range for representation type has changed. */
-	void observedDataRangeUdpate(representation::t type, const multi_img::Range& range);
+	void observedDataRangeUdpate(representation::t type,
+								 const multi_img::Range& range);
 
 	// FIXME:
 	/** Not implemented. */
-	void theoreticalDataRangeUpdate(representation::t type, const multi_img::Range& range);
+	void theoreticalDataRangeUpdate(representation::t type,
+									const multi_img::Range& range);
 
 	/** The number of spectral bands of the ROI image has changed to nBands.
 	 *
@@ -175,10 +193,12 @@ signals:
 	void roiRectChanged(cv::Rect roi);
 
 protected slots:
+
 	// payload background task has finished
 	void processNewImageData(representation::t type, SharedMultiImgPtr image);
 
 private:
+
 	// helper to spawn()
 	bool checkProfitable(const cv::Rect& oldROI, const cv::Rect& newROI);
 

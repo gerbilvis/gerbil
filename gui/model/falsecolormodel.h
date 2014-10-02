@@ -14,18 +14,17 @@
 #include "falsecolor/falsecoloring.h"
 #include "falsecolor/falsecoloringcacheitem.h"
 
-// FIXME
-// SOM-generation is not canceled when the program is terminated
 
 class FalseColorModelPayload;
 
 /**
- * @brief The FalseColorModel class provides false color image processing to the GUI.
+ * @brief The FalseColorModel class provides false color image processing to
+ * the GUI.
  *
- *  FalseColorModel will send a coloringOutOfDate() signal once it has the
- *  necessary data to compute the given FalseColoring::Type. Clients should not
- *  requestColoring() until a coloringOutOfDate() for a FalseColoring::Type has
- *  been signalled.
+ * Generally GUI objects requiring a false color representation need to
+ * subscribe for it at the Controller. See
+ * Controller::processSubscribeFalseColor(). False color image updates are
+ * provided by the signal coloringComputed().
  *
  */
 class FalseColorModel : public QObject
@@ -33,8 +32,6 @@ class FalseColorModel : public QObject
 	Q_OBJECT
 
 public:
-	/* Constructor.
-	 */
 	FalseColorModel();
 	~FalseColorModel();
 
@@ -60,18 +57,26 @@ public slots:
 	void cancelComputation(FalseColoring::Type coloringType);
 
 signals:
+	// FIXME rename to falseColoringUpdate()
+	/** The false coloring of type coloringType has been updated.
+	 *
+	 * Objects requiring a false coloring need to subscribe for it at the
+	 * Controller using Controller::processSubscribeFalseColor(). */
 	void coloringComputed(FalseColoring::Type coloringType, QPixmap p);
 
 	/** The computation was cancelled as requested.
 	 *
-	 *	Not used for signalling abort by FalseColorModel itself.
+	 * This is emitted when cancelComputation() has been called before for the
+	 * respective representation. It is not emitted if the computation for a
+	 * representation has been cancelled by FalseColorModel internally.
 	 */
 	void computationCancelled(FalseColoring::Type coloringType);
 
+	/** Signals the progress of a representation computation. */
 	void progressChanged(FalseColoring::Type coloringType, int percent);
 
 private slots:
-	/** Payload is done computing. */
+	/** Payload has finished computation. */
 	void processComputationFinished(FalseColoring::Type coloringType,
 									bool success);
 
@@ -83,7 +88,8 @@ private:
 	 */
 	void computeColoring(FalseColoring::Type coloringType);
 
-	/** Disconnect all signals from the payload object and set the cancel flag. */
+	/** Disconnect all signals from the payload object and set the cancel
+	 * flag. */
 	void abandonPayload(FalseColoring::Type coloringType);
 
 	/** Allocate and reset all cache entries. */
