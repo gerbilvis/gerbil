@@ -490,7 +490,6 @@
          <number>32</number>
         </property>
         <property name="maximum">
-         <number>256</number>
         </property>
         <property name="singleStep">
          <number>2</number>

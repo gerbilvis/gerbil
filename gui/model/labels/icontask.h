@@ -55,8 +55,8 @@ class IconTask : public QThread
 public:
 	explicit IconTask(IconTaskCtxPtr& ctxp, QObject *parent = 0);
 	virtual ~IconTask();
-	enum {IconSizeMin = 32};
-	enum {IconSizeMax = 256};
+	enum {IconSizeMin = 4};
+	enum {IconSizeMax = 1024};
 	QSize getIconSize() const { return ctxp->iconSize; }
 	bool getApplyROI() const { return ctxp->applyROI; }
 public slots:

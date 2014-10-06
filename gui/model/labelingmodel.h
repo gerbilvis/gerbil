@@ -20,7 +20,8 @@ public:
 	explicit LabelingModel();
 
 public slots:
-	void setDimensions(unsigned int height, unsigned int width);
+	/** Sets the dimensions of the multi_img. */
+	void setImageSize(unsigned int height, unsigned int width);
 	void updateROI(const cv::Rect &roi);
 	void setLabels(const Labeling &labeling, bool full);
 	void setLabels(const cv::Mat1s &labeling);

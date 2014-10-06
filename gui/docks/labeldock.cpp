@@ -16,7 +16,7 @@
 
 #include <iostream>
 
-#define GGDBG_MODULE
+//#define GGDBG_MODULE
 #include "../gerbil_gui_debug.h"
 
 
@@ -50,6 +50,8 @@ void LabelDock::init()
 
 	ui->labelView->setDragEnabled(false);
 	ui->labelView->setDragDropMode(QAbstractItemView::NoDragDrop);
+	ui->labelView->setSpacing(0);
+	ui->labelView->setUniformItemSizes(true);
 
 	connect(ui->labelView->selectionModel(),
 			SIGNAL(selectionChanged(QItemSelection,QItemSelection)),
@@ -70,10 +72,10 @@ void LabelDock::init()
 
 	connect(ui->sizeSlider, SIGNAL(valueChanged(int)),
 			this, SLOT(processSliderValueChanged(int)));
-	// Icon size is hard-coded to the range [32, 256] in IconTask.
+	// Icon size is hard-coded to the range [4, 1024] in IconTask.
 	// Don't change this unless you know what you are doing.
-	ui->sizeSlider->setMinimum(32);
-	ui->sizeSlider->setMaximum(256);
+	ui->sizeSlider->setMinimum(16);
+	ui->sizeSlider->setMaximum(512);
 	updateSliderToolTip();
 
 	connect(ui->applyROI, SIGNAL(toggled(bool)),
@@ -136,9 +138,48 @@ void LabelDock::init()
 	this->setWidget(contents);
 }
 
+void LabelDock::updateLabelIcons()
+{
+	//GGDBGM("value " << ui->sizeSlider->value() << endl);
+	int sval = ui->sizeSlider->value();
+	// Make icon size even. Odd values cause the interpolation to oscillate
+	// while changing slider.
+	sval = sval + (sval%2);
+
+	// aspect ratio
+	float r = 1.0;
+	if (imgSize != cv::Size()) {
+		r = float(imgSize.height) / float(imgSize.width);
+		GGDBGM("image aspect ratio " << r << endl);
+	}
+	if (ui->applyROI->isChecked() && roi != cv::Rect() && roi.width > 0) {
+		r = float(roi.height) / roi.width;
+		GGDBGM("ROI aspect ratio " << r << endl);
+	}
+
+	QSize iconSize(sval,sval);
+	if (r <= 1.0f) {
+		iconSize.setHeight(int(sval * r + 0.5));
+	} else {
+		iconSize.setWidth(int(sval / r + 0.5));
+	}
+
+	GGDBGM("ratio " << r << ", icon size " << iconSize << endl);
+
+	updateSliderToolTip();
+	emit labelMaskIconSizeChanged(iconSize);
+	// Label mask icons update is non-blocking, request them for each change.
+	emit labelMaskIconsRequested();
+}
+
 LabelDock::~LabelDock()
 {
 	delete ui;
+}
+
+void LabelDock::setImageSize(cv::Size imgSize)
+{
+	this->imgSize = imgSize;
 }
 
 void LabelDock::setLabeling(const cv::Mat1s & labels,
@@ -284,21 +325,19 @@ void LabelDock::processApplyROIToggled(bool checked)
 {
 	const bool applyROI = checked;
 	emit applyROIChanged(applyROI);
-	emit labelMaskIconsRequested();
+	updateLabelIcons();
+}
+
+void LabelDock::processRoiRectChanged(cv::Rect newRoi)
+{
+	GGDBG_CALL();
+	roi = newRoi;
+	updateLabelIcons();
 }
 
 void LabelDock::processSliderValueChanged(int)
 {
-	//GGDBGM("value " << ui->sizeSlider->value() << endl);
-	int val = ui->sizeSlider->value();
-	// Make icon size even. Odd values cause the interpolation to oscillate
-    // while changing slider.
-	val = val + (val%2);
-	QSize iconSize(val,val);
-	updateSliderToolTip();
-	emit labelMaskIconSizeChanged(iconSize);
-	// Label mask icons update is non-blocking, request them for each change.
-	emit labelMaskIconsRequested();
+	updateLabelIcons();
 }
 
 void LabelDock::updateSliderToolTip()

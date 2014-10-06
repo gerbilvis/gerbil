@@ -228,6 +228,7 @@ void Controller::setupDocks()
 			this, SLOT(invalidateROI()));
 
 	/* Label Dock */
+	labelDock->setImageSize(imgSize);
 	connect(labelingModel(),
 			SIGNAL(newLabeling(cv::Mat1s,QVector<QColor>,bool)),
 			labelDock, SLOT(setLabeling(cv::Mat1s,QVector<QColor>,bool)));
@@ -254,11 +255,12 @@ void Controller::setupDocks()
 			labelDock, SLOT(processMaskIconsComputed(const QVector<QImage>&)));
 	connect(labelDock, SIGNAL(applyROIChanged(bool)),
 			labelingModel(), SLOT(setApplyROI(bool)));
-	/* Labeling Dock */
 	connect(labelDock, SIGNAL(requestLoadLabeling()),
 			labelingModel(), SLOT(loadLabeling()));
 	connect(labelDock, SIGNAL(requestSaveLabeling()),
 			labelingModel(), SLOT(saveLabeling()));
+	connect(imageModel(), SIGNAL(roiRectChanged(cv::Rect)),
+			labelDock, SLOT(processRoiRectChanged(cv::Rect)));
 }
 
 void Controller::requestGraphseg(representation::t repr,

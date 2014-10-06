@@ -6,6 +6,9 @@
 
 #include <QModelIndex>
 
+#include <model/representation.h>
+#include <shared_data.h>
+
 namespace Ui {
 class LabelDock;
 }
@@ -19,6 +22,8 @@ class AutohideWidget;
 class QGraphicsScene;
 class QGraphicsProxyWidget;
 
+// TODO: add label for icon size: XXXX px
+
 class LabelDock : public QDockWidget
 {
 	Q_OBJECT
@@ -28,6 +33,9 @@ public:
 
 	explicit LabelDock(QWidget *parent = 0);
 	~LabelDock();
+
+	/** Set the size of the multi_img. */
+	void setImageSize(cv::Size imgSize);
 	
 public slots:
 
@@ -92,6 +100,9 @@ private slots:
 	void processLabelItemLeft();
 
 	void processApplyROIToggled(bool checked);
+	
+	// from ImageModel
+	void processRoiRectChanged(cv::Rect newRoi);
 
 	/** Icon size slider value changed. */
 	void processSliderValueChanged(int);
@@ -100,9 +111,11 @@ private slots:
 	void resizeSceneContents();
 
 private:
+
 	enum { LabelIndexRole = Qt::UserRole };
 
 	void init();
+	void updateLabelIcons();
 
 	// UI with autohide widgets.
 	// The view and scene for this widget.
@@ -126,7 +139,14 @@ private:
 	// Label mask icons indexed by labelid
 	QVector<QImage> icons;
 
+	// Label colors indexed by labelid
 	QVector<QColor> colors;
+
+	// The size of the multi_img
+	cv::Size imgSize;
+
+	// The current ROI.
+	cv::Rect roi;
 };
 
 // utility class to filter leave event

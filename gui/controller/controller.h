@@ -341,6 +341,11 @@ protected:
 	// ImageModel::imageUpdate() signal.
 	bool roiSpawned[representation::REPSIZE];
 
+/// IMAGE INFO (READ ONLY)
+
+	// Size of the loaded multi_img
+	cv::Size imgSize;
+
 };
 
 #endif // CONTROLLER_H

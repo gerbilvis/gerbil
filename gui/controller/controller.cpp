@@ -39,6 +39,7 @@ Controller::Controller(const std::string &filename, bool limited_mode,
 	im = new ImageModel(queue, limited_mode);
 	// load image
 	cv::Rect dimensions = im->loadImage(filename);
+	imgSize = cv::Size(dimensions.width, dimensions.height);
 	if (dimensions.width < 1) {
 		exit(4); // Qt's exit does not work before calling exec();
 	}
@@ -200,7 +201,7 @@ void Controller::initGraphSegmentation()
 void Controller::initLabeling(cv::Rect dimensions)
 {
 	// initialize label model
-	lm->setDimensions(dimensions.height, dimensions.width);
+	lm->setImageSize(dimensions.height, dimensions.width);
 }
 
 void Controller::spawnROI(cv::Rect newRoi)

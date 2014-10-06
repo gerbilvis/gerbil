@@ -16,7 +16,7 @@ LabelingModel::LabelingModel()
 	labels = full_labels;
 }
 
-void LabelingModel::setDimensions(unsigned int height, unsigned int width)
+void LabelingModel::setImageSize(unsigned int height, unsigned int width)
 {
 	full_labels = cv::Mat1s(height, width, (short)0);
 	labels = full_labels;

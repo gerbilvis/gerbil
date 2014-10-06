@@ -88,8 +88,8 @@ public:
 		drect = QRectF(dx, dy,
 					   labels.cols*scale, labels.rows*scale);
 		// rect of the border around the transformed mask
-		brect = QRectF(drect.left()-.5*scale, drect.top()-.5*scale,
-					   drect.width()+.5*scale, drect.height()+.5*scale);
+		brect = QRectF(drect.left(), drect.top(),
+					   drect.width()-1, drect.height()-1);
 
 //		GGDBGM("desired icon size " << iconSizecv << endl);
 //		GGDBGM("scale " << scale << endl);
@@ -148,7 +148,11 @@ public:
 
 			// draw a border (alternative: the icon view could do this)
 			QPainter p(&qimage);
-			p.setPen(color);
+			QPen pen(color);
+			pen.setWidthF(scale);
+			pen.setMiterLimit(scale);
+			pen.setJoinStyle(Qt::MiterJoin);
+			p.setPen(pen);
 			p.drawRect(brect);
 
 			ctx.icons[labelid] = qimage;
