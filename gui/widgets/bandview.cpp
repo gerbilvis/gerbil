@@ -21,12 +21,6 @@
 
 #include "gerbil_gui_debug.h"
 
-// for debugging
-std::ostream& operator<<(std::ostream& stream, const QPointF &p) {
-	stream << "(" << p.x() << "," << p.y() << ")";
-	return stream;
-}
-
 BandView::BandView()
 	: // note: start with invalid curLabel to trigger proper initialization!
 	  cacheValid(false), cursor(-1, -1), lastcursor(-1, -1), curLabel(-1),

@@ -25,10 +25,6 @@
 #define USE_CUDA_DATARANGE      0
 #define USE_CUDA_CLAMP          0
 
-// for DEBUG, FIXME: defined in controller.cpp,
-// put these operator<<s in a separate module, e.g. gerbil_debug_streams.{h,cpp}
-std::ostream &operator<<(std::ostream& os, const cv::Rect& r);
-
 ImageModel::ImageModel(BackgroundTaskQueue &queue, bool lm)
 	: limitedMode(lm), queue(queue),
 	  image_lim(new SharedMultiImgBase(new multi_img())),

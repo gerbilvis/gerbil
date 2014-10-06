@@ -45,6 +45,7 @@ vole_compile_library(
 	rectangles
 	shared_data
 	stopwatch
+	gerbil_ostream_ops
 )
 
 if(QT_FOUND)

@@ -8,15 +8,6 @@
 #define GGDBG_MODULE
 #include "../gerbil_gui_debug.h"
 
-// for DEBUG, FIXME defined in controller.cpp, all operator<<s should go in one module.
-std::ostream &operator<<(std::ostream& os, const cv::Rect& r);
-
-
-static std::ostream &operator<<(std::ostream& os, const QSize& s) {
-	return os << s.width() << "x" << s.height();
-}
-
-
 LabelingModel::LabelingModel()
 	: iconSize(QSize(32,32)), applyROI(true), iconTaskp(NULL)
 {

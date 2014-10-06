@@ -6,8 +6,6 @@
 #include <cassert>
 #include <stdexcept>
 
-#include <boost/format.hpp>
-
 //#define GGDBG_MODULE
 #include <gerbil_gui_debug.h>
 
@@ -124,11 +122,6 @@ void AutohideView::mouseMoveEvent(QMouseEvent *event)
 	}
 
 	QGraphicsView::mouseMoveEvent(event);
-}
-
-std::ostream &operator<<(std::ostream& os, const QRect& r)
-{
-	return os << boost::format("%1%x%2%+%3%+%4%") % r.x() % r.y() % r.width() % r.height();
 }
 
 void AutohideView::leaveEvent(QEvent *event)

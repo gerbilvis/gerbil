@@ -12,9 +12,11 @@
 #include "../widgets/autohideview.h"
 #include "../widgets/autohidewidget.h"
 
+#include <gerbil_ostream_ops.h>
+
 #include <iostream>
 
-//#define GGDBG_MODULE
+#define GGDBG_MODULE
 #include "../gerbil_gui_debug.h"
 
 
