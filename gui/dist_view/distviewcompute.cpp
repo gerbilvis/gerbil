@@ -169,25 +169,33 @@ void Compute::storeVertices(const ViewportCtx &ctx,
 
 void Compute::GenerateVertices::operator()(const tbb::blocked_range<size_t> &r) const
 {
-	for (size_t i = r.begin(); i != r.end(); ++i) {
-		const std::pair<int, BinSet::HashKey> &idx = index[i];
+	for (tbb::blocked_range<size_t>::const_iterator i = r.begin();
+		 i != r.end();
+		 ++i)
+	{
+		const std::pair<size_t, BinSet::HashKey> &idx = index[i];
 		if ( !(0 <= idx.first || idx.first < sets.size())) {
 			GGDBGM("bad sets index"<< endl);
 			return;
 		}
 		const BinSet &s = sets[idx.first];
 		const BinSet::HashKey &K = idx.second;
-		// FIXME concurrent_hash_map::equal_range MAY NOT BE USED CONCURRENTLY
-		// see http://www.threadingbuildingblocks.org/docs/help/reference/containers_overview/concurrent_hash_map_cls.htm
-		std::pair<BinSet::HashMap::const_iterator, BinSet::HashMap::const_iterator> binitp =
-				s.bins.equal_range(K);
+		// concurrent_hash_map::equal_range may not be used for concurrent
+		// access.
+		// See http://www.threadingbuildingblocks.org/docs/help/reference/containers_overview/concurrent_hash_map_cls.htm
+		// However, this is part of a read-only iteration, where the BinSet is
+		// never modified. Thus using concurrent_hash_map::equal_range seems
+		// OK.
+		std::pair<BinSet::HashMap::const_iterator,
+				  BinSet::HashMap::const_iterator>
+				binitp = s.bins.equal_range(K);
 		if (s.bins.end() == binitp.first) {
 			GGDBGM("no bin"<< endl);
 			return;
 		}
 		const Bin &b = binitp.first->second;
 		int vidx = i * 2 * dimensionality;
-		for (int d = 0; d < dimensionality; ++d) {
+		for (size_t d = 0; d < dimensionality; ++d) {
 			qreal curpos;
 			if (drawMeans) {
 				curpos = ((b.means[d] / b.weight) - minval) / binsize;
