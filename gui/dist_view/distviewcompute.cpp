@@ -4,6 +4,7 @@
 #include "../gerbil_gui_debug.h"
 
 #include <QGLBuffer>
+#include <QMessageBox>
 
 // altmann, debugging helper function
 bool assertBinSetsKeyDim(const std::vector<BinSet> &v, const ViewportCtx &ctx) {
@@ -23,6 +24,30 @@ bool assertBinSetsKeyDim(const std::vector<BinSet> &v, const ViewportCtx &ctx) {
 	return true;
 }
 
+/** Display a critical error in a message box. */
+void gerbilCriticalError(QString msg)
+{
+	const char *header =
+			"Gerbil encountered an internal error that cannot "
+			"be recovered. To help fixing this problem please collect "
+			"information on your graphics hardware and drivers, copy & paste "
+			"the following error message and send everything to "
+			"info@gerbilvis.org.\n"
+			"\n"
+			"Thank you!\n"
+			"\n"
+			"Error:\n";
+
+	QMessageBox::critical(NULL,
+						  "Gerbil Critical Error",
+						  QString(header) + msg,
+						  QMessageBox::Close);
+}
+
+void gerbilCriticalError(std::string msg) {
+	gerbilCriticalError(QString::fromStdString(msg));
+}
+
 /** RAII class to manage QGLBuffer. */
 class GLBufferHolder
 {
@@ -33,12 +58,16 @@ public:
 		const char* pfx = "GLBufferHolder::GLBufferHolder(): ";
 		msuccess = vb.create();
 		if (!msuccess) {
-			std::cerr << pfx << "QGLBuffer::create() failed" << std::endl;
+			std::stringstream err;
+			err << pfx << "QGLBuffer::create() failed." << std::endl;
+			gerbilCriticalError(err.str());
 			return;
 		}
 		msuccess = vb.bind();
 		if (!msuccess) {
-			std::cerr << pfx << "QGLBuffer::bind() failed" << std::endl;
+			std::stringstream err;
+			err << pfx << "QGLBuffer::bind() failed" << std::endl;
+			gerbilCriticalError(err.str());
 			return;
 		}
 	}
@@ -144,10 +173,12 @@ void Compute::storeVertices(const ViewportCtx &ctx,
 	//GGDBGM(boost::format("shuffleIdx.size()=%1%, (*ctx)->dimensionality=%2%\n")
 	//	   %shuffleIdx.size() %(*ctx)->dimensionality)
 	if (index.size() == 0) {
-		std::cerr << "Compute::storeVertices(): error: empty binindex" << std::endl;
+		std::cerr << "Compute::storeVertices(): error: empty binindex"
+				  << std::endl;
 		return;
 	}
-	const size_t nbytes = index.size() * ctx.dimensionality * sizeof(GLfloat) * 2;
+	const size_t nbytes = index.size() *
+			ctx.dimensionality * sizeof(GLfloat) * 2;
 	//GGDBGP("Compute::storeVertices(): allocating "<< nbytes << " bytes" << endl);
 	vb.allocate(nbytes);
 	//GGDBGM("before vb.map()\n");
@@ -155,7 +186,9 @@ void Compute::storeVertices(const ViewportCtx &ctx,
 	//GGDBGM("after vb.map()\n");
 
 	if (!varr) {
-		std::cerr << "Compute::storeVertices(): QGLBuffer::map() failed" << std::endl;
+		std::stringstream err;
+		err << "Compute::storeVertices(): QGLBuffer::map() failed" << std::endl;
+		gerbilCriticalError(err.str());
 		return;
 	}
 
