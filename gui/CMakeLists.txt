@@ -61,6 +61,9 @@ vole_compile_library(
 	docks/labeldock
 
 	gerbil_gui_debug
+
+	dialogs/openrecent/recentfile
+	dialogs/openrecent/openrecent
 )
 
 vole_moc_library(
@@ -101,6 +104,8 @@ vole_moc_library(
 	model/illuminationmodel.h
 	model/graphsegmentationmodel.h
 	model/clusteringmodel.h
+
+	dialogs/openrecent/openrecent.h
 )
 
 vole_ui_library(
@@ -117,6 +122,7 @@ vole_ui_library(
 	docks/normdock.ui
 	docks/falsecolordock_sel.ui
 	docks/labeldock.ui
+	dialogs/openrecent/openrecent.ui
 )
 
 vole_add_resources(

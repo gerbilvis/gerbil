@@ -1,6 +1,9 @@
 #include "controller/controller.h"
 #include "multi_img.h"
 
+#include "dialogs/openrecent/recentfile.h"
+#include "dialogs/openrecent/openrecent.h"
+
 #include <opencv2/gpu/gpu.hpp>
 #include <opencv2/core/core.hpp>
 #include <opencv2/imgproc/imgproc.hpp>
@@ -261,8 +264,20 @@ bool determine_limited(const std::pair<std::vector<std::string>, std::vector<mul
 	return false;
 }
 
+void registerQMetaTypes()
+{
+	qRegisterMetaType<RecentFile>("RecentFile");
+	qRegisterMetaTypeStreamOperators<RecentFile>("RecentFile");
+}
+
 int main(int argc, char **argv)
 {
+	QCoreApplication::setOrganizationName("FAU");
+	QCoreApplication::setOrganizationDomain("fau.de");
+	QCoreApplication::setApplicationName("Gerbil");
+
+	registerQMetaTypes();
+
 	// start qt before we try showing dialogs or use QGLFormat
 	QApplication app(argc, argv);
 
@@ -276,6 +291,7 @@ int main(int argc, char **argv)
 		// TODO: window?
 		std::cerr << "Unfortunately the machine does not meet minimal "
 					 "requirements to launch Gerbil." << std::endl;
+		// FIXME: Enum for return types.
 		return 3;
 	}
 
@@ -287,10 +303,19 @@ int main(int argc, char **argv)
 					 "Filename may point to a RGB image or "
 					 "a multispectral image descriptor file." << std::endl;
 #endif
-		filename = QFileDialog::getOpenFileName
-		           	(0, "Open Descriptor or Image File").toStdString();
+		OpenRecent *openRecentDlg = new OpenRecent();
+		openRecentDlg->exec();
+		// empty string if cancelled
+		filename = openRecentDlg->getSelectedFile().toStdString();
+		openRecentDlg->deleteLater();
 	} else {
 		filename = argv[1];
+	}
+
+	if (filename.empty()) {
+		std::cerr << "No input file given." << std::endl;
+		// FIXME: Enum for return types.
+		return 4;
 	}
 
 	// determine limited mode in a hackish way

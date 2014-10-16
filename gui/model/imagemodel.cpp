@@ -13,10 +13,13 @@
 #include <background_task/tasks/tbb/rescaletbb.h>
 #include <background_task/tasks/tbb/rgbqttbb.h>
 
-#include "../gerbil_gui_debug.h"
-
 #include <multi_img/multi_img_offloaded.h>
 #include <imginput.h>
+
+#include "dialogs/openrecent/recentfile.h"
+
+#include "../gerbil_gui_debug.h"
+
 #include <boost/make_shared.hpp>
 
 #include <opencv2/gpu/gpu.hpp>
@@ -85,6 +88,11 @@ cv::Rect ImageModel::loadImage(const std::string &filename)
 		multi_img::ptr img = imginput::ImgInput(inputConfig).execute();
 		image_lim = boost::make_shared<SharedMultiImgBase>(img);
 	}
+
+	// Update recent files list.
+	// TODO: preview image
+	RecentFile::appendToRecentFilesList(QString::fromStdString(filename));
+
 
 	multi_img_base &i = image_lim->getBase();
 	if (i.empty()) {
