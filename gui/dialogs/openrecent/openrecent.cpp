@@ -21,7 +21,8 @@
 OpenRecent::OpenRecent(QWidget *parent) :
     QDialog(parent),
 	ui(new Ui::OpenRecent),
-	itemModel(0)
+	itemModel(0),
+	exitEarly(false)
 {
 	ui->setupUi(this);
 
@@ -103,6 +104,21 @@ void OpenRecent::initRecentFilesUi()
 	}
 }
 
+void OpenRecent::browseForFileOnce()
+{
+	if (exitEarly) {
+		return;
+	}
+	if (0 == recentFiles.size()) {
+		exitEarly = true;
+		setResult(Rejected);
+		browseForFile();
+		if (! getSelectedFile().isEmpty()) {
+			setResult(Accepted);
+		}
+	}
+}
+
 QString OpenRecent::getSelectedFile() const
 {
 	QString filepath = ui->fileLineEdit->text();
@@ -111,6 +127,21 @@ QString OpenRecent::getSelectedFile() const
 		filepath = QString();
 	}
 	return filepath;
+}
+
+int OpenRecent::exec()
+{
+	browseForFileOnce();
+	if (exitEarly) {
+		return result();
+	}
+	return QDialog::exec();
+}
+
+void OpenRecent::showEvent(QShowEvent *event)
+{
+	QDialog::showEvent(event);
+	browseForFileOnce();
 }
 
 void OpenRecent::browseForFile()

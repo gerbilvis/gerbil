@@ -45,6 +45,14 @@ public:
 	 */
 	QString getSelectedFile() const;
 
+public slots:
+
+	int exec ();
+
+protected:
+
+	void showEvent ( QShowEvent * event );
+
 private slots:
 
 	void browseForFile();
@@ -58,6 +66,7 @@ private slots:
 private:
 
 	void initRecentFilesUi();
+	void browseForFileOnce();
 
 private:
 
@@ -70,6 +79,10 @@ private:
 
 	// item model for the list view
 	QStandardItemModel *itemModel;
+
+	// QDialog does not support exiting from showEvent() some reason. This is
+	// the workaround.
+	bool exitEarly;
 };
 
 #endif // OPENRECENT_H
