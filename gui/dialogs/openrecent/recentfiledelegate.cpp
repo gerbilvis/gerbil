@@ -57,9 +57,15 @@ void RecentFileDelegate::paint(QPainter *painter,
 
 	// draw icon
 	QPoint p = option.rect.topLeft() + QPoint(margin, margin);
-	const QRect iconRect(p, RecentFile::iconSize());
+	QRect iconRect(p, RecentFile::iconSize());
 	QPixmap pixmap = index.data(Qt::DecorationRole).value<QPixmap>();
 	if (! pixmap.isNull()) {
+		// center in icon frame
+		QSize off =
+				( pixmap.size().boundedTo(RecentFile::iconSize()) -
+				  RecentFile::iconSize() ) / 2;
+		p -= QPoint(off.width(), off.height());
+		iconRect = QRect(p, pixmap.size().boundedTo(RecentFile::iconSize()));
 		painter->drawPixmap(p, pixmap);
 	} else {
 		painter->drawLine(iconRect.topLeft(), iconRect.bottomRight());
