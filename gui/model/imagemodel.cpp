@@ -89,15 +89,14 @@ cv::Rect ImageModel::loadImage(const std::string &filename)
 		image_lim = boost::make_shared<SharedMultiImgBase>(img);
 	}
 
-	// Update recent files list.
-	// TODO: preview image
-	RecentFile::appendToRecentFilesList(QString::fromStdString(filename));
-
-
 	multi_img_base &i = image_lim->getBase();
 	if (i.empty()) {
 		return cv::Rect();
 	} else {
+		// Update recent files list.
+		QPixmap pvpm = fullRgb();
+		RecentFile::appendToRecentFilesList(QString::fromStdString(filename),
+											pvpm);
 		return cv::Rect(0, 0, i.width, i.height);
 	}
 }
@@ -311,16 +310,7 @@ void ImageModel::computeBand(representation::t type, int dim)
 
 void ImageModel::computeFullRgb()
 {
-	qimage_ptr fullRgb(new SharedData<QImage>(NULL));
-	/* we do it instantly as this is typically what the user wants to see first,
-	 * and not wait for it while the queue processes other things */
-	BackgroundTaskPtr taskRgb(new RgbTbb(
-		image_lim, mat3f_ptr(new SharedData<cv::Mat3f>(new cv::Mat3f)),
-								  fullRgb));
-	taskRgb->run();
-
-	QPixmap p = QPixmap::fromImage(**fullRgb);
-	emit fullRgbUpdate(p);
+	emit fullRgbUpdate(fullRgb());
 }
 
 void ImageModel::setNormalizationParameters(representation::t type,
@@ -355,4 +345,20 @@ void ImageModel::processNewImageData(representation::t type,
 		emit roiRectChanged(roi);
 	}
 	emit imageUpdate(type, image, /* duplicate */ false);
+}
+
+QPixmap ImageModel::fullRgb()
+{
+	// FIXME Caching
+
+	qimage_ptr fullRgb(new SharedData<QImage>(NULL));
+	/* we do it instantly as this is typically what the user wants to see first,
+	 * and not wait for it while the queue processes other things */
+	BackgroundTaskPtr taskRgb(new RgbTbb(
+		image_lim, mat3f_ptr(new SharedData<cv::Mat3f>(new cv::Mat3f)),
+								  fullRgb));
+	taskRgb->run();
+
+	QPixmap p = QPixmap::fromImage(**fullRgb);
+	return p;
 }

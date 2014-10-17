@@ -6,6 +6,10 @@
 #include <QImage>
 #include <QVariant>
 #include <QList>
+#include <QPixmap>
+
+class QModelIndex;
+class QPixmap;
 
 /** Manage recent file entries for opening gerbil image files.
  *
@@ -16,7 +20,7 @@ struct RecentFile {
 	// absolute filepath, unique key for RecentFile
 	QString fileName;
 	// timestamp in UTC
-	QDateTime lastOpenenedTimestamp;
+	QDateTime lastOpenedTimestamp;
 	// 64x64 RGB preview image
 	QImage previewImage;
 
@@ -32,6 +36,25 @@ struct RecentFile {
 		return this->fileName == other.fileName;
 	}
 
+	QString getFileNameWithoutPath() const;
+
+	/** Size of previewImage. */
+	static QSize const& iconSize();
+
+	/** Transform QPixmap by scaling to iconSize(). */
+	static QPixmap scaleToIconSize(QPixmap const& pm);
+
+	/** Returns the previewImage as QPixmap.
+	 *
+	 * If previewImage is larger than iconSize(), the pixmap is scaled
+	 * proportionally.
+	 */
+	QPixmap getPreviewPixmap() const;
+
+	/** Returns the last opened timestamp in local time formatted using the
+	 * default localized format, e.g. "Wed May 20 03:40:13 1998". */
+	QString lastOpenedString() const;
+
 	/** Get the recent files list.
 	 *
 	 * The the recent files list is automatically loaded from QSettings.
@@ -44,10 +67,11 @@ struct RecentFile {
 	/** Appends a filename to the recent files list, optionally accompanied by
 	 * a preview image.
 	 *
-	 * This function also stores the updated recent files list in QSettings.
+	 * This function also stores the updated recent files list in QSettings. The
+	 * previewPixmap is automatically scaled down to RecentFile::iconSize().
 	 */
 	static void appendToRecentFilesList(QString const& fileName,
-										QImage const& previewImage = QImage());
+										const QPixmap &previewPixmap);
 
 	/** Stores the recent files list in QSettings. */
 	static void saveRecentFilesList(QList<RecentFile> const& recentFiles);
@@ -60,6 +84,8 @@ QDataStream &operator>>(QDataStream &in, RecentFile &rf);
 inline uint qHash(RecentFile const& rf) {
 	return qHash(rf.fileName);
 }
+
+RecentFile recentFile(const QModelIndex & index );
 
 #endif // RECENTFILE_H
 

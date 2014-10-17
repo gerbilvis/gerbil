@@ -199,6 +199,9 @@ protected slots:
 
 private:
 
+	// Computes RGB image of full image (ignoring ROI).
+	QPixmap fullRgb();
+
 	// helper to spawn()
 	bool checkProfitable(const cv::Rect& oldROI, const cv::Rect& newROI);
 

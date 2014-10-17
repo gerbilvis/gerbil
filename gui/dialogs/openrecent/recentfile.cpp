@@ -7,15 +7,16 @@
 #include <QFile>
 #include <QFileInfo>
 #include <QSet>
+#include <QModelIndex>
+#include <QPixmap>
 
-
-#define GGDBG_MODULE
+//#define GGDBG_MODULE
 #include <gerbil_gui_debug.h>
 
 QDataStream &operator<<(QDataStream &out, const RecentFile &rf)
 {
 	return out << rf.fileName
-			   << rf.lastOpenenedTimestamp
+			   << rf.lastOpenedTimestamp
 			   << rf.previewImage;
 }
 
@@ -23,7 +24,7 @@ QDataStream &operator<<(QDataStream &out, const RecentFile &rf)
 QDataStream &operator>>(QDataStream &in, RecentFile &rf)
 {
 	return in  >> rf.fileName
-			   >> rf.lastOpenenedTimestamp
+			   >> rf.lastOpenedTimestamp
 			   >> rf.previewImage;
 }
 
@@ -57,13 +58,52 @@ static QList<RecentFile> loadRecentFilesList()
 		settings.remove("recentFilesList");
 	} else {
 		QList<QVariant> varl = settings.value("recentFilesList").toList();
-		foreach (QVariant rf, varl) {
-			recentFiles.append(rf.value<RecentFile>());
+		foreach (QVariant varrf, varl) {
+			RecentFile rf = varrf.value<RecentFile>();
+			GGDBGP(rf.getFileNameWithoutPath().toStdString() << ": "
+						"QImage::Format " << rf.previewImage.format() << endl);
+			recentFiles.append(rf);
 		}
 		makeListEntriesUnique(recentFiles);
 	}
 	settings.setValue("recentFilesVersion", 1);
 	return recentFiles;
+}
+
+QString RecentFile::getFileNameWithoutPath() const
+{
+	return QFileInfo(fileName).fileName();
+}
+
+const QSize &RecentFile::iconSize() {
+	static const QSize is(64, 64);
+	return is;
+}
+
+QPixmap RecentFile::scaleToIconSize(const QPixmap &pm)
+{
+	QPixmap tmp = pm.scaled(RecentFile::iconSize(),
+							Qt::KeepAspectRatio,
+							Qt::SmoothTransformation);
+	return tmp;
+}
+
+QPixmap RecentFile::getPreviewPixmap() const
+{
+	QPixmap pvpm = QPixmap::fromImage(this->previewImage);
+	if (pvpm.rect().contains(
+				QRect(QPoint(0,0), RecentFile::iconSize())))
+	{
+		// stored image is greater than icon size, rescale
+		pvpm = RecentFile::scaleToIconSize(pvpm);
+	}
+	return pvpm;
+}
+
+QString RecentFile::lastOpenedString() const
+{
+	QDateTime localts = lastOpenedTimestamp.toLocalTime();
+	return localts.toString();
 }
 
 QList<RecentFile> RecentFile::recentFilesList()
@@ -96,7 +136,7 @@ void RecentFile::saveRecentFilesList(const QList<RecentFile> &recentFilesx)
 }
 
 void RecentFile::appendToRecentFilesList(const QString &fileName,
-										 const QImage &previewImage)
+										 const QPixmap &previewPixmap)
 {
 	QFileInfo fi(fileName);
 	if ( ! fi.isFile() || ! fi.exists()) {
@@ -108,10 +148,19 @@ void RecentFile::appendToRecentFilesList(const QString &fileName,
 	}
 	RecentFile rf;
 	rf.fileName = fileName;
-	rf.lastOpenenedTimestamp = QDateTime::currentDateTimeUtc();
-	rf.previewImage = previewImage;
-
+	rf.lastOpenedTimestamp = QDateTime::currentDateTimeUtc();
+	QImage pvim = RecentFile::scaleToIconSize(previewPixmap).toImage();
+	// keep config storage small
+	pvim = pvim.convertToFormat(QImage::Format_RGB16);
+	rf.previewImage = pvim;
 	QList<RecentFile> recentFiles = recentFilesList();
 	recentFiles.prepend(rf);
 	saveRecentFilesList(recentFiles);
+}
+
+RecentFile recentFile(const QModelIndex &index)
+{
+	QVariant qvar = index.data(RecentFile::RecentFileDataRole);
+	RecentFile rf = qvar.value<RecentFile>();
+	return rf;
 }

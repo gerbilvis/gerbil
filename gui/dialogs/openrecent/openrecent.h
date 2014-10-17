@@ -21,14 +21,6 @@ class QModelIndex;
  *
  * See RecentFile::loadRecentFilesList(), RecentFile::saveRecentFilesList().
  */
-
-// TODO: Implement QStyledItemDelegate to properly paint items in list view 
-// (icon, name, path, last-used date)
-
-// TODO: Save open file dialog location.
-
-// TODO: preview-image in ImageModel
-
 class OpenRecent : public QDialog
 {
 	Q_OBJECT

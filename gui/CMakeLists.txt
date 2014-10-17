@@ -64,6 +64,7 @@ vole_compile_library(
 
 	dialogs/openrecent/recentfile
 	dialogs/openrecent/openrecent
+	dialogs/openrecent/recentfiledelegate
 )
 
 vole_moc_library(
@@ -106,6 +107,7 @@ vole_moc_library(
 	model/clusteringmodel.h
 
 	dialogs/openrecent/openrecent.h
+	dialogs/openrecent/recentfiledelegate.h
 )
 
 vole_ui_library(

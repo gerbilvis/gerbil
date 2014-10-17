@@ -1,5 +1,6 @@
 #include "openrecent.h"
 #include "ui_openrecent.h"
+#include "recentfiledelegate.h"
 
 #include <QSettings>
 #include <QVariant>
@@ -14,7 +15,7 @@
 
 #include <iostream>
 
-#define GGDBG_MODULE
+//#define GGDBG_MODULE
 #include <gerbil_gui_debug.h>
 
 
@@ -72,6 +73,8 @@ void OpenRecent::initRecentFilesUi()
 		QString fileName = QFileInfo(rf.fileName).fileName();
 		QStandardItem *item = new QStandardItem(fileName);
 		item->setData(QVariant::fromValue(rf), RecentFile::RecentFileDataRole);
+		item->setData(QVariant::fromValue<QPixmap>(rf.getPreviewPixmap()),
+						  Qt::DecorationRole);
 		items.append(item);
 		itemModel->appendRow(items);
 	}
@@ -85,6 +88,9 @@ void OpenRecent::initRecentFilesUi()
 				QAbstractItemView::SelectItems);
 	ui->recentFilesListView->setEditTriggers(
 				QAbstractItemView::NoEditTriggers);
+	ui->recentFilesListView->setHorizontalScrollBarPolicy(
+				Qt::ScrollBarAlwaysOff);
+	ui->recentFilesListView->setItemDelegate(new RecentFileDelegate(this));
 
 	connect(ui->recentFilesListView->selectionModel(),
 			SIGNAL(selectionChanged(QItemSelection,QItemSelection)),
