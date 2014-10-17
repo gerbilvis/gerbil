@@ -12,6 +12,7 @@
 #include <QStandardItemModel>
 #include <QItemSelection>
 #include <QModelIndex>
+#include <QKeyEvent>
 
 #include <iostream>
 
@@ -148,6 +149,29 @@ void OpenRecent::showEvent(QShowEvent *event)
 {
 	QDialog::showEvent(event);
 	browseForFileOnce();
+}
+
+void OpenRecent::keyPressEvent(QKeyEvent *event)
+{
+	// If up/down key pressed in line edit focus on listView and forward
+	// event.
+	if (! ui->recentFilesListView->hasFocus() &&
+			(event->key() == Qt::Key_Up || event->key() == Qt::Key_Down))
+	{
+		GGDBGM("got QKeyEvent Up/Down" << endl);
+		event->accept();
+		ui->recentFilesListView->setFocus();
+		// Is there any clever way to clone an event?
+		QKeyEvent *evclone = new QKeyEvent(event->type(),
+										   event->key(),
+										   event->modifiers(),
+										   event->text(),
+										   event->isAutoRepeat(),
+										   event->count());
+		QApplication::postEvent(ui->recentFilesListView, evclone);
+	} else {
+		QDialog::keyPressEvent(event);
+	}
 }
 
 void OpenRecent::browseForFile()
