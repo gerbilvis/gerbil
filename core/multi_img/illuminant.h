@@ -18,7 +18,7 @@ public:
 	}
 	
 	// calculate the weight such that all coeffs. in range <= 1.
-	inline void calcWeight(int wl1, int wl2) {
+	inline void setNormalization(int wl1, int wl2) {
 		double maxv = 0.;
 		for (int i = wl1; i <= wl2; i+=10)
 			maxv = std::max(at(i), maxv);

@@ -95,7 +95,7 @@ void IllumModel::buildIllum(int t)
 	QVector<multi_img::Value> cf;
 	if (t > 0) {
 		SharedMultiImgBaseGuard guard(*image);
-		il.calcWeight((*image)->meta[0].center,
+		il.setNormalization((*image)->meta[0].center,
 					  (*image)->meta[(*image)->size()-1].center);
 		cf = QVector<multi_img::Value>::fromStdVector(
 					(*image)->getIllumCoeff(il));
