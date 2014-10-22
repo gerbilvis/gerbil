@@ -34,6 +34,13 @@ public:
 	// Band high for cropping
 	int bandhigh;
 
+	// Remove blackbody illuminant with X Kelvin
+	int removeIllum;
+
+	// Add blackbody illuminant with X Kelvin
+	int addIllum;
+
+
 	virtual std::string getString() const;
 
 	virtual ~ImgInputConfig();

@@ -202,6 +202,7 @@ multi_img::ptr GdalReader::readFile()
 		// correct input?
 		if (config.bandlow > bandhigh || bandhigh > dataset->GetRasterCount() - 1)
 		{
+			std::cerr << "Inconsistent bandlow, bandhigh values specified!" << std::endl;
 			return multi_img::ptr(new multi_img());
 		}
 		bandlow = config.bandlow;

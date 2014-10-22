@@ -18,19 +18,34 @@ using namespace boost::program_options;
 namespace imginput {
 
 ImgInputConfig::ImgInputConfig(const std::string& prefix)
-	: Config(prefix) {
-	// set default values
-	normalize = false;
-	gradient = false;
-	bands = 0;
-	bandlow=0;
-	bandhigh=0;
-
+	: Config(prefix),
+	normalize(false),
+	gradient(false),
+	bands(0),
+	bandlow(0),
+	bandhigh(0),
+	removeIllum(0),
+	addIllum(0)
+{
+#ifdef WITH_BOOST_PROGRAM_OPTIONS
 	initBoostOptions();
+#endif
 }
 
 ImgInputConfig::~ImgInputConfig() {}
 
+// descriptions of configuration options
+namespace desc {
+DESC_OPT(file, "Input image filename")
+DESC_OPT(roi, "Region of Interest, specify in the form x:y:w:h to apply")
+DESC_OPT(normalize, "Normalize vector magnitudes")
+DESC_OPT(gradient, "Transform to spectral gradient")
+DESC_OPT(bands, "Reduce number of bands by linear interpolation (if >0)")
+DESC_OPT(bandlow, "Select bands and use band index as lower bound (if >0)")
+DESC_OPT(bandhigh, "Select bands and use band index as upper bound (if >0)")
+DESC_OPT(removeIllum, "Remove black body illuminant specified in Kelvin (if >0)")
+DESC_OPT(addIllum, "Add black body illuminant specified in Kelvin (if >0)")
+}
 
 std::string ImgInputConfig::getString() const {
 	std::stringstream s;
@@ -38,37 +53,34 @@ std::string ImgInputConfig::getString() const {
 	if (prefix_enabled)
 		s << "[" << prefix << "]" << std::endl;
 
-	s << "file=" << file << "\t# Image to process" << std::endl
-	  << "roi=" << roi << std::endl
-	  << "gradient=" << (gradient ? "true" : "false") << std::endl
-	  << "bands=" << bands << std::endl
-	  << "bandlow=" << bandlow << std::endl
-	  << "bandhigh=" << bandhigh << std::endl
-		 ;
+	COMMENT_OPT(s, file);
+	COMMENT_OPT(s, roi);
+	COMMENT_OPT(s, normalize);
+	COMMENT_OPT(s, gradient);
+	COMMENT_OPT(s, bands);
+	COMMENT_OPT(s, bandlow);
+	COMMENT_OPT(s, bandhigh);
+	COMMENT_OPT(s, removeIllum);
+	COMMENT_OPT(s, addIllum);
 
 	return s.str();
 }
 
-#ifdef WITH_BOOST
+#ifdef WITH_BOOST_PROGRAM_OPTIONS
 void ImgInputConfig::initBoostOptions() {
 	options.add_options()
-		(key("file"), value(&file)->default_value(file),
-		 "Image to process")
-		(key("roi"), value(&roi)->default_value(roi),
-		 "apply ROI (x:y:w:h)")
-		(key("normalize"), bool_switch(&normalize)->default_value(normalize),
-		 "normalize vector magnitudes")
-		(key("gradient"), bool_switch(&gradient)->default_value(gradient),
-		 "compute spectral gradient")
-		(key("bands"), value(&bands)->default_value(bands),
-		 "reduce number of bands by linear interpolation (0 means disabled)")
-		(key("bandlow"), value(&bandlow)->default_value(bandlow),
-		 "apply lower bound of band ROI")
-   		(key("bandhigh"), value(&bandhigh)->default_value(bandhigh),
-		 "apply upper bound of band ROI")
+			BOOST_OPT(file)
+			BOOST_OPT(roi)
+			BOOST_BOOL(normalize)
+			BOOST_BOOL(gradient)
+			BOOST_OPT(bands)
+			BOOST_OPT(bandlow)
+			BOOST_OPT(bandhigh)
+			BOOST_OPT(removeIllum)
+			BOOST_OPT(addIllum)
 	;
 
 }
-#endif // WITH_BOOST
+#endif // WITH_BOOST_PROGRAM_OPTIONS
 
 }

@@ -1,5 +1,6 @@
 #include "imginput.h"
 #include "gdalreader.h"
+#include <multi_img/illuminant.h>
 #include <string>
 #include <vector>
 #include <boost/make_shared.hpp>
@@ -80,6 +81,9 @@ multi_img::ptr ImgInput::execute()
 		*img_ptr = img_ptr->spec_rescale(config.bands);
 	}
 
+	// alter illumination
+	applyIllumination(img_ptr);
+
 	return img_ptr;
 }
 
@@ -107,18 +111,36 @@ void ImgInput::cropSpectrum(multi_img::ptr &img_ptr)
 	if ((config.bandlow > 0) ||
 		(config.bandhigh > 0 && config.bandhigh < (int)img_ptr->size() - 1)) {
 
-		// if bandhigh is not specified, do not limit
-		int bandhigh = (config.bandhigh == 0) ? (img_ptr->size() - 1) : config.bandhigh;
+		// if bandhigh is not specified, do not use upper bound
+		int bandhigh = (config.bandhigh == 0) ? (img_ptr->size() - 1)
+											  : config.bandhigh;
 
 		// correct input?
 		if (config.bandlow > bandhigh || bandhigh > (int)img_ptr->size() - 1)
 		{
-			std::cerr << "config.bandlow > config.bandhigh || bandhigh > dataset->GetRasterCount() - 1" << std::endl;
+			std::cerr << "Inconsistent bandlow, bandhigh values specified!" << std::endl;
 			img_ptr = multi_img::ptr(new multi_img());
 			return;
 		}
 
         img_ptr = multi_img::ptr(new multi_img(*img_ptr, config.bandlow, bandhigh));
+	}
+}
+
+void ImgInput::applyIllumination(multi_img::ptr &img_ptr)
+{
+	if (config.removeIllum > 0) {
+		Illuminant il(config.removeIllum);
+		// first get normalization right for our range
+		il.setNormalization(img_ptr->meta[0].center,
+					  img_ptr->meta[img_ptr->size()-1].center);
+		img_ptr->apply_illuminant(il, true);
+	}
+	if (config.addIllum > 0) {
+		Illuminant il(config.addIllum);
+		il.setNormalization(img_ptr->meta[0].center,
+					  img_ptr->meta[img_ptr->size()-1].center);
+		img_ptr->apply_illuminant(il);
 	}
 }
 

@@ -22,6 +22,8 @@ private:
 	void applyROI(multi_img::ptr &img_ptr, std::vector<int> &vals);
 
 	void cropSpectrum(multi_img::ptr &img_ptr);
+
+	void applyIllumination(multi_img::ptr &img_ptr);
 };
 
 } // namespace
