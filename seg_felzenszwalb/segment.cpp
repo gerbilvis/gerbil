@@ -90,8 +90,7 @@ std::pair<cv::Mat1i, segmap> segment_image(const multi_img &im,
 		equalizeHist(tmp, 20000);
 	}
 	
-	int i;
-	for (i = 0; i < weights.size(); ++i)
+	for (size_t i = 0; i < weights.size(); ++i)
 		edges[i].w = weights[i];
 	
 
@@ -99,7 +98,7 @@ std::pair<cv::Mat1i, segmap> segment_image(const multi_img &im,
 	universe *u = segment_graph(width*height, num, edges, config.c);
 
 	// post process small components
-	for (i = 0; i < num; i++) {
+	for (int i = 0; i < num; i++) {
 	int a = u->find(edges[i].a);
 	int b = u->find(edges[i].b);
 	if ((a != b) &&
