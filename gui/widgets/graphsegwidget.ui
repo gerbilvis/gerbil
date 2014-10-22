@@ -6,8 +6,8 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>263</width>
-    <height>109</height>
+    <width>451</width>
+    <height>138</height>
    </rect>
   </property>
   <layout class="QVBoxLayout" name="verticalLayout">
@@ -41,6 +41,12 @@
         <iconset resource="../gerbil.qrc">
          <normaloff>:/basic/pen</normaloff>:/basic/pen</iconset>
        </property>
+       <property name="iconSize">
+        <size>
+         <width>16</width>
+         <height>16</height>
+        </size>
+       </property>
        <property name="checkable">
         <bool>true</bool>
        </property>
@@ -61,7 +67,15 @@
         <string/>
        </property>
        <property name="icon">
-        <iconset theme="edit-clear"/>
+        <iconset theme="edit-clear">
+         <normaloff/>
+        </iconset>
+       </property>
+       <property name="iconSize">
+        <size>
+         <width>16</width>
+         <height>16</height>
+        </size>
        </property>
       </widget>
      </item>
@@ -174,6 +188,12 @@
          <normaloff/>
         </iconset>
        </property>
+       <property name="iconSize">
+        <size>
+         <width>16</width>
+         <height>16</height>
+        </size>
+       </property>
       </widget>
      </item>
     </layout>
@@ -271,7 +291,15 @@
           <string>Add to label</string>
          </property>
          <property name="icon">
-          <iconset theme="edit-add"/>
+          <iconset theme="edit-add">
+           <normaloff/>
+          </iconset>
+         </property>
+         <property name="iconSize">
+          <size>
+           <width>16</width>
+           <height>16</height>
+          </size>
          </property>
         </widget>
        </item>
@@ -284,7 +312,9 @@
           <string>Replace label</string>
          </property>
          <property name="icon">
-          <iconset theme="edit-redo"/>
+          <iconset theme="edit-redo">
+           <normaloff/>
+          </iconset>
          </property>
          <property name="iconSize">
           <size>
