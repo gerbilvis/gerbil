@@ -7,6 +7,7 @@
 */
 
 #include "rgb.h"
+#include <imginput.h>
 
 #ifdef WITH_SOM
 #include <sm_config.h>
@@ -204,18 +205,21 @@ private:
 	ProgressObserver *po;
 };
 
-cv::Mat3f RGB::executeSOM(const multi_img &img, ProgressObserver *po)
+cv::Mat3f RGB::executeSOM(const multi_img &img, ProgressObserver *po,
+						  boost::shared_ptr<GenSOM> som)
 {
 	typedef cv::Mat_<cv::Vec<GenSOM::value_type, 3> > Mat3;
 
 	Stopwatch total("Total runtime of false-color image generation");
 
 	img.rebuildPixels(false);
-
 	ProgressObserver *calcPo;
-	calcPo = (po ? new ChainedProgressObserver(po, .6f) : 0);
-	boost::shared_ptr<GenSOM> som(GenSOM::create(config.som, img, calcPo));
-	delete calcPo;
+
+	if (!som) {
+		calcPo = (po ? new ChainedProgressObserver(po, .6f) : 0);
+		som = boost::shared_ptr<GenSOM>(GenSOM::create(config.som, img, calcPo));
+		delete calcPo;
+	}
 	if (po && !po->update(.6f))
 		return Mat3();
 

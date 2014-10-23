@@ -2,11 +2,10 @@
 #define RGB_CONFIG_H
 
 #include <vole_config.h>
-#include <imginput.h>
+#include <imginput_config.h>
 #ifdef WITH_SOM
 #include <som_config.h>
 #endif
-#include <multi_img.h>
 
 namespace rgb {
 
@@ -52,9 +51,9 @@ public:
 	virtual std::string getString() const;
 
 protected:
-	#ifdef WITH_BOOST
+	#ifdef WITH_BOOST_PROGRAM_OPTIONS
 		virtual void initBoostOptions();
-	#endif // WITH_BOOST
+	#endif // WITH_BOOST_PROGRAM_OPTIONS
 };
 
 }

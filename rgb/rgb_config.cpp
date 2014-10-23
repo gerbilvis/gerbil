@@ -59,7 +59,7 @@ void RGBConfig::initBoostOptions()
 	options.add(som.options);
 #endif
 }
-#endif // WITH_BOOST
+#endif // WITH_BOOST_PROGRAM_OPTIONS
 
 std::string RGBConfig::getString() const {
 	std::stringstream s;
