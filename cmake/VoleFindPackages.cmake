@@ -274,3 +274,7 @@ if(OpenCL_FOUND)
     include_directories(BEFORE ${OPENCL_INCLUDE_DIR})
 
 endif (OpenCL_FOUND)
+
+# Find threading library.
+# On Linux/UNIX this pthreads.
+find_package(Threads)

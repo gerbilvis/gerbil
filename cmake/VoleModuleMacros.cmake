@@ -218,6 +218,12 @@ macro(vole_add_module)
 					add_executable(${executable_name} ${executable_sources} ${rcc_sources})
 					target_link_libraries(${executable_name} "core${VOLE_LIBRARY_SUFFIX}")
 					target_link_libraries(${executable_name} ${vole_module_library})
+
+					list(FIND vole_module_required_dependencies "Threads" threads_required)
+					if (NOT threads_required EQUAL -1)
+					    target_link_libraries (${executable_name} ${CMAKE_THREAD_LIBS_INIT})
+					endif()
+
 				endif()
 			endforeach()
 		endif()

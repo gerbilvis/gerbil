@@ -2,7 +2,7 @@ vole_module_name("shell")
 vole_module_description("Shell frontend")
 vole_module_variable("Gerbil_Shell")
 
-vole_add_required_dependencies("BOOST" "BOOST_PROGRAM_OPTIONS")
+vole_add_required_dependencies("BOOST" "BOOST_PROGRAM_OPTIONS" "Threads")
 vole_add_required_modules("core")
 
 vole_shell_configuration(vole_include_header vole_include_command vole_modules)
