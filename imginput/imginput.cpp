@@ -19,26 +19,22 @@ multi_img::ptr ImgInput::execute()
 	bool roiChanged = false;
 	bool bandsCropped = false;
 
-    multi_img::ptr img_ptr;
+	multi_img::ptr img_ptr;
+	// try GDAL first as it is better for some formats OpenCV reads, too (e.g. TIFF)
 #ifdef WITH_GDAL
-    // try GDAL first as it is better for some formats OpenCV reads, too (e.g. TIFF)
-    {
-		img_ptr = GdalReader(config).readFile();
-
-		// GdalReader was used successfully
-		if (!img_ptr->empty())
-		{
-			// GdalReader applies roiChanges & bandCropping
-			roiChanged = true;
-			bandsCropped = true;
-		}
-	}
+	img_ptr = GdalReader(config).readFile();
 #endif
-	if (!img_ptr || img_ptr->empty()) {
-        img_ptr = multi_img::ptr(new multi_img(config.file));
-    }
+	
+	if (img_ptr && !img_ptr->empty()) {
+	        // GdalReader was used successfully, applied roiChanges & bandCropping
+		roiChanged = true;
+		bandsCropped = true;
+	} else {
+	    // GDAL failed, try internal method
+	    img_ptr = multi_img::ptr(new multi_img(config.file));
+	}
 
-	// return empty image on failure
+	// return empty image if both failed
 	if (img_ptr->empty())
 		return img_ptr;
 
@@ -46,13 +42,10 @@ multi_img::ptr ImgInput::execute()
 	if (!roiChanged && !config.roi.empty())
 	{
 		std::vector<int> roiVals;
-		if (!ImgInput::parseROIString(config.roi, roiVals))
-		{
+		if (!ImgInput::parseROIString(config.roi, roiVals)) {
 			// Parsing of ROI String failed
 			std::cerr << "Ignoring invalid ROI specification" << std::endl;
-		}
-		else
-		{
+		} else {
 			applyROI(img_ptr, roiVals);
 		}
 	}
@@ -111,13 +104,11 @@ void ImgInput::cropSpectrum(multi_img::ptr &img_ptr)
 	if ((config.bandlow > 0) ||
 		(config.bandhigh > 0 && config.bandhigh < (int)img_ptr->size() - 1)) {
 
-		// if bandhigh is not specified, do not use upper bound
-		int bandhigh = (config.bandhigh == 0) ? (img_ptr->size() - 1)
-											  : config.bandhigh;
+		// if bandhigh is not specified, do not limit
+		int bandhigh = (config.bandhigh == 0) ? (img_ptr->size() - 1) : config.bandhigh;
 
 		// correct input?
-		if (config.bandlow > bandhigh || bandhigh > (int)img_ptr->size() - 1)
-		{
+		if (config.bandlow > bandhigh || bandhigh > (int)img_ptr->size() - 1) {
 			std::cerr << "Inconsistent bandlow, bandhigh values specified!" << std::endl;
 			img_ptr = multi_img::ptr(new multi_img());
 			return;

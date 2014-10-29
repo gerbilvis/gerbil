@@ -46,9 +46,9 @@ public:
 	virtual ~ImgInputConfig();
 
 protected:
-	#ifdef WITH_BOOST
-		virtual void initBoostOptions();
-	#endif // WITH_BOOST
+#ifdef WITH_BOOST_PROGRAM_OPTIONS
+	virtual void initBoostOptions();
+#endif // WITH_BOOST_PROGRAM_OPTIONS
 };
 
 }

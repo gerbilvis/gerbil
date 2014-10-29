@@ -18,18 +18,18 @@ using namespace boost::program_options;
 namespace imginput {
 
 ImgInputConfig::ImgInputConfig(const std::string& prefix)
-	: Config(prefix),
-	normalize(false),
-	gradient(false),
-	bands(0),
-	bandlow(0),
-	bandhigh(0),
-	removeIllum(0),
-	addIllum(0)
-{
-#ifdef WITH_BOOST_PROGRAM_OPTIONS
+	: Config(prefix)
+	, normalize(false)
+	, gradient(false)
+	, removeIllum(0)
+	, addIllum(0)
+	, bands(0)
+	, bandlow(0)
+	, bandhigh(0) {
+
+#ifdef WITH_BOOST
 	initBoostOptions();
-#endif
+#endif // WITH_BOOST
 }
 
 ImgInputConfig::~ImgInputConfig() {}
