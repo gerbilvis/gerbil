@@ -146,12 +146,12 @@ void AutohideView::triggerScollOut()
 	const bool trigger = haveModalWindow || !cursorInsideView;
 
 	GGDBGM("windows: this " << this
-		   << ", active " << QApplication::activeWindow()
-		   << ", trigger " << trigger << " <- "
-		   << " haveModalWindow " << haveModalWindow
-		   << " || "
-		   << " !cursorInsideView " << !cursorInsideView
-		   << endl);
+           << ", active " << QApplication::activeWindow()
+           << ", trigger " << trigger << " <- "
+           << " haveModalWindow " << haveModalWindow
+           << " || "
+           << " !cursorInsideView " << !cursorInsideView
+           << endl);
 
 	// only let them know if a modal dialog opened or
 	// cursor really moved out (no popup menu etc.).

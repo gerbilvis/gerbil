@@ -53,7 +53,12 @@ std::string ggdb_method_string(const char *clsname, const char *funname);
 
 #include <boost/format.hpp>
 
+// MSVC does not support __func__ (but might, because of C++11)
+#ifdef __func__
 #define GGDBG_PRINT_METHOD() ggdb_print_method(typeid(this).name(), __func__)
+#else
+#define GGDBG_PRINT_METHOD() ggdb_print_method(typeid(this).name(), __FUNCTION__)
+#endif
 
 // print class name and function to cerr
 #define GGDBG_CALL()  GGDBG_PRINT_METHOD(); std::cerr << std::endl;

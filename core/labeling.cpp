@@ -106,7 +106,7 @@ void Labeling::read(const cv::Mat3b &src)
 
 	// assign labelColors based on map order (somewhat canonical label indices)
 	labelColors.clear();
-	std::map<cv::Vec3b, short>::iterator itp;
+    std::map<cv::Vec3b, short, Vec3bCompare>::iterator itp;
 	for (itp = palette.begin(); itp != palette.end(); ++itp)
 	{
 		itp->second = labelColors.size(); // index into labelColors

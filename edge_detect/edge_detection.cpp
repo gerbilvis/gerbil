@@ -138,12 +138,12 @@ int EdgeDetection::execute()
 					  EdgeTBB(som.get(), lookup.get(), simfun.get(), dx, dy,
 							  config.absolute));
 
-	std::string dxfname = (boost::filesystem::path(config.outputDir)
-						   / "dx.png").native();
+    std::string dxfname
+            = (boost::filesystem::path(config.outputDir) / "dx.png").string();
 	cv::imwrite(dxfname, (config.absolute ? dx : (dx + 0.5f)) * 255.f);
 
-	std::string dyfname = (boost::filesystem::path(config.outputDir)
-						   / "dy.png").native();
+    std::string dyfname
+            = (boost::filesystem::path(config.outputDir) / "dy.png").string();
 	cv::imwrite(dyfname, (config.absolute ? dy : (dy + 0.5f)) * 255.f);
 
 	return 0;
