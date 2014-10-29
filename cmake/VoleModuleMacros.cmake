@@ -140,7 +140,7 @@ macro(vole_add_module)
 		elseif (WITH_QT)
 			# The custom define is a workaround for faulty moc preprocessor
 			# the define will disable code in boost headers that trigger the bug
-			qt4_wrap_cpp(moc_sources ${vole_module_moc_sources} OPTIONS -DBOOST_NO_TEMPLATE_PARTIAL_SPECIALIZATION)
+			qt4_wrap_cpp(moc_sources ${vole_module_moc_sources} OPTIONS -DBOOST_NO_TEMPLATE_PARTIAL_SPECIALIZATION -DBOOST_TT_HAS_OPERATOR_HPP_INCLUDED -DBOOST_TT_HAS_LEFT_SHIFT_HPP_INCLUDED)
 			qt4_wrap_ui(uic_sources ${vole_module_ui_sources})
 
 			list(APPEND vole_module_library_sources ${moc_sources} ${uic_sources})
