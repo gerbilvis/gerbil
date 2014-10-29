@@ -21,19 +21,18 @@ struct DistIndexPair {
 	DistIndexPair(value_type dist, size_t index)
 		: dist(dist), index(index)
 	{}
+
+	/** Compare function to sort by distance. */
+	static inline bool cmpDist(const DistIndexPair& a, const DistIndexPair& b)
+	{
+		return (a.dist < b.dist);
+	}
+
 	/** Distance of the best matching unit to query vector. */
 	value_type dist;
 	/** Linear index into SOM neuron storage. */
 	size_t index;
 };
-
-/** Compare function to sort DistIndexPair s by distance. */
-inline bool cmpDist(
-		DistIndexPair& a,
-		DistIndexPair& b)
-{
-	return (a.dist < b.dist);
-}
 
 /** Compute geometric series neuron weights.
  * w_i = 2 w_(i+1)
@@ -233,17 +232,17 @@ void GenSOM::findClosestN(const multi_img::Pixel &inputVec,
 
 		if (dist < dfirst->dist) {
 			// remove max. value in heap
-			std::pop_heap(dfirst, dlast, cmpDist);
+			std::pop_heap(dfirst, dlast, DistIndexPair::cmpDist);
 
 			// max element is now on position "back" and should be popped
 			// instead we overwrite it directly with the new element
 			DistIndexPair &back = *(dlast-1);
 			back = DistIndexPair(dist,                  // distance
 								 it - neurons.begin()); // index into neurons
-			std::push_heap(dfirst, dlast, cmpDist);
+			std::push_heap(dfirst, dlast, DistIndexPair::cmpDist);
 		}
 	}
-	std::sort_heap(dfirst, dlast, cmpDist); // sort ascending
+	std::sort_heap(dfirst, dlast, DistIndexPair::cmpDist); // sort ascending
 }
 
 /** Build cv::Point3 from vector v with 1 <= v.size() <= 3.

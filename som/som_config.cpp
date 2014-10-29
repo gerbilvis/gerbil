@@ -76,11 +76,8 @@ void SOMConfig::initBoostOptions() {
 		BOOST_OPT(somFile)
 		;
 	options.add(similarity.options);
-
-	if (prefix_enabled)	// skip input/output options
-		return;
 }
-#endif // WITH_BOOST
+#endif // WITH_BOOST_PROGRAM_OPTIONS
 
 std::string SOMConfig::getString() const {
 	std::stringstream s;
