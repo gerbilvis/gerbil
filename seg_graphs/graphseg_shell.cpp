@@ -25,10 +25,7 @@ GraphSegShell::GraphSegShell()
 {}
 
 int GraphSegShell::execute() {
-	multi_img::ptr input;
-	imginput::ImgInput ii(config.input);
-
-	input = ii.execute();
+	multi_img::ptr input = imginput::ImgInput(config.input).execute();
 	if (input->empty()) {
 		throw std::runtime_error
 				("EdgeDetection::execute: imginput module failed to read image.");
