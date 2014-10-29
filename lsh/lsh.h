@@ -49,7 +49,9 @@ class LSH
 	typedef vector< vector<Entry> > Htable;
 
 public:
-	LSH(data_t *data, int npoints, int dims, int K, int L, bool dataDrivenPartitions = true, const vector<unsigned int> &subSet = vector<unsigned int>());
+	LSH(const vector<vector<data_t> > &data, int K, int L,
+		bool dataDrivenPartitions = true,
+		const vector<unsigned int> &subSet = vector<unsigned int>());
 
 	~LSH() {}
 
@@ -60,10 +62,7 @@ private:
 	/// members:
 
 	/// interleaved data points
-	const data_t *data;
-
-	/// number of data points
-	const int npoints;
+	const vector<vector<data_t> > &data;
 
 	/// number of dimensions
 	const int dims;
@@ -102,7 +101,8 @@ private:
 	void fillTable();
 
 	/// determine boolean vector for given coordinates in a certain partition
-	std::vector<bool> getBoolVec(const data_t *point, const partition_t &part) const;
+	std::vector<bool> getBoolVec(const std::vector<data_t> &point,
+								 const partition_t &part) const;
 
 	/// determine boolean vector for an existing point in a certain partition
 	std::vector<bool> getBoolVec(unsigned int point, const partition_t &part) const;

@@ -12,7 +12,7 @@ vole_add_command("meanshiftsp" "meanshift_sp.h" "seg_meanshift::MeanShiftSP")
 vole_add_command("meanshiftsom" "meanshift_som.h" "seg_meanshift::MeanShiftSOM")
 
 vole_compile_library(
-	"io" "mfams"
+	"mfams" "io" "mode_pruning"
 	"meanshift"         "meanshift_config"
 	"meanshift_shell"
 	"meanshift_sp"

@@ -10,7 +10,7 @@
 
 #ifdef WITH_SOM
 namespace som { // forward declaration for executeSOM
-	class GenSOM;
+	class SOMClosestN;
 }
 #endif
 
@@ -30,12 +30,11 @@ public:
 	void printShortHelp() const;
 	void printHelp() const;
 
-protected:
 	cv::Mat3f executePCA(const multi_img& src, ProgressObserver *po);
 #ifdef WITH_SOM
 	cv::Mat3f executeSOM(const multi_img& src, ProgressObserver *po,
-						 boost::shared_ptr<som::GenSOM> som
-						 = boost::shared_ptr<som::GenSOM>());
+						 boost::shared_ptr<som::SOMClosestN> lookup
+						 = boost::shared_ptr<som::SOMClosestN>());
 #endif
 
 public:

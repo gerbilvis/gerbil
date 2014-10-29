@@ -39,6 +39,9 @@
 class Config {
 public:
 	Config(const std::string &prefix = std::string());
+	Config(const Config &other);
+	/* NOTE: assignment does not include the options member! */
+	Config& operator=(const Config& other);
 
 	virtual ~Config() {}
 
@@ -54,8 +57,6 @@ public:
 	// takes a variables_map as optional argument, because there may be already one in use
 	bool parseOptionsDescription(const char *filename,
 								 boost::program_options::variables_map *vm = NULL);
-
-	boost::program_options::options_description options;
 #endif // WITH_BOOST_PROGRAM_OPTIONS
 
 	/// helper function to be used in initBoostOptions
@@ -67,6 +68,10 @@ public:
 	bool prefix_enabled;
 	/// config option prefix (may be empty)
 	std::string prefix;
+
+#ifdef WITH_BOOST_PROGRAM_OPTIONS
+	boost::program_options::options_description options;
+#endif // WITH_BOOST_PROGRAM_OPTIONS
 
 protected:
 

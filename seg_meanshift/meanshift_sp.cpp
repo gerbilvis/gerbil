@@ -56,18 +56,19 @@ int MeanShiftSP::execute()
 		input_grad->rebuildPixels(false);
 	}
 
-	cv::Mat1s labels_mask(execute(input, input_grad));
-	if (labels_mask.empty())
+	MeanShift::Result ret = execute(input, input_grad);
+	if (ret.labels->empty())
 		return 0;
 
+	ret.printModes();
+
 	// write out beautifully colored label image
-	Labeling labels;
-	labels = labels_mask;
+	Labeling labels = *ret.labels;
 	labels.yellowcursor = false;
 	labels.shuffle = true;
 
 	std::string output_name = config.output_directory + "/"
-				  + config.output_prefix + "segmentation_rgb.png";
+				  + config.output_prefix + "-segmentation_rgb.png";
 	cv::imwrite(output_name, labels.bgr());
 	return 0;
 #else
@@ -94,17 +95,17 @@ std::map<std::string, boost::any> MeanShiftSP::execute(std::map<std::string, boo
 	if (config.sp_withGrad)
 		inputgrad->rebuildPixels(true);
 
-	boost::shared_ptr<cv::Mat1s> labels_mask(new cv::Mat1s(
-												 execute(inputimg, inputgrad)));
+	MeanShift::Result res = execute(inputimg, inputgrad);
 	std::map<std::string, boost::any> output;
-	output["labels"] = labels_mask;
+	output["labels"] = res.labels;
+	output["modes"] = res.modes;
 	return output;
 #else
 	throw std::runtime_error("Module seg_felzenszwalb needed, but missing!");
 #endif
 }
 
-cv::Mat1s MeanShiftSP::execute(multi_img::ptr input,  multi_img::ptr input_grad)
+MeanShift::Result MeanShiftSP::execute(multi_img::ptr input, multi_img::ptr input_grad)
 {
 #ifdef WITH_SEG_FELZENSZWALB
 	Stopwatch watch("Total time");
@@ -127,7 +128,7 @@ cv::Mat1s MeanShiftSP::execute(multi_img::ptr input,  multi_img::ptr input_grad)
 		output.shuffle = true;
 		output.read(result.first, false);
 		output_name = config.output_directory + "/"
-					  + config.output_prefix + "superpixels.png";
+					  + config.output_prefix + "-superpixels.png";
 		cv::imwrite(output_name, output.bgr());
 	}
 
@@ -187,13 +188,13 @@ cv::Mat1s MeanShiftSP::execute(multi_img::ptr input,  multi_img::ptr input_grad)
 		config.K = ret.first; config.L = ret.second;
 		std::cout << "Found K = " << config.K
 				  << "\tL = " << config.L << std::endl;
-		return cv::Mat1s();
+		return MeanShift::Result();
 	}
 
-	cv::Mat1s labels_ms = ms.execute(msinput, NULL,
-									 (config.sp_weight > 0 ? &weights : NULL));
-	if (labels_ms.empty())
-		return cv::Mat1s();
+	MeanShift::Result res = ms.execute(msinput, 0,
+									 (config.sp_weight > 0 ? &weights : 0));
+	if (res.labels->empty())
+		return MeanShift::Result();
 
 	// DBG: write out input to FAMS
 	//output_name = config.output_directory + "/"
@@ -201,13 +202,15 @@ cv::Mat1s MeanShiftSP::execute(multi_img::ptr input,  multi_img::ptr input_grad)
 	//	msinput.write_out(output_name);
 
 	// translate results back to original image domain
+	cv::Mat1s labels_ms = *res.labels;
 	cv::Mat1s labels_mask(in->height, in->width);
 	cv::Mat1s::iterator itr = labels_mask.begin();
 	cv::Mat1i::const_iterator itl = sp_translate.begin();
 	for (; itr != labels_mask.end(); ++itl, ++itr) {
 		*itr = labels_ms(*itl, 0);
 	}
-	return labels_mask;
+
+	return MeanShift::Result(*res.modes, labels_mask);
 #endif // WITH_SEG_FELZENSWALB
 }
 

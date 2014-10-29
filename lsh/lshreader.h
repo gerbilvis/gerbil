@@ -22,7 +22,8 @@ public:
 	/// the same intersection (i.e. same boolean vectors) will return
 	/// the pointer's value instead of NULL. The actual result will be empty.
 	/// This can serve as shortcut to the calling algorithm's final result.
-	const void *query(const LSH::data_t *point, const void *endResult = 0);
+	const void *query(const vector<LSH::data_t> &point,
+					  const void *endResult = 0);
 
 	/// perform query on existing data point
 	void query(unsigned int point);

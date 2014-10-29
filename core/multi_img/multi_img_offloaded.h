@@ -12,7 +12,7 @@ public:
 	virtual ~multi_img_offloaded() {}
 
 	/// returns number of bands
-	virtual unsigned int size() const;
+	virtual size_t size() const;
 
 	/// returns true if image is uninitialized
 	virtual bool empty() const;

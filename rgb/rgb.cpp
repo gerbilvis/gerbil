@@ -27,6 +27,7 @@
 
 #ifdef WITH_BOOST
 #include <shared_data.h>
+#include <boost/make_shared.hpp>
 #endif
 
 namespace rgb {
@@ -118,7 +119,7 @@ cv::Mat3f RGB::execute(const multi_img& src, ProgressObserver *po)
 cv::Mat3f RGB::executePCA(const multi_img& src, ProgressObserver *po)
 {
 	// cover cases of lt 3 channels
-	unsigned int components = std::min(3u, src.size());
+	unsigned int components = std::min((size_t)3, src.size());
 	multi_img pca3 = src.project(src.pca(components));
 
 	bool cont = (!po) || po->update(.7f); // TODO: values
@@ -206,7 +207,7 @@ private:
 };
 
 cv::Mat3f RGB::executeSOM(const multi_img &img, ProgressObserver *po,
-						  boost::shared_ptr<GenSOM> som)
+						  boost::shared_ptr<SOMClosestN> lookup)
 {
 	typedef cv::Mat_<cv::Vec<GenSOM::value_type, 3> > Mat3;
 
@@ -215,19 +216,22 @@ cv::Mat3f RGB::executeSOM(const multi_img &img, ProgressObserver *po,
 	img.rebuildPixels(false);
 	ProgressObserver *calcPo;
 
-	if (!som) {
+	// make sure to keep alive throughout method, if it is used
+	boost::shared_ptr<GenSOM> som;
+	if (!lookup) {
 		calcPo = (po ? new ChainedProgressObserver(po, .6f) : 0);
 		som = boost::shared_ptr<GenSOM>(GenSOM::create(config.som, img, calcPo));
 		delete calcPo;
-	}
-	if (po && !po->update(.6f))
-		return Mat3();
+		if (po && !po->update(.6f))
+			return Mat3();
 
-	Stopwatch watch("Pixel color mapping");
-	// compute lookup cache
-	calcPo = (po ? new ChainedProgressObserver(po, .35f) : 0);
-	SOMClosestN lookup(*som, img, config.som_depth, calcPo);
-	delete calcPo;
+		Stopwatch watch("Pixel color mapping");
+		// compute lookup cache
+		calcPo = (po ? new ChainedProgressObserver(po, .35f) : 0);
+		lookup = boost::make_shared<SOMClosestN>
+				 (*som, img, config.som_depth, calcPo);
+		delete calcPo;
+	}
 	if (po && !po->update(.95f))
 		return Mat3();
 
@@ -235,8 +239,8 @@ cv::Mat3f RGB::executeSOM(const multi_img &img, ProgressObserver *po,
 	Mat3 bgr(img.height, img.width);
 	calcPo = (po ? new ChainedProgressObserver(po, .05f) : 0);
 	std::vector<float> weights =
-			neuronWeightsGeometric<float>(config.som_depth);
-	SomRgbTbb<true> comp(lookup, weights, bgr, calcPo);
+			neuronWeightsGeometric<float>(lookup->n);
+	SomRgbTbb<true> comp(*lookup, weights, bgr, calcPo);
 	tbb::parallel_for(tbb::blocked_range2d<int>(0, img.height, // row range
 												0, img.width), // column range
 					  comp);

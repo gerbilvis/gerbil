@@ -18,17 +18,17 @@ namespace seg_meanshift {
 
 ENUM_MAGIC(seg_meanshift, sampling)
 
-MeanShiftConfig::MeanShiftConfig(const std::string& prefix)
-	: Config(prefix), input("input")
+MeanShiftConfig::MeanShiftConfig(const std::string& p)
+	: Config(p), input(prefix + "input")
 #ifdef WITH_SEG_FELZENSZWALB
-	, superpixel("superpixel"),
+	, superpixel(prefix + "superpixel"),
 	sp_withGrad(false)
 #endif
 #if defined(WITH_SOM) || defined(WITH_SEG_FELZENSZWALB)
 	, sp_weight(0)
 #endif
 #ifdef WITH_SOM
-	, som("som")
+	, som(prefix + "som")
 #endif
 {
 	use_LSH = false;
@@ -101,28 +101,28 @@ void MeanShiftConfig::initBoostOptions()
 				 "Working directory")
 				(key("prefix"), value(&output_prefix)->default_value(output_prefix),
 				 "Prefix to all output filenames")
-				("doFindKL", bool_switch(&findKL)->default_value(findKL),
+				(key("doFindKL"), bool_switch(&findKL)->default_value(findKL),
 				 "empirically determine optimal K, L values (1 < L < lsh.L)")
-				("Kmin", value(&Kmin)->default_value(Kmin),
+				(key("Kmin"), value(&Kmin)->default_value(Kmin),
 				 "minimum value of K to be tested (findKL only)")
-				("Kjump", value(&Kjump)->default_value(Kjump),
+				(key("Kjump"), value(&Kjump)->default_value(Kjump),
 				 "test every Kmin:Kjump:K values for K (findKL only)")
-				("epsilon", value(&epsilon)->default_value(epsilon),
+				(key("epsilon"), value(&epsilon)->default_value(epsilon),
 				 "error threshold (findKL only)")
 		;
 	}
 	options.add_options()
-			("useLSH", bool_switch(&use_LSH)->default_value(use_LSH),
+			(key("useLSH"), bool_switch(&use_LSH)->default_value(use_LSH),
 			 "use locality-sensitive hashing")
-			("lshK", value(&K)->default_value(K),
+			(key("lshK"), value(&K)->default_value(K),
 			 "K for LSH")
-			("lshL", value(&L)->default_value(L),
+			(key("lshL"), value(&L)->default_value(L),
 			 "L for LSH")
-			("seed", value(&seed)->default_value(seed),
+			(key("seed"), value(&seed)->default_value(seed),
 			 "random seed (0 means time-based)")
-			("pilotk", value(&k)->default_value(k),
+			(key("pilotk"), value(&k)->default_value(k),
 			 "number of neighbors used in the construction of the pilot density")
-			("initmethod", value(&starting)->default_value(starting),
+			(key("initmethod"), value(&starting)->default_value(starting),
 			 "start mean shift from ALL points, every Xth point (JUMP), "
 #ifdef WITH_SEG_FELZENSZWALB
 			 "a random selection of points (PERCENT), or SUPERPIXEL segmentation")
@@ -130,20 +130,20 @@ void MeanShiftConfig::initBoostOptions()
 			 "or a random selection of points (PERCENT)")
 #endif
 #ifdef WITH_SEG_FELZENSZWALB
-			("sp_withGrad", bool_switch(&sp_withGrad)->default_value
+			(key("sp_withGrad"), bool_switch(&sp_withGrad)->default_value
 																  (sp_withGrad),
 			 "compute gradient as input to mean shift step (after superpixels)")
 #endif
 #if defined(WITH_SOM) || defined(WITH_SEG_FELZENSZWALB)
-			("sp_weight", value(&sp_weight)->default_value(sp_weight),
+			(key("sp_weight"), value(&sp_weight)->default_value(sp_weight),
 			 "how to weight superpixel sizes: 0 do not weight, 1 fixed bandwidths,"
 			 " 2 alter weight")
 #endif
-			("initjump", value(&jump)->default_value(jump),
+			(key("initjump"), value(&jump)->default_value(jump),
 			 "use points with indices 1+(jump*[1..infty])")
-			("initpercent", value(&percent)->default_value(percent),
+			(key("initpercent"), value(&percent)->default_value(percent),
 			 "randomly select given percentage of points")
-			("bandwidth", value(&bandwidth)->default_value(bandwidth),
+			(key("bandwidth"), value(&bandwidth)->default_value(bandwidth),
 			 "use fixed bandwidth*dimensionality for mean shift window (else: adaptive)")
 
 	;

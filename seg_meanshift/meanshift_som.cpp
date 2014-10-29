@@ -51,11 +51,37 @@ int MeanShiftSOM::execute() {
 
 	Stopwatch watch("Total time");
 
+	Result res = execute(input);
+	if (res.labels->empty())
+		return 0;
+
+	res.printModes();
+
+	// write out beautifully colored label image
+	Labeling labels = *res.labels;
+	labels.yellowcursor = false;
+	labels.shuffle = true;
+	std::string output_name = config.output_directory + "/"
+				  + config.output_prefix
+				  + "-segmentation_rgb_som.png";
+	cv::imwrite(output_name, labels.bgr());
+
+	return 0;
+#else
+	std::cerr << "FATAL: SOM module was not built-in!"
+			  << std::endl;
+	return 1;
+#endif
+}
+
+MeanShiftSOM::Result MeanShiftSOM::execute(multi_img::ptr input)
+{
 	// SOM setup
 	boost::shared_ptr<som::GenSOM> som(som::GenSOM::create(config.som, *input));
 
 	// build lookup table
-	som::SOMClosestN mapping(*som, *input, 1);
+	boost::shared_ptr<som::SOMClosestN>
+			mapping(new som::SOMClosestN(*som, *input, 1));
 
 	// create meanshift input
 	multi_img msinput = som->img(input->meta,
@@ -76,7 +102,7 @@ int MeanShiftSOM::execute() {
 		for (int y = 0; y < input->height; ++y) {
 			for (int x = 0; x < input->width; ++x) {
 				som::SOMClosestN::resultAccess answer =
-						mapping.closestN(cv::Point(x, y));
+						mapping->closestN(cv::Point(x, y));
 				cv::Point pos = som->getCoord2D(answer.first->index);
 
 				weights[pos.y * msinput.width + pos.x]++;
@@ -100,22 +126,30 @@ int MeanShiftSOM::execute() {
 
 	assert(!config.findKL);
 
-	cv::Mat1s labels_ms = ms.execute(msinput, NULL,
-									 (config.sp_weight > 0 ? &weights : NULL));
-	if (labels_ms.empty())
-		return 0;
+	MeanShift::Result ret_in = ms.execute(msinput, 0,
+									   (config.sp_weight > 0 ? &weights : 0));
+	if (ret_in.labels->empty())
+		return Result();
+
+	Result ret_out;
+	ret_out.modes = ret_in.modes;
+	ret_out.som = som;
+	ret_out.lookup = mapping;
 
 	// translate results back to original image domain
-	cv::Mat1s labels_mask(input->height, input->width);
+	ret_out.labels->create(input->height, input->width);
 	{
 		Stopwatch watch("Label Image Generation");
 		for (int y = 0; y < input->height; ++y) {
 			for (int x = 0; x < input->width; ++x) {
 				som::SOMClosestN::resultAccess answer =
-						mapping.closestN(cv::Point(x, y));
+						mapping->closestN(cv::Point(x, y));
 				cv::Point pos = som->getCoord2D(answer.first->index);
+				
+				// get segement number of 2D coordinate position
+				short index = (*ret_in.labels)(pos) - 1;
 
-				labels_mask(y, x) = labels_ms(pos);
+				(*ret_out.labels)(y, x) = index;
 			}
 		}
 	}
@@ -137,20 +171,7 @@ int MeanShiftSOM::execute() {
 		cv::imwrite(output_name, wmatXY * 127.f);
 	}
 
-	// write out beautifully colored label image
-	Labeling labels = labels_mask;
-	labels.yellowcursor = false;
-	labels.shuffle = true;
-	output_name = config.output_directory + "/"
-				  + config.output_prefix + "-segmentation_rgb_som.png";
-	cv::imwrite(output_name, labels.bgr());
-
-	return 0;
-#else
-	std::cerr << "FATAL: SOM module was not built-in!"
-			  << std::endl;
-	return 1;
-#endif
+	return ret_out;
 }
 
 void MeanShiftSOM::printShortHelp() const {

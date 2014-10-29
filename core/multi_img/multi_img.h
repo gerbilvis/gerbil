@@ -141,7 +141,7 @@ public:
 	virtual ~multi_img_base() {}
 
 	/// returns number of bands
-	virtual unsigned int size() const = 0;
+	virtual size_t size() const = 0;
 
 	/// returns true if image is uninitialized
 	virtual bool empty() const = 0;	
@@ -265,7 +265,7 @@ public:
 //@{
 
 	/// returns number of bands
-	virtual unsigned int size() const;
+	virtual size_t size() const;
 
 	/// returns true if image is uninitialized
 	virtual bool empty() const;
@@ -368,11 +368,11 @@ public:
 	}
 
 	/// returns pointer to data in interleaved format
-	/** @note You have to free the new data array after use.
-		@param useDataRange If this is true, normalization will be done
-				based on the actual data range instead of minval and maxval
+	/** @param useDataRange If this is true, normalization will be done
+			   based on the actual data range instead of minval and maxval
 	**/
-	unsigned short* export_interleaved(bool useDataRange = false) const;
+	std::vector<std::vector<unsigned short> >
+	export_ushort(bool useDataRange = false) const;
 
 #ifdef WITH_QT
 	/// return QImage of specific band

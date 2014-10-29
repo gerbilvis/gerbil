@@ -17,7 +17,8 @@
 #include <string>
 #include <vector>
 
-unsigned short* multi_img::export_interleaved(bool useDataRange) const
+std::vector<std::vector<unsigned short> >
+multi_img::export_ushort(bool useDataRange) const
 {
 	rebuildPixels();
 
@@ -28,13 +29,13 @@ unsigned short* multi_img::export_interleaved(bool useDataRange) const
 	}
 
 	Value scale = 65535.0/(range.max - range.min);
-	int length = size(), i = 0, d;
-	unsigned short *ret = new unsigned short[length*width*height];
+	std::vector<std::vector<unsigned short> >
+			ret(width*height, std::vector<unsigned short>(size()));
 
-	std::vector<Pixel>::const_iterator it;
-	for (it = pixels.begin(); it != pixels.end(); ++it)
-		for (d = 0; d < length; ++d)
-			ret[i++] = ((*it)[d] - range.min) * scale;
+	std::vector<Pixel>::const_iterator it = pixels.begin();
+	for (size_t i = 0; it != pixels.end(); ++it, ++i)
+		for (size_t d = 0; d < size(); ++d)
+			ret[i][d] = ((*it)[d] - range.min) * scale;
 
 	return ret;
 }

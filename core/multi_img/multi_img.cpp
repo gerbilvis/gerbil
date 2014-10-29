@@ -574,9 +574,9 @@ void multi_img::blur(cv::Size ksize, double sigmaX, double sigmaY,
 	resetPixels();
 }
 
-unsigned int multi_img::size() const
+size_t multi_img::size() const
 {
-	return (unsigned int)bands.size();
+	return bands.size();
 }
 
 bool multi_img::empty() const

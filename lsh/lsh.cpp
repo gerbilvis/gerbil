@@ -20,10 +20,10 @@
 //#define DEBUG_VERBOSE
 //#define VERBOSE_RANDOM
 
-LSH::LSH(data_t *data, int npoints, int dims, int K, int L, bool dataDrivenPartitions, const vector<unsigned int> &subSet) :
+LSH::LSH(const vector<vector<data_t> > &data, int K, int L,
+		 bool dataDrivenPartitions, const vector<unsigned int> &subSet) :
 		data(data),
-		npoints(npoints),
-		dims(dims),
+		dims(data[0].size()),
 		K(K),
 		L(L),
 		dataDrivenPartitions(dataDrivenPartitions),
@@ -67,7 +67,7 @@ int LSH::GetPrime(int minp) {
 			return i;
 	}
 	return -1;
-};
+}
 
 void LSH::makeCuts()
 {
@@ -117,7 +117,7 @@ LSH::cut_t LSH::randomCut(int dim) const
 	if (dataDrivenPartitions) {
 		int p;
 		if (subSet.empty()) {
-			p = random(npoints - 1);
+			p = random(data.size() - 1);
 		} else {
 			p = random(subSet.size() - 1);
 			p = subSet[p];
@@ -126,7 +126,7 @@ LSH::cut_t LSH::randomCut(int dim) const
 		fprintf(stderr, "LSH: rand: -> %d\n", p);
 #endif // VERBOSE_RANDOM
 		ret.dim = dim;
-		ret.pos = data[p * dims + dim];
+		ret.pos = data[p][dim];
 	} else {
 		ret.dim = dim;
 		/// assuming data_t is unsigned, this should yield the maximum value
@@ -143,7 +143,7 @@ void LSH::fillTable()
 	for (int l = 0; l < L; l++) {
 		Htable &table = tables[l];
 		/// for each point...
-		int n = subSet.empty() ? npoints : subSet.size();
+		int n = subSet.empty() ? data.size() : subSet.size();
 		for (int p_i = 0; p_i < n; p_i++) {
 			int p = subSet.empty() ? p_i : subSet[p_i];
 			std::vector<bool> boolVec = getBoolVec(p, partitions[l]);
@@ -161,7 +161,8 @@ void LSH::fillTable()
 	}
 }
 
-std::vector<bool> LSH::getBoolVec(const data_t *point, const partition_t &part) const
+std::vector<bool> LSH::getBoolVec(const std::vector<data_t> &point,
+								  const partition_t &part) const
 {
 	std::vector<bool> ret(K);
 	for (int k = 0; k < K; k++)
@@ -171,7 +172,7 @@ std::vector<bool> LSH::getBoolVec(const data_t *point, const partition_t &part) 
 
 std::vector<bool> LSH::getBoolVec(unsigned int point, const partition_t &part) const
 {
-	return getBoolVec(&data[point * dims], part);
+	return getBoolVec(data[point], part);
 }
 
 pair<int, int> LSH::hashFunc(const std::vector<bool>& boolVec, int partIdx) const
@@ -192,7 +193,7 @@ pair<int, int> LSH::hashFunc(const std::vector<bool>& boolVec, int partIdx) cons
 vector< vector<unsigned int> > LSH::getLargestBuckets(double p) const
 {
 	vector< vector<unsigned int> > ret;
-	unsigned int minCount = (int)p * npoints;
+	unsigned int minCount = (int)p * data.size();
 	for (int l = 0; l < L; ++l) {
 		const Htable &table = tables[l];
 		for (int k = 0; k < nbuckets; ++k) {

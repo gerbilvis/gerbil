@@ -28,12 +28,32 @@ Config::Config(const std::string& p) :
 #endif // WITH_BOOST_PROGRAM_OPTIONS
 }
 
+Config::Config(const Config &other) :
+	verbosity(other.verbosity),
+	prefix_enabled(other.prefix_enabled),
+	prefix(other.prefix)
+#ifdef WITH_BOOST_PROGRAM_OPTIONS
+  , options(other.options)
+  #endif // WITH_BOOST_PROGRAM_OPTIONS
+{
+}
+
+Config &Config::operator=(const Config &other)
+{
+	if (this != &other) {
+		verbosity = other.verbosity;
+		prefix_enabled = other.prefix_enabled;
+		prefix = other.prefix;
+	}
+	return *this;
+}
+
 bool Config::readConfig(const char *filename) {
 #ifdef WITH_BOOST_PROGRAM_OPTIONS
 	return parseOptionsDescription(filename);
 #endif // WITH_BOOST_PROGRAM_OPTIONS
 
-	std::cerr << "No options reader implemented - big mayhem in core/vole_config.cpp" << std::endl;
+	std::cerr << "Cannot parse config file! No parser implemented!" << std::endl;
 	return false; 
 }
 

@@ -76,9 +76,9 @@ multi_img_offloaded::multi_img_offloaded(const std::vector<std::string> &files,
 			 << " MB)" << std::endl;
 }
 
-unsigned int multi_img_offloaded::size() const
+size_t multi_img_offloaded::size() const
 {
-	return (unsigned int)bands.size();
+	return bands.size();
 }
 
 bool multi_img_offloaded::empty() const

@@ -80,20 +80,26 @@ int MeanShiftShell::execute() {
 		//	config.pruneMinN = 1;
 	#endif
 
-		cv::Mat1s labels_mask;
+		MeanShift::Result res;
 #ifdef WITH_SEG_FELZENSZWALB
 		if (config.sp_withGrad) {
 			// mean shift on grad, but SP on image
-			labels_mask = ms.execute(*input_grad, NULL, NULL, *input);
+			res = ms.execute(*input_grad, NULL, NULL, *input);
 		} else
 #endif
 		{
-			labels_mask = ms.execute(*input, NULL, NULL, *input);
+			res = ms.execute(*input, NULL, NULL, *input);
 		}
-		if (labels_mask.empty())
+
+		if (res.modes->empty())
+			return 1; // something went wrong, there should always be one mode!
+
+		res.printModes();
+
+		if (res.labels->empty())
 			return 0;
 
-		labels = labels_mask;
+		labels = *res.labels;
 		labels.yellowcursor = false;
 		labels.shuffle = true;
 	}
@@ -109,7 +115,8 @@ int MeanShiftShell::execute() {
 std::map<std::string, boost::any> MeanShiftShell::execute(std::map<std::string, boost::any> &input, ProgressObserver *progress) {
 	// XXX: for now, gradient/rescale is expected to be done by caller
 
-	boost::shared_ptr<multi_img> inputimg = boost::any_cast<boost::shared_ptr<multi_img> >(input["multi_img"]);
+	boost::shared_ptr<multi_img> inputimg =
+	        boost::any_cast<boost::shared_ptr<multi_img> >(input["multi_img"]);
 	boost::shared_ptr<multi_img> inputgrad;
 #ifdef WITH_SEG_FELZENSZWALB
 	if (config.sp_withGrad) {
@@ -143,15 +150,15 @@ std::map<std::string, boost::any> MeanShiftShell::execute(std::map<std::string, 
 		output["findKL.K"] = ret.first;
 		output["findKL.L"] = ret.second;
 	} else {
-		boost::shared_ptr<cv::Mat1s> labels_mask(new cv::Mat1s(
-			  ms.execute(
+		MeanShift::Result res = ms.execute(
 #ifdef WITH_SEG_FELZENSZWALB
-						(config.sp_withGrad ? *inputgrad : *inputimg),
+				  (config.sp_withGrad ? *inputgrad : *inputimg),
 #else
-						*inputimg,
+				  *inputimg,
 #endif
-						 progress, NULL, *inputimg)));
-		output["labels"] = labels_mask;
+				   progress, NULL, *inputimg);
+		output["labels"] = res.labels;
+		output["modes"] = res.modes;
 	}
 
 	return output;

@@ -9,20 +9,21 @@ LSHReader::LSHReader(const LSH& master)
 	  queryTag(1)
 {
 	/// initialize metadata array
-	queryTags.assign(lsh.npoints, 0);
+	queryTags.assign(lsh.data.size(), 0);
 
 	/// initialize result state
 	result.valid = false;
 
 	/// initialize shortcut table
 	/// loosely based on original implementation, but should actually use nsel instead of npoints
-	shortcutTableSize = lsh.GetPrime(lsh.npoints * 4);
+	shortcutTableSize = lsh.GetPrime(lsh.data.size() * 4);
 	shortcutTable.assign(shortcutTableSize, vector<ShortcutEntry>());
 }
 
 /// perform query on given coordinates
 /// (expects array with dims elements)
-const void* LSHReader::query(const LSH::data_t *point, const void *endResult)
+const void* LSHReader::query(const vector<LSH::data_t> &point,
+							 const void *endResult)
 {
 	vector<vector<bool> > boolVecs(lsh.L);
 	vector<int> primaryHashes(lsh.L);
@@ -137,7 +138,7 @@ const void* LSHReader::query(const LSH::data_t *point, const void *endResult)
 
 void LSHReader::query(unsigned int point)
 {
-	query(&lsh.data[point * lsh.dims], NULL);
+	query(lsh.data[point], NULL);
 }
 
 const std::vector<unsigned int>& LSHReader::getResult() const

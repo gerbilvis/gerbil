@@ -27,13 +27,14 @@ std::pair<int, int> MeanShift::findKL(const multi_img& input,
 {
 	// load points
 	FAMS cfams(config, po);
-	cfams.ImportPoints(input);
+	cfams.importPoints(input);
 	return cfams.FindKL();
 }
 
-cv::Mat1s MeanShift::execute(const multi_img& input, ProgressObserver *po,
-							 vector<double> *bandwidths,
-							 const multi_img& spinput) {
+MeanShift::Result MeanShift::execute(const multi_img& input,
+                                     ProgressObserver *po,
+                                     vector<double> *bandwidths,
+                                     const multi_img& spinput) {
 	std::cout << "Mean Shift Segmentation" << std::endl;
 
 	if (config.seed != 0) {
@@ -50,13 +51,13 @@ cv::Mat1s MeanShift::execute(const multi_img& input, ProgressObserver *po,
 	// HACK it's a shame
 	cfams.spsizes = spsizes;
 
-	cfams.ImportPoints(input);
+	cfams.importPoints(input);
 
 #ifdef WITH_SEG_FELZENSZWALB
 	// superpixel setup
 	cv::Mat1i sp_translate;
 	seg_felzenszwalb::segmap sp_map;
-	std::vector<fams_point> sp_points; // initialize in right scope!
+	std::vector<FAMS::Point> sp_points; // initialize in right scope!
 	if (config.starting == SUPERPIXEL) {
 		std::pair<cv::Mat1i, seg_felzenszwalb::segmap> result =
 			 seg_felzenszwalb::segment_image(spinput, config.superpixel);
@@ -70,37 +71,37 @@ cv::Mat1s MeanShift::execute(const multi_img& input, ProgressObserver *po,
 		output.shuffle = true;
 		output.read(result.first, false);
 		std::string output_name = config.output_directory + "/"
-								  + config.output_prefix + "superpixels.png";
+								  + config.output_prefix + "-superpixels.png";
 		cv::imwrite(output_name, output.bgr());
 	}
 #endif
 
 	// prepare MS run (adaptive bandwidths)
-	bool success = cfams.PrepareFAMS(bandwidths);
+	bool success = cfams.prepareFAMS(bandwidths);
 	if (!success)
-		return cv::Mat1s();
+		return Result();
 
 	// define starting points
 	/* done after preparation such that superpixel can rely on bandwidths */
 	switch (config.starting) {
 	case JUMP:
-		cfams.SelectMsPoints(0., config.jump);
+		cfams.selectStartPoints(0., config.jump);
 		break;
 	case PERCENT:
-		cfams.SelectMsPoints(config.percent, 1);
+		cfams.selectStartPoints(config.percent, 1);
 		break;
 #ifdef WITH_SEG_FELZENSZWALB
 	case SUPERPIXEL:
 		sp_points = prepare_sp_points(cfams, sp_map);
-		cfams.ImportMsPoints(sp_points);
+		cfams.importStartPoints(sp_points);
 		break;
 #endif
 	default:
-		cfams.SelectMsPoints(0., 1);
+		cfams.selectStartPoints(0., 1);
 	}
 
 	// perform mean shift
-	success = cfams.FinishFAMS();
+	success = cfams.finishFAMS();
 #ifdef WITH_SEG_FELZENSZWALB
 /*	if (config.starting == SUPERPIXEL) {
 		cfams.DbgSavePoints(config.output_directory + "/sp-points-img",
@@ -109,44 +110,46 @@ cv::Mat1s MeanShift::execute(const multi_img& input, ProgressObserver *po,
 	cleanup_sp_points(sp_points);
 #endif
 	if (!success)
-		return cv::Mat1s();
+		return Result();
 
 	// postprocess: prune modes
-	cfams.PruneModes();
+	cfams.pruneModes();
 
 	if (config.verbosity > 1) {
 		// save the data
-		cfams.SaveModeImg(config.output_directory + "/"
-						  + config.output_prefix + "modes", input.meta);
-		//cfams.SaveModes(config.output_directory + "/");
+		cfams.saveModeImg(config.output_directory + "/"
+						  + config.output_prefix + "-modes", 0, input.meta);
+		//cfams.SaveModes(config.output_directory + "/modes.txt", 0);
 		// save pruned modes
-		cfams.SavePrunedModeImg(config.output_directory + "/"
-						  + config.output_prefix + "prunedmodes", input.meta);
-		//cfams.SavePrunedModes(config.output_directory + "/");
-		//cfams.SaveMymodes(config.output_directory + "/");
+		cfams.saveModeImg(config.output_directory + "/"
+						  + config.output_prefix + "-prunedmodes", 2, input.meta);
 	}
 
+	std::vector<multi_img::Pixel> modes = cfams.modeVector();
+
 	// return image which holds segment indices of each pixel
+	Result ret;
+	ret.setModes(cfams.modeVector());
 	if (config.starting == ALL) {
-		return cfams.segmentImage();
+		ret.setLabels(cfams.segmentImage());
 #ifdef WITH_SEG_FELZENSZWALB
 	} else if (config.starting == SUPERPIXEL) {
-		return segmentImage(cfams, sp_translate);
+		ret.setLabels(segmentImageSP(cfams, sp_translate));
 #endif
 	} else {
 		std::cerr << "Note: As mean shift is not run on all input points, no "
 				"output images were created." << std::endl;
-		return cv::Mat1s();
 	}
+	return ret;
 }
 
 #ifdef WITH_SEG_FELZENSZWALB
-std::vector<fams_point> MeanShift::prepare_sp_points(const FAMS &fams,
+std::vector<FAMS::Point> MeanShift::prepare_sp_points(const FAMS &fams,
 								  const seg_felzenszwalb::segmap &map)
 {
 	int D = fams.d_;
-	const fams_point *points = fams.getPoints();
-	std::vector<fams_point> ret;
+	const std::vector<FAMS::Point>& points = fams.getPoints();
+	std::vector<FAMS::Point> ret;
 
 	/* while superpixel vectors are averaged, the initial bandwidth is the
 	   maximum bandwidth that any individual superpixel member would obtain.
@@ -156,10 +159,10 @@ std::vector<fams_point> MeanShift::prepare_sp_points(const FAMS &fams,
 	seg_felzenszwalb::segmap::const_iterator mit;
 	for (mit = map.begin(); mit != map.end(); ++mit) {
 		// initialize new point with zero
-		fams_point p;
-		p.data_ = new unsigned short[D];
-		p.window_ = 0;
-		p.weightdp2_ = 0.;
+		FAMS::Point p;
+		p.data = new std::vector<unsigned short>(D);
+		p.window = 0;
+		p.weightdp2 = 0.;
 
 		int N = (int)mit->size();
 
@@ -168,15 +171,15 @@ std::vector<fams_point> MeanShift::prepare_sp_points(const FAMS &fams,
 		for (int i = 0; i < N; ++i) {
 			int coord = (*mit)[i];
 			for (int d = 0; d < D; ++d)
-				accum[d] += points[coord].data_[d];
-			p.window_ = std::max(p.window_, points[coord].window_);
-			p.weightdp2_ += points[coord].weightdp2_;
+				accum[d] += (*points[coord].data)[d];
+			p.window = std::max(p.window, points[coord].window);
+			p.weightdp2 += points[coord].weightdp2;
 		}
 
 		// divide by N to obtain average
 		for (int d = 0; d < D; ++d)
-			p.data_[d] = accum[d] / N;
-		p.weightdp2_ /= (double)N;
+			(*p.data)[d] = accum[d] / N;
+		p.weightdp2 /= (double)N;
 
 		// add to point set
 		ret.push_back(p);
@@ -187,9 +190,9 @@ std::vector<fams_point> MeanShift::prepare_sp_points(const FAMS &fams,
 	return ret;
 }
 
-cv::Mat1s MeanShift::segmentImage(const FAMS &fams, const cv::Mat1i &lookup)
+cv::Mat1s MeanShift::segmentImageSP(const FAMS &fams, const cv::Mat1i &lookup)
 {
-	const int *modes = fams.getModePerPixel();
+	const std::vector<int> &modes = fams.getModePerPixel();
 	cv::Mat1s ret(fams.h_, fams.w_);
 
 	cv::Mat1i::const_iterator itl = lookup.begin();
@@ -202,10 +205,10 @@ cv::Mat1s MeanShift::segmentImage(const FAMS &fams, const cv::Mat1i &lookup)
 	return ret;
 }
 
-void MeanShift::cleanup_sp_points(std::vector<fams_point> &points)
+void MeanShift::cleanup_sp_points(std::vector<FAMS::Point> &points)
 {
-	for (int i = 0; i < points.size(); ++i)
-		delete[] points[i].data_;
+	for (size_t i = 0; i < points.size(); ++i)
+		delete points[i].data;
 }
 
 #endif
