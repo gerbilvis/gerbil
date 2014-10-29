@@ -49,7 +49,7 @@ std::string ggdb_method_string(const char *clsname, const char *funname);
 #define GGDBG
 
 // Gerbil Gui DeBuG
-#if defined(GGDBG) and defined(GGDBG_MODULE)
+#if defined(GGDBG) && defined(GGDBG_MODULE)
 
 #include <boost/format.hpp>
 
