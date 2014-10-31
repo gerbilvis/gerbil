@@ -280,10 +280,12 @@ multi_img::ptr GdalReader::readFile()
 		img_ptr->meta[multiImgBandIdx] = metaTuples[metaDataIdx].bandDesc;
 	}
 
-	// TODO: *= 4, dann haette man nur gerade 2er Potenzen...
-	// Berechnung mit Schleife ok?
-	double powMax;
-	for (powMax = 256; powMax < maxVal; powMax *= 2);
+	/* if our image data has more than 8 bit (values > 255), then
+	 * determine dynamic range of camera (we assume it is a power of two) */
+	double powMax = 256;
+	for (; powMax < maxVal; powMax *= 2) {
+		// nothing
+	}
 	maxVal = powMax;
 
 	GDALClose(dataset);
