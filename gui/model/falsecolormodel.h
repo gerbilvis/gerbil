@@ -94,7 +94,6 @@ private:
 	/** Allocate and reset all cache entries. */
     void resetCache();
 
-	//typedef QList<payload*> PayloadList;
 	typedef QMap<FalseColoring::Type, FalseColorModelPayload*>
 			FalseColorModelPayloadMap;
 
