@@ -31,7 +31,7 @@ signals:
 public slots:
 	void processVisibilityChanged(bool visible);
 	void processCalculationProgressChanged(FalseColoring::Type coloringType, int percent);
-	void processColoringComputed(FalseColoring::Type coloringType, QPixmap p);
+	void processFalseColoringUpdate(FalseColoring::Type coloringType, QPixmap p);
 	void processComputationCancelled(FalseColoring::Type coloringType);
 
 	/** Inform the FalseColorDock an update of the FalseColoring coloringType is pending.

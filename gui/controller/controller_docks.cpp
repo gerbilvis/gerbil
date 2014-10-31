@@ -155,8 +155,8 @@ void Controller::setupDocks()
 
 	connect(falseColorModel(), SIGNAL(progressChanged(FalseColoring::Type,int)),
 			falseColorDock, SLOT(processCalculationProgressChanged(FalseColoring::Type,int)));
-	connect(falseColorModel(), SIGNAL(coloringComputed(FalseColoring::Type,QPixmap)),
-			falseColorDock, SLOT(processColoringComputed(FalseColoring::Type,QPixmap)));
+	connect(falseColorModel(), SIGNAL(falseColoringUpdate(FalseColoring::Type,QPixmap)),
+			falseColorDock, SLOT(processFalseColoringUpdate(FalseColoring::Type,QPixmap)));
 	connect(falseColorModel(), SIGNAL(computationCancelled(FalseColoring::Type)),
 			falseColorDock, SLOT(processComputationCancelled(FalseColoring::Type)));
 

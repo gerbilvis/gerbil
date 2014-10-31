@@ -194,7 +194,7 @@ protected slots:
 
 	/** Subscribe for false color image updates from FalseColorModel.
 	 *
-	 * A subscriber connected to FalseColorModel::coloringComputed() will
+	 * A subscriber connected to FalseColorModel::falseColoringUpdate() will
 	 * receive the signal for the given false color type at least until it
 	 * un-subscribes.  This does not imply that a non-subscribed object will
 	 * not receive the signal. The subscription just guarantees the
@@ -207,7 +207,7 @@ protected slots:
 	/** Un-subscribe from false color representation from FalseColorModel.
 	 *
 	 * This signals to the controller that the subscriber does not depend on
-	 * the FalseColorModel::coloringComputed() signal for the given false
+	 * the FalseColorModel::falseColoringUpdate() signal for the given false
 	 * color representation anymore. The signal may still be received due to
 	 * other subscribed objects.
 	 */

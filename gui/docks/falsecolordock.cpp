@@ -52,7 +52,7 @@ FalseColorDock::FalseColorDock(QWidget *parent)
 	initUi();
 }
 
-void FalseColorDock::processColoringComputed(FalseColoring::Type coloringType, QPixmap p)
+void FalseColorDock::processFalseColoringUpdate(FalseColoring::Type coloringType, QPixmap p)
 {
 	GGDBGM("enterState():"<<endl);
 	GGDBGM("receiving coloring " << coloringType << endl);
