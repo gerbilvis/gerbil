@@ -1,14 +1,17 @@
 #include "commandrunner.h"
 
-//#include "gerbil_gui_debug.h"
+#define GGDBG_MODULE
+#include "gerbil_gui_debug.h"
 
 CommandRunner::CommandRunner()
 	: cmd(0), abort(false), progress(0.f), percent(0) {}
 
 CommandRunner::~CommandRunner()
 {
-	//GGDBGM("CommandRunner object " << this << endl);
-	delete cmd;
+	GGDBGM("CommandRunner object " << this << endl);
+	if (cmd) {
+		delete cmd;
+	}
 }
 
 bool CommandRunner::update(float report, bool incremental)
