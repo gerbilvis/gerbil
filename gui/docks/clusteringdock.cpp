@@ -57,6 +57,7 @@ void ClusteringDock::startUnsupervisedSeg()
 	using namespace seg_meanshift;
 
 	int method = usMethodBox->itemData(usMethodBox->currentIndex()).value<int>();
+	// Command will be deleted by CommandRunner on destruction.
 	shell::Command *cmd;
 	if (method == 0 || method == 3) { // Meanshift
 		cmd = new MeanShiftShell();

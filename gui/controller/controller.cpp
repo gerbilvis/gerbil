@@ -98,6 +98,10 @@ Controller::Controller(const std::string &filename, bool limited_mode,
 	connect(illumm, SIGNAL(newIlluminantApplied(QVector<multi_img::Value>)),
 			dvc, SIGNAL(newIlluminantApplied(QVector<multi_img::Value>)));
 
+	connect(cm, SIGNAL(subscribeRepresentation(QObject*,representation::t)),
+			this, SLOT(subscribeRepresentation(QObject*,representation::t)));
+	connect(cm, SIGNAL(unsubscribeRepresentation(QObject*,representation::t)),
+			this, SLOT(unsubscribeRepresentation(QObject*,representation::t)));
 	connect(im, SIGNAL(imageUpdate(representation::t,SharedMultiImgPtr,bool)),
 			cm, SLOT(processImageUpdate(representation::t,SharedMultiImgPtr,bool)));
 	connect(this, SIGNAL(preROISpawn(cv::Rect,cv::Rect,std::vector<cv::Rect>,std::vector<cv::Rect>,bool)),

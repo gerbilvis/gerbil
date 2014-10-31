@@ -205,7 +205,7 @@ void Controller::setupDocks()
 			clusteringDock, SLOT(processSegmentationCompleted()));
 	connect(clusteringDock,
 			SIGNAL(segmentationRequested(shell::Command*,int,bool)),
-			cm, SLOT(startSegmentation(shell::Command*,int,bool)));
+			cm, SLOT(requestSegmentation(shell::Command*,int,bool)));
 	connect(clusteringDock, SIGNAL(cancelSegmentationRequested()),
 			cm, SLOT(cancel()));
 	connect(cm, SIGNAL(setLabelsRequested(cv::Mat1s)),
