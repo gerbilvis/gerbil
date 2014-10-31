@@ -143,7 +143,7 @@ void ClusteringModel::startSegmentation()
 
 void ClusteringModel::cancel()
 {
-	commandRunner->terminate();
+	abortCommandRunner();
 	request = boost::shared_ptr<Request>();
 }
 
@@ -151,6 +151,9 @@ void ClusteringModel::processImageUpdate(representation::t repr,
 										 SharedMultiImgPtr image,
 										 bool duplicate)
 {
+	// FIXME, see below
+	bool unsafe = State::Subscribed != state;
+
 	if (State::Idle == state) {
 		GGDBGM("we are in Idle state" << endl);
 		return;
@@ -182,6 +185,24 @@ void ClusteringModel::processImageUpdate(representation::t repr,
 		emit progressChanged(100);
 		emit segmentationCompleted();
 	}
+
+	// FIXME need to fix Request containing Command pointer...
+	if (unsafe) {
+		// We can't start the same Command object more than once!
+		GGDBGM("we are non-Idle, and would start segmentation right away "
+			   "with new data, but the implementation is still too buggy "
+			   "to re-run an already started jobs. Sorry!" << endl);
+		request = boost::shared_ptr<Request>();
+		state = State::Idle;
+		GGDBGM("unsubscribing representations" << endl);
+		emit unsubscribeRepresentation(this, representation::IMG);
+		#ifdef WITH_IMGNORM
+		emit unsubscribeRepresentation(this, representation::NORM);
+		#endif
+		emit unsubscribeRepresentation(this, representation::GRAD);
+		return;
+	}
+
 	startSegmentation();
 }
 
