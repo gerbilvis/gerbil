@@ -14,16 +14,11 @@ namespace som { // forward declaration for executeSOM
 }
 #endif
 
-/* YES, they do have a random, funny macro of that name in wingdi.h. Fuckers! */
-#ifdef RGB
-#undef RGB
-#endif
-
 namespace rgb {
 
-class RGB : public shell::Command {
+class RGBDisplay : public shell::Command {
 public:
-    RGB();
+    RGBDisplay();
 	int execute();
 #ifdef WITH_BOOST
 	std::map<std::string, boost::any>

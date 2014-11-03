@@ -16,7 +16,7 @@ void FalseColorModelPayload::run()
 		input["multi_img"] = grad;
 	}
 	runner->input = input;
-	rgb::RGB *cmd = new rgb::RGB(); // object owned by CommandRunner
+	rgb::RGBDisplay *cmd = new rgb::RGBDisplay(); // object owned by CommandRunner
 
 	switch (coloringType)
 	{

@@ -32,7 +32,7 @@
 
 namespace rgb {
 
-RGB::RGB()
+RGBDisplay::RGBDisplay()
  : Command(
 		"rgb",
 		config,
@@ -40,7 +40,7 @@ RGB::RGB()
 		"johannes.jordan@informatik.uni-erlangen.de")
 {}
 
-int RGB::execute()
+int RGBDisplay::execute()
 {
 	multi_img::ptr src = imginput::ImgInput(config.input).execute();
 	if (src->empty())
@@ -60,7 +60,7 @@ int RGB::execute()
 }
 
 #ifdef WITH_BOOST
-std::map<std::string, boost::any> RGB::execute(
+std::map<std::string, boost::any> RGBDisplay::execute(
 		std::map<std::string, boost::any> &input, ProgressObserver *po)
 {
 	// BUG BUG BUG
@@ -91,7 +91,7 @@ std::map<std::string, boost::any> RGB::execute(
 }
 #endif
 
-cv::Mat3f RGB::execute(const multi_img& src, ProgressObserver *po)
+cv::Mat3f RGBDisplay::execute(const multi_img& src, ProgressObserver *po)
 {
 	cv::Mat3f bgr;
 
@@ -116,7 +116,7 @@ cv::Mat3f RGB::execute(const multi_img& src, ProgressObserver *po)
 	return bgr;
 }
 
-cv::Mat3f RGB::executePCA(const multi_img& src, ProgressObserver *po)
+cv::Mat3f RGBDisplay::executePCA(const multi_img& src, ProgressObserver *po)
 {
 	// cover cases of lt 3 channels
 	unsigned int components = std::min((size_t)3, src.size());
@@ -206,7 +206,7 @@ private:
 	ProgressObserver *po;
 };
 
-cv::Mat3f RGB::executeSOM(const multi_img &img, ProgressObserver *po,
+cv::Mat3f RGBDisplay::executeSOM(const multi_img &img, ProgressObserver *po,
 						  boost::shared_ptr<SOMClosestN> lookup)
 {
 	typedef cv::Mat_<cv::Vec<GenSOM::value_type, 3> > Mat3;
@@ -252,12 +252,12 @@ cv::Mat3f RGB::executeSOM(const multi_img &img, ProgressObserver *po,
 }
 #endif // WITH_SOM
 
-void RGB::printShortHelp() const {
+void RGBDisplay::printShortHelp() const {
 	std::cout << "RGB image creation (true-color or false-color)" << std::endl;
 }
 
 
-void RGB::printHelp() const {
+void RGBDisplay::printHelp() const {
 	std::cout << "RGB image creation (true-color or false-color)" << std::endl;
 	std::cout << std::endl;
 	std::cout << "XYZ does a true-color image creation using a standard white balancing.\n"
