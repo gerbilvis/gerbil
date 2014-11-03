@@ -51,6 +51,11 @@
      <property name="text">
       <string>&amp;Browse ...</string>
      </property>
+     <property name="icon">
+      <iconset theme="folder-open">
+       <normaloff/>
+      </iconset>
+     </property>
     </widget>
    </item>
    <item row="2" column="0">
