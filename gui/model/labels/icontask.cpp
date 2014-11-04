@@ -59,7 +59,7 @@ public:
 					clamp(ctx.iconSize.height(),
 						  IconTask::IconSizeMin, IconTask::IconSizeMax));
 
-		// inner size = icon size without border
+		// inner size = icon size without border (fixed to 1px)
 		innerSize = QSize(iconSizecv.width - 2,
 						  iconSizecv.height - 2);
 
@@ -146,12 +146,11 @@ public:
 			// convert the result to a QImage
 			QImage qimage = Mat2QImage(icon);
 
-			// draw a border (alternative: the icon view could do this)
+			/* draw a border (alternative: the icon view could do this) */
 			QPainter p(&qimage);
 			QPen pen(color);
-			pen.setWidthF(scale);
-			pen.setMiterLimit(scale);
-			pen.setJoinStyle(Qt::MiterJoin);
+			// ensure border visibility, fixed to 1px
+			pen.setWidthF(1.f);
 			p.setPen(pen);
 			p.drawRect(brect);
 
