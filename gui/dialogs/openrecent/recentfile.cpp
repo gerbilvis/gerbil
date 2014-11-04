@@ -141,7 +141,7 @@ void RecentFile::appendToRecentFilesList(const QString &fileName,
 	QFileInfo fi(fileName);
 	if ( ! fi.isFile() || ! fi.exists()) {
 		std::cerr << "RecentFile::appendToRecentFilesList(): "
-				  << "refusing to append non-existant file "
+				  << "refusing to append non-existent file "
 				  << fileName.toStdString()
 				  << std::endl;
 		return;

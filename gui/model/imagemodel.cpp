@@ -73,18 +73,20 @@ cv::Rect ImageModel::getFullImageRect()
 	return dims;
 }
 
-cv::Rect ImageModel::loadImage(const std::string &filename)
+cv::Rect ImageModel::loadImage(const QString &filename)
 {
+	// do a more complicated transformation to preserve non-ascii filenames
+	std::string fn = filename.toLocal8Bit().constData();
 	if (limitedMode) {
 		// create offloaded image
 		std::pair<std::vector<std::string>, std::vector<multi_img::BandDesc> >
-				filelist = multi_img::parse_filelist(filename);
+				filelist = multi_img::parse_filelist(fn);
 		image_lim = boost::make_shared<SharedMultiImgBase>
 				(new multi_img_offloaded(filelist.first, filelist.second));
 	} else {
 		// create using ImgInput
 		imginput::ImgInputConfig inputConfig;
-		inputConfig.file = filename;
+		inputConfig.file = fn;
 		multi_img::ptr img = imginput::ImgInput(inputConfig).execute();
 		image_lim = boost::make_shared<SharedMultiImgBase>(img);
 	}
@@ -95,8 +97,7 @@ cv::Rect ImageModel::loadImage(const std::string &filename)
 	} else {
 		// Update recent files list.
 		QPixmap pvpm = fullRgb();
-		RecentFile::appendToRecentFilesList(QString::fromStdString(filename),
-											pvpm);
+		RecentFile::appendToRecentFilesList(filename, pvpm);
 		return cv::Rect(0, 0, i.width, i.height);
 	}
 }

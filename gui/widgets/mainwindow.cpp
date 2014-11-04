@@ -39,10 +39,10 @@ MainWindow::MainWindow()
 	setupUi(this);
 }
 
-void MainWindow::initUI(std::string filename)
+void MainWindow::initUI(const QString &filename)
 {
 	/* set title */
-	QFileInfo fi(QString::fromStdString(filename));
+	QFileInfo fi(filename);
 	setWindowTitle(QString("Gerbil - %1").arg(fi.completeBaseName()));
 }
 

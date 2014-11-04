@@ -296,7 +296,7 @@ int main(int argc, char **argv)
 	}
 
 	// get input file name
-	std::string filename;
+	QString filename;
 	if (argc < 2) {
 #ifdef __unix__
 		std::cerr << "Usage: " << argv[0] << " <filename> [labeling file]\n\n"
@@ -306,21 +306,23 @@ int main(int argc, char **argv)
 		OpenRecent *openRecentDlg = new OpenRecent();
 		openRecentDlg->exec();
 		// empty string if cancelled
-		filename = openRecentDlg->getSelectedFile().toStdString();
+		filename = openRecentDlg->getSelectedFile();
 		openRecentDlg->deleteLater();
 	} else {
-		filename = argv[1];
+		filename = QString::fromLocal8Bit(argv[1]);
 	}
 
-	if (filename.empty()) {
+	if (filename.isEmpty()) {
 		std::cerr << "No input file given." << std::endl;
 		// FIXME: Enum for return types.
 		return 4;
 	}
 
+	// do a more complicated transformation to preserve non-ascii filenames
+	std::string fn = filename.toLocal8Bit().constData();
 	// determine limited mode in a hackish way
 	std::pair<std::vector<std::string>, std::vector<multi_img::BandDesc> >
-			filelist = multi_img::parse_filelist(filename);
+			filelist = multi_img::parse_filelist(fn);
 	bool limited_mode = determine_limited(filelist);
 
 	// get optional labeling filename

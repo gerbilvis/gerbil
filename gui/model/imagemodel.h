@@ -108,7 +108,7 @@ public:
 	void invalidateROI();
 
 	/** @return dimensions of the image as a rectangle */
-	cv::Rect loadImage(const std::string &filename);
+	cv::Rect loadImage(const QString &filename);
 
 	/** @arg bands number of bands needed (only effective for IMG type) */
 	void spawn(representation::t type, const cv::Rect& roi, int bands = -1);

@@ -19,7 +19,7 @@
 #include <boost/ref.hpp>
 #include <cstdlib> // for exit()
 
-Controller::Controller(const std::string &filename, bool limited_mode,
+Controller::Controller(const QString &filename, bool limited_mode,
 	const QString &labelfile)
 	// initialize all pointers so we don't access them too early w/o notice
 	: im(0), lm(0), fm(0), illumm(0), gsm(0),

@@ -44,7 +44,7 @@ class Controller : public QObject
 {
 	Q_OBJECT
 public:
-	explicit Controller(const std::string &filename, bool limited_mode,
+	explicit Controller(const QString &filename, bool limited_mode,
 						const QString &labelfile);
 	~Controller();
 
