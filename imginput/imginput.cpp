@@ -9,12 +9,14 @@ namespace imginput {
 
 multi_img::ptr ImgInput::execute()
 {
-	if (config.file.empty())
-	{
+	if (config.file.empty()) {
 		std::cerr << "No input file specified. Try -H to see available options."
-		          << std::endl;
+				  << std::endl;
 		return multi_img::ptr(new multi_img()); // empty image
 	}
+	for (int i = 0; i < config.file.size(); ++i)
+		std::cerr << (int)config.file[i] << " ";
+	std::cerr << std::endl;
 
 	bool roiChanged = false;
 	bool bandsCropped = false;
@@ -26,12 +28,12 @@ multi_img::ptr ImgInput::execute()
 #endif
 	
 	if (img_ptr && !img_ptr->empty()) {
-	        // GdalReader was used successfully, applied roiChanges & bandCropping
+		// GdalReader was used successfully, applied roiChanges & bandCropping
 		roiChanged = true;
 		bandsCropped = true;
 	} else {
-	    // GDAL failed, try internal method
-	    img_ptr = multi_img::ptr(new multi_img(config.file));
+		// GDAL failed, try internal method
+		img_ptr = multi_img::ptr(new multi_img(config.file));
 	}
 
 	// return empty image if both failed
