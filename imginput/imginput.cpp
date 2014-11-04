@@ -14,9 +14,6 @@ multi_img::ptr ImgInput::execute()
 				  << std::endl;
 		return multi_img::ptr(new multi_img()); // empty image
 	}
-	for (int i = 0; i < config.file.size(); ++i)
-		std::cerr << (int)config.file[i] << " ";
-	std::cerr << std::endl;
 
 	bool roiChanged = false;
 	bool bandsCropped = false;
