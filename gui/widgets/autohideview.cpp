@@ -74,30 +74,40 @@ void AutohideView::fitContentRect(QRect rect)
 		if (state == AutohideWidget::STAY_OUT)
 			continue;
 
+		int offset; // offset of content to the relevant border
 		bool keepIn;
 		switch (location) {
 		case AutohideWidget::LEFT:
-			keepIn = (rect.left() > w->width());
+			offset = rect.left();
+			keepIn = (offset > w->width());
 			break;
 		case AutohideWidget::RIGHT:
-			keepIn = (rect.right() < width() - w->width());
+			offset = width() - rect.right();
+			keepIn = (offset > w->width());
 			break;
 		case AutohideWidget::TOP:
-			keepIn = (rect.top() > w->height());
+			offset = rect.top();
+			keepIn = (offset > w->height());
 			break;
 		case AutohideWidget::BOTTOM:
-			keepIn = (rect.bottom() < height() - w->height());
+			offset = height() - rect.bottom();
+			keepIn = (offset > w->height());
 			break;
 		default:
 			throw std::runtime_error("bad location in "
 									 "AutohideView::fitContentRect()");
 		}
 
+		// whole widget fits in whitespace
 		if (keepIn) {
 			w->scrollIn(true);  // enforce staying in
 		} else if (state == AutohideWidget::STAY_IN) {
 			w->scrollOut(false); // revert previous enforcement
 		}
+
+		// trigger scrollIn from widgets proximity, but not from inside content
+		w->setTriggerOffset(std::min(10,
+		                             offset - AutohideWidget::OutOffset));
 	}
 }
 
@@ -118,7 +128,7 @@ void AutohideView::mouseMoveEvent(QMouseEvent *event)
 {
 	if (!suppressScroll) {
 		foreach (AutohideWidget* w, widgets)
-			w->triggerScrolling(event->pos(), 10);
+			w->triggerScrolling(event->pos());
 	}
 
 	QGraphicsView::mouseMoveEvent(event);

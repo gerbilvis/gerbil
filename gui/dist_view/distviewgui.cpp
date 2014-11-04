@@ -41,6 +41,8 @@ void DistViewGUI::initVC(representation::t type)
 	uivc = new Ui::ViewportControl();
 	uivc->setupUi(vc);
 	ui->gv->addWidget(AutohideWidget::LEFT, vc);
+	// small hack to enable proximity trigger for said autohide widget
+	ui->gv->fitContentRect(QRect(20, 0, 0, 0)); //!! change when adding widgets!
 
 	/* we are ready to connect signals/slots */
 

@@ -40,7 +40,7 @@ public:
 	void reposition();
 
 	/* decide if scrolling needed based on mouse position */
-	void triggerScrolling(QPoint pos, int offset = 0);
+	void triggerScrolling(QPoint pos);
 
 	/* Call this instead of QWidget::adjustSize()
 	 * Whenever the widget gets a new size, we also have to reset its position.
@@ -51,6 +51,13 @@ public:
 	border getLocation() const {
 		return location;
 	}
+
+	int setTriggerOffset(int offset) {
+		triggerOffset = offset;
+	}
+
+	// how many pixels far from the widget a scroll-in is triggered
+	int triggerOffset;
 
 	// how many pixels the widget lurks into the view while scrolled out
 	static const int OutOffset = 10;

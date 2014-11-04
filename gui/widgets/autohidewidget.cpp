@@ -10,7 +10,7 @@
 ENUM_MAGIC_CLS(AutohideWidget, border)
 
 AutohideWidget::AutohideWidget()
-	: location(LEFT), state(SCROLL_OUT), show_indicator(true)
+	: location(LEFT), state(SCROLL_OUT), show_indicator(true), triggerOffset(0)
 {
 	QString style = "AutohideWidget { background: rgba(63, 63, 63, 191); } ";
 	// warning: background: transparent is important, otherwise the stylesheet
@@ -84,7 +84,7 @@ void AutohideWidget::reposition()
 	repaint();
 }
 
-void AutohideWidget::triggerScrolling(QPoint pos, int offset)
+void AutohideWidget::triggerScrolling(QPoint pos)
 {
 	// invalid position means we lost the mouse
 	if (pos.x() < 0) {
@@ -97,16 +97,16 @@ void AutohideWidget::triggerScrolling(QPoint pos, int offset)
 	bool proximity;
 	switch (location) {
 	case LEFT:
-		proximity = (pos.x() < ownpos.x() + width() + offset);
+		proximity = (pos.x() < ownpos.x() + width() + triggerOffset);
 		break;
 	case RIGHT:
-		proximity = (pos.x() > ownpos.x() - offset);
+		proximity = (pos.x() > ownpos.x() - triggerOffset);
 		break;
 	case TOP:
-		proximity = (pos.y() < ownpos.y() + height() + offset);
+		proximity = (pos.y() < ownpos.y() + height() + triggerOffset);
 		break;
 	case BOTTOM:
-		proximity = (pos.y() > ownpos.y() - offset);
+		proximity = (pos.y() > ownpos.y() - triggerOffset);
 		break;
 	}
 	if (state == SCROLL_IN && !proximity)
