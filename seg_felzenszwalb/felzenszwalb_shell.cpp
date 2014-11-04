@@ -65,13 +65,13 @@ int FelzenszwalbShell::execute() {
 
 void FelzenszwalbShell::printShortHelp() const {
 	std::cout << "Superpixel Segmentation by Felzenszwalb, Huttenlocher"
-				 " on multispectral images" << std::endl;
+			  << std::endl;
 }
 
 
 void FelzenszwalbShell::printHelp() const {
 	std::cout << "Superpixel Segmentation by Felzenszwalb, Huttenlocher"
-				 " on multispectral images" << std::endl;
+			  << std::endl;
 	std::cout << std::endl;
 	std::cout << "Please refer to Felzenszwalb, Huttenlocher: Efficient Graph-Based Image\n"
 				 "Segmentation. International Journal of Computer Vision." << std::endl;

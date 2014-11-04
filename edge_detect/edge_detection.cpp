@@ -151,12 +151,12 @@ int EdgeDetection::execute()
 
 void EdgeDetection::printShortHelp() const
 {
-	std::cout << "Edge detection in multispectral images using SOM." << std::endl;
+	std::cout << "Edge detection using a Self-Organizing Map (SOM)" << std::endl;
 }
 
 void EdgeDetection::printHelp() const
 {
-	std::cout << "Edge detection in multispectral images using SOM." << std::endl;
+	std::cout << "Edge detection using a Self-Organizing Map (SOM)" << std::endl;
 	std::cout << std::endl;
 	std::cout << "Please read \"Jordan, J., Angelopoulou E.: Edge Detection in Multispectral\n"
 				 "Images Using the N-Dimensional Self-Organizing Map.\" (ICIP 2011)"
