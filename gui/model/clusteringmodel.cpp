@@ -46,8 +46,13 @@ void ClusteringModel::requestSegmentation(
 		// We are not subscribed for image data yet. Subscribe and wait.
 		state = State::Subscribed;
 		if (!gradient) {
+#ifdef WITH_IMGNORM
+			GGDBGM("subscribing for " << representation::NORM << endl);
+			emit subscribeRepresentation(this, representation::NORM);
+#else
 			GGDBGM("subscribing for " << representation::IMG << endl);
 			emit subscribeRepresentation(this, representation::IMG);
+#endif
 		} else {
 			// This will be the good behaviour
 //			GGDBGM("subscribing for " << representation::GRAD << endl);
