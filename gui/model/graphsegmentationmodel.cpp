@@ -16,6 +16,7 @@ GraphSegmentationModel::~GraphSegmentationModel() { }
 void GraphSegmentationModel::setMultiImage(representation::t type,
 										   SharedMultiImgPtr image)
 {
+	/* FIXME: GRAD is not always available! */
 	if (type == representation::IMG || type == representation::GRAD)
 		map.insert(type, image);
 	else // tryed setting an image of an unsupported representation type

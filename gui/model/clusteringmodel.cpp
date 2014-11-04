@@ -167,7 +167,7 @@ void ClusteringModel::processImageUpdate(representation::t repr,
 	}
 
 #ifdef WITH_IMGNORM // HACK: we prefer the normed version if we have it.
-	if (type != representation::NORM)
+	if (repr != representation::NORM)
 #else
 	if (repr != representation::IMG)
 #endif
