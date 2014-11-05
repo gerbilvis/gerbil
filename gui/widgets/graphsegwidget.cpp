@@ -42,7 +42,7 @@ void GraphSegWidget::initUi(AutohideView *view)
 	connect(seedModeButton, SIGNAL(toggled(bool)),
 			loadSeedsButton, SLOT(setHidden(bool)));
 	connect(seedModeButton, SIGNAL(toggled(bool)),
-			seedModeWidget, SLOT(setShown(bool)));
+			seedModeWidget, SLOT(setVisible(bool)));
 
 	connect(clearSeedsButton, SIGNAL(clicked()),
 			this, SIGNAL(requestClearSeeds()));

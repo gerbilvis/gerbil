@@ -94,7 +94,7 @@ void AutohideWidget::triggerScrolling(QPoint pos)
 	}
 
 	QPointF ownpos = proxy->pos();
-	bool proximity;
+	bool proximity = false;
 	switch (location) {
 	case LEFT:
 		proximity = (pos.x() < ownpos.x() + width() + triggerOffset);
@@ -183,9 +183,9 @@ void AutohideWidget::timerEvent(QTimerEvent *e)
 	// position in the scene (as we have no parent)
 	QPointF pos = proxy->pos();
 	// position of the *outer* edge relative to scene border
-	qreal relpos;
+	qreal relpos = 0.;
 	// distance between outer and inner edge
-	qreal offset;
+	qreal offset = 0.;
 	switch (location) {
 	case LEFT:
 		offset = width();

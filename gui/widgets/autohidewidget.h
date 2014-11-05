@@ -52,7 +52,7 @@ public:
 		return location;
 	}
 
-	int setTriggerOffset(int offset) {
+	void setTriggerOffset(int offset) {
 		triggerOffset = offset;
 	}
 
