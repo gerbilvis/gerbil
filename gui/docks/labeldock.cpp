@@ -41,7 +41,7 @@ void LabelDock::init()
 	mainUiWidgetTmp->layout()->setSpacing(0);
 	ui->labelView->setFrameStyle(QFrame::NoFrame);
 	mainUiWidget = ahscene->addWidget(mainUiWidgetTmp);
-	mainUiWidget->translate(-AutohideWidget::OutOffset, 0);
+	mainUiWidget->moveBy(-AutohideWidget::OutOffset, 0);
 
 	ui->labelView->setModel(labelModel);
 
