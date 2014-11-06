@@ -1,5 +1,8 @@
 #include "gerbil_ostream_ops.h"
 
+#ifdef WITH_QT
+#ifdef WITH_OPENCV
+
 #include <ostream>
 #include <QSize>
 #include <QPoint>
@@ -19,3 +22,6 @@ std::ostream &operator<<(std::ostream& os, const cv::Rect& r)
 	os << boost::format("(%1%,%2%)+%3%+%4%") % r.x % r.y % r.width % r.height;
 	return os;
 }
+
+#endif
+#endif
