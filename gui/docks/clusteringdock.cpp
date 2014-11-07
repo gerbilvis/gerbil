@@ -2,6 +2,7 @@
 
 #include "../commandrunner.h"
 #include "../gerbil_gui_debug.h"
+#include <model/clustering/clusteringmethod.h>
 
 // vole modules
 #include <meanshift.h>
@@ -19,9 +20,9 @@ ClusteringDock::ClusteringDock(QWidget *parent) :
 #ifdef WITH_SEG_MEANSHIFT
 void ClusteringDock::initUi()
 {
-	usMethodBox->addItem("Accurate (FAMS)", 0);
-	usMethodBox->addItem("Fast (PSPMS)", 3);
-	usMethodBox->addItem("Fastest (FSPMS)", 4);
+	usMethodBox->addItem("Accurate (FAMS)", ClusteringMethod::FAMS);
+	usMethodBox->addItem("Fast (PSPMS)",    ClusteringMethod::PSPMS);
+	usMethodBox->addItem("Fastest (FSPMS)", ClusteringMethod::FSPMS);
 
 	// don't show progress widget at startup
 	usProgressWidget->hide();
@@ -43,7 +44,7 @@ void ClusteringDock::initUi()
 
 void ClusteringDock::unsupervisedSegCancelled() {
 	usCancelButton->setDisabled(true);
-	usCancelButton->setText("Please wait…");
+	usCancelButton->setText("Please wait...");
 	/// runner->terminate() will be called by the Cancel button
 }
 
@@ -51,17 +52,20 @@ void ClusteringDock::startUnsupervisedSeg()
 {
 	using namespace seg_meanshift;
 
-	int method = usMethodBox->itemData(usMethodBox->currentIndex()).value<int>();
+	ClusteringMethod::t method =
+			usMethodBox->itemData(usMethodBox->currentIndex())
+			.value<ClusteringMethod::t>();
 	// Command will be deleted by CommandRunner on destruction.
 	shell::Command *cmd;
 	const bool onGradient = usGradientCheckBox->isChecked();
 
-	if (method == 0 || method == 3) { // Meanshift
+	// Meanshift
+	if (ClusteringMethod::FAMS == method || ClusteringMethod::PSPMS == method) {
 		cmd = new MeanShiftShell();
 		MeanShiftConfig &config = static_cast<MeanShiftShell*>(cmd)->config;
 
 		// fixed settings
-		if (method == 3) {
+		if (ClusteringMethod::PSPMS == method) {
 			/* if combination of gradient and PSPMS requested, we assume that
 			   the user wants our best-working method in paper (sp_withGrad)
 			   TODO: most of this is better done in model, as it is internals
@@ -78,12 +82,12 @@ void ClusteringDock::startUnsupervisedSeg()
 		}
 
 		config.use_LSH = usLshCheckBox->isChecked();
-	} else if (method == 4) { // FSPMS
+	} else if (ClusteringMethod::FSPMS == method) { // FSPMS
 		cmd = new MeanShiftSP();
 		MeanShiftConfig &config = static_cast<MeanShiftSP*>(cmd)->config;
 
 		// fixed settings
-		/* see method == 3
+		/* see method == ClusteringMethod::PSPMS
 		 */
 		config.sp_withGrad = onGradient;
 		config.superpixel.eqhist=1;
