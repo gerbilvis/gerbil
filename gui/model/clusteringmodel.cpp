@@ -46,13 +46,8 @@ void ClusteringModel::requestSegmentation(
 		// We are not subscribed for image data yet. Subscribe and wait.
 		state = State::Subscribed;
 		if (!gradient) {
-#ifdef WITH_IMGNORM
 			GGDBGM("subscribing for " << representation::NORM << endl);
 			emit subscribeRepresentation(this, representation::NORM);
-#else
-			GGDBGM("subscribing for " << representation::IMG << endl);
-			emit subscribeRepresentation(this, representation::IMG);
-#endif
 		} else {
 			// This will be the good behaviour
 //			GGDBGM("subscribing for " << representation::GRAD << endl);
@@ -160,7 +155,9 @@ void ClusteringModel::processImageUpdate(representation::t repr,
 	bool unsafe = State::Subscribed != state;
 
 	if (State::Idle == state) {
-		GGDBGM("we are in Idle state" << endl);
+		if (!duplicate) {
+			GGDBGM("we are in Idle state" << endl);
+		}
 		return;
 	}
 
@@ -171,11 +168,11 @@ void ClusteringModel::processImageUpdate(representation::t repr,
 		return;
 	}
 
-#ifdef WITH_IMGNORM // HACK: we prefer the normed version if we have it.
+//#ifdef WITH_IMGNORM // HACK: we prefer the normed version if we have it.
 	if (repr != representation::NORM)
-#else
-	if (repr != representation::IMG)
-#endif
+//#else
+//	if (repr != representation::IMG)
+//#endif
 	{
 		GGDBGM("we are not interested in " << repr <<  endl);
 		return;
@@ -201,9 +198,9 @@ void ClusteringModel::processImageUpdate(representation::t repr,
 		state = State::Idle;
 		GGDBGM("unsubscribing representations" << endl);
 		emit unsubscribeRepresentation(this, representation::IMG);
-		#ifdef WITH_IMGNORM
+		//#ifdef WITH_IMGNORM
 		emit unsubscribeRepresentation(this, representation::NORM);
-		#endif
+		//#endif
 		emit unsubscribeRepresentation(this, representation::GRAD);
 		return;
 	}
@@ -220,9 +217,9 @@ void ClusteringModel::processSegmentationCompleted(
 	// We are back to Idle, just unsubscribe everything.
 	GGDBGM("unsubscribing representations" << endl);
 	emit unsubscribeRepresentation(this, representation::IMG);
-	#ifdef WITH_IMGNORM
+	//#ifdef WITH_IMGNORM
 	emit unsubscribeRepresentation(this, representation::NORM);
-	#endif
+	//#endif
 	emit unsubscribeRepresentation(this, representation::GRAD);
 	if (output.count("labels")) {
 		boost::shared_ptr<cv::Mat1s> labelMask =

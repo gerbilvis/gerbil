@@ -53,22 +53,22 @@ DistViewController::~DistViewController()
 
 void DistViewController::init()
 {
-	// start with IMG, hide IMGPCA, GRADPCA at the beginning
+	// After startup show IMG and GRAD. Hide NORM, IMGPCA and GRADPCA at the
+	// beginning.
 	// NOTE that we did not connect signals yet! This is actually good as we
 	// will not get stray signals before the content is ready.
 	activeView = representation::IMG;
 	payloadMap[activeView]->gui.setActive();
-#ifdef WITH_IMGPCA
+	payloadMap[representation::NORM]->gui.toggleFold();
 	payloadMap[representation::IMGPCA]->gui.toggleFold();
-#endif /* WITH_IMGPCA */
-#ifdef WITH_GRADPCA
-	map[representation::GRADPCA]->gui.toggleFold();
-#endif /* WITH_GRADPCA */
+	payloadMap[representation::GRADPCA]->gui.toggleFold();
 
 	connect(ctrl->imageModel(), SIGNAL(roiRectChanged(cv::Rect)),
 			this, SLOT(processROIChage(cv::Rect)));
-	connect(ctrl->imageModel(), SIGNAL(imageUpdate(representation::t,SharedMultiImgPtr,bool)),
-			this, SLOT(processImageUpdate(representation::t,SharedMultiImgPtr,bool)));
+	connect(ctrl->imageModel(),
+			SIGNAL(imageUpdate(representation::t,SharedMultiImgPtr,bool)),
+			this,
+			SLOT(processImageUpdate(representation::t,SharedMultiImgPtr,bool)));
 
 
 	foreach (payload *p, payloadMap) {

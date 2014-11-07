@@ -130,10 +130,9 @@ void ImageModelPayload::processImageDataTaskFinished(bool success)
 
 void ImageModel::spawn(representation::t type, const cv::Rect &newROI, int bands)
 {
-	// store previous states
-	// FIXME altmann: this a bit of a HACK. However there is no possibility to spawn a
-	// ROI without spawning it for IMG, is there?
-	// FIXME: well, there actually is now, but there is a hardcoded IMG subscription.
+	// Store previous state.
+	// IMG is guaranteed to be self-subscribed by controller and thus we always
+	// get this update when a new ROI is spawned.
 	if (representation::IMG == type) {
 		nBandsOld = nBands;
 		oldRoi = roi;
@@ -141,22 +140,15 @@ void ImageModel::spawn(representation::t type, const cv::Rect &newROI, int bands
 
 	GGDBGM(type << " oldRoi "<< oldRoi << " newROI " << newROI << endl);
 
-	// one ROI for all, effectively
+	// one ROI for all representations, effectively
 	roi = newROI;
 
 	// shortcuts for convenience
 	SharedMultiImgPtr image = map[representation::IMG]->image;
-#ifdef WITH_IMGNORM
 	SharedMultiImgPtr imagenorm = map[representation::NORM]->image;
-#endif /* WITH_IMGPCA */
 	SharedMultiImgPtr gradient = map[representation::GRAD]->image;
-// for macro defs see representation.h
-#ifdef WITH_IMGPCA
 	SharedMultiImgPtr imagepca = map[representation::IMGPCA]->image;
-#endif /* WITH_IMGPCA */
-#ifdef WITH_GRADPCA
 	SharedMultiImgPtr gradpca = map[representation::GRADPCA]->image;
-#endif /* WITH_GRADPCA */
 
 	// scoping and spectral rescaling done for IMG
 	if (type == representation::IMG) {
@@ -183,17 +175,14 @@ void ImageModel::spawn(representation::t type, const cv::Rect &newROI, int bands
 		BackgroundTaskPtr taskRescale(new RescaleTbb(
 			scoped_image, image, bands));
 		queue.push(taskRescale);
-	}
+	} 
 
-#ifdef WITH_IMGNORM
-	if (type == representation::NORM) {
+   // NORM / GRAD
+   if (type == representation::NORM) {
 		BackgroundTaskPtr taskNorm(new NormL2Tbb(
 			image, imagenorm));
 		queue.push(taskNorm);
-	}
-#endif
-
-	if (type == representation::GRAD) {
+	} else  if (type == representation::GRAD) {
 		if (haveCvCudaGpu()  && USE_CUDA_GRADIENT) {
 			BackgroundTaskPtr taskGradient(new GradientCuda(
 				image, gradient));
@@ -229,23 +218,18 @@ void ImageModel::spawn(representation::t type, const cv::Rect &newROI, int bands
 				target, range, mode, isGRAD, min, max, true));
 			queue.push(taskNormRange);
 		}
-	}
-
-#ifdef WITH_IMGPCA
-	if (type == representation::IMGPCA && imagepca.get()) {
+	} 
+	
+	// IMGPCA / GRADPCA
+    if (type == representation::IMGPCA && imagepca.get()) {
 		BackgroundTaskPtr taskPca(new PcaTbb(
 			image, imagepca, 10));
 		queue.push(taskPca);
-	}
-#endif /* WITH_IMGPCA */
-
-#ifdef WITH_GRADPCA
-	if (type == representation::GRADPCA && gradpca.get()) {
+	} else if (type == representation::GRADPCA && gradpca.get()) {
 		BackgroundTaskPtr taskPca(new PcaTbb(
 			gradient, gradpca, 0));
 		queue.push(taskPca);
 	}
-#endif /* WITH_GRADPCA */
 
 	// emit signal after all tasks are finished and fully updated data available
 	BackgroundTaskPtr taskEpilog(new BackgroundTask());

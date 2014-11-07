@@ -8,17 +8,7 @@ std::ostream &operator<<(std::ostream& os, const representation::t& r)
 		return os;
 	}
 	const char * const str[] = {
-		"IMG"
-	#ifdef WITH_IMGNORM
-		, "NORM"
-	#endif
-		, "GRAD"
-	#ifdef WITH_IMGPCA
-		, "IMGPCA"
-	#endif
-	#ifdef WITH_GRADPCA
-		, "GRADPCA"
-	#endif
+		"IMG", "NORM", "GRAD", "IMGPCA", "GRADPCA"
 	};
 	os << str[r];
 	return os;

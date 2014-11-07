@@ -3,28 +3,11 @@
 
 #include <QMap>
 
-// FIXME These macro defs are a temporary workaround to get the upcoming relase
-// functioning. We need to get task processing more efficient in the future.
-//#define WITH_IMGNORM
-#define WITH_IMGPCA
-//#define WITH_GRADPCA
-
 struct representation {
 
 	enum t {
-		IMG = 0
-#ifdef WITH_IMGNORM
-		, NORM
-#endif
-		, GRAD
-#ifdef WITH_IMGPCA
-		, IMGPCA
-#endif
-#ifdef WITH_GRADPCA
-		, GRADPCA
-#endif
-		, REPSIZE
 		// if you add a repres., also change operator<< and str()!
+		IMG = 0, NORM, GRAD, IMGPCA, GRADPCA, REPSIZE
 	};
 
 	// map of all representations for easy looping
@@ -41,17 +24,11 @@ struct representation {
 			return "None";
 		}
 		const char * const str[] = {
-			"Original Image"
-	#ifdef WITH_IMGNORM
-			, "Normalized Image"
-	#endif
-			, "Spectral Gradient"
-	#ifdef WITH_IMGPCA
-			, "Image PCA"
-	#endif
-	#ifdef WITH_GRADPCA
-			, "Spectral Gradient PCA"
-	#endif
+			"Original Image",
+			"Normalized Image",
+			"Spectral Gradient",
+			"Image PCA",
+			"Spectral Gradient PCA"
 		};
 		return str[r];
 	}
