@@ -28,6 +28,7 @@ ClusteringModel::~ClusteringModel()
 		commandRunner->terminate();
 		commandRunner->wait();
 		commandRunner->deleteLater();
+		commandRunner = NULL;
 	}
 }
 
@@ -115,6 +116,7 @@ void ClusteringModel::startSegmentation()
 				static_cast<MeanShiftShell*>(commandRunner->cmd)->config;
 
 		// fixed settings
+		config.verbosity = 0;
 		if (ClusteringMethod::PSPMS == request->method) {
 			/* if combination of gradient and PSPMS requested, we assume that
 			   the user wants our best-working method in paper (sp_withGrad)
@@ -140,6 +142,7 @@ void ClusteringModel::startSegmentation()
 		// fixed settings
 		/* see method == ClusteringMethod::PSPMS
 		 */
+		config.verbosity = 0;
 		config.sp_withGrad = onGradient;
 		config.superpixel.eqhist=1;
 		config.superpixel.c=0.05f;
@@ -216,9 +219,6 @@ void ClusteringModel::processImageUpdate(representation::t repr,
 										 SharedMultiImgPtr image,
 										 bool duplicate)
 {
-	// FIXME, see below
-	bool unsafe = State::Subscribed != state;
-
 	if (State::Idle == state) {
 		if (!duplicate) {
 			GGDBGM("we are in Idle state" << endl);
@@ -248,7 +248,7 @@ void ClusteringModel::processImageUpdate(representation::t repr,
 
 	if (representation::NORM == repr || representation::GRAD == repr)
 	{
-		GGDBGM("saving pointer to " << repr <<  endl);
+		GGDBGM("saving pointer to " << repr << endl) ;
 	} else {
 		GGDBGM("we are not interested in " << repr <<  endl);
 		return;
@@ -265,19 +265,6 @@ void ClusteringModel::processImageUpdate(representation::t repr,
 	if (commandRunner) {
 		GGDBGM("canceling running segmentation"<< endl);
 		abortCommandRunner();
-		// reset GUI
-		emit progressChanged(100);
-		emit segmentationCompleted();
-	}
-
-	// FIXME need to fix Request containing Command pointer...
-	if (unsafe) {
-		// We can't start the same Command object more than once!
-		GGDBGM("we are non-Idle, and would start segmentation right away "
-			   "with new data, but the implementation is still too buggy "
-			   "to re-run an already started jobs. Sorry!" << endl);
-		resetToIdle();
-		return;
 	}
 
 	startSegmentation();
@@ -301,11 +288,13 @@ void ClusteringModel::processSegmentationCompleted(
 		emit resultKL(foundK, foundL);
 	}
 	emit segmentationCompleted();
+	abortCommandRunner();
 }
 
 void ClusteringModel::processSegmentationFailed()
 {
 	resetToIdle();
+	abortCommandRunner();
 }
 
 void ClusteringModel::abortCommandRunner()
