@@ -1,8 +1,13 @@
 #include "clusteringmodel.h"
 
-#include "../commandrunner.h"
+#include <commandrunner.h>
 #include <meanshift_shell.h>
+// vole modules
+#include <meanshift.h>
+#include <meanshift_shell.h>
+#include <meanshift_sp.h>
 
+#include <map>
 #include <boost/any.hpp>
 
 #define GGDBG_MODULE
@@ -26,8 +31,7 @@ ClusteringModel::~ClusteringModel()
 	}
 }
 
-void ClusteringModel::requestSegmentation(
-		shell::Command* cmd, bool gradient)
+void ClusteringModel::requestSegmentation(const ClusteringRequest &r)
 {
 	// abort currently executing CommandRunner, if any
 	abortCommandRunner();
@@ -37,14 +41,8 @@ void ClusteringModel::requestSegmentation(
 				  << "bad state, request != NULL" << std::endl;
 		return;
 	}
-	request = boost::shared_ptr<Request>(new Request());
-	request->cmd = cmd;
-	request->gradient = gradient;
-	if (gradient) {
-		request->repr = representation::GRAD;
-	} else {
-		request->repr = representation::NORM;
-	}
+	request = boost::shared_ptr<ClusteringRequest>(
+				new ClusteringRequest(r));
 
 	if (State::Idle == state) {
 		// We are not subscribed for image data yet.
@@ -104,7 +102,54 @@ void ClusteringModel::startSegmentation()
 	GGDBGM("kicking off computation" << endl);
 
 	commandRunner = new CommandRunner();
-	commandRunner->cmd = request->cmd;
+	const bool onGradient = request->repr == representation::GRAD;
+
+	// Meanshift
+	if (ClusteringMethod::FAMS == request->method ||
+			ClusteringMethod::PSPMS == request->method)
+	{
+		using namespace seg_meanshift;
+		// will be deleted by CommandRunner
+		commandRunner->cmd = new MeanShiftShell();
+		MeanShiftConfig &config =
+				static_cast<MeanShiftShell*>(commandRunner->cmd)->config;
+
+		// fixed settings
+		if (ClusteringMethod::PSPMS == request->method) {
+			/* if combination of gradient and PSPMS requested, we assume that
+			   the user wants our best-working method in paper (sp_withGrad)
+			 */
+			config.sp_withGrad = onGradient;
+
+			config.starting = SUPERPIXEL;
+
+			config.superpixel.eqhist=1;
+			config.superpixel.c=0.05f;
+			config.superpixel.min_size=5;
+			config.superpixel.similarity.function
+					= similarity_measures::SPEC_INF_DIV;
+		}
+		config.use_LSH = request->lsh;
+	} else if (ClusteringMethod::FSPMS == request->method) { // FSPMS
+		using namespace seg_meanshift;
+		// will be deleted by CommandRunner
+		commandRunner->cmd = new MeanShiftSP();
+		MeanShiftConfig &config =
+				static_cast<MeanShiftSP*>(commandRunner->cmd)->config;
+
+		// fixed settings
+		/* see method == ClusteringMethod::PSPMS
+		 */
+		config.sp_withGrad = onGradient;
+		config.superpixel.eqhist=1;
+		config.superpixel.c=0.05f;
+		config.superpixel.min_size=5;
+		config.superpixel.similarity.function
+				= similarity_measures::SPEC_INF_DIV;
+		config.sp_weight = 2;
+
+		config.use_LSH = request->lsh;
+	}
 
 	connect(commandRunner, SIGNAL(progressChanged(int)),
 			this, SIGNAL(progressChanged(int)));
@@ -161,7 +206,7 @@ void ClusteringModel::resetToIdle()
 {
 	GGDBGM("deleteing request, unsubscribing representations, state = Idle"
 		   << endl);
-	request = boost::shared_ptr<Request>();
+	request = boost::shared_ptr<ClusteringRequest>();
 	state = State::Idle;
 	emit unsubscribeRepresentation(this, representation::NORM);
 	emit unsubscribeRepresentation(this, representation::GRAD);

@@ -196,15 +196,13 @@ void Controller::setupDocks()
 	/* Unsupervised Segmentation Dock */
 #ifdef WITH_SEG_MEANSHIFT
 	ClusteringModel const*cm = clusteringModel();
-	connect(imageModel(), SIGNAL(numBandsROIChanged(int)),
-			clusteringDock, SLOT(setNumBands(int)));
 	connect(cm, SIGNAL(progressChanged(int)),
 			clusteringDock, SLOT(updateProgress(int)));
 	connect(cm, SIGNAL(segmentationCompleted()),
 			clusteringDock, SLOT(processSegmentationCompleted()));
 	connect(clusteringDock,
-			SIGNAL(segmentationRequested(shell::Command*,bool)),
-			cm, SLOT(requestSegmentation(shell::Command*,bool)));
+			SIGNAL(segmentationRequested(const ClusteringRequest&)),
+			cm, SLOT(requestSegmentation(const ClusteringRequest&)));
 	connect(clusteringDock, SIGNAL(cancelSegmentationRequested()),
 			cm, SLOT(cancel()));
 	connect(cm, SIGNAL(setLabelsRequested(cv::Mat1s)),

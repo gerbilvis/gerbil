@@ -1,11 +1,12 @@
 #ifndef CLUSTERINGDOCK_H
 #define CLUSTERINGDOCK_H
 
+#include <model/clustering/clusteringmethod.h>
+#include <model/clustering/clusteringrequest.h>
+#include <model/representation.h>
+
 #include <QDockWidget>
 #include "ui_clusteringdock.h"
-
-#include <map>
-#include <boost/any.hpp>
 
 namespace shell {
 	class Command;
@@ -20,14 +21,9 @@ class ClusteringDock : public QDockWidget, private Ui::ClusteringDock
 public:
 	explicit ClusteringDock(QWidget *parent = 0);
 	
-	void segmentationApply(std::map<std::string, boost::any> output);
-
 signals:
 	void cancelSegmentationRequested();
-	// FIXME: get rid of the Command pointer! Use config object of some sort.
-	// FIXME: instead of bool gradient use representation::t
-	void segmentationRequested(shell::Command *cmd,
-								   bool gradient);
+	void segmentationRequested(const ClusteringRequest &r);
 public slots:
 	void updateProgress(int percent);
 	void processSegmentationCompleted();

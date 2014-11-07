@@ -7,7 +7,11 @@
 #include <boost/any.hpp>
 
 #include <shared_data.h>
-#include "representation.h"
+
+#include <model/representation.h>
+#include <model/clustering/clusteringmethod.h>
+#include <model/clustering/clusteringrequest.h>
+
 
 namespace shell {
 	class Command;
@@ -38,10 +42,12 @@ signals:
 	void unsubscribeRepresentation(QObject *subscriber, representation::t repr);
 
 public slots:
-
-	// can numbands and gradient be moved to cmd->config?
-	void requestSegmentation(shell::Command *cmd,
-			bool gradient);
+	/** Request segmentation with ClusteringMethod method on
+	 * representation repr.
+	 *
+	 * Only NORM and GRAD are supported as representations.
+	 */
+	void requestSegmentation(const ClusteringRequest &r);
 	void cancel();
 
 	void processImageUpdate(representation::t repr,
@@ -58,12 +64,8 @@ protected:
 	/** Reset to initial (idle) state and unsubscribe representations. */
 	void resetToIdle();
 
-	/** Cancel and disconnect current CommandRunner and schedule it for deletion.
-	 *
-	 *  This is a quick HACK. ClusteringModel needs to handle state properly.
-	 *  Also Meanshift doesn't seem to handle abort, so the thread will just
-	 *  continue to burn CPU cycles.
-	 */
+	/** Cancel and disconnect current CommandRunner and schedule it for
+	 *  deletion. */
 	void abortCommandRunner();
 
 	// Actually kick-off the computation.
@@ -75,18 +77,10 @@ protected:
 
 	State::t state;
 
-	// FIXME This is a workaround to store requestSegmentation args.
-    // Ideally requestSegmentation() should be passed _one_ configuration object,
-    // which is not a pointer (or at least a smart pointer), to be stored here.
-	struct Request {
-		shell::Command *cmd;
-		bool gradient;
-		representation::t repr;
-	};
-
 	// Pending request.
-	boost::shared_ptr<Request> request;
+	boost::shared_ptr<ClusteringRequest> request;
 
+	// The CommandRunner when executing.
 	CommandRunner* commandRunner;
 
 	// IMG and GRAD representation of multi image of current ROI.
