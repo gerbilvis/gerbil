@@ -567,8 +567,10 @@ bool FAMS::progressUpdate(float percent, bool absolute)
 	else
 		progress += percent;
 	if (progress > progress_old + 0.1f) {
-		std::cerr << "\r" << progress << " %          \r";
-		std::cerr.flush();
+		if (config.verbosity > 1) {
+			std::cerr << "\r" << progress << " %          \r";
+			std::cerr.flush();
+		}
 		progress_old = progress;
 	}
 
