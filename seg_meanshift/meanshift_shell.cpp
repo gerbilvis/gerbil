@@ -112,7 +112,10 @@ int MeanShiftShell::execute() {
 	return 0;
 }
 
-std::map<std::string, boost::any> MeanShiftShell::execute(std::map<std::string, boost::any> &input, ProgressObserver *progress) {
+std::map<std::string, boost::any>
+MeanShiftShell::execute(std::map<std::string, boost::any> &input,
+						ProgressObserver *progress)
+{
 	// XXX: for now, gradient/rescale is expected to be done by caller
 
 	boost::shared_ptr<multi_img> inputimg =

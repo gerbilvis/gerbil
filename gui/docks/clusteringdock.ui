@@ -7,7 +7,7 @@
     <x>0</x>
     <y>0</y>
     <width>295</width>
-    <height>154</height>
+    <height>163</height>
    </rect>
   </property>
   <property name="sizePolicy">
@@ -187,33 +187,6 @@
                  </property>
                  <property name="text">
                   <string>spectral gradient</string>
-                 </property>
-                </widget>
-               </item>
-               <item>
-                <widget class="Line" name="line_5">
-                 <property name="orientation">
-                  <enum>Qt::Vertical</enum>
-                 </property>
-                </widget>
-               </item>
-               <item>
-                <widget class="QLabel" name="label_11">
-                 <property name="toolTip">
-                  <string>number of bands (interpolated from real image bands)</string>
-                 </property>
-                 <property name="text">
-                  <string>Bands:</string>
-                 </property>
-                </widget>
-               </item>
-               <item>
-                <widget class="QSpinBox" name="usBandsSpinBox">
-                 <property name="toolTip">
-                  <string extracomment="use a reduced number of bands"/>
-                 </property>
-                 <property name="minimum">
-                  <number>1</number>
                  </property>
                 </widget>
                </item>

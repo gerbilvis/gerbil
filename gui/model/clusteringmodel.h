@@ -40,9 +40,7 @@ signals:
 public slots:
 
 	// can numbands and gradient be moved to cmd->config?
-	void requestSegmentation(
-			shell::Command *cmd,
-			int numbands,
+	void requestSegmentation(shell::Command *cmd,
 			bool gradient);
 	void cancel();
 
@@ -53,6 +51,7 @@ public slots:
 protected slots:
 
 	void processSegmentationCompleted(std::map<std::string,boost::any> output);
+	void processSegmentationFailed();
 
 protected:
 
@@ -78,16 +77,17 @@ protected:
     // which is not a pointer (or at least a smart pointer), to be stored here.
 	struct Request {
 		shell::Command *cmd;
-		int numbands;
 		bool gradient;
+		representation::t repr;
 	};
 
 	// Pending request.
 	boost::shared_ptr<Request> request;
 
 	CommandRunner* commandRunner;
-	// multi image of current ROI
-	SharedMultiImgPtr image;
+
+	// IMG and GRAD representation of multi image of current ROI.
+	QMap<representation::t, SharedMultiImgPtr> inputMap;
 };
 
 #endif // CLUSTERING_MODEL_H

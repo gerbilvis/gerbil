@@ -24,11 +24,11 @@ public:
 
 signals:
 	void cancelSegmentationRequested();
+	// FIXME: get rid of the Command pointer! Use config object of some sort.
+	// FIXME: instead of bool gradient use representation::t
 	void segmentationRequested(shell::Command *cmd,
-								   int numbands,
 								   bool gradient);
 public slots:
-	void setNumBands(int nBands);
 	void updateProgress(int percent);
 	void processSegmentationCompleted();
 
@@ -40,8 +40,6 @@ protected slots:
 
 protected:
 	void initUi();
-
-	int nBandsOld;
 };
 
 #endif // CLUSTERINGDOCK_H

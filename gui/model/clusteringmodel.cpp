@@ -27,7 +27,7 @@ ClusteringModel::~ClusteringModel()
 }
 
 void ClusteringModel::requestSegmentation(
-		shell::Command* cmd, int numbands, bool gradient)
+		shell::Command* cmd, bool gradient)
 {
 	// abort currently executing CommandRunner, if any
 	abortCommandRunner();
@@ -39,26 +39,31 @@ void ClusteringModel::requestSegmentation(
 	}
 	request = boost::shared_ptr<Request>(new Request());
 	request->cmd = cmd;
-	request->numbands = numbands;
 	request->gradient = gradient;
+	if (gradient) {
+		request->repr = representation::GRAD;
+	} else {
+		request->repr = representation::NORM;
+	}
 
 	if (State::Idle == state) {
-		// We are not subscribed for image data yet. Subscribe and wait.
+		// We are not subscribed for image data yet.
 		state = State::Subscribed;
-		if (!gradient) {
-			GGDBGM("subscribing for " << representation::NORM << endl);
-			emit subscribeRepresentation(this, representation::NORM);
-		} else {
-			// This will be the good behaviour
-//			GGDBGM("subscribing for " << representation::GRAD << endl);
-//			emit subscribeRepresentation(this, representation::GRAD);
 
-			// HACK, FIXME:This is the old BAD behaviour
-			GGDBGM("representation::GRAD HACK in effect" << endl);
-			startSegmentation();
-		}
+		// Unsubscribe other stale subscription, if any.
+		emit unsubscribeRepresentation(this, representation::NORM);
+		emit unsubscribeRepresentation(this, representation::GRAD);
+
+		// reset input pointers
+		inputMap[representation::NORM] = SharedMultiImgPtr();
+		inputMap[representation::GRAD] = SharedMultiImgPtr();
+
+		// Subscribe and wait.
+		GGDBGM("subscribing " << endl);
+		emit subscribeRepresentation(this, representation::NORM);
+		emit subscribeRepresentation(this, representation::GRAD);
 	} else {
-		GGDBGM("we are non-Idle, starting segmentation right away" << endl);
+		GGDBGM("we are non-Idle, (re-)starting segmentation right away" << endl);
 		startSegmentation();
 	}
 }
@@ -72,12 +77,23 @@ void ClusteringModel::startSegmentation()
 		good = false;
 	}
 
-	{
-		SharedMultiImgBaseGuard guard(*image);
-		if ((*image)->empty()) {
+	QList<representation::t> reps;
+	reps.append(representation::NORM);
+	reps.append(representation::GRAD);
+	foreach (representation::t repr, reps) {
+		if (!inputMap[repr]) {
 			std::cerr << "ClusteringModel::startSegmentation(): "
-					  << "image is empty" << std::endl;
+					  << "input " << request->repr << " is NULL"
+					  << std::endl;
 			good = false;
+		} else {
+			SharedMultiImgBaseGuard guard(*inputMap[repr]);
+			if ((*inputMap[repr])->empty()) {
+				std::cerr << "ClusteringModel::startSegmentation(): "
+						  << "input " << request->repr << " is empty"
+						  << std::endl;
+				good = false;
+			}
 		}
 	}
 
@@ -98,41 +114,33 @@ void ClusteringModel::startSegmentation()
 			this,
 			SLOT(processSegmentationCompleted(
 					 std::map<std::string,boost::any>)));
+	connect(commandRunner,
+			SIGNAL(failure()),
+			this,
+			SLOT(processSegmentationFailed()));
 
-	// create a copy of the image
-	boost::shared_ptr<multi_img> input, inputgrad;
+	// create copies of the input image images
 	{
-		SharedMultiImgBaseGuard guard(*image);
-		input = boost::shared_ptr<multi_img>(new multi_img(**image));
+		// Meanshift always needs the IMG/NORM representation for SUPERPIXEL.
+		SharedMultiImgBaseGuard guard(*inputMap[representation::NORM]);
+		commandRunner->input["multi_img"] =
+				boost::shared_ptr<multi_img>(
+					new multi_img(**inputMap[representation::NORM]));
 	}
-
-	if (request->numbands > 0 && request->numbands < (int) input->size()) {
-		boost::shared_ptr<multi_img> input_tmp(
-					new multi_img(input->spec_rescale(request->numbands)));
-		input = input_tmp;
+	if (representation::NORM == request->repr) {
+		commandRunner->input["multi_grad"] = boost::shared_ptr<multi_img>();
+	} else if (representation::GRAD == request->repr) {
+		SharedMultiImgBaseGuard guard(*inputMap[representation::GRAD]);
+		commandRunner->input["multi_grad"] =
+						boost::shared_ptr<multi_img>(
+							new multi_img(**inputMap[representation::GRAD]));;
+	} else {
+		std::cerr << "ClusteringModel::startSegmentation(): "
+				  << "bad representation in request: "
+				  << request->repr << std::endl;
+		delete commandRunner;
+		return;
 	}
-
-	seg_meanshift::MeanShiftConfig &config =
-			static_cast<seg_meanshift::MeanShiftShell*>(request->cmd)->config;
-	if (request->gradient) {
-		// copy needed here (TODO: only in sp_withGrad case)
-		multi_img loginput(*input, true);
-		loginput.apply_logarithm();
-
-		// FIXME: Er, shouldn't we use the GRAD image supplied by ImageModel?
-		if (config.sp_withGrad) {
-			// use gradient only as second argument
-			inputgrad = boost::shared_ptr<multi_img>(
-						new multi_img(loginput.spec_gradient()));
-		} else {
-			// method expects gradient as input (we can free the original data)
-			input = boost::shared_ptr<multi_img>(new multi_img(
-													 loginput.spec_gradient()));
-		}
-	}
-
-	commandRunner->input["multi_img"] = input;
-	commandRunner->input["multi_grad"] = inputgrad;
 
 	GGDBGM("CommandRunner object is "
 		   <<  static_cast<CommandRunner*>(commandRunner) << endl);
@@ -143,6 +151,8 @@ void ClusteringModel::startSegmentation()
 
 void ClusteringModel::cancel()
 {
+	// FIXME: CommandRunner does not send failure or complete signal after abort,
+	//        this leaves us in executing state forever.
 	abortCommandRunner();
 	request = boost::shared_ptr<Request>();
 }
@@ -159,25 +169,42 @@ void ClusteringModel::processImageUpdate(representation::t repr,
 			GGDBGM("we are in Idle state" << endl);
 		}
 		return;
-	}
-
-	if (State::Executing == state && duplicate) {
+	} else if (State::Executing == state && duplicate) {
 		// If we are executing, we only restart on new image data,
 		// i.e. duplicate == false.
 		GGDBGM("duplicate update" << endl);
 		return;
+	} else if (State::Executing == state &&
+			   !duplicate &&
+			   inputMap[representation::NORM] &&
+			   inputMap[representation::GRAD])
+	{
+		GGDBGM("update while executing, reseting input" << endl);
+		// reset input pointers
+		inputMap[representation::NORM] = SharedMultiImgPtr();
+		inputMap[representation::GRAD] = SharedMultiImgPtr();
 	}
 
-//#ifdef WITH_IMGNORM // HACK: we prefer the normed version if we have it.
-	if (repr != representation::NORM)
-//#else
-//	if (repr != representation::IMG)
-//#endif
+	if (!request) {
+		std::cerr << "ClusteringModel::processImageUpdate(): "
+				  << "request is NULL" << std::endl;
+		return;
+	}
+
+	if (representation::NORM == repr || representation::GRAD == repr)
 	{
+		GGDBGM("saving pointer to " << repr <<  endl);
+	} else {
 		GGDBGM("we are not interested in " << repr <<  endl);
 		return;
 	}
-	this->image = image;
+
+	inputMap[repr] = image;
+
+	if (!(inputMap[representation::NORM] && inputMap[representation::GRAD])) {
+		GGDBGM("input not yet complete" << endl);
+		return;
+	}
 
 	// Tell running CommandRunner to abort.
 	if (commandRunner) {
@@ -197,10 +224,7 @@ void ClusteringModel::processImageUpdate(representation::t repr,
 		request = boost::shared_ptr<Request>();
 		state = State::Idle;
 		GGDBGM("unsubscribing representations" << endl);
-		emit unsubscribeRepresentation(this, representation::IMG);
-		//#ifdef WITH_IMGNORM
 		emit unsubscribeRepresentation(this, representation::NORM);
-		//#endif
 		emit unsubscribeRepresentation(this, representation::GRAD);
 		return;
 	}
@@ -216,10 +240,7 @@ void ClusteringModel::processSegmentationCompleted(
 
 	// We are back to Idle, just unsubscribe everything.
 	GGDBGM("unsubscribing representations" << endl);
-	emit unsubscribeRepresentation(this, representation::IMG);
-	//#ifdef WITH_IMGNORM
 	emit unsubscribeRepresentation(this, representation::NORM);
-	//#endif
 	emit unsubscribeRepresentation(this, representation::GRAD);
 	if (output.count("labels")) {
 		boost::shared_ptr<cv::Mat1s> labelMask =
@@ -237,13 +258,20 @@ void ClusteringModel::processSegmentationCompleted(
 	emit segmentationCompleted();
 }
 
+void ClusteringModel::processSegmentationFailed()
+{
+	state = State::Idle;
+	request = boost::shared_ptr<Request>();
+}
+
 void ClusteringModel::abortCommandRunner()
 {
 	// FIXME: the Meanshift will not abort, but continue running
 	// in the background. Resource starvation...
 
-	if(NULL == commandRunner)
+	if (NULL == commandRunner) {
 		return;
+	}
 	// disconnect all signals
 	disconnect(commandRunner, 0, 0, 0);
 	// note: CommandRunner overrides terminate(), it just cancels.

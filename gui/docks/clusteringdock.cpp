@@ -9,8 +9,7 @@
 #include <meanshift_sp.h>
 
 ClusteringDock::ClusteringDock(QWidget *parent) :
-	QDockWidget(parent),
-	nBandsOld(-1)
+	QDockWidget(parent)
 {
 	Ui::ClusteringDock::setupUi(this);
 
@@ -23,10 +22,6 @@ void ClusteringDock::initUi()
 	usMethodBox->addItem("Accurate (FAMS)", 0);
 	usMethodBox->addItem("Fast (PSPMS)", 3);
 	usMethodBox->addItem("Fastest (FSPMS)", 4);
-
-	// will be set later by controller
-	usBandsSpinBox->setValue(-1);
-	usBandsSpinBox->setMaximum(-1);
 
 	// don't show progress widget at startup
 	usProgressWidget->hide();
@@ -59,6 +54,8 @@ void ClusteringDock::startUnsupervisedSeg()
 	int method = usMethodBox->itemData(usMethodBox->currentIndex()).value<int>();
 	// Command will be deleted by CommandRunner on destruction.
 	shell::Command *cmd;
+	const bool onGradient = usGradientCheckBox->isChecked();
+
 	if (method == 0 || method == 3) { // Meanshift
 		cmd = new MeanShiftShell();
 		MeanShiftConfig &config = static_cast<MeanShiftShell*>(cmd)->config;
@@ -69,7 +66,7 @@ void ClusteringDock::startUnsupervisedSeg()
 			   the user wants our best-working method in paper (sp_withGrad)
 			   TODO: most of this is better done in model, as it is internals
 			 */
-			config.sp_withGrad = usGradientCheckBox->isChecked();
+			config.sp_withGrad = onGradient;
 
 			config.starting = SUPERPIXEL;
 
@@ -88,7 +85,7 @@ void ClusteringDock::startUnsupervisedSeg()
 		// fixed settings
 		/* see method == 3
 		 */
-		config.sp_withGrad = usGradientCheckBox->isChecked();
+		config.sp_withGrad = onGradient;
 		config.superpixel.eqhist=1;
 		config.superpixel.c=0.05f;
 		config.superpixel.min_size=5;
@@ -105,10 +102,7 @@ void ClusteringDock::startUnsupervisedSeg()
 	usProgressWidget->show();
 	usSettingsWidget->setDisabled(true);
 
-	int numbands = usBandsSpinBox->value();
-	bool gradient = usGradientCheckBox->isChecked();
-
-	emit segmentationRequested(cmd, numbands, gradient);
+	emit segmentationRequested(cmd, onGradient);
 }
 #else // method stubs as using define in header does not work (moc problem?)
 void ClusteringDock::startUnsupervisedSeg() {}
@@ -151,26 +145,5 @@ void ClusteringDock::cancel()
 	usProgressWidget->hide();
 	usSettingsWidget->setEnabled(true);
 }
-
-void ClusteringDock::setNumBands(int nBands)
-{
-	int nBandsSpin = usBandsSpinBox->value();
-	//GGDBGM(nBandsSpin <<" " << nBands<<" " <<nBandsOld<<endl);
-
-	usBandsSpinBox->setMaximum(nBands);
-
-	// first time init
-	if(nBandsSpin == -1) {
-		usBandsSpinBox->setMinimum(0);
-		usBandsSpinBox->setValue(nBands);
-		nBandsOld = nBands;
-	} else if(nBandsSpin == nBandsOld) {
-		// Track the global number of bands until the user manually changes the
-		// value in the spinbox.
-		usBandsSpinBox->setValue(nBands);
-		nBandsOld = nBands;
-	}
-}
-
 #endif
 
