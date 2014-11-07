@@ -55,6 +55,9 @@ protected slots:
 
 protected:
 
+	/** Reset to initial (idle) state and unsubscribe representations. */
+	void resetToIdle();
+
 	/** Cancel and disconnect current CommandRunner and schedule it for deletion.
 	 *
 	 *  This is a quick HACK. ClusteringModel needs to handle state properly.

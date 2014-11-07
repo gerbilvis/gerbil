@@ -151,10 +151,20 @@ void ClusteringModel::startSegmentation()
 
 void ClusteringModel::cancel()
 {
-	// FIXME: CommandRunner does not send failure or complete signal after abort,
-	//        this leaves us in executing state forever.
 	abortCommandRunner();
+	// CommandRunner may not send failure or complete signal after abort which
+	// would leave us in executing state forever.
+	resetToIdle();
+}
+
+void ClusteringModel::resetToIdle()
+{
+	GGDBGM("deleteing request, unsubscribing representations, state = Idle"
+		   << endl);
 	request = boost::shared_ptr<Request>();
+	state = State::Idle;
+	emit unsubscribeRepresentation(this, representation::NORM);
+	emit unsubscribeRepresentation(this, representation::GRAD);
 }
 
 void ClusteringModel::processImageUpdate(representation::t repr,
@@ -221,11 +231,7 @@ void ClusteringModel::processImageUpdate(representation::t repr,
 		GGDBGM("we are non-Idle, and would start segmentation right away "
 			   "with new data, but the implementation is still too buggy "
 			   "to re-run an already started jobs. Sorry!" << endl);
-		request = boost::shared_ptr<Request>();
-		state = State::Idle;
-		GGDBGM("unsubscribing representations" << endl);
-		emit unsubscribeRepresentation(this, representation::NORM);
-		emit unsubscribeRepresentation(this, representation::GRAD);
+		resetToIdle();
 		return;
 	}
 
@@ -235,13 +241,7 @@ void ClusteringModel::processImageUpdate(representation::t repr,
 void ClusteringModel::processSegmentationCompleted(
 		std::map<std::string, boost::any> output)
 {
-	state = State::Idle;
-	request = boost::shared_ptr<Request>();
-
-	// We are back to Idle, just unsubscribe everything.
-	GGDBGM("unsubscribing representations" << endl);
-	emit unsubscribeRepresentation(this, representation::NORM);
-	emit unsubscribeRepresentation(this, representation::GRAD);
+	resetToIdle();
 	if (output.count("labels")) {
 		boost::shared_ptr<cv::Mat1s> labelMask =
 				boost::any_cast< boost::shared_ptr<cv::Mat1s> >(
@@ -260,8 +260,7 @@ void ClusteringModel::processSegmentationCompleted(
 
 void ClusteringModel::processSegmentationFailed()
 {
-	state = State::Idle;
-	request = boost::shared_ptr<Request>();
+	resetToIdle();
 }
 
 void ClusteringModel::abortCommandRunner()
