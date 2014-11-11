@@ -41,10 +41,6 @@
 
 #include <string>
 
-// Helper functions used by GGDBG_PRINT_METHOD
-void ggdb_print_method(const char *clsname, const char *funname);
-std::string ggdb_method_string(const char *clsname, const char *funname);
-
 // FIXME this should be configurable by CMAKE
 #define GGDBG
 
@@ -52,6 +48,11 @@ std::string ggdb_method_string(const char *clsname, const char *funname);
 #if defined(GGDBG) && defined(GGDBG_MODULE)
 
 #include <boost/format.hpp>
+#include <iostream>
+
+// Helper functions used by GGDBG_PRINT_METHOD
+void ggdb_print_method(const char *clsname, const char *funname);
+std::string ggdb_method_string(const char *clsname, const char *funname);
 
 // MSVC does not support __func__ (but might, because of C++11)
 #ifdef __func__
