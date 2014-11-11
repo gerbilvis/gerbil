@@ -11,11 +11,17 @@ ClusteringDock::ClusteringDock(QWidget *parent) :
 }
 
 #ifdef WITH_SEG_MEANSHIFT
+
+// because writing QVariant::fromValue(xxx) is just too much boilerplate
+static inline QVariant qv(ClusteringMethod::t cm) {
+	return QVariant::fromValue(cm);
+}
+
 void ClusteringDock::initUi()
 {
-	usMethodBox->addItem("Accurate (FAMS)", ClusteringMethod::FAMS);
-	usMethodBox->addItem("Fast (PSPMS)",    ClusteringMethod::PSPMS);
-	usMethodBox->addItem("Fastest (FSPMS)", ClusteringMethod::FSPMS);
+	usMethodBox->addItem("Accurate (FAMS)", qv(ClusteringMethod::FAMS));
+	usMethodBox->addItem("Fast (PSPMS)",    qv(ClusteringMethod::PSPMS));
+	usMethodBox->addItem("Fastest (FSPMS)", qv(ClusteringMethod::FSPMS));
 
 	// don't show progress widget at startup
 	usProgressWidget->hide();
