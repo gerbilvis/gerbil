@@ -75,7 +75,7 @@ void ClusteringDock::unsupervisedSegCancelled() {}
 #ifdef WITH_SEG_MEANSHIFT
 void ClusteringDock::usMethodChanged(int idx)
 {
-	// use to change available options
+	// use to change available (method-dependent) options
 }
 
 void ClusteringDock::updateProgress(int percent)
