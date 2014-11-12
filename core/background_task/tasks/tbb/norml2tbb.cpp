@@ -53,8 +53,8 @@ bool NormL2Tbb::run()
 
 		/* reconstruct pixel cache for the region */
 		RebuildPixels rebuildPixels(*target);
-		tbb::parallel_for(tbb::blocked_range2d<int>(copySrc.y, copySrc.height,
-		                                            copySrc.x, copySrc.width),
+		tbb::parallel_for(tbb::blocked_range2d<int>(copySrc.y, copySrc.br().y,
+		                                            copySrc.x, copySrc.br().x),
 			rebuildPixels, tbb::auto_partitioner(), stopper);
 	}
 
@@ -65,14 +65,14 @@ bool NormL2Tbb::run()
 	for (it = calc.begin(); it != calc.end(); ++it) {
 		if (it->width > 0 && it->height > 0) {
 			NormL2 computeNormL2(**source, *target);
-			tbb::parallel_for(tbb::blocked_range2d<int>(it->y, it->height,
-			                                            it->x, it->width),
+			tbb::parallel_for(tbb::blocked_range2d<int>(it->y, it->br().y,
+			                                            it->x, it->br().x),
 				computeNormL2, tbb::auto_partitioner(), stopper);
 
 			// apply the new vectors to band data
 			ApplyCache applyCache(*target);
-			tbb::parallel_for(tbb::blocked_range2d<int>(it->y, it->height,
-			                                            it->x, it->width),
+			tbb::parallel_for(tbb::blocked_range2d<int>(it->y, it->br().y,
+			                                            it->x, it->br().x),
 				applyCache, tbb::auto_partitioner(), stopper);
 		}
 
