@@ -48,7 +48,7 @@ void FalseColorModelPayload::run()
 	default:
 		assert(false);
 	}
-	runner->cmd = cmd;
+	runner->setCommand(cmd);
 	connect(runner, SIGNAL(success(std::map<std::string, boost::any>)),
 			this, SLOT(processRunnerSuccess(std::map<std::string, boost::any>)));
 	connect(runner, SIGNAL(failure()),

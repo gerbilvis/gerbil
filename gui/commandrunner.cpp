@@ -42,6 +42,12 @@ void CommandRunner::run() {
 	return;
 }
 
+void CommandRunner::setCommand(shell::Command *cmd)
+{
+	cmd->setProgressObserver(this);
+	this->cmd = cmd;
+}
+
 void CommandRunner::abort() {
 	// QThread::terminate() is dangerous and doesn't clean up anything
 	// this is the safe way to abort.

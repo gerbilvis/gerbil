@@ -12,6 +12,8 @@
 #include "vole_config.h"
 #include "progress_observer.h"
 
+class CommandRunner;
+
 namespace shell {
 
 class Command {
@@ -19,9 +21,14 @@ class Command {
 public:
 	Command(const std::string &name, Config& config,
 	        const std::string &contributor_name = "",
-	        const std::string &contributor_mail = "")
-	 : name(name), contributor_name(contributor_name),
-	   contributor_mail(contributor_mail), abstract_config(config)  {}
+			const std::string &contributor_mail = "",
+			ProgressObserver *po = NULL)
+	 : name(name),
+	   contributor_name(contributor_name),
+	   contributor_mail(contributor_mail),
+	   po(NULL),
+	   abstract_config(config)
+	{}
 
 	virtual ~Command() {}
 	virtual const std::string& getName() const { return name; }
@@ -34,13 +41,19 @@ public:
 	virtual void printHelp() const = 0;
 
 protected:
+	ProgressObserver *progressObserver() { return po; }
+	void setProgressObserver(ProgressObserver *po) { this->po = po; }
+
 	std::string name;
 	std::string contributor_name;
 	std::string contributor_mail;
 
 private:
+	ProgressObserver *po;
 	Config& abstract_config;
 
+	// setProgressObserver()
+	friend class ::CommandRunner;
 };
 
 }

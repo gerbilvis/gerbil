@@ -20,12 +20,13 @@ using namespace boost::program_options;
 
 namespace seg_meanshift {
 
-MeanShiftShell::MeanShiftShell()
+MeanShiftShell::MeanShiftShell(ProgressObserver *po)
  : Command(
 		"meanshift",
 		config,
 		"Johannes Jordan",
-		"johannes.jordan@informatik.uni-erlangen.de")
+		"johannes.jordan@informatik.uni-erlangen.de",
+	   po)
 {}
 
 MeanShiftShell::~MeanShiftShell() {}
@@ -117,6 +118,8 @@ MeanShiftShell::execute(std::map<std::string, boost::any> &input,
 						ProgressObserver *progress)
 {
 	// XXX: for now, gradient/rescale is expected to be done by caller
+
+	setProgressObserver(progress);
 
 	boost::shared_ptr<multi_img> inputimg =
 	        boost::any_cast<boost::shared_ptr<multi_img> >(input["multi_img"]);

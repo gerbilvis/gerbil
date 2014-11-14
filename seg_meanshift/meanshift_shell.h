@@ -8,7 +8,7 @@ namespace seg_meanshift {
 
 class MeanShiftShell : public shell::Command {
 public:
-	MeanShiftShell();
+	MeanShiftShell(ProgressObserver *po = NULL);
 	~MeanShiftShell();
 	int execute();
 	std::map<std::string, boost::any>

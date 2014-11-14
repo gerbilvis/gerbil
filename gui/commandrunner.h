@@ -18,7 +18,12 @@ public:
 	bool update(float report, bool incremental = false);
 	void run();
 
-	shell::Command *cmd;
+	/** Set the Command to to be executed by this runner.
+	 *
+	 * CommandRunner takes ownership of cmd and becomes its ProgressObserver.
+	 */
+	void setCommand(shell::Command *cmd);
+
 	std::map<std::string, boost::any> input;
 	std::map<std::string, boost::any> output;
 	const std::string base;
@@ -33,6 +38,8 @@ public slots:
 	void deleteLater();
 
 private:
+	shell::Command *cmd;
+
 	// progress cached for incremental updates (not threadsafe)
 	float progress;
 	// progress in percent

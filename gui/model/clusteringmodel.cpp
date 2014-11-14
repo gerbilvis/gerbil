@@ -110,10 +110,11 @@ void ClusteringModel::startSegmentation()
 			ClusteringMethod::PSPMS == request->method)
 	{
 		using namespace seg_meanshift;
-		// will be deleted by CommandRunner
-		commandRunner->cmd = new MeanShiftShell();
-		MeanShiftConfig &config =
-				static_cast<MeanShiftShell*>(commandRunner->cmd)->config;
+		// Object owned by CommandRunner.
+		MeanShiftShell *cmd = new MeanShiftShell();
+		MeanShiftConfig &config = cmd->config;
+		commandRunner->setCommand(cmd);
+
 
 		// fixed settings
 		config.verbosity = 0;
@@ -134,10 +135,10 @@ void ClusteringModel::startSegmentation()
 		config.use_LSH = request->lsh;
 	} else if (ClusteringMethod::FSPMS == request->method) { // FSPMS
 		using namespace seg_meanshift;
-		// will be deleted by CommandRunner
-		commandRunner->cmd = new MeanShiftSP();
-		MeanShiftConfig &config =
-				static_cast<MeanShiftSP*>(commandRunner->cmd)->config;
+		// Object owned by CommandRunner.
+		MeanShiftSP *cmd = new MeanShiftSP();
+		MeanShiftConfig &config = cmd->config;
+		commandRunner->setCommand(cmd);
 
 		// fixed settings
 		/* see method == ClusteringMethod::PSPMS
