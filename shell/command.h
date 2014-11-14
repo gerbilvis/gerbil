@@ -42,7 +42,14 @@ public:
 
 protected:
 	ProgressObserver *progressObserver() { return po; }
+	ProgressObserver const* progressObserver() const { return po; }
 	void setProgressObserver(ProgressObserver *po) { this->po = po; }
+
+	/** Return true if a ProgressObserver is set and it has the abort flag set.
+	 */
+	bool isAborted() const {
+		return progressObserver() && progressObserver()->isAborted();
+	}
 
 	std::string name;
 	std::string contributor_name;

@@ -22,8 +22,7 @@
 
 namespace seg_meanshift {
 
-std::pair<int, int> MeanShift::findKL(const multi_img& input,
-									  ProgressObserver *po)
+KLResult MeanShift::findKL(const multi_img& input, ProgressObserver *po)
 {
 	// load points
 	FAMS cfams(config, po);

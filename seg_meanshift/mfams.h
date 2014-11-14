@@ -11,6 +11,7 @@
 #define _FAMS_H
 
 #include "meanshift_config.h"
+#include "meanshift_klresult.h"
 
 #include <multi_img.h>
 #include <progress_observer.h>
@@ -156,7 +157,7 @@ public:
 					   const std::vector<Point> &points,
 					   const std::vector<multi_img::BandDesc>& ref);
 
-	std::pair<int, int> FindKL();
+	KLResult FindKL();
 	void ComputeRealBandwidths(unsigned int h);
 	int64 DoFindKLIteration(int K, int L, float* scores);
 	void ComputeScores(float* scores, LSHReader &lsh, int L);

@@ -126,13 +126,13 @@ MeanShiftSOM::Result MeanShiftSOM::execute(multi_img::ptr input)
 
 	assert(!config.findKL);
 
-	MeanShift::Result ret_in = ms.execute(msinput, 0,
+	MeanShift::Result msres = ms.execute(msinput, 0,
 									   (config.sp_weight > 0 ? &weights : 0));
-	if (ret_in.labels->empty())
+	if (msres.labels->empty())
 		return Result();
 
 	Result ret_out;
-	ret_out.modes = ret_in.modes;
+	ret_out.modes = msres.modes;
 	ret_out.som = som;
 	ret_out.lookup = mapping;
 
@@ -147,7 +147,7 @@ MeanShiftSOM::Result MeanShiftSOM::execute(multi_img::ptr input)
 				cv::Point pos = som->getCoord2D(answer.first->index);
 				
 				// get segement number of 2D coordinate position
-				short index = (*ret_in.labels)(pos) - 1;
+				short index = (*msres.labels)(pos) - 1;
 
 				(*ret_out.labels)(y, x) = index;
 			}

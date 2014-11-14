@@ -62,16 +62,18 @@ int MeanShiftShell::execute() {
 
 		MeanShift ms(config);
 		if (config.findKL) {
-		// find K, L
-			std::pair<int, int> ret = ms.findKL(
+			// find K, L
+			KLResult ret = ms.findKL(
 #ifdef WITH_SEG_FELZENSZWALB
 						(config.sp_withGrad ? *input_grad : *input));
 #else
 						*input);
 #endif
-			config.K = ret.first; config.L = ret.second;
+			diagnoseKLResult(ret);
 			std::cout << "Found K = " << config.K
-				      << "\tL = " << config.L << std::endl;
+					  << "\tL = " << config.L << std::endl;
+			config.K = ret.K; config.L = ret.L;
+
 			return 0;
 		}
 
@@ -92,8 +94,10 @@ int MeanShiftShell::execute() {
 			res = ms.execute(*input, NULL, NULL, *input);
 		}
 
-		if (res.modes->empty())
-			return 1; // something went wrong, there should always be one mode!
+		if (res.aborted ||
+				// something went wrong, there should always be one mode!
+				res.modes->empty())
+			return 1;
 
 		res.printModes();
 
@@ -142,19 +146,20 @@ MeanShiftShell::execute(std::map<std::string, boost::any> &input,
 	MeanShift ms(config);
 	std::map<std::string, boost::any> output;
 	if (config.findKL) {
-	// find K, L
-		std::pair<int, int> ret = ms.findKL(
+		// find K, L
+		KLResult res = ms.findKL(
 #ifdef WITH_SEG_FELZENSZWALB
-					(config.sp_withGrad ? *inputgrad : *inputimg));
+				(config.sp_withGrad ? *inputgrad : *inputimg));
 #else
-					*inputimg);
+				*inputimg);
 #endif
-		config.K = ret.first; config.L = ret.second;
-		std::cout << "Found K = " << config.K
-				  << "\tL = " << config.L << std::endl;
-
-		output["findKL.K"] = ret.first;
-		output["findKL.L"] = ret.second;
+		if (res.isGood()) {
+				config.K = res.K; config.L = res.L;
+				std::cout << "Found K = " << config.K
+				<< "\tL = " << config.L << std::endl;
+		}
+		res.insertInto(output);
+		return output;
 	} else {
 		MeanShift::Result res = ms.execute(
 #ifdef WITH_SEG_FELZENSZWALB
@@ -163,11 +168,15 @@ MeanShiftShell::execute(std::map<std::string, boost::any> &input,
 				  *inputimg,
 #endif
 				   progress, NULL, *inputimg);
-		output["labels"] = res.labels;
-		output["modes"] = res.modes;
+		if (!res.aborted) {
+			output["labels"] = res.labels;
+			output["modes"] = res.modes;
+			return output;
+		} else {
+			output["aborted"] = true;
+			return output;
+		}
 	}
-
-	return output;
 }
 
 

@@ -17,10 +17,18 @@ class MeanShift {
 
 public:
 	struct Result {
-		Result() : labels(new cv::Mat1s()),
-			modes(new std::vector<multi_img::Pixel>()) {}
+		Result()
+			: labels(new cv::Mat1s()),
+			modes(new std::vector<multi_img::Pixel>()),
+			aborted(false)
+		{}
 		Result(const std::vector<multi_img::Pixel>& m,
-		       const cv::Mat1s& l) { setModes(m); setLabels(l); }
+			   const cv::Mat1s& l)
+			: aborted(false)
+		{ setModes(m); setLabels(l); }
+
+		// default copy and assignment OK
+
 		void setModes(const std::vector<multi_img::Pixel>& in) {
 			modes = boost::make_shared<std::vector<multi_img::Pixel> >(in);
 		}
@@ -42,12 +50,13 @@ public:
 		}
 		boost::shared_ptr<cv::Mat1s> labels;
 		boost::shared_ptr<std::vector<multi_img::Pixel> > modes;
+		// FIXME: make sure this is set and propagated in every return.
+		bool aborted;
 	};
 
 	MeanShift(const MeanShiftConfig& config) : config(config) {}
 
-	std::pair<int, int> findKL(const multi_img& input,
-							   ProgressObserver *po = 0);
+	KLResult findKL(const multi_img& input, ProgressObserver *po = 0);
 	Result execute(const multi_img& input, ProgressObserver *po = 0,
 	               vector<double> *bandwidths = 0,
 	               const multi_img& spinput = multi_img());

@@ -378,7 +378,7 @@ bool FAMS::finishFAMS() {
 }
 
 // main function to find K and L
-std::pair<int,int> FAMS::FindKL() {
+KLResult FAMS::FindKL() {
 	int Kmin = config.Kmin, Kmax = config.K, Kjump = config.Kjump;
 	int Lmax = config.L, k = config.K;
 	float width = config.bandwidth, epsilon = config.epsilon;
@@ -388,7 +388,7 @@ std::pair<int,int> FAMS::FindKL() {
 
 	if (datapoints.empty()) {
 		bgLog("Load points first\n");
-		return make_pair(0, 0);
+		return KLResult(0, 0, KLState::Aborted);
 	}
 
 	int hWidth   = 0;
@@ -442,7 +442,7 @@ std::pair<int,int> FAMS::FindKL() {
 		bool cont = progressUpdate(50.f * (Kmax-Kcrt)/(Kmax-Kmin));
 		if (!cont) {
 			bgLog("FindKL aborted\n");
-			return std::make_pair(0, 0);
+			return KLResult(0, 0, KLState::Aborted);
 		}
 
 		// update Lcrt to reduce running time!
@@ -462,7 +462,7 @@ std::pair<int,int> FAMS::FindKL() {
 		bool cont = progressUpdate(50.f + 50.f * i/nBest);
 		if (!cont) {
 			bgLog("FindKL aborted\n");
-			return std::make_pair(0, 0);
+			return KLResult(0, 0, KLState::Aborted);
 		}
 
 		if (LBest[i] <= 0)
@@ -482,10 +482,10 @@ std::pair<int,int> FAMS::FindKL() {
 	bgLog("done\n");
 
 	if (iBest != -1) {
-		return std::make_pair(KBest[iBest], LBest[iBest]);
+		return KLResult(KBest[iBest], LBest[iBest]);
 	} else {
 		bgLog("No valid pairs found.\n");
-		return std::make_pair(0, 0);
+		return KLResult(0, 0, KLState::NoneFound);
 	}
 }
 

@@ -82,6 +82,8 @@ std::map<std::string, boost::any> MeanShiftSP::execute(std::map<std::string, boo
 #ifdef WITH_SEG_FELZENSZWALB
 	// XXX: for now, gradient/rescale is expected to be done by caller
 
+	setProgressObserver(progress);
+
 	boost::shared_ptr<multi_img> inputimg =
 			boost::any_cast<boost::shared_ptr<multi_img> >(input["multi_img"]);
 	boost::shared_ptr<multi_img> inputgrad;
@@ -92,17 +94,32 @@ std::map<std::string, boost::any> MeanShiftSP::execute(std::map<std::string, boo
 
 	// make sure pixel caches are built
 	inputimg->rebuildPixels(true);
+
+	// FIXME New behaviour: output is empty if we are aborted. Make this clear
+	// in the execute description and check client code.
+	std::map<std::string, boost::any> output;
+	output["aborted"] = true;
+	if (isAborted())
+		return output;
+
 	if (config.sp_withGrad)
 		inputgrad->rebuildPixels(true);
 
+	if (isAborted())
+		return output;
+
 	MeanShift::Result res = execute(inputimg, inputgrad);
-	std::map<std::string, boost::any> output;
-	output["labels"] = res.labels;
-	output["modes"] = res.modes;
+
+	if (isAborted())
+		return output;
+
+	output["aborted"] = false;
+	output["labels"]  = res.labels;
+	output["modes"]   = res.modes;
 	return output;
-#else
+#else // WITH_SEG_FELZENSZWALB
 	throw std::runtime_error("Module seg_felzenszwalb needed, but missing!");
-#endif
+#endif // WITH_SEG_FELZENSZWALB
 }
 
 MeanShift::Result MeanShiftSP::execute(multi_img::ptr input, multi_img::ptr input_grad)
@@ -184,8 +201,15 @@ MeanShift::Result MeanShiftSP::execute(multi_img::ptr input, multi_img::ptr inpu
 
 	if (config.findKL) {
 		// find K, L
-		std::pair<int, int> ret = ms.findKL(msinput);
-		config.K = ret.first; config.L = ret.second;
+		KLResult ret = ms.findKL(msinput);
+		diagnoseKLResult(ret);
+		if (ret.isState(KLState::Aborted)) {
+			MeanShift::Result myres;
+			myres.aborted = true;
+			return myres;
+		}
+
+		config.K = ret.K; config.L = ret.L;
 		std::cout << "Found K = " << config.K
 				  << "\tL = " << config.L << std::endl;
 		return MeanShift::Result();

@@ -27,7 +27,8 @@ public:
 	  *
 	  * All derived classes need to query and honor this flag while executing.
 	  */
-	bool isAborted() { return abortflag; }
+	bool isAborted() const { return abortflag; }
+
 	/** Tell the worker thread to abort the computation.
 	 *
 	 * This is virtual so that it can be a slot in derived classes.

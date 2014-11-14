@@ -17,6 +17,7 @@ vole_compile_library(
 	"meanshift_shell"
 	"meanshift_sp"
 	"meanshift_som"
+	"meanshift_klresult"
 )
 
 vole_add_module()
