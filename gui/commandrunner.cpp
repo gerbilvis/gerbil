@@ -4,7 +4,7 @@
 #include "gerbil_gui_debug.h"
 
 CommandRunner::CommandRunner()
-	: cmd(0), abort(false), progress(0.f), percent(0) {}
+	: cmd(0), progress(0.f), percent(0) {}
 
 CommandRunner::~CommandRunner()
 {
@@ -24,7 +24,7 @@ bool CommandRunner::update(float report, bool incremental)
 		percent = progress * 100;
 		emit progressChanged(percent);
 	}
-	return !abort;
+	return !isAborted();
 }
 
 void CommandRunner::run() {
@@ -34,7 +34,7 @@ void CommandRunner::run() {
 	output = cmd->execute(input, this);
 	emit progressChanged(100);
 
-	if (abort)
+	if (isAborted())
 		emit failure();
 	else
 		emit success(output);
@@ -42,15 +42,15 @@ void CommandRunner::run() {
 	return;
 }
 
-void CommandRunner::terminate() {
+void CommandRunner::abort() {
 	// QThread::terminate() is dangerous and doesn't clean up anything
-	// this is the safe way to abort
-	abort = true;
-	//std::cerr << "CommandRunner aborting" << std::endl;
+	// this is the safe way to abort.
+	ProgressObserver::abort();
+	GGDBGM("CommandRunner aborting" << endl);
 }
 
 void CommandRunner::deleteLater()
 {
-	//GGDBGM("CommandRunner object " << this << endl);
+	GGDBGM("CommandRunner object " << this << endl);
 	QThread::deleteLater();
 }

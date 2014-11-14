@@ -1,9 +1,17 @@
 #ifndef PROGRESS_OBSERVER_H
 #define PROGRESS_OBSERVER_H
 
+
+// TODO proper description
+/** Progress observer.
+ *
+ * Sub-classing: Derived classes need to query and honor isAborted() while
+ * executing.
+ */
 class ProgressObserver
 {
 public:
+	ProgressObserver() : abortflag(false) {}
 	virtual ~ProgressObserver() {}
 
 	/** provide an update and check if you should continue
@@ -15,6 +23,20 @@ public:
 	 *  The abort mechanism is thread-safe though.
 	 */
 	virtual bool update(float report, bool incremental = false) = 0;
+	/** Returns true if the worker thread should abort the computation.
+	  *
+	  * All derived classes need to query and honor this flag while executing.
+	  */
+	bool isAborted() { return abortflag; }
+	/** Tell the worker thread to abort the computation.
+	 *
+	 * This is virtual so that it can be a slot in derived classes.
+	 */
+	virtual void abort() { abortflag = true; }
+
+private:
+	// volatile to ensure worker thread reads changes done by controller thread
+	volatile bool abortflag;
 };
 
 /* For smaller tasks in a bigger calculation */

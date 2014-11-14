@@ -1,6 +1,8 @@
 #ifndef COMMANDRUNNER_H
 #define COMMANDRUNNER_H
 
+#include <gerbil_cplusplus.h>
+
 #include <QThread>
 #include <vole_config.h>
 #include <command.h>
@@ -27,12 +29,10 @@ signals:
 	void failure();
 
 public slots:
-	void terminate();
+	void abort() GBL_OVERRIDE;
 	void deleteLater();
 
 private:
-	// volatile to ensure worker thread reads changes done by controller thread
-	volatile bool abort;
 	// progress cached for incremental updates (not threadsafe)
 	float progress;
 	// progress in percent

@@ -25,7 +25,7 @@ ClusteringModel::ClusteringModel()
 ClusteringModel::~ClusteringModel()
 {
 	if (NULL != commandRunner) {
-		commandRunner->terminate();
+		commandRunner->abort();
 		commandRunner->wait();
 		commandRunner->deleteLater();
 		commandRunner = NULL;
@@ -308,7 +308,7 @@ void ClusteringModel::abortCommandRunner()
 	// disconnect all signals
 	disconnect(commandRunner, 0, 0, 0);
 	// note: CommandRunner overrides terminate(), it just cancels.
-	commandRunner->terminate();
+	commandRunner->abort();
 	// make sure the old runner is deleted after the thread has joined.
 	connect(commandRunner, SIGNAL(finished()),
 			commandRunner, SLOT(deleteLater()));

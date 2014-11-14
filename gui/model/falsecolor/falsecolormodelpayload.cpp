@@ -64,7 +64,7 @@ void FalseColorModelPayload::cancel()
 	//GGDBGM( coloringType << endl);
 	canceled = true;
 	if (runner) {
-		runner->terminate();
+		runner->abort();
 	}
 }
 
