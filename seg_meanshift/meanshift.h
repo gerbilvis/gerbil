@@ -16,6 +16,10 @@ namespace seg_meanshift {
 class MeanShift {
 
 public:
+	/** Result of MeanShift calculation.
+	 *
+	 *  If the MeanShift calculation failed or was aborted, modes is empty.
+	 */
 	struct Result {
 		Result()
 			: labels(new cv::Mat1s()),
@@ -50,7 +54,7 @@ public:
 		}
 		boost::shared_ptr<cv::Mat1s> labels;
 		boost::shared_ptr<std::vector<multi_img::Pixel> > modes;
-		// FIXME: make sure this is set and propagated in every return.
+		// FIXME @georg remove
 		bool aborted;
 	};
 
