@@ -62,7 +62,8 @@ static QList<RecentFile> loadRecentFilesList()
 			RecentFile rf = varrf.value<RecentFile>();
 			GGDBGP(rf.getFileNameWithoutPath().toStdString() << ": "
 						"QImage::Format " << rf.previewImage.format() << endl);
-			recentFiles.append(rf);
+			if (QFileInfo(rf.fileName).exists())
+				recentFiles.append(rf);
 		}
 		makeListEntriesUnique(recentFiles);
 	}
