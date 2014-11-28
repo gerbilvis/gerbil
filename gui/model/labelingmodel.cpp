@@ -1,6 +1,6 @@
 #include "model/labelingmodel.h"
-#include "iogui.h"
-
+#include <app/gerbilio.h>
+#include <gerbil_cplusplus.h>
 #include <qtopencv.h>
 
 #include "labels/icontask.h"
@@ -160,13 +160,15 @@ void LabelingModel::alterPixels(const cv::Mat1s &newLabels,
 
 void LabelingModel::loadLabeling(const QString &filename)
 {
+	GerbilIO io(GBL_NULLPTR, "Labeling From Image File", "labeling image");
+	io.setFileCategory("LabelFile");
+	io.setFileSuffix(".png");
 	/* we are properly initialized with the image dimensions
 	 * so we take these frome our initialization */
-	int height = full_labels.rows;
-	int width = full_labels.cols;
-
-	IOGui io("Labeling Image File", "labeling image");
-	cv::Mat input = io.readFile(filename, -1, height, width);
+	io.setWidth(full_labels.cols);
+	io.setHeight(full_labels.rows);
+	io.setFileName(filename);
+	cv::Mat input = io.readImage();
 	if (input.empty())
 		return;
 
@@ -179,27 +181,10 @@ void LabelingModel::saveLabeling(const QString &filename)
 	Labeling labeling(full_labels);
 	cv::Mat3b output = labeling.bgr();
 
-	IOGui io("Labeling As Image File", "labeling image");
-	io.writeFile(filename, output);
-}
-
-void LabelingModel::loadSeeds()
-{
-	IOGui io("Seed Image File", "seed image");
-	// TODO
-	/*cv::Mat1s seeding = io.readFile(QString(), 0,
-									dimensions.height, dimensions.width);
-	if (seeding.empty())
-		return;
-
-	bandView->seedMap = seeding;
-
-	// now make sure we are in seed mode
-	if (graphsegButton->isChecked()) {
-		bandView->refresh();
-	} else {
-		graphsegButton->toggle();
-	}*/
+	GerbilIO io(GBL_NULLPTR, "Labeling As Image File", "labeling image");
+	io.setFileCategory("LabelFile");
+	io.setFileSuffix(".png");
+	io.writeImage(output);
 }
 
 void LabelingModel::mergeLabels(const QVector<int> &mlabels)

@@ -38,7 +38,6 @@ public slots:
 
 	void loadLabeling(const QString &filename = QString());
 	void saveLabeling(const QString &filename = QString());
-	void loadSeeds();
 	/** Merge the labels with indexes from labels.
 	 *
 	 * @param labels Ids of the labels in the label matix which sould be merged.

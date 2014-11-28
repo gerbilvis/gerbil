@@ -10,11 +10,11 @@ vole_add_optional_modules("seg_meanshift" "seg_medianshift" "seg_probshift" "edg
 
 vole_compile_library(
 	main
-	iogui
 	commandrunner
 	gerbilapplication
 
 	app/gerbil_app_support
+	app/gerbilio
 
 	widgets/mainwindow
 	widgets/autohidewidget

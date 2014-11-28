@@ -1,7 +1,7 @@
 #include "banddock.h"
 #include "../widgets/bandview.h"
 #include "../widgets/graphsegwidget.h"
-#include "../iogui.h"
+#include <app/gerbilio.h>
 
 #include "../gerbil_gui_debug.h"
 
@@ -207,12 +207,14 @@ void BandDock::graphSegModeToggled(bool)
 
 void BandDock::loadSeeds()
 {
-	IOGui io("Seed Image File", "seed image", this);
-	cv::Mat1s seeding = io.readFile(QString(), 0,
-									fullImgSize.height, fullImgSize.width);
+	GerbilIO io(this, "Seed Image File", "seed image");
+	io.setFileCategory("SeedFile");
+	io.setOpenCVFlags(0);
+	io.setWidth(fullImgSize.width);
+	io.setHeight(fullImgSize.height);
+	cv::Mat1s seeding = io.readImage();
 	if (seeding.empty())
 		return;
-
 	bv->setSeedMap(seeding);
 }
 

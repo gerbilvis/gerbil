@@ -8,7 +8,7 @@
 */
 
 #include "viewport.h"
-#include "../iogui.h"
+#include <app/gerbilio.h>
 
 #define GGDBG_MODULE
 #include "../gerbil_gui_debug.h"
@@ -434,8 +434,10 @@ void Viewport::screenshot()
 
 	// write out
 	cv::Mat output = QImage2Mat(img);
-	IOGui io("Screenshot File", "screenshot", target);
-	io.writeFile(QString(), output);
+	GerbilIO io(target, "Screenshot File", "screenshot");
+	io.setFileSuffix(".png");
+	io.setFileCategory("Screenshot");
+	io.writeImage(output);
 }
 
 

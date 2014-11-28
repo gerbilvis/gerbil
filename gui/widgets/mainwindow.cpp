@@ -8,7 +8,7 @@
 */
 
 #include "widgets/mainwindow.h"
-#include "iogui.h"
+#include <app/gerbilio.h>
 
 /*#include "tasks/rgbtbb.h"
 #include "tasks/normrangecuda.h"
@@ -120,8 +120,10 @@ void MainWindow::screenshot()
 	// we use OpenCV so the user can expect the same data type support
 	cv::Mat output = QImage2Mat(shot.toImage());
 
-	IOGui io("Screenshot File", "screenshot", this);
-	io.writeFile(QString(), output);
+	GerbilIO io(this, "Screenshot File", "screenshot");
+	io.setFileSuffix(".png");
+	io.setFileCategory("Screenshot");
+	io.writeImage(output);
 }
 
 void MainWindow::changeEvent(QEvent *e)
