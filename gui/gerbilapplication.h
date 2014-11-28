@@ -4,9 +4,9 @@
 #include <QApplication>
 #include <cstdlib>
 
-#include <gerbil_cplusplus.h>
+#include <boost/noncopyable.hpp>
 
-class GerbilApplication : public QApplication
+class GerbilApplication : public QApplication, boost::noncopyable
 {
 	Q_OBJECT
 public:
@@ -21,12 +21,20 @@ public:
 		// Minimum system requirements for Gerbil are not met.
 		ExitSystemRequirements =	EXIT_FAILURE + 1,
 
+		//                          EXIT_FAILURE + 2
+
 		// No input file given.
 		ExitNoInput =				EXIT_FAILURE + 3
 	};
 
 	explicit GerbilApplication ( int & argc, char ** argv );
-	explicit GerbilApplication ( int & argc, char ** argv, bool GUIenabled );
+
+	/** Returns a pointer to the GerbilApplication object.
+	 *
+	 * Analogous to QCoreApplication::instance(), this returns a null
+	 * pointer if no GerbilApplication instance has been allocated.
+	 */
+	static GerbilApplication *instance();
 
 	/** Execute the gerbil GUI application.
 	 *
@@ -37,12 +45,34 @@ public:
 	 */
 	// TODO make this nothrow and catch all exceptions here.
 	virtual void run();
-signals:
 
-public slots:
+	/** Returns the path to the directory to the loaded multi-spectral
+	 * image file without the filename.
+	 *
+	 * If no image is loaded this returns a null string.
+	 */
+	QString imagePath();
 
 private:
 
+	/** Load multi-spectral image data.
+	 *
+	 * Load multi-spectral image given as command line argument or open
+	 * recent file dialog. Checks if image should be loaded in limited
+	 * mode.
+	 */
+	void loadInput();
+
+	void printUsage();
+
+	/** True if multi-spectral image should be loaded using limited mode. */
+	bool limitedMode;
+
+	/** The input filename of the multi-spectral image. */
+	QString imageFilename;
+
+	/** The input filename of the labels. */
+	QString labelsFilename;
 };
 
 #endif // GERBILAPPLICATION_H
