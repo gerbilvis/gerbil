@@ -10,6 +10,9 @@
 #define GBL_TO_XSTR(x)  #x
 #define GBL_FALSE       0
 
+// FIXME Allegedly boost has macros providing override and final depending on
+// compiler support. Use this instead.
+
 // GCC/g++ sets __cplusplus >= 201103 since version 4.7 iff compiling with
 // -std=c++11.
 // MSVC++ 11.0 _MSC_VER == 1700 (Visual Studio 2012)
