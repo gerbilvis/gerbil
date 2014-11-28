@@ -12,6 +12,9 @@ vole_compile_library(
 	main
 	iogui
 	commandrunner
+	gerbilapplication
+
+	app/gerbil_app_support
 
 	widgets/mainwindow
 	widgets/autohidewidget
@@ -52,7 +55,6 @@ vole_compile_library(
 	model/clusteringmodel
 	model/labels/icontask
 
-
 	docks/banddock
 	docks/normdock
 	docks/roidock
@@ -70,6 +72,7 @@ vole_compile_library(
 
 vole_moc_library(
 	commandrunner.h
+	gerbilapplication.h
 
 	widgets/mainwindow.h
 	widgets/autohidewidget.h
