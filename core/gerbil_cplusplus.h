@@ -22,9 +22,11 @@
 #if GBL_FALSE && (__cplusplus >= 201103 ||  MSC_VER >= 1700)
 #define GBL_OVERRIDE override
 #define GBL_FINAL    final
+#define GBL_NULLPTR  nullptr
 #else
 #define GBL_OVERRIDE
 #define GBL_FINAL
+#define GBL_NULLPTR  0
 #endif
 
 #endif // GERBIL_CPLUSPLUS_H

@@ -16,6 +16,8 @@ void dump_compiler_cplusplus_info()
 		 << ((!string(GBL_TO_STR(GBL_OVERRIDE)).empty()) ? "yes":"no") << endl;
 	cout << "Compiled with C++11 final keyword:          "
 		 << ((!string(GBL_TO_STR(GBL_FINAL)).empty()) ? "yes":"no") << endl;
+	cout << "Compiled with C++11 nullptr keyword:        "
+		 << ((string(GBL_TO_STR(GBL_NULLPTR)) != "0") ? "yes":"no") << endl;
 }
 
 int main(int argc, char **argv)
