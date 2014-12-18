@@ -33,7 +33,7 @@
 	desc::opt)
 // option with one digit shortcut (shopt)
 #define BOOST_OPT_S(opt,shopt) (\
-	(key(#opt","#shopt), \
+	key(#opt","#shopt), \
 	boost::program_options::value(&opt)->default_value(opt), \
 	desc::opt)
 #define BOOST_BOOL(opt) (\
