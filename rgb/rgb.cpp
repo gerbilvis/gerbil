@@ -238,8 +238,12 @@ cv::Mat3f RGBDisplay::executeSOM(const multi_img &img, ProgressObserver *po,
 	// compute weighted coordinates of multi_img pixels in 3D SOM
 	Mat3 bgr(img.height, img.width);
 	calcPo = (po ? new ChainedProgressObserver(po, .05f) : 0);
-	std::vector<float> weights =
-			neuronWeightsGeometric<float>(lookup->n);
+	std::vector<float> weights;
+	if (config.som_linear) {
+		weights = std::vector<float>(lookup->n, 1.f/lookup->n);
+	} else {
+		weights = neuronWeightsGeometric<float>(lookup->n);
+	}
 	SomRgbTbb<true> comp(*lookup, weights, bgr, calcPo);
 	tbb::parallel_for(tbb::blocked_range2d<int>(0, img.height, // row range
 												0, img.width), // column range
