@@ -27,12 +27,23 @@
 /* some helpful macros */
 #ifdef WITH_BOOST
 #define DESC_OPT(opt, s) const char * opt = s;
-#define BOOST_OPT(opt) (key(#opt), value(&opt)->default_value(opt), desc::opt)
+#define BOOST_OPT(opt) (\
+	key(#opt), \
+	boost::program_options::value(&opt)->default_value(opt), \
+	desc::opt)
 // option with one digit shortcut (shopt)
-#define BOOST_OPT_S(opt,shopt) (key(#opt","#shopt), value(&opt)->default_value(opt), desc::opt)
-#define BOOST_BOOL(opt) (key(#opt), bool_switch(&opt)->default_value(opt), desc::opt)
+#define BOOST_OPT_S(opt,shopt) (\
+	(key(#opt","#shopt), \
+	boost::program_options::value(&opt)->default_value(opt), \
+	desc::opt)
+#define BOOST_BOOL(opt) (\
+	key(#opt), \
+	boost::program_options::bool_switch(&opt)->default_value(opt), \
+	desc::opt)
 #endif
 #define COMMENT_OPT(s, opt) s << #opt "=" << opt  \
+	<< " # " <<  desc::opt << std::endl
+#define COMMENT_BOOL(s, opt) s << #opt "=" << (opt ? "true" : "false" )  \
 	<< " # " <<  desc::opt << std::endl
 
 /* base class that exposes configuration handling */
@@ -149,22 +160,6 @@ protected:
 	std::ostream& operator<<(std::ostream& o, CLAZZ::ENUM e)  \
 	{	o << CLAZZ ## _ ## ENUM ## _ ## Str[e]; return o;  }
 
-//	
-//	Note: the method below was a poor attempt to get ENUM_MAGIC to work (see
-//	forensics/cmfd for a working example) for other modules as well.
-//	However, it did not improve anything
-/*
-	std::istream& operator>>(std::istream& o, ENUM &e)  \
-	{	std::string tmp;\
-	    o >> tmp;\
-		for (unsigned int i = 0; i < sizeof(ENUM ## Str)/sizeof(char*); ++i) {\
-			if (strcmp(ENUM ## Str[i], tmp.c_str())) {\
-				e = (ENUM)i; \
-				return o;\
-			}\
-		}\
-	}
-*/
 #endif // BOOST_VERSION
 #else  // Now without Boost
 #define ENUM_MAGIC(ENUM) \
