@@ -15,7 +15,7 @@ som_type_table = [
 	"SOM_TESSERACT" 
 	]
 
-data_type_table = [ "bad data type", "16 Bit IEEE 574 float" ]
+data_type_table = [ "bad data type", "32-bit IEEE 574 float" ]
 
 class ExitStatus:
 	Success   = 0
