@@ -45,13 +45,13 @@ multi_img::ptr ImgInput::execute()
 			// Parsing of ROI String failed
 			std::cerr << "Ignoring invalid ROI specification" << std::endl;
 		} else {
-			applyROI(img_ptr, roiVals);
+			applyROI(*img_ptr, roiVals);
 		}
 	}
 
 	// crop spectrum - maybe we used a fancy file reader that cropped the bands already
 	if (!bandsCropped)
-		cropSpectrum(img_ptr);
+		cropSpectrum(*img_ptr);
 
 	// return empty image on failure
 	if (img_ptr->empty())
@@ -74,7 +74,7 @@ multi_img::ptr ImgInput::execute()
 	}
 
 	// alter illumination
-	applyIllumination(img_ptr);
+	applyIllumination(*img_ptr);
 
 	return img_ptr;
 }
@@ -92,45 +92,44 @@ bool ImgInput::parseROIString(const std::string &str, std::vector<int> &vals)
 	return ctr == 3;
 }
 
-void ImgInput::applyROI(multi_img::ptr &img_ptr, std::vector<int>& vals)
+void ImgInput::applyROI(multi_img &img, std::vector<int>& vals)
 {
-	img_ptr = boost::make_shared<multi_img>
-			(*img_ptr, cv::Rect(vals[0], vals[1], vals[2], vals[3]));
+	img = multi_img(img, cv::Rect(vals[0], vals[1], vals[2], vals[3]));
 }
 
-void ImgInput::cropSpectrum(multi_img::ptr &img_ptr)
+void ImgInput::cropSpectrum(multi_img& img)
 {
 	if ((config.bandlow > 0) ||
-		(config.bandhigh > 0 && config.bandhigh < (int)img_ptr->size() - 1)) {
+		(config.bandhigh > 0 && config.bandhigh < (int)img.size() - 1)) {
 
 		// if bandhigh is not specified, do not limit
-		int bandhigh = (config.bandhigh == 0) ? (img_ptr->size() - 1) : config.bandhigh;
+		int bandhigh =
+		        (config.bandhigh == 0) ? (img.size() - 1) : config.bandhigh;
 
 		// correct input?
-		if (config.bandlow > bandhigh || bandhigh > (int)img_ptr->size() - 1) {
-			std::cerr << "Inconsistent bandlow, bandhigh values specified!" << std::endl;
-			img_ptr = multi_img::ptr(new multi_img());
+		if (config.bandlow > bandhigh || bandhigh > (int)img.size() - 1) {
+			std::cerr << "Inconsistent bandlow, bandhigh values specified!"
+			          << std::endl;
+			img = multi_img();
 			return;
 		}
 
-        img_ptr = multi_img::ptr(new multi_img(*img_ptr, config.bandlow, bandhigh));
+        img = multi_img(img, config.bandlow, bandhigh);
 	}
 }
 
-void ImgInput::applyIllumination(multi_img::ptr &img_ptr)
+void ImgInput::applyIllumination(multi_img &img)
 {
 	if (config.removeIllum > 0) {
 		Illuminant il(config.removeIllum);
 		// first get normalization right for our range
-		il.setNormalization(img_ptr->meta[0].center,
-					  img_ptr->meta[img_ptr->size()-1].center);
-		img_ptr->apply_illuminant(il, true);
+		il.setNormalization(img.meta[0].center, img.meta[img.size()-1].center);
+		img.apply_illuminant(il, true);
 	}
 	if (config.addIllum > 0) {
 		Illuminant il(config.addIllum);
-		il.setNormalization(img_ptr->meta[0].center,
-					  img_ptr->meta[img_ptr->size()-1].center);
-		img_ptr->apply_illuminant(il);
+		il.setNormalization(img.meta[0].center, img.meta[img.size()-1].center);
+		img.apply_illuminant(il);
 	}
 }
 
