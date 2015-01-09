@@ -94,9 +94,8 @@ int MeanShiftShell::execute() {
 			res = ms.execute(*input, NULL, NULL, *input);
 		}
 
-		if (res.aborted ||
-				// something went wrong, there should always be one mode!
-				res.modes->empty())
+		// something went wrong, there must be at least one mode!
+		if (res.modes->empty())
 			return 1;
 
 		res.printModes();
@@ -168,14 +167,12 @@ MeanShiftShell::execute(std::map<std::string, boost::any> &input,
 				  *inputimg,
 #endif
 				   progress, NULL, *inputimg);
-		if (!res.aborted) {
+		if (res.modes->size() != 0) {
 			output["labels"] = res.labels;
 			output["modes"] = res.modes;
-			return output;
-		} else {
-			output["aborted"] = true;
-			return output;
+
 		}
+		return output;
 	}
 }
 

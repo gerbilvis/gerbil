@@ -23,12 +23,10 @@ public:
 	struct Result {
 		Result()
 			: labels(new cv::Mat1s()),
-			modes(new std::vector<multi_img::Pixel>()),
-			aborted(false)
+			modes(new std::vector<multi_img::Pixel>())
 		{}
 		Result(const std::vector<multi_img::Pixel>& m,
 			   const cv::Mat1s& l)
-			: aborted(false)
 		{ setModes(m); setLabels(l); }
 
 		// default copy and assignment OK
@@ -54,8 +52,6 @@ public:
 		}
 		boost::shared_ptr<cv::Mat1s> labels;
 		boost::shared_ptr<std::vector<multi_img::Pixel> > modes;
-		// FIXME @georg remove
-		bool aborted;
 	};
 
 	MeanShift(const MeanShiftConfig& config) : config(config) {}

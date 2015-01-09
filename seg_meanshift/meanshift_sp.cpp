@@ -95,10 +95,7 @@ std::map<std::string, boost::any> MeanShiftSP::execute(std::map<std::string, boo
 	// make sure pixel caches are built
 	inputimg->rebuildPixels(true);
 
-	// FIXME New behaviour: output is empty if we are aborted. Make this clear
-	// in the execute description and check client code.
 	std::map<std::string, boost::any> output;
-	output["aborted"] = true;
 	if (isAborted())
 		return output;
 
@@ -113,7 +110,6 @@ std::map<std::string, boost::any> MeanShiftSP::execute(std::map<std::string, boo
 	if (isAborted())
 		return output;
 
-	output["aborted"] = false;
 	output["labels"]  = res.labels;
 	output["modes"]   = res.modes;
 	return output;
@@ -204,9 +200,7 @@ MeanShift::Result MeanShiftSP::execute(multi_img::ptr input, multi_img::ptr inpu
 		KLResult ret = ms.findKL(msinput);
 		diagnoseKLResult(ret);
 		if (ret.isState(KLState::Aborted)) {
-			MeanShift::Result myres;
-			myres.aborted = true;
-			return myres;
+			return MeanShift::Result();
 		}
 
 		config.K = ret.K; config.L = ret.L;
