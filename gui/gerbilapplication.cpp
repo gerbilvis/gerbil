@@ -5,8 +5,6 @@
 #include <controller/controller.h>
 #include <widgets/mainwindow.h>
 #include <app/gerbil_app_support.h>
-#include <app/gerbil_error.h>
-
 
 #include <QFileInfo>
 #include <QIcon>
