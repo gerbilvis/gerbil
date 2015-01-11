@@ -151,11 +151,10 @@ void DistViewGUI::setEnabled(bool enabled)
 	ui->gv->setEnabled(enabled);
 }
 
-void DistViewGUI::toggleFold()
+void DistViewGUI::fold(bool folded)
 {
-	if (!ui->gv->isHidden()) {
-		/** HIDE **/
-		GGDBGM(type << " hiding" << endl);
+	if (folded) { // fold
+		GGDBGM(type << " folding" << endl);
 
 		// let the controller know we do not need our image representation
 		emit unsubscribeRepresentation(this, type);
@@ -174,35 +173,47 @@ void DistViewGUI::toggleFold()
 		//(*binsets)->clear(); // clear the vector, not re-create shareddata!
 		//viewport->shuffleIdx.clear();
 		//viewport->vb.destroy();
-	} else {
-		/** SHOW **/
-		GGDBGM(type << " showing" << endl);
+		emit foldingStateChanged(type, true);
+
+	} else { // unfold
+		GGDBGM(type << " unfolding" << endl);
 
 		emit needBinning(type);
 		// let the controller know we need our image representation
 		emit subscribeRepresentation(this, type);
 
 		// unfold GUI and set size policy for proper arrangement
-        ui->gv->setVisible(true);
+		ui->gv->setVisible(true);
 		ui->topBar->unfold();
 		QSizePolicy pol(QSizePolicy::Preferred, QSizePolicy::Expanding);
 		pol.setVerticalStretch(1);
 		frame->setSizePolicy(pol);
 
+		emit foldingStateChanged(type, false);
+
 		// TODO: trigger calculation of data?
+	}
+}
+
+void DistViewGUI::toggleFold()
+{
+	if (!ui->gv->isHidden()) {
+		fold(true);
+	} else {
+		fold(false);
 	}
 }
 
 void DistViewGUI::setTitle(representation::t type)
 {
-	QString title = QString("<b>%1</b>").arg(representation::str(type));
+	QString title = QString("<b>%1</b>").arg(representation::prettyString(type));
 	ui->topBar->setTitle(title);
 }
 
 void DistViewGUI::setTitle(representation::t type,
 						   multi_img::Value min, multi_img::Value max)
 {
-	QString title = QString("<b>%1</b>").arg(representation::str(type));
+	QString title = QString("<b>%1</b>").arg(representation::prettyString(type));
 	title = title.append(" [%1..%2]")
 			.arg(min, 0, 'f', 2).arg(max, 0, 'f', 2);
 	ui->topBar->setTitle(title);

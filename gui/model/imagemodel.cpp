@@ -284,7 +284,7 @@ void ImageModel::computeBand(representation::t type, int dim)
 	}
 
 	QString desc;
-	const char * const typestr = representation::str(type);
+	QString typestr = representation::prettyString(type);
 	if (banddesc.empty())
 		desc = QString("%1 Band #%2").arg(typestr).arg(dim+1);
 	else

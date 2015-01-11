@@ -49,6 +49,8 @@ public slots:
 	void setAlpha(float alpha);
 
 	void setLimitersMode(bool enabled);
+
+	/** Application focus on this viewport. */
 	void activate();
 
 	// entry point of user interaction with temporary quick drawing

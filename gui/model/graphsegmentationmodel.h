@@ -7,6 +7,7 @@
 #include <background_task/background_task_queue.h>
 #include <opencv2/core/core.hpp>
 
+#include <QMap>
 #include <QObject>
 #include <QPixmap>
 

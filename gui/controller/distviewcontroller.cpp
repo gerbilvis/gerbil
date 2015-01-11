@@ -10,7 +10,8 @@
 
 #include "subscriptions.h"
 
-//#define GGDBG_MODULE
+#define GGDBG_MODULE
+#include <QSettings>
 #include <gerbil_gui_debug.h>
 
 #ifdef GGDBG_MODULE
@@ -33,12 +34,12 @@ DistViewController::DistViewController(Controller *ctrl,
 {
 	/* Create all viewers. Only one viewer per representation type is supported.
 	 */
-	foreach (representation::t rType, representation::all()) {
-		payloadMap.insert(rType, new payload(rType));
-		payloadMap[rType]->model.setTaskQueue(taskQueue);
+	foreach (representation::t repr, representation::all()) {
+		payloadMap.insert(repr, new Payload(repr));
+		payloadMap[repr]->model.setTaskQueue(taskQueue);
 		// TODO: the other way round. ctx+sets come from model
-		payloadMap[rType]->model.setContext(payloadMap[rType]->gui.getContext());
-		payloadMap[rType]->model.setBinSets(payloadMap[rType]->gui.getBinSets());
+		payloadMap[repr]->model.setContext(payloadMap[repr]->gui.getContext());
+		payloadMap[repr]->model.setBinSets(payloadMap[repr]->gui.getBinSets());
 	}
 
 	foreach (representation::t i, representation::all()) {
@@ -53,15 +54,47 @@ DistViewController::~DistViewController()
 
 void DistViewController::init()
 {
-	// After startup show IMG and GRAD. Hide NORM, IMGPCA and GRADPCA at the
-	// beginning.
+
+	// First, set viewport folding.
 	// NOTE that we did not connect signals yet! This is actually good as we
 	// will not get stray signals before the content is ready.
-	activeView = representation::IMG;
-	payloadMap[activeView]->gui.setActive();
-	payloadMap[representation::NORM]->gui.toggleFold();
-	payloadMap[representation::IMGPCA]->gui.toggleFold();
-	payloadMap[representation::GRADPCA]->gui.toggleFold();
+
+	// TODO: need to add signal/slot for activeView
+
+	QSettings settings;
+	if (settings.contains("viewports/IMGfolded")) {
+		// settings are available
+		QString activeStr = settings.value("viewports/active").value<QString>();
+		activeView = representation::fromStr(activeStr);
+		if (!representation::valid(activeView)) {
+			activeView = representation::IMG;
+		}
+		payloadMap[activeView]->gui.setActive();
+		foreach(representation::t repr, representation::all()) {
+			QString key = QString("viewports/") +
+					representation::str(repr) + "folded";
+			// read folded setting, default unfolded
+			bool folded = settings.value(key, false).value<bool>();
+			Payload *p = payloadMap[repr];
+			if (p) {
+				p->gui.fold(folded);
+			}
+		}
+	} else {
+		// no settings available
+		// Show IMG and GRAD. Hide NORM, IMGPCA and GRADPCA at the
+		// beginning.
+		activeView = representation::IMG;
+		payloadMap[activeView]->gui.setActive();
+		processFoldingStateChanged(representation::IMG, false);
+		processFoldingStateChanged(representation::GRAD, false);
+		payloadMap[representation::NORM]->gui.fold(true);
+		processFoldingStateChanged(representation::NORM, true);
+		payloadMap[representation::IMGPCA]->gui.fold(true);
+		processFoldingStateChanged(representation::IMGPCA, true);
+		payloadMap[representation::GRADPCA]->gui.fold(true);
+		processFoldingStateChanged(representation::GRADPCA, true);
+	}
 
 	connect(ctrl->imageModel(), SIGNAL(roiRectChanged(cv::Rect)),
 			this, SLOT(processROIChage(cv::Rect)));
@@ -71,12 +104,12 @@ void DistViewController::init()
 			SLOT(processImageUpdate(representation::t,SharedMultiImgPtr,bool)));
 
 
-	foreach (payload *p, payloadMap) {
+	foreach (Payload *p, payloadMap) {
 		// fill GUI with distribution view
 		ctrl->mainWindow()->addDistView(p->gui.getFrame());
 	}
 
-	foreach (payload *p, payloadMap) {
+	foreach (Payload *p, payloadMap) {
 		DistViewModel *m = &p->model;
 
 		connect(m, SIGNAL(newBinning(representation::t)),
@@ -103,6 +136,8 @@ void DistViewController::init()
 				this, SLOT(processDistviewSubscribeRepresentation(QObject*,representation::t)));
 		connect(g, SIGNAL(unsubscribeRepresentation(QObject*,representation::t)),
 				this, SLOT(processDistviewUnsubscribeRepresentation(QObject*,representation::t)));
+		connect(g, SIGNAL(foldingStateChanged(representation::t,bool)),
+				this, SLOT(processFoldingStateChanged(representation::t,bool)));
 	}
 
 	/* connect pass-throughs / signals we process */
@@ -138,7 +173,7 @@ void DistViewController::init()
 
 void DistViewController::initSubscriptions()
 {
-	foreach (payload *p, payloadMap) {
+	foreach (Payload *p, payloadMap) {
 		DistViewGUI *g = &p->gui;
 		g->initSubscriptions();
 	}
@@ -163,7 +198,7 @@ void DistViewController::addImage(representation::t type, sets_ptr temp,
 void DistViewController::setActiveViewer(representation::t type)
 {
 	activeView = type;
-	QMap<representation::t, payload*>::const_iterator it;
+	QMap<representation::t, Payload*>::const_iterator it;
 	for (it = payloadMap.begin(); it != payloadMap.end(); ++it) {
 		 if (it.key() != activeView)
 			it.value()->gui.setInactive();
@@ -178,7 +213,7 @@ void DistViewController::pixelOverlay(int y, int x)
 		return;
 	}
 
-	foreach (payload *p, payloadMap) {
+	foreach (Payload *p, payloadMap) {
 		// not visible -> not subscribed -> no data
 		if (p->gui.isVisible()) {
 			QPolygonF overlay = p->model.getPixelOverlay(y, x);
@@ -309,7 +344,7 @@ void DistViewController::updateLabels(const cv::Mat1s& labels,
 									  bool colorsChanged)
 {
 	if (!colors.empty()) {
-		foreach (payload *p, payloadMap) {
+		foreach (Payload *p, payloadMap) {
 			p->model.setLabelColors(colors);
 			p->gui.updateLabelColors(colors);
 		}
@@ -319,7 +354,7 @@ void DistViewController::updateLabels(const cv::Mat1s& labels,
 	if (labels.empty() && (!colorsChanged))
 		return;
 
-	foreach (payload *p, payloadMap) {
+	foreach (Payload *p, payloadMap) {
 		p->model.updateLabels(labels, colors);
 	}
 }
@@ -332,7 +367,7 @@ void DistViewController::updateLabelsPartially(const cv::Mat1s &labels,
 	 */
 	bool profitable = (size_t(2 * cv::countNonZero(mask)) < mask.total());
 	if (profitable) {
-		foreach (payload *p, payloadMap) {
+		foreach (Payload *p, payloadMap) {
 			p->model.updateLabelsPartially(labels, mask);
 		}
 	} else {
@@ -411,7 +446,7 @@ void DistViewController::toggleIgnoreLabels(bool toggle)
 {
 	// TODO: cancel previous toggleignorelabel tasks here!
 
-	foreach (payload *p, payloadMap) {
+	foreach (Payload *p, payloadMap) {
 		p->model.toggleLabels(toggle);
 	}
 
@@ -427,4 +462,15 @@ void DistViewController::remHighlightFromLabel()
 {
 	cv::Mat1b mask = payloadMap[activeView]->model.getHighlightMask();
 	emit alterLabelRequested(currentLabel, mask, true);
+}
+
+void DistViewController::processFoldingStateChanged(representation::t repr, bool folded)
+{
+	// Store in QSettings. This is done every time a view folds/unfolds, since
+	// changing QSettings is expected to be cheap.
+	QSettings settings;
+	QString key = QString("viewports/") +
+			representation::str(repr) + "folded";
+	GGDBGM(key.toStdString() << " " << folded);
+	settings.setValue(key, QVariant(folded));
 }

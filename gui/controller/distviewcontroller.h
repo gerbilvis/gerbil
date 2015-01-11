@@ -15,8 +15,8 @@ class DistViewController : public QObject
 {
     Q_OBJECT
     
-	struct payload {
-		payload(representation::t type) : model(type), gui(type) {}
+	struct Payload {
+		Payload(representation::t type) : model(type), gui(type) {}
 
 		DistViewModel model;
 		DistViewGUI gui;
@@ -103,6 +103,9 @@ public slots:
 	void processDistviewSubscribeRepresentation(QObject *subscriber, representation::t repr);
 	void processDistviewUnsubscribeRepresentation(QObject *subscriber, representation::t repr);
 
+	// folding state of a distview changed
+	void processFoldingStateChanged(representation::t repr, bool folded);
+
 signals:
 	void toggleLabeled(bool);
 	void toggleUnlabeled(bool);
@@ -137,7 +140,7 @@ signals:
 protected:
 	void updateBinning(representation::t repr, SharedMultiImgPtr image);
 
-	QMap<representation::t, payload*> payloadMap;
+	QMap<representation::t, Payload*> payloadMap;
 	representation::t activeView;
 	Controller *ctrl;
 	ImageModel *im;

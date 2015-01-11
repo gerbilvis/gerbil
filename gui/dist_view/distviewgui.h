@@ -41,6 +41,7 @@ public slots:
 	void rebuild()		{ vp->rebuild(); }
 
 	// fold in or out
+	void fold(bool folded);
 	void toggleFold();
 
 	// from outside
@@ -73,6 +74,9 @@ signals:
 	void needBinning(representation::t type);
 	void subscribeRepresentation(QObject *subscriber, representation::t type);
 	void unsubscribeRepresentation(QObject *subscriber, representation::t type);
+
+	// The folding state changed.
+	void foldingStateChanged(representation::t type, bool folded);
 
 protected:
 	// initialize target, vp, ui::gv
