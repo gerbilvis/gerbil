@@ -8,29 +8,22 @@
 */
 
 #include "widgets/mainwindow.h"
+
 #include <app/gerbilio.h>
 
-/*#include "tasks/rgbtbb.h"
-#include "tasks/normrangecuda.h"
-#include "tasks/normrangetbb.h"
-#include <background_task/background_task_queue.h>
-*/
+#include <docks/illumdock.h>
+#include <docks/clusteringdock.h>
 
-#include "docks/illumdock.h"
-#include "docks/clusteringdock.h"
-
-#include <labeling.h>
 #include <qtopencv.h>
-
-#include <opencv2/highgui/highgui.hpp>
-#include <opencv2/gpu/gpu.hpp>
 
 #include <QPainter>
 #include <QIcon>
 #include <QSignalMapper>
-#include <iostream>
 #include <QShortcut>
 #include <QFileInfo>
+#include <QMenu>
+
+#include <iostream>
 
 MainWindow::MainWindow()
 	: contextMenu(NULL)

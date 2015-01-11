@@ -2,24 +2,26 @@
 #include "controller.h"
 #include "distviewcontroller.h"
 
-#include "widgets/mainwindow.h"
-#include "widgets/graphsegwidget.h"
+#include <widgets/mainwindow.h>
+#include <widgets/graphsegwidget.h>
 
-#include "docks/banddock.h"
-#include "widgets/bandview.h"
-#include "docks/normdock.h"
-#include "docks/falsecolordock.h"
-#include "docks/roidock.h"
-#include "docks/illumdock.h"
-#include "docks/clusteringdock.h"
-#include "docks/labeldock.h"
+#include <docks/banddock.h>
+#include <widgets/bandview.h>
+#include <docks/normdock.h>
+#include <docks/falsecolordock.h>
+#include <docks/roidock.h>
+#include <docks/illumdock.h>
+#include <docks/clusteringdock.h>
+#include <docks/labeldock.h>
 
-#include "model/labelingmodel.h"
-#include "model/falsecolormodel.h"
-#include "model/graphsegmentationmodel.h"
-#include "model/clusteringmodel.h"
+#include <model/imagemodel.h>
+#include <model/labelingmodel.h>
+#include <model/falsecolormodel.h>
+#include <model/graphsegmentationmodel.h>
+#include <model/clusteringmodel.h>
+#include <model/illuminationmodel.h>
 
-#include "gerbil_gui_debug.h"
+#include <gerbil_gui_debug.h>
 
 
 void Controller::initDocks()

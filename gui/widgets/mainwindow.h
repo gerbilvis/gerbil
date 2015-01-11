@@ -11,34 +11,7 @@
 #define MAINWINDOW_H
 
 #include "ui_mainwindow.h"
-#include "docks/roidock.h"
-#include <shared_data.h>
-#include <multi_img.h>
-#include <labeling.h>
-// TODO: should belong to a controller
-#include <model/illuminationmodel.h>
-#include <progress_observer.h>
-#include "commandrunner.h"
-#ifdef WITH_SEG_MEANSHIFT
-#include <meanshift_shell.h>
-#endif
-#ifdef WITH_SEG_MEDIANSHIFT
-#include <medianshift_shell.h>
-#endif
-#ifdef WITH_SEG_PROBSHIFT
-#include <probshift_shell.h>
-#endif
-#include <graphseg.h>
 
-#include <vector>
-#include <QPixmap>
-#include <QImage>
-#include <QVector>
-#include <QMenu>
-#include <opencv2/core/core.hpp>
-
-class Controller;
-class DistViewController;
 
 class MainWindow : public QMainWindow, private Ui::MainWindow {
     Q_OBJECT

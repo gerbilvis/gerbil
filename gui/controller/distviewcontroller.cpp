@@ -1,6 +1,9 @@
 #include "distviewcontroller.h"
-#include "dist_view/viewport.h"
-#include "widgets/mainwindow.h"
+
+#include <dist_view/viewport.h>
+#include <widgets/mainwindow.h>
+
+#include <model/imagemodel.h>
 
 #include <QSignalMapper>
 
