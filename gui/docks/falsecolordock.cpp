@@ -38,6 +38,7 @@ static QStringList prettyFalseColorNames = QStringList()
 FalseColorDock::FalseColorDock(QWidget *parent)
 	: QDockWidget(parent), lastShown(FalseColoring::CMF)
 {
+	setObjectName("FalseColorDock");
 	/* setup our UI here as it is quite minimalistic */
 	QWidget *contents = new QWidget(this);
 	QVBoxLayout *layout = new QVBoxLayout(contents);

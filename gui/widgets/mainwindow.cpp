@@ -22,6 +22,7 @@
 #include <QShortcut>
 #include <QFileInfo>
 #include <QMenu>
+#include <QSettings>
 
 #include <iostream>
 
@@ -37,6 +38,10 @@ void MainWindow::initUI(const QString &filename)
 	/* set title */
 	QFileInfo fi(filename);
 	setWindowTitle(QString("Gerbil - %1").arg(fi.completeBaseName()));
+
+	// restore geometry
+	QSettings settings;
+	restoreGeometry(settings.value("mainWindow/geometry").toByteArray());
 }
 
 void MainWindow::initSignals(QObject *ctrl, QObject *dvctrl)
@@ -117,6 +122,16 @@ void MainWindow::screenshot()
 	io.setFileSuffix(".png");
 	io.setFileCategory("Screenshot");
 	io.writeImage(output);
+}
+
+void MainWindow::closeEvent(QCloseEvent *event)
+{
+	QSettings settings;
+	// store window geometry
+	settings.setValue("mainWindow/geometry", saveGeometry());
+	// store dock widgets state
+	settings.setValue("mainWindow/windowState", saveState());
+	QMainWindow::closeEvent(event);
 }
 
 void MainWindow::changeEvent(QEvent *e)

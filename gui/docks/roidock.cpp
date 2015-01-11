@@ -16,6 +16,7 @@ static QRect CVRect2QRect(const cv::Rect &r) {
 RoiDock::RoiDock(QWidget *parent) :
 	QDockWidget(parent)
 {
+	setObjectName("ROIDock");
 	setupUi(this);
 	initUi();
 }

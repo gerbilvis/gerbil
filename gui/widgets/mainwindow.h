@@ -12,6 +12,7 @@
 
 #include "ui_mainwindow.h"
 
+#include <gerbil_cplusplus.h>
 
 class MainWindow : public QMainWindow, private Ui::MainWindow {
     Q_OBJECT
@@ -29,7 +30,9 @@ public slots:
 	void screenshot();
 
 protected:
-	void changeEvent(QEvent *e);
+
+	void closeEvent (QCloseEvent * event) GBL_OVERRIDE;
+	void changeEvent(QEvent *e) GBL_OVERRIDE;
 
 private:
 	QMenu *contextMenu;

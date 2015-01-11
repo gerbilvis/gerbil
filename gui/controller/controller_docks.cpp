@@ -21,6 +21,7 @@
 #include <model/clusteringmodel.h>
 #include <model/illuminationmodel.h>
 
+#include <QSettings>
 #include <gerbil_gui_debug.h>
 
 
@@ -28,6 +29,8 @@ void Controller::initDocks()
 {
 	createDocks();
 	setupDocks();
+
+	QSettings settings;
 
 	/// left side
 	mainWindow()->addDockWidget(Qt::LeftDockWidgetArea, roiDock);
@@ -49,6 +52,9 @@ void Controller::initDocks()
 //	mainWindow()->tabifyDockWidget(roiDock, clusteringDock);
 #endif
 	roiDock->raise();
+	// restore dock widget positions
+	mainWindow()->restoreState(
+				settings.value("mainWindow/windowState").toByteArray());
 
 	imageModel()->computeFullRgb();
 }

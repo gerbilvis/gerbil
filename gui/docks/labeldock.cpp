@@ -27,6 +27,7 @@ LabelDock::LabelDock(QWidget *parent) :
 	hovering(false),
 	hoverLabel(-1)
 {
+	setObjectName("LabelDock");
 	init();
 }
 
