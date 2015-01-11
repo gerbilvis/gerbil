@@ -13,21 +13,28 @@
 
 #include "widgets/mainwindow.h"
 
+#include "gerbil_cplusplus.h"
+
 //#define GGDBG_MODULE
 #include "gerbil_gui_debug.h"
 
 #include <boost/ref.hpp>
 #include <cstdlib> // for exit()
 
-Controller::Controller(const QString &filename, bool limited_mode,
-	const QString &labelfile)
-	// initialize all pointers so we don't access them too early w/o notice
-	: im(0), lm(0), fm(0), illumm(0), gsm(0),
+Controller::Controller(const QString &filename,
+					   bool limited_mode,
+					   const QString &labelfile,
+					   QObject *parent)
+
+	: QObject(parent),
+	  // initialize all pointers so we don't access them too early w/o notice
+	  im(GBL_NULLPTR), lm(GBL_NULLPTR), fm(GBL_NULLPTR), illumm(GBL_NULLPTR),
+	  gsm(GBL_NULLPTR),
 #ifdef WITH_SEG_MEANSHIFT
-	  cm(0),
+	  cm(GBL_NULLPTR),
 #endif
-	  dvc(0),
-	  queuethread(0),
+	  dvc(GBL_NULLPTR),
+	  queuethread(GBL_NULLPTR),
 	  subs(new Subscriptions)
 {
 	// reset internal ROI state tracking

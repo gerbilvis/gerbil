@@ -3,8 +3,11 @@
 
 #include <QApplication>
 #include <cstdlib>
+#include <gerbil_cplusplus.h>
 
 #include <boost/noncopyable.hpp>
+
+class Controller;
 
 class GerbilApplication : public QApplication, boost::noncopyable
 {
@@ -53,6 +56,13 @@ public:
 	 */
 	QString imagePath();
 
+	/** Display a critical error in a message box and exit the application
+	 * with an error state. */
+	void criticalError(QString msg);
+
+	// for eventLoopStarted
+	bool eventFilter(QObject *obj, QEvent *event) GBL_OVERRIDE;
+
 private:
 
 	/** Load multi-spectral image data.
@@ -73,6 +83,13 @@ private:
 
 	/** The input filename of the labels. */
 	QString labelsFilename;
+
+	// Track start of the Qt main event-loop
+	int  eventLoopStartedEvent;
+	volatile bool eventLoopStarted;
+
+	// The Controller.
+	Controller* ctrl;
 };
 
 #endif // GERBILAPPLICATION_H

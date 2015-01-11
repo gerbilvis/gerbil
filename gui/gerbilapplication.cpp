@@ -1,21 +1,32 @@
 
+#include "gerbilapplication.h"
 #include <dialogs/openrecent/openrecent.h>
 #include <multi_img.h>
 #include <controller/controller.h>
+#include <widgets/mainwindow.h>
 #include <app/gerbil_app_support.h>
-#include "gerbilapplication.h"
+#include <app/gerbil_error.h>
+
 
 #include <QFileInfo>
 #include <QIcon>
 #include <QStringList>
 #include <QTextStream>
+#include <QMessageBox>
 
 #include <cstdio>
+#include <cstdlib>
+
+//#define GGDBG_MODULE
+#include <gerbil_gui_debug.h>
+
 
 GerbilApplication::GerbilApplication(int &argc, char **argv)
 	: QApplication(argc, argv),
-	  limitedMode(false)
-
+	  limitedMode(false),
+	  eventLoopStartedEvent(QEvent::registerEventType()),
+	  eventLoopStarted(false),
+	  ctrl(GBL_NULLPTR)
 {
 }
 
@@ -48,7 +59,12 @@ void GerbilApplication::run()
 	loadInput();
 
 	// create controller
-	Controller ctrl(imageFilename, limitedMode, labelsFilename);
+	ctrl = new Controller(imageFilename, limitedMode, labelsFilename, this);
+
+	// get notified when the event-loop has fired up, see eventFilter()
+	installEventFilter(this);
+	postEvent(this, new QEvent(
+				  QEvent::Type(eventLoopStartedEvent)));
 
 	// run Qt event loop
 	exit(QApplication::exec());
@@ -60,6 +76,61 @@ QString GerbilApplication::imagePath()
 		return QString();
 	else
 		return QFileInfo(imageFilename).path();
+}
+
+void GerbilApplication::criticalError(QString msg)
+{
+	static const QString header =
+		"Gerbil encountered an internal error that cannot "
+		"be recovered. To help fixing this problem please collect "
+		"information on your <br/>"
+		"<ul>"
+		"  <li>operating system</li>"
+		"  <li>graphics hardware and drivers</li>"
+		"</ul> <br/>"
+		" and copy & paste "
+		"the following error message and send everything to <br/>"
+		"<a href=\"mailto:info@gerbilvis.org\">info@gerbilvis.org</a>.<br/>\n"
+		"<br/>\n"
+		"Thank you!<br/>\n"
+		"<br/>\n"
+		"Error:<br/>\n";
+
+	// HTMLify quick and dirty
+	if (!msg.contains("<br>", Qt::CaseInsensitive) &&
+			!msg.contains("<br/>", Qt::CaseInsensitive)) {
+		msg.replace("\n", "\n<br/>");
+	}
+
+	QMessageBox::critical(NULL,
+						  "Gerbil Critical Error",
+						  QString(header) + msg,
+						  QMessageBox::Close);
+
+	if (eventLoopStarted) {
+		GGDBGM("using GerbilApplication::exit()" << endl);
+		if (ctrl && ctrl->mainWindow()) {
+			ctrl->mainWindow()->close();
+		}
+		GerbilApplication::exit(GerbilApplication::ExitFailure);
+	} else {
+		GGDBGM("using std::exit()" << endl);
+		std::exit(ExitFailure);
+	}
+
+}
+
+bool GerbilApplication::eventFilter(QObject *obj, QEvent *event)
+{
+	if (event->type() == eventLoopStartedEvent) {
+		GGDBGM("eventLoopStartedEvent captured" << endl);
+		event->accept();
+		eventLoopStarted = true;
+		removeEventFilter(this);
+		return true;
+	} else {
+		return QApplication::eventFilter(obj, event);
+	}
 }
 
 void GerbilApplication::loadInput()

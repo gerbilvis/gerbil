@@ -1,10 +1,11 @@
 #include "distviewcompute.h"
 
-#define GGDBG_MODULE
+#include <gerbilapplication.h>
+
+//#define GGDBG_MODULE
 #include "../gerbil_gui_debug.h"
 
 #include <QGLBuffer>
-#include <QMessageBox>
 
 // altmann, debugging helper function
 bool assertBinSetsKeyDim(const std::vector<BinSet> &v, const ViewportCtx &ctx) {
@@ -24,30 +25,6 @@ bool assertBinSetsKeyDim(const std::vector<BinSet> &v, const ViewportCtx &ctx) {
 	return true;
 }
 
-/** Display a critical error in a message box. */
-void gerbilCriticalError(QString msg)
-{
-	const char *header =
-			"Gerbil encountered an internal error that cannot "
-			"be recovered. To help fixing this problem please collect "
-			"information on your graphics hardware and drivers, copy & paste "
-			"the following error message and send everything to "
-			"info@gerbilvis.org.\n"
-			"\n"
-			"Thank you!\n"
-			"\n"
-			"Error:\n";
-
-	QMessageBox::critical(NULL,
-						  "Gerbil Critical Error",
-						  QString(header) + msg,
-						  QMessageBox::Close);
-}
-
-void gerbilCriticalError(std::string msg) {
-	gerbilCriticalError(QString::fromStdString(msg));
-}
-
 /** RAII class to manage QGLBuffer. */
 class GLBufferHolder
 {
@@ -60,14 +37,16 @@ public:
 		if (!msuccess) {
 			std::stringstream err;
 			err << pfx << "QGLBuffer::create() failed." << std::endl;
-			gerbilCriticalError(err.str());
+			GerbilApplication::instance()->
+				criticalError(QString::fromStdString(err.str()));
 			return;
 		}
 		msuccess = vb.bind();
 		if (!msuccess) {
 			std::stringstream err;
 			err << pfx << "QGLBuffer::bind() failed" << std::endl;
-			gerbilCriticalError(err.str());
+			GerbilApplication::instance()->
+				criticalError(QString::fromStdString(err.str()));
 			return;
 		}
 	}
@@ -188,7 +167,8 @@ void Compute::storeVertices(const ViewportCtx &ctx,
 	if (!varr) {
 		std::stringstream err;
 		err << "Compute::storeVertices(): QGLBuffer::map() failed" << std::endl;
-		gerbilCriticalError(err.str());
+		GerbilApplication::instance()->
+			criticalError(QString::fromStdString(err.str()));
 		return;
 	}
 

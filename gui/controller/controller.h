@@ -11,6 +11,7 @@
 #include <QMap>
 #include <boost/thread.hpp>
 
+#include <gerbil_cplusplus.h>
 
 // forward declarations
 
@@ -44,8 +45,9 @@ class Controller : public QObject
 {
 	Q_OBJECT
 public:
-	explicit Controller(const QString &filename, bool limited_mode,
-						const QString &labelfile);
+	explicit Controller(
+			const QString &filename, bool limited_mode,
+			const QString &labelfile, QObject *parent = GBL_NULLPTR);
 	~Controller();
 
 	MainWindow* mainWindow() { return window; }
