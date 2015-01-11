@@ -8,6 +8,7 @@
 
 #include <QObject>
 #include <QVector>
+#include <QMap>
 
 struct ReprSubscriptions;
 
@@ -106,6 +107,9 @@ public slots:
 	// folding state of a distview changed
 	void processFoldingStateChanged(representation::t repr, bool folded);
 
+	// save folding state of views
+	void processLastWindowClosed();
+
 signals:
 	void toggleLabeled(bool);
 	void toggleUnlabeled(bool);
@@ -141,9 +145,12 @@ protected:
 	void updateBinning(representation::t repr, SharedMultiImgPtr image);
 
 	QMap<representation::t, Payload*> payloadMap;
-	representation::t activeView;
 	Controller *ctrl;
 	ImageModel *im;
+
+	// Folding state for each distview, true -> distview folded.
+	QMap<representation::t, bool> viewFolded;
+	representation::t activeView;
 
 	// needed for add/rem to/from label functionality
 	int currentLabel;

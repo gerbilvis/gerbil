@@ -54,29 +54,29 @@ DistViewController::~DistViewController()
 
 void DistViewController::init()
 {
-
-	// First, set viewport folding.
+	// First, set viewport folding and activeView.
 	// NOTE that we did not connect signals yet! This is actually good as we
 	// will not get stray signals before the content is ready.
-
-	// TODO: need to add signal/slot for activeView
-
 	QSettings settings;
 	if (settings.contains("viewports/IMGfolded")) {
 		// settings are available
 		QString activeStr = settings.value("viewports/active").value<QString>();
 		activeView = representation::fromStr(activeStr);
-		if (!representation::valid(activeView)) {
+		// make sure activeView is a valid enum value and we actually have a
+		// viewer for this representation.
+		if (!representation::valid(activeView) ||
+				!payloadMap.contains(activeView)) {
 			activeView = representation::IMG;
 		}
 		payloadMap[activeView]->gui.setActive();
 		foreach(representation::t repr, representation::all()) {
-			QString key = QString("viewports/") +
-					representation::str(repr) + "folded";
-			// read folded setting, default unfolded
-			bool folded = settings.value(key, false).value<bool>();
-			Payload *p = payloadMap[repr];
-			if (p) {
+			if (payloadMap[repr])  {
+				QString key = QString("viewports/") +
+						representation::str(repr) + "folded";
+				// read folded setting, default unfolded
+				bool folded = settings.value(key, false).value<bool>();
+				viewFolded[repr] = folded;
+				Payload *p = payloadMap[repr];
 				p->gui.fold(folded);
 			}
 		}
@@ -86,15 +86,18 @@ void DistViewController::init()
 		// beginning.
 		activeView = representation::IMG;
 		payloadMap[activeView]->gui.setActive();
-		processFoldingStateChanged(representation::IMG, false);
-		processFoldingStateChanged(representation::GRAD, false);
+		viewFolded[representation::IMG]     =  false;
+		viewFolded[representation::GRAD]    =  false;
+		viewFolded[representation::NORM]    =  true;
+		viewFolded[representation::IMGPCA]  =  true;
+		viewFolded[representation::GRADPCA] =  true;
 		payloadMap[representation::NORM]->gui.fold(true);
-		processFoldingStateChanged(representation::NORM, true);
 		payloadMap[representation::IMGPCA]->gui.fold(true);
-		processFoldingStateChanged(representation::IMGPCA, true);
 		payloadMap[representation::GRADPCA]->gui.fold(true);
-		processFoldingStateChanged(representation::GRADPCA, true);
 	}
+
+	connect(QApplication::instance(), SIGNAL(lastWindowClosed()),
+			 this, SLOT(processLastWindowClosed()));
 
 	connect(ctrl->imageModel(), SIGNAL(roiRectChanged(cv::Rect)),
 			this, SLOT(processROIChage(cv::Rect)));
@@ -466,11 +469,19 @@ void DistViewController::remHighlightFromLabel()
 
 void DistViewController::processFoldingStateChanged(representation::t repr, bool folded)
 {
-	// Store in QSettings. This is done every time a view folds/unfolds, since
-	// changing QSettings is expected to be cheap.
+	viewFolded[repr] = folded;
+}
+
+void DistViewController::processLastWindowClosed()
+{
+	// save folding state of views
 	QSettings settings;
-	QString key = QString("viewports/") +
-			representation::str(repr) + "folded";
-	GGDBGM(key.toStdString() << " " << folded);
-	settings.setValue(key, QVariant(folded));
+	foreach (representation::t repr, representation::all()) {
+		bool folded = viewFolded.value(repr, true);
+		QString key = QString("viewports/") +
+				representation::str(repr) + "folded";
+		GGDBGM(key.toStdString() << " " << folded << endl);
+		settings.setValue(key, QVariant(folded));
+	}
+	settings.setValue("viewports/active", representation::str(activeView));
 }
