@@ -13,8 +13,9 @@
 #define GGDBG_MODULE
 #include "gerbil_gui_debug.h"
 
-ClusteringModel::ClusteringModel()
-	: commandRunner(NULL),
+ClusteringModel::ClusteringModel(QObject *parent )
+	: QObject(parent),
+	  commandRunner(NULL),
 	  state(State::Idle)
 {
 	// for CommandRunner result slot, onSegmentationCompleted

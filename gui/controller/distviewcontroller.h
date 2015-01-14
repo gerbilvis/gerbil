@@ -1,9 +1,11 @@
 #ifndef DISTVIEWCONTROLLER_H
 #define DISTVIEWCONTROLLER_H
 
-#include "controller/controller.h"
-#include "dist_view/distviewmodel.h"
-#include "dist_view/distviewgui.h"
+#include <gerbil_cplusplus.h>
+
+#include <controller/controller.h>
+#include <dist_view/distviewmodel.h>
+#include <dist_view/distviewgui.h>
 #include <background_task/background_task_queue.h>
 
 #include <QObject>

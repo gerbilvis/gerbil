@@ -1,8 +1,11 @@
 #ifndef LABELING_MODEL_H
 #define LABELING_MODEL_H
 
+#include <gerbil_cplusplus.h>
 #include <labeling.h>
+
 #include <opencv2/core/core.hpp>
+
 #include <QObject>
 #include <QColor>
 #include <QVector>
@@ -17,7 +20,7 @@ class LabelingModel : public QObject
 {
 	Q_OBJECT
 public:
-	explicit LabelingModel();
+	explicit LabelingModel(QObject *parent = GBL_NULLPTR);
 
 public slots:
 	/** Sets the dimensions of the multi_img. */

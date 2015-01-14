@@ -24,7 +24,8 @@ QList<FalseColoring::Type> FalseColoring::allList = QList<FalseColoring::Type>()
 	<< FalseColoring::SOM
 	<< FalseColoring::SOMGRAD;
 
-FalseColorModel::FalseColorModel()
+FalseColorModel::FalseColorModel(QObject *parent )
+	: QObject(parent)
 {
 	int type = QMetaType::type("FalseColoring");
 	if (type == 0 || !QMetaType::isRegistered(type))

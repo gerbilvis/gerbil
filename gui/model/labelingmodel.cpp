@@ -8,8 +8,8 @@
 #define GGDBG_MODULE
 #include "../gerbil_gui_debug.h"
 
-LabelingModel::LabelingModel()
-	: iconSize(QSize(32,32)), applyROI(true), iconTaskp(NULL)
+LabelingModel::LabelingModel(QObject *parent)
+	: QObject(parent), iconSize(QSize(32,32)), applyROI(true), iconTaskp(NULL)
 {
 	qRegisterMetaType<QVector<QImage> >("QVector<QImage>");
 	//qRegisterMetaType<const QVector<QImage>& >("const QVector<QImage>&");

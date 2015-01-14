@@ -1,6 +1,7 @@
 #ifndef CONTROLLER_H
 #define CONTROLLER_H
 
+#include <gerbil_cplusplus.h>
 #include <model/representation.h>
 #include <shared_data.h>
 #include <background_task/background_task.h>
@@ -10,8 +11,6 @@
 #include <QObject>
 #include <QMap>
 #include <boost/thread.hpp>
-
-#include <gerbil_cplusplus.h>
 
 // forward declarations
 

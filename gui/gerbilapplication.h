@@ -1,11 +1,12 @@
 #ifndef GERBILAPPLICATION_H
 #define GERBILAPPLICATION_H
 
-#include <QApplication>
-#include <cstdlib>
 #include <gerbil_cplusplus.h>
 
+#include <cstdlib>
 #include <boost/noncopyable.hpp>
+
+#include <QApplication>
 
 class Controller;
 

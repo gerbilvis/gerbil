@@ -1,12 +1,13 @@
 #ifndef CLUSTERINGDOCK_H
 #define CLUSTERINGDOCK_H
 
+#include "ui_clusteringdock.h"
+
 #include <model/clustering/clusteringmethod.h>
 #include <model/clustering/clusteringrequest.h>
 #include <model/representation.h>
 
 #include <QDockWidget>
-#include "ui_clusteringdock.h"
 
 namespace shell {
 	class Command;

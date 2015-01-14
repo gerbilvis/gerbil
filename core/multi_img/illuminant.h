@@ -9,6 +9,10 @@
 #ifndef ILLUMINANT_H
 #define ILLUMINANT_H
 
+#include <map>
+#include <cassert>
+#include <cmath>
+
 class Illuminant {
 public:
 	Illuminant() {} // needed for std containers

@@ -28,8 +28,8 @@
 #define USE_CUDA_DATARANGE      0
 #define USE_CUDA_CLAMP          0
 
-ImageModel::ImageModel(BackgroundTaskQueue &queue, bool lm)
-	: limitedMode(lm), queue(queue),
+ImageModel::ImageModel(BackgroundTaskQueue &queue, bool lm, QObject *parent)
+	: QObject(parent), limitedMode(lm), queue(queue),
 	  image_lim(new SharedMultiImgBase(new multi_img())),
 	  nBands(-1), nBandsOld(-1)
 {

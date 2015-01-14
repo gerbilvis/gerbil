@@ -12,8 +12,8 @@
 
 #define USE_CUDA_ILLUMINANT     0
 
-IllumModel::IllumModel(BackgroundTaskQueue *queue)
-	: i1(0), i2(0), queue(queue)
+IllumModel::IllumModel(BackgroundTaskQueue *queue, QObject *parent)
+	: QObject(parent), i1(0), i2(0), queue(queue)
 {
 }
 

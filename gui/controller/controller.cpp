@@ -43,7 +43,7 @@ Controller::Controller(const QString &filename,
 	// start background task queue thread
 	startQueue();
 
-	im = new ImageModel(queue, limited_mode);
+	im = new ImageModel(queue, limited_mode, this);
 	// load image
 	cv::Rect dimensions = im->loadImage(filename);
 	imgSize = cv::Size(dimensions.width, dimensions.height);
@@ -68,14 +68,14 @@ Controller::Controller(const QString &filename,
 	connect(im, SIGNAL(imageUpdate(representation::t,SharedMultiImgPtr,bool)),
 			this, SLOT(processImageUpdate(representation::t,SharedMultiImgPtr,bool)));
 
-	lm = new LabelingModel();
+	lm = new LabelingModel(this);
 	initLabeling(dimensions);
-	illumm = new IllumModel(&queue);
+	illumm = new IllumModel(&queue, this);
 	initIlluminant();
-	gsm = new GraphSegmentationModel(&queue);
+	gsm = new GraphSegmentationModel(&queue, this);
 	initGraphSegmentation(); // depends on ImageModel / initImage()
 #ifdef WITH_SEG_MEANSHIFT
-	cm = new ClusteringModel();
+	cm = new ClusteringModel(this);
 #endif /* WITH_SEG_MEANSHIFT */
 
 	// initialize sub-controllers (after initializing the models...)
@@ -155,21 +155,11 @@ Controller::Controller(const QString &filename,
 
 Controller::~Controller()
 {
-	delete window;
-
-	delete dvc;
-
-	delete im;
-	delete lm;
-	delete fm;
-	delete illumm;
-	delete gsm;
-	delete cm;
-
-	delete subs;
 
 	// stop background task queue thread
 	stopQueue();
+	window->deleteLater();
+	delete subs;
 }
 
 
@@ -424,6 +414,7 @@ void Controller::stopQueue()
 	// cancel all jobs, then wait for thread to return
 	queue.halt();
 	queuethread->join();
+	// queuethread is not a QObject, delete it here.
 	delete queuethread;
 	queuethread = 0;
 }

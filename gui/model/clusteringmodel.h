@@ -1,17 +1,18 @@
 #ifndef CLUSTERING_MODEL_H
 #define CLUSTERING_MODEL_H
 
-#include <QObject>
-#include <QMetaClassInfo>
-#include <map>
-#include <boost/any.hpp>
-
+#include <gerbil_cplusplus.h>
 #include <shared_data.h>
 
 #include <model/representation.h>
 #include <model/clustering/clusteringmethod.h>
 #include <model/clustering/clusteringrequest.h>
 
+#include <map>
+#include <boost/any.hpp>
+
+#include <QObject>
+#include <QMetaClassInfo>
 
 namespace shell {
 	class Command;
@@ -28,7 +29,7 @@ class ClusteringModel : public QObject
 
 public:
 
-	explicit ClusteringModel();
+	explicit ClusteringModel(QObject *parent = GBL_NULLPTR);
 	~ClusteringModel();
 
 signals:

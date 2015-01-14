@@ -31,9 +31,11 @@ struct ReprSubscriptions {
 	Subscription<representation::t>::Set	repr;
 };
 
-DistViewController::DistViewController(Controller *ctrl,
-									   BackgroundTaskQueue *taskQueue, ImageModel *im)
- : ctrl(ctrl), im(im), distviewSubs(new ReprSubscriptions)
+DistViewController::DistViewController(
+		Controller *ctrl,
+		BackgroundTaskQueue *taskQueue,
+		ImageModel *im)
+ : QObject(ctrl), ctrl(ctrl), im(im), distviewSubs(new ReprSubscriptions)
 {
 	/* Create all viewers. Only one viewer per representation type is supported.
 	 */

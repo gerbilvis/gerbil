@@ -8,8 +8,10 @@
 #include <qtopencv.h>
 
 
-GraphSegmentationModel::GraphSegmentationModel(BackgroundTaskQueue *queue)
-	: queue(queue), graphsegResult(new cv::Mat1s()), curLabel(1) {}
+GraphSegmentationModel::GraphSegmentationModel(
+		BackgroundTaskQueue *queue,
+		QObject *parent)
+	: QObject(parent), queue(queue), graphsegResult(new cv::Mat1s()), curLabel(1) {}
 
 GraphSegmentationModel::~GraphSegmentationModel() { }
 

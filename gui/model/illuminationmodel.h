@@ -1,25 +1,26 @@
 #ifndef ILLUMINATION_MODEL_H
 #define ILLUMINATION_MODEL_H
 
-#include <QObject>
+#include <gerbil_cplusplus.h>
+
+#include <multi_img/illuminant.h>
+#include <background_task/background_task_queue.h>
+#include <multi_img.h>
+#include <shared_data.h>
 
 #include <boost/shared_ptr.hpp>
 #include <vector>
 
-#include <background_task/background_task_queue.h>
-#include <multi_img.h>
-#include <shared_data.h>
-// for representation
-#include <model/imagemodel.h>
+#include <QObject>
 
-#include "multi_img/illuminant.h"
+
 
 
 class IllumModel : public QObject
 {
 	Q_OBJECT
 public:
-	explicit IllumModel(BackgroundTaskQueue *queue);
+	explicit IllumModel(BackgroundTaskQueue *queue,QObject *parent = GBL_NULLPTR);
 
 	void setMultiImage(SharedMultiImgPtr image);
 	void setRoi(cv::Rect roi);
