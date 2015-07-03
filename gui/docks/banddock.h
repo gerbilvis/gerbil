@@ -8,6 +8,7 @@
 
 class BandView;
 class GraphSegWidget;
+class ModeWidget;
 
 class BandDock : public QDockWidget, private Ui::BandDock
 {
@@ -87,6 +88,7 @@ protected:
 	BandView *bv;
 	// our widget for graph segmentation controls
 	GraphSegWidget *gs;
+    ModeWidget *mw;
 };
 
 #endif // BANDDOCK_H
