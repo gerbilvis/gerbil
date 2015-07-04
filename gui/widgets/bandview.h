@@ -51,14 +51,14 @@ public slots:
 	void updateLabeling(const cv::Mat1s &labels, const cv::Mat1b &mask);
 	void applyLabelAlpha(int alpha);
 	void toggleShowLabels(bool disabled);
-    void toggleSingleLabel(bool enabled);
+    	void toggleSingleLabel(bool enabled);
 	void toggleSeedMode(bool enabled);
 	void clearSeeds();
-    void highlightSingleLabel(short label, bool highlight);
+    	void highlightSingleLabel(short label, bool highlight);
 
 	void enterEvent();
 	void leaveEvent();
-    void updateMode(SelectionMode SelectionMode);
+    	void updateMode(SelectionMode SelectionMode);
 
 signals:
 	void pixelOverlay(int y, int x);
@@ -79,16 +79,16 @@ signals:
 	// user wants to clear a label
 	void clearRequested();
 
-    void mergeLabelsRequested(QVector<int> labels);
+    	void mergeLabelsRequested(QVector<int> labels);
 
 protected:
 	void paintEvent(QPainter *painter, const QRectF &rect);
 	void keyPressEvent(QKeyEvent *);
 
-    virtual void resizeEvent();
+    	virtual void resizeEvent();
 
-    void wheelEvent(QGraphicsSceneWheelEvent *event);
-    void mouseMoveEvent(QGraphicsSceneMouseEvent* event);
+    	void wheelEvent(QGraphicsSceneWheelEvent *event);
+    	void mouseMoveEvent(QGraphicsSceneMouseEvent* event);
 
 
 
@@ -103,7 +103,7 @@ private:
 
 	// local labeling matrix
 	cv::Mat1s labels;
-   // qreal zoom;
+   	// qreal zoom;
 
 	// mask that contains pixel labels we did change, but not commit back yet
 	cv::Mat1b uncommitedLabels;
@@ -117,11 +117,11 @@ private:
 
 	QPoint cursor, lastcursor;
 	short curLabel;
-    QVector<int> selectedLabels;
+    	QVector<int> selectedLabels;
 	const cv::Mat1b *overlay;
 
 	/// color view according to labels
-    bool showLabels, singleLabel, holdLabel;
+    	bool showLabels, singleLabel, holdLabel;
 
 	/// interpret input as segmentation seeds
 	bool seedMode;
@@ -136,7 +136,7 @@ private:
 
 	QTimer labelTimer;
 	cv::Mat1s seedMap; // mat1s to be consistent with labels matrix
-    cv::Mat1b curMask; // in single label mode contains curlabel members
+    	cv::Mat1b curMask; // in single label mode contains curlabel members
 
 };
 
