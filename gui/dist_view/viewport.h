@@ -118,6 +118,9 @@ protected:
 	void wheelEvent(QGraphicsSceneWheelEvent *);
 	void keyPressEvent(QKeyEvent *);
 
+    //helper function that adjusts boundaries after zooming/panning
+    void adjustBoundaries();
+
 	// helper function that updates Y-axis labels
 	void updateYAxis();
 
@@ -203,6 +206,8 @@ private:
 	// zoom and shift in y-direction
 	qreal zoom;
 	qreal shift;
+
+    qreal xp, yp;
 	int lasty;
 
 	/* if in limiter mode, user has to release mouse button before switching

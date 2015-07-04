@@ -3,6 +3,7 @@
 #include <QGraphicsProxyWidget>
 #include <QMessageBox>
 #include <limits>
+#include <QDebug>
 
 #include <gerbil_gui_debug.h>
 
@@ -38,20 +39,15 @@ bool Viewport::drawScene(QPainter *painter, bool withDynamics)
 		return false;
 	}
 
-	// only provide selection for view with dynamic components (selected band)
-	if (withDynamics)
-		drawLegend(painter, selection);
-	else
-		drawLegend(painter);
 
 	painter->save();
 	painter->setWorldTransform(modelview);
-	drawAxesBg(painter);
+    drawAxesBg(painter);
 	painter->restore();
 
 	/* determine if we draw the highlight part */
 	// only draw when active and dynamic content is desired
-	bool drawHighlight = active && withDynamics;
+    bool drawHighlight = active && withDynamics;
 	// only draw if not implicitely empty
 	drawHighlight = drawHighlight && (hover > -1 || limiterMode);
 	// do not draw when in single pixel overlay mode
@@ -73,6 +69,12 @@ bool Viewport::drawScene(QPainter *painter, bool withDynamics)
 		QGLFramebufferObject::blitFramebuffer(b.blit, rect, b.fbo, rect);
 		target->drawTexture(rect, b.blit->texture());
 	}
+
+    // only provide selection for view with dynamic components (selected band)
+    if (withDynamics)
+        drawLegend(painter, selection);
+    else
+        drawLegend(painter);
 
 	// foreground axes are a dynamic part
 	if (withDynamics) {
@@ -151,7 +153,7 @@ void Viewport::updateBuffers(RenderMode spectrum, RenderMode highlight)
 void Viewport::updateYAxis()
 {
 	// steps on the y-axis (number of labeled values)
-	const int amount = 5;
+    const int amount = 10;
 
 	/* calculate raw numbers for y-axis */
 	std::vector<float> ycoord(amount);
@@ -491,14 +493,30 @@ void Viewport::drawLegend(QPainter *painter, int sel)
 	assert((*ctx)->xlabels.size() == (unsigned int)(*ctx)->dimensionality);
 
 	painter->setPen(Qt::white);
+
+
+    //drawing background for x-axis
+    QPointF xtp(0, height-35);
+    QPointF xbp(width, height);
+    QRectF xbgrect(xtp, xbp);
+
+    painter->save();
+    painter->setPen(QColor(0,0,0, 128));
+    painter->fillRect(xbgrect, QBrush(QColor(0,0,0,128)));
+    painter->drawRect(xbgrect);
+    painter->restore();
+
 	// x-axis
 	for (int i = 0; i < (*ctx)->dimensionality; ++i) {
 //		GGDBGM((format("label %1%: '%2%'")
 //		 %i % ((*ctx)->labels[i].toStdString()))  << endl);
-		QPointF l = modelview.map(QPointF(i - 1.f, 0.f));
-		QPointF r = modelview.map(QPointF(i + 1.f, 0.f));
+        QPointF l = modelview.map(QPointF(i - 1.f, 0.f));
+        l.setY(height - 30);
+
+        QPointF r = modelview.map(QPointF(i + 1.f, 0.f));
+        r.setY(height);
+
 		QRectF rect(l, r);
-		rect.setHeight(30.f);
 
 		// only draw every xth label if we run out of space
 		int stepping = std::max<int>(1, 150 / rect.width());
@@ -521,16 +539,34 @@ void Viewport::drawLegend(QPainter *painter, int sel)
 			painter->setPen(Qt::white);
 	}
 
+
+    //drawing background for y-axis
+    QPointF ytp(0, 0);
+    QPointF ybp(60, height);
+    QRectF ybgrect(ytp, ybp);
+
+    painter->save();
+    painter->setPen(QColor(0,0,0, 128));
+    painter->fillRect(ybgrect, QBrush(QColor(0,0,0,128)));
+    painter->drawRect(ybgrect);
+    painter->restore();
+
+
 	/// y-axis
 	for (size_t i = 0; i < yaxis.size(); ++i) {
 		float ifrac = (float)(i)/(float)(yaxis.size()-1) * (float)((*ctx)->nbins - 1);
-		QPointF b = modelview.map(QPointF(0.f, (float)((*ctx)->nbins - 1) - ifrac));
-		b += QPointF(-8.f, 20.f); // draw left of data, vcenter alignment
-		QPointF t = b;
-		t -= QPointF(200.f, 40.f); // draw left of data, vcenter alignment
-		QRectF rect(t, b);
-		painter->drawText(rect, Qt::AlignVCenter | Qt::AlignRight, yaxis[i]);
-	}
+        QPointF b = modelview.map(QPointF(0.f, (float)((*ctx)->nbins - 1) - ifrac));
+
+        QPointF t = b;
+        t -= QPointF(200.f, 40.f); // draw left of data, vcenter alignment
+
+        t.setX(0);
+        b.setX(50);
+
+        QRectF rect(t, b);
+
+        painter->drawText(rect, Qt::AlignVCenter | Qt::AlignRight, yaxis[i]);
+    }
 }
 
 void Viewport::drawOverlay(QPainter *painter)
