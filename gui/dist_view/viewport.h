@@ -241,6 +241,7 @@ private:
 
 	// single label to be highlighted
 	int highlightLabel;
+    QVector<int> labels;
 };
 
 #endif // VIEWPORT_H

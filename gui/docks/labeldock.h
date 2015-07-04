@@ -50,6 +50,8 @@ public slots:
 
 	void processMaskIconsComputed(const QVector<QImage>& icons);
 
+    void selectLabel(int label);
+
 signals:
 
 	/** The user has selected labels and wants them to be merged. */
@@ -71,7 +73,7 @@ signals:
 	 *  @param highlight If true highlight the label. Otherwise stop
 	 *  highlighting.
 	 */
-	void highlightLabelRequested(short label, bool highlight);
+    void highlightLabelRequested(short label);
 
 	/** Request a vector of mask icons representing the label masks. */
 	void labelMaskIconsRequested();
@@ -116,6 +118,7 @@ private:
 
 	void init();
 	void updateLabelIcons();
+    void deselectMerged(QVector<int> &list);
 
 	// UI with autohide widgets.
 	// The view and scene for this widget.

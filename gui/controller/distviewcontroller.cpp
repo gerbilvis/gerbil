@@ -133,8 +133,6 @@ void DistViewController::init()
 		connect(ctrl, SIGNAL(showIlluminationCurve(bool)),
 				g, SIGNAL(toggleIlluminationShown(bool)));
 
-		connect(ctrl, SIGNAL(toggleSingleLabel(bool)),
-				g, SLOT(toggleSingleLabel(bool)));
 
 		connect(g, SIGNAL(needBinning(representation::t)),
 				this, SLOT(processDistviewNeedsBinning(representation::t)));

@@ -51,10 +51,9 @@ public slots:
 	void updateLabeling(const cv::Mat1s &labels, const cv::Mat1b &mask);
 	void applyLabelAlpha(int alpha);
 	void toggleShowLabels(bool disabled);
-    void toggleSingleLabel(bool enabled);
 	void toggleSeedMode(bool enabled);
 	void clearSeeds();
-    void highlightSingleLabel(short label, bool highlight);
+    void highlightSingleLabel(short label);
 
 	void enterEvent();
 	void leaveEvent();
@@ -121,7 +120,7 @@ private:
 	const cv::Mat1b *overlay;
 
 	/// color view according to labels
-    bool showLabels, singleLabel, holdLabel;
+    bool showLabels, holdLabel;
 
 	/// interpret input as segmentation seeds
 	bool seedMode;

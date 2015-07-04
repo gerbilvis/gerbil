@@ -54,13 +54,15 @@ void LabelDock::init()
 	ui->labelView->setDragDropMode(QAbstractItemView::NoDragDrop);
 	ui->labelView->setSpacing(0);
 	ui->labelView->setUniformItemSizes(true);
+    ui->labelView->setSelectionMode(QAbstractItemView::MultiSelection);
+
 
 	connect(ui->labelView->selectionModel(),
 			SIGNAL(selectionChanged(QItemSelection,QItemSelection)),
 			this,
 			SLOT(processSelectionChanged(QItemSelection,QItemSelection)));
 
-	connect(ui->labelView, SIGNAL(entered(QModelIndex)),
+    connect(ui->labelView, SIGNAL(clicked(QModelIndex)),
 			this, SLOT(processLabelItemEntered(QModelIndex)));
 	connect(ui->labelView, SIGNAL(viewportEntered()),
 			this, SLOT(processLabelItemLeft()));
@@ -238,8 +240,24 @@ void LabelDock::mergeOrDeleteSelected()
 	if (sender() == ui->delBtn)
 		emit deleteLabelsRequested(selectedLabels);
 	else
-		emit mergeLabelsRequested(selectedLabels);
+    {
+        emit mergeLabelsRequested(selectedLabels);
+        deselectMerged(selectedLabels);
+    }
+
 	emit labelMaskIconsRequested();
+}
+
+void LabelDock::deselectMerged(QVector<int> &list)
+{
+    //first element remains selected
+    qSort(list);
+
+    for(int i = 1; i<list.size(); i++)
+    {
+        selectLabel(list[i]);
+    }
+
 }
 
 void LabelDock::processMaskIconsComputed(const QVector<QImage> &icons)
@@ -311,16 +329,33 @@ void LabelDock::processLabelItemEntered(QModelIndex midx)
 	//GGDBGM("hovering over " << label << endl);
 	hovering = true;
 	hoverLabel = label;
-	emit highlightLabelRequested(label, true);
+    emit highlightLabelRequested(label);
+}
+
+
+void LabelDock::selectLabel(int label)
+{
+    hovering = true;
+    hoverLabel = label;
+
+    QModelIndex index = ui->labelView->model()->index(label, 0);
+    if(index.isValid() )
+    {
+
+        if(ui->labelView->selectionModel()->isSelected(index))
+        {
+            ui->labelView->selectionModel()->select(index, QItemSelectionModel::Deselect);
+        }
+        else
+        {
+            ui->labelView->selectionModel()->select(index, QItemSelectionModel::Select);
+        }
+    }
 }
 
 void LabelDock::processLabelItemLeft()
 {
-	if (hovering) {
-		//GGDBGM("hovering left" << endl);
-		hovering = false;
-		emit highlightLabelRequested(hoverLabel, false);
-	}
+
 }
 
 void LabelDock::processApplyROIToggled(bool checked)

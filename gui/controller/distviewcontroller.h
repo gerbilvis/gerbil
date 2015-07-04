@@ -115,7 +115,6 @@ public slots:
 signals:
 	void toggleLabeled(bool);
 	void toggleUnlabeled(bool);
-	void toggleSingleLabel(bool toggle);
 	void singleLabelSelected(int);
 
 	void viewportAddSelection();

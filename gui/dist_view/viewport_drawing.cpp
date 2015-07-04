@@ -2,6 +2,7 @@
 
 #include <QGraphicsProxyWidget>
 #include <QMessageBox>
+#include <QDebug>
 #include <limits>
 
 #include <gerbil_gui_debug.h>
@@ -311,7 +312,7 @@ void Viewport::drawBins(QPainter &painter, QTimer &renderTimer,
 		// set color
 		QColor color = determineColor((drawRGB ? b.rgb : s.label),
 									  b.weight, s.totalweight,
-									  highlight, idx.first == single);
+                                      highlight, labels.contains(idx.first));
 		target->qglColor(color);
 
 		// draw polyline

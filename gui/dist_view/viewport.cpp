@@ -335,6 +335,17 @@ void Viewport::setLimiters(int label)
 void Viewport::highlightSingleLabel(int index)
 {
 	highlightLabel = index;
+    if(labels.contains(index))
+    {
+        int pos = labels.indexOf(index);
+        labels.remove(pos, 1);
+    }
+    else
+    {
+        labels.push_back(index);
+    }
+
+
 	updateBuffers(Viewport::RM_STEP,
 				   (highlightLabel > -1 ? RM_SKIP : RM_STEP));
 }

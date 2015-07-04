@@ -59,13 +59,9 @@ void MainWindow::initSignals(QObject *ctrl, QObject *dvctrl)
 			markButton, SLOT(setDisabled(bool)));
 	connect(ignoreButton, SIGNAL(toggled(bool)),
 			nonmarkButton, SLOT(setDisabled(bool)));
-	connect(ignoreButton, SIGNAL(toggled(bool)),
-			singleButton, SLOT(setDisabled(bool)));
 
 	connect(ignoreButton, SIGNAL(toggled(bool)),
 			ctrl, SIGNAL(toggleIgnoreLabels(bool)));
-	connect(singleButton, SIGNAL(toggled(bool)),
-			ctrl, SIGNAL(toggleSingleLabel(bool)));
 
 	// label manipulation from current dist_view
 	connect(addButton, SIGNAL(clicked()),

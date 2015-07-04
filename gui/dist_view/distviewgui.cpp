@@ -290,13 +290,6 @@ void DistViewGUI::insertPixelOverlay(const QPolygonF &points)
 	vp->insertPixelOverlay(points);
 }
 
-void DistViewGUI::toggleSingleLabel(bool toggle)
-{
-	if (!toggle) {
-		// disable single label highlight
-		vp->highlightSingleLabel(-1);
-	} // nothing to do else
-}
 
 /** Return a 32x32px icon filled with color. */
 QIcon DistViewGUI::colorIcon(const QColor &color)

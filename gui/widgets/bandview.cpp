@@ -28,7 +28,7 @@
 BandView::BandView()
 	: // note: start with invalid curLabel to trigger proper initialization!
       cacheValid(false), cursor(-1, -1), lastcursor(-1, -1), curLabel(-1),
-      overlay(0), showLabels(true), singleLabel(false), holdLabel(false),
+      overlay(0), showLabels(true), holdLabel(false), selectedLabels(0),
       ignoreUpdates(false),
 	  seedMode(false), labelAlpha(63),
 	  seedColors(std::make_pair(
@@ -183,7 +183,7 @@ void BandView::paintEvent(QPainter *painter, const QRectF &rect)
 
 
 	/* draw current cursor */
-    bool drawCursor = (seedMode || !singleLabel );
+    bool drawCursor = (seedMode || sm != Pick);
 	if (!pixmap.rect().contains(cursor.x(), cursor.y()))
 		drawCursor = false;
 	if (curLabel < 1 || curLabel >= labelColors.count())
@@ -386,7 +386,7 @@ void BandView::cursorAction(QGraphicsSceneMouseEvent *ev, bool click)
 		emit pixelOverlay(cursor.y(), cursor.x());
 
 	/// single label case
-    if (singleLabel && showLabels) {
+    if (sm == Pick && showLabels) {
 
 
 
@@ -394,16 +394,17 @@ void BandView::cursorAction(QGraphicsSceneMouseEvent *ev, bool click)
         if (ev->buttons() & Qt::LeftButton) {
             holdLabel = !holdLabel;
         }
-        if (!holdLabel && (cursorLabel != curLabel)) {
-        curLabel = cursorLabel;
-            curMask = cv::Mat1b(labels.rows, labels.cols, (uchar)0);
-            curMask.setTo(1, (labels == curLabel));
-            drawOverlay(curMask);
-            emit singleLabelSelected(curLabel); // dist view redraw
-        } else {
-            if (overlay != &curMask)
-                drawOverlay(curMask);
+
+        if(ev->button() & Qt::LeftButton)
+        {
+            highlightSingleLabel(cursorLabel);
+            emit singleLabelSelected(curLabel);
         }
+        else
+        {
+            drawOverlay(curMask);
+        }
+
 
 		return;
 
@@ -543,14 +544,6 @@ void BandView::toggleSeedMode(bool enabled)
 	refresh();
 }
 
-void BandView::toggleSingleLabel(bool enabled)
-{
-    if (singleLabel != enabled) {	// i.e. not the state we want
-        singleLabel = !singleLabel;
-        refresh();
-    }
-}
-
 void BandView::toggleShowLabels(bool disabled)
 {
 	if (showLabels == disabled) {	// i.e. not the state we want
@@ -560,17 +553,45 @@ void BandView::toggleShowLabels(bool disabled)
 }
 
 
-void BandView::highlightSingleLabel(short label, bool highlight)
+void BandView::highlightSingleLabel(short label)
 {
 
-    if (highlight) {
-        curMask = cv::Mat1b(labels.rows, labels.cols, (uchar)0);
-        curMask.setTo(1, (labels == label));
-        drawOverlay(curMask);
-    } else {
-        overlay = NULL;
-        update();
+
+    bool toDelete = false;
+    if(selectedLabels.contains(label))
+    {
+       toDelete = true;
+       //qDebug() << "REMOVED LABEL";
     }
+    else
+    {
+         selectedLabels.push_back(label);
+         toDelete = false;
+    }
+    curLabel = label;
+
+    if(selectedLabels.size() == 1)
+    {
+        curMask = cv::Mat1b(labels.rows, labels.cols, (uchar)0);
+    }
+    else
+    {
+        curMask = curMask | cv::Mat1b(labels.rows, labels.cols, (uchar)0);
+    }
+
+    if(toDelete)
+    {
+        curMask.setTo(0, (labels == label));
+        int pos = selectedLabels.indexOf(label);
+        selectedLabels.remove(pos, 1);
+    }
+    else
+    {
+        curMask.setTo(1, (labels == label));
+    }
+
+    drawOverlay(curMask);
+
 }
 
 void BandView::applyLabelAlpha(int alpha)
