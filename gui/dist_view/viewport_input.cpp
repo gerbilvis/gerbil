@@ -81,8 +81,8 @@ void Viewport::mouseMoveEvent(QGraphicsSceneMouseEvent *event)
         QPointF curronscene = modelviewI.map(event->scenePos());
         //qDebug() << "curronscene" << curronscene;
 
-        xp = curronscene.x() - lastonscene.x();
-        yp = curronscene.y() - lastonscene.y();
+        qreal xp = curronscene.x() - lastonscene.x();
+        qreal yp = curronscene.y() - lastonscene.y();
 
 
         modelview.translate(xp, yp);
@@ -234,7 +234,8 @@ void Viewport::adjustBoundaries()
  //             << "TOP BOUND " << tb;
 
 
-     xp = yp = 0;
+     qreal xp = 0;
+     qreal yp = 0;
 
 
 
