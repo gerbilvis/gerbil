@@ -395,13 +395,10 @@ void BandView::cursorAction(QGraphicsSceneMouseEvent *ev, bool click)
             holdLabel = !holdLabel;
         }
 
-        if(ev->button() & Qt::LeftButton)
-        {
+        if(ev->button() & Qt::LeftButton) {
             highlightSingleLabel(cursorLabel);
             emit singleLabelSelected(curLabel);
-        }
-        else
-        {
+        } else {
             drawOverlay(curMask);
         }
 
@@ -558,35 +555,26 @@ void BandView::highlightSingleLabel(short label)
 
 
     bool toDelete = false;
-    if(selectedLabels.contains(label))
-    {
+    if(selectedLabels.contains(label)) {
        toDelete = true;
        //qDebug() << "REMOVED LABEL";
-    }
-    else
-    {
+    } else {
          selectedLabels.push_back(label);
          toDelete = false;
     }
     curLabel = label;
 
-    if(selectedLabels.size() == 1)
-    {
+    if(selectedLabels.size() == 1) {
         curMask = cv::Mat1b(labels.rows, labels.cols, (uchar)0);
-    }
-    else
-    {
+    } else {
         curMask = curMask | cv::Mat1b(labels.rows, labels.cols, (uchar)0);
     }
 
-    if(toDelete)
-    {
+    if(toDelete) {
         curMask.setTo(0, (labels == label));
         int pos = selectedLabels.indexOf(label);
         selectedLabels.remove(pos, 1);
-    }
-    else
-    {
+    } else {
         curMask.setTo(1, (labels == label));
     }
 
