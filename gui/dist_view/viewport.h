@@ -207,7 +207,6 @@ private:
 	qreal zoom;
 	qreal shift;
 
-    qreal xp, yp;
 	int lasty;
 
 	/* if in limiter mode, user has to release mouse button before switching
