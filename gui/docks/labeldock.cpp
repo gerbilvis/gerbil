@@ -253,8 +253,7 @@ void LabelDock::deselectMerged(QVector<int> &list)
     //first element remains selected
     qSort(list);
 
-    for(int i = 1; i<list.size(); i++)
-    {
+    for(int i = 1; i<list.size(); i++) {
         selectLabel(list[i]);
     }
 
@@ -339,15 +338,11 @@ void LabelDock::selectLabel(int label)
     hoverLabel = label;
 
     QModelIndex index = ui->labelView->model()->index(label, 0);
-    if(index.isValid() )
-    {
+    if(index.isValid() ) {
 
-        if(ui->labelView->selectionModel()->isSelected(index))
-        {
+        if(ui->labelView->selectionModel()->isSelected(index)) {
             ui->labelView->selectionModel()->select(index, QItemSelectionModel::Deselect);
-        }
-        else
-        {
+        } else {
             ui->labelView->selectionModel()->select(index, QItemSelectionModel::Select);
         }
     }
