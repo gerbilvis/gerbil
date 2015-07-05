@@ -156,22 +156,18 @@ void Viewport::wheelEvent(QGraphicsSceneWheelEvent *event)
 		 return;
 
     qreal newzoom;
-    if(event->delta() > 0)
-    {
+    if(event->delta() > 0) {
        newzoom = 1.25;
     }
-    else
-    {
+    else {
        newzoom = 0.8;
     }
 
-    if(zoom*newzoom < 1)
-    {
+    if(zoom*newzoom < 1) {
        zoom = 1;
        updateModelview();
     }
-    else
-    {
+    else {
        QPointF scene = event->scenePos();
        QPointF local = modelviewI.map(scene);
 
@@ -239,8 +235,7 @@ void Viewport::adjustBoundaries()
 
 
 
-     if(lb.x() > lbpos && rb.x() < rbpos)
-     {
+     if(lb.x() > lbpos && rb.x() < rbpos) {
          QPointF pixcenter = empty;
          SharedDataLock ctxlock(ctx->mutex);
          pixcenter.setX(((*ctx)->dimensionality - 1)/2.f);
@@ -255,8 +250,7 @@ void Viewport::adjustBoundaries()
 
 
      }
-     else if(lb.x() > lbpos)
-     {
+     else if(lb.x() > lbpos) {
         // qDebug() << "LEFT BOUND IS VISIBLE!";
          QPointF topleft(lbpos, 0.f);
          topleft = modelviewI.map(topleft);
@@ -264,8 +258,7 @@ void Viewport::adjustBoundaries()
          xp = topleft.x();
 
      }
-     else if(rb.x() < rbpos)
-     {
+     else if(rb.x() < rbpos) {
      //    qDebug() << "RIGHT BOUND IS VISIBLE!";
 
          QPointF right(rbpos, 0.f);
@@ -277,8 +270,7 @@ void Viewport::adjustBoundaries()
 
 
 
-     if(bb.y() < bbpos)
-     {
+     if(bb.y() < bbpos) {
       //   qDebug() << "BOTTOM BOUND IS VISIBLE!";
 
          QPointF bottom(0.f, bbpos);
@@ -288,8 +280,7 @@ void Viewport::adjustBoundaries()
          yp = bottom.y()-bb.y();
 
      }
-     else if(tb.y() > tbpos)
-     {
+     else if(tb.y() > tbpos) {
       //   qDebug() << "TOP BOUND IS VISIBLE!";
 
          QPointF top(0, tbpos);
