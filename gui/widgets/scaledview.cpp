@@ -129,7 +129,7 @@ void ScaledView::mouseMoveEvent(QGraphicsSceneMouseEvent *event)
     scaler.translate(x,y);
     scalerI = scaler.inverted();
 
-   // adjustBoundaries();
+   
     }
 
 }
@@ -212,126 +212,7 @@ void ScaledView::wheelEvent(QGraphicsSceneWheelEvent *event)
           scalerI = scaler.inverted();
 
 
-          //adjustBoundaries();
+        
       }
 
-}
-
-void ScaledView::adjustBoundaries()
-{
-    QPointF empty(0.f, 0.f);
-    empty = scaler.map(empty);
-
-    QPointF leftbound = empty;
-    leftbound.setX(0.f);
-    QPointF lb = scaler.map(leftbound);
-
-    QPointF rightbound = empty;
-    rightbound.setX(width);
-    QPointF rb = scalerI.map(rightbound);
-
-//    QPointF endpoint = empty;
-//    endpoint.setX(width);
-//    endpoint = scalerI.map(endpoint);
-//    qDebug() <<"ENDPOINT" << endpoint;
-
-    QPointF bottombound = empty;
-    bottombound.setY(height);
-    QPointF bb = scalerI.map(bottombound);
-
-    QPointF topbound = empty;
-    topbound.setY(0);
-    QPointF tb = scalerI.map(topbound);
-
-    qreal lbpos = 20;
-    qreal rbpos = pixmap.width() + 10/zoom + 1;
-    qreal bbpos = pixmap.height() + 10/zoom +1;
-    qreal tbpos = -10/zoom -1;
-
-    QPointF end(width, 0);
-    QPointF test = scalerI.map(end);
-    qDebug() << "END" << test;
-    qDebug() << "LEFT BOUND " << lb
-             << "RIGHT BOUND " << rb
-             << "BOTTOM BOUND " << bb
-             << "TOP BOUND " << tb;
-
-
-    qreal xp = 0;
-    qreal yp = 0;
-
-
-    if(lb.x() > lbpos && rb.x() > rbpos)
-    {
-        QPointF pixcenter = empty;
-        pixcenter.setX(pixmap.width()/2.f);
-       // pixcenter = scalerI.map(pixcenter);
-
-        qDebug() << "WIDTH" << width;
-        qDebug() << "PIX WIDTH" << pixmap.width();
-        qDebug() << "PIXCENTER" << pixcenter;
-
-        QPointF center(width/2.f+ lbpos/2.f, 0);
-        center = scalerI.map(center);
-
-        qDebug() << "CENTER " << center;
-
-        xp = center.x() - pixcenter.x();
-
-
-        qDebug() << "ALIGNING TO CENTER!!!!!!";
-//        //QPointF rb = modelview.map(rightbound);
-
-
-
-    }
-    else if(lb.x() > lbpos)
-    {
-        qDebug() << "LEFT BOUND IS VISIBLE!";
-        QPointF topleft(lbpos, 0.f);
-        topleft = scalerI.map(topleft);
-
-        xp = topleft.x();
-
-    }
-    else if(rb.x() > rbpos)
-    {
-        qDebug() << "RIGHT BOUND IS VISIBLE!";
-
-        QPointF right(rbpos, 0.f);
-        right = scaler.map(right);
-        rb = scaler.map(rb);
-
-        xp = rb.x()-right.x();
-    }
-
-
-
-    if(bb.y() > bbpos)
-    {
-        qDebug() << "BOTTOM BOUND IS VISIBLE!";
-
-        QPointF bottom(0.f, bbpos);
-        bottom = scaler.map(bottom);
-        bb = scaler.map(bb);
-
-        yp = bb.y()-bottom.y();
-
-    }
-    else if(tb.y() < tbpos)
-    {
-        qDebug() << "TOP BOUND IS VISIBLE!";
-
-        QPointF top(0, tbpos);
-        top = scaler.map(top);
-        tb = scaler.map(tb);
-
-        yp = tb.y()-top.y();
-
-
-    }
-
-    qDebug() << "xcor" << xp << "ycorr" << yp;
-    scaler.translate(xp, yp);
-    scalerI = scaler.inverted();
 }
