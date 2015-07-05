@@ -335,13 +335,11 @@ void Viewport::setLimiters(int label)
 void Viewport::highlightSingleLabel(int index)
 {
 	highlightLabel = index;
-    if(labels.contains(index))
-    {
+    if(labels.contains(index)) {
         int pos = labels.indexOf(index);
         labels.remove(pos, 1);
     }
-    else
-    {
+    else {
         labels.push_back(index);
     }
 
