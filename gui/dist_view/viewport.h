@@ -201,7 +201,7 @@ private:
 	// modelview matrix and its inverse
 	QTransform modelview, modelviewI;
 	// zoom and shift in y-direction
-	qreal zoom;
+    qreal zoom;
 	qreal shift;
 	int lasty;
 

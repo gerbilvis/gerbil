@@ -33,9 +33,7 @@ if(WIN32)
 	add_definitions(-DNOMINMAX) # prevents min- and max-macro brainf*ck in VS 2003
 endif(WIN32)
 
-# No C++11, we want to be compatible with older MSVC.
-# We use boost tr1 instead.
-# http://www.boost.org/doc/libs/1_55_0/doc/html/boost_tr1.html
+add_definitions(-std=c++11)
 
 include(EnableSSE2)
 
