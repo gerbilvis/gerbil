@@ -53,7 +53,6 @@ void LabelDock::init()
 	ui->labelView->setUniformItemSizes(true);
     ui->labelView->setSelectionMode(QAbstractItemView::MultiSelection);
 
-
 	connect(ui->labelView->selectionModel(),
 			SIGNAL(selectionChanged(QItemSelection,QItemSelection)),
 			this,
@@ -326,16 +325,14 @@ void LabelDock::processLabelItemEntered(QModelIndex midx)
     emit toggleLabelHighlightRequested(label);
 }
 
-
 void LabelDock::selectLabel(int label)
 {
     hovering = true;
     hoverLabel = label;
 
     QModelIndex index = ui->labelView->model()->index(label, 0);
-    if(index.isValid() ) {
-
-        if(ui->labelView->selectionModel()->isSelected(index)) {
+    if (index.isValid() ) {
+        if (ui->labelView->selectionModel()->isSelected(index)) {
             ui->labelView->selectionModel()->select(index, QItemSelectionModel::Deselect);
         } else {
             ui->labelView->selectionModel()->select(index, QItemSelectionModel::Select);

@@ -48,8 +48,6 @@ protected:
 		painter->fillRect(rect, brush);
     }
 
-    void adjustBoundaries();
-
 	// scene geometry
 	int width, height;
     qreal zoom;

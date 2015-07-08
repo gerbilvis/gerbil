@@ -18,7 +18,6 @@
 #include <QPen>
 #include <QTimer>
 
-
 class BandView : public ScaledView
 {
 	Q_OBJECT

@@ -342,7 +342,6 @@ void Viewport::toggleLabelHighlight(int index)
         highlightLabels.push_back(index);
     }
 
-
 	updateBuffers(Viewport::RM_STEP,
                    (!highlightLabels.empty() ? RM_SKIP: RM_STEP));
 }

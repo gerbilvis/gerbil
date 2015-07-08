@@ -7,7 +7,6 @@
 #include <stdexcept>
 #include <QWheelEvent>
 
-
 //#define GGDBG_MODULE
 #include <gerbil_gui_debug.h>
 
@@ -60,7 +59,6 @@ void AutohideView::addWidget(AutohideWidget::border loc, AutohideWidget *w)
 	// add to our own reference
 	widgets.insert(loc, w);
 }
-
 
 void AutohideView::updateSizeHint(QSize sizeHint)
 {
