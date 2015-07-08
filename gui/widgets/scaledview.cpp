@@ -35,9 +35,16 @@ void ScaledView::updateSizeHint()
 
 void ScaledView::setPixmap(QPixmap p)
 {
-	pixmap = p;
-    resizeEvent();
-	updateSizeHint();
+    bool cond = (p.width() != pixmap.width()
+            || p.height() != pixmap.height());
+
+    pixmap = p;
+    if(cond)
+    {
+        resizeEvent();
+        updateSizeHint();
+    }
+
 }
 
 void ScaledView::drawBackground(QPainter *painter, const QRectF &rect)

@@ -28,7 +28,7 @@
 BandView::BandView()
 	: // note: start with invalid curLabel to trigger proper initialization!
       cacheValid(false), cursor(-1, -1), lastcursor(-1, -1), curLabel(-1),
-      overlay(0), showLabels(true), holdLabel(false), selectedLabels(0),
+      overlay(0), showLabels(true), selectedLabels(0),
       ignoreUpdates(false),
 	  seedMode(false), labelAlpha(63),
 	  seedColors(std::make_pair(
@@ -37,7 +37,6 @@ BandView::BandView()
 	// the timer automatically sends an accumulated update request
 	labelTimer.setSingleShot(true);
 	labelTimer.setInterval(500);
-
 }
 
 void BandView::initUi()
@@ -46,13 +45,10 @@ void BandView::initUi()
 			this, SLOT(commitLabelChanges()));
 }
 
-
 void BandView::updateMode(SelectionMode mode)
 {
     sm = mode;
-
 }
-
 
 void BandView::resizeEvent()
 {
@@ -62,25 +58,13 @@ void BandView::resizeEvent()
 
 void BandView::wheelEvent(QGraphicsSceneWheelEvent *event)
 {
-
     ScaledView::wheelEvent(event);
-
 }
 
 
 void BandView::setPixmap(QPixmap p)
 {
-    //ScaledView::setPixmap(p);
-    bool cond = (p.width() != pixmap.width()
-            || p.height() != pixmap.height());
-
-    pixmap = p;
-    if(cond)
-    {
-        resizeEvent();
-        updateSizeHint();
-    }
-
+    ScaledView::setPixmap(p);
 
 	// adjust seed map if necessary
 	if (seedMap.empty()
@@ -392,7 +376,6 @@ void BandView::cursorAction(QGraphicsSceneMouseEvent *ev, bool click)
 
         short cursorLabel = labels(cursor.y(), cursor.x());
         if (ev->buttons() & Qt::LeftButton) {
-            holdLabel = !holdLabel;
         }
 
         if(ev->button() & Qt::LeftButton) {

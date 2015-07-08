@@ -120,7 +120,7 @@ private:
 	const cv::Mat1b *overlay;
 
 	/// color view according to labels
-    bool showLabels, holdLabel;
+    bool showLabels;
 
 	/// interpret input as segmentation seeds
 	bool seedMode;
