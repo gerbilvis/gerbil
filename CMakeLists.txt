@@ -33,7 +33,7 @@ if(WIN32)
 	add_definitions(-DNOMINMAX) # prevents min- and max-macro brainf*ck in VS 2003
 endif(WIN32)
 
-add_definitions(-std=c++11)
+set_property(GLOBAL PROPERTY CXX_STANDARD 11)
 
 include(EnableSSE2)
 
