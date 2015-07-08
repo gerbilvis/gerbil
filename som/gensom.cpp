@@ -3,14 +3,15 @@
 
 #include <progress_observer.h>
 
+#include <similarity_measure.h>
+#include <sm_factory.h>
+
+#include <opencv2/highgui/highgui.hpp> // for debug writeout
 #include <boost/cstdint.hpp>
 #include <boost/filesystem.hpp>
 #include <fstream>
 #include <algorithm>
 #include <functional>
-
-#include <similarity_measure.h>
-#include <sm_factory.h>
 
 namespace som {
 
@@ -118,7 +119,10 @@ void GenSOM::train(const multi_img &input, ProgressObserver *po)
 				  << config.somFile << "\"" << std::endl;
 		saveFile(config.somFile);
 	}
-}
+    if (config.verbosity > 2) {
+        cv::imwrite("debug_som.png", bgr(input.meta, input.maxval)*255.f);
+    }
+ }
 
 int GenSOM::trainSingle(const multi_img::Pixel &input, int iter, int max)
 {
