@@ -96,8 +96,8 @@ void DistViewGUI::initSignals(QObject *dvctrl)
 	connect(dvctrl, SIGNAL(toggleUnlabeled(bool)),
 			vp, SLOT(toggleUnlabeled(bool)));
 
-	connect(dvctrl, SIGNAL(singleLabelSelected(int)),
-			vp, SLOT(highlightSingleLabel(int)));
+    connect(dvctrl, SIGNAL(labelSelected(int)),
+            vp, SLOT(toggleLabelHighlight(int)));
 
 	// signals to controller
 	connect(this, SIGNAL(requestBinCount(representation::t, int)),

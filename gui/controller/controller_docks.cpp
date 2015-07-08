@@ -104,8 +104,8 @@ void Controller::setupDocks()
 
 	connect(bandDock->bandView(), SIGNAL(pixelOverlay(int,int)),
 			this, SIGNAL(requestPixelOverlay(int,int)));
-	connect(bandDock->bandView(), SIGNAL(singleLabelSelected(int)),
-			this, SIGNAL(singleLabelSelected(int)));
+    connect(bandDock->bandView(), SIGNAL(labelSelected(int)),
+            this, SIGNAL(labelSelected(int)));
 	connect(bandDock, SIGNAL(currentLabelChanged(int)),
 			this, SIGNAL(currentLabelChanged(int)));
 	// alterLabel(short) -> clear label
@@ -248,10 +248,10 @@ void Controller::setupDocks()
 			labelingModel(), SLOT(deleteLabels(QVector<int>)));
 	connect(labelDock, SIGNAL(consolidateLabelsRequested()),
 			labelingModel(), SLOT(consolidate()));
-    connect(labelDock, SIGNAL(highlightLabelRequested(short)),
-            this, SLOT(highlightSingleLabel(short)));
-    connect(labelDock, SIGNAL(highlightLabelRequested(short)),
-            bandDock->bandView(), SLOT(highlightSingleLabel(short)));
+    connect(labelDock, SIGNAL(toggleLabelHighlightRequested(short)),
+            this, SLOT(toggleLabelHighlight(short)));
+    connect(labelDock, SIGNAL(toggleLabelHighlightRequested(short)),
+            bandDock->bandView(), SLOT(toggleLabelHighlight(short)));
 	connect(labelDock, SIGNAL(labelMaskIconsRequested()),
 			labelingModel(), SLOT(computeLabelIcons()));
 	connect(labelDock, SIGNAL(labelMaskIconSizeChanged(const QSize&)),
@@ -268,7 +268,7 @@ void Controller::setupDocks()
 	connect(imageModel(), SIGNAL(roiRectChanged(cv::Rect)),
 			labelDock, SLOT(processRoiRectChanged(cv::Rect)));
 
-    connect(bandDock->bandView(), SIGNAL(singleLabelSelected(int)),
+    connect(bandDock->bandView(), SIGNAL(labelSelected(int)),
                          labelDock, SLOT(selectLabel(int)));
 }
 
@@ -289,7 +289,7 @@ void Controller::requestGraphsegCurBand(const seg_graphs::GraphSegConfig &config
 	emit requestGraphsegBand(repr, bandId, seedMap, config, resetLabel);
 }
 
-void Controller::highlightSingleLabel(short label)
+void Controller::toggleLabelHighlight(short label)
 {
-    emit singleLabelSelected(label);
+    emit labelSelected(label);
 }

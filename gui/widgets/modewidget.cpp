@@ -1,9 +1,12 @@
 #include "modewidget.h"
 
+#include <QButtonGroup>
+
 ModeWidget::ModeWidget(AutohideView *view) :
     AutohideWidget()
 {
     setupUi(this);
+    initUi();
 }
 
 ModeWidget::~ModeWidget()
@@ -11,6 +14,17 @@ ModeWidget::~ModeWidget()
 
 }
 
+void ModeWidget::initUi()
+{
+    zoomButton->setCheckable(true);
+    pickButton->setCheckable(true);
+    labelButton->setCheckable(true);
+
+    group = new QButtonGroup();
+    group->addButton(zoomButton);
+    group->addButton(pickButton);
+    group->addButton(labelButton);
+}
 
 void ModeWidget::on_zoomButton_released()
 {

@@ -72,7 +72,7 @@ signals:
 	 *  @param highlight If true highlight the label. Otherwise stop
 	 *  highlighting.
 	 */
-    void highlightLabelRequested(short label);
+    void toggleLabelHighlightRequested(short label);
 
 	/** Request a vector of mask icons representing the label masks. */
 	void labelMaskIconsRequested();

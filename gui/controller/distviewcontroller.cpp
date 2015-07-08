@@ -151,8 +151,8 @@ void DistViewController::init()
 			this, SLOT(setCurrentLabel(int)));
 	connect(ctrl, SIGNAL(requestPixelOverlay(int,int)),
 			this, SLOT(pixelOverlay(int,int)));
-	connect(ctrl, SIGNAL(singleLabelSelected(int)),
-			this, SIGNAL(singleLabelSelected(int)));
+    connect(ctrl, SIGNAL(labelSelected(int)),
+            this, SIGNAL(labelSelected(int)));
 	connect(ctrl, SIGNAL(toggleIgnoreLabels(bool)),
 			this, SLOT(toggleIgnoreLabels(bool)));
 

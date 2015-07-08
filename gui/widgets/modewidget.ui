@@ -27,6 +27,12 @@
        <property name="text">
         <string>zoom/pan</string>
        </property>
+       <property name="checkable">
+        <bool>true</bool>
+       </property>
+       <property name="checked">
+        <bool>true</bool>
+       </property>
       </widget>
      </item>
      <item>
@@ -62,6 +68,9 @@
        <property name="text">
         <string>pick</string>
        </property>
+       <property name="checkable">
+        <bool>true</bool>
+       </property>
       </widget>
      </item>
      <item>
@@ -96,6 +105,9 @@
        </property>
        <property name="text">
         <string>label</string>
+       </property>
+       <property name="checkable">
+        <bool>true</bool>
        </property>
       </widget>
      </item>

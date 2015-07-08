@@ -56,12 +56,6 @@ void BandView::resizeEvent()
     zoom = 1;
 }
 
-void BandView::wheelEvent(QGraphicsSceneWheelEvent *event)
-{
-    ScaledView::wheelEvent(event);
-}
-
-
 void BandView::setPixmap(QPixmap p)
 {
     ScaledView::setPixmap(p);
@@ -126,17 +120,6 @@ void BandView::updateLabeling(const cv::Mat1s &newLabels, const cv::Mat1b &mask)
 
 	refresh();
 }
-
-
-
-void BandView::mouseMoveEvent(QGraphicsSceneMouseEvent *event)
-{
-
-    ScaledView::mouseMoveEvent(event);
-
-}
-
-
 
 void BandView::paintEvent(QPainter *painter, const QRectF &rect)
 {
@@ -371,23 +354,18 @@ void BandView::cursorAction(QGraphicsSceneMouseEvent *ev, bool click)
 
 	/// single label case
     if (sm == Pick && showLabels) {
-
-
-
         short cursorLabel = labels(cursor.y(), cursor.x());
         if (ev->buttons() & Qt::LeftButton) {
         }
 
         if(ev->button() & Qt::LeftButton) {
-            highlightSingleLabel(cursorLabel);
-            emit singleLabelSelected(curLabel);
+            toggleLabelHighlight(cursorLabel);
+            emit labelSelected(curLabel);
         } else {
             drawOverlay(curMask);
         }
 
-
 		return;
-
     }
 	/// end of function for singleLabel case. no manipulations,
 	/// destroying overlay etc.
@@ -532,11 +510,8 @@ void BandView::toggleShowLabels(bool disabled)
 	}
 }
 
-
-void BandView::highlightSingleLabel(short label)
+void BandView::toggleLabelHighlight(short label)
 {
-
-
     bool toDelete = false;
     if(selectedLabels.contains(label)) {
        toDelete = true;
@@ -577,11 +552,8 @@ void BandView::applyLabelAlpha(int alpha)
 	refresh();
 }
 
-
 void BandView::setSeedMap(cv::Mat1s seeding)
 {
 	seedMap = seeding;
 	refresh();
 }
-
-

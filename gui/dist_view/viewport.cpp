@@ -332,7 +332,7 @@ void Viewport::setLimiters(int label)
 	}
 }
 
-void Viewport::highlightSingleLabel(int index)
+void Viewport::toggleLabelHighlight(int index)
 {
     if(highlightLabels.contains(index)) {
         int pos = highlightLabels.indexOf(index);

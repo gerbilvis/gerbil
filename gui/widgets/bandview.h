@@ -19,7 +19,6 @@
 #include <QTimer>
 
 
-
 class BandView : public ScaledView
 {
 	Q_OBJECT
@@ -53,7 +52,7 @@ public slots:
 	void toggleShowLabels(bool disabled);
 	void toggleSeedMode(bool enabled);
 	void clearSeeds();
-    void highlightSingleLabel(short label);
+    void toggleLabelHighlight(short label);
 
 	void enterEvent();
 	void leaveEvent();
@@ -64,7 +63,7 @@ signals:
 	void killHover();
 
 	// single label mode, diff. label chosen
-	void singleLabelSelected(int label);
+    void labelSelected(int label);
 
 	// user changed some labels
 	void alteredLabels(const cv::Mat1s &labels, const cv::Mat1b &mask);
@@ -86,11 +85,6 @@ protected:
 
     virtual void resizeEvent();
 
-    void wheelEvent(QGraphicsSceneWheelEvent *event);
-    void mouseMoveEvent(QGraphicsSceneMouseEvent* event);
-
-
-
 private:
 	void cursorAction(QGraphicsSceneMouseEvent *ev, bool click = false);
 	inline void markCachePixel(QPainter &p, int x, int y);
@@ -102,7 +96,6 @@ private:
 
 	// local labeling matrix
 	cv::Mat1s labels;
-   // qreal zoom;
 
 	// mask that contains pixel labels we did change, but not commit back yet
 	cv::Mat1b uncommitedLabels;

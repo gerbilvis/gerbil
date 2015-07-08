@@ -323,7 +323,7 @@ void LabelDock::processLabelItemEntered(QModelIndex midx)
 	//GGDBGM("hovering over " << label << endl);
 	hovering = true;
 	hoverLabel = label;
-    emit highlightLabelRequested(label);
+    emit toggleLabelHighlightRequested(label);
 }
 
 

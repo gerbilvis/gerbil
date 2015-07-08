@@ -19,7 +19,8 @@
 /* TODO: do we really want sample buffers for these views? configurable?
  */
 ScaledView::ScaledView()
-    : width(50), height(50), zoom(1), sm(Zoom)// values don't matter much, but should be over 0
+    : width(50), height(50), // values don't matter much, but should be over 0
+      zoom(1), sm(Zoom)
 {
 	// by default small offsets; can be altered from outside
 	offLeft = offTop = offRight = offBottom = 2;

@@ -42,7 +42,7 @@ public:
 
 public slots:
 
-	void highlightSingleLabel(int index);
+    void toggleLabelHighlight(int index);
 
 	void toggleRGB(bool enabled) { drawRGB = enabled; updateBuffers(); }
 
