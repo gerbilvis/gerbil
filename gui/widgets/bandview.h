@@ -92,7 +92,6 @@ private:
 	void updateCache(int y, int x, short label = 0);
 	void updatePoint(const QPoint &p);
 
-
 	// local labeling matrix
 	cv::Mat1s labels;
 

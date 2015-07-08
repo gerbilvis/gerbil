@@ -1,10 +1,10 @@
 #ifndef SCALEDVIEW_H
 #define SCALEDVIEW_H
 
+#include "modewidget.h"
+
 #include <QGraphicsScene>
 #include <QPainter>
-
-#include "modewidget.h"
 
 class QGLWidget;
 
@@ -36,7 +36,6 @@ protected:
 	void mousePressEvent(QGraphicsSceneMouseEvent*);
 	virtual void cursorAction(QGraphicsSceneMouseEvent *ev,
                               bool click = false);
-
     void wheelEvent(QGraphicsSceneWheelEvent*);
 
 	void drawWaitMessage(QPainter *painter);
@@ -52,7 +51,6 @@ protected:
 	int width, height;
     qreal zoom;
     SelectionMode sm;
-
 
 	// transformations between pixmap coords. and scene coords.
 	QTransform scaler, scalerI;
