@@ -32,7 +32,7 @@ Viewport::Viewport(representation::t type, QGLWidget *target)
 	  selection(0), hover(-1), limiterMode(false),
 	  active(false), useralpha(1.f),
 	  showLabeled(true), showUnlabeled(true),
-	  overlayMode(false), highlightLabel(-1),
+      overlayMode(false),
 	  illuminant_show(true),
 	  zoom(1.), shift(0), lasty(-1), holdSelection(false), activeLimiter(0),
 	  drawLog(true), drawMeans(true), drawRGB(false), drawHQ(true),
@@ -334,18 +334,17 @@ void Viewport::setLimiters(int label)
 
 void Viewport::highlightSingleLabel(int index)
 {
-	highlightLabel = index;
-    if(labels.contains(index)) {
-        int pos = labels.indexOf(index);
-        labels.remove(pos, 1);
+    if(highlightLabels.contains(index)) {
+        int pos = highlightLabels.indexOf(index);
+        highlightLabels.remove(pos, 1);
     }
     else {
-        labels.push_back(index);
+        highlightLabels.push_back(index);
     }
 
 
 	updateBuffers(Viewport::RM_STEP,
-				   (highlightLabel > -1 ? RM_SKIP : RM_STEP));
+                   (!highlightLabels.empty() ? RM_SKIP: RM_STEP));
 }
 
 void Viewport::setAlpha(float alpha)

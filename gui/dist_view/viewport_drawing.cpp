@@ -58,7 +58,7 @@ bool Viewport::drawScene(QPainter *painter, bool withDynamics)
 	// do not draw when in single pixel overlay mode
 	drawHighlight = drawHighlight && (!overlayMode);
 	// do not draw when in single label mode
-	drawHighlight = drawHighlight && (highlightLabel < 0);
+    drawHighlight = drawHighlight && (highlightLabels.empty());
 
 	for (int i = 0; i < (drawHighlight ? 2 : 1); ++i) {
 
@@ -252,7 +252,8 @@ void Viewport::drawBins(QPainter &painter, QTimer &renderTimer,
 	// make sure that viewport draws "unlabeled" data in ignore-label case
 	int start = ((showUnlabeled || (*ctx)->ignoreLabels == 1) ? 0 : 1);
     int end = (showLabeled ? (int)(*sets)->size() : 1);
-	int single = ((*ctx)->ignoreLabels ? -1 : highlightLabel);
+    int single = ((*ctx)->ignoreLabels || highlightLabels.empty()
+                  ? -1 : highlightLabels[0]);
 
     size_t total = shuffleIdx.size();
     size_t first = renderedLines;
@@ -312,7 +313,7 @@ void Viewport::drawBins(QPainter &painter, QTimer &renderTimer,
 		// set color
 		QColor color = determineColor((drawRGB ? b.rgb : s.label),
 									  b.weight, s.totalweight,
-                                      highlight, labels.contains(idx.first));
+                                      highlight, highlightLabels.contains(idx.first));
 		target->qglColor(color);
 
 		// draw polyline

@@ -239,9 +239,8 @@ private:
 	std::vector<QString> yaxis;
 	int yaxisWidth;
 
-	// single label to be highlighted
-	int highlightLabel;
-    QVector<int> labels;
+    // vector containing highlighted labels
+    QVector<int> highlightLabels;
 };
 
 #endif // VIEWPORT_H

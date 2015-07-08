@@ -64,8 +64,6 @@ void LabelDock::init()
 
     connect(ui->labelView, SIGNAL(clicked(QModelIndex)),
 			this, SLOT(processLabelItemEntered(QModelIndex)));
-	connect(ui->labelView, SIGNAL(viewportEntered()),
-			this, SLOT(processLabelItemLeft()));
 
 	connect(ui->mergeBtn, SIGNAL(clicked()),
 			this, SLOT(mergeOrDeleteSelected()));
