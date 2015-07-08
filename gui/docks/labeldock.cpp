@@ -47,9 +47,6 @@ void LabelDock::init()
 
 	ui->labelView->setModel(labelModel);
 
-	LeaveEventFilter *leaveFilter = new LeaveEventFilter(this);
-	ui->labelView->installEventFilter(leaveFilter);
-
 	ui->labelView->setDragEnabled(false);
 	ui->labelView->setDragDropMode(QAbstractItemView::NoDragDrop);
 	ui->labelView->setSpacing(0);
@@ -346,11 +343,6 @@ void LabelDock::selectLabel(int label)
     }
 }
 
-void LabelDock::processLabelItemLeft()
-{
-
-}
-
 void LabelDock::processApplyROIToggled(bool checked)
 {
 	const bool applyROI = checked;
@@ -392,14 +384,3 @@ void LabelDock::resizeSceneContents()
 	geom.adjust(0, 0, +1, -off);
 	mainUiWidget->setGeometry(geom);
 }
-
-bool LeaveEventFilter::eventFilter(QObject *obj, QEvent *event)
-{
-	if (event->type() == QEvent::Leave) {
-		//GGDBGM("sending leave event" << endl);
-		LabelDock *labelDock = static_cast<LabelDock*>(parent());
-		labelDock->processLabelItemLeft();
-	}
-	return false; // continue normal processing of this event
-}
-

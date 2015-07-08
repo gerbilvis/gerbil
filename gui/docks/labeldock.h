@@ -28,7 +28,6 @@ class LabelDock : public QDockWidget
 {
 	Q_OBJECT
 
-	friend class LeaveEventFilter;
 public:
 
 	explicit LabelDock(QWidget *parent = 0);
@@ -99,7 +98,6 @@ private slots:
 	void processSelectionChanged(const QItemSelection & selected,
 							const QItemSelection & deselected);
 	void processLabelItemEntered(QModelIndex midx);
-	void processLabelItemLeft();
 
 	void processApplyROIToggled(bool checked);
 	
@@ -152,19 +150,6 @@ private:
 	cv::Rect roi;
 };
 
-// utility class to filter leave event
-class LeaveEventFilter : public QObject {
-	Q_OBJECT
 
-public:
-
-	LeaveEventFilter(LabelDock *parent)
-		: QObject(parent)
-	{}
-
-protected:
-
-	bool eventFilter(QObject *obj, QEvent *event);
-};
 
 #endif // LABELDOCK_H
