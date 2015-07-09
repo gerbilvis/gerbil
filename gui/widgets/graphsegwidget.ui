@@ -39,7 +39,7 @@
        </property>
        <property name="icon">
         <iconset resource="../gerbil.qrc">
-         <normaloff>:/basic/pen</normaloff>:/basic/pen</iconset>
+         <normaloff>:/basic/pencil</normaloff>:/basic/pencil</iconset>
        </property>
        <property name="iconSize">
         <size>
