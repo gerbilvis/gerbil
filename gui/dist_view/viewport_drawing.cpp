@@ -2,8 +2,8 @@
 
 #include <QGraphicsProxyWidget>
 #include <QMessageBox>
-#include <limits>
 #include <QDebug>
+#include <limits>
 
 #include <gerbil_gui_debug.h>
 
@@ -494,16 +494,12 @@ void Viewport::drawLegend(QPainter *painter, int sel)
 
 	painter->setPen(Qt::white);
 
-
     //drawing background for x-axis
-    QPointF xtp(0, height-35);
-    QPointF xbp(width, height);
-    QRectF xbgrect(xtp, xbp);
+    QRectF xbgrect(0, height-35, width, 35);;
 
     painter->save();
-    painter->setPen(QColor(0,0,0, 128));
+    painter->setBrush(QColor(0,0,0, 128));
     painter->fillRect(xbgrect, QBrush(QColor(0,0,0,128)));
-    painter->drawRect(xbgrect);
     painter->restore();
 
 	// x-axis
@@ -539,18 +535,13 @@ void Viewport::drawLegend(QPainter *painter, int sel)
 			painter->setPen(Qt::white);
 	}
 
-
     //drawing background for y-axis
-    QPointF ytp(0, 0);
-    QPointF ybp(60, height);
-    QRectF ybgrect(ytp, ybp);
+    QRectF ybgrect(0, 0, 60, height);
 
     painter->save();
-    painter->setPen(QColor(0,0,0, 128));
+    painter->setBrush(QColor(0,0,0, 128));
     painter->fillRect(ybgrect, QBrush(QColor(0,0,0,128)));
-    painter->drawRect(ybgrect);
     painter->restore();
-
 
 	/// y-axis
 	for (size_t i = 0; i < yaxis.size(); ++i) {
@@ -558,11 +549,9 @@ void Viewport::drawLegend(QPainter *painter, int sel)
         QPointF b = modelview.map(QPointF(0.f, (float)((*ctx)->nbins - 1) - ifrac));
 
         QPointF t = b;
-        t -= QPointF(200.f, 40.f); // draw left of data, vcenter alignment
-
+        t -= QPointF(0.f, 40.f);
         t.setX(0);
         b.setX(50);
-
         QRectF rect(t, b);
 
         painter->drawText(rect, Qt::AlignVCenter | Qt::AlignRight, yaxis[i]);

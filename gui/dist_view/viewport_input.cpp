@@ -76,7 +76,6 @@ void Viewport::mouseMoveEvent(QGraphicsSceneMouseEvent *event)
 	} else if (event->buttons() & Qt::RightButton) {
 		/* panning movement */
 
-
         QPointF lastonscene = modelviewI.map(event->lastScenePos());
         QPointF curronscene = modelviewI.map(event->scenePos());
         //qDebug() << "curronscene" << curronscene;
@@ -84,13 +83,10 @@ void Viewport::mouseMoveEvent(QGraphicsSceneMouseEvent *event)
         qreal xp = curronscene.x() - lastonscene.x();
         qreal yp = curronscene.y() - lastonscene.y();
 
-
         modelview.translate(xp, yp);
         modelviewI = modelview.inverted();
 
-
         adjustBoundaries();
-
 
 		/* TODO: make sure that we use full visible space */
 
@@ -156,44 +152,33 @@ void Viewport::wheelEvent(QGraphicsSceneWheelEvent *event)
 		 return;
 
     qreal newzoom;
-    if(event->delta() > 0) {
+    if (event->delta() > 0) {
        newzoom = 1.25;
-    }
-    else {
+    } else {
        newzoom = 0.8;
     }
 
-    if(zoom*newzoom < 1) {
+    if (zoom*newzoom < 1) {
        zoom = 1;
        updateModelview();
-    }
-    else {
+    } else {
        QPointF scene = event->scenePos();
        QPointF local = modelviewI.map(scene);
-
 
        zoom *= newzoom;
        modelview.scale(newzoom,newzoom);
        modelviewI = modelview.inverted();
 
        QPointF newlocal = modelviewI.map(scene);
-
        QPointF diff = newlocal - local;
        modelview.translate(diff.x(), diff.y());
        modelviewI = modelview.inverted();
 
-
-      // adjustZoomedBoundaries();
        adjustBoundaries();
-
-
     }
 
     updateBuffers();
-
 	/* TODO: make sure that we use full space */
-
-
 }
 
 void Viewport::adjustBoundaries()
@@ -223,19 +208,15 @@ void Viewport::adjustBoundaries()
      qreal bbpos = height - 35;
      qreal tbpos = 20;
 
-
  //    qDebug() << "LEFT BOUND " << lb
  //             << "RIGHT BOUND " << rb
  //             << "BOTTOM BOUND " << bb
  //             << "TOP BOUND " << tb;
 
-
      qreal xp = 0;
      qreal yp = 0;
 
-
-
-     if(lb.x() > lbpos && rb.x() < rbpos) {
+     if (lb.x() > lbpos && rb.x() < rbpos) {
          QPointF pixcenter = empty;
          SharedDataLock ctxlock(ctx->mutex);
          pixcenter.setX(((*ctx)->dimensionality - 1)/2.f);
@@ -244,23 +225,16 @@ void Viewport::adjustBoundaries()
          center = modelviewI.map(center);
 
          xp = center.x() - pixcenter.x();
+         //qDebug() << "ALIGNING TO CENTER!!!!!!";
 
-       //  qDebug() << "ALIGNING TO CENTER!!!!!!";
-
-
-
-     }
-     else if(lb.x() > lbpos) {
-        // qDebug() << "LEFT BOUND IS VISIBLE!";
+     } else if (lb.x() > lbpos) {
+         //qDebug() << "LEFT BOUND IS VISIBLE!";
          QPointF topleft(lbpos, 0.f);
          topleft = modelviewI.map(topleft);
 
          xp = topleft.x();
-
-     }
-     else if(rb.x() < rbpos) {
-     //    qDebug() << "RIGHT BOUND IS VISIBLE!";
-
+     } else if (rb.x() < rbpos) {
+         //qDebug() << "RIGHT BOUND IS VISIBLE!";
          QPointF right(rbpos, 0.f);
          right = modelviewI.map(right);
          rb = modelviewI.map(rb);
@@ -268,33 +242,25 @@ void Viewport::adjustBoundaries()
          xp = right.x()-rb.x();
      }
 
-
-
-     if(bb.y() < bbpos) {
-      //   qDebug() << "BOTTOM BOUND IS VISIBLE!";
-
+     if (bb.y() < bbpos) {
+         //qDebug() << "BOTTOM BOUND IS VISIBLE!";
          QPointF bottom(0.f, bbpos);
          bottom = modelviewI.map(bottom);
          bb = modelviewI.map(bb);
 
          yp = bottom.y()-bb.y();
 
-     }
-     else if(tb.y() > tbpos) {
-      //   qDebug() << "TOP BOUND IS VISIBLE!";
-
+     } else if (tb.y() > tbpos) {
+         //qDebug() << "TOP BOUND IS VISIBLE!";
          QPointF top(0, tbpos);
          top = modelviewI.map(top);
          tb = modelviewI.map(tb);
 
          yp = top.y()-tb.y();
-
      }
 
      modelview.translate(xp, yp);
      modelviewI = modelview.inverted();
-
-
  }
 
 
