@@ -41,7 +41,7 @@ void GerbilApplication::run()
 	registerQMetaTypes();
 
 	// setup our custom icon theme if there is no system theme (OS X, Windows)
-	if (QIcon::themeName().isEmpty())
+	if (QIcon::themeName().isEmpty() || !QIcon::themeName().compare("hicolor"))
 		QIcon::setThemeName("Gerbil");
 
 	if (!check_system_requirements()) {
