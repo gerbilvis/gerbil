@@ -27,6 +27,10 @@
        <property name="text">
         <string>zoom/pan</string>
        </property>
+       <property name="icon">
+        <iconset resource="../gerbil.qrc">
+         <normaloff>:/basic/zoom</normaloff>:/basic/zoom</iconset>
+       </property>
        <property name="checkable">
         <bool>true</bool>
        </property>
@@ -68,6 +72,10 @@
        <property name="text">
         <string>pick</string>
        </property>
+       <property name="icon">
+        <iconset resource="../gerbil.qrc">
+         <normaloff>:/basic/picker</normaloff>:/basic/picker</iconset>
+       </property>
        <property name="checkable">
         <bool>true</bool>
        </property>
@@ -106,6 +114,10 @@
        <property name="text">
         <string>label</string>
        </property>
+       <property name="icon">
+        <iconset resource="../gerbil.qrc">
+         <normaloff>:/basic/pencil</normaloff>:/basic/pencil</iconset>
+       </property>
        <property name="checkable">
         <bool>true</bool>
        </property>
@@ -115,6 +127,8 @@
    </item>
   </layout>
  </widget>
- <resources/>
+ <resources>
+  <include location="../gerbil.qrc"/>
+ </resources>
  <connections/>
 </ui>
