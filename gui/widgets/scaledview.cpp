@@ -162,7 +162,6 @@ void ScaledView::cursorAction(QGraphicsSceneMouseEvent *ev, bool click)
 {
 }
 
-
 void ScaledView::wheelEvent(QGraphicsSceneWheelEvent *event)
 {
       QGraphicsScene::wheelEvent(event);
@@ -173,15 +172,13 @@ void ScaledView::wheelEvent(QGraphicsSceneWheelEvent *event)
 
       if (event->delta() > 0) {
           newzoom = 1.25;
-      }
-      else {
+      } else {
           newzoom = 0.8;
       }
 
       if(zoom*newzoom < 1) {
           resizeEvent();
-      }
-      else {
+      } else {
           //obtain cursor position in scene coordinates
           QPointF scene = event->scenePos();
           //obtain cursor position in pixmap coordinates
