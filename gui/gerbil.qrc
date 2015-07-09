@@ -17,7 +17,7 @@
         <file alias="arrow-down">resources/arrow-down.png</file>
         <file alias="arrow-downright">resources/arrow-downright.png</file>
         <file alias="arrow-right">resources/arrow-right.png</file>
-        <file alias="pen">resources/pen.png</file>
+        <file alias="pencil">resources/pencil.png</file>
         <file alias="mouse-left">resources/mouse-left.png</file>
         <file alias="mouse-right">resources/mouse-right.png</file>
     </qresource>
