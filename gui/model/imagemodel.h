@@ -1,7 +1,6 @@
 #ifndef IMAGE_MODEL_H
 #define IMAGE_MODEL_H
 
-#include <gerbil_cplusplus.h>
 #include <model/representation.h>
 #include <shared_data.h>
 #include <background_task/background_task_queue.h>
@@ -58,7 +57,7 @@ public:
 
 	typedef ImageModelPayload payload;
 
-	explicit ImageModel(BackgroundTaskQueue &queue, bool limitedMode, QObject *parent = GBL_NULLPTR);
+    explicit ImageModel(BackgroundTaskQueue &queue, bool limitedMode, QObject *parent = nullptr);
 	~ImageModel();
 
 	/** Return the number of bands in the input image.

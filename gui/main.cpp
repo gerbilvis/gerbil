@@ -1,4 +1,3 @@
-#include <gerbil_cplusplus.h>
 #include "gerbilapplication.h"
 
 #include <iostream>

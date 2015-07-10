@@ -1,7 +1,6 @@
 #ifndef GRAPH_SEGMENTATION_MODEL_H
 #define GRAPH_SEGMENTATION_MODEL_H
 
-#include <gerbil_cplusplus.h>
 #include <model/representation.h>
 #include <shared_data.h>
 #include <background_task/background_task_queue.h>
@@ -22,7 +21,7 @@ class GraphSegmentationModel : public QObject
 	Q_OBJECT
 
 public:
-	GraphSegmentationModel(BackgroundTaskQueue *queue, QObject *parent = GBL_NULLPTR);
+    GraphSegmentationModel(BackgroundTaskQueue *queue, QObject *parent = nullptr);
 	~GraphSegmentationModel();
 
 	// always set required iamges before using the class

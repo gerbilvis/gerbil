@@ -1,6 +1,5 @@
 #include "model/labelingmodel.h"
 #include <app/gerbilio.h>
-#include <gerbil_cplusplus.h>
 #include <qtopencv.h>
 
 #include "labels/icontask.h"
@@ -160,7 +159,7 @@ void LabelingModel::alterPixels(const cv::Mat1s &newLabels,
 
 void LabelingModel::loadLabeling(const QString &filename)
 {
-	GerbilIO io(GBL_NULLPTR, "Labeling From Image File", "labeling image");
+    GerbilIO io(nullptr, "Labeling From Image File", "labeling image");
 	io.setFileCategory("LabelFile");
 	io.setFileSuffix(".png");
 	/* we are properly initialized with the image dimensions
@@ -181,7 +180,7 @@ void LabelingModel::saveLabeling(const QString &filename)
 	Labeling labeling(full_labels);
 	cv::Mat3b output = labeling.bgr();
 
-	GerbilIO io(GBL_NULLPTR, "Labeling As Image File", "labeling image");
+    GerbilIO io(nullptr, "Labeling As Image File", "labeling image");
 	io.setFileCategory("LabelFile");
 	io.setFileSuffix(".png");
 	io.writeImage(output);

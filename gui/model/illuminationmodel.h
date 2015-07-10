@@ -1,8 +1,6 @@
 #ifndef ILLUMINATION_MODEL_H
 #define ILLUMINATION_MODEL_H
 
-#include <gerbil_cplusplus.h>
-
 #include <multi_img/illuminant.h>
 #include <background_task/background_task_queue.h>
 #include <multi_img.h>
@@ -20,7 +18,7 @@ class IllumModel : public QObject
 {
 	Q_OBJECT
 public:
-	explicit IllumModel(BackgroundTaskQueue *queue,QObject *parent = GBL_NULLPTR);
+    explicit IllumModel(BackgroundTaskQueue *queue,QObject *parent = nullptr);
 
 	void setMultiImage(SharedMultiImgPtr image);
 	void setRoi(cv::Rect roi);

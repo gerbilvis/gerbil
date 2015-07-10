@@ -24,7 +24,7 @@ GerbilApplication::GerbilApplication(int &argc, char **argv)
 	  limitedMode(false),
 	  eventLoopStartedEvent(QEvent::registerEventType()),
 	  eventLoopStarted(false),
-	  ctrl(GBL_NULLPTR)
+      ctrl(nullptr)
 {
 }
 
