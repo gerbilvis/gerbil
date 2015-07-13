@@ -118,8 +118,8 @@ protected:
 	void wheelEvent(QGraphicsSceneWheelEvent *);
 	void keyPressEvent(QKeyEvent *);
 
-    //helper function that adjusts boundaries after zooming/panning
-    void adjustBoundaries();
+	//helper function that adjusts boundaries after zooming/panning
+	void adjustBoundaries();
 
 	// helper function that updates Y-axis labels
 	void updateYAxis();
@@ -136,7 +136,7 @@ protected:
 	/* helper functions called by drawScene/updateTextures */
 
 	void drawBins(QPainter &painter, QTimer &renderTimer,
-		unsigned int &renderedLines, unsigned int renderStep,
+				  unsigned int &renderedLines, unsigned int renderStep,
 				  bool onlyHighlight);
 	// helper function called by drawBins
 	QColor determineColor(const QColor &basecolor, float weight,
