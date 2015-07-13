@@ -10,6 +10,8 @@ endif()
 
 project(Gerbil)
 
+set(CMAKE_CXX_STANDARD 11)
+
 set(CMAKE_MODULE_PATH "${CMAKE_SOURCE_DIR}/cmake")
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin)
 
@@ -23,7 +25,7 @@ if(MSVC)
 	endif()
 elseif(CMAKE_COMPILER_IS_GNUCC OR CMAKE_COMPILER_IS_GNUCXX)
 	# Update if necessary
-        set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -Wno-long-long -Wno-reorder -pedantic -std=c++11 ")
+        set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -Wno-long-long -Wno-reorder -pedantic ")
 endif()
 
 include(VoleHelperMacros)
@@ -33,7 +35,6 @@ if(WIN32)
 	add_definitions(-DNOMINMAX) # prevents min- and max-macro brainf*ck in VS 2003
 endif(WIN32)
 
-set_property(GLOBAL PROPERTY CXX_STANDARD 11)
 
 include(EnableSSE2)
 
