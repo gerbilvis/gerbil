@@ -10,6 +10,8 @@ endif()
 
 project(Gerbil)
 
+set(CMAKE_CXX_STANDARD 11)
+
 set(CMAKE_MODULE_PATH "${CMAKE_SOURCE_DIR}/cmake")
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin)
 
@@ -33,9 +35,6 @@ if(WIN32)
 	add_definitions(-DNOMINMAX) # prevents min- and max-macro brainf*ck in VS 2003
 endif(WIN32)
 
-# No C++11, we want to be compatible with older MSVC.
-# We use boost tr1 instead.
-# http://www.boost.org/doc/libs/1_55_0/doc/html/boost_tr1.html
 
 include(EnableSSE2)
 

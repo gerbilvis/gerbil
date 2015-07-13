@@ -1,7 +1,6 @@
 #ifndef CONTROLLER_H
 #define CONTROLLER_H
 
-#include <gerbil_cplusplus.h>
 #include <model/representation.h>
 #include <shared_data.h>
 #include <background_task/background_task.h>
@@ -34,7 +33,7 @@ class LabelDock;
 
 namespace seg_graphs
 {
-	class GraphSegConfig;
+class GraphSegConfig;
 }
 
 class Subscriptions;
@@ -45,8 +44,8 @@ class Controller : public QObject
 	Q_OBJECT
 public:
 	explicit Controller(
-			const QString &filename, bool limited_mode,
-			const QString &labelfile, QObject *parent = GBL_NULLPTR);
+	        const QString &filename, bool limited_mode,
+	        const QString &labelfile, QObject *parent = nullptr);
 	~Controller();
 
 	MainWindow* mainWindow() { return window; }
@@ -90,37 +89,37 @@ signals:
 	 * or lighting.
 	 */
 	void preROISpawn(cv::Rect const & oldroi,
-					 cv::Rect const & newroi,
-					 std::vector<cv::Rect> const & sub,
-					 std::vector<cv::Rect> const & add,
-					 bool profitable
-					 );
+	                 cv::Rect const & newroi,
+	                 std::vector<cv::Rect> const & sub,
+	                 std::vector<cv::Rect> const & add,
+	                 bool profitable
+	                 );
 
-	/** This signal is emitted after he controller has spawned a new ROI. 
+	/** This signal is emitted after he controller has spawned a new ROI.
 	 *
 	 * The parameters are the same as with preROISpawn. Be aware that any
 	 * image data in the image model for the old ROI may already have been
 	 * invalidated. To access old ROI data the preROISpawn signal must be used.
 	 */
 	void postROISpawn(cv::Rect const & oldroi,
-					  cv::Rect const & newroi,
-					  std::vector<cv::Rect> const & sub,
-					  std::vector<cv::Rect> const & add,
-					  bool profitable
-					  );
+	                  cv::Rect const & newroi,
+	                  std::vector<cv::Rect> const & sub,
+	                  std::vector<cv::Rect> const & add,
+	                  bool profitable
+	                  );
 
 
 /// DOCKS
 
 	// these are send to the graphSegModel
 	void requestGraphseg(representation::t type,
-						 cv::Mat1s seedMap,
-						 const seg_graphs::GraphSegConfig &config,
-						 bool resetLabel);
+	                     cv::Mat1s seedMap,
+	                     const seg_graphs::GraphSegConfig &config,
+	                     bool resetLabel);
 	void requestGraphsegBand(representation::t type, int bandId,
-							 cv::Mat1s seedMap,
-							 const seg_graphs::GraphSegConfig &config,
-							 bool resetLabel);
+	                         cv::Mat1s seedMap,
+	                         const seg_graphs::GraphSegConfig &config,
+	                         bool resetLabel);
 
 	/** Let GUI elements know we have requested a FalseColor update
 	 * for coloringType. */
@@ -143,15 +142,15 @@ public slots:
 protected slots:
 	// these are requested by the graphSegWidget
 	void requestGraphseg(representation::t,
-						 const seg_graphs::GraphSegConfig &config,
-						 bool resetLabel);
+	                     const seg_graphs::GraphSegConfig &config,
+	                     bool resetLabel);
 	void requestGraphsegCurBand(const seg_graphs::GraphSegConfig &config,
-								bool resetLabel);
+	                            bool resetLabel);
 	void highlightSingleLabel(short label, bool highlight);
 
 	void processImageUpdate(representation::t repr,
-							SharedMultiImgPtr image,
-							bool duplicate);
+	                        SharedMultiImgPtr image,
+	                        bool duplicate);
 
 /// SUBSCRIPTIONS
 
@@ -181,8 +180,8 @@ protected slots:
 	 * will trigger the emission of the signal as well.
 	 */
 	void subscribeImageBand(QObject *subscriber,
-							representation::t repr,
-							int bandId);
+	                        representation::t repr,
+	                        int bandId);
 	/** Un-subscribe from image band from ImageModel.
 	 *
 	 * This signals to the controller that the subscriber does not depend on
@@ -190,8 +189,8 @@ protected slots:
 	 * signal may still be received due to other subscribed objects.
 	 */
 	void unsubscribeImageBand(QObject *subscriber,
-							  representation::t repr,
-							  int bandId);
+	                          representation::t repr,
+	                          int bandId);
 
 	/** Subscribe for false color image updates from FalseColorModel.
 	 *
@@ -204,7 +203,7 @@ protected slots:
 	 * the signal as well.
 	 */
 	void subscribeFalseColor(QObject *subscriber,
-							 FalseColoring::Type coloring);
+	                         FalseColoring::Type coloring);
 	/** Un-subscribe from false color representation from FalseColorModel.
 	 *
 	 * This signals to the controller that the subscriber does not depend on
@@ -213,7 +212,7 @@ protected slots:
 	 * other subscribed objects.
 	 */
 	void unsubscribeFalseColor(QObject *subscriber,
-									  FalseColoring::Type coloring);
+	                           FalseColoring::Type coloring);
 	/** Explicitly trigger a re-calculation of SOM based false color image,
 	 * even if an  up-to-date cached instance exists (SOM is
 	 * non-deterministic). */
@@ -227,10 +226,10 @@ protected slots:
 	 * not receive the signal. The subscription just guarantees the
 	 * computation will be done signal will be emitted. Any other object
 	 * subscribed for the representation will trigger the emission of the
-	 * signal as well. 
+	 * signal as well.
 	 */
 	void subscribeRepresentation(QObject *subscriber,
-								 representation::t repr);
+	                             representation::t repr);
 	/** Un-subscribe from image representation from ImageModel.
 	 *
 	 * This signals to the controller that the subscriber does not depend on
@@ -239,7 +238,7 @@ protected slots:
 	 * objects.
 	 */
 	void unsubscribeRepresentation(QObject *subscriber,
-								   representation::t repr);
+	                               representation::t repr);
 
 protected:
 	// connect models with gui
@@ -319,7 +318,7 @@ protected:
 	ClusteringDock *clusteringDock;
 	LabelDock *labelDock;
 
-/// DistViewController
+	/// DistViewController
 
 	// setup distribution views and manage them and their models
 	DistViewController *dvc;

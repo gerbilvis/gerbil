@@ -1,7 +1,6 @@
 #ifndef CLUSTERING_MODEL_H
 #define CLUSTERING_MODEL_H
 
-#include <gerbil_cplusplus.h>
 #include <shared_data.h>
 
 #include <model/representation.h>
@@ -15,7 +14,7 @@
 #include <QMetaClassInfo>
 
 namespace shell {
-	class Command;
+class Command;
 }
 class CommandRunner;
 
@@ -29,7 +28,7 @@ class ClusteringModel : public QObject
 
 public:
 
-	explicit ClusteringModel(QObject *parent = GBL_NULLPTR);
+	explicit ClusteringModel(QObject *parent = nullptr);
 	~ClusteringModel();
 
 signals:
@@ -52,8 +51,8 @@ public slots:
 	void cancel();
 
 	void processImageUpdate(representation::t repr,
-							SharedMultiImgPtr image,
-							bool duplicate);
+	                        SharedMultiImgPtr image,
+	                        bool duplicate);
 
 protected slots:
 
