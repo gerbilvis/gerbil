@@ -16,8 +16,8 @@ static QIcon colorIcon(const QColor &color)
 }
 
 BandDock::BandDock(cv::Rect fullImgSize, QWidget *parent)
-	: QDockWidget(parent), fullImgSize(fullImgSize),
-	  curRepr(representation::IMG), curBandId(0)
+    : QDockWidget(parent), fullImgSize(fullImgSize),
+      curRepr(representation::IMG), curBandId(0)
 {
 	setupUi(this);
 	initUi();
@@ -35,7 +35,7 @@ void BandDock::initUi()
 	bv = new BandView();
 	view->setScene(bv);
 	connect(bv, SIGNAL(newContentRect(QRect)),
-			view, SLOT(fitContentRect(QRect)));
+	        view, SLOT(fitContentRect(QRect)));
 
 	// add graphseg control widget
 	gs = new GraphSegWidget(view);
@@ -43,41 +43,41 @@ void BandDock::initUi()
 	view->addWidget(AutohideWidget::BOTTOM, gs);
 
 	connect(bv, SIGNAL(newSizeHint(QSize)),
-			view, SLOT(updateSizeHint(QSize)));
+	        view, SLOT(updateSizeHint(QSize)));
 
 	connect(gs, SIGNAL(requestLoadSeeds()),
-			this, SLOT(loadSeeds()));
+	        this, SLOT(loadSeeds()));
 	connect(gs, SIGNAL(requestClearSeeds()),
-			bv, SLOT(clearSeeds()));
+	        bv, SLOT(clearSeeds()));
 
 	connect(markerSelector, SIGNAL(currentIndexChanged(int)),
-			this, SLOT(processMarkerSelectorIndexChanged(int)));
+	        this, SLOT(processMarkerSelectorIndexChanged(int)));
 
 	connect(alphaSlider, SIGNAL(valueChanged(int)),
-			bv, SLOT(applyLabelAlpha(int)));
+	        bv, SLOT(applyLabelAlpha(int)));
 
 	connect(clearButton, SIGNAL(clicked()),
-			this, SLOT(clearLabel()));
+	        this, SLOT(clearLabel()));
 	connect(bv, SIGNAL(clearRequested()),
-			this, SLOT(clearLabel()));
+	        this, SLOT(clearLabel()));
 
 	/* when applybutton is pressed, bandView commits full label matrix */
 	connect(applyButton, SIGNAL(clicked()),
-			bv, SLOT(commitLabels()));
+	        bv, SLOT(commitLabels()));
 	// The apply button is unecessary now, since
 	// label update is triggered by timer. Hide it for now.
 	applyButton->setVisible(false);
 
 	connect(gs, SIGNAL(requestToggleSeedMode(bool)),
-			this, SLOT(graphSegModeToggled(bool)));
+	        this, SLOT(graphSegModeToggled(bool)));
 	connect(gs, SIGNAL(requestToggleSeedMode(bool)),
-			bv, SLOT(toggleSeedMode(bool)));
+	        bv, SLOT(toggleSeedMode(bool)));
 
 	connect(this, SIGNAL(currentLabelChanged(int)),
-			bv, SLOT(setCurrentLabel(int)));
+	        bv, SLOT(setCurrentLabel(int)));
 
 	connect(this, SIGNAL(visibilityChanged(bool)),
-			this, SLOT(processVisibilityChanged(bool)));
+	        this, SLOT(processVisibilityChanged(bool)));
 
 	//add mode widget
 	mw = new ModeWidget(view);
@@ -85,13 +85,13 @@ void BandDock::initUi()
 	view->addWidget(AutohideWidget::TOP, mw);
 
 	connect(mw, SIGNAL(modeChanged(SelectionMode)),
-			bv, SLOT(updateMode(SelectionMode)));
+	        bv, SLOT(updateMode(SelectionMode)));
 
 	bv->initUi();
 }
 
 void BandDock::changeBand(representation::t repr, int bandId,
-						  QPixmap band, QString desc)
+                          QPixmap band, QString desc)
 {
 	//GGDBGM("received image band update " << repr << " " << bandId << endl);
 	if(curRepr != repr || curBandId != bandId) {
@@ -175,8 +175,8 @@ bool BandDock::eventFilter(QObject *obj, QEvent *event)
 }
 
 void BandDock::processLabelingChange(const cv::Mat1s &labels,
-									 const QVector<QColor> &colors,
-									 bool colorsChanged)
+                                     const QVector<QColor> &colors,
+                                     bool colorsChanged)
 {
 	if (!colors.empty()) {
 		// store a local copy of the color array
@@ -206,7 +206,7 @@ void BandDock::processLabelingChange(const cv::Mat1s &labels,
 }
 
 void BandDock::processLabelingChange(const cv::Mat1s &labels,
-									 const cv::Mat1b &mask)
+                                     const cv::Mat1b &mask)
 {
 	bv->updateLabeling(labels, mask);
 }

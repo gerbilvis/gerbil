@@ -21,11 +21,11 @@
 
 
 LabelDock::LabelDock(QWidget *parent) :
-	QDockWidget(parent),
-	ui(new Ui::LabelDock),
-	labelModel(new QStandardItemModel),
-	hovering(false),
-	hoverLabel(-1)
+    QDockWidget(parent),
+    ui(new Ui::LabelDock),
+    labelModel(new QStandardItemModel),
+    hovering(false),
+    hoverLabel(-1)
 {
 	setObjectName("LabelDock");
 	init();
@@ -43,27 +43,27 @@ void LabelDock::init()
 	ui->labelView->setFrameStyle(QFrame::NoFrame);
 	mainUiWidget = ahscene->addWidget(mainUiWidgetTmp);
 	mainUiWidget->setTransform(
-				QTransform::fromTranslate(-AutohideWidget::OutOffset, 0));
+	            QTransform::fromTranslate(-AutohideWidget::OutOffset, 0));
 
 	ui->labelView->setModel(labelModel);
 
 	connect(ui->labelView->selectionModel(),
-			SIGNAL(selectionChanged(QItemSelection,QItemSelection)),
-			this,
-			SLOT(processSelectionChanged(QItemSelection,QItemSelection)));
+	        SIGNAL(selectionChanged(QItemSelection,QItemSelection)),
+	        this,
+	        SLOT(processSelectionChanged(QItemSelection,QItemSelection)));
 
 	connect(ui->labelView, SIGNAL(clicked(QModelIndex)),
-			this, SLOT(processLabelItemEntered(QModelIndex)));
+	        this, SLOT(processLabelItemEntered(QModelIndex)));
 
 	connect(ui->mergeBtn, SIGNAL(clicked()),
-			this, SLOT(mergeOrDeleteSelected()));
+	        this, SLOT(mergeOrDeleteSelected()));
 	connect(ui->delBtn, SIGNAL(clicked()),
-			this, SLOT(mergeOrDeleteSelected()));
+	        this, SLOT(mergeOrDeleteSelected()));
 	connect(ui->consolidateBtn, SIGNAL(clicked()),
-			this, SIGNAL(consolidateLabelsRequested()));
+	        this, SIGNAL(consolidateLabelsRequested()));
 
 	connect(ui->sizeSlider, SIGNAL(valueChanged(int)),
-			this, SLOT(processSliderValueChanged(int)));
+	        this, SLOT(processSliderValueChanged(int)));
 	// Icon size is hard-coded to the range [4, 1024] in IconTask.
 	// Don't change this unless you know what you are doing.
 	ui->sizeSlider->setMinimum(16);
@@ -71,15 +71,15 @@ void LabelDock::init()
 	updateSliderToolTip();
 
 	connect(ui->applyROI, SIGNAL(toggled(bool)),
-			this, SLOT(processApplyROIToggled(bool)));
+	        this, SLOT(processApplyROIToggled(bool)));
 
 	connect(ui->loadLabelingButton, SIGNAL(clicked()),
-			this, SIGNAL(requestLoadLabeling()));
+	        this, SIGNAL(requestLoadLabeling()));
 	connect(ui->saveLabelingButton, SIGNAL(clicked()),
-			this, SIGNAL(requestSaveLabeling()));
+	        this, SIGNAL(requestSaveLabeling()));
 
 	connect(this, SIGNAL(visibilityChanged(bool)),
-			this, SLOT(resizeSceneContents()));
+	        this, SLOT(resizeSceneContents()));
 
 	this->setWindowTitle("Labels");
 	QWidget *contents = new QWidget(this);
@@ -175,8 +175,8 @@ void LabelDock::setImageSize(cv::Size imgSize)
 }
 
 void LabelDock::setLabeling(const cv::Mat1s & labels,
-							const QVector<QColor> &colors,
-							bool colorsChanged)
+                            const QVector<QColor> &colors,
+                            bool colorsChanged)
 {
 	//GGDBGM("colors.size()=" << colors.size()
 	//	   << "  colorsChanged=" << colorsChanged << endl;)
@@ -300,7 +300,7 @@ void LabelDock::showEvent(QShowEvent *event)
 }
 
 void LabelDock::processSelectionChanged(const QItemSelection &,
-										const QItemSelection &)
+                                        const QItemSelection &)
 {
 	int nSelected = ui->labelView->selectionModel()->selectedIndexes().size();
 
@@ -356,7 +356,7 @@ void LabelDock::processSliderValueChanged(int)
 void LabelDock::updateSliderToolTip()
 {
 	QString t = QString("Icon Size (%1)").arg(
-					ui->sizeSlider->value());
+	                ui->sizeSlider->value());
 	ui->sizeSlider->setToolTip(t);
 }
 

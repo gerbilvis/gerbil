@@ -26,13 +26,13 @@
 #include <QDebug>
 
 BandView::BandView()
-	: // note: start with invalid curLabel to trigger proper initialization!
-	  cacheValid(false), cursor(-1, -1), lastcursor(-1, -1), curLabel(-1),
-	  overlay(0), showLabels(true), selectedLabels(0),
-	  ignoreUpdates(false),
-	  seedMode(false), labelAlpha(63),
-	  seedColors(std::make_pair(
-					 QColor(255, 0, 0, 255), QColor(255, 255, 0, 255)))
+    : // note: start with invalid curLabel to trigger proper initialization!
+      cacheValid(false), cursor(-1, -1), lastcursor(-1, -1), curLabel(-1),
+      overlay(0), showLabels(true), selectedLabels(0),
+      ignoreUpdates(false),
+      seedMode(false), labelAlpha(63),
+      seedColors(std::make_pair(
+                     QColor(255, 0, 0, 255), QColor(255, 255, 0, 255)))
 {
 	// the timer automatically sends an accumulated update request
 	labelTimer.setSingleShot(true);
@@ -42,7 +42,7 @@ BandView::BandView()
 void BandView::initUi()
 {
 	connect(&labelTimer, SIGNAL(timeout()),
-			this, SLOT(commitLabelChanges()));
+	        this, SLOT(commitLabelChanges()));
 }
 
 void BandView::updateMode(SelectionMode mode)
@@ -62,7 +62,7 @@ void BandView::setPixmap(QPixmap p)
 
 	// adjust seed map if necessary
 	if (seedMap.empty()
-		|| seedMap.rows != pixmap.height() || seedMap.cols != pixmap.width())
+	    || seedMap.rows != pixmap.height() || seedMap.cols != pixmap.width())
 	{
 		seedMap = cv::Mat1s(pixmap.height(), pixmap.width(), (short)127);
 		// TODO: send signal to model, maybe move whole seed map to model
@@ -78,8 +78,8 @@ void BandView::refresh()
 }
 
 void BandView::updateLabeling(const cv::Mat1s &newLabels,
-							  const QVector<QColor> &colors,
-							  bool colorsChanged)
+                              const QVector<QColor> &colors,
+                              bool colorsChanged)
 {
 	if (ignoreUpdates)
 		return;
@@ -126,7 +126,7 @@ void BandView::paintEvent(QPainter *painter, const QRectF &rect)
 	/* deal with no pixmap set (width==0), or labeling does not fit the pixmap
 	 * (as updates to pixmap and labeling are not synchronised) */
 	bool consistent = ((pixmap.width() == labels.cols) &&
-					   (pixmap.height() == labels.rows));
+	                   (pixmap.height() == labels.rows));
 
 	if (!consistent) {
 		painter->fillRect(rect, QBrush(Qt::gray, Qt::BDiagPattern));
@@ -201,9 +201,9 @@ struct updateCacheBody {
 	const std::pair<QColor, QColor> &seedColors;
 
 	updateCacheBody(QImage &dest, bool seedMode, const cv::Mat1s &labels, const cv::Mat1s &seedMap,
-					const QVector<QColor> &labelColorsA, const std::pair<QColor, QColor> &seedColors)
-		: dest(dest), seedMode(seedMode), labels(labels), seedMap(seedMap),
-		  labelColorsA(labelColorsA), seedColors(seedColors) {}
+	                const QVector<QColor> &labelColorsA, const std::pair<QColor, QColor> &seedColors)
+	    : dest(dest), seedMode(seedMode), labels(labels), seedMap(seedMap),
+	      labelColorsA(labelColorsA), seedColors(seedColors) {}
 
 	void operator()(const tbb::blocked_range2d<size_t> &r) const {
 		for (int y = r.rows().begin(); y != r.rows().end(); ++y) {
@@ -240,7 +240,7 @@ void BandView::updateCache()
 	QImage dest(pixmap.width(), pixmap.height(), QImage::Format_ARGB32);
 	updateCacheBody body(dest, seedMode, labels, seedMap, labelColorsA, seedColors);
 	tbb::parallel_for(tbb::blocked_range2d<size_t>(
-						  0, pixmap.height(), 0, pixmap.width()), body);
+	                      0, pixmap.height(), 0, pixmap.width()), body);
 
 	painter.drawImage(0, 0, dest);
 }
@@ -314,7 +314,7 @@ void BandView::drawOverlay(const cv::Mat1b &mask)
 void BandView::cursorAction(QGraphicsSceneMouseEvent *ev, bool click)
 {
 	bool consistent = ((pixmap.width() == labels.cols) &&
-					   (pixmap.height() == labels.rows));
+	                   (pixmap.height() == labels.rows));
 	if (!consistent) // not properly initialized
 		return;
 

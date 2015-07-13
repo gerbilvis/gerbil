@@ -19,8 +19,8 @@
 /* TODO: do we really want sample buffers for these views? configurable?
  */
 ScaledView::ScaledView()
-	: width(50), height(50), // values don't matter much, but should be over 0
-	  zoom(1), sm(Zoom)
+    : width(50), height(50), // values don't matter much, but should be over 0
+      zoom(1), sm(Zoom)
 {
 	// by default small offsets; can be altered from outside
 	offLeft = offTop = offRight = offBottom = 2;
@@ -39,7 +39,7 @@ void ScaledView::setPixmap(QPixmap p)
 	pixmap = p;
 
 	bool cond = (p.width() != pixmap.width()
-							  || p.height() != pixmap.height());
+	                          || p.height() != pixmap.height());
 	if (cond) {
 		resizeEvent();
 		updateSizeHint();
@@ -78,7 +78,7 @@ void ScaledView::resizeEvent()
 	/* centering */
 	scaler.reset();
 	scaler.translate(offLeft + (width - offLeft - offRight - w)/2.f,
-					 offTop + (height - offTop - offBottom - w/src_aspect)/2.f);
+	                 offTop + (height - offTop - offBottom - w/src_aspect)/2.f);
 	/* scaling */
 	float scale = w/pixmap.width();
 	scaler.scale(scale, scale);
@@ -153,7 +153,7 @@ void ScaledView::drawWaitMessage(QPainter *painter)
 	tmp.setPointSize(tmp.pointSize() * 1.75);
 	painter->setFont(tmp);
 	painter->drawText(sceneRect(), Qt::AlignCenter,
-					  QString::fromUtf8("Calculating…"));
+	                  QString::fromUtf8("Calculating…"));
 	painter->restore();
 }
 

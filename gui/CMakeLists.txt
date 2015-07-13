@@ -23,8 +23,8 @@ vole_compile_library(
 	widgets/scaledview
 	widgets/bandview
 	widgets/roiview
-        widgets/graphsegwidget
-        widgets/modewidget
+	widgets/graphsegwidget
+	widgets/modewidget
 
 	widgets/sizegripitem/sizegripitem
 	
@@ -83,7 +83,7 @@ vole_moc_library(
 	widgets/bandview.h
 	widgets/roiview.h
 	widgets/graphsegwidget.h
-        widgets/modewidget.h
+	widgets/modewidget.h
 
 	widgets/sizegripitem/sizegripitem.h
 
@@ -119,7 +119,7 @@ vole_moc_library(
 vole_ui_library(
 	widgets/mainwindow.ui
 	widgets/graphsegwidget.ui
-        widgets/modewidget.ui
+	widgets/modewidget.ui
 	dist_view/distviewgui.ui
 	dist_view/foldingbar.ui
 	dist_view/viewportcontrol.ui

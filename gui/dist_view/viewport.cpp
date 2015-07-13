@@ -26,18 +26,18 @@
 #include <boost/format.hpp>
 
 Viewport::Viewport(representation::t type, QGLWidget *target)
-	: type(type), target(target), width(0), height(0),
-	  ctx(new SharedData<ViewportCtx>(new ViewportCtx())),
-	  sets(new SharedData<std::vector<BinSet> >(new std::vector<BinSet>())),
-	  selection(0), hover(-1), limiterMode(false),
-	  active(false), useralpha(1.f),
-	  showLabeled(true), showUnlabeled(true),
-	  overlayMode(false),
-	  illuminant_show(true),
-	  zoom(1.), shift(0), lasty(-1), holdSelection(false), activeLimiter(0),
-	  drawLog(true), drawMeans(true), drawRGB(false), drawHQ(true),
-	  bufferFormat(RGBA16F),
-	  drawingState(HIGH_QUALITY), yaxisWidth(0), vb(QGLBuffer::VertexBuffer)
+    : type(type), target(target), width(0), height(0),
+      ctx(new SharedData<ViewportCtx>(new ViewportCtx())),
+      sets(new SharedData<std::vector<BinSet> >(new std::vector<BinSet>())),
+      selection(0), hover(-1), limiterMode(false),
+      active(false), useralpha(1.f),
+      showLabeled(true), showUnlabeled(true),
+      overlayMode(false),
+      illuminant_show(true),
+      zoom(1.), shift(0), lasty(-1), holdSelection(false), activeLimiter(0),
+      drawLog(true), drawMeans(true), drawRGB(false), drawHQ(true),
+      bufferFormat(RGBA16F),
+      drawingState(HIGH_QUALITY), yaxisWidth(0), vb(QGLBuffer::VertexBuffer)
 {
 	(*ctx)->wait = 1;
 	(*ctx)->reset = 1;
@@ -70,11 +70,11 @@ void Viewport::initTimers()
 		buffers[i].renderedLines = 0;
 		buffers[i].renderTimer.setSingleShot(true);
 		connect(&buffers[i].renderTimer, SIGNAL(timeout()),
-				mapper, SLOT(map()));
+		        mapper, SLOT(map()));
 		mapper->setMapping(&buffers[i].renderTimer, i);
 	}
 	connect(mapper, SIGNAL(mapped(int)),
-			this, SLOT(continueDrawing(int)));
+	        this, SLOT(continueDrawing(int)));
 }
 
 void Viewport::initBuffers()
@@ -98,16 +98,16 @@ void Viewport::initBuffers()
 		}
 
 		std::cerr << "Viewport: Warning: Failed to init framebuffer "
-				  << "with format " << bfs << ". "
-				  << "Falling back to RGBA8. Drawing quality reduced."
-				  << std::endl;
+		          << "with format " << bfs << ". "
+		          << "Falling back to RGBA8. Drawing quality reduced."
+		          << std::endl;
 
 		bufferFormat = RGBA8;
 		// try again
 		if(!tryInitBuffers()) {
 			std::cerr << "Viewport: Error: Failed to init framebuffer "
-					  << "with format RGBA8. Aborting."
-					  << std::endl;
+			          << "with format RGBA8. Aborting."
+			          << std::endl;
 			std::abort();
 		}
 	}
@@ -237,7 +237,7 @@ void Viewport::prepareLines()
 	// second step (cpu -> gpu)
 	target->makeCurrent();
 	Compute::storeVertices(**ctx, **sets, shuffleIdx, vb,
-						   drawMeans, illuminantAppl);
+	                       drawMeans, illuminantAppl);
 
 	//	// gracefully fail if there is a problem with VBO support
 	//	switch (success) {
@@ -313,7 +313,7 @@ void Viewport::setLimiters(int label)
 	if (label < 1) {	// not label
 		SharedDataLock ctxlock(ctx->mutex);
 		limiters.assign((*ctx)->dimensionality,
-						std::make_pair(0, (*ctx)->nbins-1));
+		                std::make_pair(0, (*ctx)->nbins-1));
 		if (label == -1) {	// use hover data
 			int b = selection;
 			int h = hover;
@@ -324,7 +324,7 @@ void Viewport::setLimiters(int label)
 		if ((int)(*sets)->size() > label && (**sets)[label].totalweight > 0) {
 			// use range from this label
 			const std::vector<std::pair<int, int> > &b =
-					(**sets)[label].boundary;
+			        (**sets)[label].boundary;
 			limiters.assign(b.begin(), b.end());
 		} else {
 			setLimiters(0);
@@ -343,7 +343,7 @@ void Viewport::toggleLabelHighlight(int index)
 	}
 
 	updateBuffers(Viewport::RM_STEP,
-				  (!highlightLabels.empty() ? RM_SKIP: RM_STEP));
+	              (!highlightLabels.empty() ? RM_SKIP: RM_STEP));
 }
 
 void Viewport::setAlpha(float alpha)
@@ -398,7 +398,7 @@ bool Viewport::updateLimiter(int dim, int bin)
 		target = activeLimiter;
 	} else { // choose closest between top and bottom
 		target = (std::abs(l.first-bin) < std::abs(l.second-bin) ?
-					  &l.first : &l.second);
+		              &l.first : &l.second);
 	}
 	if (*target == bin) // no change
 		return false;

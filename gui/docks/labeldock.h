@@ -39,8 +39,8 @@ public:
 public slots:
 
 	void setLabeling(const cv::Mat1s &labels,
-					 const QVector<QColor>& colors,
-					 bool colorsChanged);
+	                 const QVector<QColor>& colors,
+	                 bool colorsChanged);
 
 	void processPartialLabelUpdate(const cv::Mat1s &, const cv::Mat1b &);
 
@@ -96,7 +96,7 @@ protected:
 private slots:
 
 	void processSelectionChanged(const QItemSelection & selected,
-								 const QItemSelection & deselected);
+	                             const QItemSelection & deselected);
 	void processLabelItemEntered(QModelIndex midx);
 
 	void processApplyROIToggled(bool checked);

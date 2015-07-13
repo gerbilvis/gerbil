@@ -121,10 +121,10 @@ void Viewport::updateBuffers(RenderMode spectrum, RenderMode highlight)
 
 		if (!(b.fbo->isValid() && b.blit->isValid())) {
 			QMessageBox::critical(target, "Drawing Error",
-								  "Drawing spectra cannot be continued. "
-								  "Please notify us about this problem, state error code 4 "
-								  "and what actions led up to this error. Send an email to"
-								  " report@gerbilvis.org. Thank you for your help!");
+			                      "Drawing spectra cannot be continued. "
+			                      "Please notify us about this problem, state error code 4 "
+			                      "and what actions led up to this error. Send an email to"
+			                      " report@gerbilvis.org. Thank you for your help!");
 			return;
 		}
 
@@ -140,8 +140,8 @@ void Viewport::updateBuffers(RenderMode spectrum, RenderMode highlight)
 		painter.save();
 		painter.setWorldTransform(modelview);
 		drawBins(painter, b.renderTimer, b.renderedLines,
-				 (mode[i] == RM_FULL) ? std::numeric_limits<int>::max()
-									  : b.renderStep, (i == 1));
+		         (mode[i] == RM_FULL) ? std::numeric_limits<int>::max()
+		                              : b.renderStep, (i == 1));
 		painter.restore();
 		b.dirty = false;
 	}
@@ -207,7 +207,7 @@ void Viewport::updateModelview()
 
 	// if gradient, we discard one unit space intentionally for centering
 	int d = (int)(*ctx)->dimensionality
-			- ((*ctx)->type == representation::GRAD ? 0 : 1);
+	        - ((*ctx)->type == representation::GRAD ? 0 : 1);
 	qreal w = (wwidth  - 2*hp - htp)/(qreal)(d); // width of one unit
 	qreal h = (wheight - 2*vp - vtp)/(qreal)((*ctx)->nbins); // height of one unit
 	int t = ((*ctx)->type == representation::GRAD ? w/2 : 0); // moving half a unit for centering
@@ -222,7 +222,7 @@ void Viewport::updateModelview()
 }
 
 void Viewport::drawBins(QPainter &painter, QTimer &renderTimer,
-						unsigned int &renderedLines, unsigned int renderStep, bool highlight)
+                        unsigned int &renderedLines, unsigned int renderStep, bool highlight)
 {
 	SharedDataLock ctxlock(ctx->mutex);
 	// TODO: this also locks shuffleIdx implicitely, better do it explicitely?
@@ -237,10 +237,10 @@ void Viewport::drawBins(QPainter &painter, QTimer &renderTimer,
 	bool success = vb.bind();
 	if (!success) {
 		QMessageBox::critical(target, "Drawing Error",
-							  "Drawing spectra cannot be continued. "
-							  "Please notify us about this problem, state error code 3 "
-							  "and what actions led up to this error. Send an email to"
-							  " report@gerbilvis.org. Thank you for your help!");
+		                      "Drawing spectra cannot be continued. "
+		                      "Please notify us about this problem, state error code 3 "
+		                      "and what actions led up to this error. Send an email to"
+		                      " report@gerbilvis.org. Thank you for your help!");
 		painter.endNativePainting();
 		return;
 	}
@@ -253,7 +253,7 @@ void Viewport::drawBins(QPainter &painter, QTimer &renderTimer,
 	int start = ((showUnlabeled || (*ctx)->ignoreLabels == 1) ? 0 : 1);
 	int end = (showLabeled ? (int)(*sets)->size() : 1);
 	int single = ((*ctx)->ignoreLabels || highlightLabels.empty()
-				  ? -1 : highlightLabels[0]);
+	              ? -1 : highlightLabels[0]);
 
 	size_t total = shuffleIdx.size();
 	size_t first = renderedLines;
@@ -261,7 +261,7 @@ void Viewport::drawBins(QPainter &painter, QTimer &renderTimer,
 
 	// loop over all elements in vertex index, update element and vector indices
 	for (size_t i = first; i < last;
-		 ++i, iD += (*ctx)->dimensionality) {
+	     ++i, iD += (*ctx)->dimensionality) {
 		std::pair<int, BinSet::HashKey> &idx = shuffleIdx[i];
 
 		// filter out according to label
@@ -302,7 +302,7 @@ void Viewport::drawBins(QPainter &painter, QTimer &renderTimer,
 		// grab binset and bin according to key
 		BinSet &s = (**sets)[idx.first];
 		std::pair<BinSet::HashMap::const_iterator, BinSet::HashMap::const_iterator> binitp =
-				s.bins.equal_range(K);
+		        s.bins.equal_range(K);
 		if (s.bins.end() == binitp.first) {
 			// FIXME this is an error and should be treated accordingly
 			GGDBGM("no bin"<< endl);
@@ -312,8 +312,8 @@ void Viewport::drawBins(QPainter &painter, QTimer &renderTimer,
 
 		// set color
 		QColor color = determineColor((drawRGB ? b.rgb : s.label),
-									  b.weight, s.totalweight,
-									  highlight, highlightLabels.contains(idx.first));
+		                              b.weight, s.totalweight,
+		                              highlight, highlightLabels.contains(idx.first));
 		target->qglColor(color);
 
 		// draw polyline
@@ -334,8 +334,8 @@ void Viewport::drawBins(QPainter &painter, QTimer &renderTimer,
 }
 
 QColor Viewport::determineColor(const QColor &basecolor,
-								float weight, float totalweight,
-								bool highlighted, bool single)
+                                float weight, float totalweight,
+                                bool highlighted, bool single)
 {
 	QColor color = basecolor;
 	qreal alpha;
@@ -392,7 +392,7 @@ void Viewport::continueDrawing(int buffer)
 	painter.save();
 	painter.setWorldTransform(modelview);
 	drawBins(painter, b.renderTimer, b.renderedLines, b.renderStep,
-			 (buffer == 1));
+	         (buffer == 1));
 	painter.restore();
 
 	update();
@@ -430,15 +430,15 @@ void Viewport::drawAxesFg(QPainter *painter)
 				h = y2 - y1;
 			QPolygonF polygon;
 			polygon << QPointF(i - 0.25, y1 + h)
-					<< QPointF(i - 0.25, y1)
-					<< QPointF(i + 0.25, y1)
-					<< QPointF(i + 0.25, y1 + h);
+			        << QPointF(i - 0.25, y1)
+			        << QPointF(i + 0.25, y1)
+			        << QPointF(i + 0.25, y1 + h);
 			painter->drawPolyline(polygon);
 			polygon.clear();
 			polygon << QPointF(i - 0.25, y2 - h)
-					<< QPointF(i - 0.25, y2)
-					<< QPointF(i + 0.25, y2)
-					<< QPointF(i + 0.25, y2 - h);
+			        << QPointF(i - 0.25, y2)
+			        << QPointF(i + 0.25, y2)
+			        << QPointF(i + 0.25, y2 - h);
 			painter->drawPolyline(polygon);
 		}
 	}
@@ -563,7 +563,7 @@ void Viewport::drawWaitMessage(QPainter *painter)
 	tmp.setPointSize(tmp.pointSize() * 1.75);
 	painter->setFont(tmp);
 	painter->drawText(rect, Qt::AlignCenter,
-					  QString::fromUtf8("Calculating…"));
+	                  QString::fromUtf8("Calculating…"));
 	painter->restore();
 }
 

@@ -11,7 +11,7 @@
 #include <gerbil_gui_debug.h>
 
 AutohideView::AutohideView(QWidget *parent)
-	: QGraphicsView(parent), suppressScroll(false)
+    : QGraphicsView(parent), suppressScroll(false)
 {
 	// avoid floating point exceptions, unreasonable shrinkage
 	setMinimumSize(50, 50);
@@ -96,7 +96,7 @@ void AutohideView::fitContentRect(QRect rect)
 			break;
 		default:
 			throw std::runtime_error("bad location in "
-									 "AutohideView::fitContentRect()");
+			                         "AutohideView::fitContentRect()");
 		}
 
 		// whole widget fits in whitespace
@@ -108,7 +108,7 @@ void AutohideView::fitContentRect(QRect rect)
 
 		// trigger scrollIn from widgets proximity, but not from inside content
 		w->setTriggerOffset(std::min(10,
-									 offset - AutohideWidget::OutOffset));
+		                             offset - AutohideWidget::OutOffset));
 	}
 }
 
@@ -152,17 +152,17 @@ void AutohideView::triggerScollOut()
 	// FIXME: Not sure if this works on all platforms. On Linux
 	// QApplication::activeWindow() == 0 if there is a modal dialog open.
 	const bool haveModalWindow = QApplication::activeWindow() == 0 ||
-								 QApplication::activeWindow()->isModal();
+	                             QApplication::activeWindow()->isModal();
 	const bool cursorInsideView = rect().contains(mapFromGlobal(QCursor::pos()));
 	const bool trigger = haveModalWindow || !cursorInsideView;
 
 	GGDBGM("windows: this " << this
-		   << ", active " << QApplication::activeWindow()
-		   << ", trigger " << trigger << " <- "
-		   << " haveModalWindow " << haveModalWindow
-		   << " || "
-		   << " !cursorInsideView " << !cursorInsideView
-		   << endl);
+	       << ", active " << QApplication::activeWindow()
+	       << ", trigger " << trigger << " <- "
+	       << " haveModalWindow " << haveModalWindow
+	       << " || "
+	       << " !cursorInsideView " << !cursorInsideView
+	       << endl);
 
 	// only let them know if a modal dialog opened or
 	// cursor really moved out (no popup menu etc.).

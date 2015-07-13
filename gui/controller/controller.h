@@ -109,7 +109,7 @@ signals:
 					  );
 
 
-	/// DOCKS
+/// DOCKS
 
 	// these are send to the graphSegModel
 	void requestGraphseg(representation::t type,
@@ -152,7 +152,7 @@ protected slots:
 							SharedMultiImgPtr image,
 							bool duplicate);
 
-	/// SUBSCRIPTIONS
+/// SUBSCRIPTIONS
 
 	// Subscriptions provide a way for GUI objects to tell the Controller
 	// what kind of data they currently require. Based on the received
@@ -279,12 +279,12 @@ protected:
 	 * representation is necessary for the GUI to become up-to-date.*/
 	void resetROISpawned();
 
-	/// VIEWERS
+/// VIEWERS
 
 	// main window (or gui slave)
 	MainWindow *window;
 
-	/// MODELS
+/// MODELS
 
 	// image model stores all multispectral image representations (IMG, GRAD,
 	// ...)
@@ -308,7 +308,7 @@ protected:
 	ClusteringModel *cm;
 #endif /* WITH_SEG_MEANSHIFT */
 
-	/// DOCKS
+/// DOCKS
 
 	BandDock *bandDock;
 	NormDock *normDock;
@@ -318,17 +318,17 @@ protected:
 	ClusteringDock *clusteringDock;
 	LabelDock *labelDock;
 
-	/// DistViewController
+/// DistViewController
 
 	// setup distribution views and manage them and their models
 	DistViewController *dvc;
 
-	/// QUEUE
+/// QUEUE
 
 	BackgroundTaskQueue queue;
 	boost::thread *queuethread;
 
-	/// SUBSCRIPTIONS
+/// SUBSCRIPTIONS
 	// The current ROI.
 	cv::Rect roi;
 
@@ -341,7 +341,7 @@ protected:
 	// ImageModel::imageUpdate() signal.
 	bool roiSpawned[representation::REPSIZE];
 
-	/// IMAGE INFO (READ ONLY)
+/// IMAGE INFO (READ ONLY)
 
 	// Size of the loaded multi_img
 	cv::Size imgSize;

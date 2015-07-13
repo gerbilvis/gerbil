@@ -27,8 +27,8 @@ class DistViewController : public QObject
 
 public:
 	explicit DistViewController(Controller *ctrl,
-								BackgroundTaskQueue *taskQueue,
-								ImageModel *im);
+	                            BackgroundTaskQueue *taskQueue,
+	                            ImageModel *im);
 
 	~DistViewController();
 
@@ -41,9 +41,9 @@ public:
 	void initSubscriptions();
 
 	sets_ptr subImage(representation::t type,
-					  const std::vector<cv::Rect> &regions, cv::Rect roi);
+	                  const std::vector<cv::Rect> &regions, cv::Rect roi);
 	void addImage(representation::t type, sets_ptr temp,
-				  const std::vector<cv::Rect> &regions, cv::Rect roi);
+	              const std::vector<cv::Rect> &regions, cv::Rect roi);
 
 	// Old, we now listen to imageUpdate from ImageModel
 	//void setImage(representation::t type, SharedMultiImgPtr image, cv::Rect roi);
@@ -62,8 +62,8 @@ public slots:
 	void toggleIgnoreLabels(bool toggle);
 
 	void updateLabels(const cv::Mat1s &labels,
-					  const QVector<QColor>& colors = QVector<QColor>(),
-					  bool colorsChanged = false);
+	                  const QVector<QColor>& colors = QVector<QColor>(),
+	                  bool colorsChanged = false);
 	void updateLabelsPartially(const cv::Mat1s &labels, const cv::Mat1b &mask);
 
 	void changeBinCount(representation::t type, int bins);
@@ -83,24 +83,24 @@ public slots:
 
 	void processROIChage(cv::Rect roi);
 	void processImageUpdate(representation::t repr,
-							SharedMultiImgPtr image,
-							bool duplicate);
+	                        SharedMultiImgPtr image,
+	                        bool duplicate);
 
 	void processDistviewNeedsBinning(representation::t repr);
 
 	void processPreROISpawn(cv::Rect const & oldroi,
-							cv::Rect const & newroi,
-							std::vector<cv::Rect> const & sub,
-							std::vector<cv::Rect> const & add,
-							bool profitable
-							);
+	                        cv::Rect const & newroi,
+	                        std::vector<cv::Rect> const & sub,
+	                        std::vector<cv::Rect> const & add,
+	                        bool profitable
+	                        );
 
 	void processPostROISpawn(cv::Rect const & oldroi,
-							 cv::Rect const & newroi,
-							 std::vector<cv::Rect> const & sub,
-							 std::vector<cv::Rect> const & add,
-							 bool profitable
-							 );
+	                         cv::Rect const & newroi,
+	                         std::vector<cv::Rect> const & sub,
+	                         std::vector<cv::Rect> const & add,
+	                         bool profitable
+	                         );
 
 
 	void processDistviewSubscribeRepresentation(QObject *subscriber, representation::t repr);
