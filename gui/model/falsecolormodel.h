@@ -32,14 +32,14 @@ class FalseColorModel : public QObject
 	Q_OBJECT
 
 public:
-    FalseColorModel(QObject *parent = nullptr);
+	FalseColorModel(QObject *parent = nullptr);
 	~FalseColorModel();
 
 	void setMultiImg(representation::t repr, SharedMultiImgPtr img);
 public slots:
 	void processImageUpdate(representation::t type,
-							SharedMultiImgPtr img,
-							bool duplicate);
+	                        SharedMultiImgPtr img,
+	                        bool duplicate);
 
 	/** Request a rendering of coloringType of the current image or
 	 * gradient and ROI.
@@ -77,7 +77,7 @@ signals:
 private slots:
 	/** Payload has finished computation. */
 	void processComputationFinished(FalseColoring::Type coloringType,
-									bool success);
+	                                bool success);
 
 private:
 	/** Kickoff a new computation for coloringType.
@@ -92,10 +92,10 @@ private:
 	void abandonPayload(FalseColoring::Type coloringType);
 
 	/** Allocate and reset all cache entries. */
-    void resetCache();
+	void resetCache();
 
 	typedef QMap<FalseColoring::Type, FalseColorModelPayload*>
-			FalseColorModelPayloadMap;
+	FalseColorModelPayloadMap;
 
 	SharedMultiImgPtr shared_img, shared_grad;
 	FalseColorModelPayloadMap payloads;

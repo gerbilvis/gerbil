@@ -20,10 +20,10 @@
 
 
 GerbilApplication::GerbilApplication(int &argc, char **argv)
-	: QApplication(argc, argv),
-	  limitedMode(false),
-	  eventLoopStartedEvent(QEvent::registerEventType()),
-	  eventLoopStarted(false),
+    : QApplication(argc, argv),
+      limitedMode(false),
+      eventLoopStartedEvent(QEvent::registerEventType()),
+      eventLoopStarted(false),
       ctrl(nullptr)
 {
 }

@@ -19,7 +19,7 @@ class LabelingModel : public QObject
 {
 	Q_OBJECT
 public:
-    explicit LabelingModel(QObject *parent = nullptr);
+	explicit LabelingModel(QObject *parent = nullptr);
 
 public slots:
 	/** Sets the dimensions of the multi_img. */

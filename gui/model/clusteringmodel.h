@@ -14,7 +14,7 @@
 #include <QMetaClassInfo>
 
 namespace shell {
-	class Command;
+class Command;
 }
 class CommandRunner;
 
@@ -28,7 +28,7 @@ class ClusteringModel : public QObject
 
 public:
 
-    explicit ClusteringModel(QObject *parent = nullptr);
+	explicit ClusteringModel(QObject *parent = nullptr);
 	~ClusteringModel();
 
 signals:
@@ -51,8 +51,8 @@ public slots:
 	void cancel();
 
 	void processImageUpdate(representation::t repr,
-							SharedMultiImgPtr image,
-							bool duplicate);
+	                        SharedMultiImgPtr image,
+	                        bool duplicate);
 
 protected slots:
 

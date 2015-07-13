@@ -18,10 +18,9 @@ public:
 	 * and used to enqueue tasks even before the image is created the
 	 * first time. */
 	ImageModelPayload(representation::t type)
-		: type(type), image(new SharedMultiImgBase(new multi_img())),
-		  normMode(multi_img::NORM_OBSERVED), normRange(
-			new SharedData<multi_img::Range> (
-			  new multi_img::Range()))
+	    : type(type), image(new SharedMultiImgBase(new multi_img())),
+	      normMode(multi_img::NORM_OBSERVED),
+	      normRange(new SharedData<multi_img::Range>(new multi_img::Range()))
 	{}
 
 	// the type we have
@@ -57,7 +56,7 @@ public:
 
 	typedef ImageModelPayload payload;
 
-    explicit ImageModel(BackgroundTaskQueue &queue, bool limitedMode, QObject *parent = nullptr);
+	explicit ImageModel(BackgroundTaskQueue &queue, bool limitedMode, QObject *parent = nullptr);
 	~ImageModel();
 
 	/** Return the number of bands in the input image.
@@ -154,7 +153,7 @@ signals:
 	/** The ROI image data for representation type has changed.
 	 *
 	 * This signal is emitted whenever the ROI is set to a new rect or the
-	 * underlying image data has been altered. 
+	 * underlying image data has been altered.
 	 * Objects requiring image data need to subscribe for it at the
 	 * Controller. See Controller::subscribeRepresentation().
 	 * See observedDataRangeUdpate, numBandsROIChanged and roiRectChanged for
@@ -165,17 +164,17 @@ signals:
 	 * receive this signal with duplicate==true.
 	 */
 	void imageUpdate(representation::t type,
-					 SharedMultiImgPtr image,
-					 bool duplicate);
+	                 SharedMultiImgPtr image,
+	                 bool duplicate);
 
 	/** The observed data range for representation type has changed. */
 	void observedDataRangeUdpate(representation::t type,
-								 const multi_img::Range& range);
+	                             const multi_img::Range& range);
 
 	// FIXME:
 	/** Not implemented. */
 	void theoreticalDataRangeUpdate(representation::t type,
-									const multi_img::Range& range);
+	                                const multi_img::Range& range);
 
 	/** The number of spectral bands of the ROI image has changed to nBands.
 	 *

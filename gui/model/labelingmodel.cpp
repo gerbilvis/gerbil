@@ -40,8 +40,8 @@ void LabelingModel::setLabels(const Labeling &labeling, bool full)
 {
 	// check for implicit full update
 	full = full ||
-			(labels.cols == full_labels.cols
-			 && labels.rows == full_labels.rows);
+	       (labels.cols == full_labels.cols
+	        && labels.rows == full_labels.rows);
 
 	// the label matrix
 	cv::Mat1s m = labeling();
@@ -159,7 +159,7 @@ void LabelingModel::alterPixels(const cv::Mat1s &newLabels,
 
 void LabelingModel::loadLabeling(const QString &filename)
 {
-    GerbilIO io(nullptr, "Labeling From Image File", "labeling image");
+	GerbilIO io(nullptr, "Labeling From Image File", "labeling image");
 	io.setFileCategory("LabelFile");
 	io.setFileSuffix(".png");
 	/* we are properly initialized with the image dimensions
@@ -180,7 +180,7 @@ void LabelingModel::saveLabeling(const QString &filename)
 	Labeling labeling(full_labels);
 	cv::Mat3b output = labeling.bgr();
 
-    GerbilIO io(nullptr, "Labeling As Image File", "labeling image");
+	GerbilIO io(nullptr, "Labeling As Image File", "labeling image");
 	io.setFileCategory("LabelFile");
 	io.setFileSuffix(".png");
 	io.writeImage(output);
@@ -259,7 +259,7 @@ void LabelingModel::computeLabelIcons()
 	//GGDBG_CALL();
 	if (iconTaskp != NULL) {
 		if (iconSize != iconTaskp->getIconSize() ||
-				applyROI != iconTaskp->getApplyROI())
+			applyROI != iconTaskp->getApplyROI())
 		{
 			//GGDBGM("running IconTask is using old icon size, restarting." << endl);
 			discardIconTask();
@@ -313,12 +313,12 @@ void LabelingModel::startIconTask()
 	//GGDBGM("starting IconTask." << endl);
 	// shared pointer
 	IconTaskCtxPtr ctxp(new IconTaskCtx(
-				colors.size(),
-				full_labels,
-				labels,
-				iconSize,
-				applyROI,
-				colors));
+	                        colors.size(),
+	                        full_labels,
+	                        labels,
+	                        iconSize,
+	                        applyROI,
+	                        colors));
 
 	assert(NULL == iconTaskp);
 	iconTaskp = new IconTask(ctxp,this);

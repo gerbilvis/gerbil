@@ -18,7 +18,7 @@ class IllumModel : public QObject
 {
 	Q_OBJECT
 public:
-    explicit IllumModel(BackgroundTaskQueue *queue,QObject *parent = nullptr);
+	explicit IllumModel(BackgroundTaskQueue *queue,QObject *parent = nullptr);
 
 	void setMultiImage(SharedMultiImgPtr image);
 	void setRoi(cv::Rect roi);
@@ -58,7 +58,7 @@ private:
 
 	// cache for illumination coefficients
 	typedef std::map<int, std::pair<
-			Illuminant, QVector<multi_img::Value> > > Illum_map;
+	Illuminant, QVector<multi_img::Value> > > Illum_map;
 	Illum_map illuminants;
 
 	// Selected illuminant temp (K) in the combo boxes

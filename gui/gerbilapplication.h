@@ -29,7 +29,7 @@ public:
 		ExitNoInput =				EXIT_FAILURE + 3
 	};
 
-	explicit GerbilApplication ( int & argc, char ** argv );
+	explicit GerbilApplication(int & argc, char ** argv);
 
 	/** Returns a pointer to the GerbilApplication object.
 	 *
@@ -60,7 +60,7 @@ public:
 	void criticalError(QString msg);
 
 	// for eventLoopStarted
-    bool eventFilter(QObject *obj, QEvent *event) override;
+	bool eventFilter(QObject *obj, QEvent *event) override;
 
 private:
 
