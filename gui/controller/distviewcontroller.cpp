@@ -35,7 +35,7 @@ DistViewController::DistViewController(
 		Controller *ctrl,
 		BackgroundTaskQueue *taskQueue,
 		ImageModel *im)
- : QObject(ctrl), ctrl(ctrl), im(im), distviewSubs(new ReprSubscriptions)
+	: QObject(ctrl), ctrl(ctrl), im(im), distviewSubs(new ReprSubscriptions)
 {
 	/* Create all viewers. Only one viewer per representation type is supported.
 	 */
@@ -70,14 +70,14 @@ void DistViewController::init()
 		// make sure activeView is a valid enum value and we actually have a
 		// viewer for this representation.
 		if (!representation::valid(activeView) ||
-				!payloadMap.contains(activeView)) {
+			!payloadMap.contains(activeView)) {
 			activeView = representation::IMG;
 		}
 		payloadMap[activeView]->gui.setActive();
 		foreach(representation::t repr, representation::all()) {
 			if (payloadMap[repr])  {
 				QString key = QString("viewports/") +
-						representation::str(repr) + "folded";
+							  representation::str(repr) + "folded";
 				// read folded setting, default unfolded
 				bool folded = settings.value(key, false).value<bool>();
 				viewFolded[repr] = folded;
@@ -102,7 +102,7 @@ void DistViewController::init()
 	}
 
 	connect(QApplication::instance(), SIGNAL(lastWindowClosed()),
-			 this, SLOT(processLastWindowClosed()));
+			this, SLOT(processLastWindowClosed()));
 
 	connect(ctrl->imageModel(), SIGNAL(roiRectChanged(cv::Rect)),
 			this, SLOT(processROIChage(cv::Rect)));
@@ -151,8 +151,8 @@ void DistViewController::init()
 			this, SLOT(setCurrentLabel(int)));
 	connect(ctrl, SIGNAL(requestPixelOverlay(int,int)),
 			this, SLOT(pixelOverlay(int,int)));
-    connect(ctrl, SIGNAL(labelSelected(int)),
-            this, SIGNAL(labelSelected(int)));
+	connect(ctrl, SIGNAL(labelSelected(int)),
+			this, SIGNAL(labelSelected(int)));
 	connect(ctrl, SIGNAL(toggleIgnoreLabels(bool)),
 			this, SLOT(toggleIgnoreLabels(bool)));
 
@@ -186,16 +186,16 @@ void DistViewController::initSubscriptions()
 }
 
 sets_ptr DistViewController::subImage(representation::t type,
-							   const std::vector<cv::Rect> &regions,
-							   cv::Rect roi)
+									  const std::vector<cv::Rect> &regions,
+									  cv::Rect roi)
 {
 	GGDBG_CALL();
 	return payloadMap[type]->model.subImage(regions, roi);
 }
 
 void DistViewController::addImage(representation::t type, sets_ptr temp,
-							   const std::vector<cv::Rect> &regions,
-							   cv::Rect roi)
+								  const std::vector<cv::Rect> &regions,
+								  cv::Rect roi)
 {
 	GGDBG_CALL();
 	payloadMap[type]->model.addImage(temp, regions, roi);
@@ -206,7 +206,7 @@ void DistViewController::setActiveViewer(representation::t type)
 	activeView = type;
 	QMap<representation::t, Payload*>::const_iterator it;
 	for (it = payloadMap.begin(); it != payloadMap.end(); ++it) {
-		 if (it.key() != activeView)
+		if (it.key() != activeView)
 			it.value()->gui.setInactive();
 	}
 }
@@ -366,7 +366,7 @@ void DistViewController::updateLabels(const cv::Mat1s& labels,
 }
 
 void DistViewController::updateLabelsPartially(const cv::Mat1s &labels,
-											const cv::Mat1b &mask)
+											   const cv::Mat1b &mask)
 {
 	/* test: is it worth it to do it incrementally
 	 * (2 updates for each positive entry)
@@ -429,7 +429,7 @@ void DistViewController::finishNormRangeImgChange(bool success)
 	 * selected before. also this should be done by the image model
 	 * and the image model has other means of doing this (empty the map)
 	 */
-/*	if (success) {
+	/*	if (success) {
 		SharedDataLock hlock((*image)->mutex);
 		(*bands)[representation::IMG].assign((**image)->size(), NULL);
 		hlock.unlock();
@@ -440,7 +440,7 @@ void DistViewController::finishNormRangeImgChange(bool success)
 void DistViewController::finishNormRangeGradChange(bool success)
 {
 	// ************** see above
-/*	if (success) {
+	/*	if (success) {
 		SharedDataLock hlock((*gradient)->mutex);
 		(*bands)[GRAD].assign((**gradient)->size(), NULL);
 		hlock.unlock();
@@ -482,7 +482,7 @@ void DistViewController::processLastWindowClosed()
 	foreach (representation::t repr, representation::all()) {
 		bool folded = viewFolded.value(repr, true);
 		QString key = QString("viewports/") +
-				representation::str(repr) + "folded";
+					  representation::str(repr) + "folded";
 		GGDBGM(key.toStdString() << " " << folded << endl);
 		settings.setValue(key, QVariant(folded));
 	}

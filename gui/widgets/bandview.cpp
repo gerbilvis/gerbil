@@ -27,12 +27,12 @@
 
 BandView::BandView()
 	: // note: start with invalid curLabel to trigger proper initialization!
-      cacheValid(false), cursor(-1, -1), lastcursor(-1, -1), curLabel(-1),
-      overlay(0), showLabels(true), selectedLabels(0),
-      ignoreUpdates(false),
+	  cacheValid(false), cursor(-1, -1), lastcursor(-1, -1), curLabel(-1),
+	  overlay(0), showLabels(true), selectedLabels(0),
+	  ignoreUpdates(false),
 	  seedMode(false), labelAlpha(63),
 	  seedColors(std::make_pair(
-			QColor(255, 0, 0, 255), QColor(255, 255, 0, 255)))
+					 QColor(255, 0, 0, 255), QColor(255, 255, 0, 255)))
 {
 	// the timer automatically sends an accumulated update request
 	labelTimer.setSingleShot(true);
@@ -47,18 +47,18 @@ void BandView::initUi()
 
 void BandView::updateMode(SelectionMode mode)
 {
-    sm = mode;
+	sm = mode;
 }
 
 void BandView::resizeEvent()
 {
-    ScaledView::resizeEvent();
-    zoom = 1;
+	ScaledView::resizeEvent();
+	zoom = 1;
 }
 
 void BandView::setPixmap(QPixmap p)
 {
-    ScaledView::setPixmap(p);
+	ScaledView::setPixmap(p);
 
 	// adjust seed map if necessary
 	if (seedMap.empty()
@@ -128,37 +128,37 @@ void BandView::paintEvent(QPainter *painter, const QRectF &rect)
 	bool consistent = ((pixmap.width() == labels.cols) &&
 					   (pixmap.height() == labels.rows));
 
-    if (!consistent) {
-        painter->fillRect(rect, QBrush(Qt::gray, Qt::BDiagPattern));
-        drawWaitMessage(painter);
-        return;
-    }
+	if (!consistent) {
+		painter->fillRect(rect, QBrush(Qt::gray, Qt::BDiagPattern));
+		drawWaitMessage(painter);
+		return;
+	}
 
-    if (!cacheValid) {
-        updateCache();
-    }
+	if (!cacheValid) {
+		updateCache();
+	}
 
 	fillBackground(painter, rect);
 
 
 	painter->save();
 
-    //painter.setRenderHint(QPainter::Antialiasing); too slow!
-    painter->setWorldTransform(scaler);
-    QRectF damaged = scalerI.mapRect(rect);
-    painter->drawPixmap(damaged, cachedPixmap, damaged);
+	//painter.setRenderHint(QPainter::Antialiasing); too slow!
+	painter->setWorldTransform(scaler);
+	QRectF damaged = scalerI.mapRect(rect);
+	painter->drawPixmap(damaged, cachedPixmap, damaged);
 
 
 	/* draw current cursor */
-    bool drawCursor = (seedMode || sm != Pick);
+	bool drawCursor = (seedMode || sm != Pick);
 	if (!pixmap.rect().contains(cursor.x(), cursor.y()))
 		drawCursor = false;
 	if (curLabel < 1 || curLabel >= labelColors.count())
 		drawCursor = false;
 
-    if (sm == Label) {
-//		GGDBGM(boost::format("count=%1% curLabel=%2%")
-//			  %labelColors.count()% curLabel << endl);
+	if (sm == Label) {
+		//		GGDBGM(boost::format("count=%1% curLabel=%2%")
+		//			  %labelColors.count()% curLabel << endl);
 		QPen pen(seedMode ? Qt::yellow : labelColors.at(curLabel));
 		pen.setWidth(0);
 		painter->setPen(pen);
@@ -181,7 +181,7 @@ void BandView::paintEvent(QPainter *painter, const QRectF &rect)
 		painter->drawImage(0, 0, dest);
 	}
 
-    if (seedMode) {
+	if (seedMode) {
 		/* TODO: most times barely visible! */
 		pen.setColor(Qt::yellow); pen.setWidthF(0.5); pen.setStyle(Qt::DotLine);
 		painter->setPen(pen);
@@ -201,9 +201,9 @@ struct updateCacheBody {
 	const std::pair<QColor, QColor> &seedColors;
 
 	updateCacheBody(QImage &dest, bool seedMode, const cv::Mat1s &labels, const cv::Mat1s &seedMap,
-		const QVector<QColor> &labelColorsA, const std::pair<QColor, QColor> &seedColors)
+					const QVector<QColor> &labelColorsA, const std::pair<QColor, QColor> &seedColors)
 		: dest(dest), seedMode(seedMode), labels(labels), seedMap(seedMap),
-		labelColorsA(labelColorsA), seedColors(seedColors) {}
+		  labelColorsA(labelColorsA), seedColors(seedColors) {}
 
 	void operator()(const tbb::blocked_range2d<size_t> &r) const {
 		for (int y = r.rows().begin(); y != r.rows().end(); ++y) {
@@ -235,12 +235,12 @@ void BandView::updateCache()
 		return;
 
 	QPainter painter(&cachedPixmap);
-//	painter.setCompositionMode(QPainter::CompositionMode_Darken);
+	//	painter.setCompositionMode(QPainter::CompositionMode_Darken);
 
 	QImage dest(pixmap.width(), pixmap.height(), QImage::Format_ARGB32);
 	updateCacheBody body(dest, seedMode, labels, seedMap, labelColorsA, seedColors);
-    tbb::parallel_for(tbb::blocked_range2d<size_t>(
-        0, pixmap.height(), 0, pixmap.width()), body);
+	tbb::parallel_for(tbb::blocked_range2d<size_t>(
+						  0, pixmap.height(), 0, pixmap.width()), body);
 
 	painter.drawImage(0, 0, dest);
 }
@@ -248,7 +248,7 @@ void BandView::updateCache()
 // helper to color single pixel with labeling
 void BandView::markCachePixel(QPainter &p, int x, int y)
 {
-    if(sm != Label) return;
+	if(sm != Label) return;
 
 	short l = labels(y, x);
 	if (l > 0) {
@@ -260,7 +260,7 @@ void BandView::markCachePixel(QPainter &p, int x, int y)
 // helper to color single pixel in seed mode
 void BandView::markCachePixelS(QPainter &p, int x, int y)
 {
-    if(sm != Label) return;
+	if(sm != Label) return;
 
 	short l = seedMap(y, x);
 	if (l < 64 || l > 192) {
@@ -271,7 +271,7 @@ void BandView::markCachePixelS(QPainter &p, int x, int y)
 
 void BandView::updateCache(int y, int x, short label)
 {
-    if(sm != Label) return;
+	if(sm != Label) return;
 
 	if (!cacheValid) {
 		updateCache();
@@ -314,7 +314,7 @@ void BandView::drawOverlay(const cv::Mat1b &mask)
 void BandView::cursorAction(QGraphicsSceneMouseEvent *ev, bool click)
 {
 	bool consistent = ((pixmap.width() == labels.cols) &&
-						   (pixmap.height() == labels.rows));
+					   (pixmap.height() == labels.rows));
 	if (!consistent) // not properly initialized
 		return;
 
@@ -349,25 +349,25 @@ void BandView::cursorAction(QGraphicsSceneMouseEvent *ev, bool click)
 	}
 
 	// overlay in spectral views but not during pixel labeling (reduce lag)
-    if (ev->buttons() == Qt::NoButton)
+	if (ev->buttons() == Qt::NoButton)
 		emit pixelOverlay(cursor.y(), cursor.x());
 
 	/// single label case
-    if (sm == Pick && showLabels) {
-        short cursorLabel = labels(cursor.y(), cursor.x());
-        if(ev->button() & Qt::LeftButton) {
-            toggleLabelHighlight(cursorLabel);
-            emit labelSelected(curLabel);
-        } else {
-            drawOverlay(curMask);
-        }
+	if (sm == Pick && showLabels) {
+		short cursorLabel = labels(cursor.y(), cursor.x());
+		if(ev->button() & Qt::LeftButton) {
+			toggleLabelHighlight(cursorLabel);
+			emit labelSelected(curLabel);
+		} else {
+			drawOverlay(curMask);
+		}
 
 		return;
-    }
+	}
 	/// end of function for singleLabel case. no manipulations,
 	/// destroying overlay etc.
 
-    if (ev->buttons() != Qt::NoButton && sm == Label) {
+	if (ev->buttons() != Qt::NoButton && sm == Label) {
 		/* alter all pixels on the line between previous and current position.
 		 * the idea is that due to lag we might not get a notification about
 		 * every pixel the mouse moved over. this is a good approximation. */
@@ -390,7 +390,7 @@ void BandView::cursorAction(QGraphicsSceneMouseEvent *ev, bool click)
 					seedMap(y, x) = 0;
 					updateCache(y, x);
 				}
-			// erase
+				// erase
 			} else if (ev->buttons() & Qt::RightButton) {
 				if (!seedMode) {
 					if (labels(y, x) == curLabel) {
@@ -465,7 +465,7 @@ void BandView::enterEvent()
 
 void BandView::leaveEvent()
 {
-//	GGDBGM("leaveEvent" << endl);
+	//	GGDBGM("leaveEvent" << endl);
 	// invalidate cursor
 	cursor = lastcursor = QPoint(-1, -1);
 
@@ -509,31 +509,31 @@ void BandView::toggleShowLabels(bool disabled)
 
 void BandView::toggleLabelHighlight(short label)
 {
-    bool toDelete = false;
-    if(selectedLabels.contains(label)) {
-       toDelete = true;
-       //qDebug() << "REMOVED LABEL";
-    } else {
-         selectedLabels.push_back(label);
-         toDelete = false;
-    }
-    curLabel = label;
+	bool toDelete = false;
+	if(selectedLabels.contains(label)) {
+		toDelete = true;
+		//qDebug() << "REMOVED LABEL";
+	} else {
+		selectedLabels.push_back(label);
+		toDelete = false;
+	}
+	curLabel = label;
 
-    if(selectedLabels.size() == 1) {
-        curMask = cv::Mat1b(labels.rows, labels.cols, (uchar)0);
-    } else {
-        curMask = curMask | cv::Mat1b(labels.rows, labels.cols, (uchar)0);
-    }
+	if(selectedLabels.size() == 1) {
+		curMask = cv::Mat1b(labels.rows, labels.cols, (uchar)0);
+	} else {
+		curMask = curMask | cv::Mat1b(labels.rows, labels.cols, (uchar)0);
+	}
 
-    if(toDelete) {
-        curMask.setTo(0, (labels == label));
-        int pos = selectedLabels.indexOf(label);
-        selectedLabels.remove(pos, 1);
-    } else {
-        curMask.setTo(1, (labels == label));
-    }
+	if(toDelete) {
+		curMask.setTo(0, (labels == label));
+		int pos = selectedLabels.indexOf(label);
+		selectedLabels.remove(pos, 1);
+	} else {
+		curMask.setTo(1, (labels == label));
+	}
 
-    drawOverlay(curMask);
+	drawOverlay(curMask);
 
 }
 

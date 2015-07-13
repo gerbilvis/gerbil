@@ -34,7 +34,7 @@ class LabelDock;
 
 namespace seg_graphs
 {
-	class GraphSegConfig;
+class GraphSegConfig;
 }
 
 class Subscriptions;
@@ -62,7 +62,7 @@ signals:
 
 	/* pass-through to our other controller friends */
 	void toggleIgnoreLabels(bool);
-    void labelSelected(int);
+	void labelSelected(int);
 
 	void showIlluminationCurve(bool);
 
@@ -95,7 +95,7 @@ signals:
 					 bool profitable
 					 );
 
-	/** This signal is emitted after he controller has spawned a new ROI. 
+	/** This signal is emitted after he controller has spawned a new ROI.
 	 *
 	 * The parameters are the same as with preROISpawn. Be aware that any
 	 * image data in the image model for the old ROI may already have been
@@ -109,7 +109,7 @@ signals:
 					  );
 
 
-/// DOCKS
+	/// DOCKS
 
 	// these are send to the graphSegModel
 	void requestGraphseg(representation::t type,
@@ -146,13 +146,13 @@ protected slots:
 						 bool resetLabel);
 	void requestGraphsegCurBand(const seg_graphs::GraphSegConfig &config,
 								bool resetLabel);
-    void toggleLabelHighlight(short label);
+	void toggleLabelHighlight(short label);
 
 	void processImageUpdate(representation::t repr,
 							SharedMultiImgPtr image,
 							bool duplicate);
 
-/// SUBSCRIPTIONS
+	/// SUBSCRIPTIONS
 
 	// Subscriptions provide a way for GUI objects to tell the Controller
 	// what kind of data they currently require. Based on the received
@@ -212,7 +212,7 @@ protected slots:
 	 * other subscribed objects.
 	 */
 	void unsubscribeFalseColor(QObject *subscriber,
-									  FalseColoring::Type coloring);
+							   FalseColoring::Type coloring);
 	/** Explicitly trigger a re-calculation of SOM based false color image,
 	 * even if an  up-to-date cached instance exists (SOM is
 	 * non-deterministic). */
@@ -226,7 +226,7 @@ protected slots:
 	 * not receive the signal. The subscription just guarantees the
 	 * computation will be done signal will be emitted. Any other object
 	 * subscribed for the representation will trigger the emission of the
-	 * signal as well. 
+	 * signal as well.
 	 */
 	void subscribeRepresentation(QObject *subscriber,
 								 representation::t repr);
@@ -279,12 +279,12 @@ protected:
 	 * representation is necessary for the GUI to become up-to-date.*/
 	void resetROISpawned();
 
-/// VIEWERS
+	/// VIEWERS
 
 	// main window (or gui slave)
 	MainWindow *window;
 
-/// MODELS
+	/// MODELS
 
 	// image model stores all multispectral image representations (IMG, GRAD,
 	// ...)
@@ -308,7 +308,7 @@ protected:
 	ClusteringModel *cm;
 #endif /* WITH_SEG_MEANSHIFT */
 
-/// DOCKS
+	/// DOCKS
 
 	BandDock *bandDock;
 	NormDock *normDock;
@@ -318,17 +318,17 @@ protected:
 	ClusteringDock *clusteringDock;
 	LabelDock *labelDock;
 
-/// DistViewController
+	/// DistViewController
 
 	// setup distribution views and manage them and their models
 	DistViewController *dvc;
 
-/// QUEUE
+	/// QUEUE
 
 	BackgroundTaskQueue queue;
 	boost::thread *queuethread;
 
-/// SUBSCRIPTIONS
+	/// SUBSCRIPTIONS
 	// The current ROI.
 	cv::Rect roi;
 
@@ -341,7 +341,7 @@ protected:
 	// ImageModel::imageUpdate() signal.
 	bool roiSpawned[representation::REPSIZE];
 
-/// IMAGE INFO (READ ONLY)
+	/// IMAGE INFO (READ ONLY)
 
 	// Size of the loaded multi_img
 	cv::Size imgSize;

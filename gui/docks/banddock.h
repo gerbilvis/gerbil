@@ -88,7 +88,7 @@ protected:
 	BandView *bv;
 	// our widget for graph segmentation controls
 	GraphSegWidget *gs;
-    ModeWidget *mw;
+	ModeWidget *mw;
 };
 
 #endif // BANDDOCK_H

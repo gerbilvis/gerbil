@@ -32,7 +32,7 @@ Viewport::Viewport(representation::t type, QGLWidget *target)
 	  selection(0), hover(-1), limiterMode(false),
 	  active(false), useralpha(1.f),
 	  showLabeled(true), showUnlabeled(true),
-      overlayMode(false),
+	  overlayMode(false),
 	  illuminant_show(true),
 	  zoom(1.), shift(0), lasty(-1), holdSelection(false), activeLimiter(0),
 	  drawLog(true), drawMeans(true), drawRGB(false), drawHQ(true),
@@ -224,12 +224,12 @@ void Viewport::prepareLines()
 	if ((*ctx)->reset.fetch_and_store(0)) // is true if it was 1 before
 		reset();
 
-//	foreach(BinSet const& s, **sets) {
-//		if (s.bins.empty()) {
-//			GGDBGM("empty BinSet, aborting" << endl);
-//			return;
-//		}
-//	}
+	//	foreach(BinSet const& s, **sets) {
+	//		if (s.bins.empty()) {
+	//			GGDBGM("empty BinSet, aborting" << endl);
+	//			return;
+	//		}
+	//	}
 
 	// first step (cpu only)
 	Compute::preparePolylines(**ctx, **sets, shuffleIdx);
@@ -237,26 +237,26 @@ void Viewport::prepareLines()
 	// second step (cpu -> gpu)
 	target->makeCurrent();
 	Compute::storeVertices(**ctx, **sets, shuffleIdx, vb,
-										 drawMeans, illuminantAppl);
+						   drawMeans, illuminantAppl);
 
-//	// gracefully fail if there is a problem with VBO support
-//	switch (success) {
-//	case 0:
-//		return;
-//	case -1:
-//		QMessageBox::critical(target, "Drawing Error",
-//			"Vertex Buffer Objects not supported.\n"
-//			"Make sure your graphics driver supports OpenGL 1.5 or later.");
-//		QApplication::quit();
-//		exit(1);
-//	default:
-//		QMessageBox::critical(target, "Drawing Error",
-//			QString("Drawing spectra cannot be continued. "
-//					"Please notify us about this problem, state error code %1 "
-//					"and what actions led up to this error. Send an email to"
-//			" report@gerbilvis.org. Thank you for your help!").arg(success));
-//		return;
-//	}
+	//	// gracefully fail if there is a problem with VBO support
+	//	switch (success) {
+	//	case 0:
+	//		return;
+	//	case -1:
+	//		QMessageBox::critical(target, "Drawing Error",
+	//			"Vertex Buffer Objects not supported.\n"
+	//			"Make sure your graphics driver supports OpenGL 1.5 or later.");
+	//		QApplication::quit();
+	//		exit(1);
+	//	default:
+	//		QMessageBox::critical(target, "Drawing Error",
+	//			QString("Drawing spectra cannot be continued. "
+	//					"Please notify us about this problem, state error code %1 "
+	//					"and what actions led up to this error. Send an email to"
+	//			" report@gerbilvis.org. Thank you for your help!").arg(success));
+	//		return;
+	//	}
 }
 
 void Viewport::activate()
@@ -304,7 +304,7 @@ void Viewport::setAppliedIlluminant(QVector<multi_img_base::Value> illum)
 {
 	//bool change = (applied != illuminant_apply);
 	illuminantAppl = illum.toStdVector();
-/*	if (change) TODO: I assume this is already triggered by invalidated ROI
+	/*	if (change) TODO: I assume this is already triggered by invalidated ROI
 		rebuild();*/
 }
 
@@ -334,16 +334,16 @@ void Viewport::setLimiters(int label)
 
 void Viewport::toggleLabelHighlight(int index)
 {
-    if(highlightLabels.contains(index)) {
-        int pos = highlightLabels.indexOf(index);
-        highlightLabels.remove(pos, 1);
-    }
-    else {
-        highlightLabels.push_back(index);
-    }
+	if(highlightLabels.contains(index)) {
+		int pos = highlightLabels.indexOf(index);
+		highlightLabels.remove(pos, 1);
+	}
+	else {
+		highlightLabels.push_back(index);
+	}
 
 	updateBuffers(Viewport::RM_STEP,
-                   (!highlightLabels.empty() ? RM_SKIP: RM_STEP));
+				  (!highlightLabels.empty() ? RM_SKIP: RM_STEP));
 }
 
 void Viewport::setAlpha(float alpha)
@@ -398,7 +398,7 @@ bool Viewport::updateLimiter(int dim, int bin)
 		target = activeLimiter;
 	} else { // choose closest between top and bottom
 		target = (std::abs(l.first-bin) < std::abs(l.second-bin) ?
-				  &l.first : &l.second);
+					  &l.first : &l.second);
 	}
 	if (*target == bin) // no change
 		return false;

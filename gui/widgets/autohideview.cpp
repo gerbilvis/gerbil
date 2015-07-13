@@ -108,7 +108,7 @@ void AutohideView::fitContentRect(QRect rect)
 
 		// trigger scrollIn from widgets proximity, but not from inside content
 		w->setTriggerOffset(std::min(10,
-		                             offset - AutohideWidget::OutOffset));
+									 offset - AutohideWidget::OutOffset));
 	}
 }
 
@@ -127,18 +127,18 @@ void AutohideView::resizeEvent(QResizeEvent *event)
 
 void AutohideView::mouseMoveEvent(QMouseEvent *event)
 {
-    if (!suppressScroll) {
-        foreach (AutohideWidget* w, widgets)
-            w->triggerScrolling(event->pos());
-    }
+	if (!suppressScroll) {
+		foreach (AutohideWidget* w, widgets)
+			w->triggerScrolling(event->pos());
+	}
 
-    QGraphicsView::mouseMoveEvent(event);
+	QGraphicsView::mouseMoveEvent(event);
 }
 
 void AutohideView::leaveEvent(QEvent *event)
 {
 	triggerScollOut();
-	// Call triggerScollOut() again because the modal dialog test does 
+	// Call triggerScollOut() again because the modal dialog test does
 	// not work when we get the leave event -- the dialog is not active yet.
 	// When the timer finishes, the dialog will be active or the mouse
 	// does or does not point at us. All cases are correctly handled.
@@ -152,17 +152,17 @@ void AutohideView::triggerScollOut()
 	// FIXME: Not sure if this works on all platforms. On Linux
 	// QApplication::activeWindow() == 0 if there is a modal dialog open.
 	const bool haveModalWindow = QApplication::activeWindow() == 0 ||
-			QApplication::activeWindow()->isModal();
+								 QApplication::activeWindow()->isModal();
 	const bool cursorInsideView = rect().contains(mapFromGlobal(QCursor::pos()));
 	const bool trigger = haveModalWindow || !cursorInsideView;
 
 	GGDBGM("windows: this " << this
-           << ", active " << QApplication::activeWindow()
-           << ", trigger " << trigger << " <- "
-           << " haveModalWindow " << haveModalWindow
-           << " || "
-           << " !cursorInsideView " << !cursorInsideView
-           << endl);
+		   << ", active " << QApplication::activeWindow()
+		   << ", trigger " << trigger << " <- "
+		   << " haveModalWindow " << haveModalWindow
+		   << " || "
+		   << " !cursorInsideView " << !cursorInsideView
+		   << endl);
 
 	// only let them know if a modal dialog opened or
 	// cursor really moved out (no popup menu etc.).

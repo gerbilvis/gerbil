@@ -50,9 +50,9 @@ void MainWindow::initSignals(QObject *ctrl, QObject *dvctrl)
 	connect(docksButton, SIGNAL(clicked()),
 			this, SLOT(openContextMenu()));
 
-//	we decided to remove this functionality for now
-//	connect(bandDock, SIGNAL(topLevelChanged(bool)),
-//			this, SLOT(reshapeDock(bool)));
+	//	we decided to remove this functionality for now
+	//	connect(bandDock, SIGNAL(topLevelChanged(bool)),
+	//			this, SLOT(reshapeDock(bool)));
 
 	/* buttons to alter label display dynamics */
 	connect(ignoreButton, SIGNAL(toggled(bool)),
@@ -74,8 +74,8 @@ void MainWindow::initSignals(QObject *ctrl, QObject *dvctrl)
 	connect(nonmarkButton, SIGNAL(toggled(bool)),
 			dvctrl, SIGNAL(toggleUnlabeled(bool)));
 
-//	connect(chief2, SIGNAL(normTargetChanged(bool)),
-//			this, SLOT(normTargetChanged(bool)));
+	//	connect(chief2, SIGNAL(normTargetChanged(bool)),
+	//			this, SLOT(normTargetChanged(bool)));
 
 	subscriptionsDebugButton->hide();
 

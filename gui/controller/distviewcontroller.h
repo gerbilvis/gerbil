@@ -16,8 +16,8 @@ struct ReprSubscriptions;
 
 class DistViewController : public QObject
 {
-    Q_OBJECT
-    
+	Q_OBJECT
+
 	struct Payload {
 		Payload(representation::t type) : model(type), gui(type) {}
 
@@ -83,8 +83,8 @@ public slots:
 
 	void processROIChage(cv::Rect roi);
 	void processImageUpdate(representation::t repr,
-										SharedMultiImgPtr image,
-										bool duplicate);
+							SharedMultiImgPtr image,
+							bool duplicate);
 
 	void processDistviewNeedsBinning(representation::t repr);
 
@@ -115,7 +115,7 @@ public slots:
 signals:
 	void toggleLabeled(bool);
 	void toggleUnlabeled(bool);
-    void labelSelected(int);
+	void labelSelected(int);
 
 	void viewportAddSelection();
 	void viewportRemSelection();

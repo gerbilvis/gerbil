@@ -58,7 +58,7 @@ bool Viewport::drawScene(QPainter *painter, bool withDynamics)
 	// do not draw when in single pixel overlay mode
 	drawHighlight = drawHighlight && (!overlayMode);
 	// do not draw when in single label mode
-    drawHighlight = drawHighlight && (highlightLabels.empty());
+	drawHighlight = drawHighlight && (highlightLabels.empty());
 
 	for (int i = 0; i < (drawHighlight ? 2 : 1); ++i) {
 
@@ -121,10 +121,10 @@ void Viewport::updateBuffers(RenderMode spectrum, RenderMode highlight)
 
 		if (!(b.fbo->isValid() && b.blit->isValid())) {
 			QMessageBox::critical(target, "Drawing Error",
-				"Drawing spectra cannot be continued. "
-				"Please notify us about this problem, state error code 4 "
-				"and what actions led up to this error. Send an email to"
-				" report@gerbilvis.org. Thank you for your help!");
+								  "Drawing spectra cannot be continued. "
+								  "Please notify us about this problem, state error code 4 "
+								  "and what actions led up to this error. Send an email to"
+								  " report@gerbilvis.org. Thank you for your help!");
 			return;
 		}
 
@@ -222,7 +222,7 @@ void Viewport::updateModelview()
 }
 
 void Viewport::drawBins(QPainter &painter, QTimer &renderTimer,
-	unsigned int &renderedLines, unsigned int renderStep, bool highlight)
+						unsigned int &renderedLines, unsigned int renderStep, bool highlight)
 {
 	SharedDataLock ctxlock(ctx->mutex);
 	// TODO: this also locks shuffleIdx implicitely, better do it explicitely?
@@ -237,30 +237,30 @@ void Viewport::drawBins(QPainter &painter, QTimer &renderTimer,
 	bool success = vb.bind();
 	if (!success) {
 		QMessageBox::critical(target, "Drawing Error",
-			"Drawing spectra cannot be continued. "
-			"Please notify us about this problem, state error code 3 "
-			"and what actions led up to this error. Send an email to"
-			" report@gerbilvis.org. Thank you for your help!");
+							  "Drawing spectra cannot be continued. "
+							  "Please notify us about this problem, state error code 3 "
+							  "and what actions led up to this error. Send an email to"
+							  " report@gerbilvis.org. Thank you for your help!");
 		painter.endNativePainting();
 		return;
 	}
 	glEnableClientState(GL_VERTEX_ARRAY);
 	glVertexPointer(2, GL_FLOAT, 0, 0);
-    size_t iD = renderedLines * (*ctx)->dimensionality;
+	size_t iD = renderedLines * (*ctx)->dimensionality;
 
 	/* determine drawing range. could be expanded to only draw spec. labels */
 	// make sure that viewport draws "unlabeled" data in ignore-label case
 	int start = ((showUnlabeled || (*ctx)->ignoreLabels == 1) ? 0 : 1);
-    int end = (showLabeled ? (int)(*sets)->size() : 1);
-    int single = ((*ctx)->ignoreLabels || highlightLabels.empty()
-                  ? -1 : highlightLabels[0]);
+	int end = (showLabeled ? (int)(*sets)->size() : 1);
+	int single = ((*ctx)->ignoreLabels || highlightLabels.empty()
+				  ? -1 : highlightLabels[0]);
 
-    size_t total = shuffleIdx.size();
-    size_t first = renderedLines;
-    size_t last = std::min((size_t)(renderedLines + renderStep), total);
+	size_t total = shuffleIdx.size();
+	size_t first = renderedLines;
+	size_t last = std::min((size_t)(renderedLines + renderStep), total);
 
 	// loop over all elements in vertex index, update element and vector indices
-    for (size_t i = first; i < last;
+	for (size_t i = first; i < last;
 		 ++i, iD += (*ctx)->dimensionality) {
 		std::pair<int, BinSet::HashKey> &idx = shuffleIdx[i];
 
@@ -313,7 +313,7 @@ void Viewport::drawBins(QPainter &painter, QTimer &renderTimer,
 		// set color
 		QColor color = determineColor((drawRGB ? b.rgb : s.label),
 									  b.weight, s.totalweight,
-                                      highlight, highlightLabels.contains(idx.first));
+									  highlight, highlightLabels.contains(idx.first));
 		target->qglColor(color);
 
 		// draw polyline
@@ -486,8 +486,8 @@ void Viewport::drawAxesBg(QPainter *painter)
 
 void Viewport::drawLegend(QPainter *painter, int sel)
 {
-//	GGDBGM("drawing legend, representation " << (*ctx)->type <<
-//		   ", nbins: " << (*ctx)->dimensionality << endl);
+	//	GGDBGM("drawing legend, representation " << (*ctx)->type <<
+	//		   ", nbins: " << (*ctx)->dimensionality << endl);
 	SharedDataLock ctxlock(ctx->mutex);
 
 	assert((*ctx)->xlabels.size() == (unsigned int)(*ctx)->dimensionality);
@@ -495,8 +495,8 @@ void Viewport::drawLegend(QPainter *painter, int sel)
 	painter->setPen(Qt::white);
 	// x-axis
 	for (int i = 0; i < (*ctx)->dimensionality; ++i) {
-//		GGDBGM((format("label %1%: '%2%'")
-//		 %i % ((*ctx)->labels[i].toStdString()))  << endl);
+		//		GGDBGM((format("label %1%: '%2%'")
+		//		 %i % ((*ctx)->labels[i].toStdString()))  << endl);
 		QPointF l = modelview.map(QPointF(i - 1.f, 0.f));
 		QPointF r = modelview.map(QPointF(i + 1.f, 0.f));
 		QRectF rect(l, r);
@@ -563,7 +563,7 @@ void Viewport::drawWaitMessage(QPainter *painter)
 	tmp.setPointSize(tmp.pointSize() * 1.75);
 	painter->setFont(tmp);
 	painter->drawText(rect, Qt::AlignCenter,
-					 QString::fromUtf8("Calculating…"));
+					  QString::fromUtf8("Calculating…"));
 	painter->restore();
 }
 

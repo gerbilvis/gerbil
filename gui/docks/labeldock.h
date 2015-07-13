@@ -49,7 +49,7 @@ public slots:
 
 	void processMaskIconsComputed(const QVector<QImage>& icons);
 
-    void selectLabel(int label);
+	void selectLabel(int label);
 
 signals:
 
@@ -72,7 +72,7 @@ signals:
 	 *  @param highlight If true highlight the label. Otherwise stop
 	 *  highlighting.
 	 */
-    void toggleLabelHighlightRequested(short label);
+	void toggleLabelHighlightRequested(short label);
 
 	/** Request a vector of mask icons representing the label masks. */
 	void labelMaskIconsRequested();
@@ -96,7 +96,7 @@ protected:
 private slots:
 
 	void processSelectionChanged(const QItemSelection & selected,
-							const QItemSelection & deselected);
+								 const QItemSelection & deselected);
 	void processLabelItemEntered(QModelIndex midx);
 
 	void processApplyROIToggled(bool checked);
@@ -116,7 +116,7 @@ private:
 
 	void init();
 	void updateLabelIcons();
-    void deselectMerged(QVector<int> &list);
+	void deselectMerged(QVector<int> &list);
 
 	// UI with autohide widgets.
 	// The view and scene for this widget.

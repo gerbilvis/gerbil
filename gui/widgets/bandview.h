@@ -51,18 +51,18 @@ public slots:
 	void toggleShowLabels(bool disabled);
 	void toggleSeedMode(bool enabled);
 	void clearSeeds();
-    void toggleLabelHighlight(short label);
+	void toggleLabelHighlight(short label);
 
 	void enterEvent();
 	void leaveEvent();
-    void updateMode(SelectionMode SelectionMode);
+	void updateMode(SelectionMode SelectionMode);
 
 signals:
 	void pixelOverlay(int y, int x);
 	void killHover();
 
 	// single label mode, diff. label chosen
-    void labelSelected(int label);
+	void labelSelected(int label);
 
 	// user changed some labels
 	void alteredLabels(const cv::Mat1s &labels, const cv::Mat1b &mask);
@@ -76,13 +76,13 @@ signals:
 	// user wants to clear a label
 	void clearRequested();
 
-    void mergeLabelsRequested(QVector<int> labels);
+	void mergeLabelsRequested(QVector<int> labels);
 
 protected:
 	void paintEvent(QPainter *painter, const QRectF &rect);
 	void keyPressEvent(QKeyEvent *);
 
-    virtual void resizeEvent();
+	virtual void resizeEvent();
 
 private:
 	void cursorAction(QGraphicsSceneMouseEvent *ev, bool click = false);
@@ -107,11 +107,11 @@ private:
 
 	QPoint cursor, lastcursor;
 	short curLabel;
-    QVector<int> selectedLabels;
+	QVector<int> selectedLabels;
 	const cv::Mat1b *overlay;
 
 	/// color view according to labels
-    bool showLabels;
+	bool showLabels;
 
 	/// interpret input as segmentation seeds
 	bool seedMode;
@@ -126,7 +126,7 @@ private:
 
 	QTimer labelTimer;
 	cv::Mat1s seedMap; // mat1s to be consistent with labels matrix
-    cv::Mat1b curMask; // in single label mode contains curlabel members
+	cv::Mat1b curMask; // in single label mode contains curlabel members
 
 };
 

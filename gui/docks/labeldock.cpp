@@ -21,7 +21,7 @@
 
 
 LabelDock::LabelDock(QWidget *parent) :
-    QDockWidget(parent),
+	QDockWidget(parent),
 	ui(new Ui::LabelDock),
 	labelModel(new QStandardItemModel),
 	hovering(false),
@@ -52,7 +52,7 @@ void LabelDock::init()
 			this,
 			SLOT(processSelectionChanged(QItemSelection,QItemSelection)));
 
-    connect(ui->labelView, SIGNAL(clicked(QModelIndex)),
+	connect(ui->labelView, SIGNAL(clicked(QModelIndex)),
 			this, SLOT(processLabelItemEntered(QModelIndex)));
 
 	connect(ui->mergeBtn, SIGNAL(clicked()),
@@ -228,22 +228,22 @@ void LabelDock::mergeOrDeleteSelected()
 	if (sender() == ui->delBtn)
 		emit deleteLabelsRequested(selectedLabels);
 	else
-    {
-        emit mergeLabelsRequested(selectedLabels);
-        deselectMerged(selectedLabels);
-    }
+	{
+		emit mergeLabelsRequested(selectedLabels);
+		deselectMerged(selectedLabels);
+	}
 
 	emit labelMaskIconsRequested();
 }
 
 void LabelDock::deselectMerged(QVector<int> &list)
 {
-    //first element remains selected
-    qSort(list);
+	//first element remains selected
+	qSort(list);
 
-    for(int i = 1; i<list.size(); i++) {
-        selectLabel(list[i]);
-    }
+	for(int i = 1; i<list.size(); i++) {
+		selectLabel(list[i]);
+	}
 
 }
 
@@ -300,7 +300,7 @@ void LabelDock::showEvent(QShowEvent *event)
 }
 
 void LabelDock::processSelectionChanged(const QItemSelection &,
-		const QItemSelection &)
+										const QItemSelection &)
 {
 	int nSelected = ui->labelView->selectionModel()->selectedIndexes().size();
 
@@ -316,22 +316,22 @@ void LabelDock::processLabelItemEntered(QModelIndex midx)
 	//GGDBGM("hovering over " << label << endl);
 	hovering = true;
 	hoverLabel = label;
-    emit toggleLabelHighlightRequested(label);
+	emit toggleLabelHighlightRequested(label);
 }
 
 void LabelDock::selectLabel(int label)
 {
-    hovering = true;
-    hoverLabel = label;
+	hovering = true;
+	hoverLabel = label;
 
-    QModelIndex index = ui->labelView->model()->index(label, 0);
-    if (index.isValid() ) {
-        if (ui->labelView->selectionModel()->isSelected(index)) {
-            ui->labelView->selectionModel()->select(index, QItemSelectionModel::Deselect);
-        } else {
-            ui->labelView->selectionModel()->select(index, QItemSelectionModel::Select);
-        }
-    }
+	QModelIndex index = ui->labelView->model()->index(label, 0);
+	if (index.isValid() ) {
+		if (ui->labelView->selectionModel()->isSelected(index)) {
+			ui->labelView->selectionModel()->select(index, QItemSelectionModel::Deselect);
+		} else {
+			ui->labelView->selectionModel()->select(index, QItemSelectionModel::Select);
+		}
+	}
 }
 
 void LabelDock::processApplyROIToggled(bool checked)
@@ -356,7 +356,7 @@ void LabelDock::processSliderValueChanged(int)
 void LabelDock::updateSliderToolTip()
 {
 	QString t = QString("Icon Size (%1)").arg(
-				ui->sizeSlider->value());
+					ui->sizeSlider->value());
 	ui->sizeSlider->setToolTip(t);
 }
 

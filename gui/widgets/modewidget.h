@@ -6,9 +6,9 @@
 
 enum SelectionMode
 {
-    Zoom,
-    Pick,
-    Label
+	Zoom,
+	Pick,
+	Label
 };
 
 
@@ -17,25 +17,25 @@ class QButtonGroup;
 
 class ModeWidget : public AutohideWidget, private Ui::ModeWidget
 {
-    Q_OBJECT
+	Q_OBJECT
 
 public:
-    explicit ModeWidget(AutohideView* view);
-    ~ModeWidget();
+	explicit ModeWidget(AutohideView* view);
+	~ModeWidget();
 
 protected:
-    void initUi();
+	void initUi();
 
 signals:
-    void modeChanged(SelectionMode m);
+	void modeChanged(SelectionMode m);
 
 private slots:
-    void on_zoomButton_released();
-    void on_pickButton_released();
-    void on_labelButton_released();
+	void on_zoomButton_released();
+	void on_pickButton_released();
+	void on_labelButton_released();
 
 private:
-    QButtonGroup *group;
+	QButtonGroup *group;
 
 };
 

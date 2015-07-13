@@ -42,7 +42,7 @@ public:
 
 public slots:
 
-    void toggleLabelHighlight(int index);
+	void toggleLabelHighlight(int index);
 
 	void toggleRGB(bool enabled) { drawRGB = enabled; updateBuffers(); }
 
@@ -133,7 +133,7 @@ protected:
 	/* helper functions called by drawScene/updateTextures */
 
 	void drawBins(QPainter &painter, QTimer &renderTimer,
-		unsigned int &renderedLines, unsigned int renderStep,
+				  unsigned int &renderedLines, unsigned int renderStep,
 				  bool onlyHighlight);
 	// helper function called by drawBins
 	QColor determineColor(const QColor &basecolor, float weight,
@@ -239,8 +239,8 @@ private:
 	std::vector<QString> yaxis;
 	int yaxisWidth;
 
-    // vector containing highlighted labels
-    QVector<int> highlightLabels;
+	// vector containing highlighted labels
+	QVector<int> highlightLabels;
 };
 
 #endif // VIEWPORT_H

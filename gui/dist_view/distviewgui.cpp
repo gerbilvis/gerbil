@@ -90,14 +90,14 @@ void DistViewGUI::initSignals(QObject *dvctrl)
 {
 	// signals from DistviewController
 	connect(dvctrl, SIGNAL(pixelOverlayInvalid()),
-			 vp, SLOT(removePixelOverlay()));
+			vp, SLOT(removePixelOverlay()));
 	connect(dvctrl, SIGNAL(toggleLabeled(bool)),
 			vp, SLOT(toggleLabeled(bool)));
 	connect(dvctrl, SIGNAL(toggleUnlabeled(bool)),
 			vp, SLOT(toggleUnlabeled(bool)));
 
-    connect(dvctrl, SIGNAL(labelSelected(int)),
-            vp, SLOT(toggleLabelHighlight(int)));
+	connect(dvctrl, SIGNAL(labelSelected(int)),
+			vp, SLOT(toggleLabelHighlight(int)));
 
 	// signals to controller
 	connect(this, SIGNAL(requestBinCount(representation::t, int)),
@@ -260,7 +260,7 @@ void DistViewGUI::createLimiterMenu()
 	limiterMenu.addSeparator();
 	for (int i = 1; i < labelColors.size(); ++i) {
 		tmp = limiterMenu.addAction(colorIcon(labelColors.at(i)),
-													  "Limit by label");
+									"Limit by label");
 		tmp->setData(i);
 	}
 }

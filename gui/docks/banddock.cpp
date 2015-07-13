@@ -79,13 +79,13 @@ void BandDock::initUi()
 	connect(this, SIGNAL(visibilityChanged(bool)),
 			this, SLOT(processVisibilityChanged(bool)));
 
-    //add mode widget
-    mw = new ModeWidget(view);
-    bv->offTop = AutohideWidget::OutOffset;
-    view->addWidget(AutohideWidget::TOP, mw);
+	//add mode widget
+	mw = new ModeWidget(view);
+	bv->offTop = AutohideWidget::OutOffset;
+	view->addWidget(AutohideWidget::TOP, mw);
 
-    connect(mw, SIGNAL(modeChanged(SelectionMode)),
-            bv, SLOT(updateMode(SelectionMode)));
+	connect(mw, SIGNAL(modeChanged(SelectionMode)),
+			bv, SLOT(updateMode(SelectionMode)));
 
 	bv->initUi();
 }
@@ -175,8 +175,8 @@ bool BandDock::eventFilter(QObject *obj, QEvent *event)
 }
 
 void BandDock::processLabelingChange(const cv::Mat1s &labels,
-									   const QVector<QColor> &colors,
-									   bool colorsChanged)
+									 const QVector<QColor> &colors,
+									 bool colorsChanged)
 {
 	if (!colors.empty()) {
 		// store a local copy of the color array
@@ -206,7 +206,7 @@ void BandDock::processLabelingChange(const cv::Mat1s &labels,
 }
 
 void BandDock::processLabelingChange(const cv::Mat1s &labels,
-									   const cv::Mat1b &mask)
+									 const cv::Mat1b &mask)
 {
 	bv->updateLabeling(labels, mask);
 }
