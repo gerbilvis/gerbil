@@ -1,7 +1,6 @@
 #ifndef FALSECOLOR_MODEL_H
 #define FALSECOLOR_MODEL_H
 
-#include <gerbil_cplusplus.h>
 #include <model/representation.h>
 #include <shared_data.h>
 
@@ -33,7 +32,7 @@ class FalseColorModel : public QObject
 	Q_OBJECT
 
 public:
-	FalseColorModel(QObject *parent = GBL_NULLPTR);
+    FalseColorModel(QObject *parent = nullptr);
 	~FalseColorModel();
 
 	void setMultiImg(representation::t repr, SharedMultiImgPtr img);

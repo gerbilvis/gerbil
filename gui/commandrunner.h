@@ -1,8 +1,6 @@
 #ifndef COMMANDRUNNER_H
 #define COMMANDRUNNER_H
 
-#include <gerbil_cplusplus.h>
-
 #include <QThread>
 #include <vole_config.h>
 #include <command.h>
@@ -34,7 +32,7 @@ signals:
 	void failure();
 
 public slots:
-	void abort() GBL_OVERRIDE;
+	void abort() override;
 	void deleteLater();
 
 private:

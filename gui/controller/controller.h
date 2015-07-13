@@ -1,7 +1,6 @@
 #ifndef CONTROLLER_H
 #define CONTROLLER_H
 
-#include <gerbil_cplusplus.h>
 #include <model/representation.h>
 #include <shared_data.h>
 #include <background_task/background_task.h>
@@ -46,7 +45,7 @@ class Controller : public QObject
 public:
 	explicit Controller(
 			const QString &filename, bool limited_mode,
-			const QString &labelfile, QObject *parent = GBL_NULLPTR);
+            const QString &labelfile, QObject *parent = nullptr);
 	~Controller();
 
 	MainWindow* mainWindow() { return window; }

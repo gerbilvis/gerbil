@@ -1,8 +1,6 @@
 #ifndef GERBILAPPLICATION_H
 #define GERBILAPPLICATION_H
 
-#include <gerbil_cplusplus.h>
-
 #include <cstdlib>
 #include <boost/noncopyable.hpp>
 
@@ -62,7 +60,7 @@ public:
 	void criticalError(QString msg);
 
 	// for eventLoopStarted
-	bool eventFilter(QObject *obj, QEvent *event) GBL_OVERRIDE;
+    bool eventFilter(QObject *obj, QEvent *event) override;
 
 private:
 

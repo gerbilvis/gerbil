@@ -13,8 +13,6 @@
 
 #include "widgets/mainwindow.h"
 
-#include "gerbil_cplusplus.h"
-
 //#define GGDBG_MODULE
 #include "gerbil_gui_debug.h"
 
@@ -28,13 +26,13 @@ Controller::Controller(const QString &filename,
 
 	: QObject(parent),
 	  // initialize all pointers so we don't access them too early w/o notice
-	  im(GBL_NULLPTR), lm(GBL_NULLPTR), fm(GBL_NULLPTR), illumm(GBL_NULLPTR),
-	  gsm(GBL_NULLPTR),
+      im(nullptr), lm(nullptr), fm(nullptr), illumm(nullptr),
+      gsm(nullptr),
 #ifdef WITH_SEG_MEANSHIFT
-	  cm(GBL_NULLPTR),
+      cm(nullptr),
 #endif
-	  dvc(GBL_NULLPTR),
-	  queuethread(GBL_NULLPTR),
+      dvc(nullptr),
+      queuethread(nullptr),
 	  subs(new Subscriptions)
 {
 	// reset internal ROI state tracking

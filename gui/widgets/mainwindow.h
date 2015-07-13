@@ -12,8 +12,6 @@
 
 #include "ui_mainwindow.h"
 
-#include <gerbil_cplusplus.h>
-
 class MainWindow : public QMainWindow, private Ui::MainWindow {
     Q_OBJECT
 public:
@@ -31,8 +29,8 @@ public slots:
 
 protected:
 
-	void closeEvent (QCloseEvent * event) GBL_OVERRIDE;
-	void changeEvent(QEvent *e) GBL_OVERRIDE;
+    void closeEvent (QCloseEvent * event) override;
+    void changeEvent(QEvent *e) override;
 
 private:
 	QMenu *contextMenu;
