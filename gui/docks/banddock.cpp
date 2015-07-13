@@ -1,7 +1,9 @@
 #include "banddock.h"
 #include "../widgets/bandview.h"
 #include "../widgets/graphsegwidget.h"
+#include "../widgets/modewidget.h"
 #include <app/gerbilio.h>
+#include "../widgets/autohideview.h"
 
 #include "../gerbil_gui_debug.h"
 
@@ -40,6 +42,8 @@ void BandDock::initUi()
 	bv->offBottom = AutohideWidget::OutOffset;
 	view->addWidget(AutohideWidget::BOTTOM, gs);
 
+
+
 	connect(bv, SIGNAL(newSizeHint(QSize)),
 			view, SLOT(updateSizeHint(QSize)));
 
@@ -76,6 +80,17 @@ void BandDock::initUi()
 
 	connect(this, SIGNAL(visibilityChanged(bool)),
 			this, SLOT(processVisibilityChanged(bool)));
+
+
+
+    //add mode widget
+    mw = new ModeWidget(view);
+    bv->offTop = AutohideWidget::OutOffset;
+    view->addWidget(AutohideWidget::TOP, mw);
+
+
+    connect(mw, SIGNAL(modeChanged(SelectionMode)),
+            bv, SLOT(updateMode(SelectionMode)));
 
 	bv->initUi();
 }

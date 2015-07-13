@@ -5,6 +5,8 @@
 #include <QGLWidget>
 #include <cassert>
 #include <stdexcept>
+#include <QWheelEvent>
+
 
 //#define GGDBG_MODULE
 #include <gerbil_gui_debug.h>
@@ -58,6 +60,7 @@ void AutohideView::addWidget(AutohideWidget::border loc, AutohideWidget *w)
 	// add to our own reference
 	widgets.insert(loc, w);
 }
+
 
 void AutohideView::updateSizeHint(QSize sizeHint)
 {
@@ -126,12 +129,12 @@ void AutohideView::resizeEvent(QResizeEvent *event)
 
 void AutohideView::mouseMoveEvent(QMouseEvent *event)
 {
-	if (!suppressScroll) {
-		foreach (AutohideWidget* w, widgets)
-			w->triggerScrolling(event->pos());
-	}
+    if (!suppressScroll) {
+        foreach (AutohideWidget* w, widgets)
+            w->triggerScrolling(event->pos());
+    }
 
-	QGraphicsView::mouseMoveEvent(event);
+    QGraphicsView::mouseMoveEvent(event);
 }
 
 void AutohideView::leaveEvent(QEvent *event)

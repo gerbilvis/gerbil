@@ -4,6 +4,8 @@
 #include <QGraphicsScene>
 #include <QPainter>
 
+#include "modewidget.h"
+
 class QGLWidget;
 
 class ScaledView : public QGraphicsScene
@@ -16,7 +18,7 @@ public:
 	virtual void setPixmap(QPixmap p);
 
 	/* provide a reasonably high size of correct aspect ratio for layouting */
-    virtual void updateSizeHint();
+    	virtual void updateSizeHint();
 
 	// offsets reserved for autohidewidgets, can be altered from outside
 	int offLeft, offTop, offRight, offBottom;
@@ -30,10 +32,12 @@ protected:
 	void drawBackground(QPainter *painter, const QRectF &rect);
 	virtual void resizeEvent();
 	virtual void paintEvent(QPainter *painter, const QRectF &rect);
-	void mouseMoveEvent(QGraphicsSceneMouseEvent*);
+    	void mouseMoveEvent(QGraphicsSceneMouseEvent*);
 	void mousePressEvent(QGraphicsSceneMouseEvent*);
 	virtual void cursorAction(QGraphicsSceneMouseEvent *ev,
-							  bool click = false);
+                              bool click = false);
+
+    	void wheelEvent(QGraphicsSceneWheelEvent*);
 
 	void drawWaitMessage(QPainter *painter);
 
@@ -42,10 +46,15 @@ protected:
 		static QBrush brush(Qt::gray, Qt::Dense4Pattern);
 		painter->fillRect(rect, Qt::black);
 		painter->fillRect(rect, brush);
-	}
+    }
+
+    
 
 	// scene geometry
 	int width, height;
+    	qreal zoom;
+    	SelectionMode sm;
+
 
 	// transformations between pixmap coords. and scene coords.
 	QTransform scaler, scalerI;

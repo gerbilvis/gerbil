@@ -12,13 +12,14 @@
 #include <QGLWidget>
 #include <QPainter>
 #include <QGraphicsSceneEvent>
+#include <QDebug>
 
 #include <iostream>
 
 /* TODO: do we really want sample buffers for these views? configurable?
  */
 ScaledView::ScaledView()
-	: width(50), height(50) // values don't matter much, but should be over 0
+    : width(50), height(50), zoom(1), sm(Zoom)// values don't matter much, but should be over 0
 {
 	// by default small offsets; can be altered from outside
 	offLeft = offTop = offRight = offBottom = 2;
@@ -35,7 +36,7 @@ void ScaledView::updateSizeHint()
 void ScaledView::setPixmap(QPixmap p)
 {
 	pixmap = p;
-	resizeEvent();
+    resizeEvent();
 	updateSizeHint();
 }
 
@@ -69,18 +70,18 @@ void ScaledView::resizeEvent()
 		w = (height - offTop - offBottom)*src_aspect;
 
 	/* centering */
-	scaler.reset();
-	scaler.translate(offLeft + (width - offLeft - offRight - w)/2.f,
-					 offTop + (height - offTop - offBottom - w/src_aspect)/2.f);
+    scaler.reset();
+    scaler.translate(offLeft + (width - offLeft - offRight - w)/2.f,
+                     offTop + (height - offTop - offBottom - w/src_aspect)/2.f);
 	/* scaling */
 	float scale = w/pixmap.width();
-	scaler.scale(scale, scale);
+    scaler.scale(scale, scale);
 
 	// inverted transform to handle input
-	scalerI = scaler.inverted();
+    scalerI = scaler.inverted();
 
 	// let the view know about the geometry we actually do occupy
-	emit newContentRect(scaler.mapRect(pixmap.rect()));
+    emit newContentRect(scaler.mapRect(pixmap.rect()));
 }
 
 void ScaledView::paintEvent(QPainter *painter, const QRectF &rect)
@@ -103,14 +104,34 @@ void ScaledView::paintEvent(QPainter *painter, const QRectF &rect)
 	painter->restore();
 }
 
-void ScaledView::mouseMoveEvent(QGraphicsSceneMouseEvent *ev)
+void ScaledView::mouseMoveEvent(QGraphicsSceneMouseEvent *event)
 {
-	// check for scene elements first (we are technically the background)
-	QGraphicsScene::mouseMoveEvent(ev);
-	if (ev->isAccepted())
-		return;
+    QGraphicsScene::mouseMoveEvent(event);
 
-	cursorAction(ev);
+    cursorAction(event);
+
+    if(sm != Zoom) return;
+
+    if(event->buttons() == Qt::LeftButton)
+    {
+    //Obtain current cursor and last cursor position
+    //in pixmap coordinates
+    QPointF lastonscene = scalerI.map(event->lastScenePos());
+    QPointF curronscene = scalerI.map(event->scenePos());
+
+    //qDebug() << "CURRONSCENE" << curronscene;
+
+    qreal x = curronscene.x() - lastonscene.x();
+    qreal y = curronscene.y() - lastonscene.y();
+
+    //qDebug() << "xp" << x << "yp" << y;
+
+    scaler.translate(x,y);
+    scalerI = scaler.inverted();
+
+   
+    }
+
 }
 
 void ScaledView::mousePressEvent(QGraphicsSceneMouseEvent *ev)
@@ -141,4 +162,57 @@ void ScaledView::drawWaitMessage(QPainter *painter)
 
 void ScaledView::cursorAction(QGraphicsSceneMouseEvent *ev, bool click)
 {
+}
+
+
+void ScaledView::wheelEvent(QGraphicsSceneWheelEvent *event)
+{
+      QGraphicsScene::wheelEvent(event);
+
+      if(sm != Zoom) return;
+
+      qreal newzoom;
+
+      if (event->delta() > 0)
+      {
+          newzoom = 1.25;
+      }
+      else
+      {
+          newzoom = 0.8;
+      }
+
+
+      if(zoom*newzoom < 1)
+      {
+
+          resizeEvent();
+
+      }
+      else
+      {
+          //obtain cursor position in scene coordinates
+          QPointF scene = event->scenePos();
+          //obtain cursor position in pixmap coordinates
+          QPointF local = scalerI.map(scene);
+
+          zoom *= newzoom;
+          //scaling
+          scaler.scale(newzoom, newzoom);
+          scalerI = scaler.inverted();
+
+          //after scaling there's different point under cursor
+          //so we have to obtain cursor position in pixmap coordinates
+          //once again
+          QPointF newlocal = scalerI.map(scene);
+
+          //translate the by the difference
+          QPointF diff = newlocal - local;
+          scaler.translate(diff.x(), diff.y());
+          scalerI = scaler.inverted();
+
+
+        
+      }
+
 }
