@@ -32,7 +32,7 @@ signals:
 	void failure();
 
 public slots:
-    	void abort() override;
+	void abort() override;
 	void deleteLater();
 
 private:
