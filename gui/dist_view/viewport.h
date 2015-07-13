@@ -85,7 +85,7 @@ protected slots:
 
 	// triggered by scrollTimer and manually
 	void updateBuffers(RenderMode spectrum = RM_STEP,
-					   RenderMode highlight = RM_STEP);
+	                   RenderMode highlight = RM_STEP);
 
 signals:
 	// we are the active viewer
@@ -96,7 +96,7 @@ signals:
 	// highlight changed -> band display overlay
 	void requestOverlay(int dim, int bin);
 	void requestOverlay(const std::vector<std::pair<int, int> >& limiters,
-						int dim);
+	                    int dim);
 
 	// add/remove highlight from/to current label
 	void addSelectionRequested();
@@ -136,11 +136,11 @@ protected:
 	/* helper functions called by drawScene/updateTextures */
 
 	void drawBins(QPainter &painter, QTimer &renderTimer,
-				  unsigned int &renderedLines, unsigned int renderStep,
-				  bool onlyHighlight);
+	              unsigned int &renderedLines, unsigned int renderStep,
+	              bool onlyHighlight);
 	// helper function called by drawBins
 	QColor determineColor(const QColor &basecolor, float weight,
-						  float totalweight, bool highlighted, bool single);
+	                      float totalweight, bool highlighted, bool single);
 
 	void drawAxesBg(QPainter*);
 	void drawAxesFg(QPainter*);
@@ -158,7 +158,7 @@ private:
 
 	struct renderbuffer {
 		renderbuffer() : fbo(0), blit(0), dirty(true),
-			renderStep(10000), renderedLines(0) {}
+		    renderStep(10000), renderedLines(0) {}
 
 		// buffer to render to
 		QGLFramebufferObject *fbo;
