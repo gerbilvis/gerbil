@@ -16,10 +16,7 @@ ModeWidget::~ModeWidget()
 
 void ModeWidget::initUi()
 {
-    zoomButton->setCheckable(true);
-    pickButton->setCheckable(true);
-    labelButton->setCheckable(true);
-
+    /* ensure that only one button is selected at a time */
     group = new QButtonGroup();
     group->addButton(zoomButton);
     group->addButton(pickButton);
