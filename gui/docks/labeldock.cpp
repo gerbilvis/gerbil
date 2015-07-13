@@ -47,12 +47,6 @@ void LabelDock::init()
 
 	ui->labelView->setModel(labelModel);
 
-	ui->labelView->setDragEnabled(false);
-	ui->labelView->setDragDropMode(QAbstractItemView::NoDragDrop);
-	ui->labelView->setSpacing(0);
-	ui->labelView->setUniformItemSizes(true);
-    ui->labelView->setSelectionMode(QAbstractItemView::MultiSelection);
-
 	connect(ui->labelView->selectionModel(),
 			SIGNAL(selectionChanged(QItemSelection,QItemSelection)),
 			this,
