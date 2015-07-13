@@ -42,12 +42,12 @@ bool Viewport::drawScene(QPainter *painter, bool withDynamics)
 
 	painter->save();
 	painter->setWorldTransform(modelview);
-    drawAxesBg(painter);
+	drawAxesBg(painter);
 	painter->restore();
 
 	/* determine if we draw the highlight part */
 	// only draw when active and dynamic content is desired
-    bool drawHighlight = active && withDynamics;
+	bool drawHighlight = active && withDynamics;
 	// only draw if not implicitely empty
 	drawHighlight = drawHighlight && (hover > -1 || limiterMode);
 	// do not draw when in single pixel overlay mode
@@ -70,11 +70,11 @@ bool Viewport::drawScene(QPainter *painter, bool withDynamics)
 		target->drawTexture(rect, b.blit->texture());
 	}
 
-    // only provide selection for view with dynamic components (selected band)
-    if (withDynamics)
-        drawLegend(painter, selection);
-    else
-        drawLegend(painter);
+	// only provide selection for view with dynamic components (selected band)
+	if (withDynamics)
+		drawLegend(painter, selection);
+	else
+		drawLegend(painter);
 
 	// foreground axes are a dynamic part
 	if (withDynamics) {
@@ -122,10 +122,10 @@ void Viewport::updateBuffers(RenderMode spectrum, RenderMode highlight)
 
 		if (!(b.fbo->isValid() && b.blit->isValid())) {
 			QMessageBox::critical(target, "Drawing Error",
-				"Drawing spectra cannot be continued. "
-				"Please notify us about this problem, state error code 4 "
-				"and what actions led up to this error. Send an email to"
-				" report@gerbilvis.org. Thank you for your help!");
+								  "Drawing spectra cannot be continued. "
+								  "Please notify us about this problem, state error code 4 "
+								  "and what actions led up to this error. Send an email to"
+								  " report@gerbilvis.org. Thank you for your help!");
 			return;
 		}
 
@@ -153,7 +153,7 @@ void Viewport::updateBuffers(RenderMode spectrum, RenderMode highlight)
 void Viewport::updateYAxis()
 {
 	// steps on the y-axis (number of labeled values)
-    const int amount = 10;
+	const int amount = 10;
 
 	/* calculate raw numbers for y-axis */
 	std::vector<float> ycoord(amount);
@@ -223,7 +223,7 @@ void Viewport::updateModelview()
 }
 
 void Viewport::drawBins(QPainter &painter, QTimer &renderTimer,
-	unsigned int &renderedLines, unsigned int renderStep, bool highlight)
+						unsigned int &renderedLines, unsigned int renderStep, bool highlight)
 {
 	SharedDataLock ctxlock(ctx->mutex);
 	// TODO: this also locks shuffleIdx implicitely, better do it explicitely?
@@ -238,29 +238,29 @@ void Viewport::drawBins(QPainter &painter, QTimer &renderTimer,
 	bool success = vb.bind();
 	if (!success) {
 		QMessageBox::critical(target, "Drawing Error",
-			"Drawing spectra cannot be continued. "
-			"Please notify us about this problem, state error code 3 "
-			"and what actions led up to this error. Send an email to"
-			" report@gerbilvis.org. Thank you for your help!");
+							  "Drawing spectra cannot be continued. "
+							  "Please notify us about this problem, state error code 3 "
+							  "and what actions led up to this error. Send an email to"
+							  " report@gerbilvis.org. Thank you for your help!");
 		painter.endNativePainting();
 		return;
 	}
 	glEnableClientState(GL_VERTEX_ARRAY);
 	glVertexPointer(2, GL_FLOAT, 0, 0);
-    size_t iD = renderedLines * (*ctx)->dimensionality;
+	size_t iD = renderedLines * (*ctx)->dimensionality;
 
 	/* determine drawing range. could be expanded to only draw spec. labels */
 	// make sure that viewport draws "unlabeled" data in ignore-label case
 	int start = ((showUnlabeled || (*ctx)->ignoreLabels == 1) ? 0 : 1);
-    int end = (showLabeled ? (int)(*sets)->size() : 1);
+	int end = (showLabeled ? (int)(*sets)->size() : 1);
 	int single = ((*ctx)->ignoreLabels ? -1 : highlightLabel);
 
-    size_t total = shuffleIdx.size();
-    size_t first = renderedLines;
-    size_t last = std::min((size_t)(renderedLines + renderStep), total);
+	size_t total = shuffleIdx.size();
+	size_t first = renderedLines;
+	size_t last = std::min((size_t)(renderedLines + renderStep), total);
 
 	// loop over all elements in vertex index, update element and vector indices
-    for (size_t i = first; i < last;
+	for (size_t i = first; i < last;
 		 ++i, iD += (*ctx)->dimensionality) {
 		std::pair<int, BinSet::HashKey> &idx = shuffleIdx[i];
 
@@ -486,31 +486,31 @@ void Viewport::drawAxesBg(QPainter *painter)
 
 void Viewport::drawLegend(QPainter *painter, int sel)
 {
-//	GGDBGM("drawing legend, representation " << (*ctx)->type <<
-//		   ", nbins: " << (*ctx)->dimensionality << endl);
+	//	GGDBGM("drawing legend, representation " << (*ctx)->type <<
+	//		   ", nbins: " << (*ctx)->dimensionality << endl);
 	SharedDataLock ctxlock(ctx->mutex);
 
 	assert((*ctx)->xlabels.size() == (unsigned int)(*ctx)->dimensionality);
 
 	painter->setPen(Qt::white);
 
-    //drawing background for x-axis
-    QRectF xbgrect(0, height-35, width, 35);;
+	//drawing background for x-axis
+	QRectF xbgrect(0, height-35, width, 35);;
 
-    painter->save();
-    painter->setBrush(QColor(0,0,0, 128));
-    painter->fillRect(xbgrect, QBrush(QColor(0,0,0,128)));
-    painter->restore();
+	painter->save();
+	painter->setBrush(QColor(0,0,0, 128));
+	painter->fillRect(xbgrect, QBrush(QColor(0,0,0,128)));
+	painter->restore();
 
 	// x-axis
 	for (int i = 0; i < (*ctx)->dimensionality; ++i) {
-//		GGDBGM((format("label %1%: '%2%'")
-//		 %i % ((*ctx)->labels[i].toStdString()))  << endl);
-        QPointF l = modelview.map(QPointF(i - 1.f, 0.f));
-        l.setY(height - 30);
+		//		GGDBGM((format("label %1%: '%2%'")
+		//		 %i % ((*ctx)->labels[i].toStdString()))  << endl);
+		QPointF l = modelview.map(QPointF(i - 1.f, 0.f));
+		l.setY(height - 30);
 
-        QPointF r = modelview.map(QPointF(i + 1.f, 0.f));
-        r.setY(height);
+		QPointF r = modelview.map(QPointF(i + 1.f, 0.f));
+		r.setY(height);
 
 		QRectF rect(l, r);
 
@@ -535,27 +535,27 @@ void Viewport::drawLegend(QPainter *painter, int sel)
 			painter->setPen(Qt::white);
 	}
 
-    //drawing background for y-axis
-    QRectF ybgrect(0, 0, 60, height);
+	//drawing background for y-axis
+	QRectF ybgrect(0, 0, 60, height);
 
-    painter->save();
-    painter->setBrush(QColor(0,0,0, 128));
-    painter->fillRect(ybgrect, QBrush(QColor(0,0,0,128)));
-    painter->restore();
+	painter->save();
+	painter->setBrush(QColor(0,0,0, 128));
+	painter->fillRect(ybgrect, QBrush(QColor(0,0,0,128)));
+	painter->restore();
 
 	/// y-axis
 	for (size_t i = 0; i < yaxis.size(); ++i) {
 		float ifrac = (float)(i)/(float)(yaxis.size()-1) * (float)((*ctx)->nbins - 1);
-        QPointF b = modelview.map(QPointF(0.f, (float)((*ctx)->nbins - 1) - ifrac));
+		QPointF b = modelview.map(QPointF(0.f, (float)((*ctx)->nbins - 1) - ifrac));
 
-        QPointF t = b;
-        t -= QPointF(0.f, 40.f);
-        t.setX(0);
-        b.setX(50);
-        QRectF rect(t, b);
+		QPointF t = b;
+		t -= QPointF(0.f, 40.f);
+		t.setX(0);
+		b.setX(50);
+		QRectF rect(t, b);
 
-        painter->drawText(rect, Qt::AlignVCenter | Qt::AlignRight, yaxis[i]);
-    }
+		painter->drawText(rect, Qt::AlignVCenter | Qt::AlignRight, yaxis[i]);
+	}
 }
 
 void Viewport::drawOverlay(QPainter *painter)
@@ -586,7 +586,7 @@ void Viewport::drawWaitMessage(QPainter *painter)
 	tmp.setPointSize(tmp.pointSize() * 1.75);
 	painter->setFont(tmp);
 	painter->drawText(rect, Qt::AlignCenter,
-					 QString::fromUtf8("Calculating…"));
+					  QString::fromUtf8("Calculating…"));
 	painter->restore();
 }
 
