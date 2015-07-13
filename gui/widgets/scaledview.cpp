@@ -40,8 +40,7 @@ void ScaledView::setPixmap(QPixmap p)
 
 	bool cond = (p.width() != pixmap.width()
 							  || p.height() != pixmap.height());
-	if(cond)
-	{
+	if (cond) {
 		resizeEvent();
 		updateSizeHint();
 	}
@@ -166,7 +165,7 @@ void ScaledView::wheelEvent(QGraphicsSceneWheelEvent *event)
 {
 	QGraphicsScene::wheelEvent(event);
 
-	if(sm != Zoom) return;
+	if (sm != Zoom) return;
 
 	qreal newzoom;
 
@@ -176,7 +175,7 @@ void ScaledView::wheelEvent(QGraphicsSceneWheelEvent *event)
 		newzoom = 0.8;
 	}
 
-	if(zoom*newzoom < 1) {
+	if (zoom*newzoom < 1) {
 		resizeEvent();
 	} else {
 		//obtain cursor position in scene coordinates

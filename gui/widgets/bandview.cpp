@@ -248,7 +248,7 @@ void BandView::updateCache()
 // helper to color single pixel with labeling
 void BandView::markCachePixel(QPainter &p, int x, int y)
 {
-	if(sm != Label) return;
+	if (sm != Label) return;
 
 	short l = labels(y, x);
 	if (l > 0) {
@@ -260,7 +260,7 @@ void BandView::markCachePixel(QPainter &p, int x, int y)
 // helper to color single pixel in seed mode
 void BandView::markCachePixelS(QPainter &p, int x, int y)
 {
-	if(sm != Label) return;
+	if (sm != Label) return;
 
 	short l = seedMap(y, x);
 	if (l < 64 || l > 192) {
@@ -271,7 +271,7 @@ void BandView::markCachePixelS(QPainter &p, int x, int y)
 
 void BandView::updateCache(int y, int x, short label)
 {
-	if(sm != Label) return;
+	if (sm != Label) return;
 
 	if (!cacheValid) {
 		updateCache();
@@ -355,7 +355,7 @@ void BandView::cursorAction(QGraphicsSceneMouseEvent *ev, bool click)
 	/// single label case
 	if (sm == Pick && showLabels) {
 		short cursorLabel = labels(cursor.y(), cursor.x());
-		if(ev->button() & Qt::LeftButton) {
+		if (ev->button() & Qt::LeftButton) {
 			toggleLabelHighlight(cursorLabel);
 			emit labelSelected(curLabel);
 		} else {
@@ -510,7 +510,7 @@ void BandView::toggleShowLabels(bool disabled)
 void BandView::toggleLabelHighlight(short label)
 {
 	bool toDelete = false;
-	if(selectedLabels.contains(label)) {
+	if (selectedLabels.contains(label)) {
 		toDelete = true;
 		//qDebug() << "REMOVED LABEL";
 	} else {
@@ -519,13 +519,13 @@ void BandView::toggleLabelHighlight(short label)
 	}
 	curLabel = label;
 
-	if(selectedLabels.size() == 1) {
+	if (selectedLabels.size() == 1) {
 		curMask = cv::Mat1b(labels.rows, labels.cols, (uchar)0);
 	} else {
 		curMask = curMask | cv::Mat1b(labels.rows, labels.cols, (uchar)0);
 	}
 
-	if(toDelete) {
+	if (toDelete) {
 		curMask.setTo(0, (labels == label));
 		int pos = selectedLabels.indexOf(label);
 		selectedLabels.remove(pos, 1);

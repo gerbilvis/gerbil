@@ -334,7 +334,7 @@ void Viewport::setLimiters(int label)
 
 void Viewport::toggleLabelHighlight(int index)
 {
-	if(highlightLabels.contains(index)) {
+	if (highlightLabels.contains(index)) {
 		int pos = highlightLabels.indexOf(index);
 		highlightLabels.remove(pos, 1);
 	}
