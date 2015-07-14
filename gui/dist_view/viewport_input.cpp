@@ -78,6 +78,7 @@ void Viewport::mouseMoveEvent(QGraphicsSceneMouseEvent *event)
 
 		QPointF lastonscene = modelviewI.map(event->lastScenePos());
 		QPointF curronscene = modelviewI.map(event->scenePos());
+
 		//qDebug() << "curronscene" << curronscene;
 
 		qreal xp = curronscene.x() - lastonscene.x();
@@ -85,6 +86,9 @@ void Viewport::mouseMoveEvent(QGraphicsSceneMouseEvent *event)
 
 		modelview.translate(xp, yp);
 		modelviewI = modelview.inverted();
+
+		yaxischanged = true;
+		updateYAxis();
 
 		adjustBoundaries();
 
@@ -160,6 +164,8 @@ void Viewport::wheelEvent(QGraphicsSceneWheelEvent *event)
 
 	if (zoom*newzoom < 1) {
 		zoom = 1;
+		yaxischanged = false;
+		updateYAxis();
 		updateModelview();
 	} else {
 		QPointF scene = event->scenePos();
@@ -173,6 +179,9 @@ void Viewport::wheelEvent(QGraphicsSceneWheelEvent *event)
 		QPointF diff = newlocal - local;
 		modelview.translate(diff.x(), diff.y());
 		modelviewI = modelview.inverted();
+
+		yaxischanged = true;
+		updateYAxis();
 
 		adjustBoundaries();
 	}
@@ -261,6 +270,8 @@ void Viewport::adjustBoundaries()
 
 	modelview.translate(xp, yp);
 	modelviewI = modelview.inverted();
+
+	updateYAxis();
 }
 
 

@@ -158,10 +158,30 @@ void Viewport::updateYAxis()
 	/* calculate raw numbers for y-axis */
 	std::vector<float> ycoord(amount);
 	float maximum = 0.f;
+
+	SharedDataLock ctxlock(ctx->mutex);
+	float plotmaxval = (*ctx)->maxval;
+	float plotminval = (*ctx)->minval;
+	float binscount = (qreal)((*ctx)->nbins - 1);
+	ctxlock.unlock();
+
+	float maxvalue;
+	float range = 1/zoom;
+	if (yaxischanged) {
+		QPointF bottom(0.f, 0.f);
+		bottom = modelviewI.map(bottom);
+		qreal ratio = bottom.y()/binscount;
+
+		maxvalue = plotmaxval - (1.f-ratio) * (plotmaxval - plotminval);
+		if (maxvalue > plotmaxval) maxvalue = plotmaxval;
+	} else {
+		maxvalue = plotmaxval;
+	}
+
 	for (int i = 0; i < amount; ++i) {
-		SharedDataLock ctxlock(ctx->mutex);
-		float ifrac = (float)i*0.25*(float)((*ctx)->nbins - 1);
-		ycoord[i] = (*ctx)->maxval - ifrac * (*ctx)->binsize;
+		ycoord[i] = maxvalue - i*(1.f/(amount-1))*range*(plotmaxval - plotminval);
+		ycoord[i] = std::max(ycoord[i], plotminval);
+
 		maximum = std::max(maximum, std::abs(ycoord[i]));
 	}
 
@@ -204,7 +224,7 @@ void Viewport::updateModelview()
 
 	int hp = 20, vp = 12; // horizontal and vertical padding
 	int vtp = 18; // lower padding for text (legend)
-	int htp = yaxisWidth - 6; // left padding for text (legend)
+	int htp = yaxisWidth + 10; // left padding for text (legend)
 
 	// if gradient, we discard one unit space intentionally for centering
 	int d = (int)(*ctx)->dimensionality
@@ -536,7 +556,7 @@ void Viewport::drawLegend(QPainter *painter, int sel)
 	}
 
 	//drawing background for y-axis
-	QRectF ybgrect(0, 0, 60, height);
+	QRectF ybgrect(0, 0, 60, height-35);
 
 	painter->save();
 	painter->setBrush(QColor(0,0,0, 128));
@@ -545,11 +565,10 @@ void Viewport::drawLegend(QPainter *painter, int sel)
 
 	/// y-axis
 	for (size_t i = 0; i < yaxis.size(); ++i) {
-		float ifrac = (float)(i)/(float)(yaxis.size()-1) * (float)((*ctx)->nbins - 1);
-		QPointF b = modelview.map(QPointF(0.f, (float)((*ctx)->nbins - 1) - ifrac));
+		QPointF b(0.f, height/yaxis.size() * i);
 
 		QPointF t = b;
-		t -= QPointF(0.f, 40.f);
+		t += QPointF(0.f, height/yaxis.size());
 		t.setX(0);
 		b.setX(50);
 		QRectF rect(t, b);

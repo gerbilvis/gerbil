@@ -206,6 +206,7 @@ private:
 	// zoom and shift in y-direction
 	qreal zoom;
 	qreal shift;
+	bool yaxischanged;
 
 	int lasty;
 
