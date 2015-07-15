@@ -55,6 +55,16 @@ void ROIView::resizeEvent()
 	container->setRect(pixmap.rect());
 }
 
+void ROIView::mouseMoveEvent(QGraphicsSceneMouseEvent *event)
+{
+	QGraphicsScene::mouseMoveEvent(event);
+}
+
+void ROIView::wheelEvent(QGraphicsSceneWheelEvent *event)
+{
+
+}
+
 void BoundedRect::adjustTo(QRectF box, bool internal)
 {
 	/* discretize */
