@@ -34,6 +34,7 @@ protected:
 	virtual void paintEvent(QPainter *painter, const QRectF &rect);
 	void mouseMoveEvent(QGraphicsSceneMouseEvent*);
 	void mousePressEvent(QGraphicsSceneMouseEvent*);
+	void mouseReleaseEvent(QGraphicsSceneMouseEvent*);
 	virtual void cursorAction(QGraphicsSceneMouseEvent *ev,
 							  bool click = false);
 	void wheelEvent(QGraphicsSceneWheelEvent*);

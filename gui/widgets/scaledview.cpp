@@ -140,7 +140,20 @@ void ScaledView::mousePressEvent(QGraphicsSceneMouseEvent *ev)
 	if (ev->isAccepted())
 		return;
 
+	if (sm == Zoom) {
+		QApplication::setOverrideCursor(Qt::ClosedHandCursor);
+	}
+
 	cursorAction(ev, true);
+}
+
+void ScaledView::mouseReleaseEvent(QGraphicsSceneMouseEvent *ev)
+{
+	QGraphicsScene::mouseReleaseEvent(ev);
+	if (sm == Zoom)
+	{
+		QApplication::restoreOverrideCursor();
+	}
 }
 
 void ScaledView::drawWaitMessage(QPainter *painter)
