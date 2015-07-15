@@ -75,6 +75,8 @@ public slots:
 	void setIlluminationCurveShown(bool show);
 	void setAppliedIlluminant(QVector<multi_img::Value> illum);
 
+	void binCountChanged();
+
 protected slots:
 
 	// triggered by renderTimers
@@ -206,7 +208,8 @@ private:
 	// zoom and shift in y-direction
 	qreal zoom;
 	qreal shift;
-	bool yaxischanged;
+	bool yAxisChanged;
+	bool nBinsChanged;
 
 	int lasty;
 

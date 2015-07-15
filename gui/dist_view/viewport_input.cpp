@@ -87,7 +87,7 @@ void Viewport::mouseMoveEvent(QGraphicsSceneMouseEvent *event)
 		modelview.translate(xp, yp);
 		modelviewI = modelview.inverted();
 
-		yaxischanged = true;
+		yAxisChanged = true;
 		updateYAxis();
 
 		adjustBoundaries();
@@ -164,8 +164,6 @@ void Viewport::wheelEvent(QGraphicsSceneWheelEvent *event)
 
 	if (zoom*newzoom < 1) {
 		zoom = 1;
-		yaxischanged = false;
-		updateYAxis();
 		updateModelview();
 	} else {
 		QPointF scene = event->scenePos();
@@ -180,7 +178,7 @@ void Viewport::wheelEvent(QGraphicsSceneWheelEvent *event)
 		modelview.translate(diff.x(), diff.y());
 		modelviewI = modelview.inverted();
 
-		yaxischanged = true;
+		yAxisChanged = true;
 		updateYAxis();
 
 		adjustBoundaries();

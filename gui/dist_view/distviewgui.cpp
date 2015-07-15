@@ -135,6 +135,9 @@ void DistViewGUI::initSignals(QObject *dvctrl)
 			vp, SLOT(setIlluminationCurveShown(bool)));
 	connect(this, SIGNAL(newIlluminantApplied(QVector<multi_img::Value>)),
 			vp, SLOT(setAppliedIlluminant(QVector<multi_img::Value>)));
+
+	connect(this, SIGNAL(binCountChanged()),
+	        vp, SLOT(binCountChanged()));
 }
 
 void DistViewGUI::initSubscriptions()
@@ -236,6 +239,7 @@ void DistViewGUI::setBinLabel(int n)
 void DistViewGUI::setBinCount(int n)
 {
 	setBinLabel(n);
+	emit binCountChanged();
 	emit requestBinCount(type, n);
 }
 

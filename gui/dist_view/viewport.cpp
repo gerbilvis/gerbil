@@ -440,4 +440,8 @@ void Viewport::screenshot()
 	io.writeImage(output);
 }
 
+void Viewport::binCountChanged()
+{
+	nBinsChanged = true;
+}
 

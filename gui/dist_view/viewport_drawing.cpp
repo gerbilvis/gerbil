@@ -167,7 +167,7 @@ void Viewport::updateYAxis()
 
 	float maxvalue;
 	float range = 1/zoom;
-	if (yaxischanged) {
+	if (yAxisChanged) {
 		QPointF bottom(0.f, 0.f);
 		bottom = modelviewI.map(bottom);
 		qreal ratio = bottom.y()/binscount;
@@ -217,9 +217,15 @@ void Viewport::updateModelview()
 {
 	SharedDataLock ctxlock(ctx->mutex);
 
-	/* apply zoom and translation in window coordinates */
+	QPointF zero;
+	if (nBinsChanged)
+	{
+		zero = modelview.map(QPointF(0.f, 0.f));
+	}
+
+	/* apply translation in window coordinates */
 	qreal wwidth = width;
-	qreal wheight = height*zoom;
+	qreal wheight = height;
 	int vshift = height*shift;
 
 	int hp = 20, vp = 12; // horizontal and vertical padding
@@ -240,6 +246,22 @@ void Viewport::updateModelview()
 
 	// set inverse
 	modelviewI = modelview.inverted();
+
+	if (nBinsChanged)
+	{
+		QPointF zerolocal = modelviewI.map(zero);
+
+		modelview.translate(zerolocal.x(),zerolocal.y());
+		modelviewI = modelview.inverted();
+		modelview.scale(zoom, zoom);
+		modelviewI = modelview.inverted();
+
+		yAxisChanged = true;
+		updateYAxis();
+
+		nBinsChanged = false;
+	}
+
 }
 
 void Viewport::drawBins(QPainter &painter, QTimer &renderTimer,
