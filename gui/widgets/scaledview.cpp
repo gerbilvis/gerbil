@@ -129,6 +129,8 @@ void ScaledView::mouseMoveEvent(QGraphicsSceneMouseEvent *event)
 		scaler.translate(x,y);
 		scalerI = scaler.inverted();
 	}
+
+	update();
 }
 
 void ScaledView::mousePressEvent(QGraphicsSceneMouseEvent *ev)
