@@ -36,10 +36,11 @@ void ScaledView::updateSizeHint()
 
 void ScaledView::setPixmap(QPixmap p)
 {
-	pixmap = p;
-
 	bool cond = (p.width() != pixmap.width()
 	                          || p.height() != pixmap.height());
+
+	pixmap = p;
+
 	if (cond) {
 		resizeEvent();
 		updateSizeHint();
