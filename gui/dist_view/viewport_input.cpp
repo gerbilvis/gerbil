@@ -91,12 +91,7 @@ void Viewport::mouseMoveEvent(QGraphicsSceneMouseEvent *event)
 		updateYAxis();
 
 		adjustBoundaries();
-
-		/* TODO: make sure that we use full visible space */
-
-		buffers[0].renderTimer.stop();
-		buffers[1].renderTimer.stop();
-		scrollTimer.start(10);
+		updateBuffers();
 	}
 
 	if (needTextureUpdate) {
@@ -356,7 +351,9 @@ void Viewport::keyPressEvent(QKeyEvent *event)
 		case RGBA16F: bufferFormat = RGBA32F; break;
 		case RGBA32F: bufferFormat = RGBA8; break;
 		}
-		resizeScene(); // will init and update buffers
+		// initialize buffers with new format
+		initBuffers();
+		updateBuffers();
 		break;
 	case Qt::Key_M:
 		drawMeans = !drawMeans;

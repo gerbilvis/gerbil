@@ -85,7 +85,7 @@ protected slots:
 	// triggered by resizeTimer
 	void resizeScene();
 
-	// triggered by scrollTimer and manually
+	// triggered manually
 	void updateBuffers(RenderMode spectrum = RM_STEP,
 	                   RenderMode highlight = RM_STEP);
 
@@ -241,8 +241,6 @@ private:
 
 	// this timer will resize the scene after resize/folding
 	QTimer resizeTimer;
-	// this timer will update buffers after scrolling
-	QTimer scrollTimer;
 
 	std::vector<QString> yaxis;
 	int yaxisWidth;

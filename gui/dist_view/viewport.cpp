@@ -62,9 +62,6 @@ void Viewport::initTimers()
 	resizeTimer.setSingleShot(true);
 	connect(&resizeTimer, SIGNAL(timeout()), this, SLOT(resizeScene()));
 
-	scrollTimer.setSingleShot(true);
-	connect(&scrollTimer, SIGNAL(timeout()), this, SLOT(updateBuffers()));
-
 	QSignalMapper *mapper = new QSignalMapper();
 	for (int i = 0; i < 2; ++i) {
 		buffers[i].renderedLines = 0;
