@@ -17,6 +17,9 @@
 
 ROIView::ROIView()
 {
+	// prevent panning/moving through ScaledView
+	inputMode = InputMode::Disabled;
+
 	rect = new BoundedRect();
 	rect->setBrush(QColor(255, 255, 255, 31));
 	QPen pen(Qt::DashLine);
@@ -53,16 +56,6 @@ void ROIView::resizeEvent()
 	ScaledView::resizeEvent();
 	container->setTransform(scaler);
 	container->setRect(pixmap.rect());
-}
-
-void ROIView::mouseMoveEvent(QGraphicsSceneMouseEvent *event)
-{
-	QGraphicsScene::mouseMoveEvent(event);
-}
-
-void ROIView::wheelEvent(QGraphicsSceneWheelEvent *event)
-{
-
 }
 
 void BoundedRect::adjustTo(QRectF box, bool internal)

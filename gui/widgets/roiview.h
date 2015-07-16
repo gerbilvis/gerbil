@@ -47,8 +47,6 @@ signals:
 
 protected:
 	void resizeEvent();
-	void mouseMoveEvent(QGraphicsSceneMouseEvent*);
-	void wheelEvent(QGraphicsSceneWheelEvent*);
 
 	// ROI rectangle, children of container
 	BoundedRect *rect;
