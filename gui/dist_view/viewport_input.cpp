@@ -158,6 +158,8 @@ void Viewport::wheelEvent(QGraphicsSceneWheelEvent *event)
 	}
 
 	if (zoom*newzoom < 1) {
+		if (zoom == 1)
+			return;
 		zoom = 1;
 		updateModelview();
 	} else {
