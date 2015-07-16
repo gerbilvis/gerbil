@@ -9,6 +9,7 @@
 #include "scaledview.h"
 
 #include <stopwatch.h>
+#include <QApplication>
 #include <QGLWidget>
 #include <QPainter>
 #include <QGraphicsSceneEvent>
@@ -119,7 +120,7 @@ void ScaledView::mouseMoveEvent(QGraphicsSceneMouseEvent *event)
 	if (inputMode != InputMode::Zoom)
 		return;
 
-	if (event->buttons() == Qt::LeftButton) {
+	if (event->buttons() & Qt::LeftButton) {
 		//Obtain current cursor and last cursor position
 		//in pixmap coordinates
 		QPointF lastonscene = scalerI.map(event->lastScenePos());
@@ -130,9 +131,8 @@ void ScaledView::mouseMoveEvent(QGraphicsSceneMouseEvent *event)
 
 		scaler.translate(x,y);
 		scalerI = scaler.inverted();
+		update();
 	}
-
-	update();
 }
 
 void ScaledView::mousePressEvent(QGraphicsSceneMouseEvent *ev)
@@ -142,7 +142,7 @@ void ScaledView::mousePressEvent(QGraphicsSceneMouseEvent *ev)
 	if (ev->isAccepted())
 		return;
 
-	if (sm == Zoom) {
+	if (ev->button() == Qt::LeftButton && inputMode == InputMode::Zoom) {
 		QApplication::setOverrideCursor(Qt::ClosedHandCursor);
 	}
 
@@ -152,8 +152,7 @@ void ScaledView::mousePressEvent(QGraphicsSceneMouseEvent *ev)
 void ScaledView::mouseReleaseEvent(QGraphicsSceneMouseEvent *ev)
 {
 	QGraphicsScene::mouseReleaseEvent(ev);
-	if (sm == Zoom)
-	{
+	if (ev->button() == Qt::LeftButton && inputMode == InputMode::Zoom) {
 		QApplication::restoreOverrideCursor();
 	}
 }
