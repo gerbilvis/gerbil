@@ -1,7 +1,6 @@
 #ifndef GRAPH_SEGMENTATION_MODEL_H
 #define GRAPH_SEGMENTATION_MODEL_H
 
-#include <gerbil_cplusplus.h>
 #include <model/representation.h>
 #include <shared_data.h>
 #include <background_task/background_task_queue.h>
@@ -14,7 +13,7 @@
 
 namespace seg_graphs
 {
-	class GraphSegConfig;
+class GraphSegConfig;
 }
 
 class GraphSegmentationModel : public QObject
@@ -22,7 +21,7 @@ class GraphSegmentationModel : public QObject
 	Q_OBJECT
 
 public:
-	GraphSegmentationModel(BackgroundTaskQueue *queue, QObject *parent = GBL_NULLPTR);
+	GraphSegmentationModel(BackgroundTaskQueue *queue, QObject *parent = nullptr);
 	~GraphSegmentationModel();
 
 	// always set required iamges before using the class
@@ -30,16 +29,16 @@ public:
 
 protected:
 	void startGraphseg(SharedMultiImgPtr input, cv::Mat1s seedMap,
-					   const seg_graphs::GraphSegConfig &config,
-					   bool resetLabel);
+	                   const seg_graphs::GraphSegConfig &config,
+	                   bool resetLabel);
 
 public slots:
 	void setCurLabel(int curLabel);
 	void runGraphseg(representation::t type, cv::Mat1s seedMap,
-					 const seg_graphs::GraphSegConfig &config, bool resetLabel);
+	                 const seg_graphs::GraphSegConfig &config, bool resetLabel);
 	void runGraphsegBand(representation::t type, int bandId, cv::Mat1s seedMap,
-						 const seg_graphs::GraphSegConfig &config,
-						 bool resetLabel);
+	                     const seg_graphs::GraphSegConfig &config,
+	                     bool resetLabel);
 
 protected slots:
 	void finishGraphSeg(bool success);

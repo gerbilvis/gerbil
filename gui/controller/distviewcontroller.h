@@ -1,8 +1,6 @@
 #ifndef DISTVIEWCONTROLLER_H
 #define DISTVIEWCONTROLLER_H
 
-#include <gerbil_cplusplus.h>
-
 #include <controller/controller.h>
 #include <dist_view/distviewmodel.h>
 #include <dist_view/distviewgui.h>

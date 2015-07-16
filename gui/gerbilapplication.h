@@ -1,8 +1,6 @@
 #ifndef GERBILAPPLICATION_H
 #define GERBILAPPLICATION_H
 
-#include <gerbil_cplusplus.h>
-
 #include <cstdlib>
 #include <boost/noncopyable.hpp>
 
@@ -31,7 +29,7 @@ public:
 		ExitNoInput =				EXIT_FAILURE + 3
 	};
 
-	explicit GerbilApplication ( int & argc, char ** argv );
+	explicit GerbilApplication(int & argc, char ** argv);
 
 	/** Returns a pointer to the GerbilApplication object.
 	 *
@@ -62,7 +60,7 @@ public:
 	void criticalError(QString msg);
 
 	// for eventLoopStarted
-	bool eventFilter(QObject *obj, QEvent *event) GBL_OVERRIDE;
+	bool eventFilter(QObject *obj, QEvent *event) override;
 
 private:
 
