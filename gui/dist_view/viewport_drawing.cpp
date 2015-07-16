@@ -577,7 +577,7 @@ void Viewport::drawLegend(QPainter *painter, int sel)
 	}
 
 	//drawing background for y-axis
-	QRectF ybgrect(0, 0, 60, height-35);
+	QRectF ybgrect(0, 0, yaxisWidth+25, height-35);
 
 	painter->save();
 	painter->setBrush(QColor(0,0,0, 128));
@@ -591,7 +591,7 @@ void Viewport::drawLegend(QPainter *painter, int sel)
 		QPointF t = b;
 		t += QPointF(0.f, displayHeight/yaxis.size());
 		t.setX(0);
-		b.setX(50);
+		b.setX(yaxisWidth+15);
 		QRectF rect(t, b);
 
 		painter->drawText(rect, Qt::AlignVCenter | Qt::AlignRight, yaxis[i]);
