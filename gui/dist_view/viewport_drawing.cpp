@@ -233,7 +233,7 @@ void Viewport::updateModelview()
 	int htp = yaxisWidth + 10; // left padding for text (legend)
 
 	// if gradient, we discard one unit space intentionally for centering
-	int d = (int)(*ctx)->dimensionality
+	size_t d = (*ctx)->dimensionality
 	        - ((*ctx)->type == representation::GRAD ? 0 : 1);
 	qreal w = (wwidth  - 2*hp - htp)/(qreal)(d); // width of one unit
 	qreal h = (wheight - 2*vp - vtp)/(qreal)((*ctx)->nbins); // height of one unit
@@ -323,7 +323,7 @@ void Viewport::drawBins(QPainter &painter, QTimer &renderTimer,
 			bool highlighted = false;
 			if (limiterMode) {
 				highlighted = true;
-				for (int i = 0; i < (*ctx)->dimensionality; ++i) {
+				for (size_t i = 0; i < (*ctx)->dimensionality; ++i) {
 					unsigned char k = K[i];
 					if (k < limiters[i].first || k > limiters[i].second)
 						highlighted = false;
@@ -445,7 +445,7 @@ void Viewport::drawAxesFg(QPainter *painter)
 
 	SharedDataLock ctxlock(ctx->mutex);
 
-	if (selection < 0 || selection >= (*ctx)->dimensionality)
+	if (selection < 0 || selection >= (int)(*ctx)->dimensionality)
 		return;
 
 	// draw selection in foreground
@@ -461,7 +461,7 @@ void Viewport::drawAxesFg(QPainter *painter)
 	// draw limiters
 	if (limiterMode) {
 		painter->setPen(Qt::red);
-		for (int i = 0; i < (*ctx)->dimensionality; ++i) {
+		for (size_t i = 0; i < (*ctx)->dimensionality; ++i) {
 			qreal y1 = limiters[i].first, y2 = limiters[i].second + 1;
 			if (!illuminantAppl.empty()) {
 				y1 *= illuminantAppl.at(i);
@@ -494,7 +494,7 @@ void Viewport::drawAxesBg(QPainter *painter)
 
 	/* without illuminant */
 	if (!illuminant_show || illuminantCurve.empty()) {
-		for (int i = 0; i < (*ctx)->dimensionality; ++i)
+		for (size_t i = 0; i < (*ctx)->dimensionality; ++i)
 			painter->drawLine(i, 0, i, (*ctx)->nbins);
 		return;
 	}
@@ -503,7 +503,7 @@ void Viewport::drawAxesBg(QPainter *painter)
 
 	// polygon describing illuminant
 	QPolygonF poly;
-	for (int i = 0; i < (*ctx)->dimensionality; ++i) {
+	for (size_t i = 0; i < (*ctx)->dimensionality; ++i) {
 		qreal top = ((*ctx)->nbins-1) * illuminantCurve.at(i);
 		painter->drawLine(QPointF(i, 0.), QPointF(i, top));
 		poly << QPointF(i, top);
@@ -545,7 +545,7 @@ void Viewport::drawLegend(QPainter *painter, int sel)
 	painter->restore();
 
 	// x-axis
-	for (int i = 0; i < (*ctx)->dimensionality; ++i) {
+	for (size_t i = 0; i < (*ctx)->dimensionality; ++i) {
 		//		GGDBGM((format("label %1%: '%2%'")
 		//		 %i % ((*ctx)->labels[i].toStdString()))  << endl);
 		QPointF l = modelview.map(QPointF(i - 1.f, 0.f));
@@ -560,16 +560,16 @@ void Viewport::drawLegend(QPainter *painter, int sel)
 		int stepping = std::max<int>(1, 150 / rect.width());
 
 		// only draw regular steppings and selected band
-		if (i % stepping && i != sel)
+		if (i % stepping && (int)i != sel)
 			continue;
 
 		// also do not draw near selected band
-		if (i != sel && sel > -1 && std::abs(i - sel) < stepping)
+		if ((int)i != sel && sel > -1 && std::abs(i - sel) < stepping)
 			continue;
 
 		rect.adjust(-50.f, 0.f, 50.f, 0.f);
 
-		bool highlight = (i == sel);
+		bool highlight = ((int)i == sel);
 		if (highlight)
 			painter->setPen(Qt::red);
 		painter->drawText(rect, Qt::AlignCenter, (*ctx)->xlabels[i]);
