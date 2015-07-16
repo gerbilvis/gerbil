@@ -244,6 +244,7 @@ private:
 
 	std::vector<QString> yaxis;
 	int yaxisWidth;
+	int displayHeight; // height of plot without paddings
 
 	// single label to be highlighted
 	int highlightLabel;

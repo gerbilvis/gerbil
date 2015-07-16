@@ -224,19 +224,18 @@ void Viewport::updateModelview()
 	}
 
 	/* apply translation in window coordinates */
-	qreal wwidth = width;
-	qreal wheight = height;
 	int vshift = height*shift;
 
 	int hp = 20, vp = 12; // horizontal and vertical padding
-	int vtp = 18; // lower padding for text (legend)
-	int htp = yaxisWidth + 10; // left padding for text (legend)
+	int vtp = 22; // lower padding for text (legend)
+	int htp = yaxisWidth + 14; // left padding for text (legend)
+	displayHeight = height - 2*vp - vtp;
 
 	// if gradient, we discard one unit space intentionally for centering
 	size_t d = (*ctx)->dimensionality
 	        - ((*ctx)->type == representation::GRAD ? 0 : 1);
-	qreal w = (wwidth  - 2*hp - htp)/(qreal)(d); // width of one unit
-	qreal h = (wheight - 2*vp - vtp)/(qreal)((*ctx)->nbins); // height of one unit
+	qreal w = (width  - 2*hp - htp)/(qreal)(d); // width of one unit
+	qreal h = displayHeight/(qreal)((*ctx)->nbins); // height of one unit
 	int t = ((*ctx)->type == representation::GRAD ? w/2 : 0); // moving half a unit for centering
 
 	modelview.reset();
@@ -587,10 +586,10 @@ void Viewport::drawLegend(QPainter *painter, int sel)
 
 	/// y-axis
 	for (size_t i = 0; i < yaxis.size(); ++i) {
-		QPointF b(0.f, height/yaxis.size() * i);
+		QPointF b(0.f, displayHeight/yaxis.size() * i + 20.f);
 
 		QPointF t = b;
-		t += QPointF(0.f, height/yaxis.size());
+		t += QPointF(0.f, displayHeight/yaxis.size());
 		t.setX(0);
 		b.setX(50);
 		QRectF rect(t, b);
