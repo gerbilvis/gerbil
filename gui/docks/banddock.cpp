@@ -84,8 +84,10 @@ void BandDock::initUi()
 	bv->offTop = AutohideWidget::OutOffset;
 	view->addWidget(AutohideWidget::TOP, mw);
 
-	connect(mw, SIGNAL(modeChanged(SelectionMode)),
-	        bv, SLOT(updateMode(SelectionMode)));
+	connect(mw, SIGNAL(modeChanged(ScaledView::InputMode)),
+	        bv, SLOT(updateMode(ScaledView::InputMode)));
+	connect(bv, SIGNAL(modeChanged(ScaledView::InputMode)),
+	        mw, SLOT(updateMode(ScaledView::InputMode)));
 
 	bv->initUi();
 }

@@ -29,8 +29,6 @@ public:
 	void setPixmap(QPixmap pixmap);
 	void setLabelMatrix(const cv::Mat1b & matrix);
 
-	bool isSeedModeEnabled() { return seedMode; }
-
 	int getCurrentLabel() { return curLabel; }
 	cv::Mat1s getSeedMap() { return seedMap; }
 	void setSeedMap(cv::Mat1s seeding);
@@ -55,13 +53,16 @@ public slots:
 
 	void enterEvent();
 	void leaveEvent();
-	void updateMode(SelectionMode SelectionMode);
+	void updateMode(ScaledView::InputMode mode);
 
 signals:
 	void pixelOverlay(int y, int x);
 	void killHover();
 
-	// single label mode, diff. label chosen
+	// change of input mode (e.g. seed mode)
+	void modeChanged(ScaledView::InputMode m);
+
+	// picking mode, diff. label chosen
 	void labelSelected(int label);
 
 	// user changed some labels
@@ -113,8 +114,8 @@ private:
 	/// color view according to labels
 	bool showLabels;
 
-	/// interpret input as segmentation seeds
-	bool seedMode;
+	/// input mode to return to after seeding
+	InputMode lastMode;
 	
 	// local copy of label colors
 	QVector<QColor> labelColors;

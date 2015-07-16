@@ -1,16 +1,9 @@
 #ifndef MODEWIDGET_H
 #define MODEWIDGET_H
 
+#include "scaledview.h"
 #include "autohidewidget.h"
 #include "ui_modewidget.h"
-
-enum SelectionMode
-{
-	Zoom,
-	Pick,
-	Label
-};
-
 
 class AutohideView;
 class QButtonGroup;
@@ -27,7 +20,10 @@ protected:
 	void initUi();
 
 signals:
-	void modeChanged(SelectionMode m);
+	void modeChanged(ScaledView::InputMode m);
+
+public slots:
+	void updateMode(ScaledView::InputMode m);
 
 private slots:
 	void on_zoomButton_released();

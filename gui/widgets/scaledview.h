@@ -1,8 +1,6 @@
 #ifndef SCALEDVIEW_H
 #define SCALEDVIEW_H
 
-#include "modewidget.h"
-
 #include <QGraphicsScene>
 #include <QPainter>
 
@@ -12,6 +10,15 @@ class ScaledView : public QGraphicsScene
 {
 	Q_OBJECT
 public:
+	enum class InputMode
+	{
+		Zoom,
+		Pick,
+		Label,
+		Seed,
+		Disabled
+	};
+
 	ScaledView();
 	virtual ~ScaledView() {}
 
@@ -51,7 +58,7 @@ protected:
 	// scene geometry
 	int width, height;
 	qreal zoom;
-	SelectionMode sm;
+	InputMode inputMode;
 
 	// transformations between pixmap coords. and scene coords.
 	QTransform scaler, scalerI;

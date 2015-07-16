@@ -29,8 +29,7 @@ BandView::BandView()
     : // note: start with invalid curLabel to trigger proper initialization!
       cacheValid(false), cursor(-1, -1), lastcursor(-1, -1), curLabel(-1),
       overlay(0), showLabels(true), selectedLabels(0),
-      ignoreUpdates(false),
-      seedMode(false), labelAlpha(63),
+      ignoreUpdates(false), labelAlpha(63),
       seedColors(std::make_pair(
                      QColor(255, 0, 0, 255), QColor(255, 255, 0, 255)))
 {
@@ -45,9 +44,9 @@ void BandView::initUi()
 	        this, SLOT(commitLabelChanges()));
 }
 
-void BandView::updateMode(SelectionMode mode)
+void BandView::updateMode(ScaledView::InputMode mode)
 {
-	sm = mode;
+	inputMode = mode;
 }
 
 void BandView::resizeEvent()
@@ -150,16 +149,15 @@ void BandView::paintEvent(QPainter *painter, const QRectF &rect)
 
 
 	/* draw current cursor */
-	bool drawCursor = (seedMode || sm != Pick);
+	bool drawCursor = (inputMode == InputMode::Label ||
+	                   inputMode == InputMode::Seed);
 	if (!pixmap.rect().contains(cursor.x(), cursor.y()))
 		drawCursor = false;
 	if (curLabel < 1 || curLabel >= labelColors.count())
 		drawCursor = false;
-
-	if (sm == Label) {
-		//		GGDBGM(boost::format("count=%1% curLabel=%2%")
-		//			  %labelColors.count()% curLabel << endl);
-		QPen pen(seedMode ? Qt::yellow : labelColors.at(curLabel));
+	if (drawCursor) {
+		QPen pen(inputMode == InputMode::Seed ? Qt::yellow
+		                                      : labelColors.at(curLabel));
 		pen.setWidth(0);
 		painter->setPen(pen);
 		painter->drawRect(QRectF(cursor, QSizeF(1, 1)));
@@ -181,9 +179,9 @@ void BandView::paintEvent(QPainter *painter, const QRectF &rect)
 		painter->drawImage(0, 0, dest);
 	}
 
-	if (seedMode) {
+	if (inputMode == InputMode::Seed) {
 		/* TODO: most times barely visible! */
-		pen.setColor(Qt::yellow); pen.setWidthF(0.5); pen.setStyle(Qt::DotLine);
+		pen.setColor(Qt::yellow); pen.setWidthF(1.5); pen.setStyle(Qt::DotLine);
 		painter->setPen(pen);
 		painter->setBrush(Qt::NoBrush);
 		painter->drawRect(0, 0, pixmap.width(), pixmap.height());
@@ -231,14 +229,15 @@ void BandView::updateCache()
 {
 	cachedPixmap = pixmap.copy();
 	cacheValid = true;
-	if (!seedMode && !showLabels) // there is no overlay, leave early
+	if (inputMode != InputMode::Seed && !showLabels) // there is no overlay, leave early
 		return;
 
 	QPainter painter(&cachedPixmap);
 	//	painter.setCompositionMode(QPainter::CompositionMode_Darken);
 
 	QImage dest(pixmap.width(), pixmap.height(), QImage::Format_ARGB32);
-	updateCacheBody body(dest, seedMode, labels, seedMap, labelColorsA, seedColors);
+	updateCacheBody body(dest, inputMode == InputMode::Seed,
+	                     labels, seedMap, labelColorsA, seedColors);
 	tbb::parallel_for(tbb::blocked_range2d<size_t>(
 	                      0, pixmap.height(), 0, pixmap.width()), body);
 
@@ -248,7 +247,8 @@ void BandView::updateCache()
 // helper to color single pixel with labeling
 void BandView::markCachePixel(QPainter &p, int x, int y)
 {
-	if (sm != Label) return;
+	if (inputMode != InputMode::Label)
+		return;
 
 	short l = labels(y, x);
 	if (l > 0) {
@@ -260,7 +260,8 @@ void BandView::markCachePixel(QPainter &p, int x, int y)
 // helper to color single pixel in seed mode
 void BandView::markCachePixelS(QPainter &p, int x, int y)
 {
-	if (sm != Label) return;
+	if (inputMode != InputMode::Seed)
+		return;
 
 	short l = seedMap(y, x);
 	if (l < 64 || l > 192) {
@@ -271,7 +272,9 @@ void BandView::markCachePixelS(QPainter &p, int x, int y)
 
 void BandView::updateCache(int y, int x, short label)
 {
-	if (sm != Label) return;
+	if (inputMode != InputMode::Label &&
+	    inputMode != InputMode::Seed)
+		return;
 
 	if (!cacheValid) {
 		updateCache();
@@ -283,13 +286,13 @@ void BandView::updateCache(int y, int x, short label)
 	// restore pixel
 	painter.drawPixmap(x, y, pixmap, x, y, 1, 1);
 
-	if (!seedMode && !showLabels) // there is no overlay, leave early
+	if (inputMode != InputMode::Seed && !showLabels) // there is no overlay, leave early
 		return;
 	
 	// if needed, color pixel
 	const QColor *col = 0;
-	short val = (seedMode ? seedMap(y, x) : label);
-	if (seedMode) {
+	short val = (inputMode == InputMode::Seed ? seedMap(y, x) : label);
+	if (inputMode == InputMode::Seed) {
 		if (val == 255)
 			col = &seedColors.first;
 		else if (val == 0)
@@ -353,7 +356,7 @@ void BandView::cursorAction(QGraphicsSceneMouseEvent *ev, bool click)
 		emit pixelOverlay(cursor.y(), cursor.x());
 
 	/// single label case
-	if (sm == Pick && showLabels) {
+	if (inputMode == InputMode::Pick && showLabels) {
 		short cursorLabel = labels(cursor.y(), cursor.x());
 		if (ev->button() & Qt::LeftButton) {
 			toggleLabelHighlight(cursorLabel);
@@ -367,7 +370,8 @@ void BandView::cursorAction(QGraphicsSceneMouseEvent *ev, bool click)
 	/// end of function for singleLabel case. no manipulations,
 	/// destroying overlay etc.
 
-	if (ev->buttons() != Qt::NoButton && sm == Label) {
+	if (ev->buttons() != Qt::NoButton &&
+	    (inputMode == InputMode::Label || inputMode == InputMode::Seed)) {
 		/* alter all pixels on the line between previous and current position.
 		 * the idea is that due to lag we might not get a notification about
 		 * every pixel the mouse moved over. this is a good approximation. */
@@ -382,7 +386,7 @@ void BandView::cursorAction(QGraphicsSceneMouseEvent *ev, bool click)
 				break;
 
 			if (ev->buttons() & Qt::LeftButton) {
-				if (!seedMode) {
+				if (inputMode != InputMode::Seed) {
 					uncommitedLabels(y, x) = 1;
 					labels(y, x) = curLabel;
 					updateCache(y, x, curLabel);
@@ -392,7 +396,7 @@ void BandView::cursorAction(QGraphicsSceneMouseEvent *ev, bool click)
 				}
 				// erase
 			} else if (ev->buttons() & Qt::RightButton) {
-				if (!seedMode) {
+				if (inputMode != InputMode::Seed) {
 					if (labels(y, x) == curLabel) {
 						uncommitedLabels(y, x) = 1;
 						labels(y, x) = 0;
@@ -404,7 +408,8 @@ void BandView::cursorAction(QGraphicsSceneMouseEvent *ev, bool click)
 				}
 			}
 		}
-		if (!seedMode) // we must have updated something in the labeling
+		if (inputMode != InputMode::Seed)
+			// we must have updated something in the labeling
 			labelTimer.start();
 	}
 
@@ -478,7 +483,7 @@ void BandView::keyPressEvent(QKeyEvent *event)
 {
 	switch (event->key()) {
 	case Qt::Key_C:
-		if (seedMode)
+		if (inputMode == InputMode::Seed)
 			clearSeeds();
 		else
 			emit clearRequested();
@@ -495,7 +500,13 @@ void BandView::setCurrentLabel(int label)
 
 void BandView::toggleSeedMode(bool enabled)
 {
-	seedMode = enabled;
+	if (enabled) {
+		lastMode = inputMode;
+		inputMode = InputMode::Seed;
+	} else {
+		inputMode = lastMode;
+	}
+	emit modeChanged(inputMode);
 	refresh();
 }
 

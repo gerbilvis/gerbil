@@ -20,7 +20,7 @@
  */
 ScaledView::ScaledView()
     : width(50), height(50), // values don't matter much, but should be over 0
-      zoom(1), sm(Zoom)
+      zoom(1), inputMode(InputMode::Zoom)
 {
 	// by default small offsets; can be altered from outside
 	offLeft = offTop = offRight = offBottom = 2;
@@ -116,7 +116,8 @@ void ScaledView::mouseMoveEvent(QGraphicsSceneMouseEvent *event)
 	QGraphicsScene::mouseMoveEvent(event);
 	cursorAction(event);
 
-	if (sm != Zoom) return;
+	if (inputMode != InputMode::Zoom)
+		return;
 
 	if (event->buttons() == Qt::LeftButton) {
 		//Obtain current cursor and last cursor position
@@ -181,7 +182,8 @@ void ScaledView::wheelEvent(QGraphicsSceneWheelEvent *event)
 {
 	QGraphicsScene::wheelEvent(event);
 
-	if (sm != Zoom) return;
+	if (inputMode != InputMode::Zoom)
+		return;
 
 	qreal newzoom;
 
