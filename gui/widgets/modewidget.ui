@@ -7,7 +7,7 @@
     <x>0</x>
     <y>0</y>
     <width>372</width>
-    <height>47</height>
+    <height>52</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -23,6 +23,9 @@
          <horstretch>0</horstretch>
          <verstretch>0</verstretch>
         </sizepolicy>
+       </property>
+       <property name="toolTip">
+        <string>zoom/pan</string>
        </property>
        <property name="text">
         <string>zoom/pan</string>
@@ -62,19 +65,22 @@
       </spacer>
      </item>
      <item>
-      <widget class="QPushButton" name="pickButton">
+      <widget class="QPushButton" name="labelButton">
        <property name="sizePolicy">
         <sizepolicy hsizetype="Maximum" vsizetype="Preferred">
          <horstretch>0</horstretch>
          <verstretch>0</verstretch>
         </sizepolicy>
        </property>
+       <property name="toolTip">
+        <string>edit label</string>
+       </property>
        <property name="text">
-        <string>pick</string>
+        <string>label</string>
        </property>
        <property name="icon">
         <iconset resource="../gerbil.qrc">
-         <normaloff>:/basic/picker</normaloff>:/basic/picker</iconset>
+         <normaloff>:/basic/pencil</normaloff>:/basic/pencil</iconset>
        </property>
        <property name="checkable">
         <bool>true</bool>
@@ -104,19 +110,22 @@
       </spacer>
      </item>
      <item>
-      <widget class="QPushButton" name="labelButton">
+      <widget class="QPushButton" name="pickButton">
        <property name="sizePolicy">
         <sizepolicy hsizetype="Maximum" vsizetype="Preferred">
          <horstretch>0</horstretch>
          <verstretch>0</verstretch>
         </sizepolicy>
        </property>
+       <property name="toolTip">
+        <string>pick labels</string>
+       </property>
        <property name="text">
-        <string>label</string>
+        <string>pick</string>
        </property>
        <property name="icon">
         <iconset resource="../gerbil.qrc">
-         <normaloff>:/basic/pencil</normaloff>:/basic/pencil</iconset>
+         <normaloff>:/basic/picker</normaloff>:/basic/picker</iconset>
        </property>
        <property name="checkable">
         <bool>true</bool>
