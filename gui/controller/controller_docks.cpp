@@ -269,7 +269,7 @@ void Controller::setupDocks()
 			labelDock, SLOT(processRoiRectChanged(cv::Rect)));
 
 	connect(bandDock->bandView(), SIGNAL(labelSelected(int)),
-			labelDock, SLOT(selectLabel(int)));
+			labelDock, SLOT(toggleLabelSelection(int)));
 }
 
 void Controller::requestGraphseg(representation::t repr,

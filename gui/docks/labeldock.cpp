@@ -58,6 +58,8 @@ void LabelDock::init()
 	connect(ui->delBtn, SIGNAL(clicked()),
 	        this, SLOT(mergeOrDeleteSelected()));
 	connect(ui->consolidateBtn, SIGNAL(clicked()),
+	        this, SLOT(deselectSelectedLabels()));
+	connect(ui->consolidateBtn, SIGNAL(clicked()),
 	        this, SIGNAL(consolidateLabelsRequested()));
 
 	connect(ui->sizeSlider, SIGNAL(valueChanged(int)),
@@ -223,26 +225,39 @@ void LabelDock::mergeOrDeleteSelected()
 	}
 
 	// Tell the LabelingModel:
-	if (sender() == ui->delBtn)
+	if (sender() == ui->delBtn) {
 		emit deleteLabelsRequested(selectedLabels);
-	else
+		toggleLabelsSelection(selectedLabels, 0, false);
+	} else
 	{
 		emit mergeLabelsRequested(selectedLabels);
-		deselectMerged(selectedLabels);
+		toggleLabelsSelection(selectedLabels, 1, true);
 	}
 
 	emit labelMaskIconsRequested();
 }
 
-void LabelDock::deselectMerged(QVector<int> &list)
+
+void LabelDock::toggleLabelsSelection(QVector<int> &list, int start, bool toSort)
 {
-	//first element remains selected
-	qSort(list);
+	if(toSort) qSort(list);
 
-	for(int i = 1; i<list.size(); i++) {
-		selectLabel(list[i]);
+	innerAction = true;
+	for(int i = start; i<list.size(); i++) {
+		toggleLabelSelection(list[i]);
 	}
+	innerAction = false;
+}
 
+void LabelDock::deselectSelectedLabels()
+{
+	innerAction = true;
+	for(auto &idx : ui->labelView->selectionModel()->selectedIndexes())
+	{
+		int id = idx.data(LabelIndexRole).value<int>();
+		toggleLabelSelection(id);
+	}
+	innerAction = false;
 }
 
 void LabelDock::processMaskIconsComputed(const QVector<QImage> &icons)
@@ -325,12 +340,12 @@ void LabelDock::processLabelItemSelectionChanged(QModelIndex midx)
 	emit toggleLabelHighlightRequested(label);
 }
 
-void LabelDock::selectLabel(int label)
+void LabelDock::toggleLabelSelection(int label)
 {
 	hovering = true;
 	hoverLabel = label;
 
-	this->blockSignals(true); //to prevent feedback
+	if(!innerAction) this->blockSignals(true); //to prevent feedback
 
 	QModelIndex index = ui->labelView->model()->index(label, 0);
 	if (index.isValid() ) {
@@ -341,7 +356,7 @@ void LabelDock::selectLabel(int label)
 		}
 	}
 
-	this->blockSignals(false);
+	if(!innerAction) this->blockSignals(false);
 }
 
 void LabelDock::processApplyROIToggled(bool checked)

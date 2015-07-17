@@ -51,7 +51,7 @@ public slots:
 
 	void processMaskIconsComputed(const QVector<QImage>& icons);
 
-	void selectLabel(int label);
+	void toggleLabelSelection(int label);
 
 signals:
 
@@ -112,13 +112,15 @@ private slots:
 	/** Adjust view contents size. */
 	void resizeSceneContents();
 
+	void deselectSelectedLabels();
+
 private:
 
 	enum { LabelIndexRole = Qt::UserRole };
 
 	void init();
 	void updateLabelIcons();
-	void deselectMerged(QVector<int> &list);
+	void toggleLabelsSelection(QVector<int> &list, int start, bool toSort);
 
 	// UI with autohide widgets.
 	// The view and scene for this widget.
@@ -150,6 +152,8 @@ private:
 
 	// The current ROI.
 	cv::Rect roi;
+
+	bool innerAction;
 };
 
 class LabelView : public QListView
