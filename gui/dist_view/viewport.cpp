@@ -156,7 +156,9 @@ void Viewport::drawBackground(QPainter *painter, const QRectF &rect)
 	if (nwidth != width || nheight != height) {
 		width = nwidth;
 		height = nheight;
+		zoom = 1.f;
 
+		updateYAxis();
 		// update transformation (needed already for legend, axes drawing)
 		updateModelview();
 

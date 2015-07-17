@@ -174,6 +174,8 @@ void Viewport::updateYAxis()
 
 		maxvalue = plotmaxval - (1.f-ratio) * (plotmaxval - plotminval);
 		if (maxvalue > plotmaxval) maxvalue = plotmaxval;
+
+		yAxisChanged = false;
 	} else {
 		maxvalue = plotmaxval;
 	}
