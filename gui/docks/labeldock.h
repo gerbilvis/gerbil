@@ -5,12 +5,14 @@
 #include <opencv2/core/core.hpp>
 
 #include <QModelIndex>
+#include <QListView>
 
 #include <model/representation.h>
 #include <shared_data.h>
 
 namespace Ui {
 class LabelDock;
+class LabelView;
 }
 
 class QStandardItemModel;
@@ -150,6 +152,32 @@ private:
 	cv::Rect roi;
 };
 
+class LabelView : public QListView
+{
+	Q_OBJECT
+
+public:
+	explicit LabelView(QWidget *parent = 0) :
+	    QListView(parent)
+	{
+		initConnections();
+	}
+	~LabelView() {}
+
+private:
+	void initConnections();
+
+private slots:
+	void processEnterViewport();
+	void processEnterItem(QModelIndex idx);
+
+protected:
+	void mousePressEvent(QMouseEvent * event);
+
+private:
+	bool cursorOnViewport;
+
+};
 
 
 #endif // LABELDOCK_H

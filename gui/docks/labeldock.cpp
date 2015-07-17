@@ -8,6 +8,7 @@
 #include <QGraphicsView>
 #include <QGraphicsWidget>
 #include <QGraphicsLayout>
+#include <QDebug>
 
 #include "../widgets/autohideview.h"
 #include "../widgets/autohidewidget.h"
@@ -383,4 +384,35 @@ void LabelDock::resizeSceneContents()
 	const int off = 2 * AutohideWidget::OutOffset - 1;
 	geom.adjust(0, 0, +1, -off);
 	mainUiWidget->setGeometry(geom);
+}
+
+void LabelView::initConnections()
+{
+	connect(this, SIGNAL(viewportEntered()),
+	        this, SLOT(processEnterViewport()));
+
+	connect(this, SIGNAL(entered(QModelIndex)),
+	        this, SLOT(processEnterItem(QModelIndex)));
+}
+
+void LabelView::processEnterViewport()
+{
+	cursorOnViewport = true;
+}
+
+void LabelView::mousePressEvent(QMouseEvent * event)
+{
+	QListView::mousePressEvent(event);
+
+	if (cursorOnViewport) {
+		for(auto &index : selectionModel()->selectedIndexes())
+		{
+			selectionModel()->select(index, QItemSelectionModel::Deselect);
+		}
+	}
+}
+
+void LabelView::processEnterItem(QModelIndex idx)
+{
+	cursorOnViewport = false;
 }

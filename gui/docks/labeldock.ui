@@ -507,7 +507,7 @@
     </widget>
    </item>
    <item row="1" column="0">
-    <widget class="QListView" name="labelView">
+    <widget class="LabelView" name="labelView">
      <property name="palette">
       <palette>
        <active>
@@ -1196,6 +1196,13 @@
    </layout>
   </widget>
  </widget>
+ <customwidgets>
+  <customwidget>
+   <class>LabelView</class>
+   <extends>QListView</extends>
+   <header>labeldock.h</header>
+  </customwidget>
+ </customwidgets>
  <resources/>
  <connections/>
 </ui>
