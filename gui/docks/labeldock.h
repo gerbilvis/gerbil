@@ -97,7 +97,7 @@ private slots:
 
 	void processSelectionChanged(const QItemSelection & selected,
 	                             const QItemSelection & deselected);
-	void processLabelItemEntered(QModelIndex midx);
+	void processLabelItemSelectionChanged(QModelIndex midx);
 
 	void processApplyROIToggled(bool checked);
 	

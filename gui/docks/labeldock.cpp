@@ -307,15 +307,15 @@ void LabelDock::processSelectionChanged(const QItemSelection &selected,
 	ui->delBtn->setEnabled(nSelected > 0);
 
 	for (auto &item : selected.indexes()) {
-		processLabelItemEntered(item);
+		processLabelItemSelectionChanged(item);
 	}
 
 	for (auto &item : deselected.indexes()) {
-		processLabelItemEntered(item);
+		processLabelItemSelectionChanged(item);
 	}
 }
 
-void LabelDock::processLabelItemEntered(QModelIndex midx)
+void LabelDock::processLabelItemSelectionChanged(QModelIndex midx)
 {
 	short label = midx.data(LabelIndexRole).value<int>();
 	//GGDBGM("hovering over " << label << endl);
