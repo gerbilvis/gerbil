@@ -52,9 +52,6 @@ void LabelDock::init()
 	        this,
 	        SLOT(processSelectionChanged(QItemSelection,QItemSelection)));
 
-	connect(ui->labelView, SIGNAL(clicked(QModelIndex)),
-	        this, SLOT(processLabelItemEntered(QModelIndex)));
-
 	connect(ui->mergeBtn, SIGNAL(clicked()),
 	        this, SLOT(mergeOrDeleteSelected()));
 	connect(ui->delBtn, SIGNAL(clicked()),
@@ -299,8 +296,8 @@ void LabelDock::showEvent(QShowEvent *event)
 	resizeSceneContents();
 }
 
-void LabelDock::processSelectionChanged(const QItemSelection &,
-                                        const QItemSelection &)
+void LabelDock::processSelectionChanged(const QItemSelection &selected,
+                                        const QItemSelection &deselected)
 {
 	int nSelected = ui->labelView->selectionModel()->selectedIndexes().size();
 
@@ -308,6 +305,14 @@ void LabelDock::processSelectionChanged(const QItemSelection &,
 	ui->mergeBtn->setEnabled(nSelected > 1);
 	// any label selected
 	ui->delBtn->setEnabled(nSelected > 0);
+
+	for (auto &item : selected.indexes()) {
+		processLabelItemEntered(item);
+	}
+
+	for (auto &item : deselected.indexes()) {
+		processLabelItemEntered(item);
+	}
 }
 
 void LabelDock::processLabelItemEntered(QModelIndex midx)
@@ -324,6 +329,8 @@ void LabelDock::selectLabel(int label)
 	hovering = true;
 	hoverLabel = label;
 
+	this->blockSignals(true); //to prevent feedback
+
 	QModelIndex index = ui->labelView->model()->index(label, 0);
 	if (index.isValid() ) {
 		if (ui->labelView->selectionModel()->isSelected(index)) {
@@ -332,6 +339,8 @@ void LabelDock::selectLabel(int label)
 			ui->labelView->selectionModel()->select(index, QItemSelectionModel::Select);
 		}
 	}
+
+	this->blockSignals(false);
 }
 
 void LabelDock::processApplyROIToggled(bool checked)
