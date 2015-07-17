@@ -23,6 +23,7 @@
 #include <QGraphicsItem>
 #include <QPainter>
 #include <QSignalMapper>
+#include <QDebug>
 #include <boost/format.hpp>
 
 Viewport::Viewport(representation::t type, QGLWidget *target)
@@ -466,7 +467,7 @@ void Viewport::adjustBoundaries()
 	QPointF tb = modelview.map(topbound);
 
 	qreal lbpos = yaxisWidth + 25;
-	qreal rbpos = width - 10;
+	qreal rbpos = width - 15;
 	qreal bbpos = height - 35;
 	qreal tbpos = 20;
 
@@ -478,18 +479,7 @@ void Viewport::adjustBoundaries()
 	qreal xp = 0;
 	qreal yp = 0;
 
-	if (lb.x() > lbpos && rb.x() < rbpos) {
-		QPointF pixcenter = empty;
-		SharedDataLock ctxlock(ctx->mutex);
-		pixcenter.setX(((*ctx)->dimensionality - 1)/2.f);
-
-		QPointF center(width/2.f + lbpos/2.f, 0);
-		center = modelviewI.map(center);
-
-		xp = center.x() - pixcenter.x();
-		//qDebug() << "ALIGNING TO CENTER!!!!!!";
-
-	} else if (lb.x() > lbpos) {
+	if (lb.x() > lbpos) {
 		//qDebug() << "LEFT BOUND IS VISIBLE!";
 		QPointF topleft(lbpos, 0.f);
 		topleft = modelviewI.map(topleft);
@@ -523,8 +513,6 @@ void Viewport::adjustBoundaries()
 
 	modelview.translate(xp, yp);
 	modelviewI = modelview.inverted();
-
-	updateYAxis();
 }
 
 

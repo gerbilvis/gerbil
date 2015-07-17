@@ -73,7 +73,7 @@ void Viewport::mouseMoveEvent(QGraphicsSceneMouseEvent *event)
 		// add .5 to x for rounding
 		needTextureUpdate = updateXY(pos.x() + 0.5f, pos.y());
 
-	} else if (event->buttons() & Qt::RightButton) {
+	} else if (event->buttons() & Qt::RightButton && zoom  > 1) {
 		/* panning movement */
 
 		QPointF lastonscene = modelviewI.map(event->lastScenePos());
@@ -157,16 +157,19 @@ void Viewport::wheelEvent(QGraphicsSceneWheelEvent *event)
 		newzoom = 0.8;
 	}
 
-	if (zoom*newzoom < 1) {
-		if (zoom == 1)
-			return;
+	if (zoom*newzoom <= 1)
+	{
 		zoom = 1;
+		yAxisChanged = false;
+		updateYAxis();
+
 		updateModelview();
 	} else {
 		QPointF scene = event->scenePos();
 		QPointF local = modelviewI.map(scene);
 
 		zoom *= newzoom;
+
 		modelview.scale(newzoom,newzoom);
 		modelviewI = modelview.inverted();
 
@@ -175,10 +178,10 @@ void Viewport::wheelEvent(QGraphicsSceneWheelEvent *event)
 		modelview.translate(diff.x(), diff.y());
 		modelviewI = modelview.inverted();
 
+		adjustBoundaries();
+
 		yAxisChanged = true;
 		updateYAxis();
-
-		adjustBoundaries();
 	}
 
 	updateBuffers();
