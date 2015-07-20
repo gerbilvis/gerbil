@@ -242,22 +242,18 @@ void LabelDock::toggleLabelsSelection(QVector<int> &list, int start, bool toSort
 {
 	if(toSort) qSort(list);
 
-	innerAction = true;
 	for(int i = start; i<list.size(); i++) {
-		toggleLabelSelection(list[i]);
+		toggleLabelSelection(list[i], true);
 	}
-	innerAction = false;
 }
 
 void LabelDock::deselectSelectedLabels()
 {
-	innerAction = true;
 	for(auto &idx : ui->labelView->selectionModel()->selectedIndexes())
 	{
 		int id = idx.data(LabelIndexRole).value<int>();
-		toggleLabelSelection(id);
+		toggleLabelSelection(id, true);
 	}
-	innerAction = false;
 }
 
 void LabelDock::processMaskIconsComputed(const QVector<QImage> &icons)
@@ -340,12 +336,12 @@ void LabelDock::processLabelItemSelectionChanged(QModelIndex midx)
 	emit toggleLabelHighlightRequested(label);
 }
 
-void LabelDock::toggleLabelSelection(int label)
+void LabelDock::toggleLabelSelection(int label, bool innerSource)
 {
 	hovering = true;
 	hoverLabel = label;
 
-	if(!innerAction) this->blockSignals(true); //to prevent feedback
+	if(!innerSource) this->blockSignals(true); //to prevent feedback
 
 	QModelIndex index = ui->labelView->model()->index(label, 0);
 	if (index.isValid() ) {
@@ -356,7 +352,7 @@ void LabelDock::toggleLabelSelection(int label)
 		}
 	}
 
-	if(!innerAction) this->blockSignals(false);
+	if(!innerSource) this->blockSignals(false);
 }
 
 void LabelDock::processApplyROIToggled(bool checked)

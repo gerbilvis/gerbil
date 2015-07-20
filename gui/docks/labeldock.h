@@ -51,7 +51,7 @@ public slots:
 
 	void processMaskIconsComputed(const QVector<QImage>& icons);
 
-	void toggleLabelSelection(int label);
+	void toggleLabelSelection(int label, bool innerSource = false);
 
 signals:
 
@@ -152,8 +152,6 @@ private:
 
 	// The current ROI.
 	cv::Rect roi;
-
-	bool innerAction;
 };
 
 class LabelView : public QListView
