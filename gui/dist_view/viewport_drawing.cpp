@@ -583,10 +583,10 @@ void Viewport::drawLegend(QPainter *painter, int sel)
 
 	/// y-axis
 	for (size_t i = 0; i < yaxis.size(); ++i) {
-		QPointF b(0.f, displayHeight/yaxis.size() * i + 20.f);
+		QPointF b(0.f, (displayHeight)/(yaxis.size()-1) * i + boundaries.vp);
 
 		QPointF t = b;
-		t += QPointF(0.f, displayHeight/yaxis.size());
+		t += QPointF(0.f, 10.f);
 		t.setX(0);
 		b.setX(yaxisWidth+15);
 		QRectF rect(t, b);
