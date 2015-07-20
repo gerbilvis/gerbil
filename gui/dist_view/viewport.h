@@ -248,6 +248,13 @@ private:
 
 	// single label to be highlighted
 	int highlightLabel;
+
+	struct {
+		int hp = 20; //horizontal padding
+		int vp = 12; //vertical padding
+		int vtp = 22; // lower padding for text (legend)
+		int htp; // left padding for text (legend)
+	} boundaries;
 };
 
 #endif // VIEWPORT_H

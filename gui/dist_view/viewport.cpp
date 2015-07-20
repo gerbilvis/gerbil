@@ -470,8 +470,8 @@ void Viewport::adjustBoundaries()
 
 	qreal lbpos = yaxisWidth + 25;
 	qreal rbpos = width - 15;
-	qreal bbpos = height - 34;
-	qreal tbpos = 12;
+	qreal bbpos = height - boundaries.vp - boundaries.vtp;
+	qreal tbpos = boundaries.vp;
 
 	//    qDebug() << "LEFT BOUND " << lb
 	//             << "RIGHT BOUND " << rb

@@ -168,7 +168,7 @@ void Viewport::updateYAxis()
 	float maxvalue;
 	float range = 1/zoom;
 	if (yAxisChanged) {
-		QPointF bottom(0.f, 12.f);
+		QPointF bottom(0.f, boundaries.vp);
 		bottom = modelviewI.map(bottom);
 
 		qreal ratio = bottom.y()/binscount;
@@ -229,20 +229,19 @@ void Viewport::updateModelview()
 	/* apply translation in window coordinates */
 	int vshift = height*shift;
 
-	int hp = 20, vp = 12; // horizontal and vertical padding
-	int vtp = 22; // lower padding for text (legend)
-	int htp = yaxisWidth + 14; // left padding for text (legend)
-	displayHeight = height - 2*vp - vtp;
+	boundaries.htp = yaxisWidth + 14;
+	displayHeight = height - 2*boundaries.vp - boundaries.vtp;
 
 	// if gradient, we discard one unit space intentionally for centering
 	size_t d = (*ctx)->dimensionality
 	        - ((*ctx)->type == representation::GRAD ? 0 : 1);
-	qreal w = (width  - 2*hp - htp)/(qreal)(d); // width of one unit
+	qreal w = (width  - 2*boundaries.hp - boundaries.htp)/(qreal)(d); // width of one unit
 	qreal h = displayHeight/(qreal)((*ctx)->nbins); // height of one unit
 	int t = ((*ctx)->type == representation::GRAD ? w/2 : 0); // moving half a unit for centering
 
 	modelview.reset();
-	modelview.translate(hp + htp + t, vp + vshift);
+	modelview.translate(boundaries.hp + boundaries.htp + t,
+	                    boundaries.vp + vshift);
 	modelview.scale(w, -1*h); // -1 low values at bottom
 	modelview.translate(0, -((*ctx)->nbins)); // shift for low values at bottom
 
