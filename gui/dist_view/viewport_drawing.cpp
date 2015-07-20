@@ -162,14 +162,15 @@ void Viewport::updateYAxis()
 	SharedDataLock ctxlock(ctx->mutex);
 	float plotmaxval = (*ctx)->maxval;
 	float plotminval = (*ctx)->minval;
-	float binscount = (qreal)((*ctx)->nbins - 1);
+	float binscount = (qreal)((*ctx)->nbins);
 	ctxlock.unlock();
 
 	float maxvalue;
 	float range = 1/zoom;
 	if (yAxisChanged) {
-		QPointF bottom(0.f, 0.f);
+		QPointF bottom(0.f, 12.f);
 		bottom = modelviewI.map(bottom);
+
 		qreal ratio = bottom.y()/binscount;
 
 		maxvalue = plotmaxval - (1.f-ratio) * (plotmaxval - plotminval);

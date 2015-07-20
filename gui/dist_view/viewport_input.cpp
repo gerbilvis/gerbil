@@ -87,11 +87,11 @@ void Viewport::mouseMoveEvent(QGraphicsSceneMouseEvent *event)
 		modelview.translate(xp, yp);
 		modelviewI = modelview.inverted();
 
-		yAxisChanged = true;
-		updateYAxis();
-
 		adjustBoundaries();
 		updateBuffers();
+
+		yAxisChanged = true;
+		updateYAxis();
 	}
 
 	if (needTextureUpdate) {
