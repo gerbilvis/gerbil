@@ -221,13 +221,9 @@ void Viewport::updateModelview()
 	SharedDataLock ctxlock(ctx->mutex);
 
 	QPointF zero;
-	if (nBinsChanged)
-	{
+	if (nBinsChanged) {
 		zero = modelview.map(QPointF(0.f, 0.f));
 	}
-
-	/* apply translation in window coordinates */
-	int vshift = height*shift;
 
 	boundaries.htp = yaxisWidth + 14;
 	displayHeight = height - 2*boundaries.vp - boundaries.vtp;
@@ -241,15 +237,14 @@ void Viewport::updateModelview()
 
 	modelview.reset();
 	modelview.translate(boundaries.hp + boundaries.htp + t,
-	                    boundaries.vp + vshift);
+	                    boundaries.vp);
 	modelview.scale(w, -1*h); // -1 low values at bottom
 	modelview.translate(0, -((*ctx)->nbins)); // shift for low values at bottom
 
 	// set inverse
 	modelviewI = modelview.inverted();
 
-	if (nBinsChanged)
-	{
+	if (nBinsChanged) {
 		QPointF zerolocal = modelviewI.map(zero);
 
 		modelview.translate(zerolocal.x(),zerolocal.y());

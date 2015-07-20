@@ -35,7 +35,7 @@ Viewport::Viewport(representation::t type, QGLWidget *target)
 	  showLabeled(true), showUnlabeled(true),
 	  overlayMode(false), highlightLabel(-1),
 	  illuminant_show(true),
-	  zoom(1.), shift(0), lasty(-1), holdSelection(false), activeLimiter(0),
+	  zoom(1.), lasty(-1), holdSelection(false), activeLimiter(0),
 	  drawLog(true), drawMeans(true), drawRGB(false), drawHQ(true),
 	  bufferFormat(RGBA16F),
 	  drawingState(HIGH_QUALITY), yaxisWidth(0), vb(QGLBuffer::VertexBuffer)
