@@ -42,7 +42,7 @@ public:
 
 public slots:
 
-	void highlightSingleLabel(int index);
+	void toggleLabelHighlight(int index);
 
 	void toggleRGB(bool enabled) { drawRGB = enabled; updateBuffers(); }
 
@@ -239,8 +239,8 @@ private:
 	std::vector<QString> yaxis;
 	int yaxisWidth;
 
-	// single label to be highlighted
-	int highlightLabel;
+	// vector containing highlighted labels
+	QVector<int> highlightLabels;
 };
 
 #endif // VIEWPORT_H

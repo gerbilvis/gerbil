@@ -5,12 +5,12 @@
 #include <gerbil_gui_debug.h>
 
 DistViewGUI::DistViewGUI(representation::t type)
-	: type(type)
+    : type(type)
 {	
 	// setup frame and its UI
 	frame = new QWidget();
 	frame->setSizePolicy(QSizePolicy::Preferred, // hor
-						 QSizePolicy::Expanding); // ver
+	                     QSizePolicy::Expanding); // ver
 	ui = new Ui::DistViewGUI();
 	ui->setupUi(frame);
 
@@ -48,25 +48,25 @@ void DistViewGUI::initVC(representation::t type)
 
 	// let user see how many bins he will end up with
 	connect(uivc->binSlider, SIGNAL(sliderMoved(int)),
-			this, SLOT(setBinLabel(int)));
+	        this, SLOT(setBinLabel(int)));
 	connect(uivc->binSlider, SIGNAL(valueChanged(int)),
-			this, SLOT(setBinCount(int)));
+	        this, SLOT(setBinCount(int)));
 	connect(uivc->alphaSlider, SIGNAL(valueChanged(int)),
-			this, SLOT(setAlpha(int)));
+	        this, SLOT(setAlpha(int)));
 
 	// low quality drawing while user works the slider
 	connect(uivc->alphaSlider, SIGNAL(sliderPressed()),
-			vp, SLOT(startNoHQ()));
+	        vp, SLOT(startNoHQ()));
 	connect(uivc->alphaSlider, SIGNAL(sliderReleased()),
-			vp, SLOT(endNoHQ()));
+	        vp, SLOT(endNoHQ()));
 
 	connect(uivc->limiterButton, SIGNAL(toggled(bool)),
-			vp, SLOT(setLimitersMode(bool)));
+	        vp, SLOT(setLimitersMode(bool)));
 	connect(uivc->limiterMenuButton, SIGNAL(clicked()),
-			this, SLOT(showLimiterMenu()));
+	        this, SLOT(showLimiterMenu()));
 
 	connect(uivc->rgbButton, SIGNAL(toggled(bool)),
-			vp, SLOT(toggleRGB(bool)));
+	        vp, SLOT(toggleRGB(bool)));
 
 	// default UI stuff
 	if (type != representation::IMG)
@@ -80,7 +80,7 @@ void DistViewGUI::initTop()
 {
 	// connect toggling trigger
 	connect(ui->topBar, SIGNAL(toggleFold()),
-			this, SLOT(toggleFold()));
+	        this, SLOT(toggleFold()));
 
 	// setup title in topBar
 	setTitle(type);
@@ -90,51 +90,51 @@ void DistViewGUI::initSignals(QObject *dvctrl)
 {
 	// signals from DistviewController
 	connect(dvctrl, SIGNAL(pixelOverlayInvalid()),
-			 vp, SLOT(removePixelOverlay()));
+	        vp, SLOT(removePixelOverlay()));
 	connect(dvctrl, SIGNAL(toggleLabeled(bool)),
-			vp, SLOT(toggleLabeled(bool)));
+	        vp, SLOT(toggleLabeled(bool)));
 	connect(dvctrl, SIGNAL(toggleUnlabeled(bool)),
-			vp, SLOT(toggleUnlabeled(bool)));
+	        vp, SLOT(toggleUnlabeled(bool)));
 
-	connect(dvctrl, SIGNAL(singleLabelSelected(int)),
-			vp, SLOT(highlightSingleLabel(int)));
+	connect(dvctrl, SIGNAL(labelSelected(int)),
+	        vp, SLOT(toggleLabelHighlight(int)));
 
 	// signals to controller
 	connect(this, SIGNAL(requestBinCount(representation::t, int)),
-			dvctrl, SLOT(changeBinCount(representation::t, int)));
+	        dvctrl, SLOT(changeBinCount(representation::t, int)));
 
 
 	//   viewport action
 	connect(vp, SIGNAL(activated(representation::t)),
-			dvctrl, SLOT(setActiveViewer(representation::t)));
+	        dvctrl, SLOT(setActiveViewer(representation::t)));
 	connect(vp, SIGNAL(activated(representation::t)),
-			this, SIGNAL(activated()));
+	        this, SIGNAL(activated()));
 	connect(vp, SIGNAL(bandSelected(int)),
-			dvctrl, SLOT(propagateBandSelection(int)));
+	        dvctrl, SLOT(propagateBandSelection(int)));
 	connect(vp, SIGNAL(requestOverlay(int,int)),
-			dvctrl, SLOT(drawOverlay(int,int)));
+	        dvctrl, SLOT(drawOverlay(int,int)));
 	connect(vp, SIGNAL(requestOverlay(std::vector<std::pair<int,int> >,int)),
-			dvctrl, SLOT(drawOverlay(std::vector<std::pair<int,int> >,int)));
+	        dvctrl, SLOT(drawOverlay(std::vector<std::pair<int,int> >,int)));
 
 	connect(vp, SIGNAL(addSelectionRequested()),
-			dvctrl, SLOT(addHighlightToLabel()));
+	        dvctrl, SLOT(addHighlightToLabel()));
 	connect(vp, SIGNAL(remSelectionRequested()),
-			dvctrl, SLOT(remHighlightFromLabel()));
+	        dvctrl, SLOT(remHighlightFromLabel()));
 
 	//    subscriptions
 	connect(this, SIGNAL(subscribeRepresentation(QObject*,representation::t)),
-			dvctrl, SIGNAL(subscribeRepresentation(QObject*,representation::t)));
+	        dvctrl, SIGNAL(subscribeRepresentation(QObject*,representation::t)));
 	connect(this, SIGNAL(unsubscribeRepresentation(QObject*,representation::t)),
-			dvctrl, SIGNAL(unsubscribeRepresentation(QObject*,representation::t)));
+	        dvctrl, SIGNAL(unsubscribeRepresentation(QObject*,representation::t)));
 
 
 	// illumination correction
 	connect(this, SIGNAL(newIlluminantCurve(QVector<multi_img::Value>)),
-			vp, SLOT(changeIlluminantCurve(QVector<multi_img::Value>)));
+	        vp, SLOT(changeIlluminantCurve(QVector<multi_img::Value>)));
 	connect(this, SIGNAL(toggleIlluminationShown(bool)),
-			vp, SLOT(setIlluminationCurveShown(bool)));
+	        vp, SLOT(setIlluminationCurveShown(bool)));
 	connect(this, SIGNAL(newIlluminantApplied(QVector<multi_img::Value>)),
-			vp, SLOT(setAppliedIlluminant(QVector<multi_img::Value>)));
+	        vp, SLOT(setAppliedIlluminant(QVector<multi_img::Value>)));
 }
 
 void DistViewGUI::initSubscriptions()
@@ -211,11 +211,11 @@ void DistViewGUI::setTitle(representation::t type)
 }
 
 void DistViewGUI::setTitle(representation::t type,
-						   multi_img::Value min, multi_img::Value max)
+                           multi_img::Value min, multi_img::Value max)
 {
 	QString title = QString("<b>%1</b>").arg(representation::prettyString(type));
 	title = title.append(" [%1..%2]")
-			.arg(min, 0, 'f', 2).arg(max, 0, 'f', 2);
+	        .arg(min, 0, 'f', 2).arg(max, 0, 'f', 2);
 	ui->topBar->setTitle(title);
 }
 
@@ -223,7 +223,7 @@ void DistViewGUI::setAlpha(int alpha)
 {
 	float realalpha = (float)alpha/100.f;
 	uivc->alphaLabel->setText(QString::fromUtf8("α: %1")
-							  .arg(realalpha, 0, 'f', 2));
+	                          .arg(realalpha, 0, 'f', 2));
 
 	vp->setAlpha(realalpha);
 }
@@ -260,7 +260,7 @@ void DistViewGUI::createLimiterMenu()
 	limiterMenu.addSeparator();
 	for (int i = 1; i < labelColors.size(); ++i) {
 		tmp = limiterMenu.addAction(colorIcon(labelColors.at(i)),
-													  "Limit by label");
+		                            "Limit by label");
 		tmp->setData(i);
 	}
 }
@@ -290,13 +290,6 @@ void DistViewGUI::insertPixelOverlay(const QPolygonF &points)
 	vp->insertPixelOverlay(points);
 }
 
-void DistViewGUI::toggleSingleLabel(bool toggle)
-{
-	if (!toggle) {
-		// disable single label highlight
-		vp->highlightSingleLabel(-1);
-	} // nothing to do else
-}
 
 /** Return a 32x32px icon filled with color. */
 QIcon DistViewGUI::colorIcon(const QColor &color)

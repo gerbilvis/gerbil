@@ -32,10 +32,10 @@ struct ReprSubscriptions {
 };
 
 DistViewController::DistViewController(
-		Controller *ctrl,
-		BackgroundTaskQueue *taskQueue,
-		ImageModel *im)
- : QObject(ctrl), ctrl(ctrl), im(im), distviewSubs(new ReprSubscriptions)
+        Controller *ctrl,
+        BackgroundTaskQueue *taskQueue,
+        ImageModel *im)
+    : QObject(ctrl), ctrl(ctrl), im(im), distviewSubs(new ReprSubscriptions)
 {
 	/* Create all viewers. Only one viewer per representation type is supported.
 	 */
@@ -70,14 +70,14 @@ void DistViewController::init()
 		// make sure activeView is a valid enum value and we actually have a
 		// viewer for this representation.
 		if (!representation::valid(activeView) ||
-				!payloadMap.contains(activeView)) {
+		    !payloadMap.contains(activeView)) {
 			activeView = representation::IMG;
 		}
 		payloadMap[activeView]->gui.setActive();
 		foreach(representation::t repr, representation::all()) {
 			if (payloadMap[repr])  {
 				QString key = QString("viewports/") +
-						representation::str(repr) + "folded";
+				              representation::str(repr) + "folded";
 				// read folded setting, default unfolded
 				bool folded = settings.value(key, false).value<bool>();
 				viewFolded[repr] = folded;
@@ -102,14 +102,14 @@ void DistViewController::init()
 	}
 
 	connect(QApplication::instance(), SIGNAL(lastWindowClosed()),
-			 this, SLOT(processLastWindowClosed()));
+	        this, SLOT(processLastWindowClosed()));
 
 	connect(ctrl->imageModel(), SIGNAL(roiRectChanged(cv::Rect)),
-			this, SLOT(processROIChage(cv::Rect)));
+	        this, SLOT(processROIChage(cv::Rect)));
 	connect(ctrl->imageModel(),
-			SIGNAL(imageUpdate(representation::t,SharedMultiImgPtr,bool)),
-			this,
-			SLOT(processImageUpdate(representation::t,SharedMultiImgPtr,bool)));
+	        SIGNAL(imageUpdate(representation::t,SharedMultiImgPtr,bool)),
+	        this,
+	        SLOT(processImageUpdate(representation::t,SharedMultiImgPtr,bool)));
 
 
 	foreach (Payload *p, payloadMap) {
@@ -121,9 +121,9 @@ void DistViewController::init()
 		DistViewModel *m = &p->model;
 
 		connect(m, SIGNAL(newBinning(representation::t)),
-				this, SLOT(processNewBinning(representation::t)));
+		        this, SLOT(processNewBinning(representation::t)));
 		connect(m, SIGNAL(newBinningRange(representation::t)),
-				this, SLOT(processNewBinningRange(representation::t)));
+		        this, SLOT(processNewBinningRange(representation::t)));
 
 		DistViewGUI *g = &p->gui;
 		// let GUI connect its member's signals to us
@@ -131,52 +131,50 @@ void DistViewController::init()
 
 		// connect signals from outside to GUI
 		connect(ctrl, SIGNAL(showIlluminationCurve(bool)),
-				g, SIGNAL(toggleIlluminationShown(bool)));
+		        g, SIGNAL(toggleIlluminationShown(bool)));
 
-		connect(ctrl, SIGNAL(toggleSingleLabel(bool)),
-				g, SLOT(toggleSingleLabel(bool)));
 
 		connect(g, SIGNAL(needBinning(representation::t)),
-				this, SLOT(processDistviewNeedsBinning(representation::t)));
+		        this, SLOT(processDistviewNeedsBinning(representation::t)));
 
 
 		connect(g, SIGNAL(subscribeRepresentation(QObject*,representation::t)),
-				this, SLOT(processDistviewSubscribeRepresentation(QObject*,representation::t)));
+		        this, SLOT(processDistviewSubscribeRepresentation(QObject*,representation::t)));
 		connect(g, SIGNAL(unsubscribeRepresentation(QObject*,representation::t)),
-				this, SLOT(processDistviewUnsubscribeRepresentation(QObject*,representation::t)));
+		        this, SLOT(processDistviewUnsubscribeRepresentation(QObject*,representation::t)));
 		connect(g, SIGNAL(foldingStateChanged(representation::t,bool)),
-				this, SLOT(processFoldingStateChanged(representation::t,bool)));
+		        this, SLOT(processFoldingStateChanged(representation::t,bool)));
 	}
 
 	/* connect pass-throughs / signals we process */
 	connect(ctrl, SIGNAL(currentLabelChanged(int)),
-			this, SLOT(setCurrentLabel(int)));
+	        this, SLOT(setCurrentLabel(int)));
 	connect(ctrl, SIGNAL(requestPixelOverlay(int,int)),
-			this, SLOT(pixelOverlay(int,int)));
-	connect(ctrl, SIGNAL(singleLabelSelected(int)),
-			this, SIGNAL(singleLabelSelected(int)));
+	        this, SLOT(pixelOverlay(int,int)));
+	connect(ctrl, SIGNAL(labelSelected(int)),
+	        this, SIGNAL(labelSelected(int)));
 	connect(ctrl, SIGNAL(toggleIgnoreLabels(bool)),
-			this, SLOT(toggleIgnoreLabels(bool)));
+	        this, SLOT(toggleIgnoreLabels(bool)));
 
 	/* connect illuminant correction stuff only to IMG distview */
 	DistViewGUI *g = &payloadMap[representation::IMG]->gui;
 	connect(this, SIGNAL(newIlluminantCurve(QVector<multi_img::Value>)),
-			g, SIGNAL(newIlluminantCurve(QVector<multi_img::Value>)));
+	        g, SIGNAL(newIlluminantCurve(QVector<multi_img::Value>)));
 	connect(this, SIGNAL(toggleIlluminationShown(bool)),
-			g, SIGNAL(toggleIlluminationShown(bool)));
+	        g, SIGNAL(toggleIlluminationShown(bool)));
 	connect(this, SIGNAL(newIlluminantApplied(QVector<multi_img::Value>)),
-			g, SIGNAL(newIlluminantApplied(QVector<multi_img::Value>)));
+	        g, SIGNAL(newIlluminantApplied(QVector<multi_img::Value>)));
 
 	/* model needs to know applied illuminant */
 	connect(this, SIGNAL(newIlluminantApplied(QVector<multi_img::Value>)),
-			&payloadMap[representation::IMG]->model,
-			SLOT(setIlluminant(QVector<multi_img::Value>)));
+	        &payloadMap[representation::IMG]->model,
+	        SLOT(setIlluminant(QVector<multi_img::Value>)));
 
 	// forward representation subscriptions to controller
 	connect(this, SIGNAL(subscribeRepresentation(QObject*,representation::t)),
-			ctrl, SLOT(subscribeRepresentation(QObject*,representation::t)));
+	        ctrl, SLOT(subscribeRepresentation(QObject*,representation::t)));
 	connect(this, SIGNAL(unsubscribeRepresentation(QObject*,representation::t)),
-			ctrl, SLOT(unsubscribeRepresentation(QObject*,representation::t)));
+	        ctrl, SLOT(unsubscribeRepresentation(QObject*,representation::t)));
 }
 
 void DistViewController::initSubscriptions()
@@ -188,16 +186,16 @@ void DistViewController::initSubscriptions()
 }
 
 sets_ptr DistViewController::subImage(representation::t type,
-							   const std::vector<cv::Rect> &regions,
-							   cv::Rect roi)
+                                      const std::vector<cv::Rect> &regions,
+                                      cv::Rect roi)
 {
 	GGDBG_CALL();
 	return payloadMap[type]->model.subImage(regions, roi);
 }
 
 void DistViewController::addImage(representation::t type, sets_ptr temp,
-							   const std::vector<cv::Rect> &regions,
-							   cv::Rect roi)
+                                  const std::vector<cv::Rect> &regions,
+                                  cv::Rect roi)
 {
 	GGDBG_CALL();
 	payloadMap[type]->model.addImage(temp, regions, roi);
@@ -208,7 +206,7 @@ void DistViewController::setActiveViewer(representation::t type)
 	activeView = type;
 	QMap<representation::t, Payload*>::const_iterator it;
 	for (it = payloadMap.begin(); it != payloadMap.end(); ++it) {
-		 if (it.key() != activeView)
+		if (it.key() != activeView)
 			it.value()->gui.setInactive();
 	}
 }
@@ -237,13 +235,13 @@ void DistViewController::processROIChage(cv::Rect roi)
 }
 
 void DistViewController::processImageUpdate(representation::t repr,
-											SharedMultiImgPtr image,
-											bool duplicate)
+                                            SharedMultiImgPtr image,
+                                            bool duplicate)
 {
 
 	if (cv::Rect() == curROI) {
 		std::cerr << "DistViewController::processImageUpdate() error: "
-				  << "DVC internal ROI is empty" << std::endl;
+		          << "DVC internal ROI is empty" << std::endl;
 	}
 	if (duplicate) {
 		GGDBGM(repr  << " is re-spawn" << endl);
@@ -251,7 +249,7 @@ void DistViewController::processImageUpdate(representation::t repr,
 	if (distviewNeedsBinning[repr]) {
 		distviewNeedsBinning[repr] = false;
 		GGDBGM("following distview " << repr <<
-			   " request for new binning" << endl);
+		       " request for new binning" << endl);
 		updateBinning(repr, image);
 	} else {
 		GGDBGM("no binning requests, ignoring update" << endl);
@@ -265,14 +263,14 @@ void DistViewController::processDistviewNeedsBinning(representation::t repr)
 }
 
 void DistViewController::processPreROISpawn(const cv::Rect &oldroi,
-											const cv::Rect &newroi,
-											const std::vector<cv::Rect> &sub,
-											const std::vector<cv::Rect> &add,
-											bool profitable)
+                                            const cv::Rect &newroi,
+                                            const std::vector<cv::Rect> &sub,
+                                            const std::vector<cv::Rect> &add,
+                                            bool profitable)
 {
 	// recycle existing distview payload
 	roiSets = boost::shared_ptr<QMap<representation::t, sets_ptr> > (
-				new QMap<representation::t, sets_ptr>() );
+	            new QMap<representation::t, sets_ptr>() );
 	if (profitable) {
 		GGDBGM("INCREMENTAL distview update" << endl);
 		foreach (representation::t repr, representation::all()) {
@@ -289,14 +287,14 @@ void DistViewController::processPreROISpawn(const cv::Rect &oldroi,
 }
 
 void DistViewController::processPostROISpawn(const cv::Rect &oldroi,
-											 const cv::Rect &newroi,
-											 const std::vector<cv::Rect> &sub,
-											 const std::vector<cv::Rect> &add,
-											 bool profitable)
+                                             const cv::Rect &newroi,
+                                             const std::vector<cv::Rect> &sub,
+                                             const std::vector<cv::Rect> &add,
+                                             bool profitable)
 {
 	if (profitable && ! roiSets) {
 		std::cerr << "DistViewController::processPostROISpawn error: "
-					 "profitable && ! roiSets)" << std::endl;
+		             "profitable && ! roiSets)" << std::endl;
 	}
 	if (profitable) {
 		GGDBGM("INCREMENTAL distview update" << endl);
@@ -317,21 +315,21 @@ void DistViewController::processPostROISpawn(const cv::Rect &oldroi,
 }
 
 void DistViewController::processDistviewSubscribeRepresentation(
-		QObject *subscriber,
-		representation::t repr)
+        QObject *subscriber,
+        representation::t repr)
 {
 	subscribe(subscriber, repr, distviewSubs->repr);
 }
 
 void DistViewController::processDistviewUnsubscribeRepresentation(
-		QObject *subscriber,
-		representation::t repr)
+        QObject *subscriber,
+        representation::t repr)
 {
 	unsubscribe(subscriber, repr, distviewSubs->repr);
 }
 
 void DistViewController::updateBinning(representation::t repr,
-									   SharedMultiImgPtr image)
+                                       SharedMultiImgPtr image)
 {
 	int bins = payloadMap[repr]->gui.getBinCount();
 	payloadMap[repr]->model.setImage(image, curROI, bins);
@@ -348,8 +346,8 @@ void DistViewController::changeBinCount(representation::t type, int bins)
 }
 
 void DistViewController::updateLabels(const cv::Mat1s& labels,
-									  const QVector<QColor> &colors,
-									  bool colorsChanged)
+                                      const QVector<QColor> &colors,
+                                      bool colorsChanged)
 {
 	if (!colors.empty()) {
 		foreach (Payload *p, payloadMap) {
@@ -368,7 +366,7 @@ void DistViewController::updateLabels(const cv::Mat1s& labels,
 }
 
 void DistViewController::updateLabelsPartially(const cv::Mat1s &labels,
-											const cv::Mat1b &mask)
+                                               const cv::Mat1b &mask)
 {
 	/* test: is it worth it to do it incrementally
 	 * (2 updates for each positive entry)
@@ -412,7 +410,7 @@ void DistViewController::drawOverlay(int band, int bin)
 }
 
 void DistViewController::drawOverlay(const std::vector<std::pair<int, int> >& l,
-									 int dim)
+                                     int dim)
 {
 	DistViewModel &m = payloadMap[activeView]->model;
 	if (dim > -1)
@@ -431,7 +429,7 @@ void DistViewController::finishNormRangeImgChange(bool success)
 	 * selected before. also this should be done by the image model
 	 * and the image model has other means of doing this (empty the map)
 	 */
-/*	if (success) {
+	/*	if (success) {
 		SharedDataLock hlock((*image)->mutex);
 		(*bands)[representation::IMG].assign((**image)->size(), NULL);
 		hlock.unlock();
@@ -442,7 +440,7 @@ void DistViewController::finishNormRangeImgChange(bool success)
 void DistViewController::finishNormRangeGradChange(bool success)
 {
 	// ************** see above
-/*	if (success) {
+	/*	if (success) {
 		SharedDataLock hlock((*gradient)->mutex);
 		(*bands)[GRAD].assign((**gradient)->size(), NULL);
 		hlock.unlock();
@@ -484,7 +482,7 @@ void DistViewController::processLastWindowClosed()
 	foreach (representation::t repr, representation::all()) {
 		bool folded = viewFolded.value(repr, true);
 		QString key = QString("viewports/") +
-				representation::str(repr) + "folded";
+		              representation::str(repr) + "folded";
 		GGDBGM(key.toStdString() << " " << folded << endl);
 		settings.setValue(key, QVariant(folded));
 	}

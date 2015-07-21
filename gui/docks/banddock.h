@@ -8,6 +8,7 @@
 
 class BandView;
 class GraphSegWidget;
+class ModeWidget;
 
 class BandDock : public QDockWidget, private Ui::BandDock
 {
@@ -48,7 +49,7 @@ public slots:
 	void graphSegModeToggled(bool enable);
 
 	void changeBand(representation::t repr, int bandId,
-					QPixmap band, QString desc);
+	                QPixmap band, QString desc);
 
 	/** Remember which representation and band are currently selected by the spectral views (viewports).
 	 *
@@ -58,10 +59,10 @@ public slots:
 
 	// TODO label subscriptions
 	void processLabelingChange(const cv::Mat1s &labels,
-							   const QVector<QColor> &colors,
-							   bool colorsChanged);
+	                           const QVector<QColor> &colors,
+	                           bool colorsChanged);
 	void processLabelingChange(const cv::Mat1s &labels,
-							   const cv::Mat1b &mask);
+	                           const cv::Mat1b &mask);
 
 protected slots:
 	void clearLabel();
@@ -87,6 +88,7 @@ protected:
 	BandView *bv;
 	// our widget for graph segmentation controls
 	GraphSegWidget *gs;
+	ModeWidget *mw;
 };
 
 #endif // BANDDOCK_H

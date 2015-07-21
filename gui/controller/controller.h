@@ -61,8 +61,7 @@ signals:
 
 	/* pass-through to our other controller friends */
 	void toggleIgnoreLabels(bool);
-	void toggleSingleLabel(bool);
-	void singleLabelSelected(int);
+	void labelSelected(int);
 
 	void showIlluminationCurve(bool);
 
@@ -145,8 +144,8 @@ protected slots:
 	                     const seg_graphs::GraphSegConfig &config,
 	                     bool resetLabel);
 	void requestGraphsegCurBand(const seg_graphs::GraphSegConfig &config,
-	                            bool resetLabel);
-	void highlightSingleLabel(short label, bool highlight);
+								bool resetLabel);
+	void toggleLabelHighlight(short label);
 
 	void processImageUpdate(representation::t repr,
 	                        SharedMultiImgPtr image,

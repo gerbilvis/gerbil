@@ -8,6 +8,7 @@
 #include <QGraphicsView>
 #include <QGraphicsWidget>
 #include <QGraphicsLayout>
+#include <QDebug>
 
 #include "../widgets/autohideview.h"
 #include "../widgets/autohidewidget.h"
@@ -22,10 +23,10 @@
 
 LabelDock::LabelDock(QWidget *parent) :
     QDockWidget(parent),
-	ui(new Ui::LabelDock),
-	labelModel(new QStandardItemModel),
-	hovering(false),
-	hoverLabel(-1)
+    ui(new Ui::LabelDock),
+    labelModel(new QStandardItemModel),
+    hovering(false),
+    hoverLabel(-1)
 {
 	setObjectName("LabelDock");
 	init();
@@ -43,37 +44,26 @@ void LabelDock::init()
 	ui->labelView->setFrameStyle(QFrame::NoFrame);
 	mainUiWidget = ahscene->addWidget(mainUiWidgetTmp);
 	mainUiWidget->setTransform(
-				QTransform::fromTranslate(-AutohideWidget::OutOffset, 0));
+	            QTransform::fromTranslate(-AutohideWidget::OutOffset, 0));
 
 	ui->labelView->setModel(labelModel);
 
-	LeaveEventFilter *leaveFilter = new LeaveEventFilter(this);
-	ui->labelView->installEventFilter(leaveFilter);
-
-	ui->labelView->setDragEnabled(false);
-	ui->labelView->setDragDropMode(QAbstractItemView::NoDragDrop);
-	ui->labelView->setSpacing(0);
-	ui->labelView->setUniformItemSizes(true);
-
 	connect(ui->labelView->selectionModel(),
-			SIGNAL(selectionChanged(QItemSelection,QItemSelection)),
-			this,
-			SLOT(processSelectionChanged(QItemSelection,QItemSelection)));
-
-	connect(ui->labelView, SIGNAL(entered(QModelIndex)),
-			this, SLOT(processLabelItemEntered(QModelIndex)));
-	connect(ui->labelView, SIGNAL(viewportEntered()),
-			this, SLOT(processLabelItemLeft()));
+	        SIGNAL(selectionChanged(QItemSelection,QItemSelection)),
+	        this,
+	        SLOT(processSelectionChanged(QItemSelection,QItemSelection)));
 
 	connect(ui->mergeBtn, SIGNAL(clicked()),
-			this, SLOT(mergeOrDeleteSelected()));
+	        this, SLOT(mergeOrDeleteSelected()));
 	connect(ui->delBtn, SIGNAL(clicked()),
-			this, SLOT(mergeOrDeleteSelected()));
+	        this, SLOT(mergeOrDeleteSelected()));
 	connect(ui->consolidateBtn, SIGNAL(clicked()),
-			this, SIGNAL(consolidateLabelsRequested()));
+	        this, SLOT(deselectSelectedLabels()));
+	connect(ui->consolidateBtn, SIGNAL(clicked()),
+	        this, SIGNAL(consolidateLabelsRequested()));
 
 	connect(ui->sizeSlider, SIGNAL(valueChanged(int)),
-			this, SLOT(processSliderValueChanged(int)));
+	        this, SLOT(processSliderValueChanged(int)));
 	// Icon size is hard-coded to the range [4, 1024] in IconTask.
 	// Don't change this unless you know what you are doing.
 	ui->sizeSlider->setMinimum(16);
@@ -81,15 +71,15 @@ void LabelDock::init()
 	updateSliderToolTip();
 
 	connect(ui->applyROI, SIGNAL(toggled(bool)),
-			this, SLOT(processApplyROIToggled(bool)));
+	        this, SLOT(processApplyROIToggled(bool)));
 
 	connect(ui->loadLabelingButton, SIGNAL(clicked()),
-			this, SIGNAL(requestLoadLabeling()));
+	        this, SIGNAL(requestLoadLabeling()));
 	connect(ui->saveLabelingButton, SIGNAL(clicked()),
-			this, SIGNAL(requestSaveLabeling()));
+	        this, SIGNAL(requestSaveLabeling()));
 
 	connect(this, SIGNAL(visibilityChanged(bool)),
-			this, SLOT(resizeSceneContents()));
+	        this, SLOT(resizeSceneContents()));
 
 	this->setWindowTitle("Labels");
 	QWidget *contents = new QWidget(this);
@@ -185,8 +175,8 @@ void LabelDock::setImageSize(cv::Size imgSize)
 }
 
 void LabelDock::setLabeling(const cv::Mat1s & labels,
-							const QVector<QColor> &colors,
-							bool colorsChanged)
+                            const QVector<QColor> &colors,
+                            bool colorsChanged)
 {
 	//GGDBGM("colors.size()=" << colors.size()
 	//	   << "  colorsChanged=" << colorsChanged << endl;)
@@ -235,11 +225,35 @@ void LabelDock::mergeOrDeleteSelected()
 	}
 
 	// Tell the LabelingModel:
-	if (sender() == ui->delBtn)
+	if (sender() == ui->delBtn) {
 		emit deleteLabelsRequested(selectedLabels);
-	else
+		toggleLabelsSelection(selectedLabels, 0, false);
+	} else
+	{
 		emit mergeLabelsRequested(selectedLabels);
+		toggleLabelsSelection(selectedLabels, 1, true);
+	}
+
 	emit labelMaskIconsRequested();
+}
+
+
+void LabelDock::toggleLabelsSelection(QVector<int> &list, int start, bool toSort)
+{
+	if(toSort) qSort(list);
+
+	for(int i = start; i<list.size(); i++) {
+		toggleLabelSelection(list[i], true);
+	}
+}
+
+void LabelDock::deselectSelectedLabels()
+{
+	for(auto &idx : ui->labelView->selectionModel()->selectedIndexes())
+	{
+		int id = idx.data(LabelIndexRole).value<int>();
+		toggleLabelSelection(id, true);
+	}
 }
 
 void LabelDock::processMaskIconsComputed(const QVector<QImage> &icons)
@@ -294,8 +308,8 @@ void LabelDock::showEvent(QShowEvent *event)
 	resizeSceneContents();
 }
 
-void LabelDock::processSelectionChanged(const QItemSelection &,
-		const QItemSelection &)
+void LabelDock::processSelectionChanged(const QItemSelection &selected,
+                                        const QItemSelection &deselected)
 {
 	int nSelected = ui->labelView->selectionModel()->selectedIndexes().size();
 
@@ -303,24 +317,42 @@ void LabelDock::processSelectionChanged(const QItemSelection &,
 	ui->mergeBtn->setEnabled(nSelected > 1);
 	// any label selected
 	ui->delBtn->setEnabled(nSelected > 0);
+
+	for (auto &item : selected.indexes()) {
+		processLabelItemSelectionChanged(item);
+	}
+
+	for (auto &item : deselected.indexes()) {
+		processLabelItemSelectionChanged(item);
+	}
 }
 
-void LabelDock::processLabelItemEntered(QModelIndex midx)
+void LabelDock::processLabelItemSelectionChanged(QModelIndex midx)
 {
 	short label = midx.data(LabelIndexRole).value<int>();
 	//GGDBGM("hovering over " << label << endl);
 	hovering = true;
 	hoverLabel = label;
-	emit highlightLabelRequested(label, true);
+	emit toggleLabelHighlightRequested(label);
 }
 
-void LabelDock::processLabelItemLeft()
+void LabelDock::toggleLabelSelection(int label, bool innerSource)
 {
-	if (hovering) {
-		//GGDBGM("hovering left" << endl);
-		hovering = false;
-		emit highlightLabelRequested(hoverLabel, false);
+	hovering = true;
+	hoverLabel = label;
+
+	if(!innerSource) this->blockSignals(true); //to prevent feedback
+
+	QModelIndex index = ui->labelView->model()->index(label, 0);
+	if (index.isValid() ) {
+		if (ui->labelView->selectionModel()->isSelected(index)) {
+			ui->labelView->selectionModel()->select(index, QItemSelectionModel::Deselect);
+		} else {
+			ui->labelView->selectionModel()->select(index, QItemSelectionModel::Select);
+		}
 	}
+
+	if(!innerSource) this->blockSignals(false);
 }
 
 void LabelDock::processApplyROIToggled(bool checked)
@@ -345,7 +377,7 @@ void LabelDock::processSliderValueChanged(int)
 void LabelDock::updateSliderToolTip()
 {
 	QString t = QString("Icon Size (%1)").arg(
-				ui->sizeSlider->value());
+	                ui->sizeSlider->value());
 	ui->sizeSlider->setToolTip(t);
 }
 
@@ -364,14 +396,3 @@ void LabelDock::resizeSceneContents()
 	geom.adjust(0, 0, +1, -off);
 	mainUiWidget->setGeometry(geom);
 }
-
-bool LeaveEventFilter::eventFilter(QObject *obj, QEvent *event)
-{
-	if (event->type() == QEvent::Leave) {
-		//GGDBGM("sending leave event" << endl);
-		LabelDock *labelDock = static_cast<LabelDock*>(parent());
-		labelDock->processLabelItemLeft();
-	}
-	return false; // continue normal processing of this event
-}
-
