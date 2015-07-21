@@ -13,8 +13,6 @@
 
 #include "widgets/mainwindow.h"
 
-#include "gerbil_cplusplus.h"
-
 //#define GGDBG_MODULE
 #include "gerbil_gui_debug.h"
 
@@ -22,20 +20,20 @@
 #include <cstdlib> // for exit()
 
 Controller::Controller(const QString &filename,
-					   bool limited_mode,
-					   const QString &labelfile,
-					   QObject *parent)
+                       bool limited_mode,
+                       const QString &labelfile,
+                       QObject *parent)
 
-	: QObject(parent),
-	  // initialize all pointers so we don't access them too early w/o notice
-	  im(GBL_NULLPTR), lm(GBL_NULLPTR), fm(GBL_NULLPTR), illumm(GBL_NULLPTR),
-	  gsm(GBL_NULLPTR),
+    : QObject(parent),
+      // initialize all pointers so we don't access them too early w/o notice
+      im(nullptr), lm(nullptr), fm(nullptr), illumm(nullptr),
+      gsm(nullptr),
 #ifdef WITH_SEG_MEANSHIFT
-	  cm(GBL_NULLPTR),
+      cm(nullptr),
 #endif
-	  dvc(GBL_NULLPTR),
-	  queuethread(GBL_NULLPTR),
-	  subs(new Subscriptions)
+      dvc(nullptr),
+      queuethread(nullptr),
+      subs(new Subscriptions)
 {
 	// reset internal ROI state tracking
 	resetROISpawned();
@@ -64,9 +62,9 @@ Controller::Controller(const QString &filename,
 	// fm needs to get the signal first. Otherwise it will
 	// hand out invalid cached data.
 	connect(im, SIGNAL(imageUpdate(representation::t,SharedMultiImgPtr,bool)),
-			fm, SLOT(processImageUpdate(representation::t,SharedMultiImgPtr,bool)));
+	        fm, SLOT(processImageUpdate(representation::t,SharedMultiImgPtr,bool)));
 	connect(im, SIGNAL(imageUpdate(representation::t,SharedMultiImgPtr,bool)),
-			this, SLOT(processImageUpdate(representation::t,SharedMultiImgPtr,bool)));
+	        this, SLOT(processImageUpdate(representation::t,SharedMultiImgPtr,bool)));
 
 	lm = new LabelingModel(this);
 	initLabeling(dimensions);
@@ -92,29 +90,29 @@ Controller::Controller(const QString &filename,
 	 * dvc are created after these are called
 	 */
 	connect(dvc, SIGNAL(requestOverlay(cv::Mat1b)),
-			this, SIGNAL(requestOverlay(cv::Mat1b)));
+	        this, SIGNAL(requestOverlay(cv::Mat1b)));
 	connect(lm,
-			SIGNAL(newLabeling(const cv::Mat1s&, const QVector<QColor>&, bool)),
-			dvc, SLOT(updateLabels(cv::Mat1s,QVector<QColor>,bool)));
+	        SIGNAL(newLabeling(const cv::Mat1s&, const QVector<QColor>&, bool)),
+	        dvc, SLOT(updateLabels(cv::Mat1s,QVector<QColor>,bool)));
 	connect(lm, SIGNAL(partialLabelUpdate(const cv::Mat1s&,const cv::Mat1b&)),
-			dvc, SLOT(updateLabelsPartially(const cv::Mat1s&,const cv::Mat1b&)));
+	        dvc, SLOT(updateLabelsPartially(const cv::Mat1s&,const cv::Mat1b&)));
 	connect(dvc, SIGNAL(alterLabelRequested(short,cv::Mat1b,bool)),
-			lm, SLOT(alterLabel(short,cv::Mat1b,bool)));
+	        lm, SLOT(alterLabel(short,cv::Mat1b,bool)));
 	connect(illumm, SIGNAL(newIlluminantCurve(QVector<multi_img::Value>)),
-			dvc, SIGNAL(newIlluminantCurve(QVector<multi_img::Value>)));
+	        dvc, SIGNAL(newIlluminantCurve(QVector<multi_img::Value>)));
 	connect(illumm, SIGNAL(newIlluminantApplied(QVector<multi_img::Value>)),
-			dvc, SIGNAL(newIlluminantApplied(QVector<multi_img::Value>)));
+	        dvc, SIGNAL(newIlluminantApplied(QVector<multi_img::Value>)));
 
 	connect(cm, SIGNAL(subscribeRepresentation(QObject*,representation::t)),
-			this, SLOT(subscribeRepresentation(QObject*,representation::t)));
+	        this, SLOT(subscribeRepresentation(QObject*,representation::t)));
 	connect(cm, SIGNAL(unsubscribeRepresentation(QObject*,representation::t)),
-			this, SLOT(unsubscribeRepresentation(QObject*,representation::t)));
+	        this, SLOT(unsubscribeRepresentation(QObject*,representation::t)));
 	connect(im, SIGNAL(imageUpdate(representation::t,SharedMultiImgPtr,bool)),
-			cm, SLOT(processImageUpdate(representation::t,SharedMultiImgPtr,bool)));
+	        cm, SLOT(processImageUpdate(representation::t,SharedMultiImgPtr,bool)));
 	connect(this, SIGNAL(preROISpawn(cv::Rect,cv::Rect,std::vector<cv::Rect>,std::vector<cv::Rect>,bool)),
-			dvc, SLOT(processPreROISpawn(cv::Rect,cv::Rect,std::vector<cv::Rect>,std::vector<cv::Rect>,bool)));
+	        dvc, SLOT(processPreROISpawn(cv::Rect,cv::Rect,std::vector<cv::Rect>,std::vector<cv::Rect>,bool)));
 	connect(this, SIGNAL(postROISpawn(cv::Rect,cv::Rect,std::vector<cv::Rect>,std::vector<cv::Rect>,bool)),
-			dvc, SLOT(processPostROISpawn(cv::Rect,cv::Rect,std::vector<cv::Rect>,std::vector<cv::Rect>,bool)));
+	        dvc, SLOT(processPostROISpawn(cv::Rect,cv::Rect,std::vector<cv::Rect>,std::vector<cv::Rect>,bool)));
 
 	/* start with initial label or provided labeling
 	 * Do this after all signals are connected, and before initial ROI spawn!
@@ -168,7 +166,7 @@ Controller::~Controller()
 // connect all signals between model and other parties
 void Controller::initImage()
 {
-   // nothing
+	// nothing
 }
 
 // depends on ImageModel
@@ -183,7 +181,7 @@ void Controller::initIlluminant()
 	illumm->setMultiImage(im->getFullImage());
 
 	connect(illumm, SIGNAL(requestInvalidateROI(cv::Rect)),
-			this, SLOT(invalidateROI(cv::Rect)));
+	        this, SLOT(invalidateROI(cv::Rect)));
 }
 
 void Controller::initGraphSegmentation()
@@ -192,7 +190,7 @@ void Controller::initGraphSegmentation()
 	gsm->setMultiImage(representation::GRAD, im->getImage(representation::GRAD));
 
 	connect(gsm, SIGNAL(alterLabelRequested(short,cv::Mat1b,bool)),
-			lm, SLOT(alterLabel(short,cv::Mat1b,bool)));
+	        lm, SLOT(alterLabel(short,cv::Mat1b,bool)));
 	// (gsm seedingDone <-> bandDock seedingDone connection in initDocks)
 }
 
@@ -232,7 +230,7 @@ void Controller::debugSubscriptions()
 	foreach (representation::t type, representation::all()) {
 		std::cerr << "** " << std::left << std::setw(7) << type;
 		if (haveSubscriber(type)) {
-			 std::cerr << "    subscribed";
+			std::cerr << "    subscribed";
 		} else {
 			std::cerr <<  "not subscribed";
 		}
@@ -317,8 +315,8 @@ bool Controller::haveSubscriber(representation::t type)
 }
 
 void Controller::subscribeImageBand(QObject *subscriber,
-									representation::t repr,
-									int bandId)
+                                    representation::t repr,
+                                    int bandId)
 {
 	assert(subs);
 	// also subscribe to the relevant representation
@@ -330,17 +328,17 @@ void Controller::subscribeImageBand(QObject *subscriber,
 }
 
 void Controller::unsubscribeImageBand(QObject *subscriber,
-									  representation::t repr,
-									  int bandId)
+                                      representation::t repr,
+                                      int bandId)
 {
 	assert(subs);
 	subs->imageBand.erase(Subscription<ImageBandId>(subscriber,
-													ImageBandId(repr, bandId)));
+	                                                ImageBandId(repr, bandId)));
 	unsubscribeRepresentation(subscriber, repr);
 }
 
 void Controller::subscribeFalseColor(QObject *subscriber,
-									 FalseColoring::Type coloring)
+                                     FalseColoring::Type coloring)
 {
 	//GGDBGM(coloring << endl);
 	assert(subs);
@@ -353,12 +351,12 @@ void Controller::subscribeFalseColor(QObject *subscriber,
 }
 
 void Controller::unsubscribeFalseColor(QObject *subscriber,
-									   FalseColoring::Type coloring)
+                                       FalseColoring::Type coloring)
 {
 	//GGDBGM(coloring << endl);
 	assert(subs);
 	subs->falseColor.erase(Subscription<FalseColoring::Type>(subscriber,
-															 coloring));
+	                                                         coloring));
 	if (!isSubscribed(coloring, subs->falseColor)) {
 		// no more subscriptions for coloring,
 		// cancel computation if any.
@@ -376,7 +374,7 @@ void Controller::recalcFalseColor(FalseColoring::Type coloringType)
 }
 
 void Controller::subscribeRepresentation(QObject *subscriber,
-										 representation::t repr)
+                                         representation::t repr)
 {
 	assert(subs);
 	if (subscribe(subscriber, repr, subs->repr)) {
@@ -394,7 +392,7 @@ void Controller::subscribeRepresentation(QObject *subscriber,
 }
 
 void Controller::unsubscribeRepresentation(QObject *subscriber,
-										   representation::t repr)
+                                           representation::t repr)
 {
 	assert(subs);
 	GGDBGM("unsubscribe " << repr << endl);
@@ -425,12 +423,12 @@ void Controller::focusChange(QWidget *old, QWidget *now)
 	if (!old || !now)
 		return;
 	std::cerr << "Focus changed from " << old->objectName().toStdString()
-			  << " to " << now->objectName().toStdString() << std::endl;
+	          << " to " << now->objectName().toStdString() << std::endl;
 }
 
 void Controller::processImageUpdate(representation::t repr,
-									SharedMultiImgPtr image,
-									bool duplicate)
+                                    SharedMultiImgPtr image,
+                                    bool duplicate)
 {
 	if (duplicate) {
 		GGDBGM("duplicate update, ignoring" << endl);
@@ -455,7 +453,7 @@ void Controller::processImageUpdate(representation::t repr,
 	// false color updates
 
 	typedef std::tr1::unordered_set<FalseColoring::Type, std::tr1::hash<int> >
-			FalseColoringSet;
+	        FalseColoringSet;
 	FalseColoringSet fcUpdates;
 	foreach (Subscription<FalseColoring::Type> const& sub, subs->falseColor) {
 		FalseColoring::Type coloring = sub.subsid;
