@@ -260,7 +260,8 @@ void Viewport::updateModelview()
 }
 
 void Viewport::drawBins(QPainter &painter, QTimer &renderTimer,
-                        unsigned int &renderedLines, unsigned int renderStep, bool highlight)
+                        unsigned int &renderedLines, unsigned int renderStep,
+                        bool highlight)
 {
 	SharedDataLock ctxlock(ctx->mutex);
 	// TODO: this also locks shuffleIdx implicitely, better do it explicitely?
@@ -290,8 +291,6 @@ void Viewport::drawBins(QPainter &painter, QTimer &renderTimer,
 	// make sure that viewport draws "unlabeled" data in ignore-label case
 	int start = ((showUnlabeled || (*ctx)->ignoreLabels == 1) ? 0 : 1);
 	int end = (showLabeled ? (int)(*sets)->size() : 1);
-	int single = ((*ctx)->ignoreLabels || highlightLabels.empty()
-	              ? -1 : highlightLabels[0]);
 
 	size_t total = shuffleIdx.size();
 	size_t first = renderedLines;
@@ -303,7 +302,12 @@ void Viewport::drawBins(QPainter &painter, QTimer &renderTimer,
 		std::pair<int, BinSet::HashKey> &idx = shuffleIdx[i];
 
 		// filter out according to label
-		if ((idx.first < start || idx.first >= end) && !(idx.first == single)) {
+		bool filter = ((idx.first < start || idx.first >= end));
+		// do not filter out highlighted label(s)
+		if (!(*ctx)->ignoreLabels) {
+			filter = filter && !highlightLabels.contains(idx.first);
+		}
+		if (filter) {
 			// increase loop count to achieve renderStep
 			if (last < total)
 				++last;
