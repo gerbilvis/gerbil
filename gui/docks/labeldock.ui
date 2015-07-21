@@ -507,7 +507,7 @@
     </widget>
    </item>
    <item row="1" column="0">
-    <widget class="LabelView" name="labelView">
+    <widget class="QListView" name="labelView">
      <property name="palette">
       <palette>
        <active>
@@ -588,7 +588,7 @@
       <enum>QAbstractItemView::NoDragDrop</enum>
      </property>
      <property name="selectionMode">
-      <enum>QAbstractItemView::MultiSelection</enum>
+      <enum>QAbstractItemView::ExtendedSelection</enum>
      </property>
      <property name="flow">
       <enum>QListView::LeftToRight</enum>
@@ -1196,13 +1196,6 @@
    </layout>
   </widget>
  </widget>
- <customwidgets>
-  <customwidget>
-   <class>LabelView</class>
-   <extends>QListView</extends>
-   <header>labeldock.h</header>
-  </customwidget>
- </customwidgets>
  <resources/>
  <connections/>
 </ui>
