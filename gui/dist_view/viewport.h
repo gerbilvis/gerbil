@@ -208,8 +208,6 @@ private:
 
 	bool yAxisChanged;
 
-	int lasty;
-
 	/* if in limiter mode, user has to release mouse button before switching
 	   band. this is for usability, users tend to accidentially switch bands */
 	bool holdSelection;

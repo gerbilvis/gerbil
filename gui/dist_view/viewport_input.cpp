@@ -115,10 +115,8 @@ void Viewport::mousePressEvent(QGraphicsSceneMouseEvent *event)
 
 	startNoHQ();
 
-	if (event->button() == Qt::RightButton) {
+	if (event->button() == Qt::RightButton)
 		target->setCursor(Qt::ClosedHandCursor);
-		lasty = event->scenePos().y(); // TODO: qgraphicsscene
-	}
 
 	mouseMoveEvent(event);
 }
@@ -135,10 +133,8 @@ void Viewport::mouseReleaseEvent(QGraphicsSceneMouseEvent *event)
 	holdSelection = false;
 	activeLimiter = 0;
 
-	if (event->button() == Qt::RightButton) {
+	if (event->button() == Qt::RightButton)
 		target->setCursor(Qt::ArrowCursor);
-		lasty = -1;
-	}
 
 	endNoHQ((event->button() == Qt::RightButton) ? RM_STEP : RM_SKIP, RM_STEP);
 }
