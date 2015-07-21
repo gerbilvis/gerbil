@@ -120,7 +120,6 @@ private:
 
 	void init();
 	void updateLabelIcons();
-	void toggleLabelsSelection(QVector<int> &list, int start, bool toSort);
 
 	// UI with autohide widgets.
 	// The view and scene for this widget.

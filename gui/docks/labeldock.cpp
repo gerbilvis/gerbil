@@ -198,6 +198,8 @@ void LabelDock::setLabeling(const cv::Mat1s & labels,
 		ui->delBtn->setDisabled(true);
 	}
 
+	deselectSelectedLabels();
+
 	//GGDBGM("requesting new label icons" << endl);
 	emit labelMaskIconsRequested();
 }
@@ -227,24 +229,12 @@ void LabelDock::mergeOrDeleteSelected()
 	// Tell the LabelingModel:
 	if (sender() == ui->delBtn) {
 		emit deleteLabelsRequested(selectedLabels);
-		toggleLabelsSelection(selectedLabels, 0, false);
 	} else
 	{
 		emit mergeLabelsRequested(selectedLabels);
-		toggleLabelsSelection(selectedLabels, 1, true);
 	}
 
 	emit labelMaskIconsRequested();
-}
-
-
-void LabelDock::toggleLabelsSelection(QVector<int> &list, int start, bool toSort)
-{
-	if(toSort) qSort(list);
-
-	for(int i = start; i<list.size(); i++) {
-		toggleLabelSelection(list[i], true);
-	}
 }
 
 void LabelDock::deselectSelectedLabels()
