@@ -192,7 +192,7 @@ void Viewport::reset()
 	updateYAxis();
 
 	// update coordinate system
-	updateModelview();
+	updateModelview(true);
 }
 
 void Viewport::rebuild()
@@ -421,12 +421,6 @@ void Viewport::screenshot()
 	io.writeImage(output);
 }
 
-void Viewport::binCountChanged()
-{
-	nBinsChanged = true;
-}
-
-
 void Viewport::adjustBoundaries()
 {
 	QPointF empty(0.f, 0.f);
@@ -446,7 +440,7 @@ void Viewport::adjustBoundaries()
 	QPointF bb = modelview.map(bottombound);
 
 	QPointF topbound = empty;
-	topbound.setY((float)((*ctx)->nbins ));
+	topbound.setY((float)((*ctx)->nbins));
 	QPointF tb = modelview.map(topbound);
 
 	qreal lbpos = yaxisWidth + 25;

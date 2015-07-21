@@ -75,8 +75,6 @@ public slots:
 	void setIlluminationCurveShown(bool show);
 	void setAppliedIlluminant(QVector<multi_img::Value> illum);
 
-	void binCountChanged();
-
 protected slots:
 
 	// triggered by renderTimers
@@ -127,7 +125,7 @@ protected:
 	void updateYAxis();
 
 	// helper function that updates world transformation
-	void updateModelview();
+	void updateModelview(bool newBinning = false);
 
 	// helper functions called by mouseMoveEvent
 	bool updateXY(int sel, int bin);
@@ -209,7 +207,6 @@ private:
 	qreal zoom;
 
 	bool yAxisChanged;
-	bool nBinsChanged;
 
 	int lasty;
 

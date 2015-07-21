@@ -215,12 +215,12 @@ void Viewport::updateYAxis()
 	}
 }
 
-void Viewport::updateModelview()
+void Viewport::updateModelview(bool newBinning)
 {
 	SharedDataLock ctxlock(ctx->mutex);
 
 	QPointF zero;
-	if (nBinsChanged) {
+	if (newBinning) {
 		zero = modelview.map(QPointF(0.f, 0.f));
 	}
 
@@ -243,18 +243,18 @@ void Viewport::updateModelview()
 	// set inverse
 	modelviewI = modelview.inverted();
 
-	if (nBinsChanged) {
+	// restore previous position in plot (zoom>1 avoids initial bork transform)
+	if (newBinning && zoom > 1) {
 		QPointF zerolocal = modelviewI.map(zero);
-
 		modelview.translate(zerolocal.x(),zerolocal.y());
-		modelviewI = modelview.inverted();
 		modelview.scale(zoom, zoom);
+
+		// reset inverse
 		modelviewI = modelview.inverted();
 
+		// reset y-axis
 		yAxisChanged = true;
 		updateYAxis();
-
-		nBinsChanged = false;
 	}
 
 }

@@ -77,8 +77,6 @@ signals:
 	// The folding state changed.
 	void foldingStateChanged(representation::t type, bool folded);
 
-	void binCountChanged();
-
 protected:
 	// initialize target, vp, ui::gv
 	void initVP();
