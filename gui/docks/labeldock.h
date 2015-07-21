@@ -5,12 +5,14 @@
 #include <opencv2/core/core.hpp>
 
 #include <QModelIndex>
+#include <QListView>
 
 #include <model/representation.h>
 #include <shared_data.h>
 
 namespace Ui {
 class LabelDock;
+class LabelView;
 }
 
 class QStandardItemModel;
@@ -28,7 +30,6 @@ class LabelDock : public QDockWidget
 {
 	Q_OBJECT
 
-	friend class LeaveEventFilter;
 public:
 
 	explicit LabelDock(QWidget *parent = 0);
@@ -40,8 +41,8 @@ public:
 public slots:
 
 	void setLabeling(const cv::Mat1s &labels,
-					 const QVector<QColor>& colors,
-					 bool colorsChanged);
+	                 const QVector<QColor>& colors,
+	                 bool colorsChanged);
 
 	void processPartialLabelUpdate(const cv::Mat1s &, const cv::Mat1b &);
 
@@ -49,6 +50,8 @@ public slots:
 	void mergeOrDeleteSelected();
 
 	void processMaskIconsComputed(const QVector<QImage>& icons);
+
+	void toggleLabelSelection(int label, bool innerSource = false);
 
 signals:
 
@@ -71,7 +74,7 @@ signals:
 	 *  @param highlight If true highlight the label. Otherwise stop
 	 *  highlighting.
 	 */
-	void highlightLabelRequested(short label, bool highlight);
+	void toggleLabelHighlightRequested(short label);
 
 	/** Request a vector of mask icons representing the label masks. */
 	void labelMaskIconsRequested();
@@ -95,9 +98,8 @@ protected:
 private slots:
 
 	void processSelectionChanged(const QItemSelection & selected,
-							const QItemSelection & deselected);
-	void processLabelItemEntered(QModelIndex midx);
-	void processLabelItemLeft();
+	                             const QItemSelection & deselected);
+	void processLabelItemSelectionChanged(QModelIndex midx);
 
 	void processApplyROIToggled(bool checked);
 	
@@ -110,12 +112,15 @@ private slots:
 	/** Adjust view contents size. */
 	void resizeSceneContents();
 
+	void deselectSelectedLabels();
+
 private:
 
 	enum { LabelIndexRole = Qt::UserRole };
 
 	void init();
 	void updateLabelIcons();
+	void toggleLabelsSelection(QVector<int> &list, int start, bool toSort);
 
 	// UI with autohide widgets.
 	// The view and scene for this widget.
@@ -147,21 +152,6 @@ private:
 
 	// The current ROI.
 	cv::Rect roi;
-};
-
-// utility class to filter leave event
-class LeaveEventFilter : public QObject {
-	Q_OBJECT
-
-public:
-
-	LeaveEventFilter(LabelDock *parent)
-		: QObject(parent)
-	{}
-
-protected:
-
-	bool eventFilter(QObject *obj, QEvent *event);
 };
 
 #endif // LABELDOCK_H

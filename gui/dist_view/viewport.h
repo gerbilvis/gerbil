@@ -42,7 +42,7 @@ public:
 
 public slots:
 
-	void highlightSingleLabel(int index);
+	void toggleLabelHighlight(int index);
 
 	void toggleRGB(bool enabled) { drawRGB = enabled; updateBuffers(); }
 
@@ -246,8 +246,8 @@ private:
 	int yaxisWidth;
 	int displayHeight; // height of plot without paddings
 
-	// single label to be highlighted
-	int highlightLabel;
+	// vector containing highlighted labels
+	QVector<int> highlightLabels;
 
 	struct {
 		int hp = 20; //horizontal padding

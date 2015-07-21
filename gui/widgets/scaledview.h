@@ -10,13 +10,22 @@ class ScaledView : public QGraphicsScene
 {
 	Q_OBJECT
 public:
+	enum class InputMode
+	{
+		Zoom,
+		Pick,
+		Label,
+		Seed,
+		Disabled
+	};
+
 	ScaledView();
 	virtual ~ScaledView() {}
 
 	virtual void setPixmap(QPixmap p);
 
 	/* provide a reasonably high size of correct aspect ratio for layouting */
-    virtual void updateSizeHint();
+	virtual void updateSizeHint();
 
 	// offsets reserved for autohidewidgets, can be altered from outside
 	int offLeft, offTop, offRight, offBottom;
@@ -32,8 +41,10 @@ protected:
 	virtual void paintEvent(QPainter *painter, const QRectF &rect);
 	void mouseMoveEvent(QGraphicsSceneMouseEvent*);
 	void mousePressEvent(QGraphicsSceneMouseEvent*);
+	void mouseReleaseEvent(QGraphicsSceneMouseEvent*);
 	virtual void cursorAction(QGraphicsSceneMouseEvent *ev,
 							  bool click = false);
+	void wheelEvent(QGraphicsSceneWheelEvent*);
 
 	void drawWaitMessage(QPainter *painter);
 
@@ -46,6 +57,8 @@ protected:
 
 	// scene geometry
 	int width, height;
+	qreal zoom;
+	InputMode inputMode;
 
 	// transformations between pixmap coords. and scene coords.
 	QTransform scaler, scalerI;

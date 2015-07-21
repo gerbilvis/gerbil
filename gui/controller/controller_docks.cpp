@@ -47,9 +47,9 @@ void Controller::initDocks()
 	mainWindow()->addDockWidget(Qt::RightDockWidgetArea, falseColorDock);
 
 	// dock arrangement
-//	mainWindow()->tabifyDockWidget(roiDock, falseColorDock);
+	//	mainWindow()->tabifyDockWidget(roiDock, falseColorDock);
 #ifdef WITH_SEG_MEANSHIFT
-//	mainWindow()->tabifyDockWidget(roiDock, clusteringDock);
+	//	mainWindow()->tabifyDockWidget(roiDock, clusteringDock);
 #endif
 	roiDock->raise();
 	// restore dock widget positions
@@ -104,8 +104,8 @@ void Controller::setupDocks()
 
 	connect(bandDock->bandView(), SIGNAL(pixelOverlay(int,int)),
 			this, SIGNAL(requestPixelOverlay(int,int)));
-	connect(bandDock->bandView(), SIGNAL(singleLabelSelected(int)),
-			this, SIGNAL(singleLabelSelected(int)));
+	connect(bandDock->bandView(), SIGNAL(labelSelected(int)),
+			this, SIGNAL(labelSelected(int)));
 	connect(bandDock, SIGNAL(currentLabelChanged(int)),
 			this, SIGNAL(currentLabelChanged(int)));
 	// alterLabel(short) -> clear label
@@ -113,6 +113,9 @@ void Controller::setupDocks()
 			labelingModel(), SLOT(alterLabel(short)));
 	connect(bandDock, SIGNAL(newLabelRequested()),
 			labelingModel(), SLOT(addLabel()));
+
+	connect(bandDock->bandView(), SIGNAL(mergeLabelsRequested(QVector<int>)),
+			labelDock, SIGNAL(mergeLabelsRequested(QVector<int>)));
 
 	/* Graph Segmentation Widget */
 	// Controller adds missing information and resends the signal
@@ -150,8 +153,6 @@ void Controller::setupDocks()
 
 	connect(this, SIGNAL(toggleIgnoreLabels(bool)),
 			bandDock->bandView(), SLOT(toggleShowLabels(bool)));
-	connect(this, SIGNAL(toggleSingleLabel(bool)),
-			bandDock->bandView(), SLOT(toggleSingleLabel(bool)));
 
 	/* FalseColor Dock */
 	connect(falseColorDock, SIGNAL(subscribeFalseColoring(QObject*, FalseColoring::Type)),
@@ -247,10 +248,10 @@ void Controller::setupDocks()
 			labelingModel(), SLOT(deleteLabels(QVector<int>)));
 	connect(labelDock, SIGNAL(consolidateLabelsRequested()),
 			labelingModel(), SLOT(consolidate()));
-	connect(labelDock, SIGNAL(highlightLabelRequested(short,bool)),
-			this, SLOT(highlightSingleLabel(short,bool)));
-	connect(labelDock, SIGNAL(highlightLabelRequested(short,bool)),
-			bandDock->bandView(), SLOT(highlightSingleLabel(short,bool)));
+	connect(labelDock, SIGNAL(toggleLabelHighlightRequested(short)),
+			this, SLOT(toggleLabelHighlight(short)));
+	connect(labelDock, SIGNAL(toggleLabelHighlightRequested(short)),
+			bandDock->bandView(), SLOT(toggleLabelHighlight(short)));
 	connect(labelDock, SIGNAL(labelMaskIconsRequested()),
 			labelingModel(), SLOT(computeLabelIcons()));
 	connect(labelDock, SIGNAL(labelMaskIconSizeChanged(const QSize&)),
@@ -266,18 +267,21 @@ void Controller::setupDocks()
 			labelingModel(), SLOT(saveLabeling()));
 	connect(imageModel(), SIGNAL(roiRectChanged(cv::Rect)),
 			labelDock, SLOT(processRoiRectChanged(cv::Rect)));
+
+	connect(bandDock->bandView(), SIGNAL(labelSelected(int)),
+			labelDock, SLOT(toggleLabelSelection(int)));
 }
 
 void Controller::requestGraphseg(representation::t repr,
-									 const seg_graphs::GraphSegConfig &config,
-									 bool resetLabel)
+								 const seg_graphs::GraphSegConfig &config,
+								 bool resetLabel)
 {
 	cv::Mat1s seedMap = bandDock->bandView()->getSeedMap();
 	emit requestGraphseg(repr, seedMap, config, resetLabel);
 }
 
 void Controller::requestGraphsegCurBand(const seg_graphs::GraphSegConfig &config,
-											bool resetLabel)
+										bool resetLabel)
 {
 	representation::t repr = bandDock->getCurRepresentation();
 	int bandId = bandDock->getCurBandId();
@@ -285,14 +289,7 @@ void Controller::requestGraphsegCurBand(const seg_graphs::GraphSegConfig &config
 	emit requestGraphsegBand(repr, bandId, seedMap, config, resetLabel);
 }
 
-void Controller::highlightSingleLabel(short label, bool highlight)
+void Controller::toggleLabelHighlight(short label)
 {
-	/* currently we only support a single label highlight. a negative signal
-	 * will therefore deactivate all highlights. */
-	if (highlight) {
-		emit toggleSingleLabel(true);
-		emit singleLabelSelected(label);
-	} else {
-		emit toggleSingleLabel(false);
-	}
+	emit labelSelected(label);
 }
