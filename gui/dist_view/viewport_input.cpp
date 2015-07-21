@@ -153,6 +153,8 @@ void Viewport::wheelEvent(QGraphicsSceneWheelEvent *event)
 
 	if (zoom*newzoom <= 1)
 	{
+		if (zoom == 1) // nothing to do here
+			return;
 		zoom = 1;
 		updateYAxis();
 
