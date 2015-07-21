@@ -5,12 +5,12 @@
 #include <gerbil_gui_debug.h>
 
 DistViewGUI::DistViewGUI(representation::t type)
-    : type(type)
+	: type(type)
 {	
 	// setup frame and its UI
 	frame = new QWidget();
 	frame->setSizePolicy(QSizePolicy::Preferred, // hor
-	                     QSizePolicy::Expanding); // ver
+						 QSizePolicy::Expanding); // ver
 	ui = new Ui::DistViewGUI();
 	ui->setupUi(frame);
 
@@ -289,7 +289,6 @@ void DistViewGUI::insertPixelOverlay(const QPolygonF &points)
 {
 	vp->insertPixelOverlay(points);
 }
-
 
 /** Return a 32x32px icon filled with color. */
 QIcon DistViewGUI::colorIcon(const QColor &color)

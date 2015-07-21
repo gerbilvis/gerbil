@@ -2,6 +2,7 @@
 
 #include <QGraphicsSceneEvent>
 #include <QGraphicsProxyWidget>
+#include <QDebug>
 #include <cmath>
 
 bool Viewport::updateXY(int sel, int bin)
@@ -72,21 +73,23 @@ void Viewport::mouseMoveEvent(QGraphicsSceneMouseEvent *event)
 		// add .5 to x for rounding
 		needTextureUpdate = updateXY(pos.x() + 0.5f, pos.y());
 
-	} else if (event->buttons() & Qt::RightButton) {
+	} else if (event->buttons() & Qt::RightButton && zoom  > 1) {
 		/* panning movement */
 
-		if (lasty < 0)
-			return;
+		QPointF lastonscene = modelviewI.map(event->lastScenePos());
+		QPointF curronscene = modelviewI.map(event->scenePos());
 
-		shift += (event->scenePos().y() - lasty)/(qreal)height;
-		lasty = event->scenePos().y(); // TODO: will be done by qgraphicsscene!
+		//qDebug() << "curronscene" << curronscene;
 
-		/* TODO: make sure that we use full visible space */
+		qreal xp = curronscene.x() - lastonscene.x();
+		qreal yp = curronscene.y() - lastonscene.y();
 
-		updateModelview();
-		buffers[0].renderTimer.stop();
-		buffers[1].renderTimer.stop();
-		scrollTimer.start(10);
+		modelview.translate(xp, yp);
+		modelviewI = modelview.inverted();
+
+		adjustBoundaries();
+		updateBuffers();
+		updateYAxis(true);
 	}
 
 	if (needTextureUpdate) {
@@ -110,10 +113,8 @@ void Viewport::mousePressEvent(QGraphicsSceneMouseEvent *event)
 
 	startNoHQ();
 
-	if (event->button() == Qt::RightButton) {
+	if (event->button() == Qt::RightButton)
 		target->setCursor(Qt::ClosedHandCursor);
-		lasty = event->scenePos().y(); // TODO: qgraphicsscene
-	}
 
 	mouseMoveEvent(event);
 }
@@ -130,10 +131,8 @@ void Viewport::mouseReleaseEvent(QGraphicsSceneMouseEvent *event)
 	holdSelection = false;
 	activeLimiter = 0;
 
-	if (event->button() == Qt::RightButton) {
+	if (event->button() == Qt::RightButton)
 		target->setCursor(Qt::ArrowCursor);
-		lasty = -1;
-	}
 
 	endNoHQ((event->button() == Qt::RightButton) ? RM_STEP : RM_SKIP, RM_STEP);
 }
@@ -143,22 +142,44 @@ void Viewport::wheelEvent(QGraphicsSceneWheelEvent *event)
 	// check for scene elements first (we are technically the background)
 	QGraphicsScene::wheelEvent(event);
 	if (event->isAccepted())
-		 return;
+		return;
 
-	// zoom in or out
-	qreal oldzoom = zoom;
-	if (event->delta() > 0)
-		zoom *= 1.25;
-	else
-		zoom = std::max(zoom * 0.80, 1.);
+	qreal newzoom;
+	if (event->delta() > 0) {
+		newzoom = 1.25;
+	} else {
+		newzoom = 0.8;
+	}
 
-	// adjust shift to new zoom
-	shift += ((oldzoom - zoom) * 0.5);
+	if (zoom*newzoom <= 1)
+	{
+		if (zoom == 1) // nothing to do here
+			return;
+		zoom = 1;
+		updateYAxis();
 
-	/* TODO: make sure that we use full space */
+		updateModelview();
+	} else {
+		QPointF scene = event->scenePos();
+		QPointF local = modelviewI.map(scene);
 
-	updateModelview();
+		zoom *= newzoom;
+
+		modelview.scale(newzoom,newzoom);
+		modelviewI = modelview.inverted();
+
+		QPointF newlocal = modelviewI.map(scene);
+		QPointF diff = newlocal - local;
+		modelview.translate(diff.x(), diff.y());
+		modelviewI = modelview.inverted();
+
+		adjustBoundaries();
+
+		updateYAxis(true);
+	}
+
 	updateBuffers();
+	/* TODO: make sure that we use full space */
 }
 
 void Viewport::keyPressEvent(QKeyEvent *event)
@@ -166,7 +187,7 @@ void Viewport::keyPressEvent(QKeyEvent *event)
 	// check for scene elements first (we are technically the background)
 	QGraphicsScene::keyPressEvent(event);
 	if (event->isAccepted())
-		 return;
+		return;
 
 	bool highlightAltered = false;
 
@@ -244,7 +265,9 @@ void Viewport::keyPressEvent(QKeyEvent *event)
 		case RGBA16F: bufferFormat = RGBA32F; break;
 		case RGBA32F: bufferFormat = RGBA8; break;
 		}
-		resizeScene(); // will init and update buffers
+		// initialize buffers with new format
+		initBuffers();
+		updateBuffers();
 		break;
 	case Qt::Key_M:
 		drawMeans = !drawMeans;
