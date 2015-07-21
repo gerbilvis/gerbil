@@ -149,7 +149,7 @@ void Viewport::updateBuffers(RenderMode spectrum, RenderMode highlight)
 	update();
 }
 
-void Viewport::updateYAxis()
+void Viewport::updateYAxis(bool yAxisChanged)
 {
 	// steps on the y-axis (number of labeled values)
 	const int amount = 10;
@@ -173,9 +173,8 @@ void Viewport::updateYAxis()
 		qreal ratio = bottom.y()/binscount;
 
 		maxvalue = plotmaxval - (1.f-ratio) * (plotmaxval - plotminval);
-		if (maxvalue > plotmaxval) maxvalue = plotmaxval;
-
-		yAxisChanged = false;
+		if (maxvalue > plotmaxval)
+			maxvalue = plotmaxval;
 	} else {
 		maxvalue = plotmaxval;
 	}
@@ -253,8 +252,7 @@ void Viewport::updateModelview(bool newBinning)
 		modelviewI = modelview.inverted();
 
 		// reset y-axis
-		yAxisChanged = true;
-		updateYAxis();
+		updateYAxis(true);
 	}
 
 }

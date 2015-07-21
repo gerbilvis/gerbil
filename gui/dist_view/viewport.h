@@ -122,7 +122,7 @@ protected:
 	void adjustBoundaries();
 
 	// helper function that updates Y-axis labels
-	void updateYAxis();
+	void updateYAxis(bool yAxisChanged = false);
 
 	// helper function that updates world transformation
 	void updateModelview(bool newBinning = false);
@@ -205,8 +205,6 @@ private:
 	QTransform modelview, modelviewI;
 
 	qreal zoom;
-
-	bool yAxisChanged;
 
 	/* if in limiter mode, user has to release mouse button before switching
 	   band. this is for usability, users tend to accidentially switch bands */

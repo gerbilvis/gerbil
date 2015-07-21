@@ -89,9 +89,7 @@ void Viewport::mouseMoveEvent(QGraphicsSceneMouseEvent *event)
 
 		adjustBoundaries();
 		updateBuffers();
-
-		yAxisChanged = true;
-		updateYAxis();
+		updateYAxis(true);
 	}
 
 	if (needTextureUpdate) {
@@ -175,8 +173,7 @@ void Viewport::wheelEvent(QGraphicsSceneWheelEvent *event)
 
 		adjustBoundaries();
 
-		yAxisChanged = true;
-		updateYAxis();
+		updateYAxis(true);
 	}
 
 	updateBuffers();
