@@ -22,8 +22,8 @@ void dump_compiler_cplusplus_info()
 
 int main(int argc, char **argv)
 {
-	QCoreApplication::setOrganizationName("FAU");
-	QCoreApplication::setOrganizationDomain("fau.de");
+	QCoreApplication::setOrganizationName("Gerbil");
+	QCoreApplication::setOrganizationDomain("gerbilvis.org");
 	QCoreApplication::setApplicationName("Gerbil");
 
 	// FIXME Remove for RELEASE
