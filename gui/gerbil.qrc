@@ -20,6 +20,8 @@
         <file alias="pencil">resources/pencil.png</file>
         <file alias="mouse-left">resources/mouse-left.png</file>
         <file alias="mouse-right">resources/mouse-right.png</file>
+        <file alias="picker">resources/picker.png</file>
+        <file alias="zoom">resources/zoom.png</file>
     </qresource>
     <qresource prefix="/icons/Gerbil">
         <file alias="index.theme">resources/icons/index.theme</file>

@@ -17,6 +17,9 @@
 
 ROIView::ROIView()
 {
+	// prevent panning/moving through ScaledView
+	inputMode = InputMode::Disabled;
+
 	rect = new BoundedRect();
 	rect->setBrush(QColor(255, 255, 255, 31));
 	QPen pen(Qt::DashLine);

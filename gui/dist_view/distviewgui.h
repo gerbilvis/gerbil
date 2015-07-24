@@ -46,7 +46,6 @@ public slots:
 
 	// from outside
 	void updateLabelColors(QVector<QColor> colors);
-	void toggleSingleLabel(bool toggle);
 
 	// from our GUI
 	void setAlpha(int alpha);

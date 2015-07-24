@@ -27,7 +27,7 @@
 #include <iostream>
 
 MainWindow::MainWindow()
-	: contextMenu(NULL)
+    : contextMenu(NULL)
 {
 	// create all objects
 	setupUi(this);
@@ -48,43 +48,39 @@ void MainWindow::initSignals(QObject *ctrl, QObject *dvctrl)
 {
 	/* slots & signals: GUI only */
 	connect(docksButton, SIGNAL(clicked()),
-			this, SLOT(openContextMenu()));
+	        this, SLOT(openContextMenu()));
 
-//	we decided to remove this functionality for now
-//	connect(bandDock, SIGNAL(topLevelChanged(bool)),
-//			this, SLOT(reshapeDock(bool)));
+	//	we decided to remove this functionality for now
+	//	connect(bandDock, SIGNAL(topLevelChanged(bool)),
+	//			this, SLOT(reshapeDock(bool)));
 
 	/* buttons to alter label display dynamics */
 	connect(ignoreButton, SIGNAL(toggled(bool)),
-			markButton, SLOT(setDisabled(bool)));
+	        markButton, SLOT(setDisabled(bool)));
 	connect(ignoreButton, SIGNAL(toggled(bool)),
-			nonmarkButton, SLOT(setDisabled(bool)));
-	connect(ignoreButton, SIGNAL(toggled(bool)),
-			singleButton, SLOT(setDisabled(bool)));
+	        nonmarkButton, SLOT(setDisabled(bool)));
 
 	connect(ignoreButton, SIGNAL(toggled(bool)),
-			ctrl, SIGNAL(toggleIgnoreLabels(bool)));
-	connect(singleButton, SIGNAL(toggled(bool)),
-			ctrl, SIGNAL(toggleSingleLabel(bool)));
+	        ctrl, SIGNAL(toggleIgnoreLabels(bool)));
 
 	// label manipulation from current dist_view
 	connect(addButton, SIGNAL(clicked()),
-			dvctrl, SLOT(addHighlightToLabel()));
+	        dvctrl, SLOT(addHighlightToLabel()));
 	connect(remButton, SIGNAL(clicked()),
-			dvctrl, SLOT(remHighlightFromLabel()));
+	        dvctrl, SLOT(remHighlightFromLabel()));
 
 	connect(markButton, SIGNAL(toggled(bool)),
-			dvctrl, SIGNAL(toggleLabeled(bool)));
+	        dvctrl, SIGNAL(toggleLabeled(bool)));
 	connect(nonmarkButton, SIGNAL(toggled(bool)),
-			dvctrl, SIGNAL(toggleUnlabeled(bool)));
+	        dvctrl, SIGNAL(toggleUnlabeled(bool)));
 
-//	connect(chief2, SIGNAL(normTargetChanged(bool)),
-//			this, SLOT(normTargetChanged(bool)));
+	//	connect(chief2, SIGNAL(normTargetChanged(bool)),
+	//			this, SLOT(normTargetChanged(bool)));
 
 	subscriptionsDebugButton->hide();
 
 	connect(subscriptionsDebugButton, SIGNAL(clicked()),
-			ctrl, SLOT(debugSubscriptions()));
+	        ctrl, SLOT(debugSubscriptions()));
 
 	/// global shortcuts
 	QShortcut *scr = new QShortcut(Qt::CTRL + Qt::Key_S, this);

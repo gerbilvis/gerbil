@@ -42,7 +42,7 @@ public:
 
 public slots:
 
-	void highlightSingleLabel(int index);
+	void toggleLabelHighlight(int index);
 
 	void toggleRGB(bool enabled) { drawRGB = enabled; updateBuffers(); }
 
@@ -83,9 +83,9 @@ protected slots:
 	// triggered by resizeTimer
 	void resizeScene();
 
-	// triggered by scrollTimer and manually
+	// triggered manually
 	void updateBuffers(RenderMode spectrum = RM_STEP,
-					   RenderMode highlight = RM_STEP);
+	                   RenderMode highlight = RM_STEP);
 
 signals:
 	// we are the active viewer
@@ -96,7 +96,7 @@ signals:
 	// highlight changed -> band display overlay
 	void requestOverlay(int dim, int bin);
 	void requestOverlay(const std::vector<std::pair<int, int> >& limiters,
-						int dim);
+	                    int dim);
 
 	// add/remove highlight from/to current label
 	void addSelectionRequested();
@@ -118,11 +118,14 @@ protected:
 	void wheelEvent(QGraphicsSceneWheelEvent *);
 	void keyPressEvent(QKeyEvent *);
 
+	//helper function that adjusts boundaries after zooming/panning
+	void adjustBoundaries();
+
 	// helper function that updates Y-axis labels
-	void updateYAxis();
+	void updateYAxis(bool yAxisChanged = false);
 
 	// helper function that updates world transformation
-	void updateModelview();
+	void updateModelview(bool newBinning = false);
 
 	// helper functions called by mouseMoveEvent
 	bool updateXY(int sel, int bin);
@@ -133,11 +136,11 @@ protected:
 	/* helper functions called by drawScene/updateTextures */
 
 	void drawBins(QPainter &painter, QTimer &renderTimer,
-		unsigned int &renderedLines, unsigned int renderStep,
-				  bool onlyHighlight);
+	              unsigned int &renderedLines, unsigned int renderStep,
+	              bool onlyHighlight);
 	// helper function called by drawBins
 	QColor determineColor(const QColor &basecolor, float weight,
-						  float totalweight, bool highlighted, bool single);
+	                      float totalweight, bool highlighted, bool single);
 
 	void drawAxesBg(QPainter*);
 	void drawAxesFg(QPainter*);
@@ -155,7 +158,7 @@ private:
 
 	struct renderbuffer {
 		renderbuffer() : fbo(0), blit(0), dirty(true),
-			renderStep(10000), renderedLines(0) {}
+		    renderStep(10000), renderedLines(0) {}
 
 		// buffer to render to
 		QGLFramebufferObject *fbo;
@@ -200,10 +203,8 @@ private:
 
 	// modelview matrix and its inverse
 	QTransform modelview, modelviewI;
-	// zoom and shift in y-direction
+
 	qreal zoom;
-	qreal shift;
-	int lasty;
 
 	/* if in limiter mode, user has to release mouse button before switching
 	   band. this is for usability, users tend to accidentially switch bands */
@@ -233,14 +234,20 @@ private:
 
 	// this timer will resize the scene after resize/folding
 	QTimer resizeTimer;
-	// this timer will update buffers after scrolling
-	QTimer scrollTimer;
 
 	std::vector<QString> yaxis;
 	int yaxisWidth;
+	int displayHeight; // height of plot without paddings
 
-	// single label to be highlighted
-	int highlightLabel;
+	// vector containing highlighted labels
+	QVector<int> highlightLabels;
+
+	struct {
+		int hp = 20; //horizontal padding
+		int vp = 12; //vertical padding
+		int vtp = 22; // lower padding for text (legend)
+		int htp; // left padding for text (legend)
+	} boundaries;
 };
 
 #endif // VIEWPORT_H
