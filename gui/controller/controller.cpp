@@ -104,13 +104,14 @@ Controller::Controller(const QString &filename,
 			dvc, SIGNAL(newIlluminantCurve(QVector<multi_img::Value>)));
 	connect(illumm, SIGNAL(newIlluminantApplied(QVector<multi_img::Value>)),
 			dvc, SIGNAL(newIlluminantApplied(QVector<multi_img::Value>)));
-
+#ifdef WITH_SEG_MEANSHIFT
 	connect(cm, SIGNAL(subscribeRepresentation(QObject*,representation::t)),
 			this, SLOT(subscribeRepresentation(QObject*,representation::t)));
 	connect(cm, SIGNAL(unsubscribeRepresentation(QObject*,representation::t)),
 			this, SLOT(unsubscribeRepresentation(QObject*,representation::t)));
 	connect(im, SIGNAL(imageUpdate(representation::t,SharedMultiImgPtr,bool)),
 			cm, SLOT(processImageUpdate(representation::t,SharedMultiImgPtr,bool)));
+#endif
 	connect(this, SIGNAL(preROISpawn(cv::Rect,cv::Rect,std::vector<cv::Rect>,std::vector<cv::Rect>,bool)),
 			dvc, SLOT(processPreROISpawn(cv::Rect,cv::Rect,std::vector<cv::Rect>,std::vector<cv::Rect>,bool)));
 	connect(this, SIGNAL(postROISpawn(cv::Rect,cv::Rect,std::vector<cv::Rect>,std::vector<cv::Rect>,bool)),

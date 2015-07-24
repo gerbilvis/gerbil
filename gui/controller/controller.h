@@ -18,7 +18,9 @@ class DistViewController;
 class GraphSegmentationModel;
 class FalseColorModel;
 class LabelingModel;
+#ifdef WITH_SEG_MEANSHIFT
 class ClusteringModel;
+#endif
 class IllumModel;
 class ImageModel;
 class MainWindow;
@@ -55,7 +57,9 @@ public:
 	FalseColorModel* falseColorModel() { return fm; }
 	IllumModel* illumModel() { return illumm; }
 	GraphSegmentationModel* graphSegmentationModel() { return gsm; }
+#ifdef WITH_SEG_MEANSHIFT
 	ClusteringModel* clusteringModel() { return cm; }
+#endif
 
 signals:
 	void currentLabelChanged(int);

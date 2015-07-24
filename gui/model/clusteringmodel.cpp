@@ -1,5 +1,7 @@
 #include "clusteringmodel.h"
 
+#ifdef WITH_SEG_MEANSHIFT
+
 #include <commandrunner.h>
 #include <meanshift_shell.h>
 // vole modules
@@ -316,3 +318,5 @@ void ClusteringModel::abortCommandRunner()
 			commandRunner, SLOT(deleteLater()));
 	commandRunner = NULL;
 }
+
+#endif

@@ -1,6 +1,8 @@
 #ifndef CLUSTERING_MODEL_H
 #define CLUSTERING_MODEL_H
 
+#ifdef WITH_SEG_MEANSHIFT
+
 #include <gerbil_cplusplus.h>
 #include <shared_data.h>
 
@@ -87,5 +89,7 @@ protected:
 	// IMG and GRAD representation of multi image of current ROI.
 	QMap<representation::t, SharedMultiImgPtr> inputMap;
 };
+
+#endif
 
 #endif // CLUSTERING_MODEL_H
