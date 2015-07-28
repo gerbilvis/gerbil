@@ -40,7 +40,7 @@ include(EnableSSE2)
 
 # Global options
 option(VOLE_CMAKE_DEBUG_OUTPUT "Show additonal cmake debug output." OFF)
-mark_as_advanced(VOLE_CMAKE_DEBUG_OUTPUT)
+#mark_as_advanced(VOLE_CMAKE_DEBUG_OUTPUT)
 option(VOLE_CHECK_DEPENDENCIES "Do additional dependency check with nice error messages." ON)
 mark_as_advanced(VOLE_CHECK_DEPENDENCIES)
 option(VOLE_AUTO_OPTIONAL_MODULES "Automatically link optional modules if possible." ON)
