@@ -1,13 +1,12 @@
 #include "clusteringmodel.h"
 
-#ifdef WITH_SEG_MEANSHIFT
-
 #include <commandrunner.h>
+#ifdef WITH_SEG_MEANSHIFT
 #include <meanshift_shell.h>
-// vole modules
 #include <meanshift.h>
 #include <meanshift_shell.h>
 #include <meanshift_sp.h>
+#endif
 
 #include <map>
 #include <boost/any.hpp>
@@ -72,6 +71,7 @@ void ClusteringModel::requestSegmentation(const ClusteringRequest &r)
 
 void ClusteringModel::startSegmentation()
 {
+#ifdef WITH_SEG_MEANSHIFT
 	bool good = true;
 	if (!request) {
 		std::cerr << "ClusteringModel::startSegmentation(): "
@@ -198,6 +198,7 @@ void ClusteringModel::startSegmentation()
 		   <<  static_cast<CommandRunner*>(commandRunner) << endl);
 	commandRunner->start();
 	state = State::Executing;
+#endif
 }
 
 
@@ -319,4 +320,3 @@ void ClusteringModel::abortCommandRunner()
 	commandRunner = NULL;
 }
 
-#endif
