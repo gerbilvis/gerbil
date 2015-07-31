@@ -20,7 +20,7 @@ public:
 		const QVector<QColor> &colors,
 		const std::vector<multi_img::Value> &illuminant,
 		const ViewportCtx &args, vpctx_ptr context,
-		sets_ptr current, cv::Mat3f *colormat,
+		sets_ptr current, cv::Mat3f colormat,
 		sets_ptr temp = sets_ptr(new SharedData<std::vector<BinSet> >(NULL)),
 		const std::vector<cv::Rect> &sub = std::vector<cv::Rect>(),
 		const std::vector<cv::Rect> &add = std::vector<cv::Rect>(),
@@ -44,7 +44,7 @@ protected:
 	const cv::Mat1b mask;
 	QVector<QColor> colors;
 	std::vector<multi_img::Value> illuminant;
-	cv::Mat3f* colormat;
+	cv::Mat3f colormat;
 	// source context
 	ViewportCtx args;
 

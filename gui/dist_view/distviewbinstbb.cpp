@@ -17,7 +17,7 @@ public:
 	Accumulate(bool subtract, multi_img &multi, const cv::Mat1s &labels, const cv::Mat1b &mask,
 		int nbins, multi_img::Value binsize, multi_img::Value minval, bool ignoreLabels,
 		std::vector<multi_img::Value> &illuminant,
-		std::vector<BinSet> &sets, cv::Mat3f* colormat)
+		std::vector<BinSet> &sets, cv::Mat3f colormat)
 		: subtract(subtract), multi(multi), labels(labels), mask(mask), nbins(nbins), binsize(binsize),
 		minval(minval), illuminant(illuminant), ignoreLabels(ignoreLabels), sets(sets),
 		colormat(colormat) {}
@@ -33,13 +33,13 @@ private:
 	bool ignoreLabels;
 	std::vector<multi_img::Value> &illuminant;
 	std::vector<BinSet> &sets;
-	cv::Mat3f* colormat;
+	cv::Mat3f colormat;
 };
 
 bool DistviewBinsTbb::run()
 {
 	bool reuse = ((!add.empty() || !sub.empty()) && !inplace);
-	bool keepOldContext = args.valid;
+	bool keepOldContext = args.metadataValid;
 	if (reuse) {
 		/* test if minval / maxval differ too much to re-use data */
 		keepOldContext = ((fabs(args.minval) * REUSE_THRESHOLD) >=
@@ -141,9 +141,9 @@ void DistviewBinsTbb::updateContext()
 					/ (multi_img::Value)(args.nbins - 1);
 	args.minval = (*multi)->minval;
 	args.maxval = (*multi)->maxval;
-	if(colormat) args.coloringUpToDate = true;
 
-	args.valid = true;
+	if(!colormat.empty()) args.coloringValid = true;
+	args.metadataValid = true;
 }
 
 void Accumulate::operator()(const tbb::blocked_range2d<int> &r) const
@@ -171,10 +171,11 @@ void Accumulate::operator()(const tbb::blocked_range2d<int> &r) const
 			if (subtract) {
 				BinSet::HashMap::accessor ac;
 				if (s.bins.find(ac, hashkey)) {
-					ac->second.sub(pixel);
-					if (colormat) {
-						const cv::Vec3f &colorpixel = (*colormat)(y,x);
-						ac->second.sub(colorpixel);
+					if (!colormat.empty()) {
+						const cv::Vec3f &colorpixel = colormat(y,x);
+						ac->second.sub(pixel, colorpixel);
+					} else {
+						ac->second.sub(pixel);
 					}
 					if (ac->second.weight == 0.f)
 						s.bins.erase(ac);
@@ -184,10 +185,11 @@ void Accumulate::operator()(const tbb::blocked_range2d<int> &r) const
 			} else {
 				BinSet::HashMap::accessor ac;
 				s.bins.insert(ac, hashkey);
-				ac->second.add(pixel);
-				if (colormat) {
-					const cv::Vec3f &colorpixel = (*colormat)(y,x);
-					ac->second.add(colorpixel);
+				if (!colormat.empty()) {
+					const cv::Vec3f &colorpixel = colormat(y,x);
+					ac->second.add(pixel, colorpixel);
+				} else {
+					ac->second.add(pixel);
 				}
 				ac.release();
 				s.totalweight++; // atomic

@@ -82,8 +82,8 @@ void FalseColorModelPayload::processRunnerSuccess(std::map<std::string, boost::a
 	if(canceled) {
 		return;
 	}
-	matResult = new cv::Mat3f(boost::any_cast<cv::Mat3f>(output["multi_img"]));
-	result.convertFromImage(Mat2QImage((cv::Mat3b)*matResult));
+	resultMat = boost::any_cast<cv::Mat3f>(output["multi_img"]);
+	resultPixmap.convertFromImage(Mat2QImage((cv::Mat3b)resultMat));
 	emit finished(coloringType, true); // success
 }
 

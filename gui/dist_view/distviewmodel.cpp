@@ -56,7 +56,7 @@ void DistViewModel::updateBinning(int bins)
 		args.nbins = bins;
 	}
 
-	args.valid = false;
+	args.metadataValid = false;
 
 	args.reset.fetch_and_store(1);
 	args.wait.fetch_and_store(1);
@@ -210,7 +210,7 @@ void DistViewModel::addImage(sets_ptr temp,const std::vector<cv::Rect> &regions,
 	ViewportCtx args = **context;
 	ctxlock.unlock();
 
-	args.valid = false;
+	args.metadataValid = false;
 
 	args.reset.fetch_and_store(1);
 	args.wait.fetch_and_store(1);
@@ -240,7 +240,7 @@ void DistViewModel::setImage(SharedMultiImgPtr img, cv::Rect roi, int bins)
 
 	args.nbins = bins;
 
-	args.valid = false;
+	args.metadataValid = false;
 
 	args.reset.fetch_and_store(1);
 	args.wait.fetch_and_store(1);
@@ -346,23 +346,30 @@ QPolygonF DistViewModel::getPixelOverlay(int y, int x)
 	return points;
 }
 
-void DistViewModel::processColoringChanged(cv::Mat3f* result)
+void DistViewModel::processColoringChanged(cv::Mat3f result)
 {
 	coloringResult = result;
 
 	SharedDataLock ctxlock(context->mutex);
-	(*context)->coloringUpToDate = false;
+	(*context)->coloringValid = false;
+	int nbins = (*context)->nbins;
 	ctxlock.unlock();
 
 	if (coloringEnabled) {
-		updateBinning( (*context)->nbins );
+		updateBinning(nbins);
 	}
 }
 
 void DistViewModel::processRgbToggled(bool enabled)
 {
 	coloringEnabled = enabled;
-	if( coloringEnabled && !(*context)->coloringUpToDate) {
-		updateBinning( (*context)->nbins );
+
+	SharedDataLock ctxlock(context->mutex);
+	bool coloringValid = (*context)->coloringValid;
+	int nbins = (*context)->nbins;
+	ctxlock.unlock();
+
+	if (coloringEnabled && !coloringValid) {
+		updateBinning(nbins);
 	}
 }

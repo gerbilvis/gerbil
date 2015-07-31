@@ -74,7 +74,7 @@ signals:
 	/** Signals the progress of a representation computation. */
 	void progressChanged(FalseColoring::Type coloringType, int percent);
 
-	void coloringChanged(cv::Mat3f* result);
+	void coloringChanged(cv::Mat3f result);
 
 private slots:
 	/** Payload has finished computation. */

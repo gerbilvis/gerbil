@@ -89,10 +89,7 @@ void Compute::PreprocessBins::operator()(const BinSet::HashMap::range_type &r)
 			range.first = std::min<int>(range.first, (int)(it->first)[d]);
 			range.second = std::max<int>(range.second, (int)(it->first)[d]);
 		}
-		for (int i = 0; i<3; i++) {
-			b.colors[i] = b.colors[i] / b.weight;
-		}
-		b.rgb = QColor(b.colors[2], b.colors[1], b.colors[0]);
+		b.rgb = QColor(b.color[2]/b.weight, b.color[1]/b.weight, b.color[0]/b.weight);
 		index.push_back(make_pair(label, it->first));
 	}
 }

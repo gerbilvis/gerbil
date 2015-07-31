@@ -213,14 +213,14 @@ void FalseColorModel::processComputationFinished(FalseColoring::Type coloringTyp
 	assert(payload);
 	payloads.erase(payloadIt);
 	if(success) {
-		pixmap = payload->getResult();
-		cache.insert(coloringType,FalseColoringCacheItem(pixmap, *(payload->getMatResult())));
+		pixmap = payload->getResultPixmap();
+		cache.insert(coloringType,FalseColoringCacheItem(pixmap, payload->getResultMat()));
 	}
 	payload->deleteLater();
 	if(success) {
 		//GGDBGM("emitting falseColoringUpdate " << coloringType<<endl);
 		emit falseColoringUpdate(coloringType, pixmap);
-		emit coloringChanged(payload->getMatResult());
+		emit coloringChanged(payload->getResultMat());
 	} else {
 		//GGDBGM("emitting computationCancelled " << coloringType<<endl);
 		emit computationCancelled(coloringType);

@@ -61,7 +61,7 @@ public slots:
 	void propagateBinning(bool updated);
 	void propagateBinningRange(bool updated);
 
-	void processColoringChanged(cv::Mat3f *result);
+	void processColoringChanged(cv::Mat3f result);
 
 	void processRgbToggled(bool enabled);
 
@@ -95,8 +95,8 @@ protected:
 	 */
 	bool inbetween;
 
-	bool coloringEnabled = false;
-	cv::Mat3f* coloringResult = nullptr;
+	bool coloringEnabled;
+	cv::Mat3f coloringResult;
 };
 
 #endif // DISTVIEWMODEL
