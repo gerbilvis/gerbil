@@ -76,15 +76,14 @@ void FalseColorModelPayload::processRunnerProgress(int percent)
 	emit progressChanged(coloringType, percent);
 }
 
-
 void FalseColorModelPayload::processRunnerSuccess(std::map<std::string, boost::any> output)
 {
 	runner->deleteLater();
 	if(canceled) {
 		return;
 	}
-	cv::Mat3f mat = boost::any_cast<cv::Mat3f>(output["multi_img"]);
-	result.convertFromImage(Mat2QImage((cv::Mat3b)mat));
+	matResult = new cv::Mat3f(boost::any_cast<cv::Mat3f>(output["multi_img"]));
+	result.convertFromImage(Mat2QImage((cv::Mat3b)*matResult));
 	emit finished(coloringType, true); // success
 }
 

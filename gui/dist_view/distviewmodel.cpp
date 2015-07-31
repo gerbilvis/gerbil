@@ -65,7 +65,7 @@ void DistViewModel::updateBinning(int bins)
 		return;
 
 	BackgroundTaskPtr taskBins(new DistviewBinsTbb(
-		image, labels, labelColors, illuminant, args, context, binsets));
+		image, labels, labelColors, illuminant, args, context, binsets, coloringResult));
 	QObject::connect(taskBins.get(), SIGNAL(finished(bool)),
 					 this, SLOT(propagateBinning(bool)), Qt::QueuedConnection);
 	queue->push(taskBins);
@@ -86,7 +86,7 @@ void DistViewModel::toggleLabels(bool toggle)
 		return;
 
 	BackgroundTaskPtr taskBins(new DistviewBinsTbb(
-		image, labels, labelColors, illuminant, args, context, binsets));
+		image, labels, labelColors, illuminant, args, context, binsets, coloringResult));
 	QObject::connect(taskBins.get(), SIGNAL(finished(bool)),
 					 this, SLOT(propagateBinning(bool)), Qt::QueuedConnection);
 	queue->push(taskBins);
@@ -110,7 +110,7 @@ void DistViewModel::updateLabels(const cv::Mat1s &newLabels,
 	args.wait.fetch_and_store(1);
 
 	BackgroundTaskPtr taskBins(new DistviewBinsTbb(
-		image, labels, labelColors, illuminant, args, context, binsets));
+		image, labels, labelColors, illuminant, args, context, binsets, coloringResult));
 	QObject::connect(taskBins.get(), SIGNAL(finished(bool)),
 					 this, SLOT(propagateBinning(bool)), Qt::QueuedConnection);
 	queue->push(taskBins);
@@ -141,7 +141,7 @@ void DistViewModel::updateLabelsPartially(const cv::Mat1s &newLabels,
 		sub.push_back(cv::Rect(0, 0, mask.cols, mask.rows));
 		BackgroundTaskPtr taskBins(new DistviewBinsTbb(
 			image, oldLabels, labelColors, illuminant, args,
-			context, binsets, temp, sub, std::vector<cv::Rect>(),
+			context, binsets, coloringResult, temp, sub, std::vector<cv::Rect>(),
 			mask, false, false));
 		queue->push(taskBins);
 	}
@@ -154,7 +154,7 @@ void DistViewModel::updateLabelsPartially(const cv::Mat1s &newLabels,
 		add.push_back(cv::Rect(0, 0, mask.cols, mask.rows));
 		BackgroundTaskPtr taskBins(new DistviewBinsTbb(
 			image, labels, labelColors, illuminant, args,
-			context, binsets, temp, std::vector<cv::Rect>(), add,
+			context, binsets, coloringResult, temp, std::vector<cv::Rect>(), add,
 			mask, false, true));
 
 		// final signal
@@ -185,7 +185,7 @@ sets_ptr DistViewModel::subImage(const std::vector<cv::Rect> &regions,
 
 	BackgroundTaskPtr taskBins(new DistviewBinsTbb(
 		image, labels, labelColors, illuminant, args, context, binsets,
-		temp, regions,
+		coloringResult, temp, regions,
 		std::vector<cv::Rect>(), cv::Mat1b(), false, false));
 	queue->push(taskBins);
 
@@ -217,7 +217,7 @@ void DistViewModel::addImage(sets_ptr temp,const std::vector<cv::Rect> &regions,
 
 	BackgroundTaskPtr taskBins(new DistviewBinsTbb(
 		image, labels, labelColors, illuminant, args, context,
-		binsets, temp, std::vector<cv::Rect>(), regions,
+		binsets, coloringResult, temp, std::vector<cv::Rect>(), regions,
 		cv::Mat1b(), false, true));
 	// connect to propagateBinningRange as this operation can change range
 	QObject::connect(taskBins.get(), SIGNAL(finished(bool)),
@@ -248,7 +248,7 @@ void DistViewModel::setImage(SharedMultiImgPtr img, cv::Rect roi, int bins)
 	assert(context);
 	BackgroundTaskPtr taskBins(new DistviewBinsTbb(
 		image, labels, labelColors, illuminant, args, context, binsets,
-		sets_ptr(new SharedData<std::vector<BinSet> >(NULL)),
+		coloringResult, sets_ptr(new SharedData<std::vector<BinSet> >(NULL)),
 		std::vector<cv::Rect>(), std::vector<cv::Rect>(),
 		cv::Mat1b(), false, true));
 	// connect to propagateBinningRange, new image may have new range
@@ -322,7 +322,7 @@ QPolygonF DistViewModel::getPixelOverlay(int y, int x)
 		GGDBGM(type << " no image" << endl);
 		return QPolygonF();
 	}
-	if (!context){
+	if (!context) {
 		GGDBGM(type << " no context" << endl);
 		return QPolygonF();
 	}
@@ -330,8 +330,7 @@ QPolygonF DistViewModel::getPixelOverlay(int y, int x)
 	SharedDataLock imagelock(image->mutex);
 	SharedDataLock ctxlock(context->mutex);
 	if (y >= (*image)->height ||
-		x >= (*image)->width)
-	{
+		x >= (*image)->width) {
 		return QPolygonF();
 	}
 
@@ -345,4 +344,25 @@ QPolygonF DistViewModel::getPixelOverlay(int y, int x)
 							(*context)->minval, (*context)->binsize));
 	}
 	return points;
+}
+
+void DistViewModel::processColoringChanged(cv::Mat3f* result)
+{
+	coloringResult = result;
+
+	SharedDataLock ctxlock(context->mutex);
+	(*context)->coloringUpToDate = false;
+	ctxlock.unlock();
+
+	if (coloringEnabled) {
+		updateBinning( (*context)->nbins );
+	}
+}
+
+void DistViewModel::processRgbToggled(bool enabled)
+{
+	coloringEnabled = enabled;
+	if( coloringEnabled && !(*context)->coloringUpToDate) {
+		updateBinning( (*context)->nbins );
+	}
 }

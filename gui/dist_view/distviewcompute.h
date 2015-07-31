@@ -30,7 +30,7 @@
  * hash key (the hash key is not part of the Bin class
  */
 struct Bin {
-	Bin() : weight(0.f) {}
+	Bin() : weight(0.f), colors(0.f, 0.f, 0.f) {}
 	Bin(const multi_img::Pixel& initial_means)
 		: weight(1.f), means(initial_means) {} //, points(initial_means.size()) {}
 
@@ -47,6 +47,10 @@ struct Bin {
 					   std::plus<multi_img::Value>());
 	}
 
+	inline void add(const cv::Vec3f &colorpixel) {
+		colors += colorpixel;
+	}
+
 	/* in incremental update of our BinSet, we can also remove pixels from a bin */
 	inline void sub(const multi_img::Pixel& p) {
 		weight -= 1.f;
@@ -55,8 +59,13 @@ struct Bin {
 					   std::minus<multi_img::Value>());
 	}
 
+	inline void sub(const cv::Vec3f &colorpixel) {
+		colors -= colorpixel;
+	}
+
 	float weight;
 	std::vector<multi_img::Value> means;
+	cv::Vec3f colors;
 	/* each bin can have a color calculated for the mean vector
 	 */
 	QColor rgb;
@@ -132,6 +141,8 @@ struct ViewportCtx {
 
 	/* metadata depending on display configuration */
 	int nbins;
+
+	bool coloringUpToDate;
 };
 
 typedef boost::shared_ptr<SharedData<ViewportCtx> > vpctx_ptr;

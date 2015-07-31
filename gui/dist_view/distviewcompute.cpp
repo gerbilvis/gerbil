@@ -81,20 +81,18 @@ multi_img::Value Compute::curpos(
 
 void Compute::PreprocessBins::operator()(const BinSet::HashMap::range_type &r)
 {
-	cv::Vec3f color;
-	multi_img::Pixel pixel(dimensionality);
 	BinSet::HashMap::iterator it;
 	for (it = r.begin(); it != r.end(); it++) {
 		Bin &b = it->second;
 		for (int d = 0; d < dimensionality; ++d) {
-			pixel[d] = b.means[d] / b.weight;
 			std::pair<int, int> &range = ranges[d];
 			range.first = std::min<int>(range.first, (int)(it->first)[d]);
 			range.second = std::max<int>(range.second, (int)(it->first)[d]);
 		}
-		// TODO: calculate colors for all pixels BEFORE this step with functor
-		color = multi_img::bgr(pixel, meta, maxval);
-		b.rgb = QColor(color[2]*255, color[1]*255, color[0]*255);
+		for (int i = 0; i<3; i++) {
+			b.colors[i] = b.colors[i] / b.weight;
+		}
+		b.rgb = QColor(b.colors[2], b.colors[1], b.colors[0]);
 		index.push_back(make_pair(label, it->first));
 	}
 }

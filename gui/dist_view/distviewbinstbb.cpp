@@ -17,9 +17,10 @@ public:
 	Accumulate(bool subtract, multi_img &multi, const cv::Mat1s &labels, const cv::Mat1b &mask,
 		int nbins, multi_img::Value binsize, multi_img::Value minval, bool ignoreLabels,
 		std::vector<multi_img::Value> &illuminant,
-		std::vector<BinSet> &sets)
+		std::vector<BinSet> &sets, cv::Mat3f* colormat)
 		: subtract(subtract), multi(multi), labels(labels), mask(mask), nbins(nbins), binsize(binsize),
-		minval(minval), illuminant(illuminant), ignoreLabels(ignoreLabels), sets(sets) {}
+		minval(minval), illuminant(illuminant), ignoreLabels(ignoreLabels), sets(sets),
+		colormat(colormat) {}
 	void operator()(const tbb::blocked_range2d<int> &r) const;
 private:
 	bool subtract;
@@ -32,6 +33,7 @@ private:
 	bool ignoreLabels;
 	std::vector<multi_img::Value> &illuminant;
 	std::vector<BinSet> &sets;
+	cv::Mat3f* colormat;
 };
 
 bool DistviewBinsTbb::run()
@@ -85,7 +87,7 @@ bool DistviewBinsTbb::run()
 	for (it = sub.begin(); it != sub.end(); ++it) {
 		Accumulate substract(true, **multi, labels, mask, args.nbins,
 							 args.binsize, args.minval, args.ignoreLabels,
-							 illuminant, *result);
+							 illuminant, *result, colormat);
 		tbb::parallel_for(
 			tbb::blocked_range2d<int>(it->y, it->y + it->height,
 									  it->x, it->x + it->width),
@@ -95,7 +97,7 @@ bool DistviewBinsTbb::run()
 	for (it = add.begin(); it != add.end(); ++it) {
 		Accumulate add(
 			false, **multi, labels, mask, args.nbins, args.binsize,
-					args.minval, args.ignoreLabels, illuminant, *result);
+					args.minval, args.ignoreLabels, illuminant, *result, colormat);
 		tbb::parallel_for(
 			tbb::blocked_range2d<int>(it->y, it->y + it->height,
 									  it->x, it->x + it->width),
@@ -139,6 +141,7 @@ void DistviewBinsTbb::updateContext()
 					/ (multi_img::Value)(args.nbins - 1);
 	args.minval = (*multi)->minval;
 	args.maxval = (*multi)->maxval;
+	if(colormat) args.coloringUpToDate = true;
 
 	args.valid = true;
 }
@@ -169,6 +172,10 @@ void Accumulate::operator()(const tbb::blocked_range2d<int> &r) const
 				BinSet::HashMap::accessor ac;
 				if (s.bins.find(ac, hashkey)) {
 					ac->second.sub(pixel);
+					if (colormat) {
+						const cv::Vec3f &colorpixel = (*colormat)(y,x);
+						ac->second.sub(colorpixel);
+					}
 					if (ac->second.weight == 0.f)
 						s.bins.erase(ac);
 				}
@@ -178,6 +185,10 @@ void Accumulate::operator()(const tbb::blocked_range2d<int> &r) const
 				BinSet::HashMap::accessor ac;
 				s.bins.insert(ac, hashkey);
 				ac->second.add(pixel);
+				if (colormat) {
+					const cv::Vec3f &colorpixel = (*colormat)(y,x);
+					ac->second.add(colorpixel);
+				}
 				ac.release();
 				s.totalweight++; // atomic
 			}
