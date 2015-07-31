@@ -140,6 +140,8 @@ signals:
 	void subscribeRepresentation(QObject *subscriber, representation::t repr);
 	void unsubscribeRepresentation(QObject *subscriber, representation::t repr);
 
+	void coloringChanged(cv::Mat3f* result);
+
 protected:
 	void updateBinning(representation::t repr, SharedMultiImgPtr image);
 

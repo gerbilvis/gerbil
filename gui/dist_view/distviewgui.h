@@ -77,6 +77,8 @@ signals:
 	// The folding state changed.
 	void foldingStateChanged(representation::t type, bool folded);
 
+	void rgbToggled(bool toggled);
+
 protected:
 	// initialize target, vp, ui::gv
 	void initVP();

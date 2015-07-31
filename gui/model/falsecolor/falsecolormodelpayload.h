@@ -39,6 +39,7 @@ public:
 	void cancel();
 
 	QPixmap getResult() { return result; }
+	cv::Mat3f* getMatResult() { return matResult; }
 
 signals:
 	/** Computation progress changed. */
@@ -57,6 +58,7 @@ private:
 	SharedMultiImgPtr grad;
 	CommandRunner *runner;
 	QPixmap result;
+	cv::Mat3f *matResult = nullptr;
 };
 
 

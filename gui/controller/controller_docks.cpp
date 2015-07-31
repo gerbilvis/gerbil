@@ -168,6 +168,8 @@ void Controller::setupDocks()
 			falseColorDock, SLOT(processFalseColoringUpdate(FalseColoring::Type,QPixmap)));
 	connect(falseColorModel(), SIGNAL(computationCancelled(FalseColoring::Type)),
 			falseColorDock, SLOT(processComputationCancelled(FalseColoring::Type)));
+	connect(falseColorModel(), SIGNAL(coloringChanged(cv::Mat3f*)),
+			dvc, SIGNAL(coloringChanged(cv::Mat3f*)));
 
 	connect(this, SIGNAL(pendingFalseColorUpdate(FalseColoring::Type)),
 			falseColorDock, SLOT(setCalculationInProgress(FalseColoring::Type)));

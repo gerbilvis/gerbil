@@ -68,9 +68,8 @@ void DistViewGUI::initVC(representation::t type)
 	connect(uivc->rgbButton, SIGNAL(toggled(bool)),
 	        vp, SLOT(toggleRGB(bool)));
 
-	// default UI stuff
-	if (type != representation::IMG)
-		uivc->rgbButton->setVisible(false);
+	connect(uivc->rgbButton, SIGNAL(toggled(bool)),
+	        this, SIGNAL(rgbToggled(bool)));
 
 	setAlpha(uivc->alphaSlider->value());
 	setBinCount(uivc->binSlider->value());
