@@ -39,8 +39,9 @@ void LabelDock::init()
 	QWidget *mainUiWidgetTmp = new QWidget();
 	ui->setupUi(mainUiWidgetTmp);
 	mainUiWidget = ahscene->addWidget(mainUiWidgetTmp);
-	mainUiWidget->setTransform(
-	            QTransform::fromTranslate(-AutohideWidget::OutOffset, 0));
+	mainUiWidget->setTransform( // TODO: unclear why we need to do this
+	            QTransform::fromTranslate(-AutohideWidget::OutOffset,
+	                                      -AutohideWidget::OutOffset));
 
 	ui->labelView->setModel(labelModel);
 
@@ -373,12 +374,24 @@ void LabelDock::resizeSceneContents()
 		return;
 	}
 
-	// Resize labelView.
-	// Not sure where that -1 and +1 comes from --
-	// tested on Arch Linux 2014-10-01,
-	// qt4 4.8.6-1, xfwm4 4.10.1-1, xorg-server 1.16.1-1
+	// resize labelView
+	/* not sure why the +1 is needed */
 	QRect geom = ahview->geometry();
-	const int off = 2 * AutohideWidget::OutOffset - 1;
-	geom.adjust(0, 0, +1, -off);
+	geom.adjust(0, 0, +1, 0);
+
+	/* if we are "big enough", let ahview scroll-in the widgets */
+	if (geom.height() > 550) {
+		geom.adjust(0, ahwidgetTop->height(), 0, 0);
+	} else {
+		geom.adjust(0, AutohideWidget::OutOffset, 0, 0);
+	}
+
+	if (geom.height() > 300) {
+		geom.adjust(0, 0, 0, -ahwidgetBottom->height());
+	} else {
+		geom.adjust(0, 0, 0, -AutohideWidget::OutOffset);
+	}
+
 	mainUiWidget->setGeometry(geom);
+	ahview->fitContentRect(geom.adjusted(0, 0, 0, -AutohideWidget::OutOffset));
 }
