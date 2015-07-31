@@ -502,16 +502,19 @@
          </sizepolicy>
         </property>
         <property name="minimum">
-         <number>32</number>
+         <number>16</number>
         </property>
         <property name="maximum">
-         <number>99</number>
+         <number>512</number>
         </property>
         <property name="singleStep">
-         <number>2</number>
+         <number>16</number>
         </property>
         <property name="pageStep">
-         <number>16</number>
+         <number>32</number>
+        </property>
+        <property name="value">
+         <number>64</number>
         </property>
         <property name="orientation">
          <enum>Qt::Horizontal</enum>
