@@ -95,10 +95,10 @@ void DistViewController::init()
 		viewFolded[representation::GRAD]    =  false;
 		viewFolded[representation::NORM]    =  true;
 		viewFolded[representation::IMGPCA]  =  true;
-		viewFolded[representation::GRADPCA] =  true;
+//		viewFolded[representation::GRADPCA] =  true;
 		payloadMap[representation::NORM]->gui.fold(true);
 		payloadMap[representation::IMGPCA]->gui.fold(true);
-		payloadMap[representation::GRADPCA]->gui.fold(true);
+//		payloadMap[representation::GRADPCA]->gui.fold(true);
 	}
 
 	connect(QApplication::instance(), SIGNAL(lastWindowClosed()),

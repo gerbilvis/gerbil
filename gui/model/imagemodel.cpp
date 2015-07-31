@@ -148,7 +148,7 @@ void ImageModel::spawn(representation::t type, const cv::Rect &newROI, int bands
 	SharedMultiImgPtr imagenorm = map[representation::NORM]->image;
 	SharedMultiImgPtr gradient = map[representation::GRAD]->image;
 	SharedMultiImgPtr imagepca = map[representation::IMGPCA]->image;
-	SharedMultiImgPtr gradpca = map[representation::GRADPCA]->image;
+//	SharedMultiImgPtr gradpca = map[representation::GRADPCA]->image;
 
 	// scoping and spectral rescaling done for IMG
 	if (type == representation::IMG) {
@@ -225,10 +225,10 @@ void ImageModel::spawn(representation::t type, const cv::Rect &newROI, int bands
 		BackgroundTaskPtr taskPca(new PcaTbb(
 			image, imagepca, 10));
 		queue.push(taskPca);
-	} else if (type == representation::GRADPCA && gradpca.get()) {
+/*	} else if (type == representation::GRADPCA && gradpca.get()) {
 		BackgroundTaskPtr taskPca(new PcaTbb(
 			gradient, gradpca, 0));
-		queue.push(taskPca);
+		queue.push(taskPca);*/
 	}
 
 	// emit signal after all tasks are finished and fully updated data available
