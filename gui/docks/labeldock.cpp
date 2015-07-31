@@ -38,10 +38,6 @@ void LabelDock::init()
 
 	QWidget *mainUiWidgetTmp = new QWidget();
 	ui->setupUi(mainUiWidgetTmp);
-
-	mainUiWidgetTmp->layout()->setContentsMargins(0,0,0,0);
-	mainUiWidgetTmp->layout()->setSpacing(0);
-	ui->labelView->setFrameStyle(QFrame::NoFrame);
 	mainUiWidget = ahscene->addWidget(mainUiWidgetTmp);
 	mainUiWidget->setTransform(
 	            QTransform::fromTranslate(-AutohideWidget::OutOffset, 0));
