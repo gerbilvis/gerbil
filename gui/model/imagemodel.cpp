@@ -1,4 +1,10 @@
 #include "imagemodel.h"
+
+#include "dialogs/openrecent/recentfile.h"
+
+#include "../gerbil_gui_debug.h"
+#include "gerbilapplication.h"
+
 #include <background_task/tasks/cuda/gerbil_cuda_util.h>
 #include <background_task/tasks/scopeimage.h>
 #include <background_task/tasks/cuda/datarangecuda.h>
@@ -15,10 +21,6 @@
 
 #include <multi_img/multi_img_offloaded.h>
 #include <imginput.h>
-
-#include "dialogs/openrecent/recentfile.h"
-
-#include "../gerbil_gui_debug.h"
 
 #include <boost/make_shared.hpp>
 
@@ -94,6 +96,14 @@ cv::Rect ImageModel::loadImage(const QString &filename)
 
 	multi_img_base &i = image_lim->getBase();
 	if (i.empty()) {
+		GerbilApplication::instance()->
+			userError("Image file could not be read.");
+		return cv::Rect();
+	}
+
+	if (i.size() < 3) {
+		GerbilApplication::instance()->
+			userError("Image unsupported: Contains less than three bands (channels).");
 		return cv::Rect();
 	} else {
 		// Update recent files list.
