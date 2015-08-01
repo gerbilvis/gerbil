@@ -32,21 +32,17 @@ public:
 	GLBufferHolder(QGLBuffer &vb)
 		: vb(vb)
 	{
-		const char* pfx = "GLBufferHolder::GLBufferHolder(): ";
+		static const QString pfx = "GLBufferHolder::GLBufferHolder(): ";
 		msuccess = vb.create();
 		if (!msuccess) {
-			std::stringstream err;
-			err << pfx << "QGLBuffer::create() failed." << std::endl;
-			GerbilApplication::instance()->
-				criticalError(QString::fromStdString(err.str()));
+			GerbilApplication::instance()->internalError(
+			            QString(pfx) + "QGLBuffer::create() failed.");
 			return;
 		}
 		msuccess = vb.bind();
 		if (!msuccess) {
-			std::stringstream err;
-			err << pfx << "QGLBuffer::bind() failed" << std::endl;
-			GerbilApplication::instance()->
-				criticalError(QString::fromStdString(err.str()));
+			GerbilApplication::instance()->internalError(
+			            QString(pfx) + "QGLBuffer::bind() failed");
 			return;
 		}
 	}

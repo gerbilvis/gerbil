@@ -78,7 +78,15 @@ QString GerbilApplication::imagePath()
 		return QFileInfo(imageFilename).path();
 }
 
-void GerbilApplication::criticalError(QString msg)
+void GerbilApplication::userError(QString msg)
+{
+	static const QString header =
+		"Gerbil cannot continue."
+		"<br/><br/>\n";
+	criticalError(QString(header) + msg);
+}
+
+void GerbilApplication::internalError(QString msg)
 {
 	static const QString header =
 		"Gerbil encountered an internal error that cannot "
@@ -95,7 +103,12 @@ void GerbilApplication::criticalError(QString msg)
 		"Thank you!<br/>\n"
 		"<br/>\n"
 		"Error:<br/>\n";
+	criticalError(QString(header) + msg);
+}
 
+
+void GerbilApplication::criticalError(QString msg)
+{
 	// HTMLify quick and dirty
 	if (!msg.contains("<br>", Qt::CaseInsensitive) &&
 			!msg.contains("<br/>", Qt::CaseInsensitive)) {
@@ -103,9 +116,7 @@ void GerbilApplication::criticalError(QString msg)
 	}
 
 	QMessageBox::critical(NULL,
-						  "Gerbil Critical Error",
-						  QString(header) + msg,
-						  QMessageBox::Close);
+						  "Gerbil Critical Error", msg, QMessageBox::Close);
 
 	if (eventLoopStarted) {
 		GGDBGM("using GerbilApplication::exit()" << endl);
