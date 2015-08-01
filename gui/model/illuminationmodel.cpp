@@ -6,11 +6,12 @@
 #include <background_task/tasks/tbb/illuminanttbb.h>
 #include <background_task/tasks/cuda/illuminantcuda.h>
 
-#include <opencv2/gpu/gpu.hpp>
-
 #include "gerbil_gui_debug.h"
 
-#define USE_CUDA_ILLUMINANT     0
+#ifdef GERBIL_CUDA
+	#include <opencv2/gpu/gpu.hpp>
+//	#define USE_CUDA_ILLUMINANT
+#endif
 
 IllumModel::IllumModel(BackgroundTaskQueue *queue, QObject *parent)
 	: QObject(parent), i1(0), i2(0), queue(queue)
@@ -110,11 +111,15 @@ void IllumModel::submitRemoveOldIllumTask()
 	/* remove old illuminant */
 	if (i1 != 0) {
 		const Illuminant &il = getIlluminant(i1);
-		if (haveCvCudaGpu() && USE_CUDA_ILLUMINANT) {
+#ifdef USE_CUDA_ILLUMINANT
+		if (haveCvCudaGpu()) {
 			BackgroundTaskPtr taskIllum(new IlluminantCuda(
 				image, il, true, false));
 			queue->push(taskIllum);
 		} else {
+#else
+		{
+#endif
 			BackgroundTaskPtr taskIllum(new IlluminantTbb(
 				image, il, true, false));
 			queue->push(taskIllum);
@@ -128,11 +133,15 @@ void IllumModel::submitAddNewIllumTask()
 	if (i2 != 0) {
 		const Illuminant &il = getIlluminant(i2);
 
-		if (haveCvCudaGpu() && USE_CUDA_ILLUMINANT) {
+#ifdef USE_CUDA_ILLUMINANT
+		if (haveCvCudaGpu()) {
 			BackgroundTaskPtr taskIllum(new IlluminantCuda(
 				image, il, false, false));
 			queue->push(taskIllum);
 		} else {
+#else
+		{
+#endif
 			BackgroundTaskPtr taskIllum(new IlluminantTbb(
 				image, il, false, false));
 			queue->push(taskIllum);

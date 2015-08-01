@@ -3,7 +3,9 @@
 #include <gerbilapplication.h>
 #include <dialogs/openrecent/recentfile.h>
 
-#include <opencv2/gpu/gpu.hpp>
+#ifdef GERBIL_CUDA
+	#include <opencv2/gpu/gpu.hpp>
+#endif
 #include <opencv2/core/core.hpp>
 #include <opencv2/imgproc/imgproc.hpp>
 #include <opencv2/highgui/highgui.hpp>
@@ -21,6 +23,7 @@
 	"=a" (ax), "=b" (bx), "=c" (cx), "=d" (dx) : "a" (func));
 #endif
 
+#ifdef GERBIL_CUDA
 void init_cuda()
 {
 	if (cv::gpu::getCudaEnabledDeviceCount() > 0) {
@@ -73,6 +76,7 @@ void init_cuda()
 		std::cout << std::endl;
 	}
 }
+#endif
 
 void init_opencv()
 {

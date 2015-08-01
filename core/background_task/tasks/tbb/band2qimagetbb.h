@@ -1,6 +1,8 @@
 #ifndef BAND2QIMAGETBB_H
 #define BAND2QIMAGETBB_H
 
+#include <tbb/task_group.h>
+
 class Band2QImageTbb : public BackgroundTask {
 public:
 	Band2QImageTbb(SharedMultiImgPtr multi, qimage_ptr image, size_t band)

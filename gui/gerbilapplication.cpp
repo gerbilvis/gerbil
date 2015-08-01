@@ -52,7 +52,9 @@ void GerbilApplication::run()
 	}
 
 	init_opencv();
+#ifdef GERBIL_CUDA
 	init_cuda();
+#endif
 
 	loadInput();
 

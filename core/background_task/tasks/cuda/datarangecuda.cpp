@@ -1,5 +1,7 @@
 #include "datarangecuda.h"
 
+#ifdef GERBIL_CUDA
+
 #include <vector>
 
 #include <opencv2/gpu/gpu.hpp>
@@ -35,3 +37,5 @@ bool DataRangeCuda::run()
 		return false;
 	}
 }
+
+#endif

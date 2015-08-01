@@ -1,9 +1,11 @@
+#ifndef GRADIENTCUDA_H
+#define GRADIENTCUDA_H
+
+#ifdef GERBIL_CUDA
+
 #include "shared_data.h"
 #include "background_task/background_task.h"
 #include <tbb/task_group.h>
-
-#ifndef GRADIENTCUDA_H
-#define GRADIENTCUDA_H
 
 class GradientCuda : public BackgroundTask {
 public:
@@ -24,5 +26,7 @@ protected:
 	SharedMultiImgPtr current;
 	bool includecache;
 };
+
+#endif
 
 #endif // GRADIENTCUDA_H

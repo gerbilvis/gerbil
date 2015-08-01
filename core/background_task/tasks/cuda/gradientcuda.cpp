@@ -1,5 +1,7 @@
 #include "gradientcuda.h"
 
+#ifdef GERBIL_CUDA
+
 #include <vector>
 
 #include <opencv2/gpu/gpu.hpp>
@@ -109,3 +111,5 @@ bool GradientCuda::run()
 		return true;
 	}
 }
+
+#endif

@@ -1,5 +1,7 @@
 #include "clampcuda.h"
 
+#ifdef GERBIL_CUDA
+
 #include <vector>
 
 #include <opencv2/gpu/gpu.hpp>
@@ -54,3 +56,5 @@ bool ClampCuda::run()
 		return true;
 	}
 }
+
+#endif

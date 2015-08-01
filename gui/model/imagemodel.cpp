@@ -22,11 +22,12 @@
 
 #include <boost/make_shared.hpp>
 
-#include <opencv2/gpu/gpu.hpp>
-
-#define USE_CUDA_GRADIENT       1
-#define USE_CUDA_DATARANGE      0
-#define USE_CUDA_CLAMP          0
+#ifdef GERBIL_CUDA
+	#include <opencv2/gpu/gpu.hpp>
+	#define USE_CUDA_GRADIENT
+//	#define USE_CUDA_DATARANGE
+//	#define USE_CUDA_CLAMP
+#endif
 
 ImageModel::ImageModel(BackgroundTaskQueue &queue, bool lm, QObject *parent)
 	: QObject(parent), limitedMode(lm), queue(queue),
@@ -183,11 +184,15 @@ void ImageModel::spawn(representation::t type, const cv::Rect &newROI, int bands
 			image, imagenorm));
 		queue.push(taskNorm);
 	} else  if (type == representation::GRAD) {
-		if (haveCvCudaGpu()  && USE_CUDA_GRADIENT) {
+#ifdef USE_CUDA_GRADIENT
+		if (haveCvCudaGpu()) {
 			BackgroundTaskPtr taskGradient(new GradientCuda(
 				image, gradient));
 			queue.push(taskGradient);
 		} else {
+#else
+		{
+#endif
 			BackgroundTaskPtr taskGradient(new GradientTbb(
 				image, gradient));
 			queue.push(taskGradient);
@@ -208,12 +213,15 @@ void ImageModel::spawn(representation::t type, const cv::Rect &newROI, int bands
 		double min = (*range)->min;
 		double max = (*range)->max;
 		hlock.unlock();
-
-		if (haveCvCudaGpu() && USE_CUDA_DATARANGE) {
+#ifdef USE_CUDA_DATARANGE
+		if (haveCvCudaGpu()) {
 			BackgroundTaskPtr taskNormRange(new NormRangeCuda(
 				target, range, mode, isGRAD, min, max, true));
 			queue.push(taskNormRange);
 		} else {
+#else
+		{
+#endif
 			BackgroundTaskPtr taskNormRange(new NormRangeTbb(
 				target, range, mode, isGRAD, min, max, true));
 			queue.push(taskNormRange);
