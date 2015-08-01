@@ -82,7 +82,7 @@ void Compute::PreprocessBins::operator()(const BinSet::HashMap::range_type &r)
 	BinSet::HashMap::iterator it;
 	for (it = r.begin(); it != r.end(); it++) {
 		Bin &b = it->second;
-		for (int d = 0; d < dimensionality; ++d) {
+		for (size_t d = 0; d < dimensionality; ++d) {
 			pixel[d] = b.means[d] / b.weight;
 			std::pair<int, int> &range = ranges[d];
 			range.first = std::min<int>(range.first, (int)(it->first)[d]);
@@ -97,7 +97,7 @@ void Compute::PreprocessBins::operator()(const BinSet::HashMap::range_type &r)
 
 void Compute::PreprocessBins::join(PreprocessBins &toJoin)
 {
-	for (int d = 0; d < dimensionality; ++d) {
+	for (size_t d = 0; d < dimensionality; ++d) {
 		std::pair<int, int> &local = ranges[d];
 		std::pair<int, int> &remote = toJoin.ranges[d];
 		local.first = std::min<int>(local.first, remote.first);
