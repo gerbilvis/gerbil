@@ -31,11 +31,6 @@ endif()
 include(VoleHelperMacros)
 include(VoleModuleMacros)
 
-if(WIN32)
-	add_definitions(-DNOMINMAX) # prevents min- and max-macro brainf*ck in VS 2003
-endif(WIN32)
-
-
 include(EnableSSE2)
 
 # Global options
@@ -65,8 +60,6 @@ include(VoleFindExternalModules)
 include(VolePythonExtension)
 
 include_directories(core shell ${VOLE_EXTERNAL_SUBDIRECTORIES})
-# TODO: why?
-#link_directories(${ITK_LIBRARY_DIRS})
 
 foreach(dir ${VOLE_EXTERNAL_SUBDIRECTORIES})
 	get_filename_component(name ${dir} NAME)
