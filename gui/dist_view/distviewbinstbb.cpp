@@ -153,7 +153,7 @@ void Accumulate::operator()(const tbb::blocked_range2d<int> &r) const
 				continue;
 
 			int label = (ignoreLabels ? 0 : lr[x]);
-			label = (label >= sets.size()) ? 0 : label;
+			label = (label >= (int)sets.size()) ? 0 : label;
 			const multi_img::Pixel& pixel = multi(y, x);
 			BinSet &s = sets[label];
 

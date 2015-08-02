@@ -24,10 +24,10 @@ fillMaskSingleBody::fillMaskSingleBody(
 void fillMaskSingleBody::operator ()(
 		const tbb::blocked_range2d<size_t> &r) const
 {
-	for (int y = r.rows().begin(); y != r.rows().end(); ++y) {
+	for (size_t y = r.rows().begin(); y != r.rows().end(); ++y) {
 		unsigned char *mrow = mask[y];
 		const multi_img::Value *brow = band[y];
-		for (int x = r.cols().begin(); x != r.cols().end(); ++x) {
+		for (size_t x = r.cols().begin(); x != r.cols().end(); ++x) {
 			int pos = floor(
 					Compute::curpos(brow[x], dim, minval, binsize, illuminant));
 			mrow[x] = (pos == sel) ? 1 : 0;
@@ -51,9 +51,9 @@ fillMaskLimitersBody::fillMaskLimitersBody(
 void fillMaskLimitersBody::operator ()(
 		const tbb::blocked_range2d<size_t> &r) const
 {
-	for (int y = r.rows().begin(); y != r.rows().end(); ++y) {
+	for (size_t y = r.rows().begin(); y != r.rows().end(); ++y) {
 		unsigned char *row = mask[y];
-		for (int x = r.cols().begin(); x != r.cols().end(); ++x) {
+		for (size_t x = r.cols().begin(); x != r.cols().end(); ++x) {
 			row[x] = 1;
 			const multi_img::Pixel &p = image(y, x);
 			for (unsigned int d = 0; d < image.size(); ++d) {
@@ -85,10 +85,10 @@ updateMaskLimitersBody::updateMaskLimitersBody(
 void updateMaskLimitersBody::operator ()(
 		const tbb::blocked_range2d<size_t> &r) const
 {
-	for (int y = r.rows().begin(); y != r.rows().end(); ++y) {
+	for (size_t y = r.rows().begin(); y != r.rows().end(); ++y) {
 		unsigned char *mrow = mask[y];
 		const multi_img::Value *brow = image[dim][y];
-		for (int x = r.cols().begin(); x != r.cols().end(); ++x) {
+		for (size_t x = r.cols().begin(); x != r.cols().end(); ++x) {
 			int pos = floor(Compute::curpos(
 								brow[x], dim, minval, binsize, illuminant));
 			if (pos < l[dim].first || pos > l[dim].second) {
