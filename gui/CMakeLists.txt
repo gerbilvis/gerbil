@@ -9,7 +9,6 @@ vole_add_required_modules("rgb" "seg_graphs")
 vole_add_optional_modules("seg_meanshift" "seg_medianshift" "seg_probshift" "edge_detect")
 
 vole_compile_library(
-	main
 	commandrunner
 	gerbilapplication
 
@@ -138,6 +137,6 @@ vole_add_resources(
 	gerbil.qrc
 )
 
-vole_add_executable("qgerbil" "main")
+vole_add_executable("qgerbil" "gerbilapplication")
 
 vole_add_module()

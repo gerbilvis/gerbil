@@ -12,12 +12,27 @@
 #include <QTextStream>
 #include <QMessageBox>
 
+#include <iostream>
+#include <string>
 #include <cstdio>
 #include <cstdlib>
 
 //#define GGDBG_MODULE
 #include <gerbil_gui_debug.h>
 
+int main(int argc, char **argv)
+{
+	QCoreApplication::setOrganizationName("Gerbil");
+	QCoreApplication::setOrganizationDomain("gerbilvis.org");
+	QCoreApplication::setApplicationName("Gerbil");
+
+
+	GerbilApplication app(argc, argv);
+	app.run();
+
+	// never reached, GerbilApplication::run() does not return.
+	return EXIT_FAILURE;
+}
 
 GerbilApplication::GerbilApplication(int &argc, char **argv)
     : QApplication(argc, argv),
@@ -128,7 +143,6 @@ void GerbilApplication::criticalError(QString msg)
 		GGDBGM("using std::exit()" << endl);
 		std::exit(ExitFailure);
 	}
-
 }
 
 bool GerbilApplication::eventFilter(QObject *obj, QEvent *event)
