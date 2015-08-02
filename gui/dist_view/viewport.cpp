@@ -79,7 +79,7 @@ void Viewport::initBuffers()
 	/* (re)set framebuffers */
 	target->makeCurrent();
 
-	if(!tryInitBuffers()) {
+	if (!tryInitBuffers()) {
 		// tryInitBuffers() fails if the buffer format is not supported by the
 		// GL driver. RGBA8 is the default and should be supported by all
 		// drivers.
@@ -101,7 +101,7 @@ void Viewport::initBuffers()
 
 		bufferFormat = RGBA8;
 		// try again
-		if(!tryInitBuffers()) {
+		if (!tryInitBuffers()) {
 			std::cerr << "Viewport: Error: Failed to init framebuffer "
 			          << "with format RGBA8. Aborting."
 			          << std::endl;
