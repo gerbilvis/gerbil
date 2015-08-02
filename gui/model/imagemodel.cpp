@@ -259,7 +259,7 @@ void ImageModel::spawn(representation::t type, const cv::Rect &newROI, int bands
 void ImageModel::respawn(representation::t type)
 {
 	if ((*map[type]->image)->empty()) {
-		std::cerr << "ImageModel::respawn(): bad call, no payload available."
+		std::cerr << "ImageModel::respawn(): ignored, no payload available."
 					 << std::endl;
 		return;
 	}
