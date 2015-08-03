@@ -159,8 +159,6 @@ void BandDock::processVisibilityChanged(bool visible)
 		emit subscribeImageBand(this, curRepr, curBandId);
 	} else {
 		emit unsubscribeImageBand(this, curRepr, curBandId);
-		// see FS#62
-		setWindowTitle("Band View");
 	}
 
 }
