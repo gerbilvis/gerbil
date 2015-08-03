@@ -561,7 +561,7 @@ void Viewport::drawLegend(QPainter *painter, int sel)
 			continue;
 
 		// also do not draw near selected band
-		if ((int)i != sel && sel > -1 && std::abs(i - sel) < stepping)
+		if ((int)i != sel && sel > -1 && std::abs((int)i - sel) < stepping)
 			continue;
 
 		rect.adjust(-50.f, 0.f, 50.f, 0.f);
