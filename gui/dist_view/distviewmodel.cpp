@@ -228,6 +228,7 @@ void DistViewModel::addImage(sets_ptr temp,const std::vector<cv::Rect> &regions,
 void DistViewModel::setImage(SharedMultiImgPtr img, cv::Rect roi, int bins)
 {
 	GGDBG_CALL();
+	inbetween = false;
 	image = img;
 	//GGDBGM(format("image.get()=%1%\n") %image.get());
 
