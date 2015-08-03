@@ -12,12 +12,27 @@
 #include <QTextStream>
 #include <QMessageBox>
 
+#include <iostream>
+#include <string>
 #include <cstdio>
 #include <cstdlib>
 
 //#define GGDBG_MODULE
 #include <gerbil_gui_debug.h>
 
+int main(int argc, char **argv)
+{
+	QCoreApplication::setOrganizationName("Gerbil");
+	QCoreApplication::setOrganizationDomain("gerbilvis.org");
+	QCoreApplication::setApplicationName("Gerbil");
+
+
+	GerbilApplication app(argc, argv);
+	app.run();
+
+	// never reached, GerbilApplication::run() does not return.
+	return EXIT_FAILURE;
+}
 
 GerbilApplication::GerbilApplication(int &argc, char **argv)
     : QApplication(argc, argv),
@@ -52,7 +67,9 @@ void GerbilApplication::run()
 	}
 
 	init_opencv();
+#ifdef GERBIL_CUDA
 	init_cuda();
+#endif
 
 	loadInput();
 
@@ -76,7 +93,15 @@ QString GerbilApplication::imagePath()
 		return QFileInfo(imageFilename).path();
 }
 
-void GerbilApplication::criticalError(QString msg)
+void GerbilApplication::userError(QString msg)
+{
+	static const QString header =
+		"Gerbil cannot continue."
+		"<br/><br/>\n";
+	criticalError(QString(header) + msg);
+}
+
+void GerbilApplication::internalError(QString msg)
 {
 	static const QString header =
 		"Gerbil encountered an internal error that cannot "
@@ -93,7 +118,12 @@ void GerbilApplication::criticalError(QString msg)
 		"Thank you!<br/>\n"
 		"<br/>\n"
 		"Error:<br/>\n";
+	criticalError(QString(header) + msg);
+}
 
+
+void GerbilApplication::criticalError(QString msg)
+{
 	// HTMLify quick and dirty
 	if (!msg.contains("<br>", Qt::CaseInsensitive) &&
 			!msg.contains("<br/>", Qt::CaseInsensitive)) {
@@ -101,9 +131,7 @@ void GerbilApplication::criticalError(QString msg)
 	}
 
 	QMessageBox::critical(NULL,
-						  "Gerbil Critical Error",
-						  QString(header) + msg,
-						  QMessageBox::Close);
+						  "Gerbil Critical Error", msg, QMessageBox::Close);
 
 	if (eventLoopStarted) {
 		GGDBGM("using GerbilApplication::exit()" << endl);
@@ -115,7 +143,6 @@ void GerbilApplication::criticalError(QString msg)
 		GGDBGM("using std::exit()" << endl);
 		std::exit(ExitFailure);
 	}
-
 }
 
 bool GerbilApplication::eventFilter(QObject *obj, QEvent *event)

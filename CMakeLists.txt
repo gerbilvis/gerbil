@@ -31,14 +31,13 @@ endif()
 include(VoleHelperMacros)
 include(VoleModuleMacros)
 
-if(WIN32)
-	add_definitions(-DNOMINMAX) # prevents min- and max-macro brainf*ck in VS 2003
-endif(WIN32)
-
-
 include(EnableSSE2)
 
 # Global options
+option(GERBIL_CUDA "Enable CUDA support (OpenCV < 3.0)." OFF)
+if(GERBIL_CUDA)
+    add_definitions(-DGERBIL_CUDA)
+endif()
 option(VOLE_CMAKE_DEBUG_OUTPUT "Show additonal cmake debug output." OFF)
 #mark_as_advanced(VOLE_CMAKE_DEBUG_OUTPUT)
 option(VOLE_CHECK_DEPENDENCIES "Do additional dependency check with nice error messages." ON)
@@ -61,8 +60,6 @@ include(VoleFindExternalModules)
 include(VolePythonExtension)
 
 include_directories(core shell ${VOLE_EXTERNAL_SUBDIRECTORIES})
-# TODO: why?
-#link_directories(${ITK_LIBRARY_DIRS})
 
 foreach(dir ${VOLE_EXTERNAL_SUBDIRECTORIES})
 	get_filename_component(name ${dir} NAME)

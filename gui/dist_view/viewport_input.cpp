@@ -9,7 +9,7 @@ bool Viewport::updateXY(int sel, int bin)
 {
 	SharedDataLock ctxlock(ctx->mutex);
 
-	if (sel < 0 || sel >= (*ctx)->dimensionality)
+	if (sel < 0 || sel >= (int)(*ctx)->dimensionality)
 		return false;
 
 	bool highlightChanged = false;
@@ -235,7 +235,7 @@ void Viewport::keyPressEvent(QKeyEvent *event)
 	case Qt::Key_Right:
 		{
 			SharedDataLock ctxlock(ctx->mutex);
-			if (selection < (*ctx)->dimensionality-1) {
+			if (selection < (int)(*ctx)->dimensionality-1) {
 				selection++;
 				emit bandSelected(selection);
 				if (!limiterMode) // we do not touch the limiters

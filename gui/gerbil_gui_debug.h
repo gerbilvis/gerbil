@@ -42,7 +42,7 @@
 #include <string>
 
 // FIXME this should be configurable by CMAKE
-#define GGDBG
+//#define GGDBG
 
 // Gerbil Gui DeBuG
 #if defined(GGDBG) && defined(GGDBG_MODULE)

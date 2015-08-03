@@ -8,7 +8,7 @@ struct representation {
 
 	enum t {
 		// If you add a repres., also change prettyString() and str().
-		INVALID = 0, IMG, NORM, GRAD, IMGPCA, GRADPCA, REPSIZE
+		INVALID = 0, IMG, NORM, GRAD, IMGPCA, /*GRADPCA,*/ REPSIZE
 	};
 
 	// Map enum string to t.

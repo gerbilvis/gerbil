@@ -1,6 +1,8 @@
 #ifndef NORMRANGECUDA_H
 #define NORMRANGECUDA_H
 
+#ifdef GERBIL_CUDA
+
 #include "background_task/tasks/cuda/datarangecuda.h"
 
 class NormRangeCuda : public DataRangeCuda {
@@ -19,5 +21,7 @@ protected:
 	multi_img::Value maxval;
 	bool update;
 };
+
+#endif
 
 #endif // NORMRANGECUDA_H

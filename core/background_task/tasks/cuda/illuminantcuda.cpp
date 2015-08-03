@@ -1,6 +1,6 @@
+#ifdef GERBIL_CUDA
+
 #include "illuminantcuda.h"
-
-
 
 #include <vector>
 
@@ -64,3 +64,5 @@ bool IlluminantCuda::run()
 		return true;
 	}
 }
+
+#endif

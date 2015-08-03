@@ -1,6 +1,8 @@
 #ifndef DATARANGECUDA_H
 #define DATARANGECUDA_H
 
+#ifdef GERBIL_CUDA
+
 #include "shared_data.h"
 #include "background_task/background_task.h"
 #include <tbb/task_group.h>
@@ -18,5 +20,7 @@ protected:
 	SharedMultiImgPtr multi;
 	SharedMultiImgRangePtr range;
 };
+
+#endif
 
 #endif // DATARANGECUDA_H

@@ -1,3 +1,4 @@
+#ifdef GERBIL_CUDA
 
 #include "normrangecuda.h"
 
@@ -40,3 +41,5 @@ bool NormRangeCuda::run()
 		return false;
 	}
 }
+
+#endif

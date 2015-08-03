@@ -32,21 +32,17 @@ public:
 	GLBufferHolder(QGLBuffer &vb)
 		: vb(vb)
 	{
-		const char* pfx = "GLBufferHolder::GLBufferHolder(): ";
+		static const QString pfx = "GLBufferHolder::GLBufferHolder(): ";
 		msuccess = vb.create();
 		if (!msuccess) {
-			std::stringstream err;
-			err << pfx << "QGLBuffer::create() failed." << std::endl;
-			GerbilApplication::instance()->
-				criticalError(QString::fromStdString(err.str()));
+			GerbilApplication::instance()->internalError(
+			            QString(pfx) + "QGLBuffer::create() failed.");
 			return;
 		}
 		msuccess = vb.bind();
 		if (!msuccess) {
-			std::stringstream err;
-			err << pfx << "QGLBuffer::bind() failed" << std::endl;
-			GerbilApplication::instance()->
-				criticalError(QString::fromStdString(err.str()));
+			GerbilApplication::instance()->internalError(
+			            QString(pfx) + "QGLBuffer::bind() failed");
 			return;
 		}
 	}
@@ -84,7 +80,7 @@ void Compute::PreprocessBins::operator()(const BinSet::HashMap::range_type &r)
 	BinSet::HashMap::iterator it;
 	for (it = r.begin(); it != r.end(); it++) {
 		Bin &b = it->second;
-		for (int d = 0; d < dimensionality; ++d) {
+		for (size_t d = 0; d < dimensionality; ++d) {
 			std::pair<int, int> &range = ranges[d];
 			range.first = std::min<int>(range.first, (int)(it->first)[d]);
 			range.second = std::max<int>(range.second, (int)(it->first)[d]);
@@ -96,7 +92,7 @@ void Compute::PreprocessBins::operator()(const BinSet::HashMap::range_type &r)
 
 void Compute::PreprocessBins::join(PreprocessBins &toJoin)
 {
-	for (int d = 0; d < dimensionality; ++d) {
+	for (size_t d = 0; d < dimensionality; ++d) {
 		std::pair<int, int> &local = ranges[d];
 		std::pair<int, int> &remote = toJoin.ranges[d];
 		local.first = std::min<int>(local.first, remote.first);

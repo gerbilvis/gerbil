@@ -1,6 +1,8 @@
 #ifndef CLAMPCUDA_H
 #define CLAMPCUDA_H
 
+#ifdef GERBIL_CUDA
+
 #include "shared_data.h"
 #include "background_task/background_task.h"
 #include <tbb/task_group.h>
@@ -20,4 +22,6 @@ protected:
 	SharedMultiImgPtr minmax;
 	bool includecache;
 };
+#endif
+
 #endif // CLAMPCUDA_H

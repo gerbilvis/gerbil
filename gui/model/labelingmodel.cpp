@@ -59,7 +59,7 @@ void LabelingModel::setLabels(const Labeling &labeling, bool full)
 	 * Example case: global segmentation performed on ROI; when ROI is changed
 	 * afterwards, pixels outside the old ROI still hold their old labels.
 	 */
-	if (!full && colors.size() >= labeling.colors().size())
+	if (!full && colors.size() >= (int)labeling.colors().size())
 	{
 		emit newLabeling(labels, colors, false);
 		invalidateMaskIcons();

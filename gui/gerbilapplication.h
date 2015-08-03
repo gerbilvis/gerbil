@@ -57,6 +57,8 @@ public:
 
 	/** Display a critical error in a message box and exit the application
 	 * with an error state. */
+	void userError(QString msg);
+	void internalError(QString msg);
 	void criticalError(QString msg);
 
 	// for eventLoopStarted

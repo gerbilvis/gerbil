@@ -1,4 +1,10 @@
 #include "imagemodel.h"
+
+#include "dialogs/openrecent/recentfile.h"
+
+#include "../gerbil_gui_debug.h"
+#include "gerbilapplication.h"
+
 #include <background_task/tasks/cuda/gerbil_cuda_util.h>
 #include <background_task/tasks/scopeimage.h>
 #include <background_task/tasks/cuda/datarangecuda.h>
@@ -16,17 +22,14 @@
 #include <multi_img/multi_img_offloaded.h>
 #include <imginput.h>
 
-#include "dialogs/openrecent/recentfile.h"
-
-#include "../gerbil_gui_debug.h"
-
 #include <boost/make_shared.hpp>
 
-#include <opencv2/gpu/gpu.hpp>
-
-#define USE_CUDA_GRADIENT       1
-#define USE_CUDA_DATARANGE      0
-#define USE_CUDA_CLAMP          0
+#ifdef GERBIL_CUDA
+	#include <opencv2/gpu/gpu.hpp>
+	#define USE_CUDA_GRADIENT
+//	#define USE_CUDA_DATARANGE
+//	#define USE_CUDA_CLAMP
+#endif
 
 ImageModel::ImageModel(BackgroundTaskQueue &queue, bool lm, QObject *parent)
 	: QObject(parent), limitedMode(lm), queue(queue),
@@ -93,6 +96,14 @@ cv::Rect ImageModel::loadImage(const QString &filename)
 
 	multi_img_base &i = image_lim->getBase();
 	if (i.empty()) {
+		GerbilApplication::instance()->
+			userError("Image file could not be read.");
+		return cv::Rect();
+	}
+
+	if (i.size() < 3) {
+		GerbilApplication::instance()->
+			userError("Image unsupported: Contains less than three bands (channels).");
 		return cv::Rect();
 	} else {
 		// Update recent files list.
@@ -148,7 +159,7 @@ void ImageModel::spawn(representation::t type, const cv::Rect &newROI, int bands
 	SharedMultiImgPtr imagenorm = map[representation::NORM]->image;
 	SharedMultiImgPtr gradient = map[representation::GRAD]->image;
 	SharedMultiImgPtr imagepca = map[representation::IMGPCA]->image;
-	SharedMultiImgPtr gradpca = map[representation::GRADPCA]->image;
+//	SharedMultiImgPtr gradpca = map[representation::GRADPCA]->image;
 
 	// scoping and spectral rescaling done for IMG
 	if (type == representation::IMG) {
@@ -183,11 +194,15 @@ void ImageModel::spawn(representation::t type, const cv::Rect &newROI, int bands
 			image, imagenorm));
 		queue.push(taskNorm);
 	} else  if (type == representation::GRAD) {
-		if (haveCvCudaGpu()  && USE_CUDA_GRADIENT) {
+#ifdef USE_CUDA_GRADIENT
+		if (haveCvCudaGpu()) {
 			BackgroundTaskPtr taskGradient(new GradientCuda(
 				image, gradient));
 			queue.push(taskGradient);
 		} else {
+#else
+		{
+#endif
 			BackgroundTaskPtr taskGradient(new GradientTbb(
 				image, gradient));
 			queue.push(taskGradient);
@@ -208,12 +223,15 @@ void ImageModel::spawn(representation::t type, const cv::Rect &newROI, int bands
 		double min = (*range)->min;
 		double max = (*range)->max;
 		hlock.unlock();
-
-		if (haveCvCudaGpu() && USE_CUDA_DATARANGE) {
+#ifdef USE_CUDA_DATARANGE
+		if (haveCvCudaGpu()) {
 			BackgroundTaskPtr taskNormRange(new NormRangeCuda(
 				target, range, mode, isGRAD, min, max, true));
 			queue.push(taskNormRange);
 		} else {
+#else
+		{
+#endif
 			BackgroundTaskPtr taskNormRange(new NormRangeTbb(
 				target, range, mode, isGRAD, min, max, true));
 			queue.push(taskNormRange);
@@ -225,10 +243,10 @@ void ImageModel::spawn(representation::t type, const cv::Rect &newROI, int bands
 		BackgroundTaskPtr taskPca(new PcaTbb(
 			image, imagepca, 10));
 		queue.push(taskPca);
-	} else if (type == representation::GRADPCA && gradpca.get()) {
+/*	} else if (type == representation::GRADPCA && gradpca.get()) {
 		BackgroundTaskPtr taskPca(new PcaTbb(
 			gradient, gradpca, 0));
-		queue.push(taskPca);
+		queue.push(taskPca);*/
 	}
 
 	// emit signal after all tasks are finished and fully updated data available
@@ -241,7 +259,7 @@ void ImageModel::spawn(representation::t type, const cv::Rect &newROI, int bands
 void ImageModel::respawn(representation::t type)
 {
 	if ((*map[type]->image)->empty()) {
-		std::cerr << "ImageModel::respawn(): bad call, no payload available."
+		std::cerr << "ImageModel::respawn(): ignored, no payload available."
 					 << std::endl;
 		return;
 	}
