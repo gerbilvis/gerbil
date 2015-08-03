@@ -31,8 +31,8 @@
  */
 struct Bin {
 	Bin() : weight(0.f), color(0.f, 0.f, 0.f) {}
-	Bin(const multi_img::Pixel& initial_means)
-		: weight(1.f), means(initial_means) {} //, points(initial_means.size()) {}
+	Bin(const multi_img::Pixel& initial_means, const cv::Vec3f& initial_color)
+		: weight(1.f), means(initial_means), color(initial_color) {} //, points(initial_means.size()) {}
 
 	/* we store the mean/avg. of all pixel vectors represented by this bin
 	 * the mean is not normalized during filling the bin, only afterwards

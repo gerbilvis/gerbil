@@ -17,10 +17,10 @@ public:
 	Accumulate(bool subtract, multi_img &multi, const cv::Mat1s &labels, const cv::Mat1b &mask,
 		int nbins, multi_img::Value binsize, multi_img::Value minval, bool ignoreLabels,
 		std::vector<multi_img::Value> &illuminant,
-		std::vector<BinSet> &sets, cv::Mat3f colormat)
+		std::vector<BinSet> &sets, cv::Mat3f coloring)
 		: subtract(subtract), multi(multi), labels(labels), mask(mask), nbins(nbins), binsize(binsize),
 		minval(minval), illuminant(illuminant), ignoreLabels(ignoreLabels), sets(sets),
-		colormat(colormat) {}
+		coloring(coloring) {}
 	void operator()(const tbb::blocked_range2d<int> &r) const;
 private:
 	bool subtract;
@@ -33,7 +33,7 @@ private:
 	bool ignoreLabels;
 	std::vector<multi_img::Value> &illuminant;
 	std::vector<BinSet> &sets;
-	cv::Mat3f colormat;
+	cv::Mat3f coloring;
 };
 
 bool DistviewBinsTbb::run()
@@ -171,9 +171,9 @@ void Accumulate::operator()(const tbb::blocked_range2d<int> &r) const
 			if (subtract) {
 				BinSet::HashMap::accessor ac;
 				if (s.bins.find(ac, hashkey)) {
-					if (!colormat.empty()) {
-						const cv::Vec3f &colorpixel = colormat(y,x);
-						ac->second.sub(pixel, colorpixel);
+					if (!coloring.empty()) {
+						const cv::Vec3f &rgb = coloring(y,x);
+						ac->second.sub(pixel, rgb);
 					} else {
 						ac->second.sub(pixel);
 					}
@@ -185,9 +185,9 @@ void Accumulate::operator()(const tbb::blocked_range2d<int> &r) const
 			} else {
 				BinSet::HashMap::accessor ac;
 				s.bins.insert(ac, hashkey);
-				if (!colormat.empty()) {
-					const cv::Vec3f &colorpixel = colormat(y,x);
-					ac->second.add(pixel, colorpixel);
+				if (!coloring.empty()) {
+					const cv::Vec3f &rgb = coloring(y,x);
+					ac->second.add(pixel, rgb);
 				} else {
 					ac->second.add(pixel);
 				}
