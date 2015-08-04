@@ -264,7 +264,7 @@ void Controller::updateROI(bool reuse, cv::Rect newRoi, int bands)
 	}
 
 	/** FIRST STEP: recycle existing payload **/
-	// Give other objects a change to recycle old ROI image data.
+	// Give other objects a chance to recycle old ROI image data.
 	emit preROISpawn(oldRoi, roi, sub, add, reuse);
 
 	if (!reuse) {
