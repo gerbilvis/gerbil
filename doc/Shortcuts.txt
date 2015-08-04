@@ -1,7 +1,10 @@
+----GLOBAL----
+
+Ctrl+'s' - screenshot whole window
 
 ----VIEWPORT----
 
-'s'	-	screenshot
+'s'	-	screenshot plot
 'l'	-	toggle logarithmic alpha
 'f'	-	toggle framebuffer depth
 'm'	-	toggle draw means
