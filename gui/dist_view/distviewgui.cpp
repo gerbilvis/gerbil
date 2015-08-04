@@ -301,7 +301,7 @@ void DistViewGUI::showLimiterMenu()
 
 void DistViewGUI::createFrameBufferMenu()
 {
-	actionGroup = new QActionGroup(this);
+	QActionGroup *actionGroup = new QActionGroup(this);
 	actionGroup->setExclusive(true);
 
 	QAction* tmp;
