@@ -281,8 +281,13 @@ void DistViewController::processPreROISpawn(const cv::Rect &oldroi,
 			}
 		}
 	} else {
-		GGDBGM("FULL distview update" << endl);
-		// nothing to do, distview payload will be reset in processPostROISpawn
+		GGDBGM("FULL distview update (ignored)" << endl);
+		// nothing to do, except let them know that ROI change is underway
+		foreach (representation::t repr, representation::all()) {
+			if (isSubscribed(repr, distviewSubs->repr)) {
+				payloadMap[repr]->model.initiateROIChange();
+			}
+		}
 	}
 }
 

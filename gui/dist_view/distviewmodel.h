@@ -43,6 +43,7 @@ public slots:
 	void setLabelColors(QVector<QColor> colors);
 	void setIlluminant(QVector<multi_img::Value> illum);
 
+	void initiateROIChange() { inbetween = true; }
 	sets_ptr subImage(const std::vector<cv::Rect> &regions,
 						  cv::Rect roi);
 	void addImage(sets_ptr temp, const std::vector<cv::Rect> &regions,
