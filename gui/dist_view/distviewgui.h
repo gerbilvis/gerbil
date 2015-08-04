@@ -52,6 +52,7 @@ public slots:
 	void setBinLabel(int n);
 	void setBinCount(int n);
 	void showLimiterMenu();
+	void showFrameBufferMenu();
 
 signals:
 	// from GUI elements to controller
@@ -89,6 +90,8 @@ protected:
 	// (re-)create the menu according to labels
 	void createLimiterMenu();
 
+	void createFrameBufferMenu();
+
 	representation::t type;
 
 	QWidget *frame;
@@ -99,6 +102,7 @@ protected:
 
 	QVector<QColor> labelColors;
 	QMenu limiterMenu;
+	QMenu frameBufferMenu;
 };
 
 #endif // DISTVIEWGUI_H

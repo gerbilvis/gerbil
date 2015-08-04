@@ -246,19 +246,11 @@ void Viewport::keyPressEvent(QKeyEvent *event)
 		break;
 
 	case Qt::Key_Space:
-		drawHQ = !drawHQ;
-		if (drawHQ) {
-			// triggers drawing update
-			endNoHQ();
-		} else {
-			startNoHQ();
-			// deliberately make display worse for user to see effect
-			updateBuffers();
-		}
+		toggleHQ();
 		break;
 	case Qt::Key_L:
-		drawLog = !drawLog;
-		updateBuffers();
+		toggleDrawLog();
+		break;
 	case Qt::Key_F:
 		switch (bufferFormat) {
 		case RGBA8: bufferFormat = RGBA16F; break;
