@@ -303,11 +303,11 @@ void DistViewGUI::createFrameBufferMenu()
 {
 	QAction* tmp;
 	tmp = frameBufferMenu.addAction("RGBA8");
-	tmp->setData(0);
+	tmp->setData(Viewport::BufferFormat::RGBA8);
 	tmp = frameBufferMenu.addAction("RGBA16F");
-	tmp->setData(1);
+	tmp->setData(Viewport::BufferFormat::RGBA16F);
 	tmp = frameBufferMenu.addAction("RGBA32F");
-	tmp->setData(2);
+	tmp->setData(Viewport::BufferFormat::RGBA32F);
 }
 
 void DistViewGUI::showFrameBufferMenu()
@@ -321,7 +321,7 @@ void DistViewGUI::showFrameBufferMenu()
 	if (!a)
 		return;
 
-	int choice = a->data().toInt();
+	Viewport::BufferFormat choice = (Viewport::BufferFormat) a->data().toInt();
 	vp->setBufferFormat(choice);
 }
 

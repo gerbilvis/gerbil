@@ -505,13 +505,10 @@ void Viewport::toggleHQ()
 	}
 }
 
-void Viewport::setBufferFormat(int format)
+void Viewport::setBufferFormat(BufferFormat format)
 {
-	switch (format) {
-	case 0: bufferFormat = RGBA8; break;
-	case 1: bufferFormat = RGBA16F; break;
-	case 2: bufferFormat = RGBA32F; break;
-	}
+	bufferFormat = format;
+
 	initBuffers();
 	updateBuffers();
 }
