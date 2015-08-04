@@ -23,7 +23,7 @@
 DistViewModel::DistViewModel(representation::t type)
 	: type(type), queue(NULL),
 	  ignoreLabels(false),
-	  inbetween(false)
+	  inbetween(false), coloringEnabled(false)
 {}
 
 std::pair<multi_img_base::Value, multi_img_base::Value> DistViewModel::getRange()
