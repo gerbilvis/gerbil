@@ -75,6 +75,10 @@ public slots:
 	void setIlluminationCurveShown(bool show);
 	void setAppliedIlluminant(QVector<multi_img::Value> illum);
 
+	void setBufferFormat(int);
+	void toggleDrawLog();
+	void toggleHQ();
+
 protected slots:
 
 	// triggered by renderTimers

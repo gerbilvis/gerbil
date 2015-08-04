@@ -68,12 +68,26 @@ void DistViewGUI::initVC(representation::t type)
 	connect(uivc->rgbButton, SIGNAL(toggled(bool)),
 	        vp, SLOT(toggleRGB(bool)));
 
+	connect(uivc->screenshotButton, SIGNAL(released()),
+	        vp, SLOT(screenshot()));
+
+	connect(uivc->hqButton, SIGNAL(released()),
+	        vp, SLOT(toggleHQ()));
+
+	connect(uivc->formatButton, SIGNAL(released()),
+	        this, SLOT(showFrameBufferMenu()));
+
+	connect(uivc->logButton, SIGNAL(released()),
+	        vp, SLOT(toggleDrawLog()));
+
 	// default UI stuff
 	if (type != representation::IMG)
 		uivc->rgbButton->setVisible(false);
 
 	setAlpha(uivc->alphaSlider->value());
 	setBinCount(uivc->binSlider->value());
+
+	createFrameBufferMenu();
 }
 
 void DistViewGUI::initTop()
@@ -283,6 +297,32 @@ void DistViewGUI::showLimiterMenu()
 	} else {
 		vp->setLimitersMode(true);	// only viewport
 	}
+}
+
+void DistViewGUI::createFrameBufferMenu()
+{
+	QAction* tmp;
+	tmp = frameBufferMenu.addAction("RGBA8");
+	tmp->setData(0);
+	tmp = frameBufferMenu.addAction("RGBA16F");
+	tmp->setData(1);
+	tmp = frameBufferMenu.addAction("RGBA32F");
+	tmp->setData(2);
+}
+
+void DistViewGUI::showFrameBufferMenu()
+{
+	// map to scene coordinates
+	QPoint scenepoint = uivc->formatButton->mapToGlobal(QPoint(0, 0));
+	// map to screen coordinates
+	QPoint screenpoint = ui->gv->mapToGlobal(scenepoint);
+
+	QAction *a = frameBufferMenu.exec(screenpoint);
+	if (!a)
+		return;
+
+	int choice = a->data().toInt();
+	vp->setBufferFormat(choice);
 }
 
 void DistViewGUI::insertPixelOverlay(const QPolygonF &points)

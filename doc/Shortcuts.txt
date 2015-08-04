@@ -1,0 +1,17 @@
+
+----VIEWPORT----
+
+'s'	-	screenshot
+'l'	-	toggle logarithmic alpha
+'f'	-	toggle framebuffer depth
+'m'	-	toggle draw means
+'+'	-	add selection
+'-'	-	remove selection
+space 	-	toggle high/low quality
+
+arrows	-	navigating through spectral plot
+
+
+----BANDVIEW----
+
+'c'	-	clear seeds / clear label 

@@ -7,108 +7,437 @@
     <x>0</x>
     <y>0</y>
     <width>149</width>
-    <height>190</height>
+    <height>295</height>
    </rect>
   </property>
-  <layout class="QGridLayout" name="gridLayout">
-   <property name="sizeConstraint">
-    <enum>QLayout::SetNoConstraint</enum>
-   </property>
+  <property name="sizePolicy">
+   <sizepolicy hsizetype="Minimum" vsizetype="Minimum">
+    <horstretch>0</horstretch>
+    <verstretch>0</verstretch>
+   </sizepolicy>
+  </property>
+  <layout class="QGridLayout" name="gridLayout_2">
    <item row="0" column="0">
-    <layout class="QHBoxLayout" name="horizontalLayout_2_1">
-     <item>
-      <widget class="QSlider" name="binSlider">
+    <layout class="QGridLayout" name="gridLayout">
+     <item row="0" column="0">
+      <layout class="QHBoxLayout" name="horizontalLayout_4">
+       <item>
+        <widget class="QPushButton" name="screenshotButton">
+         <property name="sizePolicy">
+          <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
+           <horstretch>0</horstretch>
+           <verstretch>0</verstretch>
+          </sizepolicy>
+         </property>
+         <property name="toolTip">
+          <string>take a screenshot</string>
+         </property>
+         <property name="text">
+          <string/>
+         </property>
+         <property name="icon">
+          <iconset resource="../gerbil.qrc">
+           <normaloff>:/icons/Gerbil/16x16/document-save.png</normaloff>:/icons/Gerbil/16x16/document-save.png</iconset>
+         </property>
+         <property name="iconSize">
+          <size>
+           <width>16</width>
+           <height>16</height>
+          </size>
+         </property>
+         <property name="checkable">
+          <bool>true</bool>
+         </property>
+        </widget>
+       </item>
+      </layout>
+     </item>
+     <item row="0" column="1">
+      <layout class="QHBoxLayout" name="horizontalLayout_2">
+       <property name="spacing">
+        <number>0</number>
+       </property>
+       <item>
+        <widget class="QPushButton" name="limiterButton">
+         <property name="sizePolicy">
+          <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
+           <horstretch>0</horstretch>
+           <verstretch>0</verstretch>
+          </sizepolicy>
+         </property>
+         <property name="toolTip">
+          <string>use band-wise limiters</string>
+         </property>
+         <property name="text">
+          <string/>
+         </property>
+         <property name="icon">
+          <iconset resource="../gerbil.qrc">
+           <normaloff>:/toolbar/limiter</normaloff>:/toolbar/limiter</iconset>
+         </property>
+         <property name="iconSize">
+          <size>
+           <width>16</width>
+           <height>16</height>
+          </size>
+         </property>
+         <property name="checkable">
+          <bool>true</bool>
+         </property>
+        </widget>
+       </item>
+       <item>
+        <widget class="QPushButton" name="limiterMenuButton">
+         <property name="sizePolicy">
+          <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
+           <horstretch>0</horstretch>
+           <verstretch>0</verstretch>
+          </sizepolicy>
+         </property>
+         <property name="minimumSize">
+          <size>
+           <width>16</width>
+           <height>0</height>
+          </size>
+         </property>
+         <property name="maximumSize">
+          <size>
+           <width>16</width>
+           <height>16777215</height>
+          </size>
+         </property>
+         <property name="baseSize">
+          <size>
+           <width>16</width>
+           <height>0</height>
+          </size>
+         </property>
+         <property name="toolTip">
+          <string>initialize band-wise limiters</string>
+         </property>
+         <property name="text">
+          <string/>
+         </property>
+         <property name="icon">
+          <iconset resource="../gerbil.qrc">
+           <normaloff>:/toolbar/popup</normaloff>:/toolbar/popup</iconset>
+         </property>
+         <property name="iconSize">
+          <size>
+           <width>8</width>
+           <height>16</height>
+          </size>
+         </property>
+        </widget>
+       </item>
+      </layout>
+     </item>
+     <item row="1" column="0">
+      <spacer name="verticalSpacer_6">
+       <property name="orientation">
+        <enum>Qt::Vertical</enum>
+       </property>
+       <property name="sizeType">
+        <enum>QSizePolicy::Fixed</enum>
+       </property>
+       <property name="sizeHint" stdset="0">
+        <size>
+         <width>1</width>
+         <height>8</height>
+        </size>
+       </property>
+      </spacer>
+     </item>
+     <item row="2" column="0">
+      <layout class="QHBoxLayout" name="horizontalLayout_2_1">
+       <item>
+        <widget class="QSlider" name="binSlider">
+         <property name="sizePolicy">
+          <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
+           <horstretch>0</horstretch>
+           <verstretch>0</verstretch>
+          </sizepolicy>
+         </property>
+         <property name="toolTip">
+          <string>number of histogram bins per dimension</string>
+         </property>
+         <property name="minimum">
+          <number>2</number>
+         </property>
+         <property name="maximum">
+          <number>256</number>
+         </property>
+         <property name="value">
+          <number>64</number>
+         </property>
+         <property name="tracking">
+          <bool>false</bool>
+         </property>
+         <property name="orientation">
+          <enum>Qt::Vertical</enum>
+         </property>
+         <property name="tickPosition">
+          <enum>QSlider::TicksAbove</enum>
+         </property>
+         <property name="tickInterval">
+          <number>31</number>
+         </property>
+        </widget>
+       </item>
+      </layout>
+     </item>
+     <item row="2" column="1">
+      <layout class="QHBoxLayout" name="horizontalLayout_2_2">
+       <item>
+        <widget class="QSlider" name="alphaSlider">
+         <property name="sizePolicy">
+          <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
+           <horstretch>0</horstretch>
+           <verstretch>0</verstretch>
+          </sizepolicy>
+         </property>
+         <property name="toolTip">
+          <string>vector line opacity</string>
+         </property>
+         <property name="minimum">
+          <number>1</number>
+         </property>
+         <property name="maximum">
+          <number>100</number>
+         </property>
+         <property name="value">
+          <number>50</number>
+         </property>
+         <property name="tracking">
+          <bool>true</bool>
+         </property>
+         <property name="orientation">
+          <enum>Qt::Vertical</enum>
+         </property>
+         <property name="tickPosition">
+          <enum>QSlider::TicksAbove</enum>
+         </property>
+         <property name="tickInterval">
+          <number>20</number>
+         </property>
+        </widget>
+       </item>
+      </layout>
+     </item>
+     <item row="3" column="0">
+      <widget class="QLabel" name="binLabel">
        <property name="sizePolicy">
-        <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
+        <sizepolicy hsizetype="Minimum" vsizetype="Preferred">
          <horstretch>0</horstretch>
          <verstretch>0</verstretch>
         </sizepolicy>
        </property>
-       <property name="toolTip">
-        <string>number of histogram bins per dimension</string>
+       <property name="minimumSize">
+        <size>
+         <width>60</width>
+         <height>0</height>
+        </size>
        </property>
-       <property name="minimum">
-        <number>2</number>
+       <property name="text">
+        <string>#Bins</string>
        </property>
-       <property name="maximum">
-        <number>256</number>
+       <property name="alignment">
+        <set>Qt::AlignCenter</set>
        </property>
-       <property name="value">
-        <number>64</number>
+      </widget>
+     </item>
+     <item row="3" column="1">
+      <widget class="QLabel" name="alphaLabel">
+       <property name="sizePolicy">
+        <sizepolicy hsizetype="Minimum" vsizetype="Preferred">
+         <horstretch>0</horstretch>
+         <verstretch>0</verstretch>
+        </sizepolicy>
        </property>
-       <property name="tracking">
-        <bool>false</bool>
+       <property name="minimumSize">
+        <size>
+         <width>60</width>
+         <height>0</height>
+        </size>
        </property>
+       <property name="text">
+        <string>Alpha</string>
+       </property>
+       <property name="alignment">
+        <set>Qt::AlignCenter</set>
+       </property>
+      </widget>
+     </item>
+     <item row="4" column="0">
+      <spacer name="verticalSpacer_2">
        <property name="orientation">
         <enum>Qt::Vertical</enum>
        </property>
-       <property name="tickPosition">
-        <enum>QSlider::TicksAbove</enum>
+       <property name="sizeType">
+        <enum>QSizePolicy::Fixed</enum>
        </property>
-       <property name="tickInterval">
-        <number>31</number>
+       <property name="sizeHint" stdset="0">
+        <size>
+         <width>1</width>
+         <height>8</height>
+        </size>
        </property>
-      </widget>
+      </spacer>
+     </item>
+     <item row="5" column="0">
+      <layout class="QHBoxLayout" name="horizontalLayout_3">
+       <item>
+        <widget class="QPushButton" name="rgbButton">
+         <property name="sizePolicy">
+          <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
+           <horstretch>0</horstretch>
+           <verstretch>0</verstretch>
+          </sizepolicy>
+         </property>
+         <property name="toolTip">
+          <string>draw vectors with respective sRGB coloring</string>
+         </property>
+         <property name="text">
+          <string/>
+         </property>
+         <property name="icon">
+          <iconset resource="../gerbil.qrc">
+           <normaloff>:/toolbar/rgb</normaloff>:/toolbar/rgb</iconset>
+         </property>
+         <property name="iconSize">
+          <size>
+           <width>16</width>
+           <height>16</height>
+          </size>
+         </property>
+         <property name="checkable">
+          <bool>true</bool>
+         </property>
+        </widget>
+       </item>
+      </layout>
+     </item>
+     <item row="5" column="1">
+      <layout class="QHBoxLayout" name="horizontalLayout_6">
+       <item>
+        <widget class="QPushButton" name="logButton">
+         <property name="sizePolicy">
+          <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
+           <horstretch>0</horstretch>
+           <verstretch>0</verstretch>
+          </sizepolicy>
+         </property>
+         <property name="toolTip">
+          <string>toggle logarithmic alpha</string>
+         </property>
+         <property name="text">
+          <string/>
+         </property>
+         <property name="icon">
+          <iconset resource="../gerbil.qrc">
+           <normaloff>:/icons/Gerbil/16x16/alpha-lin.png</normaloff>
+           <normalon>:/icons/Gerbil/16x16/alpha-log.png</normalon>:/icons/Gerbil/16x16/alpha-lin.png</iconset>
+         </property>
+         <property name="iconSize">
+          <size>
+           <width>16</width>
+           <height>16</height>
+          </size>
+         </property>
+         <property name="checkable">
+          <bool>true</bool>
+         </property>
+        </widget>
+       </item>
+      </layout>
+     </item>
+     <item row="6" column="0">
+      <spacer name="verticalSpacer">
+       <property name="orientation">
+        <enum>Qt::Vertical</enum>
+       </property>
+       <property name="sizeType">
+        <enum>QSizePolicy::Fixed</enum>
+       </property>
+       <property name="sizeHint" stdset="0">
+        <size>
+         <width>1</width>
+         <height>8</height>
+        </size>
+       </property>
+      </spacer>
+     </item>
+     <item row="7" column="0">
+      <layout class="QHBoxLayout" name="horizontalLayout_5">
+       <item>
+        <widget class="QPushButton" name="hqButton">
+         <property name="sizePolicy">
+          <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
+           <horstretch>0</horstretch>
+           <verstretch>0</verstretch>
+          </sizepolicy>
+         </property>
+         <property name="toolTip">
+          <string>toggle high/low quality</string>
+         </property>
+         <property name="text">
+          <string/>
+         </property>
+         <property name="icon">
+          <iconset resource="../gerbil.qrc">
+           <normaloff>:/icons/Gerbil/16x16/quality-low.png</normaloff>
+           <normalon>:/icons/Gerbil/16x16/quality-high.png</normalon>:/icons/Gerbil/16x16/quality-low.png</iconset>
+         </property>
+         <property name="iconSize">
+          <size>
+           <width>16</width>
+           <height>16</height>
+          </size>
+         </property>
+         <property name="checkable">
+          <bool>true</bool>
+         </property>
+        </widget>
+       </item>
+      </layout>
+     </item>
+     <item row="7" column="1">
+      <layout class="QHBoxLayout" name="horizontalLayout_7">
+       <item>
+        <widget class="QPushButton" name="formatButton">
+         <property name="sizePolicy">
+          <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
+           <horstretch>0</horstretch>
+           <verstretch>0</verstretch>
+          </sizepolicy>
+         </property>
+         <property name="toolTip">
+          <string>set Framebuffer depth</string>
+         </property>
+         <property name="text">
+          <string/>
+         </property>
+         <property name="icon">
+          <iconset resource="../gerbil.qrc">
+           <normaloff>:/icons/Gerbil/16x16/memory.png</normaloff>:/icons/Gerbil/16x16/memory.png</iconset>
+         </property>
+         <property name="iconSize">
+          <size>
+           <width>16</width>
+           <height>16</height>
+          </size>
+         </property>
+         <property name="checkable">
+          <bool>true</bool>
+         </property>
+        </widget>
+       </item>
+      </layout>
      </item>
     </layout>
    </item>
    <item row="1" column="0">
-    <widget class="QLabel" name="binLabel">
-     <property name="sizePolicy">
-      <sizepolicy hsizetype="Minimum" vsizetype="Preferred">
-       <horstretch>0</horstretch>
-       <verstretch>0</verstretch>
-      </sizepolicy>
-     </property>
-     <property name="minimumSize">
-      <size>
-       <width>60</width>
-       <height>0</height>
-      </size>
-     </property>
-     <property name="text">
-      <string>#Bins</string>
-     </property>
-     <property name="alignment">
-      <set>Qt::AlignCenter</set>
-     </property>
-    </widget>
-   </item>
-   <item row="5" column="0">
-    <layout class="QHBoxLayout" name="horizontalLayout_3">
-     <item>
-      <widget class="QPushButton" name="rgbButton">
-       <property name="sizePolicy">
-        <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
-         <horstretch>0</horstretch>
-         <verstretch>0</verstretch>
-        </sizepolicy>
-       </property>
-       <property name="toolTip">
-        <string>draw vectors with respective sRGB coloring</string>
-       </property>
-       <property name="text">
-        <string/>
-       </property>
-       <property name="icon">
-        <iconset resource="../gerbil.qrc">
-         <normaloff>:/toolbar/rgb</normaloff>:/toolbar/rgb</iconset>
-       </property>
-       <property name="iconSize">
-        <size>
-         <width>16</width>
-         <height>16</height>
-        </size>
-       </property>
-       <property name="checkable">
-        <bool>true</bool>
-       </property>
-      </widget>
-     </item>
-    </layout>
-   </item>
-   <item row="6" column="0">
-    <spacer name="verticalSpacer">
+    <spacer name="verticalSpacer_5">
      <property name="orientation">
       <enum>Qt::Vertical</enum>
      </property>
@@ -117,164 +446,8 @@
      </property>
      <property name="sizeHint" stdset="0">
       <size>
-       <width>1</width>
-       <height>1</height>
-      </size>
-     </property>
-    </spacer>
-   </item>
-   <item row="0" column="1">
-    <layout class="QHBoxLayout" name="horizontalLayout_2_2">
-     <item>
-      <widget class="QSlider" name="alphaSlider">
-       <property name="sizePolicy">
-        <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
-         <horstretch>0</horstretch>
-         <verstretch>0</verstretch>
-        </sizepolicy>
-       </property>
-       <property name="toolTip">
-        <string>vector line opacity</string>
-       </property>
-       <property name="minimum">
-        <number>1</number>
-       </property>
-       <property name="maximum">
-        <number>100</number>
-       </property>
-       <property name="value">
-        <number>50</number>
-       </property>
-       <property name="tracking">
-        <bool>true</bool>
-       </property>
-       <property name="orientation">
-        <enum>Qt::Vertical</enum>
-       </property>
-       <property name="tickPosition">
-        <enum>QSlider::TicksAbove</enum>
-       </property>
-       <property name="tickInterval">
-        <number>20</number>
-       </property>
-      </widget>
-     </item>
-    </layout>
-   </item>
-   <item row="1" column="1">
-    <widget class="QLabel" name="alphaLabel">
-     <property name="sizePolicy">
-      <sizepolicy hsizetype="Minimum" vsizetype="Preferred">
-       <horstretch>0</horstretch>
-       <verstretch>0</verstretch>
-      </sizepolicy>
-     </property>
-     <property name="minimumSize">
-      <size>
-       <width>60</width>
-       <height>0</height>
-      </size>
-     </property>
-     <property name="text">
-      <string>Alpha</string>
-     </property>
-     <property name="alignment">
-      <set>Qt::AlignCenter</set>
-     </property>
-    </widget>
-   </item>
-   <item row="5" column="1">
-    <layout class="QHBoxLayout" name="horizontalLayout_2">
-     <property name="spacing">
-      <number>0</number>
-     </property>
-     <item>
-      <widget class="QPushButton" name="limiterButton">
-       <property name="sizePolicy">
-        <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
-         <horstretch>0</horstretch>
-         <verstretch>0</verstretch>
-        </sizepolicy>
-       </property>
-       <property name="toolTip">
-        <string>use band-wise limiters</string>
-       </property>
-       <property name="text">
-        <string/>
-       </property>
-       <property name="icon">
-        <iconset resource="../gerbil.qrc">
-         <normaloff>:/toolbar/limiter</normaloff>:/toolbar/limiter</iconset>
-       </property>
-       <property name="iconSize">
-        <size>
-         <width>16</width>
-         <height>16</height>
-        </size>
-       </property>
-       <property name="checkable">
-        <bool>true</bool>
-       </property>
-      </widget>
-     </item>
-     <item>
-      <widget class="QPushButton" name="limiterMenuButton">
-       <property name="sizePolicy">
-        <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
-         <horstretch>0</horstretch>
-         <verstretch>0</verstretch>
-        </sizepolicy>
-       </property>
-       <property name="minimumSize">
-        <size>
-         <width>16</width>
-         <height>0</height>
-        </size>
-       </property>
-       <property name="maximumSize">
-        <size>
-         <width>16</width>
-         <height>16777215</height>
-        </size>
-       </property>
-       <property name="baseSize">
-        <size>
-         <width>16</width>
-         <height>0</height>
-        </size>
-       </property>
-       <property name="toolTip">
-        <string>initialize band-wise limiters</string>
-       </property>
-       <property name="text">
-        <string/>
-       </property>
-       <property name="icon">
-        <iconset resource="../gerbil.qrc">
-         <normaloff>:/toolbar/popup</normaloff>:/toolbar/popup</iconset>
-       </property>
-       <property name="iconSize">
-        <size>
-         <width>8</width>
-         <height>16</height>
-        </size>
-       </property>
-      </widget>
-     </item>
-    </layout>
-   </item>
-   <item row="2" column="0">
-    <spacer name="verticalSpacer_2">
-     <property name="orientation">
-      <enum>Qt::Vertical</enum>
-     </property>
-     <property name="sizeType">
-      <enum>QSizePolicy::Fixed</enum>
-     </property>
-     <property name="sizeHint" stdset="0">
-      <size>
-       <width>1</width>
-       <height>8</height>
+       <width>13</width>
+       <height>13</height>
       </size>
      </property>
     </spacer>
