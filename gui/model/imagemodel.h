@@ -220,10 +220,10 @@ private:
 	cv::Rect oldRoi;
 
 	// current number of spectral bands in the IMG representation
-	int nBands;
+	size_t nBands;
 
 	// previous number of spectral bands in the IMG representation
-	int nBandsOld;
+	size_t nBandsOld;
 
 	BackgroundTaskQueue &queue;
 };

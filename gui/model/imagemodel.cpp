@@ -34,7 +34,7 @@
 ImageModel::ImageModel(BackgroundTaskQueue &queue, bool lm, QObject *parent)
 	: QObject(parent), limitedMode(lm), queue(queue),
 	  image_lim(new SharedMultiImgBase(new multi_img())),
-	  nBands(-1), nBandsOld(-1)
+	  nBands(0), nBandsOld(0)
 {
 	foreach (representation::t i, representation::all()) {
 		map.insert(i, new payload(i));
@@ -170,17 +170,16 @@ void ImageModel::spawn(representation::t type, const cv::Rect &newROI, int bands
 		queue.push(taskScope);
 
 		// sanitize spectral rescaling parameters
-		assert(-1 != getNumBandsFull());
-		if ( (bands == -1  && getNumBandsROI() == -1) // no ROI yet
+		assert(getNumBandsFull() > 0);
+		if ( (bands < 1 && getNumBandsROI() < 1) // no ROI yet
 			 || bands > getNumBandsFull()) { // bands too large
 			bands = getNumBandsFull();
-		} else if (bands == -1) {
+		} else if (bands < 1) {
 			// default, use nbands from ROI
 			bands = getNumBandsROI();
 		} else if (bands <= 2) { // to few bands
 			bands = 3;
 		}
-		assert(-1 != bands);
 
 		// perform spectral rescaling
 		BackgroundTaskPtr taskRescale(new RescaleTbb(
