@@ -54,6 +54,8 @@ void DistViewModel::updateBinning(int bins)
 
 	if (bins > 0) {
 		args.nbins = bins;
+	} else if (args.nbins == 0) {
+		return; // bogus state, do nothing
 	}
 
 	args.metadataValid = false;
@@ -356,7 +358,7 @@ void DistViewModel::processColoringChanged(cv::Mat3f result)
 	int nbins = (*context)->nbins;
 	ctxlock.unlock();
 
-	if (coloringEnabled) {
+	if (coloringEnabled && !inbetween) {
 		updateBinning(nbins);
 	}
 }
