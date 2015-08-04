@@ -351,6 +351,15 @@ QPolygonF DistViewModel::getPixelOverlay(int y, int x)
 
 void DistViewModel::processColoringChanged(cv::Mat3f result)
 {
+	/* hack: we can get lots of updates that are not really new.
+	 * (whenever falsecolordock unsubscribes and resubscribes)
+	 * rebinning is costly though.
+	 * This comparison is also not the cheapest operation, so beware.
+	 */
+	if (coloringResult.size == result.size &&
+	    std::equal(result.begin(), result.end(), coloringResult.begin()))
+		return;
+
 	coloringResult = result;
 
 	SharedDataLock ctxlock(context->mutex);
