@@ -492,4 +492,30 @@ void Viewport::adjustBoundaries()
 	modelviewI = modelview.inverted();
 }
 
+void Viewport::toggleHQ()
+{
+	drawHQ = !drawHQ;
+	if (drawHQ) {
+		// triggers drawing update
+		endNoHQ();
+	} else {
+		startNoHQ();
+		// deliberately make display worse for user to see effect
+		updateBuffers();
+	}
+}
+
+void Viewport::setBufferFormat(BufferFormat format)
+{
+	bufferFormat = format;
+
+	initBuffers();
+	updateBuffers();
+}
+
+void Viewport::toggleDrawLog()
+{
+	drawLog = !drawLog;
+	updateBuffers();
+}
 
