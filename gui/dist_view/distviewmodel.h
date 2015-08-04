@@ -50,7 +50,7 @@ public slots:
 				  cv::Rect roi);
 	void setImage(SharedMultiImgPtr image, cv::Rect roi, int bins);
 
-	void updateBinning(int bins);
+	void updateBinning(int bins = 0);
 
 	void updateLabels(const cv::Mat1s& labels,
 					  const QVector<QColor> &colors = QVector<QColor>());

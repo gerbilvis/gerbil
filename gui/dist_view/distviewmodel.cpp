@@ -355,11 +355,10 @@ void DistViewModel::processColoringChanged(cv::Mat3f result)
 
 	SharedDataLock ctxlock(context->mutex);
 	(*context)->coloringValid = false;
-	int nbins = (*context)->nbins;
 	ctxlock.unlock();
 
 	if (coloringEnabled && !inbetween) {
-		updateBinning(nbins);
+		updateBinning();
 	}
 }
 
@@ -369,10 +368,9 @@ void DistViewModel::processRgbToggled(bool enabled)
 
 	SharedDataLock ctxlock(context->mutex);
 	bool coloringValid = (*context)->coloringValid;
-	int nbins = (*context)->nbins;
 	ctxlock.unlock();
 
 	if (coloringEnabled && !coloringValid) {
-		updateBinning(nbins);
+		updateBinning();
 	}
 }
