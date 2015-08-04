@@ -30,13 +30,15 @@
           </sizepolicy>
          </property>
          <property name="toolTip">
-          <string>take a screenshot</string>
+          <string>save plot to file</string>
          </property>
          <property name="text">
           <string/>
          </property>
          <property name="icon">
-          <iconset theme="document-save"/>
+          <iconset theme="document-save">
+           <normaloff/>
+          </iconset>
          </property>
          <property name="iconSize">
           <size>
