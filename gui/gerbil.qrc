@@ -85,6 +85,11 @@
         <file alias="24x24/folder-open.png">resources/icons/24x24/folder-open.png</file>
         <file alias="32x32/folder-open.png">resources/icons/32x32/folder-open.png</file>
         <file alias="scalable/folder-open.svg">resources/icons/scalable/folder-open.svg</file>
+        <file alias="16x16/alpha-lin.png">resources/icons/16x16/alpha-lin.png</file>
+        <file alias="16x16/alpha-log.png">resources/icons/16x16/alpha-log.png</file>
+        <file alias="16x16/memory.png">resources/icons/16x16/memory.png</file>
+        <file alias="16x16/quality-high.png">resources/icons/16x16/quality-high.png</file>
+        <file alias="16x16/quality-low.png">resources/icons/16x16/quality-low.png</file>
     </qresource>
     <qresource prefix="/autohide">
         <file alias="bottom">resources/autohide-bottom.png</file>
