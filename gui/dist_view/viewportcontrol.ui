@@ -51,7 +51,7 @@
         </sizepolicy>
        </property>
        <property name="toolTip">
-        <string>toggle high/low quality</string>
+        <string>toggle drawing quality</string>
        </property>
        <property name="text">
         <string/>
@@ -70,6 +70,9 @@
        <property name="checkable">
         <bool>true</bool>
        </property>
+       <property name="checked">
+        <bool>true</bool>
+       </property>
       </widget>
      </item>
      <item>
@@ -81,7 +84,7 @@
         </sizepolicy>
        </property>
        <property name="toolTip">
-        <string>set Framebuffer depth</string>
+        <string>set framebuffer depth</string>
        </property>
        <property name="text">
         <string/>
@@ -95,9 +98,6 @@
          <width>16</width>
          <height>16</height>
         </size>
-       </property>
-       <property name="checkable">
-        <bool>true</bool>
        </property>
       </widget>
      </item>
@@ -120,17 +120,13 @@
         <string/>
        </property>
        <property name="icon">
-        <iconset resource="../gerbil.qrc">
-         <normaloff>:/icons/Gerbil/16x16/document-save.png</normaloff>:/icons/Gerbil/16x16/document-save.png</iconset>
+        <iconset theme="document-save"/>
        </property>
        <property name="iconSize">
         <size>
          <width>16</width>
          <height>16</height>
         </size>
-       </property>
-       <property name="checkable">
-        <bool>true</bool>
        </property>
       </widget>
      </item>

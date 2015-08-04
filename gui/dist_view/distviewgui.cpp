@@ -301,13 +301,25 @@ void DistViewGUI::showLimiterMenu()
 
 void DistViewGUI::createFrameBufferMenu()
 {
+	actionGroup = new QActionGroup(this);
+	actionGroup->setExclusive(true);
+
 	QAction* tmp;
 	tmp = frameBufferMenu.addAction("RGBA8");
+	tmp->setCheckable(true);
 	tmp->setData(Viewport::BufferFormat::RGBA8);
+	actionGroup->addAction(tmp);
+
 	tmp = frameBufferMenu.addAction("RGBA16F");
+	tmp->setCheckable(true);
+	tmp->setChecked(true);
 	tmp->setData(Viewport::BufferFormat::RGBA16F);
+	actionGroup->addAction(tmp);
+
 	tmp = frameBufferMenu.addAction("RGBA32F");
+	tmp->setCheckable(true);
 	tmp->setData(Viewport::BufferFormat::RGBA32F);
+	actionGroup->addAction(tmp);
 }
 
 void DistViewGUI::showFrameBufferMenu()
