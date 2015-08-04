@@ -35,6 +35,14 @@ void ScaledView::updateSizeHint()
 	emit newSizeHint(QSize(300*src_aspect, 300));
 }
 
+void ScaledView::scalerUpdate() {
+	// inverted transform to handle input, window damage etc.
+	scalerI = scaler.inverted();
+
+	// let the view know about the geometry we actually do occupy
+	emit newContentRect(scaler.mapRect(pixmap.rect()));
+}
+
 void ScaledView::setPixmap(QPixmap p)
 {
 	bool cond = (p.width() != pixmap.width()
@@ -84,12 +92,7 @@ void ScaledView::resizeEvent()
 	/* scaling */
 	float scale = w/pixmap.width();
 	scaler.scale(scale, scale);
-
-	// inverted transform to handle input
-	scalerI = scaler.inverted();
-
-	// let the view know about the geometry we actually do occupy
-	emit newContentRect(scaler.mapRect(pixmap.rect()));
+	scalerUpdate();
 }
 
 void ScaledView::paintEvent(QPainter *painter, const QRectF &rect)
@@ -130,7 +133,7 @@ void ScaledView::mouseMoveEvent(QGraphicsSceneMouseEvent *event)
 		qreal y = curronscene.y() - lastonscene.y();
 
 		scaler.translate(x,y);
-		scalerI = scaler.inverted();
+		scalerUpdate();
 		update();
 	}
 }
@@ -203,16 +206,15 @@ void ScaledView::wheelEvent(QGraphicsSceneWheelEvent *event)
 		zoom *= newzoom;
 		//scaling
 		scaler.scale(newzoom, newzoom);
-		scalerI = scaler.inverted();
 
 		//after scaling there's different point under cursor
 		//so we have to obtain cursor position in pixmap coordinates
 		//once again
-		QPointF newlocal = scalerI.map(scene);
+		QPointF newlocal = scaler.inverted().map(scene);
 
 		//translate the by the difference
 		QPointF diff = newlocal - local;
 		scaler.translate(diff.x(), diff.y());
-		scalerI = scaler.inverted();
+		scalerUpdate();
 	}
 }
