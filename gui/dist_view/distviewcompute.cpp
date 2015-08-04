@@ -108,11 +108,10 @@ void Compute::PreprocessBins::join(PreprocessBins &toJoin)
 void Compute::preparePolylines(const ViewportCtx &ctx,
 							   std::vector<BinSet> &sets, binindex &index)
 {
-	if (!assertBinSetsKeyDim(sets, ctx)) {
+	if (!assertBinSetsKeyDim(sets, ctx)) { // 	assert(sets.size()>0);
 		return;
 	}
 
-	assert(sets.size()>0);
 	index.clear();
 	//GGDBGP("Compute::preparePolylines() sets.size() = " << sets.size() << endl);
 	for (unsigned int i = 0; i < sets.size(); ++i) {
