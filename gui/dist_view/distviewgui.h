@@ -101,7 +101,6 @@ protected:
 	QVector<QColor> labelColors;
 	QMenu limiterMenu;
 	QMenu frameBufferMenu;
-	QActionGroup* actionGroup;
 };
 
 #endif // DISTVIEWGUI_H
