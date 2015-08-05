@@ -142,7 +142,13 @@ void DistviewBinsTbb::updateContext()
 	args.minval = (*multi)->minval;
 	args.maxval = (*multi)->maxval;
 
-	if(!colormat.empty()) args.coloringValid = true;
+	if ((*multi)->height != colormat.rows
+	    || (*multi)->width != colormat.cols ) {
+		args.coloringValid = false;
+	} else {
+		args.coloringValid = true;
+	}
+
 	args.metadataValid = true;
 }
 
@@ -152,6 +158,10 @@ void Accumulate::operator()(const tbb::blocked_range2d<int> &r) const
 		const short *lr = labels[y];
 		const uchar *mr = (mask.empty() ? 0 : mask[y]);
 		for (int x = r.cols().begin(); x != r.cols().end(); ++x) {
+
+			bool sizeCond = r.rows().end() < coloring.rows &&
+			                r.cols().end() < coloring.cols;
+
 			if (mr && !mr[x])
 				continue;
 
@@ -171,7 +181,7 @@ void Accumulate::operator()(const tbb::blocked_range2d<int> &r) const
 			if (subtract) {
 				BinSet::HashMap::accessor ac;
 				if (s.bins.find(ac, hashkey)) {
-					if (!coloring.empty()) {
+				if (!coloring.empty() && sizeCond) {
 						const cv::Vec3f &rgb = coloring(y,x);
 						ac->second.sub(pixel, rgb);
 					} else {
@@ -185,7 +195,7 @@ void Accumulate::operator()(const tbb::blocked_range2d<int> &r) const
 			} else {
 				BinSet::HashMap::accessor ac;
 				s.bins.insert(ac, hashkey);
-				if (!coloring.empty()) {
+				if (!coloring.empty() && sizeCond) {
 					const cv::Vec3f &rgb = coloring(y,x);
 					ac->second.add(pixel, rgb);
 				} else {
