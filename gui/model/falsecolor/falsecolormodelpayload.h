@@ -38,7 +38,8 @@ public:
 	/** Cancel computation: Actually signal the running thread. */
 	void cancel();
 
-	QPixmap getResult() { return result; }
+	QPixmap getResultPixmap() { return resultPixmap; }
+	cv::Mat3f getResultMat() { return resultMat; }
 
 signals:
 	/** Computation progress changed. */
@@ -56,7 +57,8 @@ private:
 	SharedMultiImgPtr img;
 	SharedMultiImgPtr grad;
 	CommandRunner *runner;
-	QPixmap result;
+	QPixmap resultPixmap;
+	cv::Mat3f resultMat;
 };
 
 

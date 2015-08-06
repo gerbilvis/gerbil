@@ -19,7 +19,8 @@ bool Viewport::drawScene(QPainter *painter, bool withDynamics)
 		/* TODO: disabled member state instead? */
 		SharedDataLock ctxlock(ctx->mutex);
 		SharedDataLock setslock(sets->mutex);
-		if ((*sets)->empty() || (*ctx)->wait)
+		bool recoloringPending = (!(*ctx)->coloringValid)&&drawRGB;
+		if ((*sets)->empty() || (*ctx)->wait || recoloringPending)
 			disabled = true;
 	}
 

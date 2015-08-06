@@ -124,6 +124,8 @@ void DistViewController::init()
 		        this, SLOT(processNewBinning(representation::t)));
 		connect(m, SIGNAL(newBinningRange(representation::t)),
 		        this, SLOT(processNewBinningRange(representation::t)));
+		connect(this, SIGNAL(coloringChanged(cv::Mat3f)),
+		        m, SLOT(processColoringChanged(cv::Mat3f)));
 
 		DistViewGUI *g = &p->gui;
 		// let GUI connect its member's signals to us
@@ -144,6 +146,9 @@ void DistViewController::init()
 		        this, SLOT(processDistviewUnsubscribeRepresentation(QObject*,representation::t)));
 		connect(g, SIGNAL(foldingStateChanged(representation::t,bool)),
 		        this, SLOT(processFoldingStateChanged(representation::t,bool)));
+
+		connect(g, SIGNAL(rgbToggled(bool)),
+		        m, SLOT(processRgbToggled(bool)));
 	}
 
 	/* connect pass-throughs / signals we process */

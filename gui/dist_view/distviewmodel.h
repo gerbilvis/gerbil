@@ -50,7 +50,7 @@ public slots:
 				  cv::Rect roi);
 	void setImage(SharedMultiImgPtr image, cv::Rect roi, int bins);
 
-	void updateBinning(int bins);
+	void updateBinning(int bins = 0);
 
 	void updateLabels(const cv::Mat1s& labels,
 					  const QVector<QColor> &colors = QVector<QColor>());
@@ -61,6 +61,10 @@ public slots:
 	// glue functions to append type
 	void propagateBinning(bool updated);
 	void propagateBinningRange(bool updated);
+
+	void processColoringChanged(cv::Mat3f result);
+
+	void processRgbToggled(bool enabled);
 
 signals:
 	void newBinning(representation::t type);
@@ -91,6 +95,9 @@ protected:
 	 * (between subImage, addImage)
 	 */
 	bool inbetween;
+
+	bool coloringEnabled;
+	cv::Mat3f coloringResult;
 };
 
 #endif // DISTVIEWMODEL

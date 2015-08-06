@@ -55,6 +55,9 @@ protected:
 		painter->fillRect(rect, brush);
 	}
 
+	// always call after changes to scaler
+	void scalerUpdate();
+
 	// scene geometry
 	int width, height;
 	qreal zoom;
