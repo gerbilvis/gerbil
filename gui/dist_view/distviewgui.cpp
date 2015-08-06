@@ -34,6 +34,38 @@ void DistViewGUI::initVP()
 	ui->gv->setScene(vp);
 }
 
+void DistViewGUI::initVPActions()
+{
+	QAction *hqAct = new QAction(ui->gv);
+	hqAct->setShortcut(Qt::Key_Space);
+	hqAct->setShortcutContext(Qt::WidgetShortcut);
+	ui->gv->addAction(hqAct);
+	uivc->hqButton->setAction(hqAct);
+	connect(hqAct, SIGNAL(triggered()), vp, SLOT(toggleHQ()));
+
+	QAction *logAct = new QAction(ui->gv);
+	logAct->setShortcut(Qt::Key_L);
+	logAct->setShortcutContext(Qt::WidgetShortcut);
+	ui->gv->addAction(logAct);
+	uivc->logButton->setAction(logAct);
+	connect(logAct, SIGNAL(triggered()), vp, SLOT(toggleDrawLog()));
+
+	QAction *scrAct = new QAction(ui->gv);
+	scrAct->setShortcut(Qt::Key_S);
+	scrAct->setShortcutContext(Qt::WidgetShortcut);
+	ui->gv->addAction(scrAct);
+	uivc->screenshotButton->setAction(scrAct);
+	connect(scrAct, SIGNAL(triggered()), vp, SLOT(screenshot()));
+
+	QAction *buffAct = new QAction(ui->gv);
+	buffAct->setShortcut(Qt::Key_F);
+	buffAct->setShortcutContext(Qt::WidgetShortcut);
+	ui->gv->addAction(buffAct);
+	connect(buffAct, SIGNAL(triggered()), vp, SLOT(toggleBufferFormat()));
+	connect(vp, SIGNAL(bufferFormatToggled(Viewport::BufferFormat)),
+	        this, SLOT(updateBufferFormat(Viewport::BufferFormat)));
+}
+
 void DistViewGUI::initVC(representation::t type)
 {
 	/* create VC, apply UI to it, then add to GV */
@@ -68,17 +100,8 @@ void DistViewGUI::initVC(representation::t type)
 	connect(uivc->rgbButton, SIGNAL(toggled(bool)),
 	        vp, SLOT(toggleRGB(bool)));
 
-	connect(uivc->screenshotButton, SIGNAL(released()),
-	        vp, SLOT(screenshot()));
-
-	connect(uivc->hqButton, SIGNAL(released()),
-	        vp, SLOT(toggleHQ()));
-
 	connect(uivc->formatButton, SIGNAL(released()),
 	        this, SLOT(showFrameBufferMenu()));
-
-	connect(uivc->logButton, SIGNAL(released()),
-	        vp, SLOT(toggleDrawLog()));
 
 	// default UI stuff
 	if (type != representation::IMG)
@@ -88,6 +111,7 @@ void DistViewGUI::initVC(representation::t type)
 	setBinCount(uivc->binSlider->value());
 
 	createFrameBufferMenu();
+	initVPActions();
 }
 
 void DistViewGUI::initTop()
@@ -353,4 +377,16 @@ QIcon DistViewGUI::colorIcon(const QColor &color)
 bool DistViewGUI::isVisible()
 {
 	return !ui->gv->isHidden();
+}
+
+void DistViewGUI::updateBufferFormat(Viewport::BufferFormat format)
+{
+	QList<QAction*> list = frameBufferMenu.actions();
+	for(QAction* act : list)
+	{
+		if(act->data().toInt() == format) {
+			act->setChecked(true);
+			return;
+		}
+	}
 }

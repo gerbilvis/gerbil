@@ -22,7 +22,7 @@
      <item row="0" column="0">
       <layout class="QHBoxLayout" name="horizontalLayout_4">
        <item>
-        <widget class="QPushButton" name="screenshotButton">
+        <widget class="ActionButton" name="screenshotButton">
          <property name="sizePolicy">
           <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
            <horstretch>0</horstretch>
@@ -47,7 +47,7 @@
           </size>
          </property>
          <property name="checkable">
-          <bool>true</bool>
+          <bool>false</bool>
          </property>
         </widget>
        </item>
@@ -321,7 +321,7 @@
      <item row="5" column="1">
       <layout class="QHBoxLayout" name="horizontalLayout_6">
        <item>
-        <widget class="QPushButton" name="logButton">
+        <widget class="ActionButton" name="logButton">
          <property name="sizePolicy">
           <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
            <horstretch>0</horstretch>
@@ -374,7 +374,7 @@
      <item row="7" column="0">
       <layout class="QHBoxLayout" name="horizontalLayout_5">
        <item>
-        <widget class="QPushButton" name="hqButton">
+        <widget class="ActionButton" name="hqButton">
          <property name="sizePolicy">
           <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
            <horstretch>0</horstretch>
@@ -435,7 +435,7 @@
           </size>
          </property>
          <property name="checkable">
-          <bool>true</bool>
+          <bool>false</bool>
          </property>
         </widget>
        </item>
@@ -461,6 +461,13 @@
    </item>
   </layout>
  </widget>
+ <customwidgets>
+  <customwidget>
+   <class>ActionButton</class>
+   <extends>QPushButton</extends>
+   <header>dist_view/actionbutton.h</header>
+  </customwidget>
+ </customwidgets>
  <resources>
   <include location="../gerbil.qrc"/>
  </resources>
