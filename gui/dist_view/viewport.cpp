@@ -23,6 +23,7 @@
 #include <QGraphicsItem>
 #include <QPainter>
 #include <QSignalMapper>
+#include <QAction>
 #include <boost/format.hpp>
 
 Viewport::Viewport(representation::t type, QGLWidget *target)
@@ -511,6 +512,21 @@ void Viewport::setBufferFormat(BufferFormat format)
 
 	initBuffers();
 	updateBuffers();
+}
+
+void Viewport::toggleBufferFormat()
+{
+	switch (bufferFormat) {
+	case RGBA8: bufferFormat = RGBA16F; break;
+	case RGBA16F: bufferFormat = RGBA32F; break;
+	case RGBA32F: bufferFormat = RGBA8; break;
+	}
+
+	// initialize buffers with new format
+	initBuffers();
+	updateBuffers();
+
+	emit bufferFormatToggled(bufferFormat);
 }
 
 void Viewport::toggleDrawLog()

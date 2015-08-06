@@ -138,6 +138,7 @@ void FalseColorModel::requestColoring(FalseColoring::Type coloringType, bool rec
 			GGDBGM("have valid cached image for " << coloringType
 				   << ", emitting falseColoringUpdate" << endl);
 			emit falseColoringUpdate(coloringType, cacheIt->pixmap());
+			emit coloringChanged(cacheIt->mat());
 		}
 	} else {
 		GGDBGM("invalid cache for "<< coloringType << ", computing." << endl);
@@ -212,13 +213,14 @@ void FalseColorModel::processComputationFinished(FalseColoring::Type coloringTyp
 	assert(payload);
 	payloads.erase(payloadIt);
 	if(success) {
-		pixmap = payload->getResult();
-		cache.insert(coloringType,FalseColoringCacheItem(pixmap));
+		pixmap = payload->getResultPixmap();
+		cache.insert(coloringType,FalseColoringCacheItem(pixmap, payload->getResultMat()));
 	}
 	payload->deleteLater();
 	if(success) {
 		//GGDBGM("emitting falseColoringUpdate " << coloringType<<endl);
 		emit falseColoringUpdate(coloringType, pixmap);
+		emit coloringChanged(payload->getResultMat());
 	} else {
 		//GGDBGM("emitting computationCancelled " << coloringType<<endl);
 		emit computationCancelled(coloringType);

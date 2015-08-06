@@ -192,17 +192,12 @@ void Viewport::keyPressEvent(QKeyEvent *event)
 	bool highlightAltered = false;
 
 	switch (event->key()) {
-	case Qt::Key_S:
-		screenshot();
-		break;
-
 	case Qt::Key_Plus:
 		emit addSelectionRequested();
 		break;
 	case Qt::Key_Minus:
 		emit remSelectionRequested();
 		break;
-
 	case Qt::Key_Up:
 		{
 			SharedDataLock ctxlock(ctx->mutex);
@@ -243,23 +238,6 @@ void Viewport::keyPressEvent(QKeyEvent *event)
 				highlightAltered = true;
 			}
 		}
-		break;
-
-	case Qt::Key_Space:
-		toggleHQ();
-		break;
-	case Qt::Key_L:
-		toggleDrawLog();
-		break;
-	case Qt::Key_F:
-		switch (bufferFormat) {
-		case RGBA8: bufferFormat = RGBA16F; break;
-		case RGBA16F: bufferFormat = RGBA32F; break;
-		case RGBA32F: bufferFormat = RGBA8; break;
-		}
-		// initialize buffers with new format
-		initBuffers();
-		updateBuffers();
 		break;
 	case Qt::Key_M:
 		drawMeans = !drawMeans;
