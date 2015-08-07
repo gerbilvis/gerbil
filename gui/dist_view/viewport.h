@@ -82,6 +82,7 @@ public slots:
 	void setAppliedIlluminant(QVector<multi_img::Value> illum);
 
 	void setBufferFormat(BufferFormat format);
+	void toggleBufferFormat();
 	void toggleDrawLog();
 	void toggleHQ();
 
@@ -111,6 +112,8 @@ signals:
 	// add/remove highlight from/to current label
 	void addSelectionRequested();
 	void remSelectionRequested();
+
+	void bufferFormatToggled(Viewport::BufferFormat format);
 
 protected:
 	void initTimers();

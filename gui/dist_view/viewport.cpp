@@ -513,6 +513,21 @@ void Viewport::setBufferFormat(BufferFormat format)
 	updateBuffers();
 }
 
+void Viewport::toggleBufferFormat()
+{
+	switch (bufferFormat) {
+	case RGBA8: bufferFormat = RGBA16F; break;
+	case RGBA16F: bufferFormat = RGBA32F; break;
+	case RGBA32F: bufferFormat = RGBA8; break;
+	}
+
+	// initialize buffers with new format
+	initBuffers();
+	updateBuffers();
+
+	emit bufferFormatToggled(bufferFormat);
+}
+
 void Viewport::toggleDrawLog()
 {
 	drawLog = !drawLog;

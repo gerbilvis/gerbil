@@ -38,6 +38,7 @@ vole_compile_library(
 	dist_view/distviewmodel
 	dist_view/viewer_tasks
 	dist_view/foldingbar
+	dist_view/actionbutton
 	dist_view/viewport
 	dist_view/viewport_drawing
 	dist_view/viewport_input
@@ -92,6 +93,7 @@ vole_moc_library(
 	dist_view/distviewmodel.h
 	dist_view/distviewgui.h
 	dist_view/foldingbar.h
+	dist_view/actionbutton.h
 	dist_view/viewport.h
 
 	docks/banddock.h
