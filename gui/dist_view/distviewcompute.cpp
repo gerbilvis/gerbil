@@ -1,6 +1,6 @@
 #include "distviewcompute.h"
 
-#include <gerbilapplication.h>
+#include "app/gerbilapplication.h"
 
 //#define GGDBG_MODULE
 #include "../gerbil_gui_debug.h"
@@ -160,10 +160,8 @@ void Compute::storeVertices(const ViewportCtx &ctx,
 	//GGDBGM("after vb.map()\n");
 
 	if (!varr) {
-		std::stringstream err;
-		err << "Compute::storeVertices(): QGLBuffer::map() failed" << std::endl;
 		GerbilApplication::instance()->
-			criticalError(QString::fromStdString(err.str()));
+			criticalError("Compute::storeVertices(): QGLBuffer::map() failed");
 		return;
 	}
 

@@ -1,7 +1,7 @@
 #include "falsecolormodelpayload.h"
-#include "commandrunner.h"
-#include "rgb.h"
-#include "qtopencv.h"
+#include "../commandrunner.h"
+#include <rgb.h>
+#include <qtopencv.h>
 
 #include <som_config.h>
 

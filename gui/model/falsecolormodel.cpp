@@ -9,7 +9,7 @@
 #include <qtopencv.h>
 
 #include "representation.h"
-#include "../commandrunner.h"
+#include "commandrunner.h"
 
 #include "falsecolormodel.h"
 #include "falsecolor/falsecolormodelpayload.h"

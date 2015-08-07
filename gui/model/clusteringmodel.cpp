@@ -1,6 +1,6 @@
 #include "clusteringmodel.h"
 
-#include <commandrunner.h>
+#include "commandrunner.h"
 #ifdef WITH_SEG_MEANSHIFT
 #include <meanshift_shell.h>
 #include <meanshift.h>

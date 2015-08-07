@@ -9,10 +9,8 @@ vole_add_required_modules("rgb" "seg_graphs")
 vole_add_optional_modules("seg_meanshift" "seg_medianshift" "seg_probshift" "edge_detect")
 
 vole_compile_library(
-	commandrunner
-	gerbilapplication
-
-	app/gerbil_app_support
+	app/gerbilapplication
+	app/gerbilapp_aux
 	app/gerbilio
 
 	widgets/mainwindow
@@ -44,6 +42,7 @@ vole_compile_library(
 	dist_view/distviewgui
 	dist_view/distviewbinstbb
 
+	model/commandrunner
 	model/representation
 	model/imagemodel
 	model/labelingmodel
@@ -71,8 +70,7 @@ vole_compile_library(
 )
 
 vole_moc_library(
-	commandrunner.h
-	gerbilapplication.h
+	app/gerbilapplication.h
 
 	widgets/mainwindow.h
 	widgets/autohidewidget.h
@@ -102,6 +100,7 @@ vole_moc_library(
 	docks/clusteringdock.h
 	docks/labeldock.h
 
+	model/commandrunner.h
 	model/imagemodel.h
 	model/labelingmodel.h
 	model/labels/icontask.h
@@ -137,6 +136,7 @@ vole_add_resources(
 	gerbil.qrc
 )
 
-vole_add_executable("qgerbil" "gerbilapplication")
+vole_add_executable("qgerbil" "app/gerbilapplication")
+
 
 vole_add_module()

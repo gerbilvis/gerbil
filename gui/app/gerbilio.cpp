@@ -1,5 +1,5 @@
 #include "gerbilio.h"
-#include <gerbilapplication.h>
+#include "gerbilapplication.h"
 
 #include <QFileDialog>
 #include <QMessageBox>

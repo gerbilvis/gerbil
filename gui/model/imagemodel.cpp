@@ -3,7 +3,7 @@
 #include "dialogs/openrecent/recentfile.h"
 
 #include "../gerbil_gui_debug.h"
-#include "gerbilapplication.h"
+#include "app/gerbilapplication.h"
 
 #include <background_task/tasks/cuda/gerbil_cuda_util.h>
 #include <background_task/tasks/scopeimage.h>

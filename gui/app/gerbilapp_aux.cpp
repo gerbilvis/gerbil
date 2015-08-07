@@ -1,6 +1,6 @@
 
 #include "gerbil_app_support.h"
-#include <gerbilapplication.h>
+#include "gerbilapplication.h"
 #include <dialogs/openrecent/recentfile.h>
 
 #ifdef GERBIL_CUDA
