@@ -58,8 +58,8 @@
        </property>
        <property name="icon">
         <iconset resource="../gerbil.qrc">
-         <normaloff>:/icons/Gerbil/16x16/quality-low.png</normaloff>
-         <normalon>:/icons/Gerbil/16x16/quality-high.png</normalon>:/icons/Gerbil/16x16/quality-low.png</iconset>
+         <normaloff>:/toolbar/quality-low</normaloff>
+         <normalon>:/toolbar/quality-high</normalon>:/toolbar/quality-low</iconset>
        </property>
        <property name="iconSize">
         <size>
@@ -91,7 +91,7 @@
        </property>
        <property name="icon">
         <iconset resource="../gerbil.qrc">
-         <normaloff>:/icons/Gerbil/16x16/memory.png</normaloff>:/icons/Gerbil/16x16/memory.png</iconset>
+         <normaloff>:/toolbar/memory</normaloff>:/toolbar/memory</iconset>
        </property>
        <property name="iconSize">
         <size>
@@ -269,8 +269,8 @@
          </property>
          <property name="icon">
           <iconset resource="../gerbil.qrc">
-           <normaloff>:/icons/Gerbil/16x16/alpha-lin.png</normaloff>
-           <normalon>:/icons/Gerbil/16x16/alpha-log.png</normalon>:/icons/Gerbil/16x16/alpha-lin.png</iconset>
+           <normaloff>:/toolbar/alpha-lin</normaloff>
+           <normalon>:/toolbar/alpha-log</normalon>:/toolbar/alpha-lin</iconset>
          </property>
          <property name="iconSize">
           <size>
