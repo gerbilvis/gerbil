@@ -239,10 +239,6 @@ void Viewport::keyPressEvent(QKeyEvent *event)
 			}
 		}
 		break;
-	case Qt::Key_M:
-		drawMeans = !drawMeans;
-		rebuild();
-		break;
 	}
 
 	if (highlightAltered) {

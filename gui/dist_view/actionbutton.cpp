@@ -1,28 +1,21 @@
 #include "actionbutton.h"
 
-void ActionButton::processCheck()
-{
-	if (!ownSignal) {
-		setChecked(!isChecked());
-	}
-	ownSignal = false;
-}
-
-void ActionButton::processAction()
-{
-	ownSignal = true;
-	emit passAction();
-}
 
 void ActionButton::setAction(QAction *action)
 {
 	if (actionOwner != nullptr) {
-		disconnect(this, SIGNAL(clicked()), this, SLOT (processAction()));
-		disconnect(this, SIGNAL(passAction()), actionOwner, SLOT(trigger()));
-		disconnect(actionOwner, SIGNAL(triggered(bool)), this, SLOT(processCheck()));
-	}
+			disconnect(actionOwner, SIGNAL(toggled(bool)), this, SLOT(updateButtonStatusFromAction()));
+			disconnect(this, SIGNAL(clicked()), actionOwner, SLOT(trigger()));
+		}
+
 	actionOwner = action;
-	connect(this, SIGNAL(clicked()), this, SLOT (processAction()));
-	connect(this, SIGNAL(passAction()), actionOwner, SLOT(trigger()));
-	connect(actionOwner, SIGNAL(triggered(bool)), this, SLOT(processCheck()));
+	updateButtonStatusFromAction();
+	connect(action, SIGNAL(toggled(bool)), this, SLOT(updateButtonStatusFromAction()));
+	connect(this, SIGNAL(clicked()), actionOwner, SLOT(trigger()));
+}
+
+void ActionButton::updateButtonStatusFromAction()
+{
+	setCheckable(actionOwner->isCheckable());
+	setChecked(actionOwner->isChecked());
 }

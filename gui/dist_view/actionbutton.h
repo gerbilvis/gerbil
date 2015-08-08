@@ -15,17 +15,12 @@ public:
 
 	void setAction(QAction* action);
 
-signals:
-	void passAction();
-
 public slots:
 
-	void processCheck();
-	void processAction();
+	void updateButtonStatusFromAction();
 
 private:
 	QAction *actionOwner;
-	bool ownSignal = false;
 
 };
 

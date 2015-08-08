@@ -39,16 +39,20 @@ void DistViewGUI::initVPActions()
 	QAction *hqAct = new QAction(ui->gv);
 	hqAct->setShortcut(Qt::Key_Space);
 	hqAct->setShortcutContext(Qt::WidgetShortcut);
+	hqAct->setCheckable(true);
 	ui->gv->addAction(hqAct);
 	uivc->hqButton->setAction(hqAct);
+	vp->setDrawHQ(hqAct);
 	connect(hqAct, SIGNAL(triggered()), vp, SLOT(toggleHQ()));
 
 	QAction *logAct = new QAction(ui->gv);
 	logAct->setShortcut(Qt::Key_L);
 	logAct->setShortcutContext(Qt::WidgetShortcut);
+	logAct->setCheckable(true);
 	ui->gv->addAction(logAct);
 	uivc->logButton->setAction(logAct);
-	connect(logAct, SIGNAL(triggered()), vp, SLOT(toggleDrawLog()));
+	vp->setDrawLog(logAct);
+	connect(logAct, SIGNAL(triggered()), vp, SLOT(updateBuffers()));
 
 	QAction *scrAct = new QAction(ui->gv);
 	scrAct->setShortcut(Qt::Key_S);
@@ -64,6 +68,22 @@ void DistViewGUI::initVPActions()
 	connect(buffAct, SIGNAL(triggered()), vp, SLOT(toggleBufferFormat()));
 	connect(vp, SIGNAL(bufferFormatToggled(Viewport::BufferFormat)),
 	        this, SLOT(updateBufferFormat(Viewport::BufferFormat)));
+
+	QAction* rgbAct = new QAction(ui->gv);
+	rgbAct->setCheckable(true);
+	ui->gv->addAction(rgbAct);
+	uivc->rgbButton->setAction(rgbAct);
+	vp->setDrawRGB(rgbAct);
+	connect(rgbAct, SIGNAL(triggered()), vp, SLOT(updateBuffers()));
+
+	QAction* meansAct = new QAction(ui->gv);
+	meansAct->setShortcut(Qt::Key_M);
+	meansAct->setShortcutContext(Qt::WidgetShortcut);
+	meansAct->setCheckable(true);
+	meansAct->setChecked(true);
+	ui->gv->addAction(meansAct);
+	vp->setDrawMeans(meansAct);
+	connect(meansAct, SIGNAL(triggered()), vp, SLOT(rebuild()));
 }
 
 void DistViewGUI::initVC(representation::t type)
@@ -96,9 +116,6 @@ void DistViewGUI::initVC(representation::t type)
 	        vp, SLOT(setLimitersMode(bool)));
 	connect(uivc->limiterMenuButton, SIGNAL(clicked()),
 	        this, SLOT(showLimiterMenu()));
-
-	connect(uivc->rgbButton, SIGNAL(toggled(bool)),
-	        vp, SLOT(toggleRGB(bool)));
 
 	connect(uivc->formatButton, SIGNAL(released()),
 	        this, SLOT(showFrameBufferMenu()));

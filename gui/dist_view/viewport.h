@@ -50,8 +50,6 @@ public slots:
 
 	void toggleLabelHighlight(int index);
 
-	void toggleRGB(bool enabled) { drawRGB = enabled; updateBuffers(); }
-
 	void setAlpha(float alpha);
 
 	void setLimitersMode(bool enabled);
@@ -83,8 +81,12 @@ public slots:
 
 	void setBufferFormat(BufferFormat format);
 	void toggleBufferFormat();
-	void toggleDrawLog();
 	void toggleHQ();
+
+	void setDrawLog(QAction* logAct) { drawLog = logAct; }
+	void setDrawHQ(QAction* hqAct) { drawHQ = hqAct; }
+	void setDrawRGB(QAction* rgbAct) { drawRGB = rgbAct; }
+	void setDrawMeans(QAction* meansAct) { drawMeans = meansAct; }
 
 protected slots:
 
@@ -225,13 +227,13 @@ private:
 	int *activeLimiter;
 
 	// draw with log weights vs. linear weights
-	bool drawLog;
+	QAction* drawLog;
 	// drawing mode mean vs. bin center
-	bool drawMeans;
+	QAction* drawMeans;
 	// drawing mode labelcolor vs. sRGB color
-	bool drawRGB;
+	QAction* drawRGB;
 	// draw with antialiasing
-	bool drawHQ;
+	QAction* drawHQ;
 	// texture buffer format
 	BufferFormat bufferFormat;
 
