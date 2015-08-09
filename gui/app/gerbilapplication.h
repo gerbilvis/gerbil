@@ -1,7 +1,8 @@
 #ifndef GERBILAPPLICATION_H
 #define GERBILAPPLICATION_H
 
-#include <cstdlib>
+#include <multi_img.h>
+
 #include <boost/noncopyable.hpp>
 
 #include <QApplication>
@@ -13,40 +14,13 @@ class GerbilApplication : public QApplication, boost::noncopyable
 	Q_OBJECT
 public:
 
-	/** Gerbil process exit status. */
-	enum ExitStatus {
-		ExitSuccess =				EXIT_SUCCESS,
-
-		// General Failure.
-		ExitFailure =				EXIT_FAILURE,
-
-		// Minimum system requirements for Gerbil are not met.
-		ExitSystemRequirements =	EXIT_FAILURE + 1,
-
-		//                          EXIT_FAILURE + 2
-
-		// No input file given.
-		ExitNoInput =				EXIT_FAILURE + 3
-	};
-
 	explicit GerbilApplication(int & argc, char ** argv);
 
-	/** Returns a pointer to the GerbilApplication object.
-	 *
-	 * Analogous to QCoreApplication::instance(), this returns a null
-	 * pointer if no GerbilApplication instance has been allocated.
-	 */
-	static GerbilApplication *instance();
-
-	/** Execute the gerbil GUI application.
-	 *
-	 * This checks various pre-conditions for running, sets up objects and
-	 * executes the Qt event loop (QApplication::exec()).
-	 * This functions does not return but calls exit().
-	 * @see ExitStatus.
-	 */
-	// TODO make this nothrow and catch all exceptions here.
-	virtual void run();
+	/** Returns a pointer to the GerbilApplication object. */
+	static GerbilApplication *instance()
+	{
+		return dynamic_cast<GerbilApplication*>(QCoreApplication::instance());
+	}
 
 	/** Returns the path to the directory to the loaded multi-spectral
 	 * image file without the filename.
@@ -55,24 +29,66 @@ public:
 	 */
 	QString imagePath();
 
-	/** Display a critical error in a message box and exit the application
-	 * with an error state. */
+public slots:
+	/** Execute the gerbil GUI application.
+	 *
+	 * This checks various pre-conditions for running and sets up objects
+	 * It expects the Qt event loop to be up.
+	 */
+	// TODO make this nothrow and catch all exceptions here.
+	virtual void run();
+
+	/** Display a critical error in a message box and kill the application */
 	void userError(QString msg);
 	void internalError(QString msg);
 	void criticalError(QString msg);
 
-	// for eventLoopStarted
-	bool eventFilter(QObject *obj, QEvent *event) override;
-
-private:
-
-	/** Load multi-spectral image data.
+protected:
+	/**  Initialize OpenCV state.
 	 *
-	 * Load multi-spectral image given as command line argument or open
-	 * recent file dialog. Checks if image should be loaded in limited
-	 * mode.
+	 * All OpenCV functions that are called from parallelized parts of gerbil have
+	 * to be first executed in single-threaded environment. This is actually
+	 * required only for functions that contain 'static const' variables, but to
+	 * avoid investigation of OpenCV sources and to defend against any future
+	 * changes in OpenCV, it is advised not to omit any used function. Note that
+	 * 'static const' variables within functions are initialized in a lazy manner
+	 * and such initialization is not thread-safe because setting the value and
+	 * init flag of the variable is not an atomic operation.
 	 */
-	void loadInput();
+	void init_opencv();
+
+	/** Initialize CUDA. */
+	void init_cuda();
+
+	/** setup resources, icon theme, register types with Qt type system. */
+	void init_qt();
+
+	/** Check for system requirements.
+	 *
+	 * Checks for MXX, SSE and SSE2 and for required OpenGL features.
+	 *
+	 * @return Returns true if all requirements are met, otherwise false.
+	 */
+	void check_system_requirements();
+
+	/** Tests wether or not to load the multi_img in limited mode.
+	 *
+	 * Opens dialog for querying the user. Calls exit() if user decides to close
+	 * the application.
+	 *
+	 * @return true if multi_img should be loaded in limited mode, otherwise false.
+	 */
+	// FIXME use QString for filenames (full unicode support).
+	bool determine_limited(const std::pair<std::vector<std::string>,
+								  std::vector<multi_img::BandDesc> > &filelist);
+
+	/** Parse arguments and open dialog in lack thereof.
+	 *
+	 * Test for command line argument or open recent file dialog.
+	 * Checks if image should be loaded in limited mode.
+	 * Also checks for label file argument.
+	 */
+	void parse_args();
 
 	void printUsage();
 
@@ -84,10 +100,6 @@ private:
 
 	/** The input filename of the labels. */
 	QString labelsFilename;
-
-	// Track start of the Qt main event-loop
-	int  eventLoopStartedEvent;
-	volatile bool eventLoopStarted;
 
 	// The Controller.
 	Controller* ctrl;

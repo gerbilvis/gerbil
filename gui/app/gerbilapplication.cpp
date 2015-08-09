@@ -4,85 +4,87 @@
 #include <multi_img.h>
 #include <controller/controller.h>
 #include <widgets/mainwindow.h>
-#include <app/gerbil_app_support.h>
 
 #include <QFileInfo>
 #include <QIcon>
+#include <QTimer>
 #include <QStringList>
-#include <QTextStream>
 #include <QMessageBox>
 
 #include <iostream>
 #include <string>
-#include <cstdio>
-#include <cstdlib>
 
 //#define GGDBG_MODULE
 #include <gerbil_gui_debug.h>
 
 int main(int argc, char **argv)
 {
-	QCoreApplication::setOrganizationName("Gerbil");
-	QCoreApplication::setOrganizationDomain("gerbilvis.org");
-	QCoreApplication::setApplicationName("Gerbil");
-
-
-	GerbilApplication app(argc, argv);
-	app.run();
-
-	// never reached, GerbilApplication::run() does not return.
-	return EXIT_FAILURE;
+	exit(GerbilApplication(argc, argv).exec());
 }
 
 GerbilApplication::GerbilApplication(int &argc, char **argv)
     : QApplication(argc, argv),
       limitedMode(false),
-      eventLoopStartedEvent(QEvent::registerEventType()),
-      eventLoopStarted(false),
       ctrl(nullptr)
 {
-}
+	// set variables for QConfig use in application
+	setOrganizationName("Gerbil");
+	setOrganizationDomain("gerbilvis.org");
+	setApplicationName("Gerbil");
 
-GerbilApplication *GerbilApplication::instance()
-{
-	return dynamic_cast<GerbilApplication*>(QCoreApplication::instance());
+	// postpone everything else until event loop is up
+	QTimer::singleShot(0, this, SLOT(run()));
 }
 
 void GerbilApplication::run()
 {
-	QTextStream out(stdout);
-	QTextStream err(stderr);
+	check_system_requirements();
 
-	registerQMetaTypes();
-
-	// setup our custom icon theme if there is no system theme (OS X, Windows)
-	if (QIcon::themeName().isEmpty() || !QIcon::themeName().compare("hicolor"))
-		QIcon::setThemeName("Gerbil");
-
-	if (!check_system_requirements()) {
-		// TODO: window
-		err << "Unfortunately the machine does not meet minimal "
-			<< "requirements to launch Gerbil." << endl;
-		exit(ExitSystemRequirements);
-	}
+	init_qt();
 
 	init_opencv();
+
 #ifdef GERBIL_CUDA
 	init_cuda();
 #endif
 
-	loadInput();
+	parse_args();
 
 	// create controller
 	ctrl = new Controller(imageFilename, limitedMode, labelsFilename, this);
+}
 
-	// get notified when the event-loop has fired up, see eventFilter()
-	installEventFilter(this);
-	postEvent(this, new QEvent(
-				  QEvent::Type(eventLoopStartedEvent)));
+void GerbilApplication::parse_args()
+{
+	if (arguments().size() < 2) {
+		printUsage();
+		OpenRecent *openRecentDlg = new OpenRecent();
+		openRecentDlg->exec();
+		// empty string if cancelled
+		imageFilename = openRecentDlg->getSelectedFile();
+		openRecentDlg->deleteLater();
+	} else {
+		imageFilename = arguments()[1];
+	}
 
-	// run Qt event loop
-	exit(QApplication::exec());
+	if (imageFilename.isEmpty()) {
+		// no window here, user already confirmed this in OpenRecent dialog.
+		std::cerr << "No input file given." << std::endl;
+		this->exit(1);
+	}
+
+	// FIXME: Use QString instead of std::string.
+	// do a more complicated transformation to preserve non-ascii filenames
+	std::string fn = imageFilename.toLocal8Bit().constData();
+	// determine limited mode in a hackish way
+	std::pair<std::vector<std::string>, std::vector<multi_img::BandDesc> >
+			filelist = multi_img::parse_filelist(fn);
+	limitedMode = determine_limited(filelist);
+
+	// get optional labeling filename
+	if (arguments().size() >= 3) {
+		labelsFilename = arguments()[2];
+	}
 }
 
 QString GerbilApplication::imagePath()
@@ -121,7 +123,6 @@ void GerbilApplication::internalError(QString msg)
 	criticalError(QString(header) + msg);
 }
 
-
 void GerbilApplication::criticalError(QString msg)
 {
 	// HTMLify quick and dirty
@@ -133,78 +134,23 @@ void GerbilApplication::criticalError(QString msg)
 	QMessageBox::critical(NULL,
 						  "Gerbil Critical Error", msg, QMessageBox::Close);
 
-	if (eventLoopStarted) {
-		GGDBGM("using GerbilApplication::exit()" << endl);
-		if (ctrl && ctrl->mainWindow()) {
-			ctrl->mainWindow()->close();
-		}
-		GerbilApplication::exit(GerbilApplication::ExitFailure);
-	} else {
-		GGDBGM("using std::exit()" << endl);
-		std::exit(ExitFailure);
+	if (ctrl && ctrl->mainWindow()) {
+		ctrl->mainWindow()->close();
 	}
-}
-
-bool GerbilApplication::eventFilter(QObject *obj, QEvent *event)
-{
-	if (event->type() == eventLoopStartedEvent) {
-		GGDBGM("eventLoopStartedEvent captured" << endl);
-		event->accept();
-		eventLoopStarted = true;
-		removeEventFilter(this);
-		return true;
-	} else {
-		return QApplication::eventFilter(obj, event);
-	}
-}
-
-void GerbilApplication::loadInput()
-{
-	QTextStream err(stderr);
-
-	if (arguments().size() < 2) {
-		printUsage();
-		OpenRecent *openRecentDlg = new OpenRecent();
-		openRecentDlg->exec();
-		// empty string if cancelled
-		imageFilename = openRecentDlg->getSelectedFile();
-		openRecentDlg->deleteLater();
-	} else {
-		imageFilename = arguments()[1];
-	}
-
-	if (imageFilename.isEmpty()) {
-		// no window here, user already confirmed this in OpenRecent dialog.
-		err << "No input file given." << endl;
-		exit(ExitNoInput);
-	}
-
-	// FIXME: Use QString instead of std::string.
-	// do a more complicated transformation to preserve non-ascii filenames
-	std::string fn = imageFilename.toLocal8Bit().constData();
-	// determine limited mode in a hackish way
-	std::pair<std::vector<std::string>, std::vector<multi_img::BandDesc> >
-			filelist = multi_img::parse_filelist(fn);
-	limitedMode = determine_limited(filelist);
-
-	// get optional labeling filename
-	if (arguments().size() >= 3) {
-		labelsFilename = arguments()[2];
-	}
-
+	this->exit(1);
 }
 
 void GerbilApplication::printUsage()
 {
 #ifdef __unix__
-	QTextStream err(stderr);
-	err << "Usage: " << arguments()[0]
+	std::cerr << "Usage: " << arguments()[0].toStdString()
 		<< " <filename> [labeling file]"
-		<< endl
-		<< endl
-		<< "Filename may point to a RGB image or "
-		<< "a multispectral image descriptor file."
-		<< endl;
+		<< std::endl
+		<< std::endl
+	    << "Filename may point to any RGB or hyperspectral image file."
+	    << std::endl
+	    << "Labeling file is an RGB image with matching geometry."
+	    << std::endl;
 #endif
 }
 
