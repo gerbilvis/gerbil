@@ -4,9 +4,9 @@
 void ActionButton::setAction(QAction *action)
 {
 	if (actionOwner != nullptr) {
-			disconnect(actionOwner, SIGNAL(toggled(bool)), this, SLOT(updateButtonStatusFromAction()));
-			disconnect(this, SIGNAL(clicked()), actionOwner, SLOT(trigger()));
-		}
+		disconnect(actionOwner, SIGNAL(toggled(bool)), this, SLOT(updateButtonStatusFromAction()));
+		disconnect(this, SIGNAL(clicked()), actionOwner, SLOT(trigger()));
+	}
 
 	actionOwner = action;
 	updateButtonStatusFromAction();
