@@ -17,7 +17,6 @@
 #include "gerbil_gui_debug.h"
 
 #include <boost/ref.hpp>
-#include <cstdlib> // for exit()
 
 Controller::Controller(const QString &filename,
                        bool limited_mode,
@@ -45,9 +44,6 @@ Controller::Controller(const QString &filename,
 	// load image
 	cv::Rect dimensions = im->loadImage(filename);
 	imgSize = cv::Size(dimensions.width, dimensions.height);
-	if (dimensions.width < 1) {
-		exit(4); // Qt's exit does not work before calling exec();
-	}
 
 	// create gui (perform initUI before connecting signals!)
 	window = new MainWindow();
