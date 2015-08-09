@@ -107,8 +107,10 @@ void AutohideView::fitContentRect(QRect rect)
 		}
 
 		// trigger scrollIn from widgets proximity, but not from inside content
-		w->setTriggerOffset(std::min(10,
-		                             offset - AutohideWidget::OutOffset));
+		offset = std::min(0 + AutohideWidget::OutOffset,
+		                  offset - AutohideWidget::OutOffset);
+		offset = std::max(offset, 0);
+		w->setTriggerOffset(offset);
 	}
 }
 
