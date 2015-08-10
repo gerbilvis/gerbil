@@ -399,9 +399,8 @@ bool DistViewGUI::isVisible()
 void DistViewGUI::updateBufferFormat(Viewport::BufferFormat format)
 {
 	QList<QAction*> list = frameBufferMenu.actions();
-	for(QAction* act : list)
-	{
-		if(act->data().toInt() == format) {
+	for (QAction* act : list) {
+		if (act->data().toInt() == format) {
 			act->setChecked(true);
 			return;
 		}
