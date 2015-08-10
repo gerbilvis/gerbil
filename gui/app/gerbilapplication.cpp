@@ -110,20 +110,18 @@ void GerbilApplication::userError(QString msg)
 void GerbilApplication::internalError(QString msg, bool critical)
 {
 	static const QString header =
-		"Gerbil encountered an internal error that cannot "
-		"be recovered. To help fixing this problem please collect "
-		"information on your <br/>"
-		"<ul>"
-		"  <li>operating system</li>"
-		"  <li>graphics hardware and drivers</li>"
-		"</ul> <br/>"
-		" and copy & paste "
-		"the following error message and send everything to <br/>"
+	        "Gerbil encountered an internal error. "
+	        "To help fixing this problem please send us a report with:"
+	        "<ul>"
+	        "  <li>steps you performed that lead up to this error</li>"
+	        "  <li>the error message below</li>"
+	        "  <li>your operating system</li>"
+	        "  <li>vendor/model of your graphics hardware</li>"
+	        "</ul>"
+		"You can reach us via email at: "
 		"<a href=\"mailto:info@gerbilvis.org\">info@gerbilvis.org</a>.<br/>\n"
 		"<br/>\n"
-		"Thank you!<br/>\n"
-		"<br/>\n"
-		"Error:<br/>\n";
+		"Error message:<br/>\n";
 	criticalError(QString(header) + msg, critical);
 }
 
