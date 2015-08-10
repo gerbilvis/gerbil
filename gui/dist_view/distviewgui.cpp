@@ -211,11 +211,7 @@ void DistViewGUI::fold(bool folded)
 
 void DistViewGUI::toggleFold()
 {
-	if (!ui->gv->isHidden()) {
-		fold(true);
-	} else {
-		fold(false);
-	}
+	fold(ui->gv->isHidden() ? false : true);
 }
 
 void DistViewGUI::setTitle(representation::t type)
