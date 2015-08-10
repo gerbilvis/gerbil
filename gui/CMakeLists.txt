@@ -13,6 +13,7 @@ vole_compile_library(
 	app/gerbilapp_aux
 	app/gerbilio
 
+	widgets/actionbutton
 	widgets/mainwindow
 	widgets/autohidewidget
 	widgets/autohideview
@@ -73,6 +74,7 @@ vole_moc_library(
 	app/gerbilapplication.h
 
 	widgets/mainwindow.h
+	widgets/actionbutton.h
 	widgets/autohidewidget.h
 	widgets/autohideview.h
 	widgets/ahcombobox.h

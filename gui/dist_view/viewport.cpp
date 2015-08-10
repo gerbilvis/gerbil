@@ -23,6 +23,7 @@
 #include <QGraphicsItem>
 #include <QPainter>
 #include <QSignalMapper>
+#include <QAction>
 #include <boost/format.hpp>
 
 Viewport::Viewport(representation::t type, QGLWidget *target)
@@ -35,7 +36,7 @@ Viewport::Viewport(representation::t type, QGLWidget *target)
       overlayMode(false),
       illuminant_show(true),
       zoom(1.), holdSelection(false), activeLimiter(0),
-      drawLog(false), drawMeans(true), drawRGB(false), drawHQ(true),
+      drawLog(nullptr), drawMeans(nullptr), drawRGB(nullptr), drawHQ(nullptr),
       bufferFormat(RGBA16F),
       drawingState(HIGH_QUALITY), yaxisWidth(0), vb(QGLBuffer::VertexBuffer)
 {
@@ -229,7 +230,7 @@ void Viewport::prepareLines()
 	// second step (cpu -> gpu)
 	target->makeCurrent();
 	Compute::storeVertices(**ctx, **sets, shuffleIdx, vb,
-	                       drawMeans, illuminantAppl);
+	                       drawMeans->isChecked(), illuminantAppl);
 
 }
 
@@ -352,11 +353,11 @@ bool Viewport::endNoHQ(RenderMode spectrum, RenderMode highlight)
 	 * state. it may be "dirty", i.e. need to be redrawn in high quality now
 	 * that is, if the global setting is not low quality anyways
 	 */
-	bool dirty = drawHQ;
+	bool dirty = drawHQ->isChecked();
 	if (drawingState == HIGH_QUALITY || drawingState == HIGH_QUALITY_QUICK)
 		dirty = false;
 
-	drawingState = (drawHQ ? HIGH_QUALITY : QUICK);
+	drawingState = (drawHQ->isChecked() ? HIGH_QUALITY : QUICK);
 	if (dirty)
 		updateBuffers(spectrum, highlight);
 	return dirty;
@@ -494,8 +495,7 @@ void Viewport::adjustBoundaries()
 
 void Viewport::toggleHQ()
 {
-	drawHQ = !drawHQ;
-	if (drawHQ) {
+	if (drawHQ->isChecked()) {
 		// triggers drawing update
 		endNoHQ();
 	} else {
@@ -513,9 +513,17 @@ void Viewport::setBufferFormat(BufferFormat format)
 	updateBuffers();
 }
 
-void Viewport::toggleDrawLog()
+void Viewport::toggleBufferFormat()
 {
-	drawLog = !drawLog;
-	updateBuffers();
-}
+	switch (bufferFormat) {
+	case RGBA8: bufferFormat = RGBA16F; break;
+	case RGBA16F: bufferFormat = RGBA32F; break;
+	case RGBA32F: bufferFormat = RGBA8; break;
+	}
 
+	// initialize buffers with new format
+	initBuffers();
+	updateBuffers();
+
+	emit bufferFormatToggled(bufferFormat);
+}
