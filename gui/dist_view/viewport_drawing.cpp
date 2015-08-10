@@ -3,6 +3,7 @@
 #include <QGraphicsProxyWidget>
 #include <QMessageBox>
 #include <QDebug>
+#include <QAction>
 #include <limits>
 
 #include <gerbil_gui_debug.h>
@@ -351,7 +352,7 @@ void Viewport::drawBins(QPainter &painter, QTimer &renderTimer,
 		Bin const &b = s.bins.equal_range(K).first->second;
 
 		// set color
-		QColor color = determineColor((drawRGB ? b.rgb : s.label),
+		QColor color = determineColor((drawRGB->isChecked() ? b.rgb : s.label),
 		                              b.weight, s.totalweight,
 		                              highlight,
 		                              highlightLabels.contains(idx.first));
@@ -386,7 +387,7 @@ QColor Viewport::determineColor(const QColor &basecolor,
 	/* logarithm is used to prevent single data points to get lost.
 	   this should be configurable. */
 	alpha = useralpha;
-	if (drawLog)
+	if (drawLog->isChecked())
 		alpha *= (0.01 + 0.99*(std::log(weight+1) / std::log(totalweight)));
 	else
 		alpha *= (0.01 + 0.99*(weight / totalweight));

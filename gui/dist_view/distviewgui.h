@@ -54,6 +54,8 @@ public slots:
 	void showLimiterMenu();
 	void showFrameBufferMenu();
 
+	void updateBufferFormat(Viewport::BufferFormat format);
+
 signals:
 	// from GUI elements to controller
 	void activated();
@@ -81,6 +83,8 @@ signals:
 protected:
 	// initialize target, vp, ui::gv
 	void initVP();
+	//initialize viewport actions
+	void initVPActions();
 	// initialize vc, uivc
 	void initVC(representation::t type);
 	// initialize topbar, title
