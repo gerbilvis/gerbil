@@ -94,6 +94,7 @@ void GerbilApplication::init_qt()
 	if (QIcon::themeName().isEmpty() || !QIcon::themeName().compare("hicolor"))
 		QIcon::setThemeName("Gerbil");
 
+	qRegisterMetaType<std::exception_ptr>("std::exception_ptr");
 	qRegisterMetaType<RecentFile>("RecentFile");
 	qRegisterMetaTypeStreamOperators<RecentFile>("RecentFile");
 }

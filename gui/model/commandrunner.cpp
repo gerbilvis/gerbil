@@ -1,10 +1,17 @@
 #include "commandrunner.h"
 
+#include <app/gerbilapplication.h>
+
 #define GGDBG_MODULE
 #include "gerbil_gui_debug.h"
 
 CommandRunner::CommandRunner()
-	: cmd(0), progress(0.f), percent(0) {}
+	: cmd(0), progress(0.f), percent(0)
+{
+	connect(this, SIGNAL(exception(std::exception_ptr, bool)),
+	        GerbilApplication::instance(),
+	        SLOT(handle_exception(std::exception_ptr, bool)));
+}
 
 CommandRunner::~CommandRunner()
 {
@@ -31,15 +38,19 @@ void CommandRunner::run() {
 	assert(cmd != NULL);
 
 	emit progressChanged(0);
-	output = cmd->execute(input, this);
-	emit progressChanged(100);
+	try {
+		output = cmd->execute(input, this);
+	} catch (std::exception &) {
+		emit exception(std::current_exception(), false);
+		abort();
+	}
 
 	if (isAborted())
 		emit failure();
 	else
+		emit progressChanged(100);
 		emit success(output);
 	//GGDBGM("CommandRunner object " << this << " return" << endl);
-	return;
 }
 
 void CommandRunner::setCommand(shell::Command *cmd)

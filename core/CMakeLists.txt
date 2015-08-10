@@ -51,6 +51,7 @@ vole_compile_library(
 if(QT_FOUND)
 vole_moc_library(
 	background_task/background_task.h
+	background_task/background_task_queue.h
 )
 endif()
 

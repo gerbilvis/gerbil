@@ -16,8 +16,17 @@
 #include <boost/thread/condition_variable.hpp>
 #include <opencv2/core/core.hpp>
 #include "background_task.h"
+#ifdef WITH_QT
+#include <QObject>
+#include <exception>
+#endif
 
+#ifdef WITH_QT
+class BackgroundTaskQueue : public QObject {
+	Q_OBJECT
+#else
 class BackgroundTaskQueue {
+#endif
 
 public:
 	BackgroundTaskQueue() : halted(false), cancelled(false) {}
@@ -34,6 +43,11 @@ public:
 
 	/** Background worker thread's main(). */
 	void operator()(); 
+
+#ifdef WITH_QT
+signals:
+	void exception(std::exception_ptr e, bool critical);
+#endif
 
 protected:
 	/** Fetch task from queue or passivelly wait on empty queue. */

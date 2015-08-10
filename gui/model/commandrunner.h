@@ -5,6 +5,7 @@
 #include <vole_config.h>
 #include <command.h>
 #include <progress_observer.h>
+#include <exception>
 
 class CommandRunner : public QThread, public ProgressObserver
 {
@@ -30,6 +31,7 @@ signals:
 	void progressChanged(int percent);
 	void success(std::map<std::string, boost::any> output);
 	void failure();
+	void exception(std::exception_ptr e, bool critical);
 
 public slots:
 	void abort() override;

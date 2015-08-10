@@ -12,6 +12,7 @@
 #include "model/clusteringmodel.h"
 
 #include "widgets/mainwindow.h"
+#include "app/gerbilapplication.h" // to connect queue exception signal
 
 //#define GGDBG_MODULE
 #include "gerbil_gui_debug.h"
@@ -38,6 +39,10 @@ Controller::Controller(const QString &filename,
 	resetROISpawned();
 
 	// start background task queue thread
+	connect(&queue, SIGNAL(exception(std::exception_ptr, bool)),
+	        GerbilApplication::instance(),
+	        SLOT(handle_exception(std::exception_ptr,bool)),
+	        Qt::BlockingQueuedConnection);
 	startQueue();
 
 	im = new ImageModel(queue, limited_mode, this);

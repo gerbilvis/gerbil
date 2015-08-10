@@ -89,19 +89,29 @@ void BackgroundTaskQueue::cancelTasks()
 
 void BackgroundTaskQueue::operator()() 
 {
-	//std::cout << "BackgroundTaskQueue started." << std::endl;
-	while (true) {
-		if (!pop()) {
-			break; // Thread termination.
+#ifdef WITH_QT
+	try {
+#else
+	{
+#endif
+		//std::cout << "BackgroundTaskQueue started." << std::endl;
+		while (true) {
+			if (!pop()) {
+				break; // Thread termination.
+			}
+			bool success = currentTask->run();
+			{
+				Lock lock(mutex);
+				currentTask->done(!cancelled && success);
+				currentTask.reset();
+			}
 		}
-		bool success = currentTask->run();
-		{
-			Lock lock(mutex);
-			currentTask->done(!cancelled && success);
-			currentTask.reset();
-		}
+		//std::cout << "BackgroundTaskQueue terminated." << std::endl;
+#ifdef WITH_QT
+	} catch (std::exception &) {
+		emit exception(std::current_exception(), true);
+#endif
 	}
-	//std::cout << "BackgroundTaskQueue terminated." << std::endl;
 }
 
 #endif

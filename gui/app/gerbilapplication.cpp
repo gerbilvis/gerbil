@@ -38,20 +38,24 @@ GerbilApplication::GerbilApplication(int &argc, char **argv)
 
 void GerbilApplication::run()
 {
-	check_system_requirements();
+	try {
+		check_system_requirements();
 
-	init_qt();
+		init_qt();
 
-	init_opencv();
+		init_opencv();
 
 #ifdef GERBIL_CUDA
-	init_cuda();
+		init_cuda();
 #endif
 
-	parse_args();
+		parse_args();
 
-	// create controller
-	ctrl = new Controller(imageFilename, limitedMode, labelsFilename, this);
+		// create controller
+		ctrl = new Controller(imageFilename, limitedMode, labelsFilename, this);
+	} catch(std::exception &) {
+		handle_exception(std::current_exception(), true);
+	}
 }
 
 void GerbilApplication::parse_args()
@@ -103,7 +107,7 @@ void GerbilApplication::userError(QString msg)
 	criticalError(QString(header) + msg);
 }
 
-void GerbilApplication::internalError(QString msg)
+void GerbilApplication::internalError(QString msg, bool critical)
 {
 	static const QString header =
 		"Gerbil encountered an internal error that cannot "
@@ -120,10 +124,10 @@ void GerbilApplication::internalError(QString msg)
 		"Thank you!<br/>\n"
 		"<br/>\n"
 		"Error:<br/>\n";
-	criticalError(QString(header) + msg);
+	criticalError(QString(header) + msg, critical);
 }
 
-void GerbilApplication::criticalError(QString msg)
+void GerbilApplication::criticalError(QString msg, bool quit)
 {
 	// HTMLify quick and dirty
 	if (!msg.contains("<br>", Qt::CaseInsensitive) &&
@@ -131,13 +135,29 @@ void GerbilApplication::criticalError(QString msg)
 		msg.replace("\n", "\n<br/>");
 	}
 
-	QMessageBox::critical(NULL,
+	if (quit) {
+		QMessageBox::critical(NULL, "Gerbil Critical Error", msg, "Quit");
+		if (ctrl && ctrl->mainWindow())
+			ctrl->mainWindow()->close();
+		this->exit(1);
+	} else {
+		QMessageBox::critical(NULL,
 						  "Gerbil Critical Error", msg, QMessageBox::Close);
-
-	if (ctrl && ctrl->mainWindow()) {
-		ctrl->mainWindow()->close();
 	}
-	this->exit(1);
+}
+
+void GerbilApplication::handle_exception(std::exception_ptr e, bool critical)
+{
+	try {
+		if (e)
+			std::rethrow_exception(e);
+	} catch(const std::exception& e) {
+		std::cerr << "Exception: " << e.what() << std::endl;
+		/* Note: After an exception is thrown, the connection to the windowing
+		 * server might already be closed. It is not safe to call a GUI related
+		 * function after catching an exception. */
+		internalError(e.what(), critical);
+	}
 }
 
 void GerbilApplication::printUsage()
