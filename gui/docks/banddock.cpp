@@ -7,6 +7,8 @@
 
 #include "../gerbil_gui_debug.h"
 
+#include <QAction>
+
 /** Return a 32x32px icon filled with color. */
 static QIcon colorIcon(const QColor &color)
 {
@@ -84,10 +86,20 @@ void BandDock::initUi()
 	bv->offTop = AutohideWidget::OutOffset;
 	view->addWidget(AutohideWidget::TOP, mw);
 
-	connect(mw, SIGNAL(modeChanged(ScaledView::InputMode)),
-	        bv, SLOT(updateMode(ScaledView::InputMode)));
-	connect(bv, SIGNAL(modeChanged(ScaledView::InputMode)),
-	        mw, SLOT(updateMode(ScaledView::InputMode)));
+	connect(mw, SIGNAL(inputModeChanged(ScaledView::InputMode)),
+	        bv, SLOT(updateInputMode(ScaledView::InputMode)));
+	connect(bv, SIGNAL(inputModeChanged(ScaledView::InputMode)),
+	        mw, SLOT(updateInputMode(ScaledView::InputMode)));
+	connect(mw, SIGNAL(cursorSizeChanged(BandView::CursorSize)),
+	        bv, SLOT(updateCursorSize(BandView::CursorSize)));
+
+	QAction *cursorModeAct = new QAction(bv);
+	cursorModeAct->setShortcut(Qt::Key_X);
+	cursorModeAct->setShortcutContext(Qt::WidgetShortcut);
+	cursorModeAct->setCheckable(true);
+	view->addAction(cursorModeAct);
+	mw->getRubberButton()->setAction(cursorModeAct);
+	connect(cursorModeAct, SIGNAL(triggered(bool)), bv, SLOT(toggleCursorMode()));
 
 	bv->initUi();
 }

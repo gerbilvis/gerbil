@@ -1,9 +1,10 @@
 #ifndef MODEWIDGET_H
 #define MODEWIDGET_H
 
-#include "scaledview.h"
+#include "bandview.h"
 #include "autohidewidget.h"
 #include "ui_modewidget.h"
+#include "actionbutton.h"
 
 class AutohideView;
 class QButtonGroup;
@@ -20,18 +21,29 @@ protected:
 	void initUi();
 
 signals:
-	void modeChanged(ScaledView::InputMode m);
+	void inputModeChanged(ScaledView::InputMode m);
+	void cursorSizeChanged(BandView::CursorSize s);
 
 public slots:
-	void updateMode(ScaledView::InputMode m);
+	void updateInputMode(ScaledView::InputMode m);
+	void updateCursorMode(BandView::CursorMode m);
+	void updateCursorSize(BandView::CursorSize s);
+
+	ActionButton* getRubberButton() { return rubberButton; }
 
 private slots:
 	void on_zoomButton_released();
 	void on_pickButton_released();
 	void on_labelButton_released();
+	void on_smallCurButton_released();
+	void on_mediumCurButton_released();
+	void on_bigCurButton_released();
 
 private:
-	QButtonGroup *group;
+	QButtonGroup *modeGroup;
+	QButtonGroup *cursorGroup;
+
+	void setCursorButtonsVisible(bool visible);
 
 };
 

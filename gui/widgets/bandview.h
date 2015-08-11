@@ -11,17 +11,32 @@
 #define BANDVIEW_H
 
 #include "widgets/scaledview.h"
-#include "widgets/modewidget.h"
 
 #include <multi_img.h>
 #include <map>
 #include <QPen>
 #include <QTimer>
 
+class ModeWidget;
+
 class BandView : public ScaledView
 {
 	Q_OBJECT
 public:
+
+	enum class CursorSize
+	{
+		Small,
+		Medium,
+		Big
+	};
+
+	enum class CursorMode
+	{
+		Marker,
+		Rubber
+	};
+
 	BandView();
 
 	void initUi();
@@ -53,14 +68,19 @@ public slots:
 
 	void enterEvent();
 	void leaveEvent();
-	void updateMode(ScaledView::InputMode mode);
+
+	void updateInputMode(ScaledView::InputMode mode);
+	void updateCursorSize(BandView::CursorSize size);
+	void toggleCursorMode();
+
+	void updatePixel(int x, int y);
 
 signals:
 	void pixelOverlay(int y, int x);
 	void killHover();
 
 	// change of input mode (e.g. seed mode)
-	void modeChanged(ScaledView::InputMode m);
+	void inputModeChanged(ScaledView::InputMode m);
 
 	// picking mode, diff. label chosen
 	void labelSelected(int label);
@@ -92,6 +112,8 @@ private:
 	void updateCache();
 	void updateCache(int y, int x, short label = 0);
 	void updatePoint(const QPoint &p);
+
+	QVector<QPointF> getCursor(int xpos, int ypos);
 
 	// local labeling matrix
 	cv::Mat1s labels;
@@ -129,6 +151,8 @@ private:
 	cv::Mat1s seedMap; // mat1s to be consistent with labels matrix
 	cv::Mat1b curMask; // in single label mode contains curlabel members
 
+	CursorMode cursorMode = CursorMode::Marker;
+	CursorSize cursorSize = CursorSize::Medium;
 };
 
 #endif // BANDVIEW_H
