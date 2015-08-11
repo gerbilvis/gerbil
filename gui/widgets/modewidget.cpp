@@ -110,11 +110,7 @@ void ModeWidget::on_labelButton_released()
 
 void ModeWidget::setCursorButtonsVisible(bool visible)
 {
-	for(auto& item : cursorGroup->buttons())
-	{
-		item->setVisible(visible);
-	}
-	rubberButton->setVisible(visible);
+	labelModeWidget->setVisible(visible);
 	adjustSize();
 }
 
