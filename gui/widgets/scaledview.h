@@ -23,6 +23,7 @@ public:
 	virtual ~ScaledView() {}
 
 	virtual void setPixmap(QPixmap p);
+	QPixmap& getPixmap();
 
 	/* provide a reasonably high size of correct aspect ratio for layouting */
 	virtual void updateSizeHint();
