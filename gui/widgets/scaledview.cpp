@@ -56,11 +56,6 @@ void ScaledView::setPixmap(QPixmap p)
 	}
 }
 
-QPixmap& ScaledView::getPixmap()
-{
-	return pixmap;
-}
-
 void ScaledView::drawBackground(QPainter *painter, const QRectF &rect)
 {
 	// update geometry
