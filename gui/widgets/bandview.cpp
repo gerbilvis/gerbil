@@ -171,9 +171,10 @@ void BandView::paintEvent(QPainter *painter, const QRectF &rect)
 	if (drawCursor) {
 
 		QPen pen;
-		if (cursorMode == CursorMode::Marker) {
-			pen = QPen(inputMode == InputMode::Seed ? Qt::yellow
-			                                      : labelColors.at(curLabel));
+		if (inputMode == InputMode::Seed) {
+			pen = QPen(Qt::yellow);
+		} else if (cursorMode == CursorMode::Marker) {
+			pen = QPen(labelColors.at(curLabel));
 		} else if (cursorMode == CursorMode::Rubber) {
 			pen = QPen(QColor(Qt::white));
 		}
@@ -181,8 +182,7 @@ void BandView::paintEvent(QPainter *painter, const QRectF &rect)
 		pen.setWidth(0);
 		painter->setPen(pen);
 
-		for(QPointF point : getCursor(cursor.x(), cursor.y()))
-		{
+		for (QPointF point : getCursor(cursor.x(), cursor.y())) {
 			painter->drawRect(QRectF(point, QSizeF(1, 1)));
 		}
 	}
