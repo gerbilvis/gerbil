@@ -36,6 +36,8 @@ BandView::BandView()
 	// the timer automatically sends an accumulated update request
 	labelTimer.setSingleShot(true);
 	labelTimer.setInterval(500);
+
+	initCursors();
 }
 
 void BandView::initUi()
@@ -167,8 +169,15 @@ void BandView::paintEvent(QPainter *painter, const QRectF &rect)
 	if (curLabel < 1 || curLabel >= labelColors.count())
 		drawCursor = false;
 	if (drawCursor) {
-		QPen pen(inputMode == InputMode::Seed ? Qt::yellow
-		                                      : labelColors.at(curLabel));
+
+		QPen pen;
+		if (cursorMode == CursorMode::Marker) {
+			pen = QPen(inputMode == InputMode::Seed ? Qt::yellow
+			                                      : labelColors.at(curLabel));
+		} else if (cursorMode == CursorMode::Rubber) {
+			pen = QPen(QColor(Qt::white));
+		}
+
 		pen.setWidth(0);
 		painter->setPen(pen);
 
@@ -398,8 +407,22 @@ void BandView::cursorAction(QGraphicsSceneMouseEvent *ev, bool click)
 			int y = point.y();
 
 			if (ev->buttons() & Qt::LeftButton) {
-				for (QPointF p : getCursor(x, y)) {
-					updatePixel(p.x(), p.y());
+				if (inputMode == InputMode::Seed) {
+					for (QPointF p : getCursor(x, y)) {
+						seedMap(p.y(), p.x()) = 0;
+						updateCache(p.y(), p.x());
+					}
+				} else {
+					for (QPointF p : getCursor(x, y)) {
+						updatePixel(p.x(), p.y());
+					}
+				}
+			} else if (ev->buttons() & Qt::RightButton) {
+				if (inputMode == InputMode::Seed) {
+					for (QPointF p : getCursor(x, y)) {
+						seedMap(p.y(), p.x()) = 255;
+						updateCache(p.y(), p.x());
+					}
 				}
 			}
 		}
@@ -424,24 +447,14 @@ void BandView::updatePixel(int x, int y)
 		return;
 
 	if (cursorMode == CursorMode::Marker) {
-		if (inputMode != InputMode::Seed) {
-			uncommitedLabels(y, x) = 1;
-			labels(y, x) = curLabel;
-			updateCache(y, x, curLabel);
-		} else {
-			seedMap(y, x) = 0;
-			updateCache(y, x);
-		}
+		uncommitedLabels(y, x) = 1;
+		labels(y, x) = curLabel;
+		updateCache(y, x, curLabel);
 	} else if (cursorMode == CursorMode::Rubber) {
-		if (inputMode != InputMode::Seed) {
-			if (labels(y, x) == curLabel) {
-				uncommitedLabels(y, x) = 1;
-				labels(y, x) = 0;
-				updateCache(y, x, 0);
-			}
-		} else {
-			seedMap(y, x) = 255;
-			updateCache(y, x);
+		if (labels(y, x) == curLabel) {
+			uncommitedLabels(y, x) = 1;
+			labels(y, x) = 0;
+			updateCache(y, x, 0);
 		}
 	}
 }
@@ -589,44 +602,52 @@ void BandView::setSeedMap(cv::Mat1s seeding)
 	refresh();
 }
 
+void BandView::initCursors()
+{
+	Cursor small;
+	small.mask = (cv::Mat1s(1,1) << 1);
+	small.center = QPoint(0,0);
+	cursors[CursorSize::Small] = small;
+
+	Cursor medium;
+	medium.mask = (cv::Mat1s(4,3) <<
+	               0,1,0,
+	               1,1,1,
+	               1,1,1,
+	               0,1,0);
+	medium.center = QPoint(2,1);
+	cursors[CursorSize::Medium] = medium;
+
+	Cursor big;
+	big.mask = (cv::Mat1s(7,7) <<
+	            0,0,1,1,1,0,0,
+	            0,1,1,1,1,1,0,
+	            1,1,1,1,1,1,1,
+	            1,1,1,1,1,1,1,
+	            1,1,1,1,1,1,1,
+	            0,1,1,1,1,1,0,
+	            0,0,1,1,1,0,0);
+	big.center = QPoint(3,3);
+	cursors[CursorSize::Big] = big;
+}
+
 QVector<QPointF> BandView::getCursor(int xpos, int ypos)
 {
 	QVector<QPointF> cursorContainer;
-	if (cursorSize == CursorSize::Small) {
-		cursorContainer.push_back(QPointF(xpos,ypos));
-	} else if (cursorSize == CursorSize::Medium) {
-		int cursorXBegin = xpos-2;
-		int cursorXEnd = xpos+1;
-		int cursorYBegin = ypos-1;
-		int cursorYEnd = ypos+1;
 
-		for (int x =  cursorXBegin; x<=cursorXEnd; x++) {
-			for (int y = cursorYBegin; y<=cursorYEnd; y++) {
+	CursorSize size;
+	if (inputMode == InputMode::Seed) size = CursorSize::Medium;
+	else size = cursorSize;
 
-				if ((x == cursorXBegin || x == cursorXEnd)
-				    && (y == cursorYBegin || y == cursorYEnd)) continue;
-				cursorContainer.push_back( QPointF(x,y));
-			}
-		}
-	} else if (cursorSize == CursorSize::Big) {
-		int cursorXBegin = xpos-3;
-		int cursorXEnd = xpos+3;
-		int cursorYBegin = ypos-3;
-		int cursorYEnd = ypos+3;
-
-		for (int x =  cursorXBegin; x<=cursorXEnd; x++) {
-			for (int y = cursorYBegin; y<=cursorYEnd; y++) {
-
-				if ((x == cursorXBegin || x == cursorXEnd)
-				    && (y == cursorYBegin || y == cursorYBegin+1
-				    || y == cursorYEnd || y == cursorYEnd - 1)) continue;
-
-				if((x == cursorXBegin+1 || x == cursorXEnd-1)
-				   && (y == cursorYEnd || y == cursorYBegin)) continue;
-
-				cursorContainer.push_back( QPointF(x,y));
+	Cursor cursor = cursors[size];
+	for (int x = 0; x < cursor.mask.rows; x++) {
+		for (int y = 0; y < cursor.mask.cols; y++) {
+			if (cursor.mask(x,y) == 1) {
+				cursorContainer.push_back(QPointF(xpos - cursor.center.x() + x,
+				                                  ypos - cursor.center.y() + y));
 			}
 		}
 	}
+
 	return cursorContainer;
 }

@@ -16,6 +16,7 @@
 #include <map>
 #include <QPen>
 #include <QTimer>
+#include <unordered_map>
 
 class ModeWidget;
 
@@ -24,7 +25,7 @@ class BandView : public ScaledView
 	Q_OBJECT
 public:
 
-	enum class CursorSize
+	enum CursorSize
 	{
 		Small,
 		Medium,
@@ -112,6 +113,7 @@ private:
 	void updateCache();
 	void updateCache(int y, int x, short label = 0);
 	void updatePoint(const QPoint &p);
+	void initCursors();
 
 	QVector<QPointF> getCursor(int xpos, int ypos);
 
@@ -153,6 +155,13 @@ private:
 
 	CursorMode cursorMode = CursorMode::Marker;
 	CursorSize cursorSize = CursorSize::Medium;
+
+	struct Cursor{
+		QPoint center;
+		cv::Mat1s mask;
+	};
+
+	std::unordered_map<CursorSize, Cursor, std::hash<int>> cursors;
 };
 
 #endif // BANDVIEW_H

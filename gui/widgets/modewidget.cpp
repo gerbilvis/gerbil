@@ -74,17 +74,7 @@ void ModeWidget::updateCursorSize(BandView::CursorSize s)
 
 void ModeWidget::updateCursorMode(BandView::CursorMode m)
 {
-	setEnabled(true);
-	switch(m) {
-	case CM::Marker:
-		rubberButton->setChecked(false);
-		break;
-	case CM::Rubber:
-		rubberButton->setChecked(true);
-		break;
-	default:
-		setEnabled(false);
-	}
+	rubberButton->setChecked(m == CM::Rubber);
 }
 
 void ModeWidget::on_zoomButton_released()
