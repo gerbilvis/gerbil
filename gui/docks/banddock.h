@@ -69,6 +69,7 @@ protected slots:
 	// TODO label subscriptions
 	void processMarkerSelectorIndexChanged(int index);
 	void processVisibilityChanged(bool visible);
+	void screenshot();
 
 protected:
 	// event filter to intercept enter()/leave() on our view

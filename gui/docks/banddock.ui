@@ -62,7 +62,9 @@
          <string>clear current label or seeds</string>
         </property>
         <property name="icon">
-         <iconset theme="edit-clear"/>
+         <iconset theme="edit-clear">
+          <normaloff/>
+         </iconset>
         </property>
         <property name="iconSize">
          <size>
@@ -123,6 +125,33 @@
         </property>
         <property name="text">
          <string>α</string>
+        </property>
+       </widget>
+      </item>
+      <item>
+       <widget class="QPushButton" name="screenshotButton">
+        <property name="sizePolicy">
+         <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
+          <horstretch>0</horstretch>
+          <verstretch>0</verstretch>
+         </sizepolicy>
+        </property>
+        <property name="toolTip">
+         <string>save image to file</string>
+        </property>
+        <property name="text">
+         <string/>
+        </property>
+        <property name="icon">
+         <iconset theme="document-save">
+          <normaloff/>
+         </iconset>
+        </property>
+        <property name="iconSize">
+         <size>
+          <width>16</width>
+          <height>16</height>
+         </size>
         </property>
        </widget>
       </item>

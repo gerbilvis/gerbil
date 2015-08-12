@@ -89,6 +89,9 @@ void BandDock::initUi()
 	connect(bv, SIGNAL(modeChanged(ScaledView::InputMode)),
 	        mw, SLOT(updateMode(ScaledView::InputMode)));
 
+	connect(screenshotButton, SIGNAL(released()),
+	        this, SLOT(screenshot()));
+
 	bv->initUi();
 }
 
@@ -228,4 +231,14 @@ void BandDock::loadSeeds()
 	bv->setSeedMap(seeding);
 }
 
+
+void BandDock::screenshot()
+{
+	QImage img = bv->getPixmap().toImage();
+	cv::Mat output = QImage2Mat(img);
+	GerbilIO io(this, "Band Image File", "band image");
+	io.setFileSuffix(".png");
+	io.setFileCategory("Screenshot");
+	io.writeImage(output);
+}
 

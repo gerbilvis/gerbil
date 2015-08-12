@@ -22,6 +22,7 @@ public:
 	ScaledView();
 	virtual ~ScaledView() {}
 
+	const QPixmap& getPixmap() const { return pixmap; }
 	virtual void setPixmap(QPixmap p);
 
 	/* provide a reasonably high size of correct aspect ratio for layouting */

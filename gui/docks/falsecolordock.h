@@ -42,6 +42,7 @@ public slots:
 protected slots:
 	void processSelectedColoring(); // the selection in the combo box changed
 	void processApplyClicked();
+	void screenshot();
 protected:
 	void initUi();
 

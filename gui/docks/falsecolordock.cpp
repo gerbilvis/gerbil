@@ -8,6 +8,7 @@
 #include "../widgets/scaledview.h"
 #include "../widgets/autohideview.h"
 #include "../widgets/autohidewidget.h"
+#include <app/gerbilio.h>
 
 //#define GGDBG_MODULE
 #include "gerbil_gui_debug.h"
@@ -185,6 +186,9 @@ void FalseColorDock::initUi()
 
 	connect(this, SIGNAL(visibilityChanged(bool)),
 			this, SLOT(processVisibilityChanged(bool)));
+
+	connect(uisel->screenshotButton, SIGNAL(released()),
+	        this, SLOT(screenshot()));
 }
 
 FalseColoring::Type FalseColorDock::selectedColoring()
@@ -241,6 +245,7 @@ void FalseColorDock::updateTheButton()
 		uisel->theButton->setText("Recalculate");
 		uisel->theButton->setToolTip("Run again with different initialization");
 		uisel->theButton->setVisible(false);
+		uisel->screenshotButton->setVisible(true);
 		if( selectedColoring()==FalseColoring::SOM ||
 			selectedColoring()==FalseColoring::SOMGRAD)
 		{
@@ -252,6 +257,7 @@ void FalseColorDock::updateTheButton()
 		uisel->theButton->setText("Cancel");
 		uisel->theButton->setToolTip("Cancel current computation");
 		uisel->theButton->setVisible(true);
+		uisel->screenshotButton->setVisible(false);
 		break;
 	case FalseColoringState::ABORTING:
 		uisel->theButton->setVisible(true);
@@ -291,4 +297,14 @@ void FalseColorDock::processCalculationProgressChanged(FalseColoring::Type color
 
 	if (coloringType == selectedColoring())
 		updateProgressBar();
+}
+
+void FalseColorDock::screenshot()
+{
+	QImage img = scene->getPixmap().toImage();
+	cv::Mat output = QImage2Mat(img);
+	GerbilIO io(this, "False-coloring File", "false-color image");
+	io.setFileSuffix(".png");
+	io.setFileCategory("Screenshot");
+	io.writeImage(output);
 }
