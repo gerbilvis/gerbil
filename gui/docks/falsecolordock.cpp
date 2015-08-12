@@ -303,7 +303,7 @@ void FalseColorDock::screenshot()
 {
 	QImage img = scene->getPixmap().toImage();
 	cv::Mat output = QImage2Mat(img);
-	GerbilIO io(this, "Screenshot File", "screenshot");
+	GerbilIO io(this, "False-coloring File", "false-color image");
 	io.setFileSuffix(".png");
 	io.setFileCategory("Screenshot");
 	io.writeImage(output);
