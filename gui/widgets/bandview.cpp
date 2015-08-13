@@ -36,6 +36,8 @@ BandView::BandView()
 	// the timer automatically sends an accumulated update request
 	labelTimer.setSingleShot(true);
 	labelTimer.setInterval(500);
+
+	initCursors();
 }
 
 void BandView::initUi()
@@ -44,9 +46,20 @@ void BandView::initUi()
 	        this, SLOT(commitLabelChanges()));
 }
 
-void BandView::updateMode(ScaledView::InputMode mode)
+void BandView::updateInputMode(ScaledView::InputMode mode)
 {
 	inputMode = mode;
+}
+
+void BandView::toggleCursorMode()
+{
+	if (cursorMode == CursorMode::Marker) cursorMode = CursorMode::Rubber;
+	else cursorMode = CursorMode::Marker;
+}
+
+void BandView::updateCursorSize(CursorSize size)
+{
+	cursorSize = size;
 }
 
 void BandView::resizeEvent()
@@ -156,11 +169,22 @@ void BandView::paintEvent(QPainter *painter, const QRectF &rect)
 	if (curLabel < 1 || curLabel >= labelColors.count())
 		drawCursor = false;
 	if (drawCursor) {
-		QPen pen(inputMode == InputMode::Seed ? Qt::yellow
-		                                      : labelColors.at(curLabel));
+
+		QPen pen;
+		if (inputMode == InputMode::Seed) {
+			pen = QPen(Qt::yellow);
+		} else if (cursorMode == CursorMode::Marker) {
+			pen = QPen(labelColors.at(curLabel));
+		} else if (cursorMode == CursorMode::Rubber) {
+			pen = QPen(QColor(Qt::white));
+		}
+
 		pen.setWidth(0);
 		painter->setPen(pen);
-		painter->drawRect(QRectF(cursor, QSizeF(1, 1)));
+
+		for (QPointF point : getCursor(cursor.x(), cursor.y())) {
+			painter->drawRect(QRectF(point, QSizeF(1, 1)));
+		}
 	}
 
 	/* draw overlay (a quasi one-timer) */
@@ -288,7 +312,7 @@ void BandView::updateCache(int y, int x, short label)
 
 	if (inputMode != InputMode::Seed && !showLabels) // there is no overlay, leave early
 		return;
-	
+
 	// if needed, color pixel
 	const QColor *col = 0;
 	short val = (inputMode == InputMode::Seed ? seedMap(y, x) : label);
@@ -382,29 +406,23 @@ void BandView::cursorAction(QGraphicsSceneMouseEvent *ev, bool click)
 			int x = point.x();
 			int y = point.y();
 
-			if (!pixmap.rect().contains(x, y))
-				break;
-
 			if (ev->buttons() & Qt::LeftButton) {
-				if (inputMode != InputMode::Seed) {
-					uncommitedLabels(y, x) = 1;
-					labels(y, x) = curLabel;
-					updateCache(y, x, curLabel);
-				} else {
-					seedMap(y, x) = 0;
-					updateCache(y, x);
-				}
-				// erase
-			} else if (ev->buttons() & Qt::RightButton) {
-				if (inputMode != InputMode::Seed) {
-					if (labels(y, x) == curLabel) {
-						uncommitedLabels(y, x) = 1;
-						labels(y, x) = 0;
-						updateCache(y, x, 0);
+				if (inputMode == InputMode::Seed) {
+					for (QPointF p : getCursor(x, y)) {
+						seedMap(p.y(), p.x()) = 0;
+						updateCache(p.y(), p.x());
 					}
 				} else {
-					seedMap(y, x) = 255;
-					updateCache(y, x);
+					for (QPointF p : getCursor(x, y)) {
+						updatePixel(p.x(), p.y());
+					}
+				}
+			} else if (ev->buttons() & Qt::RightButton) {
+				if (inputMode == InputMode::Seed) {
+					for (QPointF p : getCursor(x, y)) {
+						seedMap(p.y(), p.x()) = 255;
+						updateCache(p.y(), p.x());
+					}
 				}
 			}
 		}
@@ -420,6 +438,24 @@ void BandView::cursorAction(QGraphicsSceneMouseEvent *ev, bool click)
 	if (grandupdate) {
 		overlay = NULL;
 		update();
+	}
+}
+
+void BandView::updatePixel(int x, int y)
+{
+	if (!pixmap.rect().contains(x, y))
+		return;
+
+	if (cursorMode == CursorMode::Marker) {
+		uncommitedLabels(y, x) = 1;
+		labels(y, x) = curLabel;
+		updateCache(y, x, curLabel);
+	} else if (cursorMode == CursorMode::Rubber) {
+		if (labels(y, x) == curLabel) {
+			uncommitedLabels(y, x) = 1;
+			labels(y, x) = 0;
+			updateCache(y, x, 0);
+		}
 	}
 }
 
@@ -506,7 +542,7 @@ void BandView::toggleSeedMode(bool enabled)
 	} else {
 		inputMode = lastMode;
 	}
-	emit modeChanged(inputMode);
+	emit inputModeChanged(inputMode);
 	refresh();
 }
 
@@ -564,4 +600,76 @@ void BandView::setSeedMap(cv::Mat1s seeding)
 {
 	seedMap = seeding;
 	refresh();
+}
+
+void BandView::initCursors()
+{
+	Cursor small;
+	small.mask = (cv::Mat1s(1,1) << 1);
+	small.center = QPoint(0,0);
+	cursors[CursorSize::Small] = small;
+
+	Cursor medium;
+	medium.mask = (cv::Mat1s(4,4) <<
+	               0,1,1,0,
+	               1,1,1,1,
+	               1,1,1,1,
+	               0,1,1,0);
+	medium.center = QPoint(1,1);
+	cursors[CursorSize::Medium] = medium;
+
+	Cursor big;
+	big.mask = (cv::Mat1s(7,7) <<
+	            0,0,1,1,1,0,0,
+	            0,1,1,1,1,1,0,
+	            1,1,1,1,1,1,1,
+	            1,1,1,1,1,1,1,
+	            1,1,1,1,1,1,1,
+	            0,1,1,1,1,1,0,
+	            0,0,1,1,1,0,0);
+	big.center = QPoint(3,3);
+	cursors[CursorSize::Big] = big;
+
+	Cursor huge;
+	huge.mask = (cv::Mat1s(15,15) <<
+	             0,0,0,0,0,1,1,1,1,1,0,0,0,0,0,
+	             0,0,0,1,1,1,1,1,1,1,1,1,0,0,0,
+	             0,0,1,1,1,1,1,1,1,1,1,1,1,0,0,
+	             0,1,1,1,1,1,1,1,1,1,1,1,1,1,0,
+	             0,1,1,1,1,1,1,1,1,1,1,1,1,1,0,
+	             1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,
+	             1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,
+	             1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,
+	             1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,
+	             1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,
+	             0,1,1,1,1,1,1,1,1,1,1,1,1,1,0,
+	             0,1,1,1,1,1,1,1,1,1,1,1,1,1,0,
+	             0,0,1,1,1,1,1,1,1,1,1,1,1,0,0,
+	             0,0,0,1,1,1,1,1,1,1,1,1,0,0,0,
+	             0,0,0,0,0,1,1,1,1,1,0,0,0,0,0);
+	huge.center = QPoint(3,3);
+	cursors[CursorSize::Huge] = huge;
+}
+
+QVector<QPointF> BandView::getCursor(int xpos, int ypos)
+{
+	QVector<QPointF> cursorContainer;
+
+	CursorSize size;
+	if (inputMode == InputMode::Seed)
+		size = CursorSize::Medium;
+	else
+		size = cursorSize;
+
+	Cursor cursor = cursors[size];
+	for (int x = 0; x < cursor.mask.rows; x++) {
+		for (int y = 0; y < cursor.mask.cols; y++) {
+			if (cursor.mask(x,y) == 1) {
+				cursorContainer.push_back(QPointF(xpos - cursor.center.x() + x,
+				                                  ypos - cursor.center.y() + y));
+			}
+		}
+	}
+
+	return cursorContainer;
 }
