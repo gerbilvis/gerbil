@@ -170,19 +170,20 @@
    <item>
     <widget class="QWidget" name="labelModeWidget" native="true">
      <layout class="QHBoxLayout" name="horizontalLayout_3">
+      <property name="topMargin">
+       <number>0</number>
+      </property>
       <item>
        <widget class="QPushButton" name="smallCurButton">
         <property name="enabled">
          <bool>true</bool>
         </property>
-        <property name="sizePolicy">
-         <sizepolicy hsizetype="Maximum" vsizetype="Fixed">
-          <horstretch>0</horstretch>
-          <verstretch>0</verstretch>
-         </sizepolicy>
-        </property>
         <property name="text">
-         <string>Small c</string>
+         <string/>
+        </property>
+        <property name="icon">
+         <iconset resource="../gerbil.qrc">
+          <normaloff>:/basic/cursor-1</normaloff>:/basic/cursor-1</iconset>
         </property>
         <property name="checkable">
          <bool>true</bool>
@@ -197,14 +198,12 @@
         <property name="enabled">
          <bool>true</bool>
         </property>
-        <property name="sizePolicy">
-         <sizepolicy hsizetype="Maximum" vsizetype="Fixed">
-          <horstretch>0</horstretch>
-          <verstretch>0</verstretch>
-         </sizepolicy>
-        </property>
         <property name="text">
-         <string>Medium c</string>
+         <string/>
+        </property>
+        <property name="icon">
+         <iconset resource="../gerbil.qrc">
+          <normaloff>:/basic/cursor-3</normaloff>:/basic/cursor-3</iconset>
         </property>
         <property name="checkable">
          <bool>true</bool>
@@ -219,14 +218,12 @@
         <property name="enabled">
          <bool>true</bool>
         </property>
-        <property name="sizePolicy">
-         <sizepolicy hsizetype="Maximum" vsizetype="Fixed">
-          <horstretch>0</horstretch>
-          <verstretch>0</verstretch>
-         </sizepolicy>
-        </property>
         <property name="text">
-         <string>Big c</string>
+         <string/>
+        </property>
+        <property name="icon">
+         <iconset resource="../gerbil.qrc">
+          <normaloff>:/basic/cursor-7</normaloff>:/basic/cursor-7</iconset>
         </property>
         <property name="checkable">
          <bool>true</bool>
@@ -234,15 +231,37 @@
        </widget>
       </item>
       <item>
-       <widget class="ActionButton" name="rubberButton">
-        <property name="sizePolicy">
-         <sizepolicy hsizetype="Maximum" vsizetype="Fixed">
-          <horstretch>0</horstretch>
-          <verstretch>0</verstretch>
-         </sizepolicy>
+       <widget class="QPushButton" name="hugeCurButton">
+        <property name="enabled">
+         <bool>true</bool>
         </property>
         <property name="text">
-         <string>Rubber</string>
+         <string/>
+        </property>
+        <property name="icon">
+         <iconset resource="../gerbil.qrc">
+          <normaloff>:/basic/cursor-15</normaloff>:/basic/cursor-15</iconset>
+        </property>
+        <property name="checkable">
+         <bool>true</bool>
+        </property>
+       </widget>
+      </item>
+      <item>
+       <widget class="Line" name="line">
+        <property name="orientation">
+         <enum>Qt::Vertical</enum>
+        </property>
+       </widget>
+      </item>
+      <item>
+       <widget class="ActionButton" name="rubberButton">
+        <property name="text">
+         <string/>
+        </property>
+        <property name="icon">
+         <iconset resource="../gerbil.qrc">
+          <normaloff>:/toolbar/eraser</normaloff>:/toolbar/eraser</iconset>
         </property>
         <property name="checkable">
          <bool>true</bool>
@@ -253,6 +272,12 @@
        <spacer name="horizontalSpacer_3">
         <property name="orientation">
          <enum>Qt::Horizontal</enum>
+        </property>
+        <property name="sizeHint" stdset="0">
+         <size>
+          <width>0</width>
+          <height>0</height>
+         </size>
         </property>
        </spacer>
       </item>
@@ -268,6 +293,16 @@
    <header>widgets/actionbutton.h</header>
   </customwidget>
  </customwidgets>
+ <tabstops>
+  <tabstop>zoomButton</tabstop>
+  <tabstop>labelButton</tabstop>
+  <tabstop>pickButton</tabstop>
+  <tabstop>smallCurButton</tabstop>
+  <tabstop>mediumCurButton</tabstop>
+  <tabstop>bigCurButton</tabstop>
+  <tabstop>hugeCurButton</tabstop>
+  <tabstop>rubberButton</tabstop>
+ </tabstops>
  <resources>
   <include location="../gerbil.qrc"/>
  </resources>

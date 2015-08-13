@@ -610,12 +610,12 @@ void BandView::initCursors()
 	cursors[CursorSize::Small] = small;
 
 	Cursor medium;
-	medium.mask = (cv::Mat1s(4,3) <<
-	               0,1,0,
-	               1,1,1,
-	               1,1,1,
-	               0,1,0);
-	medium.center = QPoint(2,1);
+	medium.mask = (cv::Mat1s(4,4) <<
+	               0,1,1,0,
+	               1,1,1,1,
+	               1,1,1,1,
+	               0,1,1,0);
+	medium.center = QPoint(1,1);
 	cursors[CursorSize::Medium] = medium;
 
 	Cursor big;
@@ -629,6 +629,26 @@ void BandView::initCursors()
 	            0,0,1,1,1,0,0);
 	big.center = QPoint(3,3);
 	cursors[CursorSize::Big] = big;
+
+	Cursor huge;
+	huge.mask = (cv::Mat1s(15,15) <<
+	             0,0,0,0,0,1,1,1,1,1,0,0,0,0,0,
+	             0,0,0,1,1,1,1,1,1,1,1,1,0,0,0,
+	             0,0,1,1,1,1,1,1,1,1,1,1,1,0,0,
+	             0,1,1,1,1,1,1,1,1,1,1,1,1,1,0,
+	             0,1,1,1,1,1,1,1,1,1,1,1,1,1,0,
+	             1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,
+	             1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,
+	             1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,
+	             1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,
+	             1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,
+	             0,1,1,1,1,1,1,1,1,1,1,1,1,1,0,
+	             0,1,1,1,1,1,1,1,1,1,1,1,1,1,0,
+	             0,0,1,1,1,1,1,1,1,1,1,1,1,0,0,
+	             0,0,0,1,1,1,1,1,1,1,1,1,0,0,0,
+	             0,0,0,0,0,1,1,1,1,1,0,0,0,0,0);
+	huge.center = QPoint(3,3);
+	cursors[CursorSize::Huge] = huge;
 }
 
 QVector<QPointF> BandView::getCursor(int xpos, int ypos)
@@ -636,8 +656,10 @@ QVector<QPointF> BandView::getCursor(int xpos, int ypos)
 	QVector<QPointF> cursorContainer;
 
 	CursorSize size;
-	if (inputMode == InputMode::Seed) size = CursorSize::Medium;
-	else size = cursorSize;
+	if (inputMode == InputMode::Seed)
+		size = CursorSize::Medium;
+	else
+		size = cursorSize;
 
 	Cursor cursor = cursors[size];
 	for (int x = 0; x < cursor.mask.rows; x++) {

@@ -13,6 +13,7 @@
         <file alias="memory">resources/memory.png</file>
         <file alias="quality-high">resources/quality-high.png</file>
         <file alias="quality-low">resources/quality-low.png</file>
+        <file alias="eraser">resources/eraser.png</file>
     </qresource>
     <qresource prefix="/">
         <file alias="mainicon">resources/mainicon.svg</file>
@@ -27,6 +28,10 @@
         <file alias="mouse-right">resources/mouse-right.png</file>
         <file alias="picker">resources/picker.png</file>
         <file alias="zoom">resources/zoom.png</file>
+        <file alias="cursor-1">resources/cursor-1.png</file>
+        <file alias="cursor-3">resources/cursor-3.png</file>
+        <file alias="cursor-7">resources/cursor-7.png</file>
+        <file alias="cursor-15">resources/cursor-15.png</file>
     </qresource>
     <qresource prefix="/icons/Gerbil">
         <file alias="index.theme">resources/icons/index.theme</file>

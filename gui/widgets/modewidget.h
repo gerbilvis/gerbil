@@ -38,6 +38,7 @@ private slots:
 	void on_smallCurButton_released();
 	void on_mediumCurButton_released();
 	void on_bigCurButton_released();
+	void on_hugeCurButton_released();
 
 private:
 	QButtonGroup *modeGroup;

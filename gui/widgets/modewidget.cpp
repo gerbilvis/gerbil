@@ -30,6 +30,7 @@ void ModeWidget::initUi()
 	cursorGroup->addButton(smallCurButton);
 	cursorGroup->addButton(mediumCurButton);
 	cursorGroup->addButton(bigCurButton);
+	cursorGroup->addButton(hugeCurButton);
 	setCursorButtonsVisible(false);
 }
 
@@ -66,6 +67,9 @@ void ModeWidget::updateCursorSize(BandView::CursorSize s)
 		break;
 	case CS::Big:
 		bigCurButton->setChecked(true);
+		break;
+	case CS::Huge:
+		hugeCurButton->setChecked(true);
 		break;
 	default:
 		setEnabled(false);
@@ -119,3 +123,7 @@ void ModeWidget::on_bigCurButton_released()
 	emit cursorSizeChanged(CS::Big);
 }
 
+void ModeWidget::on_hugeCurButton_released()
+{
+	emit cursorSizeChanged(CS::Huge);
+}

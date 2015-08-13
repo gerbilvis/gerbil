@@ -29,7 +29,8 @@ public:
 	{
 		Small,
 		Medium,
-		Big
+		Big,
+		Huge
 	};
 
 	enum class CursorMode
