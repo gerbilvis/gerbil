@@ -114,6 +114,7 @@ private:
 	void updateCache();
 	void updateCache(int y, int x, short label = 0);
 	void updatePoint(const QPoint &p);
+	static QPolygonF createCursor(const cv::Mat1b &mask, const QPoint &center);
 	void initCursors();
 
 	QVector<QPointF> getCursor(int xpos, int ypos);
@@ -157,12 +158,8 @@ private:
 	CursorMode cursorMode = CursorMode::Marker;
 	CursorSize cursorSize = CursorSize::Medium;
 
-	struct Cursor{
-		QPoint center;
-		cv::Mat1s mask;
-	};
-
-	std::unordered_map<CursorSize, Cursor, std::hash<int>> cursors;
+	// point sets, stored as polygon to be able to use translate()
+	std::unordered_map<CursorSize, QPolygonF, std::hash<int>> cursors;
 };
 
 #endif // BANDVIEW_H
