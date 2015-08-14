@@ -647,7 +647,7 @@ void BandView::initCursors()
 	             0,0,1,1,1,1,1,1,1,1,1,1,1,0,0,
 	             0,0,0,1,1,1,1,1,1,1,1,1,0,0,0,
 	             0,0,0,0,0,1,1,1,1,1,0,0,0,0,0);
-	huge.center = QPoint(3,3);
+	huge.center = QPoint(7,7);
 	cursors[CursorSize::Huge] = huge;
 }
 
