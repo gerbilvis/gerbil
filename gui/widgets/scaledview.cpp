@@ -123,7 +123,9 @@ void ScaledView::mouseMoveEvent(QGraphicsSceneMouseEvent *event)
 	if (inputMode != InputMode::Zoom)
 		return;
 
-	if (event->buttons() & Qt::LeftButton) {
+	QRectF rect = scaler.mapRect(pixmap.rect());
+	if (event->buttons() & Qt::LeftButton &&
+	    rect.contains(event->scenePos())) {
 		//Obtain current cursor and last cursor position
 		//in pixmap coordinates
 		QPointF lastonscene = scalerI.map(event->lastScenePos());
@@ -133,9 +135,67 @@ void ScaledView::mouseMoveEvent(QGraphicsSceneMouseEvent *event)
 		qreal y = curronscene.y() - lastonscene.y();
 
 		scaler.translate(x,y);
-		scalerUpdate();
-		update();
+		adjustBoundaries();
 	}
+}
+
+void ScaledView::adjustBoundaries()
+{
+	qreal x = 0.f;
+	qreal y = 0.f;
+
+	QRectF rect = scaler.mapRect(pixmap.rect());
+	QRectF sceneRect = this->sceneRect();
+
+	if (rect.width() < sceneRect.width()) {
+		QPointF space((sceneRect.width() - rect.width())/2.f, 0.f);
+		space = scaler.inverted().map(space);
+		QPointF pos(rect.x(), 0.f);
+		pos = scaler.inverted().map(pos);
+
+		x = space.x() - pos.x();
+	} else if (rect.x() > offLeft) {
+		QPointF left(offLeft, 0.f);
+		left = scaler.inverted().map(left);
+		QPointF pos(rect.x(), 0.f);
+		pos = scaler.inverted().map(pos);
+
+		x = left.x() - pos.x();
+	} else if (rect.x() + rect.width() < sceneRect.width() - offRight) {
+		QPointF right(sceneRect.width() - offRight, 0.f);
+		right = scaler.inverted().map(right);
+		QPointF pos(rect.x()+rect.width(), 0.f);
+		pos = scaler.inverted().map(pos);
+
+		x = right.x() - pos.x();
+	}
+
+	if (rect.height() < sceneRect.height()) {
+		QPointF space(0.f, (sceneRect.height() - rect.height())/2.f);
+		space = scaler.inverted().map(space);
+		QPointF pos(0.f, rect.y());
+		pos = scaler.inverted().map(pos);
+
+		y = space.y() - pos.y();
+	} else if (rect.y() > offTop) {
+		QPointF top(0.f, offTop);
+		top = scaler.inverted().map(top);
+		QPointF pos(0.f, rect.y());
+		pos = scaler.inverted().map(pos);
+
+		y = top.y() - pos.y();
+	} else if (rect.y() + rect.height() < sceneRect.height() - offBottom) {
+		QPointF bottom(0.f, sceneRect.height() - offBottom);
+		bottom = scaler.inverted().map(bottom);
+		QPointF pos(0.f, rect.y() + rect.height());
+		pos = scaler.inverted().map(pos);
+
+		y = bottom.y() - pos.y();
+	}
+
+	scaler.translate(x,y);
+	scalerUpdate();
+	update();
 }
 
 void ScaledView::mousePressEvent(QGraphicsSceneMouseEvent *ev)
@@ -195,8 +255,13 @@ void ScaledView::wheelEvent(QGraphicsSceneWheelEvent *event)
 		newzoom = 0.8;
 	}
 
-	if (zoom*newzoom < 1) {
-		resizeEvent();
+	if (zoom*newzoom <= 1) {
+		if (zoom == 1) {
+			return;
+		} else {
+			zoom = 1;
+			resizeEvent();
+		}
 	} else {
 		//obtain cursor position in scene coordinates
 		QPointF scene = event->scenePos();
@@ -215,6 +280,6 @@ void ScaledView::wheelEvent(QGraphicsSceneWheelEvent *event)
 		//translate the by the difference
 		QPointF diff = newlocal - local;
 		scaler.translate(diff.x(), diff.y());
-		scalerUpdate();
+		adjustBoundaries();
 	}
 }

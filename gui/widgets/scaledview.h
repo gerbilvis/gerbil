@@ -49,6 +49,8 @@ protected:
 
 	void drawWaitMessage(QPainter *painter);
 
+	void adjustBoundaries();
+
 	// draw the background, inline function
 	void fillBackground(QPainter *painter, const QRectF& rect) {
 		static QBrush brush(Qt::gray, Qt::Dense4Pattern);
