@@ -203,11 +203,10 @@ void BandView::paintEvent(QPainter *painter, const QRectF &rect)
 	}
 
 	if (inputMode == InputMode::Seed) {
-		/* TODO: most times barely visible! */
 		pen.setColor(Qt::yellow); pen.setWidthF(1.5); pen.setStyle(Qt::DotLine);
 		painter->setPen(pen);
 		painter->setBrush(Qt::NoBrush);
-		painter->drawRect(0, 0, pixmap.width(), pixmap.height());
+		painter->drawRect(pixmap.rect());
 	}
 
 	painter->restore();
