@@ -17,6 +17,7 @@
 #include <QPen>
 #include <QTimer>
 #include <unordered_map>
+#include <utility>
 
 class ModeWidget;
 
@@ -114,10 +115,12 @@ private:
 	void updateCache();
 	void updateCache(int y, int x, short label = 0);
 	void updatePoint(const QPoint &p);
-	static QPolygonF createCursor(const cv::Mat1b &mask, const QPoint &center);
+	static std::pair<QPolygonF, QPolygonF>
+	createCursor(const cv::Mat1b &mask, const QPoint &center);
 	void initCursors();
 
-	QVector<QPointF> getCursor(int xpos, int ypos);
+	QPolygonF getCursor(int xpos, int ypos);
+	QPolygonF getCursorHull(int xpos, int ypos);
 
 	// local labeling matrix
 	cv::Mat1s labels;
@@ -158,8 +161,9 @@ private:
 	CursorMode cursorMode = CursorMode::Marker;
 	CursorSize cursorSize = CursorSize::Medium;
 
-	// point sets, stored as polygon to be able to use translate()
-	std::unordered_map<CursorSize, QPolygonF, std::hash<int>> cursors;
+	// point sets, stored as polygon for translate(), and hulls for drawing
+	std::unordered_map<CursorSize, std::pair<QPolygonF, QPolygonF>,
+	std::hash<int>> cursors;
 };
 
 #endif // BANDVIEW_H

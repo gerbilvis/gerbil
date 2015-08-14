@@ -12,7 +12,9 @@
 #include <stopwatch.h>
 #include <QPainter>
 #include <QGraphicsSceneEvent>
+#include <QGraphicsPixmapItem>
 #include <QKeyEvent>
+#include <opencv2/imgproc/imgproc.hpp> // for createCursor()
 #include <iostream>
 #include <cmath>
 #include <tbb/task.h>
@@ -22,7 +24,6 @@
 #include "qmath.h"
 
 #include "gerbil_gui_debug.h"
-#include <QGraphicsPixmapItem>
 #include <QDebug>
 
 BandView::BandView()
@@ -182,9 +183,7 @@ void BandView::paintEvent(QPainter *painter, const QRectF &rect)
 		pen.setWidth(0);
 		painter->setPen(pen);
 
-		for (QPointF point : getCursor(cursor.x(), cursor.y())) {
-			painter->drawRect(QRectF(point, QSizeF(1, 1)));
-		}
+		painter->drawConvexPolygon(getCursorHull(cursor.x(), cursor.y()));
 	}
 
 	/* draw overlay (a quasi one-timer) */
@@ -602,17 +601,28 @@ void BandView::setSeedMap(cv::Mat1s seeding)
 	refresh();
 }
 
-QPolygonF BandView::createCursor(const cv::Mat1b &mask, const QPoint &center)
+std::pair<QPolygonF, QPolygonF>
+BandView::createCursor(const cv::Mat1b &mask, const QPoint &center)
 {
-	QPolygonF cursor;
+	QPolygonF cursor, hull;
+	std::vector<cv::Point> points;
 	for (int y = 0; y < mask.rows; y++) {
 		for (int x = 0; x < mask.cols; x++) {
 			if (mask(y, x) == 1) {
 				cursor.push_back(QPointF(x - center.x(), y - center.y()));
+				points.push_back(cv::Point(x - center.x(), y - center.y()));
 			}
 		}
 	}
-	return cursor;
+
+	std::vector<int> indices;
+	cv::convexHull(points, indices);
+	for (auto i : indices) {
+		auto p = points[i];
+		hull.push_back(QPointF(p.x, p.y));
+	}
+
+	return std::make_pair(cursor, hull);
 }
 
 void BandView::initCursors()
@@ -660,12 +670,22 @@ void BandView::initCursors()
 	cursors[CursorSize::Huge] = createCursor(mask, center);
 }
 
-QVector<QPointF> BandView::getCursor(int xpos, int ypos)
+QPolygonF BandView::getCursor(int xpos, int ypos)
 {
 	CursorSize size;
 	if (inputMode == InputMode::Seed)
 		size = CursorSize::Medium;
 	else
 		size = cursorSize;
-	return cursors[size].translated(xpos, ypos);
+	return cursors[size].first.translated(xpos, ypos);
+}
+
+QPolygonF BandView::getCursorHull(int xpos, int ypos)
+{
+	CursorSize size;
+	if (inputMode == InputMode::Seed)
+		size = CursorSize::Medium;
+	else
+		size = cursorSize;
+	return cursors[size].second.translated(xpos + 0.5f, ypos + 0.5f);
 }
