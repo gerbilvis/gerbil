@@ -153,7 +153,6 @@ void BandView::paintEvent(QPainter *painter, const QRectF &rect)
 
 	fillBackground(painter, rect);
 
-
 	painter->save();
 
 	//painter.setRenderHint(QPainter::Antialiasing); too slow!
@@ -212,41 +211,6 @@ void BandView::paintEvent(QPainter *painter, const QRectF &rect)
 	painter->restore();
 }
 
-struct updateCacheBody {
-	QImage &dest;
-	bool seedMode;
-	const cv::Mat1s &labels;
-	const cv::Mat1s &seedMap;
-	const QVector<QColor> &labelColorsA;
-	const std::pair<QColor, QColor> &seedColors;
-
-	updateCacheBody(QImage &dest, bool seedMode, const cv::Mat1s &labels, const cv::Mat1s &seedMap,
-	                const QVector<QColor> &labelColorsA, const std::pair<QColor, QColor> &seedColors)
-	    : dest(dest), seedMode(seedMode), labels(labels), seedMap(seedMap),
-	      labelColorsA(labelColorsA), seedColors(seedColors) {}
-
-	void operator()(const tbb::blocked_range2d<size_t> &r) const {
-		for (size_t y = r.rows().begin(); y != r.rows().end(); ++y) {
-			const short *lrow = labels[y], *srow = seedMap[y];
-			QRgb *destrow = (QRgb*)dest.scanLine(y);
-			for (size_t x = r.cols().begin(); x != r.cols().end(); ++x) {
-				short lval = lrow[x], sval = srow[x];
-				destrow[x] = qRgba(0, 0, 0, 0);
-				if (seedMode) {
-					if (sval == 255)
-						destrow[x] = seedColors.first.rgba();
-					else if (sval == 0)
-						destrow[x] = seedColors.second.rgba();
-					else if (lval > 0)
-						destrow[x] = labelColorsA[lval].rgba();
-				} else if (lval > 0) {
-					destrow[x] = labelColorsA[lval].rgba();
-				}
-			}
-		}
-	}
-};
-
 void BandView::updateCache()
 {
 	cachedPixmap = pixmap.copy();
@@ -258,10 +222,29 @@ void BandView::updateCache()
 	//	painter.setCompositionMode(QPainter::CompositionMode_Darken);
 
 	QImage dest(pixmap.width(), pixmap.height(), QImage::Format_ARGB32);
-	updateCacheBody body(dest, inputMode == InputMode::Seed,
-	                     labels, seedMap, labelColorsA, seedColors);
+
 	tbb::parallel_for(tbb::blocked_range2d<size_t>(
-	                      0, pixmap.height(), 0, pixmap.width()), body);
+	                      0, pixmap.height(), 0, pixmap.width()),
+	                  [&](tbb::blocked_range2d<size_t> r) {
+		for (size_t y = r.rows().begin(); y != r.rows().end(); ++y) {
+			const short *lrow = labels[y], *srow = seedMap[y];
+			QRgb *destrow = (QRgb*)dest.scanLine(y);
+			for (size_t x = r.cols().begin(); x != r.cols().end(); ++x) {
+				short lval = lrow[x], sval = srow[x];
+				destrow[x] = qRgba(0, 0, 0, 0);
+				if (inputMode == InputMode::Seed) {
+					if (sval == 255)
+						destrow[x] = seedColors.first.rgba();
+					else if (sval == 0)
+						destrow[x] = seedColors.second.rgba();
+					else if (lval > 0)
+						destrow[x] = labelColorsA[lval].rgba();
+				} else if (lval > 0) {
+					destrow[x] = labelColorsA[lval].rgba();
+				}
+			}
+		}
+	});
 
 	painter.drawImage(0, 0, dest);
 }
