@@ -80,7 +80,7 @@ void FalseColorModel::processImageUpdate(representation::t type,
 	FalseColorModelPayloadMap::iterator payloadIt;
 	for (payloadIt = payloads.begin(); payloadIt != payloads.end(); payloadIt++) {
 		FalseColoring::Type coloringType = payloadIt.key();
-		if(FalseColoring::isBasedOn(coloringType, type)) {
+		if (FalseColoring::isBasedOn(coloringType, type)) {
 			GGDBGM("abandoning payload " << coloringType << endl);
 			abandonPayload(coloringType);
 			// remember to restart the calculation
@@ -90,9 +90,9 @@ void FalseColorModel::processImageUpdate(representation::t type,
 
 	// invalidate affected cache entries:
 	FalseColoringCache::iterator it;
-	for (it=cache.begin(); it != cache.end(); it++) {
+	for (it = cache.begin(); it != cache.end(); it++) {
 		FalseColoring::Type coloringType = it.key();
-		if(FalseColoring::isBasedOn(coloringType, type)) {
+		if (FalseColoring::isBasedOn(coloringType, type)) {
 			GGDBGM("invalidate cache for " << type << endl);
 			it.value().invalidate();
 		}
