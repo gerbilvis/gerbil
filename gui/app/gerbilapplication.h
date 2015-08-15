@@ -40,14 +40,14 @@ public slots:
 	virtual void run();
 
 	/** Display a critical error in a message box and kill the application */
-	void userError(QString msg);
-	void internalError(QString msg, bool critical = true);
-	void criticalError(QString msg, bool quit = true);
+	static void userError(QString msg);
+	static void internalError(QString msg, bool critical = true);
+	static void criticalError(QString msg, bool quit = true);
 
 	/** Print error on stderr and in message box (at least tries to).
 	 * If critical is set, also quit the application.
 	 */
-	void handle_exception(std::exception_ptr e, bool critical);
+	static void handle_exception(std::exception_ptr e, bool critical);
 
 protected:
 	/**  Initialize OpenCV state.

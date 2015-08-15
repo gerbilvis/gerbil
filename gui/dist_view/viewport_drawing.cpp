@@ -123,7 +123,7 @@ void Viewport::updateBuffers(RenderMode spectrum, RenderMode highlight)
 		b.renderedLines = 0;
 
 		if (!(b.fbo->isValid() && b.blit->isValid())) {
-			GerbilApplication::instance()->internalError(
+			GerbilApplication::internalError(
 			            "Framebuffer not valid in viewport updateBuffers().",
 			            false);
 			return;
@@ -275,7 +275,7 @@ void Viewport::drawBins(QPainter &painter, QTimer &renderTimer,
 	glBlendFunc(GL_SRC_ALPHA,GL_ONE_MINUS_SRC_ALPHA);
 	bool success = vb.bind();
 	if (!success) {
-		GerbilApplication::instance()->internalError(
+		GerbilApplication::internalError(
 		            "Vertex buffer could not be bound in viewport drawBins().",
 		            false);
 		painter.endNativePainting();

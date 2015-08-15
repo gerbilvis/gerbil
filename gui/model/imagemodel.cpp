@@ -96,14 +96,14 @@ cv::Rect ImageModel::loadImage(const QString &filename)
 
 	multi_img_base &i = image_lim->getBase();
 	if (i.empty()) {
-		GerbilApplication::instance()->
-			userError("Image file could not be read.");
+		GerbilApplication::userError("Image file could not be read.");
 		return cv::Rect();
 	}
 
 	if (i.size() < 3) {
-		GerbilApplication::instance()->
-			userError("Image unsupported: Contains less than three bands (channels).");
+		GerbilApplication::userError("Image unsupported: "
+		                             "Contains less than three bands "
+		                             "(channels).");
 		return cv::Rect();
 	} else {
 		// Update recent files list.

@@ -35,13 +35,13 @@ public:
 		static const QString pfx = "GLBufferHolder::GLBufferHolder(): ";
 		msuccess = vb.create();
 		if (!msuccess) {
-			GerbilApplication::instance()->internalError(
+			GerbilApplication::internalError(
 			            QString(pfx) + "QGLBuffer::create() failed.");
 			return;
 		}
 		msuccess = vb.bind();
 		if (!msuccess) {
-			GerbilApplication::instance()->internalError(
+			GerbilApplication::internalError(
 			            QString(pfx) + "QGLBuffer::bind() failed");
 			return;
 		}
@@ -160,8 +160,8 @@ void Compute::storeVertices(const ViewportCtx &ctx,
 	//GGDBGM("after vb.map()\n");
 
 	if (!varr) {
-		GerbilApplication::instance()->
-			criticalError("Compute::storeVertices(): QGLBuffer::map() failed");
+		GerbilApplication::criticalError("Compute::storeVertices(): "
+		                                 "QGLBuffer::map() failed");
 		return;
 	}
 

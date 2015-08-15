@@ -135,9 +135,11 @@ void GerbilApplication::criticalError(QString msg, bool quit)
 
 	if (quit) {
 		QMessageBox::critical(NULL, "Gerbil Critical Error", msg, "Quit");
-		if (ctrl && ctrl->mainWindow())
-			ctrl->mainWindow()->close();
-		this->exit(1);
+		auto app = instance();
+		if (app && app->ctrl && app->ctrl->mainWindow()) {
+			app->ctrl->mainWindow()->close();
+		}
+		GerbilApplication::exit(1);
 	} else {
 		QMessageBox::critical(NULL,
 						  "Gerbil Critical Error", msg, QMessageBox::Close);
