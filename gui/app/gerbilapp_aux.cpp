@@ -267,8 +267,10 @@ bool GerbilApplication::determine_limited(const
 			msgBox.exec();
 			if (msgBox.clickedButton() == memory)
 				return true;
-			if (msgBox.clickedButton() == close)
+			if (msgBox.clickedButton() == close) {
 				quit();
+				throw shutdown_exception();
+			}
 		}
 	}
 

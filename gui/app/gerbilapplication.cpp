@@ -38,24 +38,20 @@ GerbilApplication::GerbilApplication(int &argc, char **argv)
 
 void GerbilApplication::run()
 {
-	try {
-		check_system_requirements();
+	check_system_requirements();
 
-		init_qt();
+	init_qt();
 
-		init_opencv();
+	init_opencv();
 
 #ifdef GERBIL_CUDA
-		init_cuda();
+	init_cuda();
 #endif
 
-		parse_args();
+	parse_args();
 
-		// create controller
-		ctrl = new Controller(imageFilename, limitedMode, labelsFilename, this);
-	} catch(std::exception &) {
-		handle_exception(std::current_exception(), true);
-	}
+	// create controller
+	ctrl = new Controller(imageFilename, limitedMode, labelsFilename, this);
 }
 
 void GerbilApplication::parse_args()
@@ -75,6 +71,7 @@ void GerbilApplication::parse_args()
 		// no window here, user already confirmed this in OpenRecent dialog.
 		std::cerr << "No input file given." << std::endl;
 		this->exit(1);
+		throw shutdown_exception();
 	}
 
 	// FIXME: Use QString instead of std::string.
@@ -140,10 +137,26 @@ void GerbilApplication::criticalError(QString msg, bool quit)
 			app->ctrl->mainWindow()->close();
 		}
 		GerbilApplication::exit(1);
+		throw shutdown_exception();
 	} else {
 		QMessageBox::critical(NULL,
 						  "Gerbil Critical Error", msg, QMessageBox::Close);
 	}
+}
+
+bool GerbilApplication::notify(QObject* receiver, QEvent* event) {
+	try {
+		return QApplication::notify(receiver, event);
+	} catch (shutdown_exception &) {
+		// do nothing, let Qt clean up after this
+	} catch (std::exception&) {
+		try {
+			handle_exception(std::current_exception(), true);
+		} catch (shutdown_exception &) {
+			// gently eat up redundant throw
+		}
+	}
+	return false;
 }
 
 void GerbilApplication::handle_exception(std::exception_ptr e, bool critical)

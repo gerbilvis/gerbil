@@ -8,6 +8,12 @@
 #include <QApplication>
 #include <exception>
 
+// a simple exception to avoid further code execution when we need to quit
+struct shutdown_exception : public std::exception {
+	~shutdown_exception() throw() {}
+	const char* what() const throw() { return "Gerbil is closing down."; }
+};
+
 class Controller;
 
 class GerbilApplication : public QApplication, boost::noncopyable
@@ -30,13 +36,15 @@ public:
 	 */
 	QString imagePath();
 
+	/** Catches exceptions thrown in Qt event handlers (so, all of them?) */
+	bool notify(QObject *receiver, QEvent *event) override;
+
 public slots:
 	/** Execute the gerbil GUI application.
 	 *
 	 * This checks various pre-conditions for running and sets up objects
 	 * It expects the Qt event loop to be up.
 	 */
-	// TODO make this nothrow and catch all exceptions here.
 	virtual void run();
 
 	/** Display a critical error in a message box and kill the application */
@@ -46,6 +54,8 @@ public slots:
 
 	/** Print error on stderr and in message box (at least tries to).
 	 * If critical is set, also quit the application.
+	 * Note: This method is also wired to signals from other threads.
+	 * This method will throw a shutdown_exception itself if critical == true
 	 */
 	static void handle_exception(std::exception_ptr e, bool critical);
 
