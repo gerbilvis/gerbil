@@ -140,7 +140,7 @@ void GerbilApplication::criticalError(QString msg, bool quit)
 		throw shutdown_exception();
 	} else {
 		QMessageBox::critical(NULL,
-						  "Gerbil Critical Error", msg, QMessageBox::Close);
+		                      "Gerbil Critical Error", msg, QMessageBox::Close);
 	}
 }
 
