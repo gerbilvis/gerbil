@@ -19,7 +19,7 @@
 
 int main(int argc, char **argv)
 {
-	exit(GerbilApplication(argc, argv).exec());
+	return GerbilApplication(argc, argv).exec();
 }
 
 GerbilApplication::GerbilApplication(int &argc, char **argv)
