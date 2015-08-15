@@ -447,11 +447,10 @@ void Viewport::drawAxesFg(QPainter *painter)
 	if (selection < 0 || selection >= (int)(*ctx)->dimensionality)
 		return;
 
-	// draw selection in foreground
-	if (active)
-		painter->setPen(Qt::red);
-	else
-		painter->setPen(Qt::gray);
+	QPen pen(active ? Qt::red : Qt::gray); // draw selection in foreground
+	pen.setWidth(0);
+	painter->setPen(pen);
+
 	qreal top = ((*ctx)->nbins);
 	if (illuminant_show && !illuminantCurve.empty())
 		top *= illuminantCurve.at(selection);
@@ -489,7 +488,9 @@ void Viewport::drawAxesBg(QPainter *painter)
 	SharedDataLock ctxlock(ctx->mutex);
 
 	// draw axes in background
-	painter->setPen(QColor(64, 64, 64));
+	QPen pen(QColor(64, 64, 64));
+	pen.setWidth(0);
+	painter->setPen(pen);
 
 	/* without illuminant */
 	if (!illuminant_show || illuminantCurve.empty()) {
