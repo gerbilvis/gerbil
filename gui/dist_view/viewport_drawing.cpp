@@ -1,5 +1,7 @@
 #include "viewport.h"
 
+#include <app/gerbilapplication.h>
+
 #include <QGraphicsProxyWidget>
 #include <QMessageBox>
 #include <QDebug>
@@ -121,11 +123,9 @@ void Viewport::updateBuffers(RenderMode spectrum, RenderMode highlight)
 		b.renderedLines = 0;
 
 		if (!(b.fbo->isValid() && b.blit->isValid())) {
-			QMessageBox::critical(target, "Drawing Error",
-			                      "Drawing spectra cannot be continued. "
-			                      "Please notify us about this problem, state error code 4 "
-			                      "and what actions led up to this error. Send an email to"
-			                      " report@gerbilvis.org. Thank you for your help!");
+			GerbilApplication::instance()->internalError(
+			            "Framebuffer not valid in viewport updateBuffers().",
+			            false);
 			return;
 		}
 
@@ -274,11 +274,9 @@ void Viewport::drawBins(QPainter &painter, QTimer &renderTimer,
 	glBlendFunc(GL_SRC_ALPHA,GL_ONE_MINUS_SRC_ALPHA);
 	bool success = vb.bind();
 	if (!success) {
-		QMessageBox::critical(target, "Drawing Error",
-		                      "Drawing spectra cannot be continued. "
-		                      "Please notify us about this problem, state error code 3 "
-		                      "and what actions led up to this error. Send an email to"
-		                      " report@gerbilvis.org. Thank you for your help!");
+		GerbilApplication::instance()->internalError(
+		            "Vertex buffer could not be bound in viewport drawBins().",
+		            false);
 		painter.endNativePainting();
 		return;
 	}
