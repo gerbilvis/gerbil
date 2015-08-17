@@ -50,6 +50,10 @@ protected:
 	void drawWaitMessage(QPainter *painter);
 
 	void adjustBoundaries();
+	void alignLeft();
+	void alignRight();
+	void alignBottom();
+	void alignTop();
 
 	// draw the background, inline function
 	void fillBackground(QPainter *painter, const QRectF& rect) {
