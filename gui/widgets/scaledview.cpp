@@ -123,7 +123,9 @@ void ScaledView::mouseMoveEvent(QGraphicsSceneMouseEvent *event)
 	if (inputMode != InputMode::Zoom)
 		return;
 
-	if (event->buttons() & Qt::LeftButton) {
+	QRectF rect = scaler.mapRect(pixmap.rect());
+	if (event->buttons() & Qt::LeftButton &&
+	    rect.contains(event->scenePos())) {
 		//Obtain current cursor and last cursor position
 		//in pixmap coordinates
 		QPointF lastonscene = scalerI.map(event->lastScenePos());
@@ -133,9 +135,53 @@ void ScaledView::mouseMoveEvent(QGraphicsSceneMouseEvent *event)
 		qreal y = curronscene.y() - lastonscene.y();
 
 		scaler.translate(x,y);
-		scalerUpdate();
-		update();
+		adjustBoundaries();
 	}
+}
+
+void ScaledView::adjustBoundaries()
+{
+	QRectF rect = scaler.mapRect(pixmap.rect());
+	QRectF sceneRect = this->sceneRect();
+
+	if (rect.width() > sceneRect.width()) {
+		if (rect.x() > offLeft) {
+			alignLeft();
+		} else if (rect.x() + rect.width() < sceneRect.width() - offRight) {
+			alignRight();
+		}
+	} else if (rect.x() < offLeft
+	           || rect.x() + rect.width() > sceneRect.width() - offRight) {
+		int left = rect.x() - offLeft;
+		int right = sceneRect.width() - offRight - rect.x() - rect.width();
+
+		if (left<right) {
+			alignLeft();
+		} else {
+			alignRight();
+		}
+	}
+
+	if (rect.height() > sceneRect.height()) {
+		if (rect.y() > offTop) {
+			alignTop();
+		} else if (rect.y() + rect.height() < sceneRect.height() - offBottom) {
+			alignBottom();
+		}
+	} else if (rect.y() < offTop
+	           || rect.y() + rect.height() > sceneRect.height() - offBottom) {
+		int top = rect.y() - offTop;
+		int bottom = sceneRect.height() - offBottom - rect.y() - rect.height();
+
+		if (top<bottom) {
+			alignTop();
+		} else {
+			alignBottom();
+		}
+	}
+
+	scalerUpdate();
+	update();
 }
 
 void ScaledView::mousePressEvent(QGraphicsSceneMouseEvent *ev)
@@ -199,8 +245,13 @@ void ScaledView::wheelEvent(QGraphicsSceneWheelEvent *event)
 		newzoom = 0.8;
 	}
 
-	if (zoom*newzoom < 1) {
-		resizeEvent();
+	if (zoom*newzoom <= 1) {
+		if (zoom == 1) {
+			return;
+		} else {
+			zoom = 1;
+			resizeEvent();
+		}
 	} else {
 		//obtain cursor position in scene coordinates
 		QPointF scene = event->scenePos();
@@ -219,7 +270,7 @@ void ScaledView::wheelEvent(QGraphicsSceneWheelEvent *event)
 		//translate the by the difference
 		QPointF diff = newlocal - local;
 		scaler.translate(diff.x(), diff.y());
-		scalerUpdate();
+		adjustBoundaries();
 	}
 }
 
@@ -263,4 +314,62 @@ void ScaledView::showContextMenu(QPoint screenpoint)
 	QAction* a = contextMenu->exec(screenpoint);
 	if(!a)
 		return;
+}
+
+void ScaledView::alignLeft()
+{
+	qreal x = 0.f;
+	QRectF rect = scaler.mapRect(pixmap.rect());
+
+	QPointF left(offLeft, 0.f);
+	left = scaler.inverted().map(left);
+	QPointF pos(rect.x(), 0.f);
+	pos = scaler.inverted().map(pos);
+
+	x = left.x() - pos.x();
+	scaler.translate(x, 0.f);
+}
+
+void ScaledView::alignRight()
+{
+	qreal x = 0.f;
+	QRectF rect = scaler.mapRect(pixmap.rect());
+	QRectF sceneRect = this->sceneRect();
+
+	QPointF right(sceneRect.width() - offRight, 0.f);
+	right = scaler.inverted().map(right);
+	QPointF pos(rect.x()+rect.width(), 0.f);
+	pos = scaler.inverted().map(pos);
+
+	x = right.x() - pos.x();
+	scaler.translate(x, 0.f);
+}
+
+void ScaledView::alignBottom()
+{
+	qreal y = 0.f;
+	QRectF rect = scaler.mapRect(pixmap.rect());
+	QRectF sceneRect = this->sceneRect();
+
+	QPointF bottom(0.f, sceneRect.height() - offBottom);
+	bottom = scaler.inverted().map(bottom);
+	QPointF pos(0.f, rect.y() + rect.height());
+	pos = scaler.inverted().map(pos);
+
+	y = bottom.y() - pos.y();
+	scaler.translate(0.f, y);
+}
+
+void ScaledView::alignTop()
+{
+	qreal y = 0.f;
+	QRectF rect = scaler.mapRect(pixmap.rect());
+
+	QPointF top(0.f, offTop);
+	top = scaler.inverted().map(top);
+	QPointF pos(0.f, rect.y());
+	pos = scaler.inverted().map(pos);
+
+	y = top.y() - pos.y();
+	scaler.translate(0.f, y);
 }
