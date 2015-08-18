@@ -178,6 +178,10 @@ void ScaledView::drawWaitMessage(QPainter *painter)
 
 void ScaledView::cursorAction(QGraphicsSceneMouseEvent *ev, bool click)
 {
+	if (ev->buttons() & Qt::RightButton && inputMode != InputMode::Seed) {
+		QPoint point = ev->screenPos();
+		showContextMenu(point);
+	}
 }
 
 void ScaledView::wheelEvent(QGraphicsSceneWheelEvent *event)
@@ -217,4 +221,46 @@ void ScaledView::wheelEvent(QGraphicsSceneWheelEvent *event)
 		scaler.translate(diff.x(), diff.y());
 		scalerUpdate();
 	}
+}
+
+void ScaledView::scaleBestFit()
+{
+	resizeEvent();
+}
+
+void ScaledView::scaleOriginal()
+{
+	resizeEvent();
+	QRectF rect = scaler.mapRect(pixmap.rect());
+	qreal ratio = pixmap.width() / rect.width();
+
+	zoom *= ratio;
+	scaler.scale(ratio, ratio);
+	scalerUpdate();
+
+}
+
+QMenu* ScaledView::createContextMenu()
+{
+	QMenu* contextMenu = new QMenu();
+
+	QAction* tmp;
+	tmp = contextMenu->addAction("Scale best fit");
+	connect(tmp, SIGNAL(triggered()), this, SLOT(scaleBestFit()));
+	tmp->setData(-1);
+
+	tmp = contextMenu->addAction("Scale 100%");
+	connect(tmp, SIGNAL(triggered()), this, SLOT(scaleOriginal()));
+	tmp->setData(-1);
+
+	return contextMenu;
+}
+
+void ScaledView::showContextMenu(QPoint screenpoint)
+{
+	if(!contextMenu) contextMenu = createContextMenu();
+
+	QAction* a = contextMenu->exec(screenpoint);
+	if(!a)
+		return;
 }

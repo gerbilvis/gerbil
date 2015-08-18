@@ -321,6 +321,8 @@ void BandView::drawOverlay(const cv::Mat1b &mask)
 
 void BandView::cursorAction(QGraphicsSceneMouseEvent *ev, bool click)
 {
+	ScaledView::cursorAction(ev, click);
+
 	bool consistent = ((pixmap.width() == labels.cols) &&
 	                   (pixmap.height() == labels.rows));
 	if (!consistent) // not properly initialized
@@ -670,4 +672,51 @@ QPolygonF BandView::getCursorHull(int xpos, int ypos)
 	else
 		size = cursorSize;
 	return cursors[size].second.translated(xpos + 0.5f, ypos + 0.5f);
+}
+
+QMenu *BandView::createContextMenu()
+{
+	QMenu* contextMenu = ScaledView::createContextMenu();
+
+	contextMenu->addSeparator();
+
+	QActionGroup *actionGroup = new QActionGroup(this);
+	actionGroup->setExclusive(true);
+
+	QAction* tmp;
+	tmp = contextMenu->addAction("Zoom");
+	tmp->setData( (int)InputMode::Zoom);
+	tmp->setCheckable(true);
+	tmp->setChecked(true);
+	actionGroup->addAction(tmp);
+
+	tmp = contextMenu->addAction("Label");
+	tmp->setData( (int)InputMode::Label);
+	tmp->setCheckable(true);
+	actionGroup->addAction(tmp);
+
+	tmp = contextMenu->addAction("Pick");
+	tmp->setData( (int)InputMode::Pick);
+	tmp->setCheckable(true);
+	actionGroup->addAction(tmp);
+
+	return contextMenu;
+}
+
+void BandView::showContextMenu(QPoint screenpoint)
+{
+	if(!contextMenu) contextMenu = createContextMenu();
+
+	QAction* a = contextMenu->exec(screenpoint);
+	if(!a)
+		return;
+
+	int choice = a->data().toInt();
+	InputMode mode = (InputMode)choice;
+	if( mode == InputMode::Zoom || mode == InputMode::Label
+	    || mode == InputMode::Pick)
+	{
+		emit inputModeChanged(mode);
+		updateInputMode(mode);
+	}
 }

@@ -107,6 +107,8 @@ protected:
 	void keyPressEvent(QKeyEvent *);
 
 	virtual void resizeEvent();
+	QMenu* createContextMenu();
+	void showContextMenu(QPoint screenpoint);
 
 private:
 	void cursorAction(QGraphicsSceneMouseEvent *ev, bool click = false);

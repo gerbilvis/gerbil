@@ -3,6 +3,7 @@
 
 #include <QGraphicsScene>
 #include <QPainter>
+#include <QMenu>
 
 class QGLWidget;
 
@@ -35,6 +36,10 @@ signals:
 	void newSizeHint(QSize hint);
 	void newContentRect(QRect rect);
 
+private slots:
+	void scaleBestFit();
+	void scaleOriginal();
+
 protected:
 	// handles both resize and drawing
 	void drawBackground(QPainter *painter, const QRectF &rect);
@@ -58,6 +63,11 @@ protected:
 
 	// always call after changes to scaler
 	void scalerUpdate();
+
+	virtual QMenu* createContextMenu();
+	virtual void showContextMenu(QPoint screenpoint);
+
+	QMenu* contextMenu = nullptr;
 
 	// scene geometry
 	int width, height;
