@@ -58,6 +58,16 @@ void ROIView::resizeEvent()
 	container->setRect(pixmap.rect());
 }
 
+QMenu *ROIView::createContextMenu()
+{
+	QMenu* contextMenu = new QMenu();
+
+	contextMenu->addAction(applyAction);
+	contextMenu->addAction(resetAction);
+
+	return contextMenu;
+}
+
 void BoundedRect::adjustTo(QRectF box, bool internal)
 {
 	/* discretize */
@@ -121,4 +131,13 @@ void BoundedRect::mouseMoveEvent(QGraphicsSceneMouseEvent *ev)
 
 	// remember where we took off
 	lastcursor = cursor;
+}
+
+void BoundedRect::mousePressEvent(QGraphicsSceneMouseEvent *ev)
+{
+	if (ev->buttons() & Qt::RightButton) {
+		QGraphicsRectItem::mousePressEvent(ev);
+	}
+	lastcursor = QPointF(0.f, 0.f);
+	setCursor(Qt::SizeAllCursor);
 }

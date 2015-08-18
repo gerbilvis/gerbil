@@ -274,11 +274,6 @@ void ScaledView::wheelEvent(QGraphicsSceneWheelEvent *event)
 	}
 }
 
-void ScaledView::scaleBestFit()
-{
-	resizeEvent();
-}
-
 void ScaledView::scaleOriginal()
 {
 	resizeEvent();
@@ -287,8 +282,7 @@ void ScaledView::scaleOriginal()
 
 	zoom *= ratio;
 	scaler.scale(ratio, ratio);
-	scalerUpdate();
-
+	adjustBoundaries();
 }
 
 QMenu* ScaledView::createContextMenu()
@@ -297,7 +291,7 @@ QMenu* ScaledView::createContextMenu()
 
 	QAction* tmp;
 	tmp = contextMenu->addAction("Scale best fit");
-	connect(tmp, SIGNAL(triggered()), this, SLOT(scaleBestFit()));
+	connect(tmp, SIGNAL(triggered()), this, SLOT(fitScene()));
 	tmp->setData(-1);
 
 	tmp = contextMenu->addAction("Scale 100%");

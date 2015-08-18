@@ -69,14 +69,24 @@ void RoiDock::initUi()
 	connect(roiView, SIGNAL(newSizeHint(QSize)),
 			view, SLOT(updateSizeHint(QSize)));
 
-	connect(uibtn->roiButtons, SIGNAL(clicked(QAbstractButton*)),
-			 this, SLOT(processRoiButtonsClicked(QAbstractButton*)));
 	connect(roiView, SIGNAL(newSelection(const QRect&)),
 			this, SLOT(processNewSelection(const QRect&)));
 	connect(bandsSlider, SIGNAL(valueChanged(int)),
 			this, SLOT(processBandsSliderChange(int)));
 	connect(bandsSlider, SIGNAL(sliderMoved(int)),
 			this, SLOT(processBandsSliderChange(int)));
+
+	applyAction = new QAction(this);
+	applyAction->setText("Apply");
+	uibtn->applyButton->setAction(applyAction);
+	roiView->setApplyAction(applyAction);
+	connect(applyAction, SIGNAL(triggered()), this, SLOT(applyRoi()));
+
+	resetAction = new QAction(this);
+	resetAction->setText("Reset");
+	uibtn->resetButton->setAction(resetAction);
+	roiView->setResetAction(resetAction);
+	connect(resetAction, SIGNAL(triggered()), this, SLOT(resetRoi()));
 }
 
 void RoiDock::processBandsSliderChange(int b)
@@ -84,17 +94,6 @@ void RoiDock::processBandsSliderChange(int b)
 	bandsLabel->setText(QString("%1 bands").arg(b));
 	if (!bandsSlider->isSliderDown()) {
 		emit specRescaleRequested(b);
-	}
-}
-
-void RoiDock::processRoiButtonsClicked(QAbstractButton *sender)
-{
-	QDialogButtonBox::ButtonRole role = uibtn->roiButtons->buttonRole(sender);
-	uibtn->roiButtons->setDisabled(true);
-	if (role == QDialogButtonBox::ResetRole) {
-		resetRoi();
-	} else if (role == QDialogButtonBox::ApplyRole) {
-		applyRoi();
 	}
 }
 
@@ -106,7 +105,7 @@ void RoiDock::processNewSelection(const QRect &roi, bool internal)
 		roiView->setROI(roi);
 	} else {
 		// we have something to apply / reset from
-		uibtn->roiButtons->setEnabled(true);
+		enableActions(true);
 	}
 
 	QString title("<b>ROI:</b> %1, %2 - %3, %4 (%5x%6)");
@@ -117,6 +116,7 @@ void RoiDock::processNewSelection(const QRect &roi, bool internal)
 
 void RoiDock::applyRoi()
 {
+	enableActions(false);
 	cv::Rect roi = QRect2CVRect(curRoi);
 	emit roiRequested(roi);
 
@@ -126,6 +126,7 @@ void RoiDock::applyRoi()
 
 void RoiDock::resetRoi()
 {
+	enableActions(false);
 	curRoi = oldRoi;
 	processNewSelection(curRoi, true);
 }
@@ -136,4 +137,10 @@ void RoiDock::updatePixmap(const QPixmap image)
 	roiView->setPixmap(image);
 	//GGDBGM(format("pixmap size %1%x%2%")%image.width() %image.height()<<endl);
 	roiView->update();
+}
+
+void RoiDock::enableActions(bool enable)
+{
+	applyAction->setEnabled(enable);
+	resetAction->setEnabled(enable);
 }

@@ -685,18 +685,18 @@ QMenu *BandView::createContextMenu()
 
 	QAction* tmp;
 	tmp = contextMenu->addAction("Zoom");
-	tmp->setData( (int)InputMode::Zoom);
+	tmp->setData((int)InputMode::Zoom);
 	tmp->setCheckable(true);
 	tmp->setChecked(true);
 	actionGroup->addAction(tmp);
 
 	tmp = contextMenu->addAction("Label");
-	tmp->setData( (int)InputMode::Label);
+	tmp->setData((int)InputMode::Label);
 	tmp->setCheckable(true);
 	actionGroup->addAction(tmp);
 
 	tmp = contextMenu->addAction("Pick");
-	tmp->setData( (int)InputMode::Pick);
+	tmp->setData((int)InputMode::Pick);
 	tmp->setCheckable(true);
 	actionGroup->addAction(tmp);
 

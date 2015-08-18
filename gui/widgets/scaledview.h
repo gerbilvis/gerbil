@@ -37,7 +37,7 @@ signals:
 	void newContentRect(QRect rect);
 
 private slots:
-	void scaleBestFit();
+	inline void fitScene() { resizeEvent(); }
 	void scaleOriginal();
 
 protected:
