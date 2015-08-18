@@ -705,15 +705,15 @@ QMenu *BandView::createContextMenu()
 
 void BandView::showContextMenu(QPoint screenpoint)
 {
-	if(!contextMenu) contextMenu = createContextMenu();
+	if (!contextMenu) contextMenu = createContextMenu();
 
 	QAction* a = contextMenu->exec(screenpoint);
-	if(!a)
+	if (!a)
 		return;
 
 	int choice = a->data().toInt();
 	InputMode mode = (InputMode)choice;
-	if( mode == InputMode::Zoom || mode == InputMode::Label
+	if (mode == InputMode::Zoom || mode == InputMode::Label
 	    || mode == InputMode::Pick)
 	{
 		emit inputModeChanged(mode);
