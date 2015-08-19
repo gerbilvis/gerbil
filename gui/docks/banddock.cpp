@@ -86,8 +86,6 @@ void BandDock::initUi()
 	bv->offTop = AutohideWidget::OutOffset;
 	view->addWidget(AutohideWidget::TOP, mw);
 
-	connect(mw, SIGNAL(inputModeChanged(ScaledView::InputMode)),
-	        bv, SLOT(updateInputMode(ScaledView::InputMode)));
 	connect(bv, SIGNAL(inputModeChanged(ScaledView::InputMode)),
 	        mw, SLOT(updateInputMode(ScaledView::InputMode)));
 	connect(mw, SIGNAL(cursorSizeChanged(BandView::CursorSize)),
@@ -104,7 +102,58 @@ void BandDock::initUi()
 	connect(screenshotButton, SIGNAL(released()),
 	        this, SLOT(screenshot()));
 
+	initActions();
 	bv->initUi();
+	mw->initUi();
+}
+
+void BandDock::initActions()
+{
+	QActionGroup *actionGroup = new QActionGroup(this);
+	actionGroup->setExclusive(true);
+
+	zoomAction = new QAction(this);
+	zoomAction->setText("Zoom");
+	zoomAction->setShortcut(Qt::Key_1);
+	zoomAction->setData((int)ScaledView::InputMode::Zoom);
+	zoomAction->setCheckable(true);
+	zoomAction->setChecked(true);
+	zoomAction->setIcon(QIcon(":/basic/zoom"));
+	zoomAction->setIconVisibleInMenu(true);
+	actionGroup->addAction(zoomAction);
+	bv->setZoomAction(zoomAction);
+	mw->setZoomAction(zoomAction);
+	this->addAction(zoomAction);
+	connect(zoomAction, SIGNAL(triggered()),
+	        bv, SLOT(updateInputMode()));
+
+	labelAction = new QAction(this);
+	labelAction->setText("Label");
+	labelAction->setShortcut(Qt::Key_2);
+	labelAction->setData((int)ScaledView::InputMode::Label);
+	labelAction->setCheckable(true);
+	labelAction->setIcon((QIcon(":/basic/pencil")));
+	labelAction->setIconVisibleInMenu(true);
+	actionGroup->addAction(labelAction);
+	bv->setLabelAction(labelAction);
+	mw->setLabelAction(labelAction);
+	this->addAction(labelAction);
+	connect(labelAction, SIGNAL(triggered()),
+	        bv, SLOT(updateInputMode()));
+
+	pickAction = new QAction(this);
+	pickAction->setText("Pick");
+	pickAction->setShortcut(Qt::Key_3);
+	pickAction->setData((int)ScaledView::InputMode::Pick);
+	pickAction->setCheckable(true);
+	pickAction->setIcon((QIcon(":/basic/picker")));
+	pickAction->setIconVisibleInMenu(true);
+	actionGroup->addAction(pickAction);
+	bv->setPickAction(pickAction);
+	mw->setPickAction(pickAction);
+	this->addAction(pickAction);
+	connect(pickAction, SIGNAL(triggered()),
+	        bv, SLOT(updateInputMode()));
 }
 
 void BandDock::changeBand(representation::t repr, int bandId,

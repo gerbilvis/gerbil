@@ -51,6 +51,10 @@ public:
 	cv::Mat1s getSeedMap() { return seedMap; }
 	void setSeedMap(cv::Mat1s seeding);
 
+	void setZoomAction(QAction* act) { zoomAction = act; }
+	void setLabelAction(QAction* act) { labelAction = act; }
+	void setPickAction(QAction* act) { pickAction = act; }
+
 public slots:
 	void refresh();
 	void commitLabels();
@@ -72,7 +76,7 @@ public slots:
 	void enterEvent();
 	void leaveEvent();
 
-	void updateInputMode(ScaledView::InputMode mode);
+	void updateInputMode();
 	void updateCursorSize(BandView::CursorSize size);
 	void toggleCursorMode();
 
@@ -105,10 +109,7 @@ signals:
 protected:
 	void paintEvent(QPainter *painter, const QRectF &rect);
 	void keyPressEvent(QKeyEvent *);
-
-	virtual void resizeEvent();
 	QMenu* createContextMenu();
-	void showContextMenu(QPoint screenpoint);
 
 private:
 	void cursorAction(QGraphicsSceneMouseEvent *ev, bool click = false);
@@ -166,6 +167,10 @@ private:
 	// point sets, stored as polygon for translate(), and hulls for drawing
 	std::unordered_map<CursorSize, std::pair<QPolygonF, QPolygonF>,
 	std::hash<int>> cursors;
+
+	QAction* zoomAction = nullptr;
+	QAction* labelAction = nullptr;
+	QAction* pickAction = nullptr;
 };
 
 #endif // BANDVIEW_H

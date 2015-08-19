@@ -21,4 +21,5 @@ void ActionButton::updateButtonStatusFromAction()
 	setCheckable(actionOwner->isCheckable());
 	setChecked(actionOwner->isChecked());
 	setEnabled(actionOwner->isEnabled());
+	setIcon(actionOwner->icon());
 }

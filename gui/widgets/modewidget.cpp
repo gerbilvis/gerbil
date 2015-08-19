@@ -10,7 +10,6 @@ ModeWidget::ModeWidget(AutohideView *view) :
 	AutohideWidget()
 {
 	setupUi(this);
-	initUi();
 }
 
 ModeWidget::~ModeWidget()
@@ -32,6 +31,10 @@ void ModeWidget::initUi()
 	cursorGroup->addButton(bigCurButton);
 	cursorGroup->addButton(hugeCurButton);
 	setCursorButtonsVisible(false);
+
+	zoomButton->setAction(zoomAction);
+	labelButton->setAction(labelAction);
+	pickButton->setAction(pickAction);
 }
 
 void ModeWidget::updateInputMode(ScaledView::InputMode m)
@@ -83,21 +86,18 @@ void ModeWidget::updateCursorMode(BandView::CursorMode m)
 
 void ModeWidget::on_zoomButton_released()
 {
-	emit inputModeChanged(IM::Zoom);
 	setCursorButtonsVisible(false);
 	adjustSize();
 }
 
 void ModeWidget::on_pickButton_released()
 {
-	emit inputModeChanged(IM::Pick);
 	setCursorButtonsVisible(false);
 	adjustSize();
 }
 
 void ModeWidget::on_labelButton_released()
 {
-	emit inputModeChanged(IM::Label);
 	setCursorButtonsVisible(true);
 	adjustSize();
 }

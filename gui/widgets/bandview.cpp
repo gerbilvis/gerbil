@@ -47,9 +47,10 @@ void BandView::initUi()
 	        this, SLOT(commitLabelChanges()));
 }
 
-void BandView::updateInputMode(ScaledView::InputMode mode)
+void BandView::updateInputMode()
 {
-	inputMode = mode;
+	QAction* sender = (QAction*) QObject::sender();
+	inputMode = (InputMode) sender->data().toInt();
 }
 
 void BandView::toggleCursorMode()
@@ -61,12 +62,6 @@ void BandView::toggleCursorMode()
 void BandView::updateCursorSize(CursorSize size)
 {
 	cursorSize = size;
-}
-
-void BandView::resizeEvent()
-{
-	ScaledView::resizeEvent();
-	zoom = 1;
 }
 
 void BandView::setPixmap(QPixmap p)
@@ -679,44 +674,9 @@ QMenu *BandView::createContextMenu()
 	QMenu* contextMenu = ScaledView::createContextMenu();
 
 	contextMenu->addSeparator();
-
-	QActionGroup *actionGroup = new QActionGroup(this);
-	actionGroup->setExclusive(true);
-
-	QAction* tmp;
-	tmp = contextMenu->addAction("Zoom");
-	tmp->setData((int)InputMode::Zoom);
-	tmp->setCheckable(true);
-	tmp->setChecked(true);
-	actionGroup->addAction(tmp);
-
-	tmp = contextMenu->addAction("Label");
-	tmp->setData((int)InputMode::Label);
-	tmp->setCheckable(true);
-	actionGroup->addAction(tmp);
-
-	tmp = contextMenu->addAction("Pick");
-	tmp->setData((int)InputMode::Pick);
-	tmp->setCheckable(true);
-	actionGroup->addAction(tmp);
+	contextMenu->addAction(zoomAction);
+	contextMenu->addAction(labelAction);
+	contextMenu->addAction(pickAction);
 
 	return contextMenu;
-}
-
-void BandView::showContextMenu(QPoint screenpoint)
-{
-	if (!contextMenu) contextMenu = createContextMenu();
-
-	QAction* a = contextMenu->exec(screenpoint);
-	if (!a)
-		return;
-
-	int choice = a->data().toInt();
-	InputMode mode = (InputMode)choice;
-	if (mode == InputMode::Zoom || mode == InputMode::Label
-	    || mode == InputMode::Pick)
-	{
-		emit inputModeChanged(mode);
-		updateInputMode(mode);
-	}
 }
