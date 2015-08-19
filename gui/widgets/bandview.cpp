@@ -50,7 +50,7 @@ void BandView::initUi()
 void BandView::updateInputMode()
 {
 	QAction* sender = (QAction*) QObject::sender();
-	inputMode = (InputMode) sender->data().toInt();
+	inputMode = sender->data().value<InputMode>();
 }
 
 void BandView::toggleCursorMode()

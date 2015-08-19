@@ -115,7 +115,7 @@ void BandDock::initActions()
 	zoomAction = new QAction(this);
 	zoomAction->setText("Zoom");
 	zoomAction->setShortcut(Qt::Key_1);
-	zoomAction->setData((int)ScaledView::InputMode::Zoom);
+	zoomAction->setData(QVariant::fromValue(ScaledView::InputMode::Zoom));
 	zoomAction->setCheckable(true);
 	zoomAction->setChecked(true);
 	zoomAction->setIcon(QIcon(":/basic/zoom"));
@@ -130,7 +130,7 @@ void BandDock::initActions()
 	labelAction = new QAction(this);
 	labelAction->setText("Label");
 	labelAction->setShortcut(Qt::Key_2);
-	labelAction->setData((int)ScaledView::InputMode::Label);
+	labelAction->setData(QVariant::fromValue(ScaledView::InputMode::Label));
 	labelAction->setCheckable(true);
 	labelAction->setIcon((QIcon(":/basic/pencil")));
 	labelAction->setIconVisibleInMenu(true);
@@ -144,7 +144,7 @@ void BandDock::initActions()
 	pickAction = new QAction(this);
 	pickAction->setText("Pick");
 	pickAction->setShortcut(Qt::Key_3);
-	pickAction->setData((int)ScaledView::InputMode::Pick);
+	pickAction->setData(QVariant::fromValue(ScaledView::InputMode::Pick));
 	pickAction->setCheckable(true);
 	pickAction->setIcon((QIcon(":/basic/picker")));
 	pickAction->setIconVisibleInMenu(true);

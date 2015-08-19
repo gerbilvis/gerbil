@@ -87,4 +87,6 @@ protected:
 	QPixmap	pixmap;
 };
 
+Q_DECLARE_METATYPE(ScaledView::InputMode)
+
 #endif // SCALEDVIEW_H

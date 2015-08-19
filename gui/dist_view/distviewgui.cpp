@@ -370,7 +370,7 @@ void DistViewGUI::showFrameBufferMenu()
 	if (!a)
 		return;
 
-	Viewport::BufferFormat choice = (Viewport::BufferFormat) a->data().toInt();
+	Viewport::BufferFormat choice = a->data().value<Viewport::BufferFormat>();
 	vp->setBufferFormat(choice);
 }
 
