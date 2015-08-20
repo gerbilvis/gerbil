@@ -235,6 +235,10 @@
         <property name="text">
          <string/>
         </property>
+        <property name="icon">
+         <iconset resource="../gerbil.qrc">
+          <normaloff>:/toolbar/eraser</normaloff>:/toolbar/eraser</iconset>
+        </property>
         <property name="checkable">
          <bool>true</bool>
         </property>
