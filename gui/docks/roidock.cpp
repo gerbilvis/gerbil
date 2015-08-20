@@ -100,7 +100,10 @@ void RoiDock::processRoiButtonsClicked(QAbstractButton *sender)
 
 void RoiDock::processNewSelection(const QRect &roi, bool internal)
 {
+	if (curRoi == roi)
+		return;
 	curRoi = roi;
+
 	if (internal) {
 		// also update the roiView
 		roiView->setROI(roi);
