@@ -40,6 +40,7 @@ void DistViewGUI::initVPActions()
 	hqAct->setShortcut(Qt::Key_Space);
 	hqAct->setShortcutContext(Qt::WidgetShortcut);
 	hqAct->setCheckable(true);
+	hqAct->setChecked(true); // drawHQ by default
 	ui->gv->addAction(hqAct);
 	uivc->hqButton->setAction(hqAct);
 	vp->setDrawHQ(hqAct);
