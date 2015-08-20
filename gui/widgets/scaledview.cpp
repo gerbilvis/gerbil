@@ -244,6 +244,7 @@ void ScaledView::wheelEvent(QGraphicsSceneWheelEvent *event)
 	if (inputMode != InputMode::Zoom)
 		return;
 
+	QRectF rect = scaler.mapRect(pixmap.rect());
 	qreal newzoom;
 
 	if (event->delta() > 0) {
@@ -252,14 +253,14 @@ void ScaledView::wheelEvent(QGraphicsSceneWheelEvent *event)
 		newzoom = 0.8;
 	}
 
-	if (zoom*newzoom <= 1 && newzoom < 1) {
-		if (zoom == 1) {
-			return;
-		} else if (zoom > 1) {
-			zoom = 1;
-			resizeEvent();
-		}
-	} else {
+	if ((zoom < 1 && newzoom > 1) ||
+	    (zoom > 1 && zoom*newzoom <= 1)) {
+		zoom = 1;
+		resizeEvent();
+	} else if (zoom == 1 && newzoom < 1
+	           && pixmap.width()/rect.width() < 1) {
+		scaleOriginal();
+	} else if (zoom > 1 || newzoom > 1) {
 		//obtain cursor position in scene coordinates
 		QPointF scene = event->scenePos();
 		//obtain cursor position in pixmap coordinates
