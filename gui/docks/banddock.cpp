@@ -98,6 +98,7 @@ void BandDock::initUi()
 	cursorModeAct->setShortcut(Qt::Key_X);
 	cursorModeAct->setShortcutContext(Qt::WidgetShortcut);
 	cursorModeAct->setCheckable(true);
+	cursorModeAct->setIcon(QIcon(":/toolbar/eraser"));
 	view->addAction(cursorModeAct);
 	mw->getRubberButton()->setAction(cursorModeAct);
 	connect(cursorModeAct, SIGNAL(triggered(bool)), bv, SLOT(toggleCursorMode()));
