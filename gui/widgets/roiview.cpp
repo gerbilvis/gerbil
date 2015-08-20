@@ -60,7 +60,8 @@ void ROIView::resizeEvent()
 
 QMenu *ROIView::createContextMenu()
 {
-	QMenu* contextMenu = new QMenu();
+	QMenu* contextMenu = ScaledView::createContextMenu();
+	contextMenu->clear();
 
 	contextMenu->addAction(applyAction);
 	contextMenu->addAction(resetAction);
