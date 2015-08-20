@@ -44,6 +44,9 @@ void BandDock::initUi()
 	bv->offBottom = AutohideWidget::OutOffset;
 	view->addWidget(AutohideWidget::BOTTOM, gs);
 
+	connect(bv, SIGNAL(updateScrolling(bool)),
+	        view, SLOT(suppressScrolling(bool)));
+
 	connect(bv, SIGNAL(newSizeHint(QSize)),
 	        view, SLOT(updateSizeHint(QSize)));
 
@@ -86,8 +89,6 @@ void BandDock::initUi()
 	bv->offTop = AutohideWidget::OutOffset;
 	view->addWidget(AutohideWidget::TOP, mw);
 
-	connect(mw, SIGNAL(inputModeChanged(ScaledView::InputMode)),
-	        bv, SLOT(updateInputMode(ScaledView::InputMode)));
 	connect(bv, SIGNAL(inputModeChanged(ScaledView::InputMode)),
 	        mw, SLOT(updateInputMode(ScaledView::InputMode)));
 	connect(mw, SIGNAL(cursorSizeChanged(BandView::CursorSize)),
@@ -97,6 +98,7 @@ void BandDock::initUi()
 	cursorModeAct->setShortcut(Qt::Key_X);
 	cursorModeAct->setShortcutContext(Qt::WidgetShortcut);
 	cursorModeAct->setCheckable(true);
+	cursorModeAct->setIcon(QIcon(":/toolbar/eraser"));
 	view->addAction(cursorModeAct);
 	mw->getRubberButton()->setAction(cursorModeAct);
 	connect(cursorModeAct, SIGNAL(triggered(bool)), bv, SLOT(toggleCursorMode()));
@@ -104,7 +106,64 @@ void BandDock::initUi()
 	connect(screenshotButton, SIGNAL(released()),
 	        this, SLOT(screenshot()));
 
+	initActions();
 	bv->initUi();
+	mw->initUi();
+}
+
+void BandDock::initActions()
+{
+	QActionGroup *actionGroup = new QActionGroup(this);
+	actionGroup->setExclusive(true);
+
+	zoomAction = new QAction(this);
+	zoomAction->setText("Zoom");
+	zoomAction->setShortcut(Qt::Key_1);
+	zoomAction->setData(QVariant::fromValue(ScaledView::InputMode::Zoom));
+	zoomAction->setCheckable(true);
+	zoomAction->setChecked(true);
+	zoomAction->setIcon(QIcon(":/basic/zoom"));
+	zoomAction->setIconVisibleInMenu(true);
+	actionGroup->addAction(zoomAction);
+	bv->setZoomAction(zoomAction);
+	mw->setZoomAction(zoomAction);
+	this->addAction(zoomAction);
+	connect(zoomAction, SIGNAL(triggered()),
+	        bv, SLOT(updateInputMode()));
+	connect(zoomAction, SIGNAL(triggered()),
+	        mw, SLOT(zoomMode()));
+
+	labelAction = new QAction(this);
+	labelAction->setText("Label");
+	labelAction->setShortcut(Qt::Key_2);
+	labelAction->setData(QVariant::fromValue(ScaledView::InputMode::Label));
+	labelAction->setCheckable(true);
+	labelAction->setIcon((QIcon(":/basic/pencil")));
+	labelAction->setIconVisibleInMenu(true);
+	actionGroup->addAction(labelAction);
+	bv->setLabelAction(labelAction);
+	mw->setLabelAction(labelAction);
+	this->addAction(labelAction);
+	connect(labelAction, SIGNAL(triggered()),
+	        bv, SLOT(updateInputMode()));
+	connect(labelAction, SIGNAL(triggered()),
+	        mw, SLOT(labelMode()));
+
+	pickAction = new QAction(this);
+	pickAction->setText("Pick");
+	pickAction->setShortcut(Qt::Key_3);
+	pickAction->setData(QVariant::fromValue(ScaledView::InputMode::Pick));
+	pickAction->setCheckable(true);
+	pickAction->setIcon((QIcon(":/basic/picker")));
+	pickAction->setIconVisibleInMenu(true);
+	actionGroup->addAction(pickAction);
+	bv->setPickAction(pickAction);
+	mw->setPickAction(pickAction);
+	this->addAction(pickAction);
+	connect(pickAction, SIGNAL(triggered()),
+	        bv, SLOT(updateInputMode()));
+	connect(pickAction, SIGNAL(triggered()),
+	        mw, SLOT(pickMode()));
 }
 
 void BandDock::changeBand(representation::t repr, int bandId,

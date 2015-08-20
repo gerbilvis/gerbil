@@ -7,7 +7,7 @@
     <x>0</x>
     <y>0</y>
     <width>378</width>
-    <height>88</height>
+    <height>91</height>
    </rect>
   </property>
   <property name="sizePolicy">
@@ -50,7 +50,7 @@
       <number>9</number>
      </property>
      <item>
-      <widget class="QPushButton" name="zoomButton">
+      <widget class="ActionButton" name="zoomButton">
        <property name="sizePolicy">
         <sizepolicy hsizetype="Maximum" vsizetype="Fixed">
          <horstretch>0</horstretch>
@@ -62,10 +62,6 @@
        </property>
        <property name="text">
         <string>zoom/pan</string>
-       </property>
-       <property name="icon">
-        <iconset resource="../gerbil.qrc">
-         <normaloff>:/basic/zoom</normaloff>:/basic/zoom</iconset>
        </property>
        <property name="checkable">
         <bool>true</bool>
@@ -98,7 +94,7 @@
       </spacer>
      </item>
      <item>
-      <widget class="QPushButton" name="labelButton">
+      <widget class="ActionButton" name="labelButton">
        <property name="sizePolicy">
         <sizepolicy hsizetype="Maximum" vsizetype="Fixed">
          <horstretch>0</horstretch>
@@ -110,10 +106,6 @@
        </property>
        <property name="text">
         <string>label</string>
-       </property>
-       <property name="icon">
-        <iconset resource="../gerbil.qrc">
-         <normaloff>:/basic/pencil</normaloff>:/basic/pencil</iconset>
        </property>
        <property name="checkable">
         <bool>true</bool>
@@ -143,7 +135,7 @@
       </spacer>
      </item>
      <item>
-      <widget class="QPushButton" name="pickButton">
+      <widget class="ActionButton" name="pickButton">
        <property name="sizePolicy">
         <sizepolicy hsizetype="Maximum" vsizetype="Fixed">
          <horstretch>0</horstretch>
@@ -155,10 +147,6 @@
        </property>
        <property name="text">
         <string>pick</string>
-       </property>
-       <property name="icon">
-        <iconset resource="../gerbil.qrc">
-         <normaloff>:/basic/picker</normaloff>:/basic/picker</iconset>
        </property>
        <property name="checkable">
         <bool>true</bool>
@@ -175,9 +163,6 @@
       </property>
       <item>
        <widget class="QPushButton" name="smallCurButton">
-        <property name="enabled">
-         <bool>true</bool>
-        </property>
         <property name="text">
          <string/>
         </property>
@@ -195,9 +180,6 @@
       </item>
       <item>
        <widget class="QPushButton" name="mediumCurButton">
-        <property name="enabled">
-         <bool>true</bool>
-        </property>
         <property name="text">
          <string/>
         </property>
@@ -215,9 +197,6 @@
       </item>
       <item>
        <widget class="QPushButton" name="bigCurButton">
-        <property name="enabled">
-         <bool>true</bool>
-        </property>
         <property name="text">
          <string/>
         </property>
@@ -232,9 +211,6 @@
       </item>
       <item>
        <widget class="QPushButton" name="hugeCurButton">
-        <property name="enabled">
-         <bool>true</bool>
-        </property>
         <property name="text">
          <string/>
         </property>

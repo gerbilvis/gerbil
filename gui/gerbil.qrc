@@ -90,6 +90,11 @@
         <file alias="24x24/edit-clear.png">resources/icons/24x24/edit-clear.png</file>
         <file alias="32x32/edit-clear.png">resources/icons/32x32/edit-clear.png</file>
         <file alias="scalable/edit-clear.svg">resources/icons/scalable/edit-clear.svg</file>
+        <file alias="16x16/edit-undo.png">resources/icons/16x16/edit-undo.png</file>
+        <file alias="22x22/edit-undo.png">resources/icons/22x22/edit-undo.png</file>
+        <file alias="24x24/edit-undo.png">resources/icons/24x24/edit-undo.png</file>
+        <file alias="32x32/edit-undo.png">resources/icons/32x32/edit-undo.png</file>
+        <file alias="scalable/edit-undo.svg">resources/icons/scalable/edit-undo.svg</file>
         <file alias="16x16/folder-open.png">resources/icons/16x16/folder-open.png</file>
         <file alias="22x22/folder-open.png">resources/icons/22x22/folder-open.png</file>
         <file alias="24x24/folder-open.png">resources/icons/24x24/folder-open.png</file>
