@@ -44,6 +44,9 @@ void BandDock::initUi()
 	bv->offBottom = AutohideWidget::OutOffset;
 	view->addWidget(AutohideWidget::BOTTOM, gs);
 
+	connect(bv, SIGNAL(updateScrolling(bool)),
+	        view, SLOT(suppressScrolling(bool)));
+
 	connect(bv, SIGNAL(newSizeHint(QSize)),
 	        view, SLOT(updateSizeHint(QSize)));
 

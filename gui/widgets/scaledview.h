@@ -35,10 +35,12 @@ public:
 signals:
 	void newSizeHint(QSize hint);
 	void newContentRect(QRect rect);
+	void updateScrolling(bool);
 
 private slots:
 	inline void fitScene() { zoom = 1; resizeEvent(); }
 	void scaleOriginal();
+	void hideContextMenu();
 
 protected:
 	// handles both resize and drawing

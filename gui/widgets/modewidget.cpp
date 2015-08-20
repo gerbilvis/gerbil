@@ -87,25 +87,23 @@ void ModeWidget::updateCursorMode(BandView::CursorMode m)
 void ModeWidget::zoomMode()
 {
 	setCursorButtonsVisible(false);
-	adjustSize();
 }
 
 void ModeWidget::pickMode()
 {
 	setCursorButtonsVisible(false);
-	adjustSize();
 }
 
 void ModeWidget::labelMode()
 {
 	setCursorButtonsVisible(true);
-	adjustSize();
 }
 
 void ModeWidget::setCursorButtonsVisible(bool visible)
 {
 	labelModeWidget->setVisible(visible);
 	adjustSize();
+	reposition();
 }
 
 void ModeWidget::on_smallCurButton_released()

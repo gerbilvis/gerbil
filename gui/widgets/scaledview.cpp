@@ -340,6 +340,9 @@ QMenu* ScaledView::createContextMenu()
 	tmp->setIconVisibleInMenu(true);
 	connect(tmp, SIGNAL(triggered()), this, SLOT(scaleOriginal()));
 
+	connect(contextMenu, SIGNAL(aboutToHide()),
+	        this, SLOT(hideContextMenu()));
+
 	return contextMenu;
 }
 
@@ -347,6 +350,11 @@ void ScaledView::showContextMenu(QPoint screenpoint)
 {
 	if (!contextMenu) contextMenu = createContextMenu();
 	contextMenu->exec(screenpoint);
+}
+
+void ScaledView::hideContextMenu()
+{
+	emit updateScrolling(false);
 }
 
 void ScaledView::alignLeft()

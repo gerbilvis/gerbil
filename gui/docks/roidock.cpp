@@ -68,7 +68,8 @@ void RoiDock::initUi()
 	/* init signals */
 	connect(roiView, SIGNAL(newSizeHint(QSize)),
 			view, SLOT(updateSizeHint(QSize)));
-
+	connect(roiView, SIGNAL(updateScrolling(bool)),
+	        view, SLOT(suppressScrolling(bool)));
 	connect(roiView, SIGNAL(newSelection(const QRect&)),
 			this, SLOT(processNewSelection(const QRect&)));
 	connect(bandsSlider, SIGNAL(valueChanged(int)),
