@@ -84,19 +84,19 @@ void ModeWidget::updateCursorMode(BandView::CursorMode m)
 	rubberButton->setChecked(m == CM::Rubber);
 }
 
-void ModeWidget::on_zoomButton_released()
+void ModeWidget::zoomMode()
 {
 	setCursorButtonsVisible(false);
 	adjustSize();
 }
 
-void ModeWidget::on_pickButton_released()
+void ModeWidget::pickMode()
 {
 	setCursorButtonsVisible(false);
 	adjustSize();
 }
 
-void ModeWidget::on_labelButton_released()
+void ModeWidget::labelMode()
 {
 	setCursorButtonsVisible(true);
 	adjustSize();

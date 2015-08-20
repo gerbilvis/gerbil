@@ -6,6 +6,7 @@
 #include <QGraphicsItem>
 #include <QGraphicsSceneEvent>
 #include <QCursor>
+#include <QApplication>
 
 class BoundedRect : public QObject, public QGraphicsRectItem
 {
@@ -24,7 +25,7 @@ protected:
 	// implement such that we will get mouse grab
 	void mousePressEvent(QGraphicsSceneMouseEvent *ev);
 	void mouseReleaseEvent(QGraphicsSceneMouseEvent *)
-	{ lastcursor = QPointF(0.f, 0.f); unsetCursor(); }
+	{ lastcursor = QPointF(0.f, 0.f); QApplication::restoreOverrideCursor(); }
 	void mouseMoveEvent(QGraphicsSceneMouseEvent *ev);
 
 	QPointF lastcursor;

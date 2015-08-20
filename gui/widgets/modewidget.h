@@ -33,10 +33,11 @@ public slots:
 
 	ActionButton* getRubberButton() { return rubberButton; }
 
+	void zoomMode();
+	void pickMode();
+	void labelMode();
+
 private slots:
-	void on_zoomButton_released();
-	void on_pickButton_released();
-	void on_labelButton_released();
 	void on_smallCurButton_released();
 	void on_mediumCurButton_released();
 	void on_bigCurButton_released();

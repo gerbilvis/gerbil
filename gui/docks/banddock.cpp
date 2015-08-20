@@ -126,6 +126,8 @@ void BandDock::initActions()
 	this->addAction(zoomAction);
 	connect(zoomAction, SIGNAL(triggered()),
 	        bv, SLOT(updateInputMode()));
+	connect(zoomAction, SIGNAL(triggered()),
+	        mw, SLOT(zoomMode()));
 
 	labelAction = new QAction(this);
 	labelAction->setText("Label");
@@ -140,6 +142,8 @@ void BandDock::initActions()
 	this->addAction(labelAction);
 	connect(labelAction, SIGNAL(triggered()),
 	        bv, SLOT(updateInputMode()));
+	connect(labelAction, SIGNAL(triggered()),
+	        mw, SLOT(labelMode()));
 
 	pickAction = new QAction(this);
 	pickAction->setText("Pick");
@@ -154,6 +158,8 @@ void BandDock::initActions()
 	this->addAction(pickAction);
 	connect(pickAction, SIGNAL(triggered()),
 	        bv, SLOT(updateInputMode()));
+	connect(pickAction, SIGNAL(triggered()),
+	        mw, SLOT(pickMode()));
 }
 
 void BandDock::changeBand(representation::t repr, int bandId,

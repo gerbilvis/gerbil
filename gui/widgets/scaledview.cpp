@@ -289,7 +289,6 @@ void ScaledView::scaleOriginal()
 
 	zoom *= ratio;
 	scaler.scale(ratio, ratio);
-	scalerUpdate();
 
 	qreal x = 0.f;
 	qreal y = 0.f;
@@ -330,24 +329,19 @@ QMenu* ScaledView::createContextMenu()
 	tmp->setIcon(QIcon::fromTheme("zoom-best-fit"));
 	tmp->setIconVisibleInMenu(true);
 	connect(tmp, SIGNAL(triggered()), this, SLOT(fitScene()));
-	tmp->setData(-1);
 
 	tmp = contextMenu->addAction("Scale 100%");
 	tmp->setIcon(QIcon::fromTheme("zoom-original"));
 	tmp->setIconVisibleInMenu(true);
 	connect(tmp, SIGNAL(triggered()), this, SLOT(scaleOriginal()));
-	tmp->setData(-1);
 
 	return contextMenu;
 }
 
 void ScaledView::showContextMenu(QPoint screenpoint)
 {
-	if(!contextMenu) contextMenu = createContextMenu();
-
-	QAction* a = contextMenu->exec(screenpoint);
-	if(!a)
-		return;
+	if (!contextMenu) contextMenu = createContextMenu();
+	contextMenu->exec(screenpoint);
 }
 
 void ScaledView::alignLeft()

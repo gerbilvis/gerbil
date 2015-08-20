@@ -78,12 +78,16 @@ void RoiDock::initUi()
 
 	applyAction = new QAction(this);
 	applyAction->setText("Apply");
+	applyAction->setIcon(QIcon::fromTheme("dialog-apply"));
+	applyAction->setIconVisibleInMenu(true);
 	uibtn->applyButton->setAction(applyAction);
 	roiView->setApplyAction(applyAction);
 	connect(applyAction, SIGNAL(triggered()), this, SLOT(applyRoi()));
 
 	resetAction = new QAction(this);
 	resetAction->setText("Reset");
+	resetAction->setIcon(QIcon::fromTheme("undo"));
+	resetAction->setIconVisibleInMenu(true);
 	uibtn->resetButton->setAction(resetAction);
 	roiView->setResetAction(resetAction);
 	connect(resetAction, SIGNAL(triggered()), this, SLOT(resetRoi()));

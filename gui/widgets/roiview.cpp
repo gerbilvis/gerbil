@@ -135,9 +135,11 @@ void BoundedRect::mouseMoveEvent(QGraphicsSceneMouseEvent *ev)
 
 void BoundedRect::mousePressEvent(QGraphicsSceneMouseEvent *ev)
 {
-	if (ev->buttons() & Qt::RightButton) {
+	if (ev->button() == Qt::RightButton) {
+		//ignore right button
 		QGraphicsRectItem::mousePressEvent(ev);
+	} else if (ev->button() == Qt::LeftButton) {
+		lastcursor = QPointF(0.f, 0.f);
+		QApplication::setOverrideCursor(QCursor(Qt::SizeAllCursor));
 	}
-	lastcursor = QPointF(0.f, 0.f);
-	setCursor(Qt::SizeAllCursor);
 }
