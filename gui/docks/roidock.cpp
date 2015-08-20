@@ -87,7 +87,7 @@ void RoiDock::initUi()
 
 	resetAction = new QAction(this);
 	resetAction->setText("Reset");
-	resetAction->setIcon(QIcon::fromTheme("undo"));
+	resetAction->setIcon(QIcon::fromTheme("edit-undo"));
 	resetAction->setIconVisibleInMenu(true);
 	uibtn->resetButton->setAction(resetAction);
 	roiView->setResetAction(resetAction);
