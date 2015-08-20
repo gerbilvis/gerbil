@@ -163,9 +163,6 @@
       </property>
       <item>
        <widget class="QPushButton" name="smallCurButton">
-        <property name="enabled">
-         <bool>true</bool>
-        </property>
         <property name="text">
          <string/>
         </property>
@@ -183,9 +180,6 @@
       </item>
       <item>
        <widget class="QPushButton" name="mediumCurButton">
-        <property name="enabled">
-         <bool>true</bool>
-        </property>
         <property name="text">
          <string/>
         </property>
@@ -203,9 +197,6 @@
       </item>
       <item>
        <widget class="QPushButton" name="bigCurButton">
-        <property name="enabled">
-         <bool>true</bool>
-        </property>
         <property name="text">
          <string/>
         </property>
@@ -220,9 +211,6 @@
       </item>
       <item>
        <widget class="QPushButton" name="hugeCurButton">
-        <property name="enabled">
-         <bool>true</bool>
-        </property>
         <property name="text">
          <string/>
         </property>
