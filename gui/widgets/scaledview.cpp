@@ -284,12 +284,15 @@ void ScaledView::wheelEvent(QGraphicsSceneWheelEvent *event)
 
 void ScaledView::scaleOriginal()
 {
+	qreal currzoom = zoom;
+	zoom = 1;
 	resizeEvent();
+
 	QRectF rect = scaler.mapRect(pixmap.rect());
 	qreal ratio = pixmap.width() / rect.width();
 
-	zoom *= ratio;
 	scaler.scale(ratio, ratio);
+	zoom = currzoom * ratio;
 
 	qreal x = 0.f;
 	qreal y = 0.f;
@@ -297,22 +300,23 @@ void ScaledView::scaleOriginal()
 	rect = scaler.mapRect(pixmap.rect());
 	QRectF sceneRect = this->sceneRect();
 
-	if (rect.width() < sceneRect.width()) {
-		QPointF space((sceneRect.width() - rect.width())/2.f, 0.f);
+	if (rect.width() < sceneRect.width() - offLeft - offRight) {
+		QPointF space((sceneRect.width() - offLeft - offRight - rect.width())/2.f, 0.f);
 		space = scaler.inverted().map(space);
 		QPointF pos(rect.x(), 0.f);
 		pos = scaler.inverted().map(pos);
 
-		x = space.x() - pos.x();
+		x = space.x() - pos.x() + offLeft;
 	}
 
-	if (rect.height() < sceneRect.height()) {
-		QPointF space(0.f, (sceneRect.height() - rect.height())/2.f);
+	if (rect.height() < sceneRect.height() - offTop - offBottom) {
+		QPointF space(0.f,
+		              (sceneRect.height() - offTop - offBottom - rect.height())/2.f);
 		space = scaler.inverted().map(space);
 		QPointF pos(0.f, rect.y());
 		pos = scaler.inverted().map(pos);
 
-		y = space.y() - pos.y();
+		y = space.y() - pos.y() + offTop;
 	}
 
 	scaler.translate(x,y);
