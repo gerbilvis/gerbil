@@ -53,9 +53,6 @@ protected:
 private:
 	void initUi();
 
-	QAction* applyAction;
-	QAction* resetAction;
-
 	// The old ROI before apply (used for reset).
 	QRect oldRoi;
 	// The current ROI selected, but possibly not yet applied.

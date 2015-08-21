@@ -87,10 +87,6 @@ protected:
 	representation::t curRepr;
 	int curBandId;
 
-	QAction* zoomAction = nullptr;
-	QAction* labelAction = nullptr;
-	QAction* pickAction = nullptr;
-
 	// our band view
 	BandView *bv;
 	// our widget for graph segmentation controls

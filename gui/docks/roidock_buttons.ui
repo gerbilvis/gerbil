@@ -80,6 +80,22 @@
     </spacer>
    </item>
   </layout>
+  <action name="actionApply">
+   <property name="icon">
+    <iconset theme="dialog-apply"/>
+   </property>
+   <property name="text">
+    <string>apply</string>
+   </property>
+  </action>
+  <action name="actionReset">
+   <property name="icon">
+    <iconset theme="edit-undo"/>
+   </property>
+   <property name="text">
+    <string>reset</string>
+   </property>
+  </action>
  </widget>
  <customwidgets>
   <customwidget>
