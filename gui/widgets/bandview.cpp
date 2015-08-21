@@ -484,9 +484,7 @@ void BandView::leaveEvent()
 	// invalidate cursor
 	cursor = lastcursor = QPoint(-1, -1);
 
-	// invalidate previous overlay
-	emit pixelOverlay(-1, -1);
-	update();
+	ScaledView::leaveEvent();
 }
 
 void BandView::keyPressEvent(QKeyEvent *event)

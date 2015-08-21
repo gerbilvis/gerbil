@@ -237,8 +237,17 @@ void ScaledView::cursorAction(QGraphicsSceneMouseEvent *ev, bool click)
 
 	if (ev->buttons() & Qt::RightButton && inputMode != InputMode::Seed) {
 		showContextMenu(cursor);
-	} else if (ev->buttons() == Qt::NoButton)
+	} else if (ev->buttons() == Qt::NoButton) {
+		// overlay in spectral views but not during pixel labeling (reduce lag)
 		emit pixelOverlay(cursor.y(), cursor.x());
+	}
+}
+
+void ScaledView::leaveEvent()
+{
+	// invalidate previous overlay
+	emit pixelOverlay(-1,-1);
+	update();
 }
 
 void ScaledView::wheelEvent(QGraphicsSceneWheelEvent *event)

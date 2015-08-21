@@ -42,6 +42,9 @@ private slots:
 	inline void fitScene() { zoom = 1; resizeEvent(); }
 	void scaleOriginal();
 
+public slots:
+	virtual void leaveEvent();
+
 protected:
 	// handles both resize and drawing
 	void drawBackground(QPainter *painter, const QRectF &rect);

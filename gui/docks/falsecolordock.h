@@ -47,6 +47,8 @@ protected slots:
 	void screenshot();
 protected:
 	void initUi();
+	// event filter to intercept leave() on our view
+	bool eventFilter(QObject *obj, QEvent *event);
 
 	// the coloringType currently selected in the comboBox
 	FalseColoring::Type selectedColoring();
