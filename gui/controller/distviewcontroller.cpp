@@ -29,14 +29,12 @@ DistViewController::DistViewController(
 	 */
 	for (auto r : representation::all()) {
 		payloadMap.insert(r, new Payload(r));
-		payloadMap[r]->model.setTaskQueue(taskQueue);
+		auto p = payloadMap[r];
+		p->model.setTaskQueue(taskQueue);
 		// TODO: the other way round. ctx+sets come from model
-		payloadMap[r]->model.setContext(payloadMap[r]->gui.getContext());
-		payloadMap[r]->model.setBinSets(payloadMap[r]->gui.getBinSets());
-	}
-
-	for (auto r : representation::all()) {
-		distviewNeedsBinning[r] = false;
+		p->model.setContext(payloadMap[r]->gui.getContext());
+		p->model.setBinSets(payloadMap[r]->gui.getBinSets());
+		p->binningNeeded = false;
 	}
 }
 
@@ -229,8 +227,7 @@ void DistViewController::processImageUpdate(representation::t repr,
 	if (duplicate) {
 		GGDBGM(repr  << " is re-spawn" << endl);
 	}
-	if (distviewNeedsBinning[repr]) {
-		distviewNeedsBinning[repr] = false;
+	if (payloadMap[repr]->binningNeeded) {
 		GGDBGM("following distview " << repr <<
 		       " request for new binning" << endl);
 		updateBinning(repr, image);
@@ -242,7 +239,7 @@ void DistViewController::processImageUpdate(representation::t repr,
 void DistViewController::processDistviewNeedsBinning(representation::t repr)
 {
 	GGDBGM(repr << " needs binning" << endl);
-	distviewNeedsBinning[repr] = true;
+	payloadMap[repr]->binningNeeded = true;
 }
 
 void DistViewController::processPreROISpawn(const cv::Rect &oldroi,
@@ -319,6 +316,7 @@ void DistViewController::processDistviewUnsubscribeRepresentation(
 void DistViewController::updateBinning(representation::t repr,
                                        SharedMultiImgPtr image)
 {
+	payloadMap[repr]->binningNeeded = false;
 	int bins = payloadMap[repr]->gui.getBinCount();
 	payloadMap[repr]->model.setImage(image, curROI, bins);
 }

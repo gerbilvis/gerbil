@@ -19,6 +19,7 @@ class DistViewController : public QObject
 
 		DistViewModel model;
 		DistViewGUI gui;
+		bool binningNeeded;
 	};
 
 public:
@@ -152,8 +153,6 @@ protected:
 
 	// the current ROI
 	cv::Rect curROI;
-
-	bool distviewNeedsBinning[representation::REPSIZE];
 
 	// Subscription state of distviews.
 	// There is no other means for the DistViewController to determine
