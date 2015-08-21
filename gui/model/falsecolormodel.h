@@ -36,6 +36,7 @@ public:
 	~FalseColorModel();
 
 	void setMultiImg(representation::t repr, SharedMultiImgPtr img);
+
 public slots:
 	void processImageUpdate(representation::t type,
 	                        SharedMultiImgPtr img,

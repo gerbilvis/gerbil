@@ -274,7 +274,7 @@ void DistViewController::processPreROISpawn(const cv::Rect &oldroi,
 	if (profitable) {
 		GGDBGM("INCREMENTAL distview update" << endl);
 		foreach (representation::t repr, representation::all()) {
-			if (isSubscribed(repr, distviewSubs->repr)) {
+			if (distviewSubs->repr.subscribed(repr)) {
 				GGDBGM("   BEGIN " << repr <<" distview update" << endl);
 				(*roiSets)[repr] = subImage(repr, sub, newroi);
 				GGDBGM("   END " << repr <<" distview update" << endl);
@@ -284,7 +284,7 @@ void DistViewController::processPreROISpawn(const cv::Rect &oldroi,
 		GGDBGM("FULL distview update (ignored)" << endl);
 		// nothing to do, except let them know that ROI change is underway
 		foreach (representation::t repr, representation::all()) {
-			if (isSubscribed(repr, distviewSubs->repr)) {
+			if (distviewSubs->repr.subscribed(repr)) {
 				payloadMap[repr]->model.initiateROIChange();
 			}
 		}
@@ -307,7 +307,7 @@ void DistViewController::processPostROISpawn(const cv::Rect &oldroi,
 		GGDBGM("FULL distview update" << endl);
 	}
 	foreach (representation::t repr, representation::all()) {
-		if (isSubscribed(repr, distviewSubs->repr)) {
+		if (distviewSubs->repr.subscribed(repr)) {
 			if (profitable && roiSets) {
 				addImage(repr, (*roiSets)[repr], add, newroi);
 			} else {
@@ -323,14 +323,14 @@ void DistViewController::processDistviewSubscribeRepresentation(
         QObject *subscriber,
         representation::t repr)
 {
-	subscribe(subscriber, repr, distviewSubs->repr);
+	distviewSubs->repr.subscribe(subscriber, repr);
 }
 
 void DistViewController::processDistviewUnsubscribeRepresentation(
         QObject *subscriber,
         representation::t repr)
 {
-	unsubscribe(subscriber, repr, distviewSubs->repr);
+	distviewSubs->repr.unsubscribe(subscriber, repr);
 }
 
 void DistViewController::updateBinning(representation::t repr,

@@ -272,11 +272,6 @@ protected:
 	 */
 	void updateROI(bool reuse, cv::Rect newRoi = cv::Rect(), int bands = -1);
 
-	/** Returns true if there is a subscriber for the given representation,
-	 * otherwise returns false.
-	 */
-	bool haveSubscriber(representation::t type);
-
 	/** Reset internal ROI state tracking: ROIs for all representation types
 	 * are set to non-spawned. That is a ROI spawn for each subscribed
 	 * representation is necessary for the GUI to become up-to-date.*/
