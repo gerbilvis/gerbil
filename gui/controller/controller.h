@@ -1,6 +1,7 @@
 #ifndef CONTROLLER_H
 #define CONTROLLER_H
 
+#include "subscriptions.h"
 #include <model/representation.h>
 #include <shared_data.h>
 #include <background_task/background_task.h>
@@ -37,8 +38,6 @@ namespace seg_graphs
 {
 class GraphSegConfig;
 }
-
-class Subscriptions;
 
 /** Controller class. */
 class Controller : public QObject
@@ -330,8 +329,8 @@ protected:
 	// The current ROI.
 	cv::Rect roi;
 
-	// see subscriptions.h
-	Subscriptions *subs;
+	// subscriptions to data
+	Subscriptions subscriptions;
 
 	// Track spawn state of ROIs for each representation.
 	// true -> ROI for this representation has been spawned. This makes

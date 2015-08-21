@@ -30,8 +30,7 @@ Controller::Controller(const QString &filename,
       cm(nullptr),
 #endif
       dvc(nullptr),
-      queuethread(nullptr),
-      subs(new Subscriptions)
+      queuethread(nullptr)
 {
 	// reset internal ROI state tracking
 	resetROISpawned();
@@ -155,11 +154,9 @@ Controller::Controller(const QString &filename,
 
 Controller::~Controller()
 {
-
 	// stop background task queue thread
 	stopQueue();
 	window->deleteLater();
-	delete subs;
 }
 
 
@@ -231,7 +228,7 @@ void Controller::debugSubscriptions()
 	//std::cerr << "** TYPE      subscribed flag" << std::endl;
 	for (auto r : representation::all()) {
 		std::cerr << "** " << std::left << std::setw(7) << r;
-		if (subs->images.subscribed(r)) {
+		if (subscriptions.images.subscribed(r)) {
 			std::cerr << "    subscribed";
 		} else {
 			std::cerr <<  "not subscribed";
@@ -281,7 +278,7 @@ void Controller::updateROI(bool reuse, cv::Rect newRoi, int bands)
 	 * would like this knowledge to be part of image model's logic.
 	 */
 	for (auto r : representation::all()) {
-		bool needed = subs->images.subscribed(r);
+		bool needed = subscriptions.images.subscribed(r);
 
 		if (needed) {
 			GGDBGM("     subscribed " << repr << endl);
@@ -310,12 +307,11 @@ void Controller::subscribeImageBand(QObject *subscriber,
                                     representation::t repr,
                                     int bandId)
 {
-	assert(subs);
 	// also subscribe to the relevant representation
 	subscribeRepresentation(subscriber, repr);
 	// only update if the subscription is new
 	// TODO: what about other subscribers on bandId?
-	bool newly = subs->bands.subscribe(subscriber, BandId(repr, bandId));
+	bool newly = subscriptions.bands.subscribe(subscriber, BandId(repr, bandId));
 	if (newly)
 		im->computeBand(repr, bandId);
 }
@@ -324,8 +320,7 @@ void Controller::unsubscribeImageBand(QObject *subscriber,
                                       representation::t repr,
                                       int bandId)
 {
-	assert(subs);
-	subs->bands.unsubscribe(subscriber, BandId(repr, bandId));
+	subscriptions.bands.unsubscribe(subscriber, BandId(repr, bandId));
 	unsubscribeRepresentation(subscriber, repr);
 }
 
@@ -333,10 +328,9 @@ void Controller::subscribeFalseColor(QObject *subscriber,
                                      FalseColoring::Type coloring)
 {
 	//GGDBGM(coloring << endl);
-	assert(subs);
 	// also subscribe to the relevant representation
 	subscribeRepresentation(subscriber, FalseColoring::basis(coloring));
-	if (subs->colorings.subscribe(subscriber, coloring)) {
+	if (subscriptions.colorings.subscribe(subscriber, coloring)) {
 		//GGDBGM("requesting from fm " << coloring << endl);
 		fm->requestColoring(coloring);
 	}
@@ -346,9 +340,8 @@ void Controller::unsubscribeFalseColor(QObject *subscriber,
                                        FalseColoring::Type coloring)
 {
 	//GGDBGM(coloring << endl);
-	assert(subs);
-	subs->colorings.unsubscribe(subscriber, coloring);
-	if (!subs->colorings.subscribed(coloring)) {
+	subscriptions.colorings.unsubscribe(subscriber, coloring);
+	if (!subscriptions.colorings.subscribed(coloring)) {
 		// no more subscriptions for coloring,
 		// cancel computation if any.
 		fm->cancelComputation(coloring);
@@ -358,8 +351,7 @@ void Controller::unsubscribeFalseColor(QObject *subscriber,
 
 void Controller::recalcFalseColor(FalseColoring::Type coloringType)
 {
-	assert(subs);
-	if (subs->colorings.subscribed((coloringType))) {
+	if (subscriptions.colorings.subscribed((coloringType))) {
 		fm->requestColoring(coloringType, /* recalc */ true);
 	}
 }
@@ -367,8 +359,7 @@ void Controller::recalcFalseColor(FalseColoring::Type coloringType)
 void Controller::subscribeRepresentation(QObject *subscriber,
                                          representation::t repr)
 {
-	assert(subs);
-	if (subs->images.subscribe(subscriber, repr)) {
+	if (subscriptions.images.subscribe(subscriber, repr)) {
 		GGDBGM("new subscription, ");
 		if (roiSpawned[repr]) {
 			GGDBGP("RE-spawning ROI "<< roi << " for " << repr << endl);
@@ -384,9 +375,8 @@ void Controller::subscribeRepresentation(QObject *subscriber,
 void Controller::unsubscribeRepresentation(QObject *subscriber,
                                            representation::t repr)
 {
-	assert(subs);
 	GGDBGM("unsubscribe " << repr << endl);
-	subs->images.unsubscribe(subscriber, repr);
+	subscriptions.images.unsubscribe(subscriber, repr);
 }
 
 void Controller::startQueue()
@@ -429,10 +419,9 @@ void Controller::processImageUpdate(representation::t repr,
 
 	Subscription<BandId>::KeySet bandUpdates;
 
-	assert(subs);
-	for (auto sub : subs->bands) {
-		if (repr == sub.id.repr)	 {
-			bandUpdates.insert(sub.id);
+	for (auto s : subscriptions.bands) {
+		if (repr == s.id.repr)	 {
+			bandUpdates.insert(s.id);
 		}
 	}
 	for (auto ib : bandUpdates) {
@@ -445,8 +434,8 @@ void Controller::processImageUpdate(representation::t repr,
 	typedef std::unordered_set<FalseColoring::Type, std::hash<int> >
 	        FalseColoringSet;
 	FalseColoringSet fcUpdates;
-	for (auto sub : subs->colorings) {
-		FalseColoring::Type coloring = sub.id;
+	for (auto s : subscriptions.colorings) {
+		FalseColoring::Type coloring = s.id;
 		if (FalseColoring::isBasedOn(coloring, repr)) {
 			//GGDBGM("found subscriber for " << coloring <<
 			//       " based on " << repr << endl);
