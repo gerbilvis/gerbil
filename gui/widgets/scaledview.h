@@ -36,6 +36,7 @@ signals:
 	void newSizeHint(QSize hint);
 	void newContentRect(QRect rect);
 	void updateScrolling(bool scrolling = false);
+	void pixelOverlay(int y, int x);
 
 private slots:
 	inline void fitScene() { zoom = 1; resizeEvent(); }

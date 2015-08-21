@@ -83,7 +83,6 @@ public slots:
 	void updatePixel(int x, int y);
 
 signals:
-	void pixelOverlay(int y, int x);
 	void killHover();
 
 	// change of input mode (e.g. seed mode)
