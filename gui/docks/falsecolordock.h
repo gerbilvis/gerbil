@@ -20,8 +20,6 @@ class FalseColorDock : public QDockWidget {
 	Q_OBJECT
 public:
 	explicit FalseColorDock(QWidget *parent = 0);
-
-	ScaledView *scaledView() { return scene; }
 	
 signals:
 	/** Request re-calculation of non-determinitstic representation (e.g. SOM). */
@@ -29,6 +27,7 @@ signals:
 
 	void subscribeFalseColoring(QObject* subscriber, FalseColoring::Type coloringType);
 	void unsubscribeFalseColoring(QObject* subscriber, FalseColoring::Type coloringType);
+	void pixelOverlay(int, int);
 
 public slots:
 	void processVisibilityChanged(bool visible);

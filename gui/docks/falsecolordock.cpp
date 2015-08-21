@@ -182,6 +182,9 @@ void FalseColorDock::initUi()
 	connect(scene, SIGNAL(updateScrolling(bool)),
 	        view, SLOT(suppressScrolling(bool)));
 
+	connect(scene, SIGNAL(pixelOverlay(int,int)),
+	        this, SIGNAL(pixelOverlay(int,int)));
+
 	connect(uisel->sourceBox, SIGNAL(currentIndexChanged(int)),
 			this, SLOT(processSelectedColoring()));
 
