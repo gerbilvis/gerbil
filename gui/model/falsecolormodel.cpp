@@ -36,11 +36,11 @@ FalseColorModel::FalseColorModel(QObject *parent )
 		qRegisterMetaType< std::map<std::string, boost::any> >(
 					"std::map<std::string, boost::any>");
 
-	foreach(FalseColoring::Type c, FalseColoring::all()) {
+	for (auto c : FalseColoring::all()) {
 		pendingRequests[c] = false;
 	}
-	foreach(representation::t type, representation::all()) {
-		representationInit[type] = false;
+	for (auto r : representation::all()) {
+		representationInit[r] = false;
 	}
 
 	resetCache();
@@ -98,7 +98,7 @@ void FalseColorModel::processImageUpdate(representation::t type,
 		}
 	}
 
-	foreach(FalseColoring::Type c, FalseColoring::all()) {
+	for (auto c : FalseColoring::all()) {
 		if (FalseColoring::isBasedOn(c, type) && pendingRequests[c]) {
 			GGDBGM("processing pending request for " << c << endl);
 			pendingRequests[c] = false;
@@ -114,10 +114,10 @@ void FalseColorModel::requestColoring(FalseColoring::Type coloringType, bool rec
 	GGDBG_CALL();
 
 	// check if we are already initialized and should deal with that request
-	foreach(representation::t repr, representation::all()) {
-		if (FalseColoring::isBasedOn(coloringType, repr) && !representationInit[repr]) {
+	for (auto r : representation::all()) {
+		if (FalseColoring::isBasedOn(coloringType, r) && !representationInit[r]) {
 			GGDBGM("request for " << coloringType <<
-				   ": representation " << repr << " not initialized, deferring request"<< endl);
+				   ": representation " << r << " not initialized, deferring request"<< endl);
 			pendingRequests[coloringType] = true;
 			return;
 		}
@@ -182,8 +182,8 @@ void FalseColorModel::abandonPayload(FalseColoring::Type coloringType) {
 
 void FalseColorModel::resetCache()
 {
-	foreach (FalseColoring::Type coloringType, FalseColoring::all()) {
-		cache[coloringType].invalidate();
+	for (auto c : FalseColoring::all()) {
+		cache[c].invalidate();
 	}
 }
 

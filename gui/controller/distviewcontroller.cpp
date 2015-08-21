@@ -39,16 +39,16 @@ DistViewController::DistViewController(
 {
 	/* Create all viewers. Only one viewer per representation type is supported.
 	 */
-	foreach (representation::t repr, representation::all()) {
-		payloadMap.insert(repr, new Payload(repr));
-		payloadMap[repr]->model.setTaskQueue(taskQueue);
+	for (auto r : representation::all()) {
+		payloadMap.insert(r, new Payload(r));
+		payloadMap[r]->model.setTaskQueue(taskQueue);
 		// TODO: the other way round. ctx+sets come from model
-		payloadMap[repr]->model.setContext(payloadMap[repr]->gui.getContext());
-		payloadMap[repr]->model.setBinSets(payloadMap[repr]->gui.getBinSets());
+		payloadMap[r]->model.setContext(payloadMap[r]->gui.getContext());
+		payloadMap[r]->model.setBinSets(payloadMap[r]->gui.getBinSets());
 	}
 
-	foreach (representation::t i, representation::all()) {
-		distviewNeedsBinning[i] = false;
+	for (auto r : representation::all()) {
+		distviewNeedsBinning[r] = false;
 	}
 }
 
@@ -74,14 +74,14 @@ void DistViewController::init()
 			activeView = representation::IMG;
 		}
 		payloadMap[activeView]->gui.setActive();
-		foreach(representation::t repr, representation::all()) {
-			if (payloadMap[repr])  {
+		for (auto r : representation::all()) {
+			if (payloadMap[r])  {
 				QString key = QString("viewports/") +
-				              representation::str(repr) + "folded";
+				              representation::str(r) + "folded";
 				// read folded setting, default unfolded
 				bool folded = settings.value(key, false).value<bool>();
-				viewFolded[repr] = folded;
-				Payload *p = payloadMap[repr];
+				viewFolded[r] = folded;
+				Payload *p = payloadMap[r];
 				p->gui.fold(folded);
 			}
 		}
@@ -112,12 +112,12 @@ void DistViewController::init()
 	        SLOT(processImageUpdate(representation::t,SharedMultiImgPtr,bool)));
 
 
-	foreach (Payload *p, payloadMap) {
+	for (auto p : payloadMap) {
 		// fill GUI with distribution view
 		ctrl->mainWindow()->addDistView(p->gui.getFrame());
 	}
 
-	foreach (Payload *p, payloadMap) {
+	for (auto p : payloadMap) {
 		DistViewModel *m = &p->model;
 
 		connect(m, SIGNAL(newBinning(representation::t)),
@@ -179,7 +179,7 @@ void DistViewController::init()
 
 void DistViewController::initSubscriptions()
 {
-	foreach (Payload *p, payloadMap) {
+	for (auto p : payloadMap) {
 		DistViewGUI *g = &p->gui;
 		g->initSubscriptions();
 	}
@@ -219,7 +219,7 @@ void DistViewController::pixelOverlay(int y, int x)
 		return;
 	}
 
-	foreach (Payload *p, payloadMap) {
+	for (auto p : payloadMap) {
 		// not visible -> not subscribed -> no data
 		if (p->gui.isVisible()) {
 			QPolygonF overlay = p->model.getPixelOverlay(y, x);
@@ -273,19 +273,19 @@ void DistViewController::processPreROISpawn(const cv::Rect &oldroi,
 	            new QMap<representation::t, sets_ptr>() );
 	if (profitable) {
 		GGDBGM("INCREMENTAL distview update" << endl);
-		foreach (representation::t repr, representation::all()) {
-			if (distviewSubs->repr.subscribed(repr)) {
-				GGDBGM("   BEGIN " << repr <<" distview update" << endl);
-				(*roiSets)[repr] = subImage(repr, sub, newroi);
-				GGDBGM("   END " << repr <<" distview update" << endl);
+		for (auto r : representation::all()) {
+			if (distviewSubs->repr.subscribed(r)) {
+				GGDBGM("   BEGIN " << r <<" distview update" << endl);
+				(*roiSets)[r] = subImage(r, sub, newroi);
+				GGDBGM("   END " << r <<" distview update" << endl);
 			}
 		}
 	} else {
 		GGDBGM("FULL distview update (ignored)" << endl);
 		// nothing to do, except let them know that ROI change is underway
-		foreach (representation::t repr, representation::all()) {
-			if (distviewSubs->repr.subscribed(repr)) {
-				payloadMap[repr]->model.initiateROIChange();
+		for (auto r : representation::all()) {
+			if (distviewSubs->repr.subscribed(r)) {
+				payloadMap[r]->model.initiateROIChange();
 			}
 		}
 	}
@@ -306,12 +306,12 @@ void DistViewController::processPostROISpawn(const cv::Rect &oldroi,
 	} else {
 		GGDBGM("FULL distview update" << endl);
 	}
-	foreach (representation::t repr, representation::all()) {
-		if (distviewSubs->repr.subscribed(repr)) {
+	for (auto r : representation::all()) {
+		if (distviewSubs->repr.subscribed(r)) {
 			if (profitable && roiSets) {
-				addImage(repr, (*roiSets)[repr], add, newroi);
+				addImage(r, (*roiSets)[r], add, newroi);
 			} else {
-				updateBinning(repr, im->getImage(repr));
+				updateBinning(r, im->getImage(r));
 			}
 		}
 	}
@@ -355,7 +355,7 @@ void DistViewController::updateLabels(const cv::Mat1s& labels,
                                       bool colorsChanged)
 {
 	if (!colors.empty()) {
-		foreach (Payload *p, payloadMap) {
+		for (auto p : payloadMap) {
 			p->model.setLabelColors(colors);
 			p->gui.updateLabelColors(colors);
 		}
@@ -365,7 +365,7 @@ void DistViewController::updateLabels(const cv::Mat1s& labels,
 	if (labels.empty() && (!colorsChanged))
 		return;
 
-	foreach (Payload *p, payloadMap) {
+	for (auto p : payloadMap) {
 		p->model.updateLabels(labels, colors);
 	}
 }
@@ -378,7 +378,7 @@ void DistViewController::updateLabelsPartially(const cv::Mat1s &labels,
 	 */
 	bool profitable = (size_t(2 * cv::countNonZero(mask)) < mask.total());
 	if (profitable) {
-		foreach (Payload *p, payloadMap) {
+		for (auto p : payloadMap) {
 			p->model.updateLabelsPartially(labels, mask);
 		}
 	} else {
@@ -457,7 +457,7 @@ void DistViewController::toggleIgnoreLabels(bool toggle)
 {
 	// TODO: cancel previous toggleignorelabel tasks here!
 
-	foreach (Payload *p, payloadMap) {
+	for (auto p : payloadMap) {
 		p->model.toggleLabels(toggle);
 	}
 
@@ -484,10 +484,10 @@ void DistViewController::processLastWindowClosed()
 {
 	// save folding state of views
 	QSettings settings;
-	foreach (representation::t repr, representation::all()) {
-		bool folded = viewFolded.value(repr, true);
+	for (auto r : representation::all()) {
+		bool folded = viewFolded.value(r, true);
 		QString key = QString("viewports/") +
-		              representation::str(repr) + "folded";
+		              representation::str(r) + "folded";
 		GGDBGM(key.toStdString() << " " << folded << endl);
 		settings.setValue(key, QVariant(folded));
 	}

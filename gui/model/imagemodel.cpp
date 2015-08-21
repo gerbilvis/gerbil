@@ -36,11 +36,11 @@ ImageModel::ImageModel(BackgroundTaskQueue &queue, bool lm, QObject *parent)
 	  image_lim(new SharedMultiImgBase(new multi_img())),
 	  nBands(0), nBandsOld(0)
 {
-	foreach (representation::t i, representation::all()) {
-		map.insert(i, new payload(i));
+	for (auto r : representation::all()) {
+		map.insert(r, new payload(r));
 	}
 
-	foreach (payload *p, map) {
+	for (auto p : map) {
 		connect(p, SIGNAL(newImageData(representation::t,SharedMultiImgPtr)),
 				this,
 				SLOT(processNewImageData(representation::t,SharedMultiImgPtr)));
@@ -53,7 +53,7 @@ ImageModel::ImageModel(BackgroundTaskQueue &queue, bool lm, QObject *parent)
 
 ImageModel::~ImageModel()
 {
-	foreach (payload *p, map)
+	for (auto p : map)
 		delete p;
 }
 
@@ -117,7 +117,7 @@ void ImageModel::invalidateROI()
 {
 	// set roi to empty rect
 	roi = cv::Rect();
-	foreach (payload *p, map) {
+	for (auto p : map) {
 		if (!p->image)
 			continue;
 
@@ -185,7 +185,7 @@ void ImageModel::spawn(representation::t type, const cv::Rect &newROI, int bands
 		BackgroundTaskPtr taskRescale(new RescaleTbb(
 			scoped_image, image, bands));
 		queue.push(taskRescale);
-	} 
+	}
 
    // NORM / GRAD
    if (type == representation::NORM) {
@@ -235,8 +235,8 @@ void ImageModel::spawn(representation::t type, const cv::Rect &newROI, int bands
 				target, range, mode, isGRAD, min, max, true));
 			queue.push(taskNormRange);
 		}
-	} 
-	
+	}
+
 	// IMGPCA / GRADPCA
     if (type == representation::IMGPCA && imagepca.get()) {
 		BackgroundTaskPtr taskPca(new PcaTbb(

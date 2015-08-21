@@ -16,8 +16,8 @@ representation::t representation::fromStr(const QString &s)
 {
 	// lazy init
 	if (strToRepresentation.empty()) {
-		foreach(representation::t repr, all()) {
-			strToRepresentation[str(repr)] = repr;
+		for (auto r : all()) {
+			strToRepresentation[str(r)] = r;
 		}
 		representation::t invalid = representation::INVALID;
 		strToRepresentation[str(invalid)] = invalid;

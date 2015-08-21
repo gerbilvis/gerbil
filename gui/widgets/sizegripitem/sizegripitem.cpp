@@ -38,8 +38,7 @@ SizeGripItem::HandleItem::HandleItem(int positionFlags, SizeGripItem* parent)
 	setFlag(ItemSendsGeometryChanges);
 	setFlag(ItemIgnoresTransformations);
 
-	switch (positionFlags_)
-	{
+	switch (positionFlags_) {
 	case TopLeft:
 	case BottomRight:
 		setCursor(Qt::SizeFDiagCursor);
@@ -69,16 +68,13 @@ QVariant SizeGripItem::HandleItem::itemChange(GraphicsItemChange change,
 {
 	QVariant retVal = value;
 
-	if (change == ItemPositionChange)
-	{
+	if (change == ItemPositionChange) {
 		retVal = restrictPosition(value.toPointF());
 	}
-	else if (change == ItemPositionHasChanged)
-	{
+	else if (change == ItemPositionHasChanged) {
 		QPointF pos = value.toPointF();
 
-		switch (positionFlags_)
-		{
+		switch (positionFlags_) {
 		case TopLeft:
 			parent_->setTopLeft(pos);
 			break;
@@ -191,8 +187,7 @@ void SizeGripItem::setRect(QRectF rect)
 
 void SizeGripItem::doResize()
 {
-	if (resizer_)
-	{
+	if (resizer_) {
 		(*resizer_)(parentItem(), rect_);
 		updateHandleItemPositions();
 	}
@@ -200,12 +195,10 @@ void SizeGripItem::doResize()
 
 void SizeGripItem::updateHandleItemPositions()
 {
-	foreach (HandleItem* item, handleItems_)
-	{
+	for (auto item : handleItems_) {
 		item->setFlag(ItemSendsGeometryChanges, false);
 
-		switch (item->positionFlags())
-		{
+		switch (item->positionFlags()) {
 		case TopLeft:
 			item->setPos(rect_.topLeft());
 			break;

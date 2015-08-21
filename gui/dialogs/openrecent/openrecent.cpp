@@ -69,7 +69,7 @@ void OpenRecent::initRecentFilesUi()
 {
 	itemModel = new QStandardItemModel(this);
 
-	foreach(RecentFile const& rf, recentFiles) {
+	for (auto rf : recentFiles) {
 		QList<QStandardItem*> items;
 		QString fileName = QFileInfo(rf.fileName).fileName();
 		QStandardItem *item = new QStandardItem(fileName);

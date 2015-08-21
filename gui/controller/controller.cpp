@@ -229,9 +229,9 @@ void Controller::rescaleSpectrum(int bands)
 void Controller::debugSubscriptions()
 {
 	//std::cerr << "** TYPE      subscribed flag" << std::endl;
-	foreach (representation::t type, representation::all()) {
-		std::cerr << "** " << std::left << std::setw(7) << type;
-		if (subs->images.subscribed(type)) {
+	for (auto r : representation::all()) {
+		std::cerr << "** " << std::left << std::setw(7) << r;
+		if (subs->images.subscribed(r)) {
 			std::cerr << "    subscribed";
 		} else {
 			std::cerr <<  "not subscribed";
@@ -430,12 +430,12 @@ void Controller::processImageUpdate(representation::t repr,
 	Subscription<BandId>::KeySet bandUpdates;
 
 	assert(subs);
-	foreach (Subscription<BandId> const& sub, subs->bands) {
+	for (auto sub : subs->bands) {
 		if (repr == sub.id.repr)	 {
 			bandUpdates.insert(sub.id);
 		}
 	}
-	foreach (BandId const& ib, bandUpdates) {
+	for (auto ib : bandUpdates) {
 		//GGDBGM("requesting band " << ib.first << " " << ib.second << endl);
 		im->computeBand(ib.repr, ib.band);
 	}
@@ -445,7 +445,7 @@ void Controller::processImageUpdate(representation::t repr,
 	typedef std::unordered_set<FalseColoring::Type, std::hash<int> >
 	        FalseColoringSet;
 	FalseColoringSet fcUpdates;
-	foreach (Subscription<FalseColoring::Type> const& sub, subs->colorings) {
+	for (auto sub : subs->colorings) {
 		FalseColoring::Type coloring = sub.id;
 		if (FalseColoring::isBasedOn(coloring, repr)) {
 			//GGDBGM("found subscriber for " << coloring <<
@@ -453,7 +453,7 @@ void Controller::processImageUpdate(representation::t repr,
 			fcUpdates.insert(coloring);
 		}
 	}
-	foreach (FalseColoringSet::value_type const& coloring, fcUpdates) {
+	for (auto coloring : fcUpdates) {
 		//GGDBGM("requesting from fm " << coloring << endl);
 		emit pendingFalseColorUpdate(coloring);
 		fm->requestColoring(coloring);
@@ -462,7 +462,7 @@ void Controller::processImageUpdate(representation::t repr,
 
 void Controller::resetROISpawned()
 {
-	foreach (representation::t repr, representation::all()) {
-		roiSpawned[repr] = false;
+	for (auto r : representation::all()) {
+		roiSpawned[r] = false;
 	}
 }
