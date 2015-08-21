@@ -10,8 +10,6 @@
 #include <QVector>
 #include <QMap>
 
-struct ReprSubscriptions;
-
 class DistViewController : public QObject
 {
 	Q_OBJECT
@@ -27,8 +25,6 @@ public:
 	explicit DistViewController(Controller *ctrl,
 	                            BackgroundTaskQueue *taskQueue,
 	                            ImageModel *im);
-
-	~DistViewController();
 
 	void init();
 	/** Initialize subscriptions.
@@ -162,7 +158,7 @@ protected:
 	// Subscription state of distviews.
 	// There is no other means for the DistViewController to determine
 	// whether or not to do BinSet sub/add in ROI change.
-	ReprSubscriptions* distviewSubs;
+	Subscription<representation::t>::Set subscriptions;
 
 	// Pointer to map of vectors of binsets: BinSets that are recycled
 	// during a ROI spawn.

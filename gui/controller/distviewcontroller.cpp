@@ -11,8 +11,6 @@
 #include <boost/format.hpp>
 #include <QDebug>
 
-#include "subscriptions.h"
-
 #define GGDBG_MODULE
 #include <QSettings>
 #include <gerbil_gui_debug.h>
@@ -21,21 +19,11 @@
 #define GGDBG_REPR(type) GGDBGM(format("%1%")%type << endl)
 #endif
 
-/** Holds a subscription set for representations.
- *
- * This is purely for avoiding the distviewcontroller.h -> subscriptions.h
- * dependency. Forward declaration of Subscription<representation::t>::Set
- * is impossible(?).
- */
-struct ReprSubscriptions {
-	Subscription<representation::t>::Set	repr;
-};
-
 DistViewController::DistViewController(
         Controller *ctrl,
         BackgroundTaskQueue *taskQueue,
         ImageModel *im)
-    : QObject(ctrl), ctrl(ctrl), im(im), distviewSubs(new ReprSubscriptions)
+    : QObject(ctrl), ctrl(ctrl), im(im)
 {
 	/* Create all viewers. Only one viewer per representation type is supported.
 	 */
@@ -50,11 +38,6 @@ DistViewController::DistViewController(
 	for (auto r : representation::all()) {
 		distviewNeedsBinning[r] = false;
 	}
-}
-
-DistViewController::~DistViewController()
-{
-	delete distviewSubs;
 }
 
 void DistViewController::init()
@@ -274,7 +257,7 @@ void DistViewController::processPreROISpawn(const cv::Rect &oldroi,
 	if (profitable) {
 		GGDBGM("INCREMENTAL distview update" << endl);
 		for (auto r : representation::all()) {
-			if (distviewSubs->repr.subscribed(r)) {
+			if (subscriptions.subscribed(r)) {
 				GGDBGM("   BEGIN " << r <<" distview update" << endl);
 				(*roiSets)[r] = subImage(r, sub, newroi);
 				GGDBGM("   END " << r <<" distview update" << endl);
@@ -284,7 +267,7 @@ void DistViewController::processPreROISpawn(const cv::Rect &oldroi,
 		GGDBGM("FULL distview update (ignored)" << endl);
 		// nothing to do, except let them know that ROI change is underway
 		for (auto r : representation::all()) {
-			if (distviewSubs->repr.subscribed(r)) {
+			if (subscriptions.subscribed(r)) {
 				payloadMap[r]->model.initiateROIChange();
 			}
 		}
@@ -307,7 +290,7 @@ void DistViewController::processPostROISpawn(const cv::Rect &oldroi,
 		GGDBGM("FULL distview update" << endl);
 	}
 	for (auto r : representation::all()) {
-		if (distviewSubs->repr.subscribed(r)) {
+		if (subscriptions.subscribed(r)) {
 			if (profitable && roiSets) {
 				addImage(r, (*roiSets)[r], add, newroi);
 			} else {
@@ -323,14 +306,14 @@ void DistViewController::processDistviewSubscribeRepresentation(
         QObject *subscriber,
         representation::t repr)
 {
-	distviewSubs->repr.subscribe(subscriber, repr);
+	subscriptions.subscribe(subscriber, repr);
 }
 
 void DistViewController::processDistviewUnsubscribeRepresentation(
         QObject *subscriber,
         representation::t repr)
 {
-	distviewSubs->repr.unsubscribe(subscriber, repr);
+	subscriptions.unsubscribe(subscriber, repr);
 }
 
 void DistViewController::updateBinning(representation::t repr,
