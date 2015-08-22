@@ -14,6 +14,8 @@
         <file alias="quality-high">resources/quality-high.png</file>
         <file alias="quality-low">resources/quality-low.png</file>
         <file alias="eraser">resources/eraser.png</file>
+        <file alias="overwrite-off">resources/overwrite-off.png</file>
+        <file alias="overwrite-on">resources/overwrite-on.png</file>
     </qresource>
     <qresource prefix="/">
         <file alias="mainicon">resources/mainicon.svg</file>

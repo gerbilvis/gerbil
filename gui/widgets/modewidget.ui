@@ -261,6 +261,11 @@
         <property name="text">
          <string/>
         </property>
+        <property name="icon">
+         <iconset resource="../gerbil.qrc">
+          <normaloff>:/toolbar/overwrite-off</normaloff>
+          <normalon>:/toolbar/overwrite-on</normalon>:/toolbar/overwrite-off</iconset>
+        </property>
         <property name="checkable">
          <bool>true</bool>
         </property>
@@ -364,6 +369,11 @@
    </property>
    <property name="checked">
     <bool>true</bool>
+   </property>
+   <property name="icon">
+    <iconset resource="../gerbil.qrc">
+     <normaloff>:/toolbar/overwrite-off</normaloff>
+     <normalon>:/toolbar/overwrite-on</normalon>:/toolbar/overwrite-off</iconset>
    </property>
    <property name="text">
     <string>Override</string>
