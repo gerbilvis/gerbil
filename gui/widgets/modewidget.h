@@ -27,9 +27,9 @@ public slots:
 	void updateCursorMode(BandView::CursorMode m);
 	void updateCursorSize(BandView::CursorSize s);
 
-	void setZoomAction(QAction* act) { zoomAction = act; }
-	void setLabelAction(QAction* act) { labelAction = act; }
-	void setPickAction(QAction* act) { pickAction = act; }
+	QAction* zoomAction() { return actionZoom; }
+	QAction* labelAction() { return actionLabel; }
+	QAction* pickAction() { return actionPick; }
 
 	ActionButton* getRubberButton() { return rubberButton; }
 
@@ -46,10 +46,6 @@ private slots:
 private:
 	QButtonGroup *modeGroup;
 	QButtonGroup *cursorGroup;
-
-	QAction* zoomAction = nullptr;
-	QAction* labelAction = nullptr;
-	QAction* pickAction = nullptr;
 
 	void setCursorButtonsVisible(bool visible);
 

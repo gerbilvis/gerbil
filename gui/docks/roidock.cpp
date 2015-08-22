@@ -77,21 +77,13 @@ void RoiDock::initUi()
 	connect(bandsSlider, SIGNAL(sliderMoved(int)),
 			this, SLOT(processBandsSliderChange(int)));
 
-	applyAction = new QAction(this);
-	applyAction->setText("Apply");
-	applyAction->setIcon(QIcon::fromTheme("dialog-apply"));
-	applyAction->setIconVisibleInMenu(true);
-	uibtn->applyButton->setAction(applyAction);
-	roiView->setApplyAction(applyAction);
-	connect(applyAction, SIGNAL(triggered()), this, SLOT(applyRoi()));
+	uibtn->applyButton->setAction(uibtn->actionApply);
+	roiView->setApplyAction(uibtn->actionApply);
+	connect(uibtn->actionApply, SIGNAL(triggered()), this, SLOT(applyRoi()));
 
-	resetAction = new QAction(this);
-	resetAction->setText("Reset");
-	resetAction->setIcon(QIcon::fromTheme("edit-undo"));
-	resetAction->setIconVisibleInMenu(true);
-	uibtn->resetButton->setAction(resetAction);
-	roiView->setResetAction(resetAction);
-	connect(resetAction, SIGNAL(triggered()), this, SLOT(resetRoi()));
+	uibtn->resetButton->setAction(uibtn->actionReset);
+	roiView->setResetAction(uibtn->actionReset);
+	connect(uibtn->actionReset, SIGNAL(triggered()), this, SLOT(resetRoi()));
 }
 
 void RoiDock::processBandsSliderChange(int b)
@@ -146,6 +138,6 @@ void RoiDock::updatePixmap(const QPixmap image)
 
 void RoiDock::enableActions(bool enable)
 {
-	applyAction->setEnabled(enable);
-	resetAction->setEnabled(enable);
+	uibtn->actionApply->setEnabled(enable);
+	uibtn->actionReset->setEnabled(enable);
 }

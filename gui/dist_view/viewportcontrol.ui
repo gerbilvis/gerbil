@@ -6,8 +6,8 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>162</width>
-    <height>295</height>
+    <width>197</width>
+    <height>322</height>
    </rect>
   </property>
   <property name="sizePolicy">
@@ -17,29 +17,6 @@
    </sizepolicy>
   </property>
   <layout class="QGridLayout" name="gridLayout_2">
-   <item row="7" column="0">
-    <spacer name="verticalSpacer_5">
-     <property name="orientation">
-      <enum>Qt::Vertical</enum>
-     </property>
-     <property name="sizeType">
-      <enum>QSizePolicy::MinimumExpanding</enum>
-     </property>
-     <property name="sizeHint" stdset="0">
-      <size>
-       <width>13</width>
-       <height>13</height>
-      </size>
-     </property>
-    </spacer>
-   </item>
-   <item row="5" column="0">
-    <widget class="Line" name="line">
-     <property name="orientation">
-      <enum>Qt::Horizontal</enum>
-     </property>
-    </widget>
-   </item>
    <item row="6" column="0">
     <layout class="QHBoxLayout" name="horizontalLayout_5">
      <item>
@@ -434,6 +411,22 @@
      </item>
     </layout>
    </item>
+   <item row="7" column="0">
+    <spacer name="verticalSpacer_5">
+     <property name="orientation">
+      <enum>Qt::Vertical</enum>
+     </property>
+     <property name="sizeType">
+      <enum>QSizePolicy::MinimumExpanding</enum>
+     </property>
+     <property name="sizeHint" stdset="0">
+      <size>
+       <width>13</width>
+       <height>13</height>
+      </size>
+     </property>
+    </spacer>
+   </item>
    <item row="1" column="0">
     <widget class="Line" name="line_2">
      <property name="orientation">
@@ -441,7 +434,133 @@
      </property>
     </widget>
    </item>
+   <item row="5" column="0">
+    <widget class="Line" name="line">
+     <property name="orientation">
+      <enum>Qt::Horizontal</enum>
+     </property>
+    </widget>
+   </item>
   </layout>
+  <action name="actionRgb">
+   <property name="checkable">
+    <bool>true</bool>
+   </property>
+   <property name="icon">
+    <iconset resource="../gerbil.qrc">
+     <normaloff>:/toolbar/rgb</normaloff>:/toolbar/rgb</iconset>
+   </property>
+   <property name="text">
+    <string>rgb</string>
+   </property>
+   <property name="toolTip">
+    <string>draw vectors with respective sRGB coloring</string>
+   </property>
+   <property name="shortcutContext">
+    <enum>Qt::WidgetShortcut</enum>
+   </property>
+  </action>
+  <action name="actionScr">
+   <property name="icon">
+    <iconset theme="document-save">
+     <normaloff/>
+    </iconset>
+   </property>
+   <property name="text">
+    <string>scr</string>
+   </property>
+   <property name="toolTip">
+    <string>save plot to image file</string>
+   </property>
+   <property name="shortcut">
+    <string>S</string>
+   </property>
+   <property name="shortcutContext">
+    <enum>Qt::WidgetShortcut</enum>
+   </property>
+  </action>
+  <action name="actionLog">
+   <property name="checkable">
+    <bool>true</bool>
+   </property>
+   <property name="icon">
+    <iconset resource="../gerbil.qrc">
+     <normaloff>:/toolbar/alpha-lin</normaloff>
+     <normalon>:/toolbar/alpha-log</normalon>:/toolbar/alpha-lin</iconset>
+   </property>
+   <property name="text">
+    <string>log</string>
+   </property>
+   <property name="toolTip">
+    <string>toggle logarithmic alpha</string>
+   </property>
+   <property name="shortcut">
+    <string>L</string>
+   </property>
+   <property name="shortcutContext">
+    <enum>Qt::WidgetShortcut</enum>
+   </property>
+  </action>
+  <action name="actionBuff">
+   <property name="icon">
+    <iconset resource="../gerbil.qrc">
+     <normaloff>:/toolbar/memory</normaloff>:/toolbar/memory</iconset>
+   </property>
+   <property name="text">
+    <string>buff</string>
+   </property>
+   <property name="toolTip">
+    <string>set framebuffer depth</string>
+   </property>
+   <property name="shortcut">
+    <string>F</string>
+   </property>
+   <property name="shortcutContext">
+    <enum>Qt::WidgetShortcut</enum>
+   </property>
+  </action>
+  <action name="actionHq">
+   <property name="checkable">
+    <bool>true</bool>
+   </property>
+   <property name="checked">
+    <bool>true</bool>
+   </property>
+   <property name="icon">
+    <iconset resource="../gerbil.qrc">
+     <normaloff>:/toolbar/quality-low</normaloff>
+     <normalon>:/toolbar/quality-high</normalon>:/toolbar/quality-low</iconset>
+   </property>
+   <property name="text">
+    <string>hq</string>
+   </property>
+   <property name="toolTip">
+    <string>toggle drawing quality</string>
+   </property>
+   <property name="shortcut">
+    <string>Space</string>
+   </property>
+   <property name="shortcutContext">
+    <enum>Qt::WidgetShortcut</enum>
+   </property>
+  </action>
+  <action name="actionMeans">
+   <property name="checkable">
+    <bool>true</bool>
+   </property>
+   <property name="checked">
+    <bool>true</bool>
+   </property>
+   <property name="text">
+    <string>means</string>
+   </property>
+   <property name="shortcut">
+    <string>M</string>
+   </property>
+   <property name="shortcutContext">
+    <enum>Qt::WidgetShortcut</enum>
+   </property>
+  </action>
  </widget>
  <customwidgets>
   <customwidget>

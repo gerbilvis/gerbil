@@ -100,6 +100,10 @@
         <file alias="24x24/folder-open.png">resources/icons/24x24/folder-open.png</file>
         <file alias="32x32/folder-open.png">resources/icons/32x32/folder-open.png</file>
         <file alias="scalable/folder-open.svg">resources/icons/scalable/folder-open.svg</file>
+        <file alias="16x16/zoom-best-fit.png">resources/icons/16x16/zoom-best-fit.png</file>
+        <file alias="scalable/zoom-best-fit.svg">resources/icons/scalable/zoom-best-fit.svg</file>
+        <file alias="16x16/zoom-original.png">resources/icons/16x16/zoom-original.png</file>
+        <file alias="scalable/zoom-original.svg">resources/icons/scalable/zoom-original.svg</file>
     </qresource>
     <qresource prefix="/autohide">
         <file alias="bottom">resources/autohide-bottom.png</file>

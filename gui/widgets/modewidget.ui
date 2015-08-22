@@ -63,6 +63,10 @@
        <property name="text">
         <string>zoom/pan</string>
        </property>
+       <property name="icon">
+        <iconset resource="../gerbil.qrc">
+         <normaloff>:/basic/zoom</normaloff>:/basic/zoom</iconset>
+       </property>
        <property name="checkable">
         <bool>true</bool>
        </property>
@@ -107,6 +111,10 @@
        <property name="text">
         <string>label</string>
        </property>
+       <property name="icon">
+        <iconset resource="../gerbil.qrc">
+         <normaloff>:/basic/pencil</normaloff>:/basic/pencil</iconset>
+       </property>
        <property name="checkable">
         <bool>true</bool>
        </property>
@@ -147,6 +155,10 @@
        </property>
        <property name="text">
         <string>pick</string>
+       </property>
+       <property name="icon">
+        <iconset resource="../gerbil.qrc">
+         <normaloff>:/basic/picker</normaloff>:/basic/picker</iconset>
        </property>
        <property name="checkable">
         <bool>true</bool>
@@ -261,6 +273,78 @@
     </widget>
    </item>
   </layout>
+  <action name="actionZoom">
+   <property name="checkable">
+    <bool>true</bool>
+   </property>
+   <property name="checked">
+    <bool>true</bool>
+   </property>
+   <property name="icon">
+    <iconset resource="../gerbil.qrc">
+     <normaloff>:/basic/zoom</normaloff>:/basic/zoom</iconset>
+   </property>
+   <property name="text">
+    <string>Zoom</string>
+   </property>
+   <property name="toolTip">
+    <string>zoom/pan</string>
+   </property>
+   <property name="shortcut">
+    <string>1</string>
+   </property>
+  </action>
+  <action name="actionLabel">
+   <property name="checkable">
+    <bool>true</bool>
+   </property>
+   <property name="icon">
+    <iconset resource="../gerbil.qrc">
+     <normaloff>:/basic/pencil</normaloff>:/basic/pencil</iconset>
+   </property>
+   <property name="text">
+    <string>Label</string>
+   </property>
+   <property name="toolTip">
+    <string>edit label</string>
+   </property>
+   <property name="shortcut">
+    <string>2</string>
+   </property>
+  </action>
+  <action name="actionPick">
+   <property name="checkable">
+    <bool>true</bool>
+   </property>
+   <property name="icon">
+    <iconset resource="../gerbil.qrc">
+     <normaloff>:/basic/picker</normaloff>:/basic/picker</iconset>
+   </property>
+   <property name="text">
+    <string>Pick</string>
+   </property>
+   <property name="toolTip">
+    <string>pick labels</string>
+   </property>
+   <property name="shortcut">
+    <string>3</string>
+   </property>
+  </action>
+  <action name="actionRubber">
+   <property name="checkable">
+    <bool>true</bool>
+   </property>
+   <property name="icon">
+    <iconset resource="../gerbil.qrc">
+     <normaloff>:/toolbar/eraser</normaloff>:/toolbar/eraser</iconset>
+   </property>
+   <property name="text">
+    <string>Rubber</string>
+   </property>
+   <property name="shortcut">
+    <string>X</string>
+   </property>
+  </action>
  </widget>
  <customwidgets>
   <customwidget>

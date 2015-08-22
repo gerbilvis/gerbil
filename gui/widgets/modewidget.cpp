@@ -32,9 +32,17 @@ void ModeWidget::initUi()
 	cursorGroup->addButton(hugeCurButton);
 	setCursorButtonsVisible(false);
 
-	zoomButton->setAction(zoomAction);
-	labelButton->setAction(labelAction);
-	pickButton->setAction(pickAction);
+	zoomButton->setAction(actionZoom);
+	connect(actionZoom, SIGNAL(triggered()),
+	        this, SLOT(zoomMode()));
+
+	labelButton->setAction(actionLabel);
+	connect(actionLabel, SIGNAL(triggered()),
+	        this, SLOT(labelMode()));
+
+	pickButton->setAction(actionPick);
+	connect(actionZoom, SIGNAL(triggered()),
+	        this, SLOT(pickMode()));
 }
 
 void ModeWidget::updateInputMode(ScaledView::InputMode m)
