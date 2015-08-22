@@ -82,18 +82,22 @@
   </layout>
   <action name="actionApply">
    <property name="icon">
-    <iconset theme="dialog-apply"/>
+    <iconset theme="dialog-apply">
+     <normaloff/>
+    </iconset>
    </property>
    <property name="text">
-    <string>apply</string>
+    <string>Apply</string>
    </property>
   </action>
   <action name="actionReset">
    <property name="icon">
-    <iconset theme="edit-undo"/>
+    <iconset theme="edit-undo">
+     <normaloff/>
+    </iconset>
    </property>
    <property name="text">
-    <string>reset</string>
+    <string>Reset</string>
    </property>
   </action>
  </widget>

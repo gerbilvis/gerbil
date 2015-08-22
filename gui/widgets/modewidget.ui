@@ -285,7 +285,7 @@
      <normaloff>:/basic/zoom</normaloff>:/basic/zoom</iconset>
    </property>
    <property name="text">
-    <string>zoom</string>
+    <string>Zoom</string>
    </property>
    <property name="toolTip">
     <string>zoom/pan</string>
@@ -303,7 +303,7 @@
      <normaloff>:/basic/pencil</normaloff>:/basic/pencil</iconset>
    </property>
    <property name="text">
-    <string>label</string>
+    <string>Label</string>
    </property>
    <property name="toolTip">
     <string>edit label</string>
@@ -321,7 +321,7 @@
      <normaloff>:/basic/picker</normaloff>:/basic/picker</iconset>
    </property>
    <property name="text">
-    <string>pick</string>
+    <string>Pick</string>
    </property>
    <property name="toolTip">
     <string>pick labels</string>
@@ -339,7 +339,7 @@
      <normaloff>:/toolbar/eraser</normaloff>:/toolbar/eraser</iconset>
    </property>
    <property name="text">
-    <string>rubber</string>
+    <string>Rubber</string>
    </property>
    <property name="shortcut">
     <string>X</string>
