@@ -353,10 +353,6 @@ void BandView::cursorAction(QGraphicsSceneMouseEvent *ev, bool click)
 		lastcursor = cursor;
 	}
 
-	// overlay in spectral views but not during pixel labeling (reduce lag)
-	if (ev->buttons() == Qt::NoButton)
-		emit pixelOverlay(cursor.y(), cursor.x());
-
 	/// single label case
 	if (inputMode == InputMode::Pick && showLabels) {
 		short cursorLabel = labels(cursor.y(), cursor.x());
@@ -488,9 +484,7 @@ void BandView::leaveEvent()
 	// invalidate cursor
 	cursor = lastcursor = QPoint(-1, -1);
 
-	// invalidate previous overlay
-	emit pixelOverlay(-1, -1);
-	update();
+	ScaledView::leaveEvent();
 }
 
 void BandView::keyPressEvent(QKeyEvent *event)

@@ -231,10 +231,23 @@ void ScaledView::drawWaitMessage(QPainter *painter)
 
 void ScaledView::cursorAction(QGraphicsSceneMouseEvent *ev, bool click)
 {
+	QPointF cursorF = scalerI.map(QPointF(ev->scenePos()));
+	QPoint cursor(std::floor(cursorF.x() - 0.25),
+	              std::floor(cursorF.y() - 0.25));
+
 	if (ev->buttons() & Qt::RightButton && inputMode != InputMode::Seed) {
-		QPoint point = ev->screenPos();
-		showContextMenu(point);
+		showContextMenu(ev->screenPos());
+	} else if (ev->buttons() == Qt::NoButton) {
+		// overlay in spectral views but not during pixel labeling (reduce lag)
+		emit pixelOverlay(cursor.y(), cursor.x());
 	}
+}
+
+void ScaledView::leaveEvent()
+{
+	// invalidate previous overlay
+	emit pixelOverlay(-1,-1);
+	update();
 }
 
 void ScaledView::wheelEvent(QGraphicsSceneWheelEvent *event)
