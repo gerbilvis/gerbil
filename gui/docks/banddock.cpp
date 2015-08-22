@@ -94,15 +94,6 @@ void BandDock::initUi()
 	connect(mw, SIGNAL(cursorSizeChanged(BandView::CursorSize)),
 	        bv, SLOT(updateCursorSize(BandView::CursorSize)));
 
-	QAction *cursorModeAct = new QAction(bv);
-	cursorModeAct->setShortcut(Qt::Key_X);
-	cursorModeAct->setShortcutContext(Qt::WidgetShortcut);
-	cursorModeAct->setCheckable(true);
-	cursorModeAct->setIcon(QIcon(":/toolbar/eraser"));
-	view->addAction(cursorModeAct);
-	mw->getRubberButton()->setAction(cursorModeAct);
-	connect(cursorModeAct, SIGNAL(triggered(bool)), bv, SLOT(toggleCursorMode()));
-
 	connect(screenshotButton, SIGNAL(released()),
 	        this, SLOT(screenshot()));
 
@@ -136,6 +127,14 @@ void BandDock::initActions()
 	mw->pickAction()->setData(QVariant::fromValue(ScaledView::InputMode::Pick));
 	connect(mw->pickAction(), SIGNAL(triggered()),
 	        bv, SLOT(updateInputMode()));
+
+	this->addAction(mw->rubberAction());
+	connect(mw->rubberAction(), SIGNAL(triggered()),
+	        bv, SLOT(toggleCursorMode()));
+
+	this->addAction(mw->overrideAction());
+	connect(mw->overrideAction(), SIGNAL(triggered()),
+	        bv, SLOT(toggleOverrideMode()));
 }
 
 void BandDock::changeBand(representation::t repr, int bandId,

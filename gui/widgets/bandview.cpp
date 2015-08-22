@@ -59,6 +59,12 @@ void BandView::toggleCursorMode()
 	else cursorMode = CursorMode::Marker;
 }
 
+void BandView::toggleOverrideMode()
+{
+	if (overrideMode == OverrideMode::On) overrideMode = OverrideMode::Off;
+	else overrideMode = OverrideMode::On;
+}
+
 void BandView::updateCursorSize(CursorSize size)
 {
 	cursorSize = size;
@@ -421,11 +427,15 @@ void BandView::updatePixel(int x, int y)
 		return;
 
 	if (cursorMode == CursorMode::Marker) {
-		uncommitedLabels(y, x) = 1;
-		labels(y, x) = curLabel;
-		updateCache(y, x, curLabel);
-	} else if (cursorMode == CursorMode::Rubber) {
-		if (labels(y, x) == curLabel) {
+		if (overrideMode == OverrideMode::On
+		    || (overrideMode == OverrideMode::Off && (labels(y,x) == 0))) {
+			uncommitedLabels(y, x) = 1;
+			labels(y, x) = curLabel;
+			updateCache(y, x, curLabel);
+		}
+	} else if (cursorMode == CursorMode::Rubber) {	
+		if (overrideMode == OverrideMode::On
+		    || (overrideMode == OverrideMode::Off && (labels(y,x) == curLabel))) {
 			uncommitedLabels(y, x) = 1;
 			labels(y, x) = 0;
 			updateCache(y, x, 0);

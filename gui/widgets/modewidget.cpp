@@ -43,6 +43,9 @@ void ModeWidget::initUi()
 	pickButton->setAction(actionPick);
 	connect(actionZoom, SIGNAL(triggered()),
 	        this, SLOT(pickMode()));
+
+	rubberButton->setAction(actionRubber);
+	overrideButton->setAction(actionOverride);
 }
 
 void ModeWidget::updateInputMode(ScaledView::InputMode m)
