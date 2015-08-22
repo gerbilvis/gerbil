@@ -40,6 +40,12 @@ public:
 		Rubber
 	};
 
+	enum class OverrideMode
+	{
+		On,
+		Off
+	};
+
 	BandView();
 
 	void initUi();
@@ -79,6 +85,7 @@ public slots:
 	void updateInputMode();
 	void updateCursorSize(BandView::CursorSize size);
 	void toggleCursorMode();
+	void toggleOverrideMode();
 
 	void updatePixel(int x, int y);
 
@@ -162,6 +169,7 @@ private:
 
 	CursorMode cursorMode = CursorMode::Marker;
 	CursorSize cursorSize = CursorSize::Medium;
+	OverrideMode overrideMode = OverrideMode::On;
 
 	// point sets, stored as polygon for translate(), and hulls for drawing
 	std::unordered_map<CursorSize, std::pair<QPolygonF, QPolygonF>,

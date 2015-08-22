@@ -30,8 +30,8 @@ public slots:
 	QAction* zoomAction() { return actionZoom; }
 	QAction* labelAction() { return actionLabel; }
 	QAction* pickAction() { return actionPick; }
-
-	ActionButton* getRubberButton() { return rubberButton; }
+	QAction* rubberAction() { return actionRubber; }
+	QAction* overrideAction() { return actionOverride; }
 
 	void zoomMode();
 	void pickMode();
