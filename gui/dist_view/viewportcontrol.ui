@@ -2,14 +2,6 @@
 <ui version="4.0">
  <class>ViewportControl</class>
  <widget class="QWidget" name="ViewportControl">
-  <property name="geometry">
-   <rect>
-    <x>0</x>
-    <y>0</y>
-    <width>197</width>
-    <height>322</height>
-   </rect>
-  </property>
   <property name="sizePolicy">
    <sizepolicy hsizetype="Minimum" vsizetype="Minimum">
     <horstretch>0</horstretch>
@@ -116,8 +108,8 @@
        </property>
        <property name="sizeHint" stdset="0">
         <size>
-         <width>40</width>
-         <height>20</height>
+         <width>0</width>
+         <height>0</height>
         </size>
        </property>
       </spacer>
@@ -421,8 +413,8 @@
      </property>
      <property name="sizeHint" stdset="0">
       <size>
-       <width>13</width>
-       <height>13</height>
+       <width>0</width>
+       <height>0</height>
       </size>
      </property>
     </spacer>
