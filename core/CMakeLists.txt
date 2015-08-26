@@ -35,6 +35,7 @@ vole_compile_library(
 	background_task/tasks/tbb/rescaletbb
 	background_task/tasks/tbb/normrangetbb
 	background_task/tasks/tbb/pcatbb
+	background_task/tasks/tbb/specsimtbb
 	background_task/tasks/tbb/band2qimagetbb
 	background_task/tasks/tbb/rgbqttbb
 	background_task/tasks/tbb/bgrtbb

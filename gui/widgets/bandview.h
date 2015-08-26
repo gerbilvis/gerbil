@@ -82,7 +82,6 @@ public slots:
 	void enterEvent();
 	void leaveEvent();
 
-	void updateInputMode();
 	void updateCursorSize(BandView::CursorSize size);
 	void toggleCursorMode();
 	void toggleOverrideMode();
@@ -91,9 +90,6 @@ public slots:
 
 signals:
 	void killHover();
-
-	// change of input mode (e.g. seed mode)
-	void inputModeChanged(ScaledView::InputMode m);
 
 	// picking mode, diff. label chosen
 	void labelSelected(int label);

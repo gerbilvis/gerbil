@@ -3,6 +3,8 @@
 
 #include <model/representation.h>
 #include <shared_data.h>
+#include <background_task/background_task_queue.h>
+#include "sm_config.h"
 
 #include <QPixmap>
 #include <QMap>
@@ -32,7 +34,7 @@ class FalseColorModel : public QObject
 	Q_OBJECT
 
 public:
-	FalseColorModel(QObject *parent = nullptr);
+	FalseColorModel(BackgroundTaskQueue *queue, QObject *parent = nullptr);
 	~FalseColorModel();
 
 	void setMultiImg(representation::t repr, SharedMultiImgPtr img);
@@ -51,6 +53,7 @@ public slots:
 	 *               new SOM.
 	 */
 	void requestColoring(FalseColoring::Type coloringType, bool recalc = false);
+	void computeSpecSim(int x, int y, similarity_measures::SMConfig conf);
 
 
 	/** Cancels a previously requested calculation for coloringType. */
@@ -73,11 +76,13 @@ signals:
 
 	/** Signals the progress of a representation computation. */
 	void progressChanged(FalseColoring::Type coloringType, int percent);
+	void computeSpecSimFinished(QPixmap result);
 
 private slots:
 	/** Payload has finished computation. */
 	void processComputationFinished(FalseColoring::Type coloringType,
 	                                bool success);
+	void finishSpecSim(bool success);
 
 private:
 	/** Kickoff a new computation for coloringType.
@@ -110,6 +115,9 @@ private:
 	// Remember if we got imageUpdate signal for representation. Until then
 	// all requests are deferred.
 	QMap<representation::t, bool> representationInit;
+
+	BackgroundTaskQueue *const queue;
+	qimage_ptr similarityImg;
 };
 
 #endif // FALSECOLOR_MODEL_H

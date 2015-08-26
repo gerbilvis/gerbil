@@ -163,6 +163,8 @@ void Controller::setupDocks()
 			this, SLOT(recalcFalseColor(FalseColoring::Type)));
 	connect(falseColorDock, SIGNAL(pixelOverlay(int,int)),
 	        this, SIGNAL(requestPixelOverlay(int,int)));
+	connect(falseColorDock, SIGNAL(requestComputeSpecSim(int,int,similarity_measures::SMConfig)),
+	        falseColorModel(), SLOT(computeSpecSim(int,int,similarity_measures::SMConfig)));
 
 	connect(falseColorModel(), SIGNAL(progressChanged(FalseColoring::Type,int)),
 			falseColorDock, SLOT(processCalculationProgressChanged(FalseColoring::Type,int)));
@@ -170,6 +172,8 @@ void Controller::setupDocks()
 			falseColorDock, SLOT(processFalseColoringUpdate(FalseColoring::Type,QPixmap)));
 	connect(falseColorModel(), SIGNAL(computationCancelled(FalseColoring::Type)),
 			falseColorDock, SLOT(processComputationCancelled(FalseColoring::Type)));
+	connect(falseColorModel(), SIGNAL(computeSpecSimFinished(QPixmap)),
+	        falseColorDock, SLOT(processSpecSimUpdate(QPixmap)));
 
 	connect(this, SIGNAL(pendingFalseColorUpdate(FalseColoring::Type)),
 			falseColorDock, SLOT(setCalculationInProgress(FalseColoring::Type)));

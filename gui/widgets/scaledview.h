@@ -17,6 +17,7 @@ public:
 		Pick,
 		Label,
 		Seed,
+		Target,
 		Disabled
 	};
 
@@ -25,6 +26,7 @@ public:
 
 	const QPixmap& getPixmap() const { return pixmap; }
 	virtual void setPixmap(QPixmap p);
+	void setActionTarget(QAction* act) { actionTarget = act; }
 
 	/* provide a reasonably high size of correct aspect ratio for layouting */
 	virtual void updateSizeHint();
@@ -38,12 +40,18 @@ signals:
 	void updateScrolling(bool scrolling = false);
 	void pixelOverlay(int y, int x);
 
+	// change of input mode (e.g. seed mode)
+	void inputModeChanged(ScaledView::InputMode m);
+	void requestSpecSim(int x, int y);
+
 private slots:
 	inline void fitScene() { zoom = 1; resizeEvent(); }
 	void scaleOriginal();
 
 public slots:
 	virtual void leaveEvent();
+	virtual void enterEvent();
+	void updateInputMode();
 
 protected:
 	// handles both resize and drawing
@@ -58,6 +66,7 @@ protected:
 	void wheelEvent(QGraphicsSceneWheelEvent*);
 
 	void drawWaitMessage(QPainter *painter);
+	void updateCursor();
 
 	void adjustBoundaries();
 	void alignLeft();
@@ -90,6 +99,8 @@ protected:
 
 	// the pixmap we display
 	QPixmap	pixmap;
+
+	QAction* actionTarget = nullptr;
 };
 
 Q_DECLARE_METATYPE(ScaledView::InputMode)

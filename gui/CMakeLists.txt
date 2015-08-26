@@ -23,6 +23,7 @@ vole_compile_library(
 	widgets/roiview
 	widgets/graphsegwidget
 	widgets/modewidget
+	widgets/similaritywidget
 
 	widgets/sizegripitem/sizegripitem
 	
@@ -83,6 +84,7 @@ vole_moc_library(
 	widgets/roiview.h
 	widgets/graphsegwidget.h
 	widgets/modewidget.h
+	widgets/similaritywidget.h
 
 	widgets/sizegripitem/sizegripitem.h
 
@@ -120,6 +122,7 @@ vole_ui_library(
 	widgets/mainwindow.ui
 	widgets/graphsegwidget.ui
 	widgets/modewidget.ui
+	widgets/similaritywidget.ui
 	dist_view/distviewgui.ui
 	dist_view/foldingbar.ui
 	dist_view/viewportcontrol.ui
