@@ -27,6 +27,7 @@ public:
 	const QPixmap& getPixmap() const { return pixmap; }
 	virtual void setPixmap(QPixmap p);
 	void setActionTarget(QAction* act) { actionTarget = act; }
+	void updateCursor();
 
 	/* provide a reasonably high size of correct aspect ratio for layouting */
 	virtual void updateSizeHint();
@@ -43,6 +44,7 @@ signals:
 	// change of input mode (e.g. seed mode)
 	void inputModeChanged(ScaledView::InputMode m);
 	void requestSpecSim(int x, int y);
+	void requestCursor(Qt::CursorShape);
 
 private slots:
 	inline void fitScene() { zoom = 1; resizeEvent(); }
@@ -50,7 +52,6 @@ private slots:
 
 public slots:
 	virtual void leaveEvent();
-	virtual void enterEvent();
 	void updateInputMode();
 
 protected:
@@ -66,7 +67,6 @@ protected:
 	void wheelEvent(QGraphicsSceneWheelEvent*);
 
 	void drawWaitMessage(QPainter *painter);
-	void updateCursor();
 
 	void adjustBoundaries();
 	void alignLeft();

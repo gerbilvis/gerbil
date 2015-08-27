@@ -21,7 +21,11 @@ void SimilarityWidget::initUi(AutohideView *view)
 	pickButton->setAction(actionTarget);
 	actionTarget->setData(QVariant::fromValue(ScaledView::InputMode::Target));
 
+	connect(actionTarget, SIGNAL(triggered(bool)),
+	        actionTarget, SLOT(setEnabled(bool)));
+
 	doneButton->setAction(actionDone);
+	actionDone->setData(QVariant::fromValue(ScaledView::InputMode::Zoom));
 
 	similarityBox->setAHView(view);
 	similarityBox->addItem("Manhattan distance (L1)", MANHATTAN);

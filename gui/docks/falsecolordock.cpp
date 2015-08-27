@@ -184,6 +184,9 @@ void FalseColorDock::initUi()
 	connect(scene, SIGNAL(updateScrolling(bool)),
 	        view, SLOT(suppressScrolling(bool)));
 
+	connect(scene, SIGNAL(requestCursor(Qt::CursorShape)),
+	        view, SLOT(applyCursor(Qt::CursorShape)));
+
 	connect(scene, SIGNAL(pixelOverlay(int,int)),
 	        this, SIGNAL(pixelOverlay(int,int)));
 
@@ -209,7 +212,8 @@ void FalseColorDock::initUi()
 
 	connect(sw->doneAction(), SIGNAL(triggered()),
 	        this, SLOT(restoreFalseColorFunction()));
-
+	connect(sw->doneAction(), SIGNAL(triggered()),
+	        scene, SLOT(updateInputMode()));
 	connect(sw->targetAction(), SIGNAL(triggered()),
 	        scene, SLOT(updateInputMode()));
 	scene->setActionTarget(sw->targetAction());
@@ -337,8 +341,6 @@ bool FalseColorDock::eventFilter(QObject *obj, QEvent *event)
 {
 	if (event->type() == QEvent::Leave) {
 		scene->leaveEvent();
-	} else if (event->type() == QEvent::Enter) {
-		scene->enterEvent();
 	}
 
 	// continue with standard event processing
@@ -355,12 +357,13 @@ void FalseColorDock::processSpecSimUpdate(QPixmap result)
 {
 	scene->setPixmap(result);
 	scene->update();
-	view->update();
 	sw->doneAction()->setEnabled(true);
+	sw->targetAction()->setEnabled(true);
 }
 
 void FalseColorDock::restoreFalseColorFunction()
 {
+	sw->targetAction()->setEnabled(true);
 	sw->doneAction()->setEnabled(false);
 	processSelectedColoring();
 }

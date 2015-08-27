@@ -245,9 +245,7 @@ void ScaledView::cursorAction(QGraphicsSceneMouseEvent *ev, bool click)
 
 	if (ev->button() != Qt::NoButton && inputMode == InputMode::Target) {
 		inputMode = InputMode::Zoom;
-		updateCursor();
-		actionTarget->setChecked(false);
-
+		actionTarget->setEnabled(true);
 		if (ev->buttons() & Qt::LeftButton) {
 			QRectF rect = scaler.mapRect(pixmap.rect());
 			if (rect.contains(ev->scenePos())) {
@@ -255,6 +253,10 @@ void ScaledView::cursorAction(QGraphicsSceneMouseEvent *ev, bool click)
 				emit requestSpecSim(point.x(), point.y());
 			}
 		}
+	}
+
+	if (!itemAt(ev->scenePos())) {
+		updateCursor();
 	}
 }
 
@@ -266,11 +268,6 @@ void ScaledView::leaveEvent()
 	update();
 }
 
-void ScaledView::enterEvent()
-{
-	updateCursor();
-}
-
 void ScaledView::updateInputMode()
 {
 	QAction* sender = (QAction*) QObject::sender();
@@ -280,9 +277,12 @@ void ScaledView::updateInputMode()
 
 void ScaledView::updateCursor()
 {
-	QApplication::restoreOverrideCursor();
 	if (inputMode == InputMode::Target) {
-		QApplication::setOverrideCursor(Qt::CrossCursor);
+		emit requestCursor(Qt::CrossCursor);
+	} else if (inputMode == InputMode::Zoom) {
+		emit requestCursor(Qt::OpenHandCursor);
+	} else {
+		emit requestCursor(Qt::ArrowCursor);
 	}
 }
 

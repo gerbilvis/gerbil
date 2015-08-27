@@ -35,6 +35,7 @@ public slots:
 	void fitContentRect(QRect rect);
 	// explicitely (un)lock scroll suppression
 	void suppressScrolling(bool suppress) { suppressScroll = suppress; }
+	void applyCursor(Qt::CursorShape shape);
 
 protected:
 
@@ -71,6 +72,7 @@ protected:
 
 	// don't trigger scrolling in some situations
 	bool suppressScroll;
+	Qt::CursorShape curShape = Qt::ArrowCursor;
 };
 
 #endif // AUTOHIDEVIEW_H
