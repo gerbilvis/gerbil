@@ -87,6 +87,7 @@ public slots:
 	void setDrawHQ(QAction* hqAct) { drawHQ = hqAct; }
 	void setDrawRGB(QAction* rgbAct) { drawRGB = rgbAct; }
 	void setDrawMeans(QAction* meansAct) { drawMeans = meansAct; }
+	void restoreState();
 
 protected slots:
 
@@ -99,6 +100,8 @@ protected slots:
 	// triggered manually
 	void updateBuffers(RenderMode spectrum = RM_STEP,
 	                   RenderMode highlight = RM_STEP);
+
+	void saveState();
 
 signals:
 	// we are the active viewer

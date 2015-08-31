@@ -1,6 +1,9 @@
 #include "distviewgui.h"
 #include "widgets/autohidewidget.h"
 
+#include <QSettings>
+#include <QDebug>
+
 //#define GGDBG_MODULE
 #include <gerbil_gui_debug.h>
 
@@ -14,6 +17,9 @@ DistViewGUI::DistViewGUI(representation::t type)
 	ui = new Ui::DistViewGUI();
 	ui->setupUi(frame);
 
+	connect(QApplication::instance(), SIGNAL(lastWindowClosed()),
+	        this, SLOT(saveState()));
+
 	// create viewport
 	initVP();
 
@@ -22,6 +28,8 @@ DistViewGUI::DistViewGUI(representation::t type)
 
 	// connect and initialize topBar
 	initTop();
+
+	restoreState();
 }
 
 void DistViewGUI::initVP()
@@ -323,18 +331,18 @@ void DistViewGUI::createFrameBufferMenu()
 	QAction* tmp;
 	tmp = frameBufferMenu.addAction("RGBA8");
 	tmp->setCheckable(true);
-	tmp->setData(Viewport::BufferFormat::RGBA8);
+	tmp->setData(QVariant::fromValue(Viewport::BufferFormat::RGBA8));
 	actionGroup->addAction(tmp);
 
 	tmp = frameBufferMenu.addAction("RGBA16F");
 	tmp->setCheckable(true);
 	tmp->setChecked(true);
-	tmp->setData(Viewport::BufferFormat::RGBA16F);
+	tmp->setData(QVariant::fromValue(Viewport::BufferFormat::RGBA16F));
 	actionGroup->addAction(tmp);
 
 	tmp = frameBufferMenu.addAction("RGBA32F");
 	tmp->setCheckable(true);
-	tmp->setData(Viewport::BufferFormat::RGBA32F);
+	tmp->setData(QVariant::fromValue(Viewport::BufferFormat::RGBA32F));
 	actionGroup->addAction(tmp);
 }
 
@@ -375,9 +383,45 @@ void DistViewGUI::updateBufferFormat(Viewport::BufferFormat format)
 {
 	QList<QAction*> list = frameBufferMenu.actions();
 	for (QAction* act : list) {
-		if (act->data().toInt() == format) {
+		if (act->data().value<Viewport::BufferFormat>() == format) {
 			act->setChecked(true);
 			return;
 		}
 	}
+}
+
+void DistViewGUI::saveState()
+{
+	QSettings settings;
+	settings.beginGroup("DistView" + representation::prettyString(type));
+	settings.setValue("HQDrawing", uivc->actionHq->isChecked());
+	settings.setValue("LogDrawing",uivc->actionLog->isChecked());
+	settings.setValue("alphaModifier", uivc->alphaSlider->value());
+	settings.setValue("NBins", uivc->binSlider->value());
+	settings.endGroup();
+}
+
+void DistViewGUI::restoreState()
+{
+	QSettings settings;
+
+	QString title = representation::prettyString(type);
+	settings.beginGroup("DistView" + title);
+
+	bool checked = settings.value("HQDrawing", true).toBool();
+	uivc->actionHq->setChecked(checked);
+
+	checked = settings.value("LogDrawing", false).toBool();
+	uivc->actionLog->setChecked(checked);
+
+	int alpha = settings.value("alphaModifier", 50).toInt();
+	uivc->alphaSlider->setValue(alpha);
+
+	int nbins = settings.value("NBins", 64).toInt();
+	uivc->binSlider->setValue(nbins);
+
+	updateBufferFormat(
+	            (Viewport::BufferFormat)settings.value("BufferFormat", Viewport::RGBA16F).toInt());
+
+	settings.endGroup();
 }

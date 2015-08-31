@@ -24,6 +24,8 @@
 #include <QPainter>
 #include <QSignalMapper>
 #include <QAction>
+#include <QDebug>
+#include <QSettings>
 #include <boost/format.hpp>
 
 Viewport::Viewport(representation::t type, QGLWidget *target)
@@ -44,7 +46,11 @@ Viewport::Viewport(representation::t type, QGLWidget *target)
 	(*ctx)->reset = 1;
 	(*ctx)->ignoreLabels = false;
 
+	restoreState();
 	initTimers();
+
+	connect(QApplication::instance(), SIGNAL(lastWindowClosed()),
+	        this, SLOT(saveState()));
 }
 
 Viewport::~Viewport()
@@ -526,4 +532,21 @@ void Viewport::toggleBufferFormat()
 	updateBuffers();
 
 	emit bufferFormatToggled(bufferFormat);
+}
+
+void Viewport::saveState()
+{
+	QSettings settings;
+	QString title = representation::prettyString(type);
+	settings.beginGroup("DistView" + title);
+	settings.setValue("BufferFormat", bufferFormat);
+	settings.endGroup();
+}
+
+void Viewport::restoreState()
+{
+	QSettings settings;
+	settings.beginGroup("DistView" + representation::prettyString(type));
+	bufferFormat = (BufferFormat) settings.value("BufferFormat", RGBA16F).toInt();
+	settings.endGroup();
 }

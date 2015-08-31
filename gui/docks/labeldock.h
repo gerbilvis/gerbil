@@ -37,6 +37,7 @@ public:
 
 	/** Set the size of the multi_img. */
 	void setImageSize(cv::Size imgSize);
+	void restoreState();
 	
 public slots:
 
@@ -113,6 +114,8 @@ private slots:
 	void resizeSceneContents();
 
 	void deselectSelectedLabels();
+
+	void saveState();
 
 private:
 

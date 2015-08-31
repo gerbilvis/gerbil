@@ -61,6 +61,9 @@ void BandDock::initUi()
 	connect(alphaSlider, SIGNAL(valueChanged(int)),
 	        bv, SLOT(applyLabelAlpha(int)));
 
+	connect(bv, SIGNAL(setAlphaValue(int)),
+	        alphaSlider, SLOT(setValue(int)));
+
 	connect(clearButton, SIGNAL(clicked()),
 	        this, SLOT(clearLabel()));
 	connect(bv, SIGNAL(clearRequested()),
