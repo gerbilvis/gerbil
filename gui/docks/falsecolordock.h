@@ -27,6 +27,7 @@ signals:
 
 	void subscribeFalseColoring(QObject* subscriber, FalseColoring::Type coloringType);
 	void unsubscribeFalseColoring(QObject* subscriber, FalseColoring::Type coloringType);
+	void pixelOverlay(int, int);
 
 public slots:
 	void processVisibilityChanged(bool visible);
@@ -45,6 +46,8 @@ protected slots:
 	void screenshot();
 protected:
 	void initUi();
+	// event filter to intercept leave() on our view
+	bool eventFilter(QObject *obj, QEvent *event);
 
 	// the coloringType currently selected in the comboBox
 	FalseColoring::Type selectedColoring();

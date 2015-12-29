@@ -261,4 +261,6 @@ private:
 	} boundaries;
 };
 
+Q_DECLARE_METATYPE(Viewport::BufferFormat)
+
 #endif // VIEWPORT_H

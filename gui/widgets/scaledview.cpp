@@ -74,6 +74,12 @@ void ScaledView::resizeEvent()
 	if (pixmap.isNull())
 		return;
 
+	QRectF rect = scaler.mapRect(pixmap.rect());
+	if (zoom > 1 && !sceneRect().contains(rect)) {
+		adjustBoundaries();
+		return;
+	}
+
 	// determine scale of correct aspect-ratio
 	float src_aspect = pixmap.width()/(float)pixmap.height();
 	float dest_aspect = width/(float)height;
@@ -88,6 +94,7 @@ void ScaledView::resizeEvent()
 	scaler.translate(offLeft + (width - offLeft - offRight - w)/2.f,
 	                 offTop + (height - offTop - offBottom - w/src_aspect)/2.f);
 	/* scaling */
+	zoom = 1;
 	float scale = w/pixmap.width();
 	scaler.scale(scale, scale);
 	scalerUpdate();
@@ -222,6 +229,23 @@ void ScaledView::drawWaitMessage(QPainter *painter)
 
 void ScaledView::cursorAction(QGraphicsSceneMouseEvent *ev, bool click)
 {
+	QPointF cursorF = scalerI.map(QPointF(ev->scenePos()));
+	QPoint cursor(std::floor(cursorF.x() - 0.25),
+	              std::floor(cursorF.y() - 0.25));
+
+	if (ev->buttons() & Qt::RightButton && inputMode != InputMode::Seed) {
+		showContextMenu(ev->screenPos());
+	} else if (ev->buttons() == Qt::NoButton) {
+		// overlay in spectral views but not during pixel labeling (reduce lag)
+		emit pixelOverlay(cursor.y(), cursor.x());
+	}
+}
+
+void ScaledView::leaveEvent()
+{
+	// invalidate previous overlay
+	emit pixelOverlay(-1,-1);
+	update();
 }
 
 void ScaledView::wheelEvent(QGraphicsSceneWheelEvent *event)
@@ -231,6 +255,7 @@ void ScaledView::wheelEvent(QGraphicsSceneWheelEvent *event)
 	if (inputMode != InputMode::Zoom)
 		return;
 
+	QRectF rect = scaler.mapRect(pixmap.rect());
 	qreal newzoom;
 
 	if (event->delta() > 0) {
@@ -239,14 +264,14 @@ void ScaledView::wheelEvent(QGraphicsSceneWheelEvent *event)
 		newzoom = 0.8;
 	}
 
-	if (zoom*newzoom <= 1) {
-		if (zoom == 1) {
-			return;
-		} else {
-			zoom = 1;
-			resizeEvent();
-		}
-	} else {
+	if ((zoom < 1 && newzoom > 1) ||
+	    (zoom > 1 && zoom*newzoom <= 1)) {
+		zoom = 1;
+		resizeEvent();
+	} else if (zoom == 1 && newzoom < 1
+	           && pixmap.width()/rect.width() < 1) {
+		scaleOriginal();
+	} else if (zoom > 1 || newzoom > 1) {
 		//obtain cursor position in scene coordinates
 		QPointF scene = event->scenePos();
 		//obtain cursor position in pixmap coordinates
@@ -266,6 +291,76 @@ void ScaledView::wheelEvent(QGraphicsSceneWheelEvent *event)
 		scaler.translate(diff.x(), diff.y());
 		adjustBoundaries();
 	}
+}
+
+void ScaledView::scaleOriginal()
+{
+	qreal currzoom = zoom;
+	zoom = 1;
+	resizeEvent();
+
+	QRectF rect = scaler.mapRect(pixmap.rect());
+	qreal ratio = pixmap.width() / rect.width();
+
+	scaler.scale(ratio, ratio);
+	zoom = currzoom * ratio;
+
+	qreal x = 0.f;
+	qreal y = 0.f;
+
+	rect = scaler.mapRect(pixmap.rect());
+	QRectF sceneRect = this->sceneRect();
+
+	if (rect.width() < sceneRect.width() - offLeft - offRight) {
+		QPointF space((sceneRect.width() - offLeft - offRight - rect.width())/2.f, 0.f);
+		space = scaler.inverted().map(space);
+		QPointF pos(rect.x(), 0.f);
+		pos = scaler.inverted().map(pos);
+
+		x = space.x() - pos.x() + offLeft;
+	}
+
+	if (rect.height() < sceneRect.height() - offTop - offBottom) {
+		QPointF space(0.f,
+		              (sceneRect.height() - offTop - offBottom - rect.height())/2.f);
+		space = scaler.inverted().map(space);
+		QPointF pos(0.f, rect.y());
+		pos = scaler.inverted().map(pos);
+
+		y = space.y() - pos.y() + offTop;
+	}
+
+	scaler.translate(x,y);
+	scalerUpdate();
+	update();
+
+}
+
+QMenu* ScaledView::createContextMenu()
+{
+	QMenu* contextMenu = new QMenu();
+
+	QAction* tmp;
+	tmp = contextMenu->addAction("Scale best fit");
+	tmp->setIcon(QIcon::fromTheme("zoom-best-fit"));
+	tmp->setIconVisibleInMenu(true);
+	connect(tmp, SIGNAL(triggered()), this, SLOT(fitScene()));
+
+	tmp = contextMenu->addAction("Scale 100%");
+	tmp->setIcon(QIcon::fromTheme("zoom-original"));
+	tmp->setIconVisibleInMenu(true);
+	connect(tmp, SIGNAL(triggered()), this, SLOT(scaleOriginal()));
+
+	connect(contextMenu, SIGNAL(aboutToHide()),
+	        this, SIGNAL(updateScrolling()));
+
+	return contextMenu;
+}
+
+void ScaledView::showContextMenu(QPoint screenpoint)
+{
+	if (!contextMenu) contextMenu = createContextMenu();
+	contextMenu->exec(screenpoint);
 }
 
 void ScaledView::alignLeft()

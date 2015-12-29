@@ -40,15 +40,15 @@ protected slots:
 	// band slider movement
 	void processBandsSliderChange(int b);
 
-	void processRoiButtonsClicked(QAbstractButton *sender);
-
 	// new roi selected in RoiView or propagated through controller (internal)
 	void processNewSelection(const QRect &roi, bool internal = false);
 
-protected:
 	// helper functions to roiButtonsClicked
 	void resetRoi();
 	void applyRoi();
+
+protected:
+	void enableActions(bool enable);
 
 private:
 	void initUi();
