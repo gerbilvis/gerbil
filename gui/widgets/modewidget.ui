@@ -7,7 +7,7 @@
     <x>0</x>
     <y>0</y>
     <width>378</width>
-    <height>88</height>
+    <height>91</height>
    </rect>
   </property>
   <property name="sizePolicy">
@@ -50,7 +50,7 @@
       <number>9</number>
      </property>
      <item>
-      <widget class="QPushButton" name="zoomButton">
+      <widget class="ActionButton" name="zoomButton">
        <property name="sizePolicy">
         <sizepolicy hsizetype="Maximum" vsizetype="Fixed">
          <horstretch>0</horstretch>
@@ -98,7 +98,7 @@
       </spacer>
      </item>
      <item>
-      <widget class="QPushButton" name="labelButton">
+      <widget class="ActionButton" name="labelButton">
        <property name="sizePolicy">
         <sizepolicy hsizetype="Maximum" vsizetype="Fixed">
          <horstretch>0</horstretch>
@@ -143,7 +143,7 @@
       </spacer>
      </item>
      <item>
-      <widget class="QPushButton" name="pickButton">
+      <widget class="ActionButton" name="pickButton">
        <property name="sizePolicy">
         <sizepolicy hsizetype="Maximum" vsizetype="Fixed">
          <horstretch>0</horstretch>
@@ -175,9 +175,6 @@
       </property>
       <item>
        <widget class="QPushButton" name="smallCurButton">
-        <property name="enabled">
-         <bool>true</bool>
-        </property>
         <property name="text">
          <string/>
         </property>
@@ -195,9 +192,6 @@
       </item>
       <item>
        <widget class="QPushButton" name="mediumCurButton">
-        <property name="enabled">
-         <bool>true</bool>
-        </property>
         <property name="text">
          <string/>
         </property>
@@ -215,9 +209,6 @@
       </item>
       <item>
        <widget class="QPushButton" name="bigCurButton">
-        <property name="enabled">
-         <bool>true</bool>
-        </property>
         <property name="text">
          <string/>
         </property>
@@ -232,9 +223,6 @@
       </item>
       <item>
        <widget class="QPushButton" name="hugeCurButton">
-        <property name="enabled">
-         <bool>true</bool>
-        </property>
         <property name="text">
          <string/>
         </property>
@@ -269,6 +257,24 @@
        </widget>
       </item>
       <item>
+       <widget class="ActionButton" name="overrideButton">
+        <property name="text">
+         <string/>
+        </property>
+        <property name="icon">
+         <iconset resource="../gerbil.qrc">
+          <normaloff>:/toolbar/overwrite-off</normaloff>
+          <normalon>:/toolbar/overwrite-on</normalon>:/toolbar/overwrite-off</iconset>
+        </property>
+        <property name="checkable">
+         <bool>true</bool>
+        </property>
+        <property name="checked">
+         <bool>true</bool>
+        </property>
+       </widget>
+      </item>
+      <item>
        <spacer name="horizontalSpacer_3">
         <property name="orientation">
          <enum>Qt::Horizontal</enum>
@@ -285,6 +291,97 @@
     </widget>
    </item>
   </layout>
+  <action name="actionZoom">
+   <property name="checkable">
+    <bool>true</bool>
+   </property>
+   <property name="checked">
+    <bool>true</bool>
+   </property>
+   <property name="icon">
+    <iconset resource="../gerbil.qrc">
+     <normaloff>:/basic/zoom</normaloff>:/basic/zoom</iconset>
+   </property>
+   <property name="text">
+    <string>Zoom</string>
+   </property>
+   <property name="toolTip">
+    <string>zoom/pan</string>
+   </property>
+   <property name="shortcut">
+    <string>1</string>
+   </property>
+  </action>
+  <action name="actionLabel">
+   <property name="checkable">
+    <bool>true</bool>
+   </property>
+   <property name="icon">
+    <iconset resource="../gerbil.qrc">
+     <normaloff>:/basic/pencil</normaloff>:/basic/pencil</iconset>
+   </property>
+   <property name="text">
+    <string>Label</string>
+   </property>
+   <property name="toolTip">
+    <string>edit label</string>
+   </property>
+   <property name="shortcut">
+    <string>2</string>
+   </property>
+  </action>
+  <action name="actionPick">
+   <property name="checkable">
+    <bool>true</bool>
+   </property>
+   <property name="icon">
+    <iconset resource="../gerbil.qrc">
+     <normaloff>:/basic/picker</normaloff>:/basic/picker</iconset>
+   </property>
+   <property name="text">
+    <string>Pick</string>
+   </property>
+   <property name="toolTip">
+    <string>pick labels</string>
+   </property>
+   <property name="shortcut">
+    <string>3</string>
+   </property>
+  </action>
+  <action name="actionRubber">
+   <property name="checkable">
+    <bool>true</bool>
+   </property>
+   <property name="icon">
+    <iconset resource="../gerbil.qrc">
+     <normaloff>:/toolbar/eraser</normaloff>:/toolbar/eraser</iconset>
+   </property>
+   <property name="text">
+    <string>Rubber</string>
+   </property>
+   <property name="shortcut">
+    <string>X</string>
+   </property>
+  </action>
+  <action name="actionOverride">
+   <property name="checkable">
+    <bool>true</bool>
+   </property>
+   <property name="checked">
+    <bool>true</bool>
+   </property>
+   <property name="icon">
+    <iconset resource="../gerbil.qrc">
+     <normaloff>:/toolbar/overwrite-off</normaloff>
+     <normalon>:/toolbar/overwrite-on</normalon>:/toolbar/overwrite-off</iconset>
+   </property>
+   <property name="text">
+    <string>Override</string>
+   </property>
+   <property name="shortcut">
+    <string>O</string>
+   </property>
+  </action>
  </widget>
  <customwidgets>
   <customwidget>

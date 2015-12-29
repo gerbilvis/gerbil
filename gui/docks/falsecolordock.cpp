@@ -142,6 +142,7 @@ void FalseColorDock::processApplyClicked()
 void FalseColorDock::initUi()
 {
 	// initialize scaled view
+	view->installEventFilter(this); // needed for leave event
 	view->init();
 	scene = new ScaledView();
 	view->setScene(scene);
@@ -177,6 +178,12 @@ void FalseColorDock::initUi()
 
 	connect(scene, SIGNAL(newSizeHint(QSize)),
 			view, SLOT(updateSizeHint(QSize)));
+
+	connect(scene, SIGNAL(updateScrolling(bool)),
+	        view, SLOT(suppressScrolling(bool)));
+
+	connect(scene, SIGNAL(pixelOverlay(int,int)),
+	        this, SIGNAL(pixelOverlay(int,int)));
 
 	connect(uisel->sourceBox, SIGNAL(currentIndexChanged(int)),
 			this, SLOT(processSelectedColoring()));
@@ -307,4 +314,13 @@ void FalseColorDock::screenshot()
 	io.setFileSuffix(".png");
 	io.setFileCategory("Screenshot");
 	io.writeImage(output);
+}
+
+bool FalseColorDock::eventFilter(QObject *obj, QEvent *event)
+{
+	if (event->type() == QEvent::Leave)
+		scene->leaveEvent();
+
+	// continue with standard event processing
+	return QObject::eventFilter(obj, event);
 }

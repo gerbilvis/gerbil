@@ -17,11 +17,9 @@ public:
 	explicit ModeWidget(AutohideView* view);
 	~ModeWidget();
 
-protected:
 	void initUi();
 
 signals:
-	void inputModeChanged(ScaledView::InputMode m);
 	void cursorSizeChanged(BandView::CursorSize s);
 
 public slots:
@@ -29,12 +27,17 @@ public slots:
 	void updateCursorMode(BandView::CursorMode m);
 	void updateCursorSize(BandView::CursorSize s);
 
-	ActionButton* getRubberButton() { return rubberButton; }
+	QAction* zoomAction() { return actionZoom; }
+	QAction* labelAction() { return actionLabel; }
+	QAction* pickAction() { return actionPick; }
+	QAction* rubberAction() { return actionRubber; }
+	QAction* overrideAction() { return actionOverride; }
+
+	void zoomMode();
+	void pickMode();
+	void labelMode();
 
 private slots:
-	void on_zoomButton_released();
-	void on_pickButton_released();
-	void on_labelButton_released();
 	void on_smallCurButton_released();
 	void on_mediumCurButton_released();
 	void on_bigCurButton_released();

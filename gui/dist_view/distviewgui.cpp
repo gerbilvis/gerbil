@@ -36,54 +36,33 @@ void DistViewGUI::initVP()
 
 void DistViewGUI::initVPActions()
 {
-	QAction *hqAct = new QAction(ui->gv);
-	hqAct->setShortcut(Qt::Key_Space);
-	hqAct->setShortcutContext(Qt::WidgetShortcut);
-	hqAct->setCheckable(true);
-	ui->gv->addAction(hqAct);
-	uivc->hqButton->setAction(hqAct);
-	vp->setDrawHQ(hqAct);
-	connect(hqAct, SIGNAL(triggered()), vp, SLOT(toggleHQ()));
+	ui->gv->addAction(uivc->actionHq);
+	uivc->hqButton->setAction(uivc->actionHq);
+	vp->setDrawHQ(uivc->actionHq);
+	connect(uivc->actionHq, SIGNAL(triggered()), vp, SLOT(toggleHQ()));
 
-	QAction *logAct = new QAction(ui->gv);
-	logAct->setShortcut(Qt::Key_L);
-	logAct->setShortcutContext(Qt::WidgetShortcut);
-	logAct->setCheckable(true);
-	ui->gv->addAction(logAct);
-	uivc->logButton->setAction(logAct);
-	vp->setDrawLog(logAct);
-	connect(logAct, SIGNAL(triggered()), vp, SLOT(updateBuffers()));
+	ui->gv->addAction(uivc->actionLog);
+	uivc->logButton->setAction(uivc->actionLog);
+	vp->setDrawLog(uivc->actionLog);
+	connect(uivc->actionLog, SIGNAL(triggered()), vp, SLOT(updateBuffers()));
 
-	QAction *scrAct = new QAction(ui->gv);
-	scrAct->setShortcut(Qt::Key_S);
-	scrAct->setShortcutContext(Qt::WidgetShortcut);
-	ui->gv->addAction(scrAct);
-	uivc->screenshotButton->setAction(scrAct);
-	connect(scrAct, SIGNAL(triggered()), vp, SLOT(screenshot()));
+	ui->gv->addAction(uivc->actionScr);
+	uivc->screenshotButton->setAction(uivc->actionScr);
+	connect(uivc->actionScr, SIGNAL(triggered()), vp, SLOT(screenshot()));
 
-	QAction *buffAct = new QAction(ui->gv);
-	buffAct->setShortcut(Qt::Key_F);
-	buffAct->setShortcutContext(Qt::WidgetShortcut);
-	ui->gv->addAction(buffAct);
-	connect(buffAct, SIGNAL(triggered()), vp, SLOT(toggleBufferFormat()));
+	ui->gv->addAction(uivc->actionBuff);
+	connect(uivc->actionBuff, SIGNAL(triggered()), vp, SLOT(toggleBufferFormat()));
 	connect(vp, SIGNAL(bufferFormatToggled(Viewport::BufferFormat)),
 	        this, SLOT(updateBufferFormat(Viewport::BufferFormat)));
 
-	QAction* rgbAct = new QAction(ui->gv);
-	rgbAct->setCheckable(true);
-	ui->gv->addAction(rgbAct);
-	uivc->rgbButton->setAction(rgbAct);
-	vp->setDrawRGB(rgbAct);
-	connect(rgbAct, SIGNAL(triggered()), vp, SLOT(updateBuffers()));
+	ui->gv->addAction(uivc->actionRgb);
+	uivc->rgbButton->setAction(uivc->actionRgb);
+	vp->setDrawRGB(uivc->actionRgb);
+	connect(uivc->actionRgb, SIGNAL(triggered()), vp, SLOT(updateBuffers()));
 
-	QAction* meansAct = new QAction(ui->gv);
-	meansAct->setShortcut(Qt::Key_M);
-	meansAct->setShortcutContext(Qt::WidgetShortcut);
-	meansAct->setCheckable(true);
-	meansAct->setChecked(true);
-	ui->gv->addAction(meansAct);
-	vp->setDrawMeans(meansAct);
-	connect(meansAct, SIGNAL(triggered()), vp, SLOT(rebuild()));
+	ui->gv->addAction(uivc->actionMeans);
+	vp->setDrawMeans(uivc->actionMeans);
+	connect(uivc->actionMeans, SIGNAL(triggered()), vp, SLOT(rebuild()));
 }
 
 void DistViewGUI::initVC(representation::t type)
@@ -370,7 +349,7 @@ void DistViewGUI::showFrameBufferMenu()
 	if (!a)
 		return;
 
-	Viewport::BufferFormat choice = (Viewport::BufferFormat) a->data().toInt();
+	Viewport::BufferFormat choice = a->data().value<Viewport::BufferFormat>();
 	vp->setBufferFormat(choice);
 }
 
