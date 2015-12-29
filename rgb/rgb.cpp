@@ -264,8 +264,8 @@ void RGBDisplay::printShortHelp() const {
 void RGBDisplay::printHelp() const {
 	std::cout << "RGB image creation (true-color or false-color)" << std::endl;
 	std::cout << std::endl;
-	std::cout << "XYZ does a true-color image creation using a standard white balancing.\n"
-	             "PCA and SOM do false-coloring.\"";
+	std::cout << "XYZ creates a true-color image using a standard white balancing.\n"
+	             "PCA and SOM perform false-coloring.";
 	std::cout << std::endl;
 }
 
