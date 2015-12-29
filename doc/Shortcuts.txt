@@ -17,4 +17,8 @@ arrows	-	navigating through spectral plot
 
 ----BANDVIEW----
 
+'1'	-	zooming/panning mode
+'2'	-	label mode
+'3'	-	pick mode 
+'x'	-	rubber/marker toggle in label mode
 'c'	-	clear seeds / clear label 

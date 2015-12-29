@@ -9,6 +9,7 @@
 class BandView;
 class GraphSegWidget;
 class ModeWidget;
+class QAction;
 
 class BandDock : public QDockWidget, private Ui::BandDock
 {
@@ -76,6 +77,7 @@ protected:
 	bool eventFilter(QObject *obj, QEvent *event);
 
 	void initUi();
+	void initActions();
 
 	// local copies
 	QVector<QColor> labelColors;

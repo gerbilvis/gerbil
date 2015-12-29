@@ -89,6 +89,7 @@ void GerbilApplication::init_qt()
 	 *  initialization of your resources"
 	 */
 	Q_INIT_RESOURCE(gerbil);
+	QApplication::setAttribute(Qt::AA_DontShowIconsInMenus, false);
 
 	// setup our custom icon theme if there is no system theme (OS X, Windows)
 	if (QIcon::themeName().isEmpty() || !QIcon::themeName().compare("hicolor"))

@@ -44,6 +44,9 @@ void BandDock::initUi()
 	bv->offBottom = AutohideWidget::OutOffset;
 	view->addWidget(AutohideWidget::BOTTOM, gs);
 
+	connect(bv, SIGNAL(updateScrolling(bool)),
+	        view, SLOT(suppressScrolling(bool)));
+
 	connect(bv, SIGNAL(newSizeHint(QSize)),
 	        view, SLOT(updateSizeHint(QSize)));
 
@@ -86,25 +89,52 @@ void BandDock::initUi()
 	bv->offTop = AutohideWidget::OutOffset;
 	view->addWidget(AutohideWidget::TOP, mw);
 
-	connect(mw, SIGNAL(inputModeChanged(ScaledView::InputMode)),
-	        bv, SLOT(updateInputMode(ScaledView::InputMode)));
 	connect(bv, SIGNAL(inputModeChanged(ScaledView::InputMode)),
 	        mw, SLOT(updateInputMode(ScaledView::InputMode)));
 	connect(mw, SIGNAL(cursorSizeChanged(BandView::CursorSize)),
 	        bv, SLOT(updateCursorSize(BandView::CursorSize)));
 
-	QAction *cursorModeAct = new QAction(bv);
-	cursorModeAct->setShortcut(Qt::Key_X);
-	cursorModeAct->setShortcutContext(Qt::WidgetShortcut);
-	cursorModeAct->setCheckable(true);
-	view->addAction(cursorModeAct);
-	mw->getRubberButton()->setAction(cursorModeAct);
-	connect(cursorModeAct, SIGNAL(triggered(bool)), bv, SLOT(toggleCursorMode()));
-
 	connect(screenshotButton, SIGNAL(released()),
 	        this, SLOT(screenshot()));
 
+	initActions();
 	bv->initUi();
+	mw->initUi();
+}
+
+void BandDock::initActions()
+{
+	QActionGroup *actionGroup = new QActionGroup(this);
+	actionGroup->setExclusive(true);
+
+	actionGroup->addAction(mw->zoomAction());
+	bv->setZoomAction(mw->zoomAction());
+	this->addAction(mw->zoomAction());
+	mw->zoomAction()->setData(QVariant::fromValue(ScaledView::InputMode::Zoom));
+	connect(mw->zoomAction(), SIGNAL(triggered()),
+	        bv, SLOT(updateInputMode()));
+
+	actionGroup->addAction(mw->labelAction());
+	bv->setLabelAction(mw->labelAction());
+	this->addAction(mw->labelAction());
+	mw->labelAction()->setData(QVariant::fromValue(ScaledView::InputMode::Label));
+	connect(mw->labelAction(), SIGNAL(triggered()),
+	        bv, SLOT(updateInputMode()));
+
+	actionGroup->addAction(mw->pickAction());
+	bv->setPickAction(mw->pickAction());
+	this->addAction(mw->pickAction());
+	mw->pickAction()->setData(QVariant::fromValue(ScaledView::InputMode::Pick));
+	connect(mw->pickAction(), SIGNAL(triggered()),
+	        bv, SLOT(updateInputMode()));
+
+	this->addAction(mw->rubberAction());
+	connect(mw->rubberAction(), SIGNAL(triggered()),
+	        bv, SLOT(toggleCursorMode()));
+
+	this->addAction(mw->overrideAction());
+	connect(mw->overrideAction(), SIGNAL(triggered()),
+	        bv, SLOT(toggleOverrideMode()));
 }
 
 void BandDock::changeBand(representation::t repr, int bandId,

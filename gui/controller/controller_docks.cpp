@@ -161,6 +161,8 @@ void Controller::setupDocks()
 			this, SLOT(unsubscribeFalseColor(QObject*,FalseColoring::Type)));
 	connect(falseColorDock, SIGNAL(falseColoringRecalcRequested(FalseColoring::Type)),
 			this, SLOT(recalcFalseColor(FalseColoring::Type)));
+	connect(falseColorDock, SIGNAL(pixelOverlay(int,int)),
+	        this, SIGNAL(requestPixelOverlay(int,int)));
 
 	connect(falseColorModel(), SIGNAL(progressChanged(FalseColoring::Type,int)),
 			falseColorDock, SLOT(processCalculationProgressChanged(FalseColoring::Type,int)));

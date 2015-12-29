@@ -47,8 +47,8 @@ vole_check_package(OPENGL
 	"OpenGL"
 	"Please check your OpenGL installation."
 	OpenGL_FOUND
-	"${OpenGL_INCLUDE_DIR}"
-	"${OpenGL_LIBRARIES}"
+	"${OPENGL_INCLUDE_DIR}"
+	"${OPENGL_LIBRARIES}"
 )
 
 # GLEW

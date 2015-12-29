@@ -10,7 +10,6 @@ ModeWidget::ModeWidget(AutohideView *view) :
 	AutohideWidget()
 {
 	setupUi(this);
-	initUi();
 }
 
 ModeWidget::~ModeWidget()
@@ -32,6 +31,21 @@ void ModeWidget::initUi()
 	cursorGroup->addButton(bigCurButton);
 	cursorGroup->addButton(hugeCurButton);
 	setCursorButtonsVisible(false);
+
+	zoomButton->setAction(actionZoom);
+	connect(actionZoom, SIGNAL(triggered()),
+	        this, SLOT(zoomMode()));
+
+	labelButton->setAction(actionLabel);
+	connect(actionLabel, SIGNAL(triggered()),
+	        this, SLOT(labelMode()));
+
+	pickButton->setAction(actionPick);
+	connect(actionZoom, SIGNAL(triggered()),
+	        this, SLOT(pickMode()));
+
+	rubberButton->setAction(actionRubber);
+	overrideButton->setAction(actionOverride);
 }
 
 void ModeWidget::updateInputMode(ScaledView::InputMode m)
@@ -81,31 +95,26 @@ void ModeWidget::updateCursorMode(BandView::CursorMode m)
 	rubberButton->setChecked(m == CM::Rubber);
 }
 
-void ModeWidget::on_zoomButton_released()
+void ModeWidget::zoomMode()
 {
-	emit inputModeChanged(IM::Zoom);
 	setCursorButtonsVisible(false);
-	adjustSize();
 }
 
-void ModeWidget::on_pickButton_released()
+void ModeWidget::pickMode()
 {
-	emit inputModeChanged(IM::Pick);
 	setCursorButtonsVisible(false);
-	adjustSize();
 }
 
-void ModeWidget::on_labelButton_released()
+void ModeWidget::labelMode()
 {
-	emit inputModeChanged(IM::Label);
 	setCursorButtonsVisible(true);
-	adjustSize();
 }
 
 void ModeWidget::setCursorButtonsVisible(bool visible)
 {
 	labelModeWidget->setVisible(visible);
 	adjustSize();
+	reposition();
 }
 
 void ModeWidget::on_smallCurButton_released()

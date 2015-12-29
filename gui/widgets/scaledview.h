@@ -3,6 +3,7 @@
 
 #include <QGraphicsScene>
 #include <QPainter>
+#include <QMenu>
 
 class QGLWidget;
 
@@ -34,6 +35,15 @@ public:
 signals:
 	void newSizeHint(QSize hint);
 	void newContentRect(QRect rect);
+	void updateScrolling(bool scrolling = false);
+	void pixelOverlay(int y, int x);
+
+private slots:
+	inline void fitScene() { zoom = 1; resizeEvent(); }
+	void scaleOriginal();
+
+public slots:
+	virtual void leaveEvent();
 
 protected:
 	// handles both resize and drawing
@@ -49,6 +59,12 @@ protected:
 
 	void drawWaitMessage(QPainter *painter);
 
+	void adjustBoundaries();
+	void alignLeft();
+	void alignRight();
+	void alignBottom();
+	void alignTop();
+
 	// draw the background, inline function
 	void fillBackground(QPainter *painter, const QRectF& rect) {
 		static QBrush brush(Qt::gray, Qt::Dense4Pattern);
@@ -58,6 +74,11 @@ protected:
 
 	// always call after changes to scaler
 	void scalerUpdate();
+
+	virtual QMenu* createContextMenu();
+	virtual void showContextMenu(QPoint screenpoint);
+
+	QMenu* contextMenu = nullptr;
 
 	// scene geometry
 	int width, height;
@@ -70,5 +91,7 @@ protected:
 	// the pixmap we display
 	QPixmap	pixmap;
 };
+
+Q_DECLARE_METATYPE(ScaledView::InputMode)
 
 #endif // SCALEDVIEW_H
