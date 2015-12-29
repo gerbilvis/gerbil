@@ -59,7 +59,7 @@ public:
 	virtual bool readConfig(const char *filename);
 
 	bool storeConfig(const char *filename);
-	virtual std::string getString() const = 0;
+	virtual std::string getString() const { return {}; };
 
 	virtual unsigned long int
 	configHash(Hashes::Method method = Hashes::HASH_djb2);
