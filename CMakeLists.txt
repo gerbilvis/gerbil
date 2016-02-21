@@ -10,7 +10,25 @@ endif()
 
 project(Gerbil)
 
-set(CMAKE_CXX_STANDARD 11)
+## C++11 requirement
+if(CMAKE_VERSION VERSION_GREATER "3.1")
+	set(CMAKE_CXX_STANDARD 11)
+	set(CMAKE_CXX_STANDARD_REQUIRED ON)
+else() # [remove when bumping CMake req. to 3.1+]
+	if ("${CMAKE_CXX_COMPILER_ID}" MATCHES "GNU")
+		execute_process(
+			COMMAND ${CMAKE_CXX_COMPILER} -dumpversion OUTPUT_VARIABLE GCC_VERSION)
+		if (NOT (GCC_VERSION VERSION_GREATER 4.7 OR GCC_VERSION VERSION_EQUAL 4.7))
+			message(FATAL_ERROR "${PROJECT_NAME} requires g++ 4.7 or greater.")
+		endif ()
+		set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11")
+	elseif ("${CMAKE_CXX_COMPILER_ID}" MATCHES "Clang")
+		set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -stdlib=libc++")
+	else ()
+		message(FATAL_ERROR "Your C++ compiler does not support C++11.")
+	endif ()
+endif()
+##
 
 set(CMAKE_MODULE_PATH "${CMAKE_SOURCE_DIR}/cmake")
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin)
@@ -25,7 +43,7 @@ if(MSVC)
 	endif()
 elseif(CMAKE_COMPILER_IS_GNUCC OR CMAKE_COMPILER_IS_GNUCXX)
 	# Update if necessary
-	set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -Wno-long-long -Wno-reorder -pedantic -std=c++11")
+	set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -Wno-long-long -Wno-reorder -pedantic")
 endif()
 
 include(VoleHelperMacros)
