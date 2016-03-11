@@ -281,9 +281,9 @@ void Controller::updateROI(bool reuse, cv::Rect newRoi, int bands)
 		bool needed = subscriptions.images.subscribed(r);
 
 		if (needed) {
-			GGDBGM("     subscribed " << repr << endl);
+			GGDBGM("     subscribed " << r << endl);
 		} else {
-			GGDBGM("not  subscribed " << repr << endl);
+			GGDBGM("not  subscribed " << r << endl);
 		}
 
 		if (needed) {

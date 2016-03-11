@@ -170,7 +170,7 @@ sets_ptr DistViewController::subImage(representation::t type,
                                       const std::vector<cv::Rect> &regions,
                                       cv::Rect roi)
 {
-	GGDBG_CALL();
+	GGDBGM(type << endl);
 	return payloadMap[type]->model.subImage(regions, roi);
 }
 
@@ -178,7 +178,7 @@ void DistViewController::addImage(representation::t type, sets_ptr temp,
                                   const std::vector<cv::Rect> &regions,
                                   cv::Rect roi)
 {
-	GGDBG_CALL();
+	GGDBGM(type << endl);
 	payloadMap[type]->model.addImage(temp, regions, roi);
 }
 
