@@ -34,6 +34,7 @@ DistViewController::DistViewController(
 		// TODO: the other way round. ctx+sets come from model
 		p->model.setContext(payloadMap[r]->gui.getContext());
 		p->model.setBinSets(payloadMap[r]->gui.getBinSets());
+		p->viewFolded = false;
 		p->binningNeeded = false;
 		p->isSubscribed = false;
 	}
@@ -56,16 +57,14 @@ void DistViewController::init()
 			activeView = representation::IMG;
 		}
 		payloadMap[activeView]->gui.setActive();
-		for (auto r : representation::all()) {
-			if (payloadMap[r])  {
-				QString key = QString("viewports/") +
-				              representation::str(r) + "folded";
-				// read folded setting, default unfolded
-				bool folded = settings.value(key, false).value<bool>();
-				viewFolded[r] = folded;
-				Payload *p = payloadMap[r];
-				p->gui.fold(folded);
-			}
+		for (auto r : payloadMap.keys()) {
+			auto &p = payloadMap[r];
+			QString key = QString("viewports/") +
+			              representation::str(r) + "folded";
+			// read folded setting, default unfolded
+			bool folded = settings.value(key, false).value<bool>();
+			p->viewFolded = folded;
+			p->gui.fold(folded);
 		}
 	} else {
 		// no settings available
@@ -73,11 +72,6 @@ void DistViewController::init()
 		// beginning.
 		activeView = representation::IMG;
 		payloadMap[activeView]->gui.setActive();
-		viewFolded[representation::IMG]     =  false;
-		viewFolded[representation::GRAD]    =  false;
-		viewFolded[representation::NORM]    =  true;
-		viewFolded[representation::IMGPCA]  =  true;
-//		viewFolded[representation::GRADPCA] =  true;
 		payloadMap[representation::NORM]->gui.fold(true);
 		payloadMap[representation::IMGPCA]->gui.fold(true);
 //		payloadMap[representation::GRADPCA]->gui.fold(true);
@@ -433,15 +427,16 @@ void DistViewController::remHighlightFromLabel()
 
 void DistViewController::processFoldingStateChanged(representation::t repr, bool folded)
 {
-	viewFolded[repr] = folded;
+	payloadMap[repr]->viewFolded = folded;
+	// TODO: if all folded, disable add/remove from label buttons.
 }
 
 void DistViewController::processLastWindowClosed()
 {
 	// save folding state of views
 	QSettings settings;
-	for (auto r : representation::all()) {
-		bool folded = viewFolded.value(r, true);
+	for (auto r : payloadMap.keys()) {
+		bool folded = payloadMap[r]->viewFolded;
 		QString key = QString("viewports/") +
 		              representation::str(r) + "folded";
 		GGDBGM(key.toStdString() << " " << folded << endl);

@@ -20,6 +20,7 @@ class DistViewController : public QObject
 		DistViewModel model;
 		DistViewGUI gui;
 		bool binningNeeded;
+		bool viewFolded; // Folding state, true -> distview folded (inactive).
 		bool isSubscribed; // TODO: redundant state! Better remove payload on unsubscribe?
 		sets_ptr tmp_binset; // used for recycling in ROI spawn
 	};
@@ -147,8 +148,6 @@ protected:
 	Controller *ctrl;
 	ImageModel *im;
 
-	// Folding state for each distview, true -> distview folded.
-	QMap<representation::t, bool> viewFolded;
 	representation::t activeView;
 
 	// needed for add/rem to/from label functionality
