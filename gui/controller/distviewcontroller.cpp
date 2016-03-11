@@ -163,8 +163,7 @@ void DistViewController::init()
 void DistViewController::initSubscriptions()
 {
 	for (auto p : payloadMap) {
-		DistViewGUI *g = &p->gui;
-		g->initSubscriptions();
+		p->gui.initSubscriptions();
 	}
 }
 
@@ -187,10 +186,9 @@ void DistViewController::addImage(representation::t type, sets_ptr temp,
 void DistViewController::setActiveViewer(representation::t type)
 {
 	activeView = type;
-	QMap<representation::t, Payload*>::const_iterator it;
-	for (it = payloadMap.begin(); it != payloadMap.end(); ++it) {
-		if (it.key() != activeView)
-			it.value()->gui.setInactive();
+	for (auto r : payloadMap.keys()) {
+		if (r != activeView)
+			payloadMap[r]->gui.setInactive();
 	}
 }
 

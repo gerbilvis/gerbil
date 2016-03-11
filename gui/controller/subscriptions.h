@@ -66,6 +66,7 @@ struct GenericHash<BandId> {
  */
 template <typename Target>
 struct Subscription {
+
 	struct Hash {
 		std::size_t operator()(Subscription<Target> const& v) const {
 			// IDTYPE will most likely not be a pointer. Thus we have disjunct hash
@@ -85,8 +86,7 @@ struct Subscription {
 	/** unordered_set with enhanced functionality.
 	 * Note: *never* introduce new class members to std containers
 	 */
-	class Set :
-	        public std::unordered_set<Subscription<Target>, Hash> {
+	class Set : public std::unordered_set<Subscription<Target>, Hash> {
 	public:
 		/* check if there is any subscription for a target */
 		bool subscribed(Target t) {
@@ -96,6 +96,7 @@ struct Subscription {
 			}
 			return false;
 		}
+
 		/** Add a subscriber.
 		 * Returns true if this subscription did not exist yet.
 		 */
