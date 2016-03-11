@@ -2,30 +2,22 @@
 #include <QMap>
 #include <ostream>
 
-static QMap<QString, representation::t> strToRepresentation;
-
 representation::representation() {
 	// skips INVALID
 	for (int i = 1; i < REPSIZE; ++i) {
 		allList.append(t(i));
 	}
-
 }
 
 representation::t representation::fromStr(const QString &s)
 {
-	// lazy init
-	if (strToRepresentation.empty()) {
+	static QMap<QString, representation::t> mapping;
+	if (mapping.empty()) { // lazy initialization
 		for (auto r : all()) {
-			strToRepresentation[str(r)] = r;
+			mapping[str(r)] = r;
 		}
-		representation::t invalid = representation::INVALID;
-		strToRepresentation[str(invalid)] = invalid;
 	}
-	representation::t repr =
-			strToRepresentation.value(s, representation::INVALID);
-	return repr;
-
+	return mapping.value(s, representation::INVALID);
 }
 
 QString representation::prettyString(representation::t repr)
