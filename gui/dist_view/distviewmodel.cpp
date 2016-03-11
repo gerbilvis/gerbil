@@ -71,7 +71,7 @@ void DistViewModel::updateBinning(int bins)
 	queue->push(taskBins);
 }
 
-void DistViewModel::toggleLabels(bool toggle)
+void DistViewModel::toggleLabels(bool toggle, bool active)
 {
 	SharedDataLock ctxlock(context->mutex);
 	ViewportCtx args = **context;
@@ -92,14 +92,13 @@ void DistViewModel::toggleLabels(bool toggle)
 	queue->push(taskBins);
 }
 
-void DistViewModel::updateLabels(const cv::Mat1s &newLabels,
-									const QVector<QColor> &colors)
+void DistViewModel::updateLabels(const cv::Mat1s &newLabels, bool active)
 {
 	if (!newLabels.empty())
 		labels = newLabels.clone();
 
 	// check if we are ready to compute anything and not within ROI change
-	if (inbetween || !image.get() || labels.empty())
+	if (!active || inbetween || !image.get() || labels.empty())
 		return;
 
 	SharedDataLock ctxlock(context->mutex);
@@ -117,14 +116,14 @@ void DistViewModel::updateLabels(const cv::Mat1s &newLabels,
 }
 
 void DistViewModel::updateLabelsPartially(const cv::Mat1s &newLabels,
-											 const cv::Mat1b &mask)
+											 const cv::Mat1b &mask, bool active)
 {
 	// save old configuration for partial updates
 	cv::Mat1s oldLabels = labels.clone();
 	// just override the whole thing
 	labels = newLabels.clone();
 
-	if (!image.get())
+	if (!active || !image.get())
 		return;
 
 	SharedDataLock ctxlock(context->mutex);

@@ -35,6 +35,7 @@ DistViewController::DistViewController(
 		p->model.setContext(payloadMap[r]->gui.getContext());
 		p->model.setBinSets(payloadMap[r]->gui.getBinSets());
 		p->binningNeeded = false;
+		p->isSubscribed = false;
 	}
 }
 
@@ -119,10 +120,17 @@ void DistViewController::init()
 		        this, SLOT(processDistviewNeedsBinning(representation::t)));
 
 
+		// forward representation subscriptions to controller
 		connect(g, SIGNAL(subscribeRepresentation(QObject*,representation::t)),
-		        this, SLOT(processDistviewSubscribeRepresentation(QObject*,representation::t)));
+		        ctrl, SLOT(subscribeRepresentation(QObject*,representation::t)));
 		connect(g, SIGNAL(unsubscribeRepresentation(QObject*,representation::t)),
-		        this, SLOT(processDistviewUnsubscribeRepresentation(QObject*,representation::t)));
+		        ctrl, SLOT(unsubscribeRepresentation(QObject*,representation::t)));
+		// fill-in our own state-holder (TODO)
+		connect(g, SIGNAL(subscribeRepresentation(QObject*,representation::t)),
+		        this, SLOT(subscribeRepresentation(QObject*,representation::t)));
+		connect(g, SIGNAL(unsubscribeRepresentation(QObject*,representation::t)),
+		        this, SLOT(unsubscribeRepresentation(QObject*,representation::t)));
+
 		connect(g, SIGNAL(foldingStateChanged(representation::t,bool)),
 		        this, SLOT(processFoldingStateChanged(representation::t,bool)));
 	}
@@ -150,12 +158,6 @@ void DistViewController::init()
 	connect(this, SIGNAL(newIlluminantApplied(QVector<multi_img::Value>)),
 	        &payloadMap[representation::IMG]->model,
 	        SLOT(setIlluminant(QVector<multi_img::Value>)));
-
-	// forward representation subscriptions to controller
-	connect(this, SIGNAL(subscribeRepresentation(QObject*,representation::t)),
-	        ctrl, SLOT(subscribeRepresentation(QObject*,representation::t)));
-	connect(this, SIGNAL(unsubscribeRepresentation(QObject*,representation::t)),
-	        ctrl, SLOT(unsubscribeRepresentation(QObject*,representation::t)));
 }
 
 void DistViewController::initSubscriptions()
@@ -201,12 +203,11 @@ void DistViewController::pixelOverlay(int y, int x)
 	}
 
 	for (auto p : payloadMap) {
-		// not visible -> not subscribed -> no data
-		if (p->gui.isVisible()) {
-			QPolygonF overlay = p->model.getPixelOverlay(y, x);
-			if (!overlay.empty())
-				p->gui.insertPixelOverlay(overlay);
-		}
+		if (!p->isSubscribed)
+			continue;
+		QPolygonF overlay = p->model.getPixelOverlay(y, x);
+		if (!overlay.empty())
+			p->gui.insertPixelOverlay(overlay);
 	}
 }
 
@@ -248,25 +249,23 @@ void DistViewController::processPreROISpawn(const cv::Rect &oldroi,
                                             const std::vector<cv::Rect> &add,
                                             bool profitable)
 {
-	// recycle existing distview payload
-	roiSets = boost::shared_ptr<QMap<representation::t, sets_ptr> > (
-	            new QMap<representation::t, sets_ptr>() );
 	if (profitable) {
 		GGDBGM("INCREMENTAL distview update" << endl);
-		for (auto r : representation::all()) {
-			if (subscriptions.subscribed(r)) {
-				GGDBGM("   BEGIN " << r <<" distview update" << endl);
-				(*roiSets)[r] = subImage(r, sub, newroi);
-				GGDBGM("   END " << r <<" distview update" << endl);
-			}
+		for (auto r : payloadMap.keys()) {
+			auto &p = payloadMap[r];
+			if (!p->isSubscribed)
+				continue;
+			GGDBGM("   BEGIN " << r <<" distview update" << endl);
+			p->tmp_binset = subImage(r, sub, newroi);
+			GGDBGM("   END " << r <<" distview update" << endl);
 		}
 	} else {
 		GGDBGM("FULL distview update (ignored)" << endl);
 		// nothing to do, except let them know that ROI change is underway
-		for (auto r : representation::all()) {
-			if (subscriptions.subscribed(r)) {
-				payloadMap[r]->model.initiateROIChange();
-			}
+		for (auto p : payloadMap) {
+			if (!p->isSubscribed)
+				continue;
+			p->model.initiateROIChange();
 		}
 	}
 }
@@ -277,40 +276,18 @@ void DistViewController::processPostROISpawn(const cv::Rect &oldroi,
                                              const std::vector<cv::Rect> &add,
                                              bool profitable)
 {
-	if (profitable && ! roiSets) {
-		std::cerr << "DistViewController::processPostROISpawn error: "
-		             "profitable && ! roiSets)" << std::endl;
-	}
-	if (profitable) {
-		GGDBGM("INCREMENTAL distview update" << endl);
-	} else {
-		GGDBGM("FULL distview update" << endl);
-	}
-	for (auto r : representation::all()) {
-		if (subscriptions.subscribed(r)) {
-			if (profitable && roiSets) {
-				addImage(r, (*roiSets)[r], add, newroi);
-			} else {
-				updateBinning(r, im->getImage(r));
-			}
+	GGDBGM((profitable ? "INCREMENTAL" : "FULL") << " distview update" << endl);
+	for (auto r : payloadMap.keys()) {
+		auto &p = payloadMap[r];
+		if (!p->isSubscribed)
+			continue;
+		if (profitable && p->tmp_binset) {
+			addImage(r, p->tmp_binset, add, newroi);
+			p->tmp_binset.reset();
+		} else {
+			updateBinning(r, im->getImage(r));
 		}
 	}
-	// free sets map
-	roiSets = boost::shared_ptr<QMap<representation::t, sets_ptr> > ();
-}
-
-void DistViewController::processDistviewSubscribeRepresentation(
-        QObject *subscriber,
-        representation::t repr)
-{
-	subscriptions.subscribe(subscriber, repr);
-}
-
-void DistViewController::processDistviewUnsubscribeRepresentation(
-        QObject *subscriber,
-        representation::t repr)
-{
-	subscriptions.unsubscribe(subscriber, repr);
 }
 
 void DistViewController::updateBinning(representation::t repr,
@@ -347,7 +324,7 @@ void DistViewController::updateLabels(const cv::Mat1s& labels,
 		return;
 
 	for (auto p : payloadMap) {
-		p->model.updateLabels(labels, colors);
+		p->model.updateLabels(labels, p->isSubscribed);
 	}
 }
 
@@ -360,7 +337,7 @@ void DistViewController::updateLabelsPartially(const cv::Mat1s &labels,
 	bool profitable = (size_t(2 * cv::countNonZero(mask)) < mask.total());
 	if (profitable) {
 		for (auto p : payloadMap) {
-			p->model.updateLabelsPartially(labels, mask);
+			p->model.updateLabelsPartially(labels, mask, p->isSubscribed);
 		}
 	} else {
 		// just update the whole thing
@@ -439,7 +416,7 @@ void DistViewController::toggleIgnoreLabels(bool toggle)
 	// TODO: cancel previous toggleignorelabel tasks here!
 
 	for (auto p : payloadMap) {
-		p->model.toggleLabels(toggle);
+		p->model.toggleLabels(toggle, p->isSubscribed);
 	}
 
 }

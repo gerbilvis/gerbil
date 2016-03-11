@@ -20,6 +20,8 @@ class DistViewController : public QObject
 		DistViewModel model;
 		DistViewGUI gui;
 		bool binningNeeded;
+		bool isSubscribed; // TODO: redundant state! Better remove payload on unsubscribe?
+		sets_ptr tmp_binset; // used for recycling in ROI spawn
 	};
 
 public:
@@ -97,15 +99,20 @@ public slots:
 	                         bool profitable
 	                         );
 
-
-	void processDistviewSubscribeRepresentation(QObject *subscriber, representation::t repr);
-	void processDistviewUnsubscribeRepresentation(QObject *subscriber, representation::t repr);
-
 	// folding state of a distview changed
 	void processFoldingStateChanged(representation::t repr, bool folded);
 
 	// save folding state of views
 	void processLastWindowClosed();
+
+	// pass on as subscriptions is not a qobject
+	void subscribeRepresentation(QObject* o,representation::t r) {
+		payloadMap[r]->isSubscribed = true;
+	}
+	// pass on as subscriptions is not a qobject
+	void unsubscribeRepresentation(QObject* o,representation::t r) {
+		payloadMap[r]->isSubscribed = false;
+	}
 
 signals:
 	void toggleLabeled(bool);
@@ -133,10 +140,6 @@ signals:
 	// distviewmodel/viewport recognition of applied illuminant (only IMG)
 	void newIlluminantApplied(QVector<multi_img::Value>);
 
-	// SUBSCRIPTION FORWARDING
-	void subscribeRepresentation(QObject *subscriber, representation::t repr);
-	void unsubscribeRepresentation(QObject *subscriber, representation::t repr);
-
 protected:
 	void updateBinning(representation::t repr, SharedMultiImgPtr image);
 
@@ -153,15 +156,6 @@ protected:
 
 	// the current ROI
 	cv::Rect curROI;
-
-	// Subscription state of distviews.
-	// There is no other means for the DistViewController to determine
-	// whether or not to do BinSet sub/add in ROI change.
-	Subscription<representation::t>::Set subscriptions;
-
-	// Pointer to map of vectors of binsets: BinSets that are recycled
-	// during a ROI spawn.
-	boost::shared_ptr<QMap<representation::t, sets_ptr> > roiSets;
 };
 
 #endif // DISTVIEWCONTROLLER_H

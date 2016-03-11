@@ -155,13 +155,6 @@ void DistViewGUI::initSignals(QObject *dvctrl)
 	connect(vp, SIGNAL(remSelectionRequested()),
 	        dvctrl, SLOT(remHighlightFromLabel()));
 
-	//    subscriptions
-	connect(this, SIGNAL(subscribeRepresentation(QObject*,representation::t)),
-	        dvctrl, SIGNAL(subscribeRepresentation(QObject*,representation::t)));
-	connect(this, SIGNAL(unsubscribeRepresentation(QObject*,representation::t)),
-	        dvctrl, SIGNAL(unsubscribeRepresentation(QObject*,representation::t)));
-
-
 	// illumination correction
 	connect(this, SIGNAL(newIlluminantCurve(QVector<multi_img::Value>)),
 	        vp, SLOT(changeIlluminantCurve(QVector<multi_img::Value>)));
