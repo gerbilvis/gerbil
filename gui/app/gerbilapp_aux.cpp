@@ -87,8 +87,9 @@ void GerbilApplication::init_qt()
 	/* qt docs:
 	 * "If you have resources in a static library, you might need to force
 	 *  initialization of your resources"
+	 * However, right now we don't put the resources in the lib but the binary.
+	 * Q_INIT_RESOURCE(gerbil);
 	 */
-	Q_INIT_RESOURCE(gerbil);
 	QApplication::setAttribute(Qt::AA_DontShowIconsInMenus, false);
 
 	// setup our custom icon theme if there is no system theme (OS X, Windows)
