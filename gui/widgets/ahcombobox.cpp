@@ -17,12 +17,10 @@ void AHComboBox::showPopup()
 
 	// map to scene coordinates
 	QPoint scenepoint = mapToGlobal(QPoint(0, 0));
-	// map to screen coordinates
-	QPoint screenpoint = view->mapToGlobal(scenepoint);
 	menu.setActiveAction(actions[currentIndex()]);
 	// would be nice, but has a drawing bug in Qt (text too wide for window)
 	// menu.setDefaultAction(actions[currentIndex()]);
-	QAction *a = menu.exec(screenpoint, actions[currentIndex()]);
+	QAction *a = menu.exec(scenepoint, actions[currentIndex()]);
 	if (!a)
 		return;
 
