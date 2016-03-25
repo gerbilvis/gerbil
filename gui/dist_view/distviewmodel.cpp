@@ -47,9 +47,9 @@ void DistViewModel::setIlluminant(QVector<multi_img::Value> illum)
 
 void DistViewModel::updateBinning(int bins)
 {
-	GGDBG_CALL();
 	SharedDataLock ctxlock(context->mutex);
 	ViewportCtx args = **context;
+	GGDBGM(args.type << endl);
 	ctxlock.unlock();
 
 	if (bins > 0) {
@@ -71,11 +71,11 @@ void DistViewModel::updateBinning(int bins)
 	queue->push(taskBins);
 }
 
-void DistViewModel::toggleLabels(bool toggle)
+void DistViewModel::toggleLabels(bool toggle, bool active)
 {
-	GGDBG_CALL();
 	SharedDataLock ctxlock(context->mutex);
 	ViewportCtx args = **context;
+	GGDBGM(args.type << endl);
 	ctxlock.unlock();
 
 	ignoreLabels = toggle;
@@ -92,19 +92,18 @@ void DistViewModel::toggleLabels(bool toggle)
 	queue->push(taskBins);
 }
 
-void DistViewModel::updateLabels(const cv::Mat1s &newLabels,
-									const QVector<QColor> &colors)
+void DistViewModel::updateLabels(const cv::Mat1s &newLabels, bool active)
 {
-	GGDBG_CALL();
 	if (!newLabels.empty())
 		labels = newLabels.clone();
 
 	// check if we are ready to compute anything and not within ROI change
-	if (inbetween || !image.get() || labels.empty())
+	if (!active || inbetween || !image.get() || labels.empty())
 		return;
 
 	SharedDataLock ctxlock(context->mutex);
 	ViewportCtx args = **context;
+	GGDBGM(args.type << endl);
 	ctxlock.unlock();
 
 	args.wait.fetch_and_store(1);
@@ -117,19 +116,19 @@ void DistViewModel::updateLabels(const cv::Mat1s &newLabels,
 }
 
 void DistViewModel::updateLabelsPartially(const cv::Mat1s &newLabels,
-											 const cv::Mat1b &mask)
+											 const cv::Mat1b &mask, bool active)
 {
-	GGDBG_CALL();
 	// save old configuration for partial updates
 	cv::Mat1s oldLabels = labels.clone();
 	// just override the whole thing
 	labels = newLabels.clone();
 
-	if (!image.get())
+	if (!active || !image.get())
 		return;
 
 	SharedDataLock ctxlock(context->mutex);
 	ViewportCtx args = **context;
+	GGDBGM(args.type << endl);
 	ctxlock.unlock();
 
 	args.wait.fetch_and_store(1);
@@ -167,7 +166,6 @@ void DistViewModel::updateLabelsPartially(const cv::Mat1s &newLabels,
 sets_ptr DistViewModel::subImage(const std::vector<cv::Rect> &regions,
 								 cv::Rect roi)
 {
-	GGDBG_CALL();
 	sets_ptr temp(new SharedData<std::vector<BinSet> >(NULL));
 	inbetween = true;
 	// FIXME need proper check if subImage is a valid operation in current state.
@@ -181,6 +179,7 @@ sets_ptr DistViewModel::subImage(const std::vector<cv::Rect> &regions,
 	}
 	SharedDataLock ctxlock(context->mutex);
 	ViewportCtx args = **context;
+	GGDBGM(args.type << endl);
 	ctxlock.unlock();
 
 	BackgroundTaskPtr taskBins(new DistviewBinsTbb(
@@ -195,7 +194,6 @@ sets_ptr DistViewModel::subImage(const std::vector<cv::Rect> &regions,
 void DistViewModel::addImage(sets_ptr temp,const std::vector<cv::Rect> &regions,
 							 cv::Rect roi)
 {
-	GGDBG_CALL();
 	inbetween = false;
 	// FIXME need proper check if addImage is a valid operation in current state.
 	if (!context) {
@@ -208,6 +206,7 @@ void DistViewModel::addImage(sets_ptr temp,const std::vector<cv::Rect> &regions,
 	}
 	SharedDataLock ctxlock(context->mutex);
 	ViewportCtx args = **context;
+	GGDBGM(args.type << endl);
 	ctxlock.unlock();
 
 	args.valid = false;
@@ -227,7 +226,7 @@ void DistViewModel::addImage(sets_ptr temp,const std::vector<cv::Rect> &regions,
 
 void DistViewModel::setImage(SharedMultiImgPtr img, cv::Rect roi, int bins)
 {
-	GGDBG_CALL();
+	GGDBGM(type << endl);
 	inbetween = false;
 	image = img;
 	//GGDBGM(format("image.get()=%1%\n") %image.get());

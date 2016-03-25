@@ -11,8 +11,10 @@ class ImgInput {
 public:
 	ImgInput(const ImgInputConfig& config) : config(config) { }
 
-	// Wrapper around readFile()
 	multi_img::ptr execute();
+
+	// convenience method for most simple case
+	static multi_img::ptr load(const std::string& filename);
 
 	static bool parseROIString(const std::string &str, std::vector<int> &vals);
 

@@ -269,8 +269,8 @@ void Viewport::drawBins(QPainter &painter, QTimer &renderTimer,
 	// Stopwatch watch("drawBins");
 
 	/* initialize painting in GL, vertex buffer */
-	painter.beginNativePainting();
 	target->makeCurrent();
+	painter.beginNativePainting();
 	glEnable(GL_BLEND);
 	glBlendFunc(GL_SRC_ALPHA,GL_ONE_MINUS_SRC_ALPHA);
 	bool success = vb.bind();

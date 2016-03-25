@@ -82,15 +82,15 @@ void ClusteringModel::startSegmentation()
 	QList<representation::t> reps;
 	reps.append(representation::NORM);
 	reps.append(representation::GRAD);
-	foreach (representation::t repr, reps) {
-		if (!inputMap[repr]) {
+	for (auto r : reps) {
+		if (!inputMap[r]) {
 			std::cerr << "ClusteringModel::startSegmentation(): "
 					  << "input " << request->repr << " is NULL"
 					  << std::endl;
 			good = false;
 		} else {
-			SharedMultiImgBaseGuard guard(*inputMap[repr]);
-			if ((*inputMap[repr])->empty()) {
+			SharedMultiImgBaseGuard guard(*inputMap[r]);
+			if ((*inputMap[r])->empty()) {
 				std::cerr << "ClusteringModel::startSegmentation(): "
 						  << "input " << request->repr << " is empty"
 						  << std::endl;

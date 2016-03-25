@@ -26,7 +26,7 @@ enum measure {
 	MANHATTAN,
 	EUCLIDEAN,
 	CHEBYSHEV,
-	MOD_SPEC_ANGLE,
+	SPECTRAL_ANGLE,
 	SPEC_INF_DIV,
 	SIDSAM1,
 	SIDSAM2,
@@ -34,7 +34,7 @@ enum measure {
 };
 #define similarity_measures_measureString \
 	{"MANHATTAN", "EUCLIDEAN", "CHEBYSHEV", \
-	"MOD_SPEC_ANGLE", "SPEC_INF_DIV", "SIDSAM1", "SIDSAM2", "NORM_L2"}
+	"SPECTRAL_ANGLE", "SPEC_INF_DIV", "SIDSAM1", "SIDSAM2", "NORM_L2"}
 
 class SMConfig: public Config {
 public:

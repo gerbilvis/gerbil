@@ -11,8 +11,8 @@
 bool assertBinSetsKeyDim(const std::vector<BinSet> &v, const ViewportCtx &ctx) {
 	assert(v.size() > 0);
 
-	foreach(BinSet set, v) {
-		foreach(BinSet::HashMap::value_type pr, set.bins) {
+	for (auto set : v) {
+		for (auto pr : set.bins) {
 			const BinSet::HashKey &key = pr.first;
 			if (ctx.dimensionality != key.size()) {
 				GGDBGP(boost::format("failure: type=%1% ,  (key.size()==%2%  != dim==%3%)")

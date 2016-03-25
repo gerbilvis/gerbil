@@ -1,6 +1,7 @@
 #ifndef CONTROLLER_H
 #define CONTROLLER_H
 
+#include "subscriptions.h"
 #include <model/representation.h>
 #include <shared_data.h>
 #include <background_task/background_task.h>
@@ -39,8 +40,6 @@ namespace seg_graphs
 {
 class GraphSegConfig;
 }
-
-class Subscriptions;
 
 /** Controller class. */
 class Controller : public QObject
@@ -274,11 +273,6 @@ protected:
 	 */
 	void updateROI(bool reuse, cv::Rect newRoi = cv::Rect(), int bands = -1);
 
-	/** Returns true if there is a subscriber for the given representation,
-	 * otherwise returns false.
-	 */
-	bool haveSubscriber(representation::t type);
-
 	/** Reset internal ROI state tracking: ROIs for all representation types
 	 * are set to non-spawned. That is a ROI spawn for each subscribed
 	 * representation is necessary for the GUI to become up-to-date.*/
@@ -337,8 +331,8 @@ protected:
 	// The current ROI.
 	cv::Rect roi;
 
-	// see subscriptions.h
-	Subscriptions *subs;
+	// subscriptions to data
+	Subscriptions subscriptions;
 
 	// Track spawn state of ROIs for each representation.
 	// true -> ROI for this representation has been spawned. This makes

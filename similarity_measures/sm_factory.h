@@ -23,7 +23,7 @@ public:
 			return new LNorm<T>(cv::NORM_L2);
 		case CHEBYSHEV:
 			return new LNorm<T>(cv::NORM_INF);
-		case MOD_SPEC_ANGLE:
+		case SPECTRAL_ANGLE:
 			return new ModifiedSpectralAngleSimilarity<T>();
 		case SPEC_INF_DIV:
 			return new SpectralInformationDivergence<T>();

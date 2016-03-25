@@ -5,28 +5,25 @@
 int rectComplement(int width, int height, cv::Rect r,
 				   std::vector<cv::Rect> &result)
 {
-	result.push_back(cv::Rect(0, 0,
-							  r.x, r.y));
-	result.push_back(cv::Rect(r.x, 0,
-							  r.width, r.y));
-	result.push_back(cv::Rect(r.x + r.width, 0,
-							  width - r.width - r.x, r.y));
-	result.push_back(cv::Rect(0, r.y,
-							  r.x, r.height));
-	result.push_back(cv::Rect(r.x + r.width, r.y,
-							  width - r.width - r.x, r.height));
-	result.push_back(cv::Rect(0, r.y + r.height, r.x,
-							  height - r.height - r.y));
-	result.push_back(cv::Rect(r.x, r.y + r.height,
-							  r.width, height - r.height - r.y));
-	result.push_back(cv::Rect(r.x + r.width, r.y + r.height,
-							  width - r.width - r.x, height - r.height - r.y));
-
 	int area = 0;
-	std::vector<cv::Rect>::iterator it;
-	for (it = result.begin(); it != result.end(); ++it) {
-		area += it->area();
-	}
+
+	auto addRect = [&](int x, int y, int w, int h) {
+		if (w <= 0 || h <= 0) // don't add empty rectangles
+			return;
+		cv::Rect rect(x, y, w, h);
+		area += rect.area();
+		result.push_back(rect);
+	};
+
+	addRect(0, 0, r.x, r.y);
+	addRect(r.x, 0, r.width, r.y);
+	addRect(r.x + r.width, 0, width - r.width - r.x, r.y);
+	addRect(0, r.y, r.x, r.height);
+	addRect(r.x + r.width, r.y, width - r.width - r.x, r.height);
+	addRect(0, r.y + r.height, r.x, height - r.height - r.y);
+	addRect(r.x, r.y + r.height, r.width, height - r.height - r.y);
+	addRect(r.x + r.width, r.y + r.height,
+	        width - r.width - r.x, height - r.height - r.y);
 
 	return area;
 }

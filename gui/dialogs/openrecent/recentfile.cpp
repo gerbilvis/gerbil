@@ -37,8 +37,8 @@ void makeListEntriesUnique(QList<RecentFile> &recentFiles)
 {
 	QSet<QString> seen;
 	QList<RecentFile> tmp;
-	foreach (RecentFile const& rf, recentFiles) {
-		if (! seen.contains(rf.fileName)) {
+	for (auto rf : recentFiles) {
+		if (!seen.contains(rf.fileName)) {
 			tmp.append(rf);
 			seen.insert(rf.fileName);
 		}
@@ -58,7 +58,7 @@ static QList<RecentFile> loadRecentFilesList()
 		settings.remove("recentFilesList");
 	} else {
 		QList<QVariant> varl = settings.value("recentFilesList").toList();
-		foreach (QVariant varrf, varl) {
+		for (auto varrf : varl) {
 			RecentFile rf = varrf.value<RecentFile>();
 			GGDBGP(rf.getFileNameWithoutPath().toStdString() << ": "
 						"QImage::Format " << rf.previewImage.format() << endl);
@@ -130,7 +130,7 @@ void RecentFile::saveRecentFilesList(const QList<RecentFile> &recentFilesx)
 	// app name is set in main.cpp
 	QSettings settings;
 	QVariantList varl;
-	foreach(RecentFile const& rf, recentFiles) {
+	for (auto rf : recentFiles) {
 		varl << QVariant::fromValue(rf);
 	}
 	settings.setValue("recentFilesList", varl);

@@ -52,11 +52,10 @@ public slots:
 
 	void updateBinning(int bins);
 
-	void updateLabels(const cv::Mat1s& labels,
-					  const QVector<QColor> &colors = QVector<QColor>());
-	void updateLabelsPartially(const cv::Mat1s &labels, const cv::Mat1b &mask);
+	void updateLabels(const cv::Mat1s& labels, bool active);
+	void updateLabelsPartially(const cv::Mat1s &labels, const cv::Mat1b &mask, bool active);
 
-	void toggleLabels(bool toggle);
+	void toggleLabels(bool toggle, bool active);
 
 	// glue functions to append type
 	void propagateBinning(bool updated);

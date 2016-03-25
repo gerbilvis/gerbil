@@ -79,6 +79,13 @@ multi_img::ptr ImgInput::execute()
 	return img_ptr;
 }
 
+multi_img::ptr ImgInput::load(const std::string &filename)
+{
+	ImgInputConfig cfg;
+	cfg.file = filename;
+	return ImgInput(cfg).execute();
+}
+
 bool ImgInput::parseROIString(const std::string &str, std::vector<int> &vals)
 {
 	int ctr = 0;
