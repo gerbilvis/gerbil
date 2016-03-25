@@ -61,7 +61,6 @@ vole_check_package(OPENGL
 #	"${GLEW_LIBRARIES}"
 #)
 
-# We are not quite there yet to support Qt5 in the code (run-time problems)
 # QtWidgets 5
 find_package(Qt5Widgets)
 vole_check_package(QT
@@ -81,40 +80,6 @@ vole_check_package(QT_OPENGL
 	"${Qt5OpenGL_INCLUDE_DIRS}"
 	"${Qt5OpenGL_LIBRARIES}"
 )
-
-if(Qt5Widgets_FOUND)
-	set(WITH_QT5 TRUE)
-else()
-	# QtGui 4
-	find_package(Qt4 ${VOLE_MINIMUM_QT_VERSION} COMPONENTS QtCore QtGui)
-	vole_check_package(QT
-		"Qt4"
-		"Please install Qt4 >=${VOLE_MINIMUM_QT_VERSION} or set QT_QMAKE_EXECUTABLE."
-		QT_FOUND
-		"${QT_INCLUDE_DIR};${QT_QTCORE_INCLUDE_DIR};${QT_QTGUI_INCLUDE_DIR}"
-		"${QT_QTCORE_LIBRARY};${QT_QTGUI_LIBRARY}"
-	)
-
-	# QtOpenGL 4
-	find_package(Qt4 ${VOLE_MINIMUM_QT_VERSION} COMPONENTS QtOpenGL)
-	vole_check_package(QT_OPENGL
-		"Qt4 OpenGL"
-	"Please install Qt4 >=${VOLE_MINIMUM_QT_VERSION} or set QT_QMAKE_EXECUTABLE."
-		QT_QTOPENGL_FOUND
-		"${QT_INCLUDE_DIR};${QT_QTOPENGL_INCLUDE_DIR}"
-		"${QT_QTOPENGL_LIBRARY}"
-	)
-
-	# QtXml 4
-	find_package(Qt4 ${VOLE_MINIMUM_QT_VERSION} COMPONENTS QtXml)
-	vole_check_package(QT_XML
-		"Qt4 XML"
-	"Please install Qt4 >=${VOLE_MINIMUM_QT_VERSION} or set QT_QMAKE_EXECUTABLE."
-		QT_QTXML_FOUND
-		"${QT_INCLUDE_DIR};${QT_QTXML_INCLUDE_DIR}"
-		"${QT_QTXML_LIBRARY}"
-	)
-endif()
 
 # Boost
 if(WIN32)
