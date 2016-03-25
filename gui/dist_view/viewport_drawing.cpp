@@ -458,7 +458,9 @@ void Viewport::drawAxesFg(QPainter *painter)
 
 	// draw limiters
 	if (limiterMode) {
-		painter->setPen(Qt::red);
+		QPen pen(Qt::red);
+		pen.setWidth(0);
+		painter->setPen(pen);
 		for (size_t i = 0; i < (*ctx)->dimensionality; ++i) {
 			qreal y1 = limiters[i].first, y2 = limiters[i].second + 1;
 			if (!illuminantAppl.empty()) {
