@@ -289,7 +289,7 @@ void Viewport::setLimiters(int label)
 		SharedDataLock ctxlock(ctx->mutex);
 		limiters.assign((*ctx)->dimensionality,
 		                std::make_pair(0, (*ctx)->nbins-1));
-		if (label == -1) {	// use hover data
+		if (label == -1 && hover >= 0) {	// use hover data
 			int b = selection;
 			int h = hover;
 			limiters[b] = std::make_pair(h, h);
