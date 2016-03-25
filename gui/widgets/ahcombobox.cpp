@@ -36,6 +36,7 @@ void AHComboBox::showPopup()
 void AHComboBox::hidePopup()
 {
 	menu.close();
+	QComboBox::hidePopup(); // reset internal state of the combobox
 	/* QComboBox somewhat manages to suck-up the mouse release event, so
 	   we need to explicitely unlock the scrolling here */
 	view->suppressScrolling(false);
