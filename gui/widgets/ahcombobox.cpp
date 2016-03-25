@@ -14,11 +14,16 @@ void AHComboBox::showPopup()
 	assert(view);
 	if (actions.count() != count()) // we are inconsistent
 		populateMenu();
-
-	// map to scene coordinates
-	QPoint scenepoint = mapToGlobal(QPoint(0, 0));
 	menu.setActiveAction(actions[currentIndex()]);
 	menu.setDefaultAction(actions[currentIndex()]);
+
+	// map to scene coordinates
+#ifdef _WIN32 // mapToGlobal() doesn't work correctly
+	auto scenepoint = QCursor::pos();
+#else
+	auto scenepoint = mapToGlobal(QPoint(0, 0));
+#endif
+
 	QAction *a = menu.exec(scenepoint, actions[currentIndex()]);
 	if (!a)
 		return;
