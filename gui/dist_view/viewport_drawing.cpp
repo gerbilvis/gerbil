@@ -447,8 +447,9 @@ void Viewport::drawAxesFg(QPainter *painter)
 	if (selection < 0 || selection >= (int)(*ctx)->dimensionality)
 		return;
 
-	QPen pen(active ? Qt::red : Qt::gray); // draw selection in foreground
-	pen.setWidth(0);
+	QPen pen;
+	pen.setWidth(0); // hairline width, needed because of our projection
+	pen.setColor(active ? Qt::red : Qt::gray); // draw selection in foreground
 	painter->setPen(pen);
 
 	qreal top = ((*ctx)->nbins);
@@ -458,8 +459,7 @@ void Viewport::drawAxesFg(QPainter *painter)
 
 	// draw limiters
 	if (limiterMode) {
-		QPen pen(Qt::red);
-		pen.setWidth(0);
+		pen.setColor(Qt::red);
 		painter->setPen(pen);
 		for (size_t i = 0; i < (*ctx)->dimensionality; ++i) {
 			qreal y1 = limiters[i].first, y2 = limiters[i].second + 1;
