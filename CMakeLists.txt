@@ -2,6 +2,7 @@ cmake_minimum_required(VERSION 2.6.2) # for VERSION_GREATER, lol
 cmake_policy(SET CMP0009 NEW)
 
 if(CMAKE_VERSION VERSION_GREATER "2.8.11.100")
+	cmake_policy(SET CMP0020 NEW)
 	cmake_policy(SET CMP0022 NEW)
 endif()
 if(CMAKE_VERSION VERSION_GREATER "3.0")
