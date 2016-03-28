@@ -291,9 +291,14 @@ void DistViewGUI::createLimiterMenu()
 void DistViewGUI::showLimiterMenu()
 {
 	// map to scene coordinates
-	QPoint scenepoint = uivc->limiterMenuButton->mapToGlobal(QPoint(0, 0));
-	// map to screen coordinates
-	QPoint screenpoint = ui->gv->mapToGlobal(scenepoint);
+#ifdef _WIN32 // mapToGlobal() doesn't work correctly
+	auto screenpoint = QCursor::pos();
+#else
+	auto screenpoint = uivc->limiterMenuButton->mapToGlobal(QPoint(0, 0));
+#ifndef QT_BROKEN_MAPTOGLOBAL
+	screenpoint = ui->gv->mapToGlobal(screenpoint);
+#endif
+#endif
 
 	QAction *a = limiterMenu.exec(screenpoint);
 	if (!a)
@@ -334,9 +339,14 @@ void DistViewGUI::createFrameBufferMenu()
 void DistViewGUI::showFrameBufferMenu()
 {
 	// map to scene coordinates
-	QPoint scenepoint = uivc->formatButton->mapToGlobal(QPoint(0, 0));
-	// map to screen coordinates
-	QPoint screenpoint = ui->gv->mapToGlobal(scenepoint);
+#ifdef _WIN32 // mapToGlobal() doesn't work correctly
+	auto screenpoint = QCursor::pos();
+#else
+	auto screenpoint = uivc->formatButton->mapToGlobal(QPoint(0, 0));
+#ifndef QT_BROKEN_MAPTOGLOBAL
+	screenpoint = ui->gv->mapToGlobal(screenpoint);
+#endif
+#endif
 
 	QAction *a = frameBufferMenu.exec(screenpoint);
 	if (!a)

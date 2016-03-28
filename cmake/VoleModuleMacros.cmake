@@ -132,19 +132,10 @@ macro(vole_add_module)
 		include_directories(${CMAKE_CURRENT_BINARY_DIR})
 
 		# Wrap Qt sources
-		if (WITH_QT5)
-			qt5_wrap_cpp(moc_sources ${vole_module_moc_sources})
-			qt5_wrap_ui(uic_sources ${vole_module_ui_sources})
+		qt5_wrap_cpp(moc_sources ${vole_module_moc_sources})
+		qt5_wrap_ui(uic_sources ${vole_module_ui_sources})
 
-			list(APPEND vole_module_library_sources ${moc_sources} ${uic_sources})
-		elseif (WITH_QT)
-			# The custom define is a workaround for faulty moc preprocessor
-			# the define will disable code in boost headers that trigger the bug
-			qt4_wrap_cpp(moc_sources ${vole_module_moc_sources} OPTIONS -DBOOST_NO_TEMPLATE_PARTIAL_SPECIALIZATION -DBOOST_TT_HAS_OPERATOR_HPP_INCLUDED -DBOOST_TT_HAS_LEFT_SHIFT_HPP_INCLUDED)
-			qt4_wrap_ui(uic_sources ${vole_module_ui_sources})
-
-			list(APPEND vole_module_library_sources ${moc_sources} ${uic_sources})
-		endif()
+		list(APPEND vole_module_library_sources ${moc_sources} ${uic_sources})
 
 		# Add library target
 		set(vole_module_library "${vole_module_name}${VOLE_LIBRARY_SUFFIX}")
@@ -209,11 +200,7 @@ macro(vole_add_module)
 					vole_debug_message("  Adding executable \"${executable_name}\" with sources \"${executable_sources}\".")
 
 					set(rcc_sources)
-					if(WITH_QT5)
-						qt5_add_resources(rcc_sources ${vole_module_rcc_sources})
-					elseif (WITH_QT)
-						qt4_add_resources(rcc_sources ${vole_module_rcc_sources})
-					endif()
+					qt5_add_resources(rcc_sources ${vole_module_rcc_sources})
 
 					add_executable(${executable_name} ${executable_sources} ${rcc_sources})
 					target_link_libraries(${executable_name} "core${VOLE_LIBRARY_SUFFIX}")

@@ -14,14 +14,19 @@ void AHComboBox::showPopup()
 	assert(view);
 	if (actions.count() != count()) // we are inconsistent
 		populateMenu();
+	menu.setActiveAction(actions[currentIndex()]);
+	menu.setDefaultAction(actions[currentIndex()]);
 
 	// map to scene coordinates
-	QPoint scenepoint = mapToGlobal(QPoint(0, 0));
-	// map to screen coordinates
-	QPoint screenpoint = view->mapToGlobal(scenepoint);
-	menu.setActiveAction(actions[currentIndex()]);
-	// would be nice, but has a drawing bug in Qt (text too wide for window)
-	// menu.setDefaultAction(actions[currentIndex()]);
+#ifdef _WIN32 // mapToGlobal() doesn't work correctly
+	auto screenpoint = QCursor::pos();
+#else
+	auto screenpoint = mapToGlobal(QPoint(0, 0));
+#ifndef QT_BROKEN_MAPTOGLOBAL
+	screenpoint = view->mapToGlobal(screenpoint);
+#endif
+#endif
+
 	QAction *a = menu.exec(screenpoint, actions[currentIndex()]);
 	if (!a)
 		return;
