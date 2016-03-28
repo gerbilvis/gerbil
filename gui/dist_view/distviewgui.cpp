@@ -1,6 +1,9 @@
 #include "distviewgui.h"
 #include "widgets/autohidewidget.h"
 
+#include <QSettings>
+#include <QDebug>
+
 //#define GGDBG_MODULE
 #include <gerbil_gui_debug.h>
 
@@ -14,6 +17,9 @@ DistViewGUI::DistViewGUI(representation::t type)
 	ui = new Ui::DistViewGUI();
 	ui->setupUi(frame);
 
+	connect(QApplication::instance(), SIGNAL(lastWindowClosed()),
+	        this, SLOT(saveState()));
+
 	// create viewport
 	initVP();
 
@@ -22,6 +28,8 @@ DistViewGUI::DistViewGUI(representation::t type)
 
 	// connect and initialize topBar
 	initTop();
+
+	restoreState();
 }
 
 void DistViewGUI::initVP()
@@ -107,6 +115,9 @@ void DistViewGUI::initVC(representation::t type)
 	setBinCount(uivc->binSlider->value());
 
 	createFrameBufferMenu();
+	// initialize from VP as we only implicitely store it
+	updateBufferFormat(vp->format());
+
 	initVPActions();
 }
 
@@ -321,7 +332,6 @@ void DistViewGUI::createFrameBufferMenu()
 
 	tmp = frameBufferMenu.addAction("RGBA16F");
 	tmp->setCheckable(true);
-	tmp->setChecked(true);
 	tmp->setData(QVariant::fromValue(Viewport::BufferFormat::RGBA16F));
 	actionGroup->addAction(tmp);
 
@@ -368,9 +378,37 @@ void DistViewGUI::updateBufferFormat(Viewport::BufferFormat format)
 {
 	QList<QAction*> list = frameBufferMenu.actions();
 	for (QAction* act : list) {
-		if (act->data().toInt() == (int)format) {
+		if (act->data().value<Viewport::BufferFormat>() == format) {
 			act->setChecked(true);
 			return;
 		}
 	}
+}
+
+void DistViewGUI::saveState()
+{
+	QSettings settings;
+	settings.beginGroup("DistView_" + representation::str(type));
+	settings.setValue("HQDrawing", uivc->actionHq->isChecked());
+	settings.setValue("LogDrawing",uivc->actionLog->isChecked());
+	settings.setValue("alphaModifier", uivc->alphaSlider->value());
+	settings.setValue("NBins", uivc->binSlider->value());
+	settings.endGroup();
+}
+
+void DistViewGUI::restoreState()
+{
+	QSettings settings;
+
+	settings.beginGroup("DistView_" + representation::str(type));
+	auto hq = settings.value("HQDrawing", true);
+	auto log = settings.value("LogDrawing", false);
+	auto alpha = settings.value("alphaModifier", 50);
+	auto nbins = settings.value("NBins", 64);
+	settings.endGroup();
+
+	uivc->actionHq->setChecked(hq.toBool());
+	uivc->actionLog->setChecked(log.toBool());
+	uivc->alphaSlider->setValue(alpha.toInt());
+	uivc->binSlider->setValue(nbins.toInt());
 }

@@ -39,6 +39,8 @@ public:
 		RGBA32F = GL_RGBA32F//0x8814 // GL_RGBA32F
 	};
 
+	BufferFormat format() { return bufferFormat; }
+
 	/* TODO: make non-public. I am just too tired right now. */
 	// viewport context
 	vpctx_ptr ctx;
@@ -87,6 +89,7 @@ public slots:
 	void setDrawHQ(QAction* hqAct) { drawHQ = hqAct; }
 	void setDrawRGB(QAction* rgbAct) { drawRGB = rgbAct; }
 	void setDrawMeans(QAction* meansAct) { drawMeans = meansAct; }
+	void restoreState();
 
 protected slots:
 
@@ -99,6 +102,8 @@ protected slots:
 	// triggered manually
 	void updateBuffers(RenderMode spectrum = RM_STEP,
 	                   RenderMode highlight = RM_STEP);
+
+	void saveState();
 
 signals:
 	// we are the active viewer

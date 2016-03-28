@@ -80,6 +80,9 @@ signals:
 	// The folding state changed.
 	void foldingStateChanged(representation::t type, bool folded);
 
+protected slots:
+	void saveState();
+
 protected:
 	// initialize target, vp, ui::gv
 	void initVP();
@@ -93,6 +96,8 @@ protected:
 	void createLimiterMenu();
 
 	void createFrameBufferMenu();
+
+	void restoreState();
 
 	representation::t type;
 

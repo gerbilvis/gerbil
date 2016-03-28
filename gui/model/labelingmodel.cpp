@@ -3,6 +3,8 @@
 #include <qtopencv.h>
 
 #include "labels/icontask.h"
+#include <QSettings>
+#include <QDebug>
 
 #define GGDBG_MODULE
 #include "../gerbil_gui_debug.h"
@@ -13,6 +15,7 @@ LabelingModel::LabelingModel(QObject *parent)
 	qRegisterMetaType<QVector<QImage> >("QVector<QImage>");
 	//qRegisterMetaType<const QVector<QImage>& >("const QVector<QImage>&");
 	labels = full_labels;
+	restoreState();
 }
 
 void LabelingModel::setImageSize(unsigned int height, unsigned int width)
@@ -346,4 +349,10 @@ void LabelingModel::discardIconTask()
 	disconnect(iconTaskp, 0, this, 0);
 	// old icon task will delete itself after aborting, we can drop the pointer.
 	iconTaskp = NULL;
+}
+
+void LabelingModel::restoreState()
+{
+	QSettings settings;
+	applyROI = settings.value("Labeling/applyROI", true).toBool();
 }
