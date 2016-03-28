@@ -409,9 +409,9 @@ void LabelDock::saveState()
 void LabelDock::restoreState()
 {
 	QSettings settings;
-	bool roiChecked = settings.value("Labeling/applyROI", true).toBool();
-	ui->applyROI->setChecked(roiChecked);
+	auto roiChecked = settings.value("Labeling/applyROI", true);
+	auto size = settings.value("Labeling/iconsSize", 64);
 
-	int size = settings.value("Labeling/iconsSize", 64).toInt();
-	ui->sizeSlider->setValue(size);
+	ui->sizeSlider->setValue(size.toInt());
+	ui->applyROI->setChecked(roiChecked.toBool());
 }

@@ -51,7 +51,7 @@ void BandView::initUi()
 	connect(&labelTimer, SIGNAL(timeout()),
 	        this, SLOT(commitLabelChanges()));
 
-	restoreState();
+	restoreState(); // note: needs setAlphaValue() signal connected
 }
 
 void BandView::updateInputMode()
@@ -701,6 +701,6 @@ void BandView::saveState()
 void BandView::restoreState()
 {
 	QSettings settings;
-	int alphaValue = settings.value("BandView/alphaValue", 63).toInt();
-	emit setAlphaValue(alphaValue);
+	auto alphaValue = settings.value("BandView/alphaValue", 63);
+	emit setAlphaValue(alphaValue.toInt());
 }

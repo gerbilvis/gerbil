@@ -411,18 +411,14 @@ void DistViewGUI::restoreState()
 	QSettings settings;
 
 	settings.beginGroup("DistView_" + representation::str(type));
-
-	bool checked = settings.value("HQDrawing", true).toBool();
-	uivc->actionHq->setChecked(checked);
-
-	checked = settings.value("LogDrawing", false).toBool();
-	uivc->actionLog->setChecked(checked);
-
-	int alpha = settings.value("alphaModifier", 50).toInt();
-	uivc->alphaSlider->setValue(alpha);
-
-	int nbins = settings.value("NBins", 64).toInt();
-	uivc->binSlider->setValue(nbins);
-
+	auto hq = settings.value("HQDrawing", true);
+	auto log = settings.value("LogDrawing", false);
+	auto alpha = settings.value("alphaModifier", 50);
+	auto nbins = settings.value("NBins", 64);
 	settings.endGroup();
+
+	uivc->actionHq->setChecked(hq.toBool());
+	uivc->actionLog->setChecked(log.toBool());
+	uivc->alphaSlider->setValue(alpha.toInt());
+	uivc->binSlider->setValue(nbins.toInt());
 }

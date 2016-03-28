@@ -548,6 +548,7 @@ void Viewport::restoreState()
 	QSettings settings;
 	settings.beginGroup("DistView_" + representation::str(type));
 	auto format = settings.value("BufferFormat", (GLenum)bufferFormat);
-	bufferFormat = (BufferFormat)format.value<GLenum>();
 	settings.endGroup();
+
+	bufferFormat = (BufferFormat)format.value<GLenum>();
 }
