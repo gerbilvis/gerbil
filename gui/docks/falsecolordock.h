@@ -44,8 +44,10 @@ protected slots:
 	void processSelectedColoring(); // the selection in the combo box changed
 	void processApplyClicked();
 	void screenshot();
+	void saveState();
 protected:
 	void initUi();
+	void restoreState();
 	// event filter to intercept leave() on our view
 	bool eventFilter(QObject *obj, QEvent *event);
 

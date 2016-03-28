@@ -8,6 +8,7 @@
 #include <QGraphicsView>
 #include <QGraphicsWidget>
 #include <QGraphicsLayout>
+#include <QSettings>
 #include <QDebug>
 
 #include "../widgets/autohideview.h"
@@ -29,7 +30,10 @@ LabelDock::LabelDock(QWidget *parent) :
     hoverLabel(-1)
 {
 	setObjectName("LabelDock");
+	connect(QApplication::instance(), SIGNAL(lastWindowClosed()),
+	        this, SLOT(saveState()));
 	init();
+	restoreState();
 }
 
 void LabelDock::init()
@@ -393,4 +397,21 @@ void LabelDock::resizeSceneContents()
 
 	mainUiWidget->setGeometry(geom);
 	ahview->fitContentRect(geom.adjusted(0, 0, 0, -AutohideWidget::OutOffset));
+}
+
+void LabelDock::saveState()
+{
+	QSettings settings;
+	settings.setValue("Labeling/iconsSize", ui->sizeSlider->value());
+	settings.setValue("Labeling/applyROI", ui->applyROI->isChecked());
+}
+
+void LabelDock::restoreState()
+{
+	QSettings settings;
+	auto roiChecked = settings.value("Labeling/applyROI", true);
+	auto size = settings.value("Labeling/iconsSize", 64);
+
+	ui->sizeSlider->setValue(size.toInt());
+	ui->applyROI->setChecked(roiChecked.toBool());
 }

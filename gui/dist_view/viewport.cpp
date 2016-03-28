@@ -24,6 +24,8 @@
 #include <QPainter>
 #include <QSignalMapper>
 #include <QAction>
+#include <QDebug>
+#include <QSettings>
 #include <boost/format.hpp>
 
 Viewport::Viewport(representation::t type, QGLWidget *target)
@@ -44,7 +46,11 @@ Viewport::Viewport(representation::t type, QGLWidget *target)
 	(*ctx)->reset = 1;
 	(*ctx)->ignoreLabels = false;
 
+	restoreState();
 	initTimers();
+
+	connect(QApplication::instance(), SIGNAL(lastWindowClosed()),
+	        this, SLOT(saveState()));
 }
 
 Viewport::~Viewport()
@@ -526,4 +532,23 @@ void Viewport::toggleBufferFormat()
 	if (bufferFormat == BufferFormat::RGBA16F)
 		format = BufferFormat::RGBA32F;
 	setBufferFormat(format, true);
+}
+
+void Viewport::saveState()
+{
+	QSettings settings;
+	settings.beginGroup("DistView_" + representation::str(type));
+	/* QVariant can only serialize GLenum, not BufferFormat */
+	settings.setValue("BufferFormat", (GLenum)bufferFormat);
+	settings.endGroup();
+}
+
+void Viewport::restoreState()
+{
+	QSettings settings;
+	settings.beginGroup("DistView_" + representation::str(type));
+	auto format = settings.value("BufferFormat", (GLenum)bufferFormat);
+	settings.endGroup();
+
+	bufferFormat = (BufferFormat)format.value<GLenum>();
 }

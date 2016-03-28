@@ -106,6 +106,7 @@ private:
 
 	// Cancel and disconnect running IconTask and return without waiting.
 	void discardIconTask();
+	void restoreState();
 
 	// full image labels and roi scoped labels
 	/* labels is always a header with the same data as full_labels (CV memory
