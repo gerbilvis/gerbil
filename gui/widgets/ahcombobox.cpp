@@ -19,12 +19,15 @@ void AHComboBox::showPopup()
 
 	// map to scene coordinates
 #ifdef _WIN32 // mapToGlobal() doesn't work correctly
-	auto scenepoint = QCursor::pos();
+	auto screenpoint = QCursor::pos();
 #else
-	auto scenepoint = mapToGlobal(QPoint(0, 0));
+	auto screenpoint = mapToGlobal(QPoint(0, 0));
+#ifndef QT_BROKEN_MAPTOGLOBAL
+	screenpoint = view->mapToGlobal(screenpoint);
+#endif
 #endif
 
-	QAction *a = menu.exec(scenepoint, actions[currentIndex()]);
+	QAction *a = menu.exec(screenpoint, actions[currentIndex()]);
 	if (!a)
 		return;
 
