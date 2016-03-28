@@ -3,8 +3,8 @@
 # 2.4 introduces some new features we use and older versions are buggy, too!
 set(VOLE_MINIMUM_OPENCV_VERSION "2.4.0")
 
-# 4.7 introduces some GL features we use
-set(VOLE_MINIMUM_QT_VERSION "4.7.0")
+# 5.5 or 5.5.1 fixes an important drawing bug
+set(VOLE_MINIMUM_QT_VERSION "5.5.1")
 
 # 1.47 introduces CHRONO, and I am tired of even guarding lib dependencies!
 set(VOLE_MINIMUM_BOOST_VERSION "1.47")
@@ -63,9 +63,21 @@ vole_check_package(OPENGL
 
 # QtWidgets 5
 find_package(Qt5Widgets)
+if(Qt5Widgets_FOUND)
+	if(${Qt5Widgets_VERSION} VERSION_LESS ${VOLE_MINIMUM_QT_VERSION})
+		message(SEND_ERROR "Unsupported Qt version: "
+			"${Qt5Widgets_VERSION} (minimum required: ${VOLE_MINIMUM_QT_VERSION})")
+		# cmake configure will fail after SEND_ERROR
+	endif()
+	if(${Qt5Widgets_VERSION} VERSION_EQUAL "5.5.1")
+		# see https://codereview.qt-project.org/#/c/114591/
+		# and https://codereview.qt-project.org/#/c/144603/
+		add_definitions(-DQT_BROKEN_MAPTOGLOBAL)
+	endif()
+endif()
 vole_check_package(QT
 	"Qt5"
-	"Please install Qt5 OR Qt4 >=${VOLE_MINIMUM_QT_VERSION} or set QT_QMAKE_EXECUTABLE."
+	"Please install Qt5 >=${VOLE_MINIMUM_QT_VERSION}."
 	Qt5Widgets_FOUND
 	"${Qt5Widgets_INCLUDE_DIRS}"
 	"${Qt5Widgets_LIBRARIES}"
@@ -75,7 +87,7 @@ vole_check_package(QT
 find_package(Qt5OpenGL)
 vole_check_package(QT_OPENGL
 	"Qt5 OpenGL"
-	"Please install Qt5 OR Qt4 >=${VOLE_MINIMUM_QT_VERSION} or set QT_QMAKE_EXECUTABLE."
+	"Please install Qt5 >=${VOLE_MINIMUM_QT_VERSION}."
 	Qt5OpenGL_FOUND
 	"${Qt5OpenGL_INCLUDE_DIRS}"
 	"${Qt5OpenGL_LIBRARIES}"

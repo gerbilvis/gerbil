@@ -1,18 +1,16 @@
-cmake_minimum_required(VERSION 2.6.2) # for VERSION_GREATER, lol
-cmake_policy(SET CMP0009 NEW)
+cmake_minimum_required(VERSION 2.8.11) # Qt5 recommendation
 
-if(CMAKE_VERSION VERSION_GREATER "2.8.11.100")
-	cmake_policy(SET CMP0020 NEW)
+if(NOT CMAKE_VERSION VERSION_LESS "2.8.12")
 	cmake_policy(SET CMP0022 NEW)
 endif()
-if(CMAKE_VERSION VERSION_GREATER "3.0")
+if(NOT CMAKE_VERSION VERSION_LESS "3.0")
 	cmake_policy(SET CMP0038 NEW)
 endif()
 
 project(Gerbil)
 
 ## C++11 requirement
-if(CMAKE_VERSION VERSION_GREATER "3.1")
+if(NOT CMAKE_VERSION VERSION_LESS "3.1")
 	set(CMAKE_CXX_STANDARD 11)
 	set(CMAKE_CXX_STANDARD_REQUIRED ON)
 else() # [remove when bumping CMake req. to 3.1+]
