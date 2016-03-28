@@ -39,6 +39,8 @@ public:
 		RGBA32F = GL_RGBA32F//0x8814 // GL_RGBA32F
 	};
 
+	BufferFormat format() { return bufferFormat; }
+
 	/* TODO: make non-public. I am just too tired right now. */
 	// viewport context
 	vpctx_ptr ctx;

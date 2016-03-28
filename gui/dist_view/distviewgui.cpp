@@ -115,6 +115,9 @@ void DistViewGUI::initVC(representation::t type)
 	setBinCount(uivc->binSlider->value());
 
 	createFrameBufferMenu();
+	// initialize from VP as we only implicitely store it
+	updateBufferFormat(vp->format());
+
 	initVPActions();
 }
 
@@ -334,7 +337,6 @@ void DistViewGUI::createFrameBufferMenu()
 
 	tmp = frameBufferMenu.addAction("RGBA16F");
 	tmp->setCheckable(true);
-	tmp->setChecked(true);
 	tmp->setData(QVariant::fromValue(Viewport::BufferFormat::RGBA16F));
 	actionGroup->addAction(tmp);
 
