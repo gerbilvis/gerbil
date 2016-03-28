@@ -69,7 +69,7 @@ void AutohideView::updateSizeHint(QSize sizeHint)
 void AutohideView::fitContentRect(QRect rect)
 {
 	/* let autohide widgets that completely fit-in stay in */
-	foreach (AutohideWidget::border location, widgets.keys()) {
+	for (auto location : widgets.keys()) {
 		AutohideWidget* w = widgets.value(location);
 		AutohideWidget::scrollstate state = w->scrollState();
 		if (state == AutohideWidget::STAY_OUT)
@@ -121,7 +121,7 @@ void AutohideView::resizeEvent(QResizeEvent *event)
 		scene()->setSceneRect(QRect(QPoint(0, 0), event->size()));
 
 	/* also let the widgets adjust */
-	foreach (AutohideWidget* w, widgets)
+	for (auto w : widgets)
 		w->reposition();
 
 	QGraphicsView::resizeEvent(event);
@@ -130,7 +130,7 @@ void AutohideView::resizeEvent(QResizeEvent *event)
 void AutohideView::mouseMoveEvent(QMouseEvent *event)
 {
 	if (!suppressScroll) {
-		foreach (AutohideWidget* w, widgets)
+		for (auto w : widgets)
 			w->triggerScrolling(event->pos());
 	}
 
@@ -169,7 +169,7 @@ void AutohideView::triggerScollOut()
 	// only let them know if a modal dialog opened or
 	// cursor really moved out (no popup menu etc.).
 	if (trigger) {
-		foreach (AutohideWidget* w, widgets) {
+		for (auto w : widgets) {
 			GGDBGM("trigger " << w->getLocation() << endl);
 			w->triggerScrolling(QPoint(-1, -1));
 		}

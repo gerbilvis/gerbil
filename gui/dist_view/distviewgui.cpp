@@ -163,13 +163,6 @@ void DistViewGUI::initSignals(QObject *dvctrl)
 	connect(vp, SIGNAL(remSelectionRequested()),
 	        dvctrl, SLOT(remHighlightFromLabel()));
 
-	//    subscriptions
-	connect(this, SIGNAL(subscribeRepresentation(QObject*,representation::t)),
-	        dvctrl, SIGNAL(subscribeRepresentation(QObject*,representation::t)));
-	connect(this, SIGNAL(unsubscribeRepresentation(QObject*,representation::t)),
-	        dvctrl, SIGNAL(unsubscribeRepresentation(QObject*,representation::t)));
-
-
 	// illumination correction
 	connect(this, SIGNAL(newIlluminantCurve(QVector<multi_img::Value>)),
 	        vp, SLOT(changeIlluminantCurve(QVector<multi_img::Value>)));
@@ -306,9 +299,14 @@ void DistViewGUI::createLimiterMenu()
 void DistViewGUI::showLimiterMenu()
 {
 	// map to scene coordinates
-	QPoint scenepoint = uivc->limiterMenuButton->mapToGlobal(QPoint(0, 0));
-	// map to screen coordinates
-	QPoint screenpoint = ui->gv->mapToGlobal(scenepoint);
+#ifdef _WIN32 // mapToGlobal() doesn't work correctly
+	auto screenpoint = QCursor::pos();
+#else
+	auto screenpoint = uivc->limiterMenuButton->mapToGlobal(QPoint(0, 0));
+#ifndef QT_BROKEN_MAPTOGLOBAL
+	screenpoint = ui->gv->mapToGlobal(screenpoint);
+#endif
+#endif
 
 	QAction *a = limiterMenu.exec(screenpoint);
 	if (!a)
@@ -349,9 +347,14 @@ void DistViewGUI::createFrameBufferMenu()
 void DistViewGUI::showFrameBufferMenu()
 {
 	// map to scene coordinates
-	QPoint scenepoint = uivc->formatButton->mapToGlobal(QPoint(0, 0));
-	// map to screen coordinates
-	QPoint screenpoint = ui->gv->mapToGlobal(scenepoint);
+#ifdef _WIN32 // mapToGlobal() doesn't work correctly
+	auto screenpoint = QCursor::pos();
+#else
+	auto screenpoint = uivc->formatButton->mapToGlobal(QPoint(0, 0));
+#ifndef QT_BROKEN_MAPTOGLOBAL
+	screenpoint = ui->gv->mapToGlobal(screenpoint);
+#endif
+#endif
 
 	QAction *a = frameBufferMenu.exec(screenpoint);
 	if (!a)
@@ -393,7 +396,7 @@ void DistViewGUI::updateBufferFormat(Viewport::BufferFormat format)
 void DistViewGUI::saveState()
 {
 	QSettings settings;
-	settings.beginGroup("DistView" + representation::prettyString(type));
+	settings.beginGroup("DistView_" + representation::str(type));
 	settings.setValue("HQDrawing", uivc->actionHq->isChecked());
 	settings.setValue("LogDrawing",uivc->actionLog->isChecked());
 	settings.setValue("alphaModifier", uivc->alphaSlider->value());
@@ -405,8 +408,7 @@ void DistViewGUI::restoreState()
 {
 	QSettings settings;
 
-	QString title = representation::prettyString(type);
-	settings.beginGroup("DistView" + title);
+	settings.beginGroup("DistView_" + representation::str(type));
 
 	bool checked = settings.value("HQDrawing", true).toBool();
 	uivc->actionHq->setChecked(checked);
@@ -419,9 +421,6 @@ void DistViewGUI::restoreState()
 
 	int nbins = settings.value("NBins", 64).toInt();
 	uivc->binSlider->setValue(nbins);
-
-	updateBufferFormat(
-	            (Viewport::BufferFormat)settings.value("BufferFormat", Viewport::RGBA16F).toInt());
 
 	settings.endGroup();
 }

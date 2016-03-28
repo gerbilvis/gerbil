@@ -3,8 +3,8 @@
 # 2.4 introduces some new features we use and older versions are buggy, too!
 set(VOLE_MINIMUM_OPENCV_VERSION "2.4.0")
 
-# 4.7 introduces some GL features we use
-set(VOLE_MINIMUM_QT_VERSION "4.7.0")
+# 5.5 or 5.5.1 fixes an important drawing bug
+set(VOLE_MINIMUM_QT_VERSION "5.5.1")
 
 # 1.47 introduces CHRONO, and I am tired of even guarding lib dependencies!
 set(VOLE_MINIMUM_BOOST_VERSION "1.47")
@@ -47,8 +47,8 @@ vole_check_package(OPENGL
 	"OpenGL"
 	"Please check your OpenGL installation."
 	OpenGL_FOUND
-	"${OpenGL_INCLUDE_DIR}"
-	"${OpenGL_LIBRARIES}"
+	"${OPENGL_INCLUDE_DIR}"
+	"${OPENGL_LIBRARIES}"
 )
 
 # GLEW
@@ -61,59 +61,37 @@ vole_check_package(OPENGL
 #	"${GLEW_LIBRARIES}"
 #)
 
-## We are not quite there yet to support Qt5 in the code (run-time problems)
-## QtWidgets 5
-#find_package(Qt5Widgets)
-#vole_check_package(QT
-#	"Qt5"
-#	"Please install Qt5 OR Qt4 >=${VOLE_MINIMUM_QT_VERSION} or set QT_QMAKE_EXECUTABLE."
-#	Qt5Widgets_FOUND
-#	"${Qt5Widgets_INCLUDE_DIRS}"
-#	"${Qt5Widgets_LIBRARIES}"
-#)
+# QtWidgets 5
+find_package(Qt5Widgets)
+if(Qt5Widgets_FOUND)
+	if(${Qt5Widgets_VERSION} VERSION_LESS ${VOLE_MINIMUM_QT_VERSION})
+		message(SEND_ERROR "Unsupported Qt version: "
+			"${Qt5Widgets_VERSION} (minimum required: ${VOLE_MINIMUM_QT_VERSION})")
+		# cmake configure will fail after SEND_ERROR
+	endif()
+	if(${Qt5Widgets_VERSION} VERSION_EQUAL "5.5.1")
+		# see https://codereview.qt-project.org/#/c/114591/
+		# and https://codereview.qt-project.org/#/c/144603/
+		add_definitions(-DQT_BROKEN_MAPTOGLOBAL)
+	endif()
+endif()
+vole_check_package(QT
+	"Qt5"
+	"Please install Qt5 >=${VOLE_MINIMUM_QT_VERSION}."
+	Qt5Widgets_FOUND
+	"${Qt5Widgets_INCLUDE_DIRS}"
+	"${Qt5Widgets_LIBRARIES}"
+)
 
-## QtOpenGL 5 (which is a backwards-compatibility module)
-#find_package(Qt5OpenGL)
-#vole_check_package(QT_OPENGL
-#	"Qt5 OpenGL"
-#	"Please install Qt5 OR Qt4 >=${VOLE_MINIMUM_QT_VERSION} or set QT_QMAKE_EXECUTABLE."
-#	Qt5OpenGL_FOUND
-#	"${Qt5OpenGL_INCLUDE_DIRS}"
-#	"${Qt5OpenGL_LIBRARIES}"
-#)
-#
-#if(Qt5Widgets_FOUND)
-#	set(WITH_QT5 TRUE)
-#else()
-	# QtGui 4
-	find_package(Qt4 ${VOLE_MINIMUM_QT_VERSION} COMPONENTS QtCore QtGui)
-	vole_check_package(QT
-		"Qt4"
-		"Please install Qt4 >=${VOLE_MINIMUM_QT_VERSION} or set QT_QMAKE_EXECUTABLE."
-		QT_FOUND
-		"${QT_INCLUDE_DIR};${QT_QTCORE_INCLUDE_DIR};${QT_QTGUI_INCLUDE_DIR}"
-		"${QT_QTCORE_LIBRARY};${QT_QTGUI_LIBRARY}"
-	)
-
-	# QtOpenGL 4
-	find_package(Qt4 ${VOLE_MINIMUM_QT_VERSION} COMPONENTS QtOpenGL)
-	vole_check_package(QT_OPENGL
-		"Qt4 OpenGL"
-	"Please install Qt4 >=${VOLE_MINIMUM_QT_VERSION} or set QT_QMAKE_EXECUTABLE."
-		QT_QTOPENGL_FOUND
-		"${QT_INCLUDE_DIR};${QT_QTOPENGL_INCLUDE_DIR}"
-		"${QT_QTOPENGL_LIBRARY}"
-	)
-
-	# QtXml 4
-	find_package(Qt4 ${VOLE_MINIMUM_QT_VERSION} COMPONENTS QtXml)
-	vole_check_package(QT_XML
-		"Qt4 XML"
-	"Please install Qt4 >=${VOLE_MINIMUM_QT_VERSION} or set QT_QMAKE_EXECUTABLE."
-		QT_QTXML_FOUND
-		"${QT_INCLUDE_DIR};${QT_QTXML_INCLUDE_DIR}"
-		"${QT_QTXML_LIBRARY}"
-	)
+# QtOpenGL 5 (which is a backwards-compatibility module)
+find_package(Qt5OpenGL)
+vole_check_package(QT_OPENGL
+	"Qt5 OpenGL"
+	"Please install Qt5 >=${VOLE_MINIMUM_QT_VERSION}."
+	Qt5OpenGL_FOUND
+	"${Qt5OpenGL_INCLUDE_DIRS}"
+	"${Qt5OpenGL_LIBRARIES}"
+)
 
 # Boost
 if(WIN32)

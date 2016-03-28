@@ -39,7 +39,7 @@ Viewport::Viewport(representation::t type, QGLWidget *target)
       illuminant_show(true),
       zoom(1.), holdSelection(false), activeLimiter(0),
       drawLog(nullptr), drawMeans(nullptr), drawRGB(nullptr), drawHQ(nullptr),
-      bufferFormat(RGBA16F),
+      bufferFormat(BufferFormat::RGBA16F),
       drawingState(HIGH_QUALITY), yaxisWidth(0), vb(QGLBuffer::VertexBuffer)
 {
 	(*ctx)->wait = 1;
@@ -91,22 +91,22 @@ void Viewport::initBuffers()
 		// GL driver. RGBA8 is the default and should be supported by all
 		// drivers.
 
-		// TODO: write operator<<
+		/* debug output */
 		const char* bfs;
-		switch(bufferFormat) {
-		case RGBA8: bfs = "RGBA8"; break;
-		case RGBA16F: bfs = "RGBA16F"; break;
-		case RGBA32F: bfs = "RGBA32F"; break;
+		switch (bufferFormat) {
+		case BufferFormat::RGBA8  : bfs = "RGBA8"; break;
+		case BufferFormat::RGBA16F: bfs = "RGBA16F"; break;
+		case BufferFormat::RGBA32F: bfs = "RGBA32F"; break;
 		default:
 			bfs = "UNKNOWN_BUFFER_FORMAT"; break;
 		}
-
 		std::cerr << "Viewport: Warning: Failed to init framebuffer "
 		          << "with format " << bfs << ". "
 		          << "Falling back to RGBA8. Drawing quality reduced."
 		          << std::endl;
 
-		bufferFormat = RGBA8;
+		/* try fallback */
+		bufferFormat = BufferFormat::RGBA8;
 		// try again
 		if (!tryInitBuffers()) {
 			std::cerr << "Viewport: Error: Failed to init framebuffer "
@@ -125,7 +125,7 @@ bool Viewport::tryInitBuffers()
 
 		/* use floating point for better alpha accuracy in back buffer! */
 		if (i == 0)
-			format_blit.setInternalTextureFormat(bufferFormat);
+			format_blit.setInternalTextureFormat((GLenum)bufferFormat);
 
 		// strict: format_buf must be format_blit + multisampling! OGL spec!
 		format_buf = format_blit;
@@ -295,7 +295,7 @@ void Viewport::setLimiters(int label)
 		SharedDataLock ctxlock(ctx->mutex);
 		limiters.assign((*ctx)->dimensionality,
 		                std::make_pair(0, (*ctx)->nbins-1));
-		if (label == -1) {	// use hover data
+		if (label == -1 && hover >= 0) {	// use hover data
 			int b = selection;
 			int h = hover;
 			limiters[b] = std::make_pair(h, h);
@@ -511,42 +511,43 @@ void Viewport::toggleHQ()
 	}
 }
 
-void Viewport::setBufferFormat(BufferFormat format)
+void Viewport::setBufferFormat(BufferFormat format, bool propagate)
 {
 	bufferFormat = format;
-
-	initBuffers();
-	updateBuffers();
-}
-
-void Viewport::toggleBufferFormat()
-{
-	switch (bufferFormat) {
-	case RGBA8: bufferFormat = RGBA16F; break;
-	case RGBA16F: bufferFormat = RGBA32F; break;
-	case RGBA32F: bufferFormat = RGBA8; break;
-	}
 
 	// initialize buffers with new format
 	initBuffers();
 	updateBuffers();
 
-	emit bufferFormatToggled(bufferFormat);
+	// propagate change
+	if (propagate)
+		emit bufferFormatToggled(bufferFormat);
+}
+
+void Viewport::toggleBufferFormat()
+{
+	BufferFormat format = BufferFormat::RGBA8;
+	if (bufferFormat == BufferFormat::RGBA8)
+		format = BufferFormat::RGBA16F;
+	if (bufferFormat == BufferFormat::RGBA16F)
+		format = BufferFormat::RGBA32F;
+	setBufferFormat(format, true);
 }
 
 void Viewport::saveState()
 {
 	QSettings settings;
-	QString title = representation::prettyString(type);
-	settings.beginGroup("DistView" + title);
-	settings.setValue("BufferFormat", bufferFormat);
+	settings.beginGroup("DistView_" + representation::str(type));
+	/* QVariant can only serialize GLenum, not BufferFormat */
+	settings.setValue("BufferFormat", (GLenum)bufferFormat);
 	settings.endGroup();
 }
 
 void Viewport::restoreState()
 {
 	QSettings settings;
-	settings.beginGroup("DistView" + representation::prettyString(type));
-	bufferFormat = (BufferFormat) settings.value("BufferFormat", RGBA16F).toInt();
+	settings.beginGroup("DistView_" + representation::str(type));
+	auto format = settings.value("BufferFormat", (GLenum)bufferFormat);
+	bufferFormat = (BufferFormat)format.value<GLenum>();
 	settings.endGroup();
 }

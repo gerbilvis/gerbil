@@ -10,10 +10,8 @@
 
 #include <stopwatch.h>
 #include <QApplication>
-#include <QGLWidget>
 #include <QPainter>
 #include <QGraphicsSceneEvent>
-#include <QDebug>
 
 #include <iostream>
 

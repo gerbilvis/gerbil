@@ -25,7 +25,7 @@ void GraphSegWidget::initUi(AutohideView *view)
 	similarityBox->addItem("Euclidean distance (L2)", EUCLIDEAN);
 	similarityBox->addItem(QString::fromUtf8("Chebyshev distance (L∞)"),
 								   CHEBYSHEV);
-	similarityBox->addItem("Spectral Angle", MOD_SPEC_ANGLE);
+	similarityBox->addItem("Spectral Angle", SPECTRAL_ANGLE);
 	similarityBox->addItem("Spectral Information Divergence",
 								   SPEC_INF_DIV);
 	similarityBox->addItem("SID+SAM I", SIDSAM1);

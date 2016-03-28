@@ -40,7 +40,7 @@
         <bool>true</bool>
        </property>
        <property name="checked">
-        <bool>true</bool>
+        <bool>false</bool>
        </property>
       </widget>
      </item>
@@ -283,7 +283,7 @@
           <enum>Qt::Vertical</enum>
          </property>
          <property name="tickPosition">
-          <enum>QSlider::TicksAbove</enum>
+          <enum>QSlider::TicksBothSides</enum>
          </property>
          <property name="tickInterval">
           <number>20</number>
@@ -321,7 +321,7 @@
           <enum>Qt::Vertical</enum>
          </property>
          <property name="tickPosition">
-          <enum>QSlider::TicksAbove</enum>
+          <enum>QSlider::TicksBothSides</enum>
          </property>
          <property name="tickInterval">
           <number>31</number>

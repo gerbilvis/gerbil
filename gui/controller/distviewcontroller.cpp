@@ -11,8 +11,6 @@
 #include <boost/format.hpp>
 #include <QDebug>
 
-#include "subscriptions.h"
-
 #define GGDBG_MODULE
 #include <QSettings>
 #include <gerbil_gui_debug.h>
@@ -21,40 +19,25 @@
 #define GGDBG_REPR(type) GGDBGM(format("%1%")%type << endl)
 #endif
 
-/** Holds a subscription set for representations.
- *
- * This is purely for avoiding the distviewcontroller.h -> subscriptions.h
- * dependency. Forward declaration of Subscription<representation::t>::Set
- * is impossible(?).
- */
-struct ReprSubscriptions {
-	Subscription<representation::t>::Set	repr;
-};
-
 DistViewController::DistViewController(
         Controller *ctrl,
         BackgroundTaskQueue *taskQueue,
         ImageModel *im)
-    : QObject(ctrl), ctrl(ctrl), im(im), distviewSubs(new ReprSubscriptions)
+    : QObject(ctrl), ctrl(ctrl), im(im)
 {
 	/* Create all viewers. Only one viewer per representation type is supported.
 	 */
-	foreach (representation::t repr, representation::all()) {
-		payloadMap.insert(repr, new Payload(repr));
-		payloadMap[repr]->model.setTaskQueue(taskQueue);
+	for (auto r : representation::all()) {
+		payloadMap.insert(r, new Payload(r));
+		auto p = payloadMap[r];
+		p->model.setTaskQueue(taskQueue);
 		// TODO: the other way round. ctx+sets come from model
-		payloadMap[repr]->model.setContext(payloadMap[repr]->gui.getContext());
-		payloadMap[repr]->model.setBinSets(payloadMap[repr]->gui.getBinSets());
+		p->model.setContext(payloadMap[r]->gui.getContext());
+		p->model.setBinSets(payloadMap[r]->gui.getBinSets());
+		p->viewFolded = false;
+		p->binningNeeded = false;
+		p->isSubscribed = false;
 	}
-
-	foreach (representation::t i, representation::all()) {
-		distviewNeedsBinning[i] = false;
-	}
-}
-
-DistViewController::~DistViewController()
-{
-	delete distviewSubs;
 }
 
 void DistViewController::init()
@@ -74,16 +57,14 @@ void DistViewController::init()
 			activeView = representation::IMG;
 		}
 		payloadMap[activeView]->gui.setActive();
-		foreach(representation::t repr, representation::all()) {
-			if (payloadMap[repr])  {
-				QString key = QString("viewports/") +
-				              representation::str(repr) + "folded";
-				// read folded setting, default unfolded
-				bool folded = settings.value(key, false).value<bool>();
-				viewFolded[repr] = folded;
-				Payload *p = payloadMap[repr];
-				p->gui.fold(folded);
-			}
+		for (auto r : payloadMap.keys()) {
+			auto &p = payloadMap[r];
+			QString key = QString("viewports/") +
+			              representation::str(r) + "folded";
+			// read folded setting, default unfolded
+			bool folded = settings.value(key, false).value<bool>();
+			p->viewFolded = folded;
+			p->gui.fold(folded);
 		}
 	} else {
 		// no settings available
@@ -91,11 +72,6 @@ void DistViewController::init()
 		// beginning.
 		activeView = representation::IMG;
 		payloadMap[activeView]->gui.setActive();
-		viewFolded[representation::IMG]     =  false;
-		viewFolded[representation::GRAD]    =  false;
-		viewFolded[representation::NORM]    =  true;
-		viewFolded[representation::IMGPCA]  =  true;
-//		viewFolded[representation::GRADPCA] =  true;
 		payloadMap[representation::NORM]->gui.fold(true);
 		payloadMap[representation::IMGPCA]->gui.fold(true);
 //		payloadMap[representation::GRADPCA]->gui.fold(true);
@@ -112,12 +88,12 @@ void DistViewController::init()
 	        SLOT(processImageUpdate(representation::t,SharedMultiImgPtr,bool)));
 
 
-	foreach (Payload *p, payloadMap) {
+	for (auto p : payloadMap) {
 		// fill GUI with distribution view
 		ctrl->mainWindow()->addDistView(p->gui.getFrame());
 	}
 
-	foreach (Payload *p, payloadMap) {
+	for (auto p : payloadMap) {
 		DistViewModel *m = &p->model;
 
 		connect(m, SIGNAL(newBinning(representation::t)),
@@ -138,10 +114,17 @@ void DistViewController::init()
 		        this, SLOT(processDistviewNeedsBinning(representation::t)));
 
 
+		// forward representation subscriptions to controller
 		connect(g, SIGNAL(subscribeRepresentation(QObject*,representation::t)),
-		        this, SLOT(processDistviewSubscribeRepresentation(QObject*,representation::t)));
+		        ctrl, SLOT(subscribeRepresentation(QObject*,representation::t)));
 		connect(g, SIGNAL(unsubscribeRepresentation(QObject*,representation::t)),
-		        this, SLOT(processDistviewUnsubscribeRepresentation(QObject*,representation::t)));
+		        ctrl, SLOT(unsubscribeRepresentation(QObject*,representation::t)));
+		// fill-in our own state-holder (TODO)
+		connect(g, SIGNAL(subscribeRepresentation(QObject*,representation::t)),
+		        this, SLOT(subscribeRepresentation(QObject*,representation::t)));
+		connect(g, SIGNAL(unsubscribeRepresentation(QObject*,representation::t)),
+		        this, SLOT(unsubscribeRepresentation(QObject*,representation::t)));
+
 		connect(g, SIGNAL(foldingStateChanged(representation::t,bool)),
 		        this, SLOT(processFoldingStateChanged(representation::t,bool)));
 	}
@@ -169,19 +152,12 @@ void DistViewController::init()
 	connect(this, SIGNAL(newIlluminantApplied(QVector<multi_img::Value>)),
 	        &payloadMap[representation::IMG]->model,
 	        SLOT(setIlluminant(QVector<multi_img::Value>)));
-
-	// forward representation subscriptions to controller
-	connect(this, SIGNAL(subscribeRepresentation(QObject*,representation::t)),
-	        ctrl, SLOT(subscribeRepresentation(QObject*,representation::t)));
-	connect(this, SIGNAL(unsubscribeRepresentation(QObject*,representation::t)),
-	        ctrl, SLOT(unsubscribeRepresentation(QObject*,representation::t)));
 }
 
 void DistViewController::initSubscriptions()
 {
-	foreach (Payload *p, payloadMap) {
-		DistViewGUI *g = &p->gui;
-		g->initSubscriptions();
+	for (auto p : payloadMap) {
+		p->gui.initSubscriptions();
 	}
 }
 
@@ -189,7 +165,7 @@ sets_ptr DistViewController::subImage(representation::t type,
                                       const std::vector<cv::Rect> &regions,
                                       cv::Rect roi)
 {
-	GGDBG_CALL();
+	GGDBGM(type << endl);
 	return payloadMap[type]->model.subImage(regions, roi);
 }
 
@@ -197,17 +173,16 @@ void DistViewController::addImage(representation::t type, sets_ptr temp,
                                   const std::vector<cv::Rect> &regions,
                                   cv::Rect roi)
 {
-	GGDBG_CALL();
+	GGDBGM(type << endl);
 	payloadMap[type]->model.addImage(temp, regions, roi);
 }
 
 void DistViewController::setActiveViewer(representation::t type)
 {
 	activeView = type;
-	QMap<representation::t, Payload*>::const_iterator it;
-	for (it = payloadMap.begin(); it != payloadMap.end(); ++it) {
-		if (it.key() != activeView)
-			it.value()->gui.setInactive();
+	for (auto r : payloadMap.keys()) {
+		if (r != activeView)
+			payloadMap[r]->gui.setInactive();
 	}
 }
 
@@ -219,13 +194,12 @@ void DistViewController::pixelOverlay(int y, int x)
 		return;
 	}
 
-	foreach (Payload *p, payloadMap) {
-		// not visible -> not subscribed -> no data
-		if (p->gui.isVisible()) {
-			QPolygonF overlay = p->model.getPixelOverlay(y, x);
-			if (!overlay.empty())
-				p->gui.insertPixelOverlay(overlay);
-		}
+	for (auto p : payloadMap) {
+		if (!p->isSubscribed)
+			continue;
+		QPolygonF overlay = p->model.getPixelOverlay(y, x);
+		if (!overlay.empty())
+			p->gui.insertPixelOverlay(overlay);
 	}
 }
 
@@ -246,8 +220,7 @@ void DistViewController::processImageUpdate(representation::t repr,
 	if (duplicate) {
 		GGDBGM(repr  << " is re-spawn" << endl);
 	}
-	if (distviewNeedsBinning[repr]) {
-		distviewNeedsBinning[repr] = false;
+	if (payloadMap[repr]->binningNeeded) {
 		GGDBGM("following distview " << repr <<
 		       " request for new binning" << endl);
 		updateBinning(repr, image);
@@ -259,7 +232,7 @@ void DistViewController::processImageUpdate(representation::t repr,
 void DistViewController::processDistviewNeedsBinning(representation::t repr)
 {
 	GGDBGM(repr << " needs binning" << endl);
-	distviewNeedsBinning[repr] = true;
+	payloadMap[repr]->binningNeeded = true;
 }
 
 void DistViewController::processPreROISpawn(const cv::Rect &oldroi,
@@ -268,25 +241,23 @@ void DistViewController::processPreROISpawn(const cv::Rect &oldroi,
                                             const std::vector<cv::Rect> &add,
                                             bool profitable)
 {
-	// recycle existing distview payload
-	roiSets = boost::shared_ptr<QMap<representation::t, sets_ptr> > (
-	            new QMap<representation::t, sets_ptr>() );
 	if (profitable) {
 		GGDBGM("INCREMENTAL distview update" << endl);
-		foreach (representation::t repr, representation::all()) {
-			if (isSubscribed(repr, distviewSubs->repr)) {
-				GGDBGM("   BEGIN " << repr <<" distview update" << endl);
-				(*roiSets)[repr] = subImage(repr, sub, newroi);
-				GGDBGM("   END " << repr <<" distview update" << endl);
-			}
+		for (auto r : payloadMap.keys()) {
+			auto &p = payloadMap[r];
+			if (!p->isSubscribed)
+				continue;
+			GGDBGM("   BEGIN " << r <<" distview update" << endl);
+			p->tmp_binset = subImage(r, sub, newroi);
+			GGDBGM("   END " << r <<" distview update" << endl);
 		}
 	} else {
 		GGDBGM("FULL distview update (ignored)" << endl);
 		// nothing to do, except let them know that ROI change is underway
-		foreach (representation::t repr, representation::all()) {
-			if (isSubscribed(repr, distviewSubs->repr)) {
-				payloadMap[repr]->model.initiateROIChange();
-			}
+		for (auto p : payloadMap) {
+			if (!p->isSubscribed)
+				continue;
+			p->model.initiateROIChange();
 		}
 	}
 }
@@ -297,45 +268,24 @@ void DistViewController::processPostROISpawn(const cv::Rect &oldroi,
                                              const std::vector<cv::Rect> &add,
                                              bool profitable)
 {
-	if (profitable && ! roiSets) {
-		std::cerr << "DistViewController::processPostROISpawn error: "
-		             "profitable && ! roiSets)" << std::endl;
-	}
-	if (profitable) {
-		GGDBGM("INCREMENTAL distview update" << endl);
-	} else {
-		GGDBGM("FULL distview update" << endl);
-	}
-	foreach (representation::t repr, representation::all()) {
-		if (isSubscribed(repr, distviewSubs->repr)) {
-			if (profitable && roiSets) {
-				addImage(repr, (*roiSets)[repr], add, newroi);
-			} else {
-				updateBinning(repr, im->getImage(repr));
-			}
+	GGDBGM((profitable ? "INCREMENTAL" : "FULL") << " distview update" << endl);
+	for (auto r : payloadMap.keys()) {
+		auto &p = payloadMap[r];
+		if (!p->isSubscribed)
+			continue;
+		if (profitable && p->tmp_binset) {
+			addImage(r, p->tmp_binset, add, newroi);
+			p->tmp_binset.reset();
+		} else {
+			updateBinning(r, im->getImage(r));
 		}
 	}
-	// free sets map
-	roiSets = boost::shared_ptr<QMap<representation::t, sets_ptr> > ();
-}
-
-void DistViewController::processDistviewSubscribeRepresentation(
-        QObject *subscriber,
-        representation::t repr)
-{
-	subscribe(subscriber, repr, distviewSubs->repr);
-}
-
-void DistViewController::processDistviewUnsubscribeRepresentation(
-        QObject *subscriber,
-        representation::t repr)
-{
-	unsubscribe(subscriber, repr, distviewSubs->repr);
 }
 
 void DistViewController::updateBinning(representation::t repr,
                                        SharedMultiImgPtr image)
 {
+	payloadMap[repr]->binningNeeded = false;
 	int bins = payloadMap[repr]->gui.getBinCount();
 	payloadMap[repr]->model.setImage(image, curROI, bins);
 }
@@ -355,7 +305,7 @@ void DistViewController::updateLabels(const cv::Mat1s& labels,
                                       bool colorsChanged)
 {
 	if (!colors.empty()) {
-		foreach (Payload *p, payloadMap) {
+		for (auto p : payloadMap) {
 			p->model.setLabelColors(colors);
 			p->gui.updateLabelColors(colors);
 		}
@@ -365,8 +315,8 @@ void DistViewController::updateLabels(const cv::Mat1s& labels,
 	if (labels.empty() && (!colorsChanged))
 		return;
 
-	foreach (Payload *p, payloadMap) {
-		p->model.updateLabels(labels, colors);
+	for (auto p : payloadMap) {
+		p->model.updateLabels(labels, p->isSubscribed);
 	}
 }
 
@@ -378,8 +328,8 @@ void DistViewController::updateLabelsPartially(const cv::Mat1s &labels,
 	 */
 	bool profitable = (size_t(2 * cv::countNonZero(mask)) < mask.total());
 	if (profitable) {
-		foreach (Payload *p, payloadMap) {
-			p->model.updateLabelsPartially(labels, mask);
+		for (auto p : payloadMap) {
+			p->model.updateLabelsPartially(labels, mask, p->isSubscribed);
 		}
 	} else {
 		// just update the whole thing
@@ -457,8 +407,8 @@ void DistViewController::toggleIgnoreLabels(bool toggle)
 {
 	// TODO: cancel previous toggleignorelabel tasks here!
 
-	foreach (Payload *p, payloadMap) {
-		p->model.toggleLabels(toggle);
+	for (auto p : payloadMap) {
+		p->model.toggleLabels(toggle, p->isSubscribed);
 	}
 
 }
@@ -477,17 +427,18 @@ void DistViewController::remHighlightFromLabel()
 
 void DistViewController::processFoldingStateChanged(representation::t repr, bool folded)
 {
-	viewFolded[repr] = folded;
+	payloadMap[repr]->viewFolded = folded;
+	// TODO: if all folded, disable add/remove from label buttons.
 }
 
 void DistViewController::processLastWindowClosed()
 {
 	// save folding state of views
 	QSettings settings;
-	foreach (representation::t repr, representation::all()) {
-		bool folded = viewFolded.value(repr, true);
+	for (auto r : payloadMap.keys()) {
+		bool folded = payloadMap[r]->viewFolded;
 		QString key = QString("viewports/") +
-		              representation::str(repr) + "folded";
+		              representation::str(r) + "folded";
 		GGDBGM(key.toStdString() << " " << folded << endl);
 		settings.setValue(key, QVariant(folded));
 	}

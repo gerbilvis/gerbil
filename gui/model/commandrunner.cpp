@@ -10,7 +10,8 @@ CommandRunner::CommandRunner()
 {
 	connect(this, SIGNAL(exception(std::exception_ptr, bool)),
 	        GerbilApplication::instance(),
-	        SLOT(handle_exception(std::exception_ptr, bool)));
+	        SLOT(handle_exception(std::exception_ptr, bool)),
+	        Qt::BlockingQueuedConnection);
 }
 
 CommandRunner::~CommandRunner()

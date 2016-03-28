@@ -33,10 +33,10 @@ public:
 		RM_FULL = 2
 	};
 
-	enum BufferFormat {
-		RGBA8 = 0x8058,  // GL_RGBA8, constants not defined on windows
-		RGBA16F = 0x881A,// GL_RGBA16F
-		RGBA32F = 0x8814 // GL_RGBA32F
+	enum class BufferFormat : GLenum {
+		RGBA8 = GL_RGBA8,//0x8058,  // GL_RGBA8, constants not defined on windows
+		RGBA16F = GL_RGBA16F,//0x881A,// GL_RGBA16F
+		RGBA32F = GL_RGBA32F//0x8814 // GL_RGBA32F
 	};
 
 	/* TODO: make non-public. I am just too tired right now. */
@@ -79,7 +79,7 @@ public slots:
 	void setIlluminationCurveShown(bool show);
 	void setAppliedIlluminant(QVector<multi_img::Value> illum);
 
-	void setBufferFormat(BufferFormat format);
+	void setBufferFormat(BufferFormat format, bool propagate = false);
 	void toggleBufferFormat();
 	void toggleHQ();
 

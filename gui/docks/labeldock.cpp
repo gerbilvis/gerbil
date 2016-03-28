@@ -221,7 +221,7 @@ void LabelDock::mergeOrDeleteSelected()
 
 	// Extract label ids from QModelIndex s.
 	QVector<int> selectedLabels;
-	foreach (QModelIndex idx, modelIdxs) {
+	for (auto idx : modelIdxs) {
 		int id = idx.data(LabelIndexRole).value<int>();
 		selectedLabels.push_back(id);
 	}

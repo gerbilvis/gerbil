@@ -62,7 +62,7 @@ void GerbilApplication::check_system_requirements()
 
 	bool supportOGL = QGLFormat::hasOpenGL();
 	bool supportFBO = QGLFramebufferObject::hasOpenGLFramebufferObjects();
-	bool supportBlit = QGLFramebufferObject::hasOpenGLFramebufferBlit();
+	bool supportBlit = true; //QGLFramebufferObject::hasOpenGLFramebufferBlit();
 
 	QString problems;
 	if (!supportMMX)
@@ -87,8 +87,9 @@ void GerbilApplication::init_qt()
 	/* qt docs:
 	 * "If you have resources in a static library, you might need to force
 	 *  initialization of your resources"
+	 * However, right now we don't put the resources in the lib but the binary.
+	 * Q_INIT_RESOURCE(gerbil);
 	 */
-	Q_INIT_RESOURCE(gerbil);
 	QApplication::setAttribute(Qt::AA_DontShowIconsInMenus, false);
 
 	// setup our custom icon theme if there is no system theme (OS X, Windows)
@@ -268,8 +269,10 @@ bool GerbilApplication::determine_limited(const
 			msgBox.exec();
 			if (msgBox.clickedButton() == memory)
 				return true;
-			if (msgBox.clickedButton() == close)
+			if (msgBox.clickedButton() == close) {
 				quit();
+				throw shutdown_exception();
+			}
 		}
 	}
 
