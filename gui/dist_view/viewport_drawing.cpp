@@ -12,11 +12,6 @@
 
 bool Viewport::drawScene(QPainter *painter, bool withDynamics)
 {
-	/*
-	const char *dst[] = { "HQ", "HQ_QUICK", "QUICK" };
-	std::cerr << type << "\t" << "drawing in state "
-			  << dst[drawingState] << std::endl;*/
-
 	bool disabled = false;
 	{
 		/* TODO: disabled member state instead? */
@@ -129,6 +124,8 @@ void Viewport::updateBuffers(RenderMode spectrum, RenderMode highlight)
 			return;
 		}
 
+		// does not make much sense here, but seems to help with no/partial update problems
+		target->makeCurrent();
 		QPainter painter(b.fbo);
 
 		painter.setCompositionMode(QPainter::CompositionMode_Source);
