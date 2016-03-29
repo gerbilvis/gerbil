@@ -43,9 +43,8 @@ void LabelDock::init()
 	QWidget *mainUiWidgetTmp = new QWidget();
 	ui->setupUi(mainUiWidgetTmp);
 	mainUiWidget = ahscene->addWidget(mainUiWidgetTmp);
-	mainUiWidget->setTransform( // TODO: unclear why we need to do this
-	            QTransform::fromTranslate(-AutohideWidget::OutOffset,
-	                                      -AutohideWidget::OutOffset));
+	// TODO: origin of this problem not understood
+	mainUiWidget->setTransform(QTransform::fromTranslate(-10, -10));
 
 	ui->labelView->setModel(labelModel);
 
