@@ -254,13 +254,11 @@ void Controller::setupDocks()
 			this, SLOT(toggleLabelHighlight(short)));
 	connect(labelDock, SIGNAL(toggleLabelHighlightRequested(short)),
 			bandDock->bandView(), SLOT(toggleLabelHighlight(short)));
-	connect(labelDock, SIGNAL(labelMaskIconsRequested()),
-			labelingModel(), SLOT(computeLabelIcons()));
-	connect(labelDock, SIGNAL(labelMaskIconSizeChanged(const QSize&)),
-			labelingModel(), SLOT(setLabelIconSize(const QSize&)));
+	connect(labelDock, SIGNAL(labelMaskIconsRequested(QSize)),
+			labelingModel(), SLOT(computeLabelIcons(QSize)));
 	connect(labelingModel(),
-			SIGNAL(labelIconsComputed(const QVector<QImage>&)),
-			labelDock, SLOT(processMaskIconsComputed(const QVector<QImage>&)));
+			SIGNAL(labelIconsComputed(QVector<QImage>)),
+			labelDock, SLOT(processMaskIconsComputed(QVector<QImage>)));
 	connect(labelDock, SIGNAL(applyROIChanged(bool)),
 			labelingModel(), SLOT(setApplyROI(bool)));
 	connect(labelDock, SIGNAL(requestLoadLabeling()),

@@ -50,7 +50,7 @@ public slots:
 	/** Merge/delete currently selected labels depending on sender. */
 	void mergeOrDeleteSelected();
 
-	void processMaskIconsComputed(const QVector<QImage>& icons);
+	void processMaskIconsComputed(QVector<QImage> icons);
 
 	void toggleLabelSelection(int label, bool innerSource = false);
 
@@ -78,7 +78,7 @@ signals:
 	void toggleLabelHighlightRequested(short label);
 
 	/** Request a vector of mask icons representing the label masks. */
-	void labelMaskIconsRequested();
+	void labelMaskIconsRequested(QSize size = QSize());
 
 	/** The user changed the mask icon size using the slider. */
 	void labelMaskIconSizeChanged(const QSize& size);
@@ -107,10 +107,12 @@ private slots:
 	// from ImageModel
 	void processRoiRectChanged(cv::Rect newRoi);
 
-	/** Icon size slider value changed. */
-	void processSliderValueChanged(int);
+	void updateLabelIcons();
+
 	void updateSliderToolTip();
+
 	/** Adjust view contents size. */
+
 	void resizeSceneContents();
 
 	void deselectSelectedLabels();
@@ -122,7 +124,6 @@ private:
 	enum { LabelIndexRole = Qt::UserRole };
 
 	void init();
-	void updateLabelIcons();
 
 	// UI with autohide widgets.
 	// The view and scene for this widget.
