@@ -44,7 +44,7 @@ void LabelDock::init()
 	ui->setupUi(mainUiWidgetTmp);
 	mainUiWidget = ahscene->addWidget(mainUiWidgetTmp);
 	// TODO: origin of this problem not understood
-	mainUiWidget->setTransform(QTransform::fromTranslate(-10, -10));
+	mainUiWidget->setTransform(QTransform::fromTranslate(-9, -9));
 
 	ui->labelView->setModel(labelModel);
 
