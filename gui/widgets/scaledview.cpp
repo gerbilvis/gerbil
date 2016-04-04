@@ -253,7 +253,8 @@ void ScaledView::cursorAction(QGraphicsSceneMouseEvent *ev, bool click)
 		}
 	}
 
-	if (!itemAt(ev->scenePos())) {
+	// note: we always have identity transform between scene and view
+	if (!itemAt(ev->scenePos(), QTransform())) {
 		updateCursor();
 	}
 }
