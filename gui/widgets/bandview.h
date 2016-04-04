@@ -88,6 +88,9 @@ public slots:
 
 	void updatePixel(int x, int y);
 
+protected slots:
+	void saveState();
+
 signals:
 	void killHover();
 
@@ -108,10 +111,13 @@ signals:
 
 	void mergeLabelsRequested(QVector<int> labels);
 
+	void setAlphaValue(int val);
+
 protected:
 	void paintEvent(QPainter *painter, const QRectF &rect);
 	void keyPressEvent(QKeyEvent *);
 	QMenu* createContextMenu();
+	void restoreState();
 
 private:
 	void cursorAction(QGraphicsSceneMouseEvent *ev, bool click = false);

@@ -1,5 +1,6 @@
 #include <QVBoxLayout>
 #include <QThread>
+#include <QSettings>
 
 #include <iostream>
 
@@ -52,7 +53,10 @@ FalseColorDock::FalseColorDock(QWidget *parent)
 	layout->addWidget(view);
 	this->setWidget(contents);
 
+	connect(QApplication::instance(), SIGNAL(lastWindowClosed()),
+	        this, SLOT(saveState()));
 	initUi();
+	restoreState();
 }
 
 void FalseColorDock::processFalseColoringUpdate(FalseColoring::Type coloringType, QPixmap p)
@@ -365,5 +369,24 @@ void FalseColorDock::restoreFalseColorFunction()
 {
 	sw->targetAction()->setEnabled(true);
 	sw->doneAction()->setEnabled(false);
+	processSelectedColoring();
+}
+
+void FalseColorDock::saveState()
+{
+	QSettings settings;
+	QComboBox *src = uisel->sourceBox;
+	settings.setValue("FalseColorDock/selectedColoringIndex", src->currentIndex());
+	// TODO: specsim state?
+}
+
+void FalseColorDock::restoreState()
+{
+	QSettings settings;
+	auto selectedColoring = settings.value("FalseColorDock/selectedColoringIndex", 0);
+	// TODO: specsim state?
+
+	QComboBox *src = uisel->sourceBox;
+	src->setCurrentIndex(selectedColoring.toInt());
 	processSelectedColoring();
 }

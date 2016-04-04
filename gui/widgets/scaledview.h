@@ -5,8 +5,6 @@
 #include <QPainter>
 #include <QMenu>
 
-class QGLWidget;
-
 class ScaledView : public QGraphicsScene
 {
 	Q_OBJECT

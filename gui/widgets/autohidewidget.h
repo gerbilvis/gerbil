@@ -60,7 +60,7 @@ public:
 	int triggerOffset;
 
 	// how many pixels the widget lurks into the view while scrolled out
-	static const int OutOffset = 10;
+	static const int OutOffset = 14;
 
 signals:
 	

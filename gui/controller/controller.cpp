@@ -17,8 +17,6 @@
 //#define GGDBG_MODULE
 #include "gerbil_gui_debug.h"
 
-#include <boost/ref.hpp>
-
 Controller::Controller(const QString &filename,
                        bool limited_mode,
                        const QString &labelfile,
@@ -32,8 +30,7 @@ Controller::Controller(const QString &filename,
       cm(nullptr),
 #endif
       dvc(nullptr),
-      queuethread(nullptr),
-      subs(new Subscriptions)
+      queuethread(nullptr)
 {
 	// reset internal ROI state tracking
 	resetROISpawned();
@@ -157,11 +154,9 @@ Controller::Controller(const QString &filename,
 
 Controller::~Controller()
 {
-
 	// stop background task queue thread
 	stopQueue();
 	window->deleteLater();
-	delete subs;
 }
 
 
@@ -231,9 +226,9 @@ void Controller::rescaleSpectrum(int bands)
 void Controller::debugSubscriptions()
 {
 	//std::cerr << "** TYPE      subscribed flag" << std::endl;
-	foreach (representation::t type, representation::all()) {
-		std::cerr << "** " << std::left << std::setw(7) << type;
-		if (haveSubscriber(type)) {
+	for (auto r : representation::all()) {
+		std::cerr << "** " << std::left << std::setw(7) << r;
+		if (subscriptions.images.subscribed(r)) {
 			std::cerr << "    subscribed";
 		} else {
 			std::cerr <<  "not subscribed";
@@ -282,18 +277,18 @@ void Controller::updateROI(bool reuse, cv::Rect newRoi, int bands)
 	 * IMG before all others, GRAD before GRADPCA it is implicit here but we
 	 * would like this knowledge to be part of image model's logic.
 	 */
-	foreach (representation::t type, representation::all()) {
-		bool sub = haveSubscriber(type);
+	for (auto r : representation::all()) {
+		bool needed = subscriptions.images.subscribed(r);
 
-		if (sub) {
-			GGDBGM("     subscribed " << type << endl);
+		if (needed) {
+			GGDBGM("     subscribed " << r << endl);
 		} else {
-			GGDBGM("not  subscribed " << type << endl);
+			GGDBGM("not  subscribed " << r << endl);
 		}
 
-		if (sub) {
+		if (needed) {
 			/* tasks to (incrementally) re-calculate image data */
-			im->spawn(type, newRoi, bands);
+			im->spawn(r, newRoi, bands);
 		}
 	}
 
@@ -308,36 +303,24 @@ void Controller::updateROI(bool reuse, cv::Rect newRoi, int bands)
 	}*/
 }
 
-bool Controller::haveSubscriber(representation::t type)
-{
-	foreach (Subscription<representation::t> const& sub, subs->repr) {
-		if (sub.subsid == type) {
-			return true;
-		}
-	}
-	return false;
-}
-
 void Controller::subscribeImageBand(QObject *subscriber,
                                     representation::t repr,
                                     int bandId)
 {
-	assert(subs);
 	// also subscribe to the relevant representation
 	subscribeRepresentation(subscriber, repr);
-	// if not inserted, the subscription already exists -> no need to update
-	if (subscribe(subscriber, ImageBandId(repr, bandId), subs->imageBand)) {
+	// only update if the subscription is new
+	// TODO: what about other subscribers on bandId?
+	bool newly = subscriptions.bands.subscribe(subscriber, BandId(repr, bandId));
+	if (newly)
 		im->computeBand(repr, bandId);
-	}
 }
 
 void Controller::unsubscribeImageBand(QObject *subscriber,
                                       representation::t repr,
                                       int bandId)
 {
-	assert(subs);
-	subs->imageBand.erase(Subscription<ImageBandId>(subscriber,
-	                                                ImageBandId(repr, bandId)));
+	subscriptions.bands.unsubscribe(subscriber, BandId(repr, bandId));
 	unsubscribeRepresentation(subscriber, repr);
 }
 
@@ -345,10 +328,9 @@ void Controller::subscribeFalseColor(QObject *subscriber,
                                      FalseColoring::Type coloring)
 {
 	//GGDBGM(coloring << endl);
-	assert(subs);
 	// also subscribe to the relevant representation
 	subscribeRepresentation(subscriber, FalseColoring::basis(coloring));
-	if (subscribe(subscriber, coloring, subs->falseColor)) {
+	if (subscriptions.colorings.subscribe(subscriber, coloring)) {
 		//GGDBGM("requesting from fm " << coloring << endl);
 		fm->requestColoring(coloring);
 	}
@@ -358,10 +340,8 @@ void Controller::unsubscribeFalseColor(QObject *subscriber,
                                        FalseColoring::Type coloring)
 {
 	//GGDBGM(coloring << endl);
-	assert(subs);
-	subs->falseColor.erase(Subscription<FalseColoring::Type>(subscriber,
-	                                                         coloring));
-	if (!isSubscribed(coloring, subs->falseColor)) {
+	subscriptions.colorings.unsubscribe(subscriber, coloring);
+	if (!subscriptions.colorings.subscribed(coloring)) {
 		// no more subscriptions for coloring,
 		// cancel computation if any.
 		fm->cancelComputation(coloring);
@@ -371,8 +351,7 @@ void Controller::unsubscribeFalseColor(QObject *subscriber,
 
 void Controller::recalcFalseColor(FalseColoring::Type coloringType)
 {
-	assert(subs);
-	if (isSubscribed(coloringType, subs->falseColor)) {
+	if (subscriptions.colorings.subscribed((coloringType))) {
 		fm->requestColoring(coloringType, /* recalc */ true);
 	}
 }
@@ -380,8 +359,7 @@ void Controller::recalcFalseColor(FalseColoring::Type coloringType)
 void Controller::subscribeRepresentation(QObject *subscriber,
                                          representation::t repr)
 {
-	assert(subs);
-	if (subscribe(subscriber, repr, subs->repr)) {
+	if (subscriptions.images.subscribe(subscriber, repr)) {
 		GGDBGM("new subscription, ");
 		if (roiSpawned[repr]) {
 			GGDBGP("RE-spawning ROI "<< roi << " for " << repr << endl);
@@ -391,16 +369,14 @@ void Controller::subscribeRepresentation(QObject *subscriber,
 			im->spawn(repr, roi, -1);
 			roiSpawned[repr] = true;
 		}
-
 	}
 }
 
 void Controller::unsubscribeRepresentation(QObject *subscriber,
                                            representation::t repr)
 {
-	assert(subs);
 	GGDBGM("unsubscribe " << repr << endl);
-	subs->repr.erase(Subscription<representation::t>(subscriber, repr));
+	subscriptions.images.unsubscribe(subscriber, repr);
 }
 
 void Controller::startQueue()
@@ -441,33 +417,32 @@ void Controller::processImageUpdate(representation::t repr,
 
 	roiSpawned[repr] = true;
 
-	Subscription<ImageBandId>::IdTypeSet bandUpdates;
+	Subscription<BandId>::KeySet bandUpdates;
 
-	assert(subs);
-	foreach (Subscription<ImageBandId> const& sub, subs->imageBand) {
-		if(repr == sub.subsid.repr)	 {
-			bandUpdates.insert(sub.subsid);
+	for (auto s : subscriptions.bands) {
+		if (repr == s.id.repr)	 {
+			bandUpdates.insert(s.id);
 		}
 	}
-	foreach (ImageBandId const& ib, bandUpdates) {
+	for (auto ib : bandUpdates) {
 		//GGDBGM("requesting band " << ib.first << " " << ib.second << endl);
-		im->computeBand(ib.repr, ib.bandx);
+		im->computeBand(ib.repr, ib.band);
 	}
 
 	// false color updates
 
-	typedef std::tr1::unordered_set<FalseColoring::Type, std::tr1::hash<int> >
+	typedef std::unordered_set<FalseColoring::Type, std::hash<int> >
 	        FalseColoringSet;
 	FalseColoringSet fcUpdates;
-	foreach (Subscription<FalseColoring::Type> const& sub, subs->falseColor) {
-		FalseColoring::Type coloring = sub.subsid;
+	for (auto s : subscriptions.colorings) {
+		FalseColoring::Type coloring = s.id;
 		if (FalseColoring::isBasedOn(coloring, repr)) {
 			//GGDBGM("found subscriber for " << coloring <<
 			//       " based on " << repr << endl);
 			fcUpdates.insert(coloring);
 		}
 	}
-	foreach (FalseColoringSet::value_type const& coloring, fcUpdates) {
+	for (auto coloring : fcUpdates) {
 		//GGDBGM("requesting from fm " << coloring << endl);
 		emit pendingFalseColorUpdate(coloring);
 		fm->requestColoring(coloring);
@@ -476,7 +451,7 @@ void Controller::processImageUpdate(representation::t repr,
 
 void Controller::resetROISpawned()
 {
-	foreach (representation::t repr, representation::all()) {
-		roiSpawned[repr] = false;
+	for (auto r : representation::all()) {
+		roiSpawned[r] = false;
 	}
 }

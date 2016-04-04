@@ -1,5 +1,7 @@
 #include "viewport.h"
 
+#include <app/gerbilapplication.h>
+
 #include <QGraphicsProxyWidget>
 #include <QMessageBox>
 #include <QDebug>
@@ -10,11 +12,6 @@
 
 bool Viewport::drawScene(QPainter *painter, bool withDynamics)
 {
-	/*
-	const char *dst[] = { "HQ", "HQ_QUICK", "QUICK" };
-	std::cerr << type << "\t" << "drawing in state "
-			  << dst[drawingState] << std::endl;*/
-
 	bool disabled = false;
 	{
 		/* TODO: disabled member state instead? */
@@ -121,14 +118,14 @@ void Viewport::updateBuffers(RenderMode spectrum, RenderMode highlight)
 		b.renderedLines = 0;
 
 		if (!(b.fbo->isValid() && b.blit->isValid())) {
-			QMessageBox::critical(target, "Drawing Error",
-			                      "Drawing spectra cannot be continued. "
-			                      "Please notify us about this problem, state error code 4 "
-			                      "and what actions led up to this error. Send an email to"
-			                      " report@gerbilvis.org. Thank you for your help!");
+			GerbilApplication::internalError(
+			            "Framebuffer not valid in viewport updateBuffers().",
+			            false);
 			return;
 		}
 
+		// does not make much sense here, but seems to help with no/partial update problems
+		target->makeCurrent();
 		QPainter painter(b.fbo);
 
 		painter.setCompositionMode(QPainter::CompositionMode_Source);
@@ -269,16 +266,15 @@ void Viewport::drawBins(QPainter &painter, QTimer &renderTimer,
 	// Stopwatch watch("drawBins");
 
 	/* initialize painting in GL, vertex buffer */
+	target->makeCurrent();
 	painter.beginNativePainting();
 	glEnable(GL_BLEND);
 	glBlendFunc(GL_SRC_ALPHA,GL_ONE_MINUS_SRC_ALPHA);
 	bool success = vb.bind();
 	if (!success) {
-		QMessageBox::critical(target, "Drawing Error",
-		                      "Drawing spectra cannot be continued. "
-		                      "Please notify us about this problem, state error code 3 "
-		                      "and what actions led up to this error. Send an email to"
-		                      " report@gerbilvis.org. Thank you for your help!");
+		GerbilApplication::internalError(
+		            "Vertex buffer could not be bound in viewport drawBins().",
+		            false);
 		painter.endNativePainting();
 		return;
 	}
@@ -448,11 +444,11 @@ void Viewport::drawAxesFg(QPainter *painter)
 	if (selection < 0 || selection >= (int)(*ctx)->dimensionality)
 		return;
 
-	// draw selection in foreground
-	if (active)
-		painter->setPen(Qt::red);
-	else
-		painter->setPen(Qt::gray);
+	QPen pen;
+	pen.setWidth(0); // hairline width, needed because of our projection
+	pen.setColor(active ? Qt::red : Qt::gray); // draw selection in foreground
+	painter->setPen(pen);
+
 	qreal top = ((*ctx)->nbins);
 	if (illuminant_show && !illuminantCurve.empty())
 		top *= illuminantCurve.at(selection);
@@ -460,7 +456,8 @@ void Viewport::drawAxesFg(QPainter *painter)
 
 	// draw limiters
 	if (limiterMode) {
-		painter->setPen(Qt::red);
+		pen.setColor(Qt::red);
+		painter->setPen(pen);
 		for (size_t i = 0; i < (*ctx)->dimensionality; ++i) {
 			qreal y1 = limiters[i].first, y2 = limiters[i].second + 1;
 			if (!illuminantAppl.empty()) {
@@ -490,7 +487,9 @@ void Viewport::drawAxesBg(QPainter *painter)
 	SharedDataLock ctxlock(ctx->mutex);
 
 	// draw axes in background
-	painter->setPen(QColor(64, 64, 64));
+	QPen pen(QColor(64, 64, 64));
+	pen.setWidth(0);
+	painter->setPen(pen);
 
 	/* without illuminant */
 	if (!illuminant_show || illuminantCurve.empty()) {

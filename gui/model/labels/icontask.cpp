@@ -182,8 +182,8 @@ private:
 };
 
 IconTask::IconTask(IconTaskCtxPtr &ctxp, QObject *parent)
-	:QThread(parent), ctxp(ctxp), abortFlag(false),
-	  tbbTaskGroupContext(tbb::task_group_context::isolated)
+    : QThread(parent), ctxp(ctxp), abortFlag(false),
+      tbbTaskGroupContext(tbb::task_group_context::isolated)
 {
 }
 
@@ -230,17 +230,14 @@ void IconTask::run()
 	tbb::auto_partitioner partitioner;
 
 	if (abortFlag) {
-		emit taskAborted();
 		return;
 	}
 
-	tbb::parallel_for(tbb::blocked_range<short>(0,ctx.nlabels),
+	tbb::parallel_for(tbb::blocked_range<short>(0, ctx.nlabels),
 					  ComputeIconMasks(ctx), partitioner, tbbTaskGroupContext);
 
 	if (!abortFlag) {
 		emit labelIconsComputed(ctx.icons);
-	} else {
-		emit taskAborted();
 	}
 	//GGDBGM("return" << endl);
 }

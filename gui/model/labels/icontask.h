@@ -59,6 +59,7 @@ public:
 	enum {IconSizeMax = 1024};
 	QSize getIconSize() const { return ctxp->iconSize; }
 	bool getApplyROI() const { return ctxp->applyROI; }
+
 public slots:
 	/** Abort the computation.
 	 *
@@ -67,13 +68,14 @@ public slots:
 	 */
 	void abort();
 	void deleteLater();
+
 protected:
 	virtual void run();
+
 signals:
 	/** Label icons computed successfully. */
-	void labelIconsComputed(const QVector<QImage>& icons);
-	/** Task was aborted. */
-	void taskAborted();
+	void labelIconsComputed(QVector<QImage> icons);
+
 private:
 	IconTaskCtxPtr ctxp;
 	volatile bool abortFlag;

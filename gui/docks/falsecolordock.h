@@ -53,8 +53,11 @@ protected slots:
 	void screenshot();
 	void requestSpecSim(int x, int y);
 
+	void saveState();
+
 protected:
 	void initUi();
+	void restoreState();
 	// event filter to intercept leave() on our view
 	bool eventFilter(QObject *obj, QEvent *event);
 
