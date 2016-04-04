@@ -20,6 +20,7 @@ bool SpecSimTbb::run()
 	                  [&](tbb::blocked_range2d<size_t> r) {
 		for (size_t y = r.rows().begin(); y != r.rows().end(); ++y) {
 			for (size_t x = r.cols().begin(); x != r.cols().end(); ++x) {
+				// negate so small values get high response
 				result(y,x) = -1.f*(float)distfun->getSimilarity((**multi)(y,x), reference);
 			}
 		}
@@ -29,10 +30,10 @@ bool SpecSimTbb::run()
 	double max;
 	cv::minMaxLoc(result, &min, &max);
 	multi_img::Value minval = (multi_img::Value)min;
-	multi_img::Value maxval = (multi_img::Value)max;
+	multi_img::Value maxval = 0; // 0 -> equal // (multi_img::Value)max;
 
 	QImage *target = new QImage(result.cols, result.rows, QImage::Format_ARGB32);
-	Conversion computeConversion(result, *target, minval, 0);
+	Conversion computeConversion(result, *target, minval, maxval);
 	tbb::parallel_for(tbb::blocked_range2d<int>(0, result.rows, 0, result.cols),
 	                  computeConversion, tbb::auto_partitioner(), stopper);
 
