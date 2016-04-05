@@ -15,6 +15,13 @@
     <number>10</number>
    </property>
    <item>
+    <widget class="QLabel" name="titleLabel">
+     <property name="text">
+      <string>&lt;b&gt;Supervised Segmentation&lt;/b&gt;</string>
+     </property>
+    </widget>
+   </item>
+   <item>
     <layout class="QHBoxLayout" name="horizontalLayout">
      <item>
       <widget class="QLabel" name="label">
@@ -68,8 +75,7 @@
        </property>
        <property name="icon">
         <iconset theme="edit-clear">
-         <normaloff/>
-        </iconset>
+         <normaloff>.</normaloff>.</iconset>
        </property>
        <property name="iconSize">
         <size>
@@ -185,8 +191,7 @@
        </property>
        <property name="icon">
         <iconset theme="document-open">
-         <normaloff/>
-        </iconset>
+         <normaloff>.</normaloff>.</iconset>
        </property>
        <property name="iconSize">
         <size>
@@ -292,8 +297,7 @@
          </property>
          <property name="icon">
           <iconset theme="edit-add">
-           <normaloff/>
-          </iconset>
+           <normaloff>.</normaloff>.</iconset>
          </property>
          <property name="iconSize">
           <size>
@@ -313,8 +317,7 @@
          </property>
          <property name="icon">
           <iconset theme="edit-redo">
-           <normaloff/>
-          </iconset>
+           <normaloff>.</normaloff>.</iconset>
          </property>
          <property name="iconSize">
           <size>
