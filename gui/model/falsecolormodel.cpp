@@ -13,9 +13,13 @@
 
 #include "falsecolormodel.h"
 #include "falsecolor/falsecolormodelpayload.h"
+#include "sm_factory.h"
+#include "background_task/tasks/tbb/specsimtbb.h"
 
 //#define GGDBG_MODULE
 #include <gerbil_gui_debug.h>
+
+using SimMeasure = similarity_measures::SimilarityMeasure<multi_img::Value>;
 
 QList<FalseColoring::Type> FalseColoring::allList = QList<FalseColoring::Type>()
 	<< FalseColoring::CMF
@@ -24,8 +28,9 @@ QList<FalseColoring::Type> FalseColoring::allList = QList<FalseColoring::Type>()
 	<< FalseColoring::SOM
 	<< FalseColoring::SOMGRAD;
 
-FalseColorModel::FalseColorModel(QObject *parent )
-	: QObject(parent)
+FalseColorModel::FalseColorModel(BackgroundTaskQueue *queue,
+                                 QObject *parent)
+	: QObject(parent), queue(queue), similarityImg(new SharedData<QImage>(new QImage()))
 {
 	int type = QMetaType::type("FalseColoring");
 	if (type == 0 || !QMetaType::isRegistered(type))
@@ -225,5 +230,23 @@ void FalseColorModel::processComputationFinished(FalseColoring::Type coloringTyp
 	}
 }
 
+void FalseColorModel::computeSpecSim(int x, int y, similarity_measures::SMConfig conf)
+{
+	std::shared_ptr<SimMeasure> distfun(
+	            similarity_measures::SMFactory<multi_img::Value>::spawn(conf));
+	cv::Point point(x,y);
 
+	BackgroundTaskPtr taskSpecSim(new SpecSimTbb(
+	                                  shared_img, similarityImg, point, distfun));
+	QObject::connect(taskSpecSim.get(), SIGNAL(finished(bool)),
+	                 this, SLOT(finishSpecSim(bool)), Qt::QueuedConnection);
+	queue->push(taskSpecSim);
+}
 
+void FalseColorModel::finishSpecSim(bool success)
+{
+	if (success) {
+		QPixmap result = QPixmap::fromImage(**similarityImg);
+		emit computeSpecSimFinished(result);
+	}
+}

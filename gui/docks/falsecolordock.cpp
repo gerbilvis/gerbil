@@ -9,6 +9,7 @@
 #include "../widgets/scaledview.h"
 #include "../widgets/autohideview.h"
 #include "../widgets/autohidewidget.h"
+#include "../widgets/similaritywidget.h"
 #include <app/gerbilio.h>
 
 //#define GGDBG_MODULE
@@ -66,6 +67,7 @@ void FalseColorDock::processFalseColoringUpdate(FalseColoring::Type coloringType
 	coloringUpToDate[coloringType] = true;
 	updateTheButton();
 	updateProgressBar();
+	sw->doneAction()->setEnabled(false);
 	if (coloringType == selectedColoring()) {
 		//GGDBGM("updating " << coloringType << endl);
 		view->setEnabled(true);
@@ -186,8 +188,14 @@ void FalseColorDock::initUi()
 	connect(scene, SIGNAL(updateScrolling(bool)),
 	        view, SLOT(suppressScrolling(bool)));
 
+	connect(scene, SIGNAL(requestCursor(Qt::CursorShape)),
+	        view, SLOT(applyCursor(Qt::CursorShape)));
+
 	connect(scene, SIGNAL(pixelOverlay(int,int)),
 	        this, SIGNAL(pixelOverlay(int,int)));
+
+	connect(scene, SIGNAL(requestSpecSim(int,int)),
+	        this, SLOT(requestSpecSim(int,int)));
 
 	connect(uisel->sourceBox, SIGNAL(currentIndexChanged(int)),
 			this, SLOT(processSelectedColoring()));
@@ -200,6 +208,19 @@ void FalseColorDock::initUi()
 
 	connect(uisel->screenshotButton, SIGNAL(released()),
 	        this, SLOT(screenshot()));
+
+	// add similarity widget
+	sw = new SimilarityWidget(view);
+	scene->offBottom = AutohideWidget::OutOffset;
+	view->addWidget(AutohideWidget::BOTTOM, sw);
+
+	connect(sw->doneAction(), SIGNAL(triggered()),
+	        this, SLOT(restoreFalseColorFunction()));
+	connect(sw->doneAction(), SIGNAL(triggered()),
+	        scene, SLOT(updateInputMode()));
+	connect(sw->targetAction(), SIGNAL(triggered()),
+	        scene, SLOT(updateInputMode()));
+	scene->setActionTarget(sw->targetAction());
 }
 
 FalseColoring::Type FalseColorDock::selectedColoring()
@@ -322,11 +343,33 @@ void FalseColorDock::screenshot()
 
 bool FalseColorDock::eventFilter(QObject *obj, QEvent *event)
 {
-	if (event->type() == QEvent::Leave)
+	if (event->type() == QEvent::Leave) {
 		scene->leaveEvent();
+	}
 
 	// continue with standard event processing
 	return QObject::eventFilter(obj, event);
+}
+
+void FalseColorDock::requestSpecSim(int x, int y)
+{
+	similarity_measures::SMConfig conf = sw->config();
+	emit requestComputeSpecSim(x, y, conf);
+}
+
+void FalseColorDock::processSpecSimUpdate(QPixmap result)
+{
+	scene->setPixmap(result);
+	scene->update();
+	sw->doneAction()->setEnabled(true);
+	sw->targetAction()->setEnabled(true);
+}
+
+void FalseColorDock::restoreFalseColorFunction()
+{
+	sw->targetAction()->setEnabled(true);
+	sw->doneAction()->setEnabled(false);
+	processSelectedColoring();
 }
 
 void FalseColorDock::saveState()
@@ -334,13 +377,16 @@ void FalseColorDock::saveState()
 	QSettings settings;
 	QComboBox *src = uisel->sourceBox;
 	settings.setValue("FalseColorDock/selectedColoringIndex", src->currentIndex());
+	// TODO: specsim state?
 }
 
 void FalseColorDock::restoreState()
 {
 	QSettings settings;
-	int selectedColoring = settings.value("FalseColorDock/selectedColoringIndex", 0).toInt();
+	auto selectedColoring = settings.value("FalseColorDock/selectedColoringIndex", 0);
+	// TODO: specsim state?
+
 	QComboBox *src = uisel->sourceBox;
-	src->setCurrentIndex(selectedColoring);
+	src->setCurrentIndex(selectedColoring.toInt());
 	processSelectedColoring();
 }

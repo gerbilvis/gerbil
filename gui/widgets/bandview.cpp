@@ -54,12 +54,6 @@ void BandView::initUi()
 	restoreState(); // note: needs setAlphaValue() signal connected
 }
 
-void BandView::updateInputMode()
-{
-	QAction* sender = (QAction*) QObject::sender();
-	inputMode = sender->data().value<InputMode>();
-}
-
 void BandView::toggleCursorMode()
 {
 	if (cursorMode == CursorMode::Marker) cursorMode = CursorMode::Rubber;

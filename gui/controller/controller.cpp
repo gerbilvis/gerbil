@@ -53,7 +53,7 @@ Controller::Controller(const QString &filename,
 
 	// initialize models
 	initImage();
-	fm = new FalseColorModel();
+	fm = new FalseColorModel(&queue);
 	initFalseColor(); // depends on ImageModel / initImage()
 
 	// The order of connection is crucial for fm and Controller.
