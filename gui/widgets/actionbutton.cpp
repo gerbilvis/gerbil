@@ -22,4 +22,5 @@ void ActionButton::updateButtonStatusFromAction()
 	setChecked(actionOwner->isChecked());
 	setEnabled(actionOwner->isEnabled());
 	setIcon(actionOwner->icon());
+	setToolTip(actionOwner->toolTip());
 }
