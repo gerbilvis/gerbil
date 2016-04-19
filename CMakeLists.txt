@@ -29,6 +29,11 @@ else() # [remove when bumping CMake req. to 3.1+]
 endif()
 ##
 
+# disable ridiculous Microsoft min()/max() macros
+if(MSVC)
+	add_definitions(-DNOMINMAX)
+endif()
+
 set(CMAKE_MODULE_PATH "${CMAKE_SOURCE_DIR}/cmake")
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin)
 

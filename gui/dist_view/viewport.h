@@ -11,11 +11,13 @@
 #define VIEWPORT_H
 
 #include "distviewcompute.h"
+
 #include <QGraphicsScene>
 #include <QGLWidget>
-#include <vector>
 #include <QLabel>
 #include <QTimer>
+
+#include <vector>
 
 class Viewport : public QGraphicsScene
 {

@@ -2,6 +2,8 @@
  * The following include statement is for the IDE */
 #include "isosom.h"
 
+#include <algorithm>
+
 template <size_t N>
 IsoSOM<N>::IsoSOM(SOMConfig const& config, size_t nbands, bool randomize)
 	: GenSOM(config)

@@ -21,6 +21,7 @@
 #include <opencv2/highgui/highgui.hpp>
 #include <iostream>
 #include <cstdio>
+#include <algorithm>
 
 namespace seg_graphs {
 

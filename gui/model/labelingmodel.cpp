@@ -7,6 +7,7 @@
 #include <QDebug>
 
 #include <boost/make_shared.hpp>
+#include <algorithm>
 
 #define GGDBG_MODULE
 #include "../gerbil_gui_debug.h"

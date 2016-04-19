@@ -3,20 +3,7 @@
 
 #include "../gerbil_gui_debug.h"
 
-// sigh, still no min(), max() in C++
-double min(double a, double b) {
-	if(a<=b)
-		return a;
-	else
-		return b;
-}
-
-double max(double a, double b) {
-	if(a>=b)
-		return a;
-	else
-		return b;
-}
+#include <algorithm>
 
 // for DEBUG
 #ifdef GGDBG_MODULE
@@ -166,7 +153,7 @@ void NormDock::processMinValueChanged()
 	const double val = normMinBox->value();
 	ranges[normTarget].min = val;
 	//GGDBGM(ranges[normTarget].max << endl);
-	ranges[normTarget].max = max(val, ranges[normTarget].max);
+	ranges[normTarget].max = std::max(val, (double)ranges[normTarget].max);
 	//GGDBGM(ranges[normTarget].max << endl);
 	updateGUI();
 }
@@ -176,7 +163,7 @@ void NormDock::processMaxValueChanged()
 	//GGDBG_CALL();
 	const double val = normMaxBox->value();
 	ranges[normTarget].max = val;
-	ranges[normTarget].min = min(val, ranges[normTarget].min);
+	ranges[normTarget].min = std::min(val, (double)ranges[normTarget].min);
 	updateGUI();
 }
 

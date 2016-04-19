@@ -1,4 +1,4 @@
-/*	
+/*
 	Copyright(c) 2010 Johannes Jordan <johannes.jordan@cs.fau.de>.
 
 	This file may be licensed under the terms of of the GNU General Public
@@ -10,6 +10,7 @@
 #define ILLUMINANT_H
 
 #include <map>
+#include <algorithm>
 #include <cassert>
 #include <cmath>
 
@@ -20,7 +21,7 @@ public:
 	{	// precalculate real value at 560nm to do norming
 		norm560 = 100./at(560, true);
 	}
-	
+
 	// calculate the weight such that all coeffs. in range <= 1.
 	inline void setNormalization(int wl1, int wl2) {
 		double maxv = 0.;
@@ -29,13 +30,13 @@ public:
 
 		weight = 1./maxv;
 	}
-	
+
 	inline double at(int wavelength, bool norm = false) const {
 		assert(wavelength > 0);
 		std::map<int, double>::iterator i = coeff.find(wavelength);
 		if (i != coeff.end())
 			return i->second * weight;
-	
+
 		// black body calculation
 		double wl = wavelength * 0.000000001;
 		double wl_5 = std::pow(wl, -5);
@@ -47,7 +48,7 @@ public:
 		}
 		return M * weight;
 	}
-	
+
 	inline double at(float wavelength, bool norm = false) const {
 		return at((int)(wavelength + 0.5f), norm);
 	}

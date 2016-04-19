@@ -1,14 +1,13 @@
+#include "specsimtbb.h"
+#include "band2qimagetbb.h"
+
+#include <multi_img.h>
+#include <background_task/background_task.h>
+
 #include <shared_data.h>
 
-#include <tbb/blocked_range.h>
 #include <tbb/blocked_range2d.h>
 #include <tbb/parallel_for.h>
-#include <tbb/parallel_reduce.h>
-
-#include "multi_img/multi_img_tbb.h"
-#include <background_task/background_task.h>
-#include "specsimtbb.h"
-#include "band2qimagetbb.cpp"
 
 bool SpecSimTbb::run()
 {
@@ -16,8 +15,8 @@ bool SpecSimTbb::run()
 	const multi_img::Pixel& reference = (**multi)(coord.y,coord.x);
 
 	tbb::parallel_for(tbb::blocked_range2d<size_t>(
-	                      0, (*multi)->height, 0, (*multi)->width),
-	                  [&](tbb::blocked_range2d<size_t> r) {
+						  0, (*multi)->height, 0, (*multi)->width),
+					  [&](tbb::blocked_range2d<size_t> r) {
 		for (size_t y = r.rows().begin(); y != r.rows().end(); ++y) {
 			for (size_t x = r.cols().begin(); x != r.cols().end(); ++x) {
 				// negate so small values get high response
@@ -33,9 +32,9 @@ bool SpecSimTbb::run()
 	multi_img::Value maxval = 0; // 0 -> equal // (multi_img::Value)max;
 
 	QImage *target = new QImage(result.cols, result.rows, QImage::Format_ARGB32);
-	Conversion computeConversion(result, *target, minval, maxval);
+	Band2QImage computeConversion(result, *target, minval, maxval);
 	tbb::parallel_for(tbb::blocked_range2d<int>(0, result.rows, 0, result.cols),
-	                  computeConversion, tbb::auto_partitioner(), stopper);
+					  computeConversion, tbb::auto_partitioner(), stopper);
 
 	if (stopper.is_group_execution_cancelled()) {
 		delete target;

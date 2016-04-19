@@ -1,12 +1,14 @@
 #include "widgets/autohidewidget.h"
 
+#include <vole_config.h>
+#include <boost/program_options.hpp>
+
 #include <QGraphicsScene>
 #include <QTimer>
 #include <QPainter>
 #include <QLayout>
 
-#include <vole_config.h>
-#include <boost/program_options.hpp>
+#include <algorithm>
 
 ENUM_MAGIC_CLS(AutohideWidget, border)
 

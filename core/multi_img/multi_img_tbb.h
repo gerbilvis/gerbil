@@ -1,6 +1,9 @@
 #ifndef MULTI_IMG_TBB_H
 #define MULTI_IMG_TBB_H
 
+#include <multi_img.h>
+#include <tbb/blocked_range.h>
+#include <tbb/blocked_range2d.h>
 
 // TODO doc
 class RebuildPixels {

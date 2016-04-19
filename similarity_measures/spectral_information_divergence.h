@@ -12,6 +12,7 @@
 
 #include "similarity_measure.h"
 #include <iostream>
+#include <algorithm>
 #include <limits>
 
 namespace similarity_measures {

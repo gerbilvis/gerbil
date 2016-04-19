@@ -1,4 +1,4 @@
-/*	
+/*
 	Copyright(c) 2011 Daniel Danner,
 	Johannes Jordan <johannes.jordan@cs.fau.de>.
 
@@ -11,6 +11,7 @@
 
 #include <vector>
 #include <map>
+#include <algorithm>
 
 /// fixed size for partition data type
 #define K_MAX 70

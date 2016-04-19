@@ -1,5 +1,3 @@
-
-
 #include "labeldock.h"
 #include "ui_labeldock.h"
 
@@ -17,6 +15,7 @@
 #include <gerbil_ostream_ops.h>
 
 #include <iostream>
+#include <algorithm>
 
 //#define GGDBG_MODULE
 #include "../gerbil_gui_debug.h"

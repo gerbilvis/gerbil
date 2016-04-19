@@ -1,4 +1,4 @@
-/*	
+/*
 	Copyright(c) 2010 Johannes Jordan <johannes.jordan@cs.fau.de>.
 
 	This file may be licensed under the terms of of the GNU General Public
@@ -14,6 +14,7 @@
 #include <QGraphicsSceneEvent>
 #include <iostream>
 #include <cmath>
+#include <algorithm>
 
 ROIView::ROIView()
 {
