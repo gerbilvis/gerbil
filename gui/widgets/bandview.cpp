@@ -56,14 +56,14 @@ void BandView::initUi()
 
 void BandView::toggleCursorMode()
 {
-	if (cursorMode == CursorMode::Marker) cursorMode = CursorMode::Rubber;
-	else cursorMode = CursorMode::Marker;
+	cursorMode = (cursorMode == CursorMode::Marker ? CursorMode::Rubber
+												   : CursorMode::Marker);
 }
 
 void BandView::toggleOverrideMode()
 {
-	if (overrideMode == OverrideMode::On) overrideMode = OverrideMode::Off;
-	else overrideMode = OverrideMode::On;
+	overrideMode = (overrideMode == OverrideMode::On ? OverrideMode::Off
+													 : OverrideMode::On);
 }
 
 void BandView::updateCursorSize(CursorSize size)
