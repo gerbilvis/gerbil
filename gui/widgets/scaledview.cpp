@@ -128,20 +128,23 @@ void ScaledView::mouseMoveEvent(QGraphicsSceneMouseEvent *event)
 	if (inputMode != InputMode::Zoom)
 		return;
 
+	// avoid jitter
+	if (!(event->buttons() & Qt::LeftButton) || zoom == 1)
+		return;
+
 	QRectF rect = scaler.mapRect(pixmap.rect());
-	if (event->buttons() & Qt::LeftButton &&
-	    rect.contains(event->scenePos())) {
-		//Obtain current cursor and last cursor position
-		//in pixmap coordinates
-		QPointF lastonscene = scalerI.map(event->lastScenePos());
-		QPointF curronscene = scalerI.map(event->scenePos());
+	if (!rect.contains(event->scenePos()))
+		return;
 
-		qreal x = curronscene.x() - lastonscene.x();
-		qreal y = curronscene.y() - lastonscene.y();
+	// obtain current cursor and last cursor position in pixmap coordinates
+	QPointF lastonscene = scalerI.map(event->lastScenePos());
+	QPointF curronscene = scalerI.map(event->scenePos());
 
-		scaler.translate(x,y);
-		adjustBoundaries();
-	}
+	qreal x = curronscene.x() - lastonscene.x();
+	qreal y = curronscene.y() - lastonscene.y();
+
+	scaler.translate(x,y);
+	adjustBoundaries();
 }
 
 void ScaledView::adjustBoundaries()
