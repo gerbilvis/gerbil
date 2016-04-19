@@ -44,11 +44,14 @@ void BandDock::initUi()
 	bv->offBottom = AutohideWidget::OutOffset;
 	view->addWidget(AutohideWidget::BOTTOM, gs);
 
+	connect(bv, SIGNAL(newSizeHint(QSize)),
+			view, SLOT(updateSizeHint(QSize)));
+
 	connect(bv, SIGNAL(updateScrolling(bool)),
 	        view, SLOT(suppressScrolling(bool)));
 
-	connect(bv, SIGNAL(newSizeHint(QSize)),
-	        view, SLOT(updateSizeHint(QSize)));
+	connect(bv, SIGNAL(requestCursor(Qt::CursorShape)),
+			view, SLOT(applyCursor(Qt::CursorShape)));
 
 	connect(gs, SIGNAL(requestLoadSeeds()),
 	        this, SLOT(loadSeeds()));
