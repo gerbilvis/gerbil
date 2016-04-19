@@ -67,9 +67,7 @@
         <string/>
        </property>
        <property name="icon">
-        <iconset theme="edit-clear">
-         <normaloff/>
-        </iconset>
+        <iconset theme="edit-clear"/>
        </property>
        <property name="iconSize">
         <size>
