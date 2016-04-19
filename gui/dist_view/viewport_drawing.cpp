@@ -7,6 +7,7 @@
 #include <QDebug>
 #include <QAction>
 #include <limits>
+#include <algorithm>
 
 #include <gerbil_gui_debug.h>
 

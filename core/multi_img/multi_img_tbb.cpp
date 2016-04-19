@@ -1,15 +1,13 @@
-#include <cstddef>
-#include <tbb/parallel_for.h>
-#include <tbb/blocked_range.h>
-#include <tbb/blocked_range2d.h>
-#include <opencv2/core/core.hpp>
+#include "multi_img_tbb.h"
+#include "cieobserver.h"
 
 #include <multi_img.h>
 #include <multi_img/illuminant.h>
 
-#include "multi_img_tbb.h"
-#include "cieobserver.h"
-
+#include <opencv2/core/core.hpp>
+#include <tbb/parallel_for.h>
+#include <cstddef>
+#include <algorithm>
 
 void RebuildPixels::operator()(const tbb::blocked_range<size_t> &r) const
 {

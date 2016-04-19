@@ -14,6 +14,8 @@
 #include "widgets/mainwindow.h"
 #include "app/gerbilapplication.h" // to connect queue exception signal
 
+#include <algorithm>
+
 //#define GGDBG_MODULE
 #include "gerbil_gui_debug.h"
 

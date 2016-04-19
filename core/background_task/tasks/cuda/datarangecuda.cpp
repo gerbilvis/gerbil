@@ -3,6 +3,7 @@
 #ifdef GERBIL_CUDA
 
 #include <vector>
+#include <algorithm>
 
 #include <opencv2/gpu/gpu.hpp>
 #include <tbb/blocked_range2d.h>

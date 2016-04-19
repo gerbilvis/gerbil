@@ -11,6 +11,7 @@
 #include <iostream>
 #include <string>
 #include <vector>
+#include <algorithm>
 
 const float multi_img_base::ValueMin = -FLT_MAX;
 const float multi_img_base::ValueMax = FLT_MAX;
@@ -115,7 +116,7 @@ multi_img::multi_img(const multi_img_base &a, const cv::Rect &roi)
 multi_img::multi_img(const multi_img &a, unsigned int start, unsigned int end) : roi(a.roi)
 {
 	minval = a.minval;
-	maxval = a.maxval; 
+	maxval = a.maxval;
 	width = a.width;
 	height = a.height;
 
@@ -380,10 +381,10 @@ cv::PCA multi_img::pca(unsigned int components) const
 	rebuildPixels(true);
 
 	// create input matrix
-    cv::Mat_<Value> input(size(), (int)pixels.size());
+	cv::Mat_<Value> input(size(), (int)pixels.size());
 	for (size_t i = 0; i < pixels.size(); ++i) {
 		cv::Mat_<Value> in(pixels[i]);
-        cv::Mat_<Value> out(input.col((int)i));
+		cv::Mat_<Value> out(input.col((int)i));
 		in.copyTo(out);
 	}
 
