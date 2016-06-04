@@ -11,6 +11,8 @@
 #include <QStringList>
 #include <QMessageBox>
 
+#include <tbb/task_scheduler_init.h>
+
 #include <iostream>
 #include <string>
 
@@ -19,6 +21,11 @@
 
 int main(int argc, char **argv)
 {
+	/* ensure global tbb task scheduler for process lifetime
+	 * avoid problems with tbb tasks started from different threads
+	 */
+	tbb::task_scheduler_init tsi; // for debugging pass 1 -> only one thread
+
 	return GerbilApplication(argc, argv).exec();
 }
 

@@ -11,7 +11,6 @@
 //#define BACKGROUND_TASK_QUEUE_DEBUG
 
 #include "background_task_queue.h"
-#include <tbb/task_scheduler_init.h>
 #include <iostream>
 #include <iomanip>
 
@@ -95,8 +94,6 @@ void BackgroundTaskQueue::operator()()
 #else
 	{
 #endif
-		// use for debugging, only one thread
-		// tbb::task_scheduler_init init(1);
 		while (true) {
 			if (!pop()) {
 				break; // Thread termination.
