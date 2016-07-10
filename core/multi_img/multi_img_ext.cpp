@@ -1,4 +1,4 @@
-/*	
+/*
 	Copyright(c) 2011 Johannes Jordan <johannes.jordan@cs.fau.de>.
 
 	This file may be licensed under the terms of of the GNU General Public
@@ -74,7 +74,7 @@ multi_img multi_img::spec_rescale(unsigned int newsize) const
 	return ret;
 }
 
-void multi_img::pixel2xyz(const Pixel &p, cv::Vec3f &v, 
+void multi_img::pixel2xyz(const Pixel &p, cv::Vec3f &v,
 	size_t dim, const std::vector<BandDesc> &meta, Value maxval)
 {
 	int idx;

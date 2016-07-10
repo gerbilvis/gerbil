@@ -1,11 +1,14 @@
 #include "widgets/autohidewidget.h"
 
+#include <vole_config.h>
+#include <boost/program_options.hpp>
+
 #include <QGraphicsScene>
 #include <QTimer>
 #include <QPainter>
+#include <QLayout>
 
-#include <vole_config.h>
-#include <boost/program_options.hpp>
+#include <algorithm>
 
 ENUM_MAGIC_CLS(AutohideWidget, border)
 
@@ -29,12 +32,28 @@ void AutohideWidget::init(QGraphicsProxyWidget *p, border loc)
 	location = loc;
 	proxy = p;
 
+	/* add margin and load icon for outoffset */
+	const int addendum = OutOffset - 4;
+	auto margins = layout()->contentsMargins();
 	switch (location) {
-	case LEFT:   indicator.load(":/autohide/left"); break;
-	case RIGHT:  indicator.load(":/autohide/right"); break;
-	case TOP:    indicator.load(":/autohide/top"); break;
-	case BOTTOM: indicator.load(":/autohide/bottom"); break;
+	case LEFT:
+		indicator.load(":/autohide/left");
+		margins.setRight(margins.right() + addendum);
+		break;
+	case RIGHT:
+		indicator.load(":/autohide/right");
+		margins.setLeft(margins.left() + addendum);
+		break;
+	case TOP:
+		indicator.load(":/autohide/top");
+		margins.setBottom(margins.bottom() + addendum);
+		break;
+	case BOTTOM:
+		indicator.load(":/autohide/bottom");
+		margins.setTop(margins.top() + addendum);
+		break;
 	}
+	layout()->setContentsMargins(margins);
 
 	reposition();
 	/* Idea: start with SCROLL_IN to show that we exist, then disappear later

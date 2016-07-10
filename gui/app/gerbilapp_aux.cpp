@@ -62,7 +62,7 @@ void GerbilApplication::check_system_requirements()
 
 	bool supportOGL = QGLFormat::hasOpenGL();
 	bool supportFBO = QGLFramebufferObject::hasOpenGLFramebufferObjects();
-	bool supportBlit = QGLFramebufferObject::hasOpenGLFramebufferBlit();
+	bool supportBlit = true; //QGLFramebufferObject::hasOpenGLFramebufferBlit();
 
 	QString problems;
 	if (!supportMMX)

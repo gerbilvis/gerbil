@@ -3,9 +3,11 @@
 #include <QApplication>
 #include <QTimer>
 #include <QGLWidget>
+#include <QWheelEvent>
+
 #include <cassert>
 #include <stdexcept>
-#include <QWheelEvent>
+#include <algorithm>
 
 //#define GGDBG_MODULE
 #include <gerbil_gui_debug.h>
@@ -175,5 +177,11 @@ void AutohideView::triggerScollOut()
 		}
 	}
 
+}
+
+void AutohideView::applyCursor(Qt::CursorShape shape)
+{
+	curShape = shape;
+	target->setCursor(shape);
 }
 

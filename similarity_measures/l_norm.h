@@ -1,4 +1,4 @@
-/*	
+/*
 	Copyright(c) 2010 Christian Riess <christian.riess@cs.fau.de>,
 	Felix Lugauer, Johannes Jordan <johannes.jordan@cs.fau.de>.
 
@@ -13,6 +13,7 @@
 #include "similarity_measure.h"
 #include <xmmintrin.h>
 #include <emmintrin.h>
+#include <algorithm>
 
 namespace similarity_measures {
 

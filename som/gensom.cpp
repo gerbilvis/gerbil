@@ -36,8 +36,10 @@ void GenSOM::train(const multi_img &input, ProgressObserver *po)
 	// output percentage
 	unsigned int hundred = std::max<unsigned int>(maxIter/100, 100);
 	int percent = 1;
-	if (config.verbosity > 0)
-		std::cout  << "  0 %"; std::cout.flush();
+	if (config.verbosity > 0) {
+		std::cout << "  0 %";
+		std::cout.flush();
+	}
 	long sumOfUpdates = 0;
 
 	// starting training (notifier needed by OpenCL impl.)

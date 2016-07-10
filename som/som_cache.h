@@ -51,7 +51,7 @@ public:
 
 protected:
 	// Compute offset into results from pixel coordinates.
-	inline size_t roff(int x, int y) const {
+	inline size_t roff(int y, int x) const {
 		assert(0 <= x && x < width);
 		assert(0 <= y && y < height);
 		size_t off = ((y * width) + x) * n;

@@ -6,10 +6,12 @@
 #include <shared_data.h>
 #include "../model/representation.h"
 #include "../model/falsecolor/falsecoloring.h"
+#include "sm_config.h"
 
 class AutohideView;
 class ScaledView;
 class AutohideWidget;
+class SimilarityWidget;
 
 struct FalseColoringState {
 	enum Type {UNKNOWN=0,FINISHED, CALCULATING, ABORTING};
@@ -28,24 +30,34 @@ signals:
 	void subscribeFalseColoring(QObject* subscriber, FalseColoring::Type coloringType);
 	void unsubscribeFalseColoring(QObject* subscriber, FalseColoring::Type coloringType);
 	void pixelOverlay(int, int);
+	void requestComputeSpecSim(int x, int y, similarity_measures::SMConfig conf);
 
 public slots:
 	void processVisibilityChanged(bool visible);
 	void processCalculationProgressChanged(FalseColoring::Type coloringType, int percent);
 	void processFalseColoringUpdate(FalseColoring::Type coloringType, QPixmap p);
 	void processComputationCancelled(FalseColoring::Type coloringType);
+	void restoreFalseColorFunction();
 
 	/** Inform the FalseColorDock an update of the FalseColoring coloringType is pending.
 	 *
 	 * This triggers the display of a progress bar.
 	 */
 	void setCalculationInProgress(FalseColoring::Type coloringType);
+
+	void processSpecSimUpdate(QPixmap result);
+
 protected slots:
 	void processSelectedColoring(); // the selection in the combo box changed
 	void processApplyClicked();
 	void screenshot();
+	void requestSpecSim(int x, int y);
+
+	void saveState();
+
 protected:
 	void initUi();
+	void restoreState();
 	// event filter to intercept leave() on our view
 	bool eventFilter(QObject *obj, QEvent *event);
 
@@ -73,6 +85,7 @@ protected:
 	// UI and widget for our button row
 	Ui::FalsecolorDockSelUI *uisel;
 	AutohideWidget *sel;
+	SimilarityWidget *sw;
 
 };
 

@@ -6,6 +6,7 @@
 #include "../gerbil_gui_debug.h"
 
 #include <QGLBuffer>
+#include <algorithm>
 
 // altmann, debugging helper function
 bool assertBinSetsKeyDim(const std::vector<BinSet> &v, const ViewportCtx &ctx) {

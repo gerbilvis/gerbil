@@ -10,9 +10,7 @@
 
 #include <QObject>
 #include <QMap>
-#ifndef Q_MOC_RUN
 #include <boost/thread.hpp>
-#endif
 
 // forward declarations
 

@@ -163,6 +163,8 @@ void Controller::setupDocks()
 			this, SLOT(recalcFalseColor(FalseColoring::Type)));
 	connect(falseColorDock, SIGNAL(pixelOverlay(int,int)),
 	        this, SIGNAL(requestPixelOverlay(int,int)));
+	connect(falseColorDock, SIGNAL(requestComputeSpecSim(int,int,similarity_measures::SMConfig)),
+	        falseColorModel(), SLOT(computeSpecSim(int,int,similarity_measures::SMConfig)));
 
 	connect(falseColorModel(), SIGNAL(progressChanged(FalseColoring::Type,int)),
 			falseColorDock, SLOT(processCalculationProgressChanged(FalseColoring::Type,int)));
@@ -170,6 +172,8 @@ void Controller::setupDocks()
 			falseColorDock, SLOT(processFalseColoringUpdate(FalseColoring::Type,QPixmap)));
 	connect(falseColorModel(), SIGNAL(computationCancelled(FalseColoring::Type)),
 			falseColorDock, SLOT(processComputationCancelled(FalseColoring::Type)));
+	connect(falseColorModel(), SIGNAL(computeSpecSimFinished(QPixmap)),
+	        falseColorDock, SLOT(processSpecSimUpdate(QPixmap)));
 
 	connect(this, SIGNAL(pendingFalseColorUpdate(FalseColoring::Type)),
 			falseColorDock, SLOT(setCalculationInProgress(FalseColoring::Type)));
@@ -254,13 +258,11 @@ void Controller::setupDocks()
 			this, SLOT(toggleLabelHighlight(short)));
 	connect(labelDock, SIGNAL(toggleLabelHighlightRequested(short)),
 			bandDock->bandView(), SLOT(toggleLabelHighlight(short)));
-	connect(labelDock, SIGNAL(labelMaskIconsRequested()),
-			labelingModel(), SLOT(computeLabelIcons()));
-	connect(labelDock, SIGNAL(labelMaskIconSizeChanged(const QSize&)),
-			labelingModel(), SLOT(setLabelIconSize(const QSize&)));
+	connect(labelDock, SIGNAL(labelMaskIconsRequested(QSize)),
+			labelingModel(), SLOT(computeLabelIcons(QSize)));
 	connect(labelingModel(),
-			SIGNAL(labelIconsComputed(const QVector<QImage>&)),
-			labelDock, SLOT(processMaskIconsComputed(const QVector<QImage>&)));
+			SIGNAL(labelIconsComputed(QVector<QImage>)),
+			labelDock, SLOT(processMaskIconsComputed(QVector<QImage>)));
 	connect(labelDock, SIGNAL(applyROIChanged(bool)),
 			labelingModel(), SLOT(setApplyROI(bool)));
 	connect(labelDock, SIGNAL(requestLoadLabeling()),

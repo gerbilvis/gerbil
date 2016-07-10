@@ -14,6 +14,8 @@
 #include <QGraphicsSceneEvent>
 #include <QGraphicsPixmapItem>
 #include <QKeyEvent>
+#include <QSettings>
+#include <QApplication>
 #include <opencv2/imgproc/imgproc.hpp> // for createCursor()
 #include <iostream>
 #include <cmath>
@@ -38,6 +40,9 @@ BandView::BandView()
 	labelTimer.setSingleShot(true);
 	labelTimer.setInterval(500);
 
+	connect(QApplication::instance(), SIGNAL(lastWindowClosed()),
+	        this, SLOT(saveState()));
+
 	initCursors();
 }
 
@@ -45,24 +50,20 @@ void BandView::initUi()
 {
 	connect(&labelTimer, SIGNAL(timeout()),
 	        this, SLOT(commitLabelChanges()));
-}
 
-void BandView::updateInputMode()
-{
-	QAction* sender = (QAction*) QObject::sender();
-	inputMode = sender->data().value<InputMode>();
+	restoreState(); // note: needs setAlphaValue() signal connected
 }
 
 void BandView::toggleCursorMode()
 {
-	if (cursorMode == CursorMode::Marker) cursorMode = CursorMode::Rubber;
-	else cursorMode = CursorMode::Marker;
+	cursorMode = (cursorMode == CursorMode::Marker ? CursorMode::Rubber
+												   : CursorMode::Marker);
 }
 
 void BandView::toggleOverrideMode()
 {
-	if (overrideMode == OverrideMode::On) overrideMode = OverrideMode::Off;
-	else overrideMode = OverrideMode::On;
+	overrideMode = (overrideMode == OverrideMode::On ? OverrideMode::Off
+													 : OverrideMode::On);
 }
 
 void BandView::updateCursorSize(CursorSize size)
@@ -683,4 +684,17 @@ QMenu *BandView::createContextMenu()
 	contextMenu->addAction(pickAction);
 
 	return contextMenu;
+}
+
+void BandView::saveState()
+{
+	QSettings settings;
+	settings.setValue("BandView/alphaValue", labelAlpha);
+}
+
+void BandView::restoreState()
+{
+	QSettings settings;
+	auto alphaValue = settings.value("BandView/alphaValue", 63);
+	emit setAlphaValue(alphaValue.toInt());
 }

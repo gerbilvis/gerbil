@@ -3,16 +3,27 @@
 #include <qtopencv.h>
 
 #include "labels/icontask.h"
+#include <QSettings>
+#include <QDebug>
+
+#include <boost/make_shared.hpp>
+#include <algorithm>
 
 #define GGDBG_MODULE
 #include "../gerbil_gui_debug.h"
 
 LabelingModel::LabelingModel(QObject *parent)
-	: QObject(parent), iconSize(QSize(32,32)), applyROI(true), iconTaskp(NULL)
+	: QObject(parent), applyROI(true), iconTask(NULL)
 {
 	qRegisterMetaType<QVector<QImage> >("QVector<QImage>");
-	//qRegisterMetaType<const QVector<QImage>& >("const QVector<QImage>&");
-	labels = full_labels;
+
+	restoreState();
+}
+
+void LabelingModel::restoreState()
+{
+	QSettings settings;
+	applyROI = settings.value("Labeling/applyROI", true).toBool();
 }
 
 void LabelingModel::setImageSize(unsigned int height, unsigned int width)
@@ -32,7 +43,7 @@ void LabelingModel::updateROI(const cv::Rect &roi)
 	emit newLabeling(labels, colors);
 
 	if (applyROI) {
-		invalidateMaskIcons();
+		computeLabelIcons();
 	}
 }
 
@@ -62,7 +73,7 @@ void LabelingModel::setLabels(const Labeling &labeling, bool full)
 	if (!full && colors.size() >= (int)labeling.colors().size())
 	{
 		emit newLabeling(labels, colors, false);
-		invalidateMaskIcons();
+		computeLabelIcons();
 		return;
 	}
 
@@ -79,7 +90,7 @@ void LabelingModel::setLabels(const Labeling &labeling, bool full)
 
 	// now signal new labels and colors as well
 	emit newLabeling(labels, colors, true);
-	invalidateMaskIcons();
+	computeLabelIcons();
 }
 
 void LabelingModel::setLabels(const cv::Mat1s &labeling)
@@ -115,7 +126,7 @@ void LabelingModel::setLabelColors(const std::vector<cv::Vec3b> &newColors,
 
 	// signal only the colors, do not cause costly updates
 	emit newLabeling(cv::Mat1s(), colors, changed);
-	invalidateMaskIcons();
+	computeLabelIcons();
 }
 
 void LabelingModel::addLabel()
@@ -143,7 +154,7 @@ void LabelingModel::alterLabel(short index, cv::Mat1b mask,
 
 	// signal change
 	emit partialLabelUpdate(labels, mask);
-	invalidateMaskIcons();
+	computeLabelIcons();
 }
 
 void LabelingModel::alterPixels(const cv::Mat1s &newLabels,
@@ -154,7 +165,7 @@ void LabelingModel::alterPixels(const cv::Mat1s &newLabels,
 
 	// signal change
 	emit partialLabelUpdate(labels, mask);
-	invalidateMaskIcons();
+	computeLabelIcons();
 }
 
 void LabelingModel::loadLabeling(const QString &filename)
@@ -212,7 +223,7 @@ void LabelingModel::mergeLabels(const QVector<int> &mlabels)
 	full_labels.setTo(target, mask);
 
 	emit newLabeling(labels, colors, false);
-	invalidateMaskIcons();
+	computeLabelIcons();
 }
 
 void LabelingModel::deleteLabels(const QVector<int> &labels)
@@ -237,113 +248,49 @@ void LabelingModel::consolidate()
 	setLabels(newfull, true);
 }
 
-void LabelingModel::setLabelIconSize(int width, int height)
-{
-	setLabelIconSize(QSize(width, height));
-}
-
-void LabelingModel::setLabelIconSize(const QSize& size)
-{
-	//GGDBGM("new size " << size << endl);
-	iconSize = size;
-	invalidateMaskIcons();
-}
-
 void LabelingModel::setApplyROI(bool applyROI)
 {
 	this->applyROI = applyROI;
 }
 
-void LabelingModel::computeLabelIcons()
+void LabelingModel::computeLabelIcons(QSize size)
 {
+	if (size.isValid()) { // computation due to size change
+		if (iconSize == size)
+			return; // nothing to do
+
+		iconSize = size;
+	}
+
+	if (iconSize.isEmpty()) {
+		return; // GUI not fully initialized yet
+	}
+
 	//GGDBG_CALL();
-	if (iconTaskp != NULL) {
-		if (iconSize != iconTaskp->getIconSize() ||
-			applyROI != iconTaskp->getApplyROI())
-		{
-			//GGDBGM("running IconTask is using old icon size, restarting." << endl);
-			discardIconTask();
-			startIconTask();
-		} else {
-			//GGDBGM("IconTask already in progress" << endl);
-		}
-	} else {
-		startIconTask();
+	if (iconTask != NULL) {
+		iconTask->abort();
+		// task will delete itself after aborting, we can drop the pointer.
 	}
-}
 
-void LabelingModel::processLabelIconsComputed(const QVector<QImage> &icons)
-{
-	// The reference argument icons is valid, since the icon task will be
-	// deleted only after this function leaves its scope.
-	//GGDBGM("IconTask finished successfully" << endl);
-
-	// store the result and emit
-	this->icons = icons;
-	emit labelIconsComputed(icons);
-	discardIconTask();
-}
-
-void LabelingModel::processIconTaskAborted()
-{
-	//GGDBGM("IconTask has aborted" << endl);
-
-	discardIconTask();
-
-	//GGDBGM("requesting new icon computation" << endl);
-	computeLabelIcons();
-}
-
-void LabelingModel::resetIconTaskPointer()
-{
-	iconTaskp = NULL;
-}
-
-void LabelingModel::invalidateMaskIcons()
-{
-	//GGDBGM("aborting IconTask" << endl);
-	if(iconTaskp) {
-		iconTaskp->abort();
-	}
-	icons.clear();
-}
-
-void LabelingModel::startIconTask()
-{
 	//GGDBGM("starting IconTask." << endl);
 	// shared pointer
-	IconTaskCtxPtr ctxp(new IconTaskCtx(
-	                        colors.size(),
-	                        full_labels,
-	                        labels,
-	                        iconSize,
-	                        applyROI,
-	                        colors));
+	auto ctx = boost::make_shared<IconTaskCtx>(colors.size(), full_labels,
+	                                           labels, iconSize, applyROI,
+	                                           colors);
+	iconTask = new IconTask(ctx, this);
 
-	assert(NULL == iconTaskp);
-	iconTaskp = new IconTask(ctxp,this);
+	connect(iconTask, SIGNAL(finished()), iconTask, SLOT(deleteLater()));
+	connect(iconTask, SIGNAL(labelIconsComputed(QVector<QImage>)),
+			this, SLOT(processLabelIconsComputed(QVector<QImage>)));
 
-	connect(iconTaskp, SIGNAL(finished()), this, SLOT(resetIconTaskPointer()));
-	connect(iconTaskp, SIGNAL(finished()), iconTaskp, SLOT(deleteLater()));
-	connect(iconTaskp, SIGNAL(taskAborted()),
-			this, SLOT(processIconTaskAborted()));
-	connect(iconTaskp, SIGNAL(labelIconsComputed(const QVector<QImage>&)),
-			this, SLOT(processLabelIconsComputed(const QVector<QImage>&)));
-
-	iconTaskp->start();
+	iconTask->start();
 }
 
-
-void LabelingModel::discardIconTask()
+void LabelingModel::processLabelIconsComputed(QVector<QImage> icons)
 {
-	//GGDBG_CALL();
-	if(!iconTaskp)
-		return;
+	// remove our reference to the task who will delete itself
+	iconTask = NULL;
 
-	iconTaskp->abort();
-	// disconnect all signals, except finished() -> deleteLater()
-	disconnect(this, 0, iconTaskp, 0);
-	disconnect(iconTaskp, 0, this, 0);
-	// old icon task will delete itself after aborting, we can drop the pointer.
-	iconTaskp = NULL;
+	emit labelIconsComputed(icons); // copies the icons
 }
+

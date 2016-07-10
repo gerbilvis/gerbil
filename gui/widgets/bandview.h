@@ -82,18 +82,17 @@ public slots:
 	void enterEvent();
 	void leaveEvent();
 
-	void updateInputMode();
 	void updateCursorSize(BandView::CursorSize size);
 	void toggleCursorMode();
 	void toggleOverrideMode();
 
 	void updatePixel(int x, int y);
 
+protected slots:
+	void saveState();
+
 signals:
 	void killHover();
-
-	// change of input mode (e.g. seed mode)
-	void inputModeChanged(ScaledView::InputMode m);
 
 	// picking mode, diff. label chosen
 	void labelSelected(int label);
@@ -112,10 +111,13 @@ signals:
 
 	void mergeLabelsRequested(QVector<int> labels);
 
+	void setAlphaValue(int val);
+
 protected:
 	void paintEvent(QPainter *painter, const QRectF &rect);
 	void keyPressEvent(QKeyEvent *);
 	QMenu* createContextMenu();
+	void restoreState();
 
 private:
 	void cursorAction(QGraphicsSceneMouseEvent *ev, bool click = false);

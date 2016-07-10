@@ -1,5 +1,3 @@
-
-
 #include "labeldock.h"
 #include "ui_labeldock.h"
 
@@ -8,6 +6,7 @@
 #include <QGraphicsView>
 #include <QGraphicsWidget>
 #include <QGraphicsLayout>
+#include <QSettings>
 #include <QDebug>
 
 #include "../widgets/autohideview.h"
@@ -16,6 +15,7 @@
 #include <gerbil_ostream_ops.h>
 
 #include <iostream>
+#include <algorithm>
 
 //#define GGDBG_MODULE
 #include "../gerbil_gui_debug.h"
@@ -29,7 +29,10 @@ LabelDock::LabelDock(QWidget *parent) :
     hoverLabel(-1)
 {
 	setObjectName("LabelDock");
+	connect(QApplication::instance(), SIGNAL(lastWindowClosed()),
+	        this, SLOT(saveState()));
 	init();
+	restoreState();
 }
 
 void LabelDock::init()
@@ -39,9 +42,8 @@ void LabelDock::init()
 	QWidget *mainUiWidgetTmp = new QWidget();
 	ui->setupUi(mainUiWidgetTmp);
 	mainUiWidget = ahscene->addWidget(mainUiWidgetTmp);
-	mainUiWidget->setTransform( // TODO: unclear why we need to do this
-	            QTransform::fromTranslate(-AutohideWidget::OutOffset,
-	                                      -AutohideWidget::OutOffset));
+	// TODO: origin of this problem not understood
+	mainUiWidget->setTransform(QTransform::fromTranslate(-9, -9));
 
 	ui->labelView->setModel(labelModel);
 
@@ -60,11 +62,10 @@ void LabelDock::init()
 	        this, SIGNAL(consolidateLabelsRequested()));
 
 	connect(ui->sizeSlider, SIGNAL(valueChanged(int)),
-	        this, SLOT(processSliderValueChanged(int)));
+	        this, SLOT(updateLabelIcons()));
 	// Icon size is hard-coded to the range [4, 1024] in IconTask.
 	ui->sizeSlider->setMinimum(std::max(4, ui->sizeSlider->minimum()));
 	ui->sizeSlider->setMaximum(std::min(1024, ui->sizeSlider->maximum()));
-	updateSliderToolTip();
 
 	connect(ui->applyROI, SIGNAL(toggled(bool)),
 	        this, SLOT(processApplyROIToggled(bool)));
@@ -129,10 +130,8 @@ void LabelDock::init()
 void LabelDock::updateLabelIcons()
 {
 	//GGDBGM("value " << ui->sizeSlider->value() << endl);
-	int sval = ui->sizeSlider->value();
-	// Make icon size even. Odd values cause the interpolation to oscillate
-	// while changing slider.
-	sval = sval + (sval%2);
+	int size = ui->sizeSlider->value();
+	size += (size % 2); // avoid uneven sizes due to oscillating interpolation
 
 	// aspect ratio
 	float r = 1.0;
@@ -145,19 +144,17 @@ void LabelDock::updateLabelIcons()
 		GGDBGM("ROI aspect ratio " << r << endl);
 	}
 
-	QSize iconSize(sval,sval);
+	QSize iconSize(size, size);
 	if (r <= 1.0f) {
-		iconSize.setHeight(int(sval * r + 0.5));
+		iconSize.setHeight(int(size * r + 0.5));
 	} else {
-		iconSize.setWidth(int(sval / r + 0.5));
+		iconSize.setWidth(int(size / r + 0.5));
 	}
 
 	GGDBGM("ratio " << r << ", icon size " << iconSize << endl);
 
 	updateSliderToolTip();
-	emit labelMaskIconSizeChanged(iconSize);
-	// Label mask icons update is non-blocking, request them for each change.
-	emit labelMaskIconsRequested();
+	emit labelMaskIconsRequested(iconSize);
 }
 
 LabelDock::~LabelDock()
@@ -176,7 +173,7 @@ void LabelDock::setLabeling(const cv::Mat1s & labels,
 {
 	//GGDBGM("colors.size()=" << colors.size()
 	//	   << "  colorsChanged=" << colorsChanged << endl;)
-	if(colors.size() < 1) {
+	if (colors.size() < 1) {
 		// only background, no "real" labels
 		return;
 	}
@@ -184,11 +181,11 @@ void LabelDock::setLabeling(const cv::Mat1s & labels,
 	// did the colors change?
 	// FIXME: It is probably uneccessary to compare the color vectors.
 	// Test after 1.0 release.
-	if(colorsChanged || (this->colors != colors) ) {
+	if (colorsChanged || (this->colors != colors) ) {
 		this->colors = colors;
 	}
 
-	if(colors.size() != labelModel->rowCount()) {
+	if (colors.size() != labelModel->rowCount()) {
 		// label count changed, slection invalid
 		ui->mergeBtn->setDisabled(true);
 		ui->delBtn->setDisabled(true);
@@ -242,25 +239,25 @@ void LabelDock::deselectSelectedLabels()
 	}
 }
 
-void LabelDock::processMaskIconsComputed(const QVector<QImage> &icons)
+void LabelDock::processMaskIconsComputed(QVector<QImage> icons)
 {
 	//GGDBG_CALL();
 	this->icons = icons;
 
 	bool rebuild = false;
-	if(icons.size() != labelModel->rowCount()) {
+	if (icons.size() != labelModel->rowCount()) {
 		// the label count has changed
 		//GGDBGM("label count has changed" << endl);
 		labelModel->clear();
 		rebuild = true;
 	}
 
-	if(icons.size()>0) {
+	if (icons.size()>0) {
 		ui->labelView->setIconSize(icons[0].size());
 	}
 
 	// no tree model -> just iterate flat over all items
-	for(int i=0; i<icons.size(); i++) {
+	for (int i = 0; i < icons.size(); i++) {
 
 		const QImage &image = icons[i];
 		QPixmap pixmap = QPixmap::fromImage(image);
@@ -275,9 +272,9 @@ void LabelDock::processMaskIconsComputed(const QVector<QImage> &icons)
 		}
 
 		// we are using only rows, i == row
-		QModelIndex idx = labelModel->index(i,0);
+		QModelIndex idx = labelModel->index(i, 0);
 
-		labelModel->setData(idx, icon ,Qt::DecorationRole);
+		labelModel->setData(idx, icon, Qt::DecorationRole);
 	}
 }
 
@@ -355,15 +352,9 @@ void LabelDock::processRoiRectChanged(cv::Rect newRoi)
 	updateLabelIcons();
 }
 
-void LabelDock::processSliderValueChanged(int)
-{
-	updateLabelIcons();
-}
-
 void LabelDock::updateSliderToolTip()
 {
-	QString t = QString("Icon Size (%1)").arg(
-	                ui->sizeSlider->value());
+	QString t = QString("Icon Size (%1)").arg(ui->sizeSlider->value());
 	ui->sizeSlider->setToolTip(t);
 }
 
@@ -393,4 +384,21 @@ void LabelDock::resizeSceneContents()
 
 	mainUiWidget->setGeometry(geom);
 	ahview->fitContentRect(geom.adjusted(0, 0, 0, -AutohideWidget::OutOffset));
+}
+
+void LabelDock::saveState()
+{
+	QSettings settings;
+	settings.setValue("Labeling/iconsSize", ui->sizeSlider->value());
+	settings.setValue("Labeling/applyROI", ui->applyROI->isChecked());
+}
+
+void LabelDock::restoreState()
+{
+	QSettings settings;
+	auto roiChecked = settings.value("Labeling/applyROI", true);
+	auto size = settings.value("Labeling/iconsSize", 64);
+
+	ui->sizeSlider->setValue(size.toInt());
+	ui->applyROI->setChecked(roiChecked.toBool());
 }

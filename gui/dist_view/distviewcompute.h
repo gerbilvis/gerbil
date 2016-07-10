@@ -9,7 +9,6 @@
 #include <QGLBuffer>
 #include <QGLFramebufferObject>
 
-#include <limits>
 #include <tbb/atomic.h>
 #include <tbb/concurrent_vector.h>
 #include <tbb/concurrent_hash_map.h>
@@ -21,6 +20,10 @@
 #include <tbb/parallel_reduce.h>
 #include <tbb/tbb_allocator.h>
 #include <boost/functional/hash.hpp>
+
+#include <limits>
+#include <algorithm>
+#include <functional>
 
 /* N: number of bands,
  * D: number of bins per band (discretization steps)

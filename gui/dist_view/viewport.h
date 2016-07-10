@@ -11,11 +11,13 @@
 #define VIEWPORT_H
 
 #include "distviewcompute.h"
+
 #include <QGraphicsScene>
 #include <QGLWidget>
-#include <vector>
 #include <QLabel>
 #include <QTimer>
+
+#include <vector>
 
 class Viewport : public QGraphicsScene
 {
@@ -33,11 +35,13 @@ public:
 		RM_FULL = 2
 	};
 
-	enum BufferFormat {
-		RGBA8 = 0x8058,  // GL_RGBA8, constants not defined on windows
-		RGBA16F = 0x881A,// GL_RGBA16F
-		RGBA32F = 0x8814 // GL_RGBA32F
+	enum class BufferFormat : GLenum {
+		RGBA8 = GL_RGBA8,//0x8058,  // GL_RGBA8, constants not defined on windows
+		RGBA16F = GL_RGBA16F,//0x881A,// GL_RGBA16F
+		RGBA32F = GL_RGBA32F//0x8814 // GL_RGBA32F
 	};
+
+	BufferFormat format() { return bufferFormat; }
 
 	/* TODO: make non-public. I am just too tired right now. */
 	// viewport context
@@ -79,7 +83,7 @@ public slots:
 	void setIlluminationCurveShown(bool show);
 	void setAppliedIlluminant(QVector<multi_img::Value> illum);
 
-	void setBufferFormat(BufferFormat format);
+	void setBufferFormat(BufferFormat format, bool propagate = false);
 	void toggleBufferFormat();
 	void toggleHQ();
 
@@ -87,6 +91,7 @@ public slots:
 	void setDrawHQ(QAction* hqAct) { drawHQ = hqAct; }
 	void setDrawRGB(QAction* rgbAct) { drawRGB = rgbAct; }
 	void setDrawMeans(QAction* meansAct) { drawMeans = meansAct; }
+	void restoreState();
 
 protected slots:
 
@@ -99,6 +104,8 @@ protected slots:
 	// triggered manually
 	void updateBuffers(RenderMode spectrum = RM_STEP,
 	                   RenderMode highlight = RM_STEP);
+
+	void saveState();
 
 signals:
 	// we are the active viewer

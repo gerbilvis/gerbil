@@ -54,13 +54,6 @@ public slots:
 
 	/////// Label Mask Icons ////////////
 
-	/** Set the size of the computed label mask icons in pixels.
-	 *
-	 *  Default size is 32x32 pixels.
-	*/
-	void setLabelIconSize(int width, int height);
-	void setLabelIconSize(const QSize& size);
-
 	/** If set true, icons are computed on the current ROI.
 	 *
 	 * @default true
@@ -72,7 +65,7 @@ public slots:
 	 * When the computation is complete, the result is signalled by
 	 * labelIconsComputed(). Results are cached, so calling this function
 	 * multiple times is cheap. */
-	void computeLabelIcons();
+	void computeLabelIcons(QSize size = QSize());
 
 signals:
 	/** The Labeling has changed.
@@ -89,23 +82,15 @@ signals:
 	void partialLabelUpdate(const cv::Mat1s &labels, const cv::Mat1b &mask);
 
 	/** Signal result requested by computeLabelIcons(). */
-	void labelIconsComputed(const QVector<QImage>& icons);
+	void labelIconsComputed(QVector<QImage> icons);
 
 private slots:
-	// process label icon task result
-	void processLabelIconsComputed(const QVector<QImage> &icons);
-	void processIconTaskAborted();
+	// signals from icon task
+	void processLabelIconsComputed(QVector<QImage> icons);
 
-	// This is handling QThread::finished() and will be called wether or not
-	// the IconTask has finished successfully.
-	void resetIconTaskPointer();
 private:
-	/** The labeling has changed, mask icons are out of date. */
-	void invalidateMaskIcons();
-	void startIconTask();
-
-	// Cancel and disconnect running IconTask and return without waiting.
-	void discardIconTask();
+	// load state from settings
+	void restoreState();
 
 	// full image labels and roi scoped labels
 	/* labels is always a header with the same data as full_labels (CV memory
@@ -126,14 +111,10 @@ private:
 	// compute icons on ROI?
 	bool applyROI;
 
-	// Label icons (colored alpha masks)
-	QVector<QImage> icons;
-
 	// The execution icon task (=thread).
-	// If iconTaskp != NULL, a task is executing.
-	IconTask *iconTaskp;
+	// If iconTask != NULL, a task is executing.
+	IconTask *iconTask;
 };
 
-Q_DECLARE_METATYPE(QVector<QImage>)
 #endif // LABELING_MODEL_H
 

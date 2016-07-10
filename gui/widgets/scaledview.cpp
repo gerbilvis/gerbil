@@ -128,20 +128,23 @@ void ScaledView::mouseMoveEvent(QGraphicsSceneMouseEvent *event)
 	if (inputMode != InputMode::Zoom)
 		return;
 
+	// avoid jitter
+	if (!(event->buttons() & Qt::LeftButton) || zoom == 1)
+		return;
+
 	QRectF rect = scaler.mapRect(pixmap.rect());
-	if (event->buttons() & Qt::LeftButton &&
-	    rect.contains(event->scenePos())) {
-		//Obtain current cursor and last cursor position
-		//in pixmap coordinates
-		QPointF lastonscene = scalerI.map(event->lastScenePos());
-		QPointF curronscene = scalerI.map(event->scenePos());
+	if (!rect.contains(event->scenePos()))
+		return;
 
-		qreal x = curronscene.x() - lastonscene.x();
-		qreal y = curronscene.y() - lastonscene.y();
+	// obtain current cursor and last cursor position in pixmap coordinates
+	QPointF lastonscene = scalerI.map(event->lastScenePos());
+	QPointF curronscene = scalerI.map(event->scenePos());
 
-		scaler.translate(x,y);
-		adjustBoundaries();
-	}
+	qreal x = curronscene.x() - lastonscene.x();
+	qreal y = curronscene.y() - lastonscene.y();
+
+	scaler.translate(x,y);
+	adjustBoundaries();
 }
 
 void ScaledView::adjustBoundaries()
@@ -233,19 +236,56 @@ void ScaledView::cursorAction(QGraphicsSceneMouseEvent *ev, bool click)
 	QPoint cursor(std::floor(cursorF.x() - 0.25),
 	              std::floor(cursorF.y() - 0.25));
 
-	if (ev->buttons() & Qt::RightButton && inputMode != InputMode::Seed) {
+	if (ev->buttons() & Qt::RightButton && inputMode != InputMode::Seed
+	    && inputMode != InputMode::Target) {
 		showContextMenu(ev->screenPos());
 	} else if (ev->buttons() == Qt::NoButton) {
 		// overlay in spectral views but not during pixel labeling (reduce lag)
 		emit pixelOverlay(cursor.y(), cursor.x());
 	}
+
+	if (ev->button() != Qt::NoButton && inputMode == InputMode::Target) {
+		inputMode = InputMode::Zoom;
+		actionTarget->setEnabled(true);
+		if (ev->buttons() & Qt::LeftButton) {
+			QRectF rect = scaler.mapRect(pixmap.rect());
+			if (rect.contains(ev->scenePos())) {
+				QPoint point = QPointF(scalerI.map(ev->scenePos())).toPoint();
+				emit requestSpecSim(point.x(), point.y());
+			}
+		}
+	}
+
+	// note: we always have identity transform between scene and view
+	if (!itemAt(ev->scenePos(), QTransform())) {
+		updateCursor();
+	}
 }
 
 void ScaledView::leaveEvent()
 {
+	QApplication::restoreOverrideCursor();
 	// invalidate previous overlay
 	emit pixelOverlay(-1,-1);
 	update();
+}
+
+void ScaledView::updateInputMode()
+{
+	QAction* sender = (QAction*) QObject::sender();
+	inputMode = sender->data().value<InputMode>();
+	updateCursor();
+}
+
+void ScaledView::updateCursor()
+{
+	if (inputMode == InputMode::Target) {
+		emit requestCursor(Qt::CrossCursor);
+	} else if (inputMode == InputMode::Zoom) {
+		emit requestCursor(Qt::OpenHandCursor);
+	} else {
+		emit requestCursor(Qt::ArrowCursor);
+	}
 }
 
 void ScaledView::wheelEvent(QGraphicsSceneWheelEvent *event)
