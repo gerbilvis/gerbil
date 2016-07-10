@@ -73,20 +73,20 @@ namespace seg_graphs {
 cv::Mat1b Graph::MSF_Prim() {
 /*=====================================================================================*/
 /* returns a segmentation performed by Prim's algorithm for Maximum Spanning Forest computation */
-	int i, u, v, x, y, x_1, y_1;
+	int u, v, x, y, x_1, y_1;
 	int N = width*height;                       /* nb of nodes */
 	int M = edges.size(); /* number of edges */
 
 	// G is a labeling map
 	unsigned char * G = (unsigned char*)calloc(N, sizeof(unsigned char));
-	for (i = 0; i < seeds.size(); i++)
+	for (size_t i = 0; i < seeds.size(); i++)
 		G[seeds[i].first] = seeds[i].second;
 
 	std::vector<bool> indics(M, false);
 	std::multiset<Score> L;
-	i = 0;
 
 	// initialize at seed points
+	size_t i = 0;
 	for (u = 0; u < M && i < seeds.size(); u++) {
 		if (u == seeds[i].first) {
 			for (x = 1; x <= degree; x++) {
@@ -112,7 +112,7 @@ cv::Mat1b Graph::MSF_Prim() {
 		if ((std::min<unsigned char>(G[x], G[y]) == 0)
 		 && (std::max<unsigned char>(G[x], G[y]) > 0)) {
 			G[x] = G[y];
-			for (i = 1; i <= degree; i++) {
+			for (int i = 1; i <= degree; i++) {
 				v = neighbor_node_edge(x, i);
 				if ((v != -1) && (!indics[v])) {
 					x_1 = edges[v].nodes[0];
@@ -132,7 +132,7 @@ cv::Mat1b Graph::MSF_Prim() {
 	cv::Mat1b ret(height, width);
 	cv::MatIterator_<uchar> it = ret.begin();
 
-	for (i = 0; i < N; i++, it++)
+	for (int i = 0; i < N; i++, it++)
 		*it = G[i] - 1;
 
 	free(G);
@@ -145,7 +145,7 @@ cv::Mat1b Graph::MSF_Prim() {
 cv::Mat1b Graph::MSF_Kruskal() {
 /*=====================================================================*/
 /*returns a segmentation performed by Kruskal's algorithm for Maximum Spanning Forest computation*/
-	int i, k, x, y, e1, e2;
+	int k, x, y, e1, e2;
 	int N, M;
 
 	N = width * height; /* number of vertices */
@@ -155,7 +155,7 @@ cv::Mat1b Graph::MSF_Kruskal() {
 	if (Mrk == NULL) {
 		fprintf(stderr, "lMSF() : malloc failed\n"); exit(0);
 	}
-	for (i = 0; i < seeds.size(); i++) {
+	for (size_t i = 0; i < seeds.size(); i++) {
 		Mrk[seeds[i].first] = seeds[i].second;
 	}
 	int * Rnk = (int*)calloc(N, sizeof(int));
@@ -191,7 +191,7 @@ cv::Mat1b Graph::MSF_Kruskal() {
 
 	int cpt_aretes = 0;
 
-	while (nb_arete < N - seeds.size()) {
+	while (nb_arete < N - (int)seeds.size()) {
 		e_max = Es[cpt_aretes];
 		// printf("%d \n", e_max);
 		cpt_aretes = cpt_aretes + 1;
@@ -213,19 +213,19 @@ cv::Mat1b Graph::MSF_Kruskal() {
 	//building the map (find the root vertex of each tree)
 	int * Map2 = (int *)malloc(N * sizeof(int));
 	int * Map  = (int *)malloc(N * sizeof(int));
-	for (i = 0; i < N; i++)
+	for (int i = 0; i < N; i++)
 		Map2[i] = element_find(i, Fth);
 
 	bool* Fullseeds = (bool *)calloc(N, sizeof(bool));
-	for (i = 0; i < seeds.size(); i++) {
+	for (size_t i = 0; i < seeds.size(); i++) {
 		Fullseeds[seeds[i].first] = 1;
 		Map[seeds[i].first]       = (int)seeds[i].second;
 	}
 
-	for (i = 0; i < N; i++)
+	for (int i = 0; i < N; i++)
 		Mrk[i] = false;
 
-	for (i = 0; i < seeds.size(); i++) {
+	for (size_t i = 0; i < seeds.size(); i++) {
 		std::stack<int> lifo;
 		lifo.push(seeds[i].first);
 		while (!lifo.empty()) {
@@ -249,7 +249,7 @@ cv::Mat1b Graph::MSF_Kruskal() {
 	cv::Mat1b ret(height, width);
 	cv::MatIterator_<uchar> it = ret.begin();
 
-	for (i = 0; i < N; i++, it++)
+	for (int i = 0; i < N; i++, it++)
 		*it = Map[i] - 1;
 
 
@@ -395,7 +395,7 @@ cv::Mat1b Graph::PowerWatershed_q2(bool geodesic, cv::Mat1b *out_proba) {
 	}
 
 	// initialize probabilities for seed points
-	for (i = 0; i < seeds.size(); i++)
+	for (size_t i = 0; i < seeds.size(); i++)
 		for (j = 0; j < max_label - 1; j++) {
 			if (seeds[i].second == j + 1)
 				proba[j][seeds[i].first] = 1;
@@ -499,7 +499,7 @@ cv::Mat1b Graph::PowerWatershed_q2(bool geodesic, cv::Mat1b *out_proba) {
 		}
 		for (j = 0; j < nb_vertices; j++)
 			indic_VP[LCVP[j]] = 0;
-		for (j = 0; j < lcp.size(); j++)
+		for (size_t j = 0; j < lcp.size(); j++)
 			indic_P[lcp[j]] = false;
 
 		// 3. If e_max belongs to a plateau
@@ -652,7 +652,8 @@ cv::Mat1b Graph::PowerWatershed_q2(bool geodesic, cv::Mat1b *out_proba) {
 	}
 
 	for (i = 0; i < 2; i++)
-		free(edgesLCP[i]);free(edgesLCP);
+		free(edgesLCP[i]);
+	free(edgesLCP);
 
 	free(Rnk);
 	free(local_seeds);
