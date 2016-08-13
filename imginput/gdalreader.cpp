@@ -274,7 +274,9 @@ multi_img::ptr GdalReader::readFile()
 		int multiImgBandIdx = metaDataIdx - bandlow;
 
 		// copy band data to multi_img (we want a zero based index)
-		img_ptr->setBand(multiImgBandIdx, multi_img::Band(sizeY, sizeX, (multi_img::Value *)scanline));
+		multi_img::Band mat(sizeY, sizeX, (multi_img::Value *)scanline);
+		mat = cv::max(mat, 0.);
+		img_ptr->setBand(multiImgBandIdx, mat);
 		CPLFree(scanline);
 
 		img_ptr->meta[multiImgBandIdx] = metaTuples[metaDataIdx].bandDesc;
