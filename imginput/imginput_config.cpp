@@ -18,15 +18,11 @@ using namespace boost::program_options;
 namespace imginput {
 
 ImgInputConfig::ImgInputConfig(const std::string& prefix)
-	: Config(prefix)
-	, normalize(false)
-	, gradient(false)
-	, removeIllum(0)
-	, addIllum(0)
-	, bands(0)
-	, bandlow(0)
-	, bandhigh(0) {
-
+	: Config(prefix),
+      normalize(false), gradient(false),
+      removeIllum(0), addIllum(0), bands(0), bandlow(0), bandhigh(0),
+      output("/tmp/image")
+{
 #ifdef WITH_BOOST
 	initBoostOptions();
 #endif // WITH_BOOST
@@ -45,6 +41,7 @@ DESC_OPT(bandlow, "Select bands and use band index as lower bound (if >0)")
 DESC_OPT(bandhigh, "Select bands and use band index as upper bound (if >0)")
 DESC_OPT(removeIllum, "Remove black body illuminant specified in Kelvin (if >0)")
 DESC_OPT(addIllum, "Add black body illuminant specified in Kelvin (if >0)")
+DESC_OPT(output, "Basename of output descriptor file and directory")
 }
 
 std::string ImgInputConfig::getString() const {
@@ -79,7 +76,9 @@ void ImgInputConfig::initBoostOptions() {
 			BOOST_OPT(removeIllum)
 			BOOST_OPT(addIllum)
 	;
-
+	if (!prefix_enabled) {
+		options.add_options()BOOST_OPT_S(output,O);
+	}
 }
 #endif // WITH_BOOST_PROGRAM_OPTIONS
 

@@ -40,6 +40,7 @@ public:
 	// Add blackbody illuminant with X Kelvin
 	int addIllum;
 
+	std::string output;
 
 	virtual std::string getString() const;
 

@@ -9,6 +9,9 @@ vole_compile_library(
 	"imginput"
 	"imginput_config"
 	"gdalreader"
+	"export"
 )
+
+vole_add_command(export export.h imginput::Export)
 
 vole_add_module()
