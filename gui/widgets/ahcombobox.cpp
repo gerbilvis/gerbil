@@ -18,11 +18,11 @@ void AHComboBox::showPopup()
 	menu.setDefaultAction(actions[currentIndex()]);
 
 	// map to scene coordinates
-#ifdef _WIN32 // mapToGlobal() doesn't work correctly
+#ifdef _WIN32 // mapToGlobal() doesn't work correctly (TODO: test qt 5.7)
 	auto screenpoint = QCursor::pos();
 #else
 	auto screenpoint = mapToGlobal(QPoint(0, 0));
-#ifndef QT_BROKEN_MAPTOGLOBAL
+#ifdef QT_BROKEN_MAPTOGLOBAL
 	screenpoint = view->mapToGlobal(screenpoint);
 #endif
 #endif

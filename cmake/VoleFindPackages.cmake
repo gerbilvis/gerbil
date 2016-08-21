@@ -69,7 +69,7 @@ if(Qt5Widgets_FOUND)
 			"${Qt5Widgets_VERSION} (minimum required: ${VOLE_MINIMUM_QT_VERSION})")
 		# cmake configure will fail after SEND_ERROR
 	endif()
-	if(${Qt5Widgets_VERSION} VERSION_EQUAL "5.5.1")
+	if(${Qt5Widgets_VERSION} VERSION_EQUAL "5.6")
 		# see https://codereview.qt-project.org/#/c/114591/
 		# and https://codereview.qt-project.org/#/c/144603/
 		add_definitions(-DQT_BROKEN_MAPTOGLOBAL)

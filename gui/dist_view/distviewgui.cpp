@@ -306,7 +306,7 @@ void DistViewGUI::showLimiterMenu()
 	auto screenpoint = QCursor::pos();
 #else
 	auto screenpoint = uivc->limiterMenuButton->mapToGlobal(QPoint(0, 0));
-#ifndef QT_BROKEN_MAPTOGLOBAL
+#ifdef QT_BROKEN_MAPTOGLOBAL
 	screenpoint = ui->gv->mapToGlobal(screenpoint);
 #endif
 #endif
@@ -353,7 +353,7 @@ void DistViewGUI::showFrameBufferMenu()
 	auto screenpoint = QCursor::pos();
 #else
 	auto screenpoint = uivc->formatButton->mapToGlobal(QPoint(0, 0));
-#ifndef QT_BROKEN_MAPTOGLOBAL
+#ifdef QT_BROKEN_MAPTOGLOBAL
 	screenpoint = ui->gv->mapToGlobal(screenpoint);
 #endif
 #endif
