@@ -688,13 +688,11 @@ QMenu *BandView::createContextMenu()
 
 void BandView::saveState()
 {
-	QSettings settings;
-	settings.setValue("BandView/alphaValue", labelAlpha);
+	QSettings().setValue("BandView/alphaValue", labelAlpha);
 }
 
 void BandView::restoreState()
 {
-	QSettings settings;
-	auto alphaValue = settings.value("BandView/alphaValue", 63);
+	auto alphaValue = QSettings().value("BandView/alphaValue", 63);
 	emit setAlphaValue(alphaValue.toInt());
 }

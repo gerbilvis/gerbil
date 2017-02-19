@@ -34,7 +34,7 @@ GerbilApplication::GerbilApplication(int &argc, char **argv)
       limitedMode(false),
       ctrl(nullptr)
 {
-	// set variables for QConfig use in application
+	// set variables for QSettings use in application
 	setOrganizationName("Gerbil");
 	setOrganizationDomain("gerbilvis.org");
 	setApplicationName("Gerbil");

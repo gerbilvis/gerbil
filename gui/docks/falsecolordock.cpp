@@ -377,16 +377,17 @@ void FalseColorDock::saveState()
 	QSettings settings;
 	QComboBox *src = uisel->sourceBox;
 	settings.setValue("FalseColorDock/selectedColoringIndex", src->currentIndex());
-	// TODO: specsim state?
+	// TODO: state of spectral distance map
 }
 
 void FalseColorDock::restoreState()
 {
 	QSettings settings;
 	auto selectedColoring = settings.value("FalseColorDock/selectedColoringIndex", 0);
-	// TODO: specsim state?
 
 	QComboBox *src = uisel->sourceBox;
 	src->setCurrentIndex(selectedColoring.toInt());
 	processSelectedColoring();
+
+	// TODO: state of spectral distance map
 }

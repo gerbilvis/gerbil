@@ -39,9 +39,8 @@ void MainWindow::initUI(const QString &filename)
 	QFileInfo fi(filename);
 	setWindowTitle(QString("Gerbil - %1").arg(fi.completeBaseName()));
 
-	// restore geometry
-	QSettings settings;
-	restoreGeometry(settings.value("mainWindow/geometry").toByteArray());
+	// restore window geometry
+	restoreGeometry(QSettings().value("mainWindow/geometry").toByteArray());
 }
 
 void MainWindow::initSignals(QObject *ctrl, QObject *dvctrl)

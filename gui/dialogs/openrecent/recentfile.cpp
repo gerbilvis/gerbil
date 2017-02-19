@@ -50,25 +50,22 @@ void makeListEntriesUnique(QList<RecentFile> &recentFiles)
 /** Loads the recent files list from QSettings. */
 static QList<RecentFile> loadRecentFilesList()
 {
-	// app name is expected set in main.cpp
+	QList<RecentFile> files;
 	QSettings settings;
-	QList<RecentFile> recentFiles;
 	int recentFilesVersion = settings.value("recentFilesVersion").toInt();
-	if (recentFilesVersion < 1) {
-		settings.remove("recentFilesList");
-	} else {
-		QList<QVariant> varl = settings.value("recentFilesList").toList();
-		for (auto varrf : varl) {
-			RecentFile rf = varrf.value<RecentFile>();
-			GGDBGP(rf.getFileNameWithoutPath().toStdString() << ": "
-						"QImage::Format " << rf.previewImage.format() << endl);
-			if (QFileInfo(rf.fileName).exists())
-				recentFiles.append(rf);
-		}
-		makeListEntriesUnique(recentFiles);
+	if (recentFilesVersion < 1)
+		return files;
+
+	QList<QVariant> varl = settings.value("recentFilesList").toList();
+	for (auto varrf : varl) {
+		RecentFile rf = varrf.value<RecentFile>();
+		GGDBGP(rf.getFileNameWithoutPath().toStdString() << ": "
+		                                                    "QImage::Format " << rf.previewImage.format() << endl);
+		if (QFileInfo(rf.fileName).exists())
+			files.append(rf);
 	}
-	settings.setValue("recentFilesVersion", 1);
-	return recentFiles;
+	makeListEntriesUnique(files);
+	return files;
 }
 
 QString RecentFile::getFileNameWithoutPath() const
@@ -118,22 +115,22 @@ QList<RecentFile> RecentFile::recentFilesList()
 	return recentFiles;
 }
 
-void RecentFile::saveRecentFilesList(const QList<RecentFile> &recentFilesx)
+void RecentFile::saveRecentFilesList(const QList<RecentFile> &recentFiles)
 {
-	QList<RecentFile> recentFiles = recentFilesx;
-	makeListEntriesUnique(recentFiles);
-	if (recentFiles.size() > MaxRecentFiles) {
-		recentFiles.erase(recentFiles.begin() + MaxRecentFiles,
-						  recentFiles.end());
+	QList<RecentFile> files = recentFiles;
+	makeListEntriesUnique(files);
+	if (files.size() > MaxRecentFiles) {
+		files.erase(files.begin() + MaxRecentFiles, files.end());
 	}
 
-	// app name is set in main.cpp
-	QSettings settings;
 	QVariantList varl;
-	for (auto rf : recentFiles) {
+	for (auto rf : files) {
 		varl << QVariant::fromValue(rf);
 	}
+
+	QSettings settings;
 	settings.setValue("recentFilesList", varl);
+	settings.setValue("recentFilesVersion", 1);
 }
 
 void RecentFile::appendToRecentFilesList(const QString &fileName,

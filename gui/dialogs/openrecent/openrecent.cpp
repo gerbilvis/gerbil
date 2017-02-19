@@ -38,15 +38,11 @@ OpenRecent::OpenRecent(QWidget *parent) :
 	connect(ui->fileLineEdit, SIGNAL(textChanged(QString)),
 			this, SLOT(processFileNameChanged(QString)));
 
-	// expecting app name is set in main.cpp
-	QSettings settings;
-
 	recentFiles = RecentFile::recentFilesList();
 
 	// Use the last used directory for opening an image file or the user's
 	// home as base path.
-	recentPath = settings.value("recentPath",
-								QDir::homePath()).toString();
+	recentPath = QSettings().value("recentPath", QDir::homePath()).toString();
 
 	// Don't show recent files list if there aren't any.
 	if (recentFiles.size() == 0) {

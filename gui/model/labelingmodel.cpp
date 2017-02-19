@@ -22,8 +22,7 @@ LabelingModel::LabelingModel(QObject *parent)
 
 void LabelingModel::restoreState()
 {
-	QSettings settings;
-	applyROI = settings.value("Labeling/applyROI", true).toBool();
+	applyROI = QSettings().value("Labeling/applyROI", true).toBool();
 }
 
 void LabelingModel::setImageSize(unsigned int height, unsigned int width)
