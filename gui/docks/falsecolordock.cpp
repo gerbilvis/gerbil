@@ -386,7 +386,11 @@ void FalseColorDock::restoreState()
 	auto selectedColoring = settings.value("FalseColorDock/selectedColoringIndex", 0);
 
 	QComboBox *src = uisel->sourceBox;
-	src->setCurrentIndex(selectedColoring.toInt());
+	/* TODO: disabled to avoid crashes */
+	if (false)
+		src->setCurrentIndex(selectedColoring.toInt());
+	else
+		src->setCurrentIndex(0);
 	processSelectedColoring();
 
 	// TODO: state of spectral distance map

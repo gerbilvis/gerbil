@@ -53,8 +53,9 @@ void Controller::initDocks()
 #endif
 	roiDock->raise();
 	// restore dock widget positions
-	mainWindow()->restoreState(
-				settings.value("mainWindow/windowState").toByteArray());
+	if (false) /* TODO: disabled to avoid crashes */
+		mainWindow()->restoreState(
+		            settings.value("mainWindow/windowState").toByteArray());
 
 	imageModel()->computeFullRgb();
 }

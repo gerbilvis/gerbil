@@ -46,7 +46,7 @@ void DistViewController::init()
 	// NOTE that we did not connect signals yet! This is actually good as we
 	// will not get stray signals before the content is ready.
 	QSettings settings;
-	if (settings.contains("viewports/IMGfolded")) {
+	if (false && settings.contains("viewports/IMGfolded")) { /* TODO: disabled to avoid crashes */
 		// settings are available
 		QString activeStr = settings.value("viewports/active").value<QString>();
 		activeView = representation::fromStr(activeStr);
