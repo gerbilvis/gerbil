@@ -561,7 +561,7 @@ bool FAMS::progressUpdate(float percent, bool absolute)
 	if (!po && config.verbosity < 1)
 		return true;
 
-	tbb::mutex::scoped_lock(progressMutex);
+	tbb::mutex::scoped_lock l(progressMutex);
 	if (absolute)
 		progress = percent;
 	else
