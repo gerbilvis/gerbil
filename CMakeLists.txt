@@ -6,6 +6,9 @@ endif()
 if(NOT CMAKE_VERSION VERSION_LESS "3.0")
 	cmake_policy(SET CMP0038 NEW)
 endif()
+if(NOT CMAKE_VERSION VERSION_LESS "3.11")
+	cmake_policy(SET CMP0072 NEW)
+endif()
 
 project(Gerbil)
 
