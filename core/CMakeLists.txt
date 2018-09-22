@@ -20,8 +20,8 @@ vole_compile_library(
 	multi_img/multi_img_tbb
 	multi_img/illuminant
 	multi_img/cieobserver
-	background_task/background_task
-	background_task/background_task_queue
+	background_task/background_task.cpp
+	background_task/background_task_queue.cpp
 	background_task/tasks/cuda/gradientcuda
 	background_task/tasks/cuda/clampcuda
 	background_task/tasks/cuda/datarangecuda

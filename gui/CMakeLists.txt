@@ -9,66 +9,64 @@ vole_add_required_modules("rgb" "seg_graphs")
 vole_add_optional_modules("seg_meanshift" "seg_medianshift" "seg_probshift" "edge_detect")
 
 vole_compile_library(
-	app/gerbilapplication
-	app/gerbilapp_aux
-	app/gerbilio
+	app/gerbilapplication.cpp
+	app/gerbilapp_aux.cpp
+	app/gerbilio.cpp
 
-	widgets/actionbutton
-	widgets/mainwindow
-	widgets/autohidewidget
-	widgets/autohideview
-	widgets/ahcombobox
-	widgets/scaledview
-	widgets/bandview
-	widgets/roiview
-	widgets/graphsegwidget
-	widgets/modewidget
-	widgets/similaritywidget
+	widgets/actionbutton.cpp
+	widgets/mainwindow.cpp
+	widgets/autohidewidget.cpp
+	widgets/autohideview.cpp
+	widgets/ahcombobox.cpp
+	widgets/scaledview.cpp
+	widgets/bandview.cpp
+	widgets/roiview.cpp
+	widgets/graphsegwidget.cpp
+	widgets/modewidget.cpp
+	widgets/similaritywidget.cpp
 
-	widgets/sizegripitem/sizegripitem
+	widgets/sizegripitem/sizegripitem.cpp
 	
-	controller/controller
-	controller/controller_docks
-	controller/distviewcontroller
-	controller/subscriptions
-	# Huh? module not compiled otherwise... weird.
+	controller/controller.cpp
+	controller/controller_docks.cpp
+	controller/distviewcontroller.cpp
 	controller/subscriptions.cpp
 
-	dist_view/distviewcompute
-	dist_view/distviewmodel
-	dist_view/viewer_tasks
-	dist_view/foldingbar
-	dist_view/viewport
-	dist_view/viewport_drawing
-	dist_view/viewport_input
-	dist_view/distviewgui
-	dist_view/distviewbinstbb
+	dist_view/distviewcompute.cpp
+	dist_view/distviewmodel.cpp
+	dist_view/viewer_tasks.cpp
+	dist_view/foldingbar.cpp
+	dist_view/viewport.cpp
+	dist_view/viewport_drawing.cpp
+	dist_view/viewport_input.cpp
+	dist_view/distviewgui.cpp
+	dist_view/distviewbinstbb.cpp
 
-	model/commandrunner
-	model/representation
-	model/imagemodel
-	model/labelingmodel
-	model/falsecolormodel
-	model/falsecolor/falsecoloring
-	model/falsecolor/falsecolormodelpayload
-	model/illuminationmodel
-	model/graphsegmentationmodel
-	model/clusteringmodel
-	model/labels/icontask
+	model/commandrunner.cpp
+	model/representation.cpp
+	model/imagemodel.cpp
+	model/labelingmodel.cpp
+	model/falsecolormodel.cpp
+	model/falsecolor/falsecoloring.cpp
+	model/falsecolor/falsecolormodelpayload.cpp
+	model/illuminationmodel.cpp
+	model/graphsegmentationmodel.cpp
+	model/clusteringmodel.cpp
+	model/labels/icontask.cpp
 
-	docks/banddock
-	docks/normdock
-	docks/roidock
-	docks/illumdock
-	docks/falsecolordock
-	docks/clusteringdock
-	docks/labeldock
+	docks/banddock.cpp
+	docks/normdock.cpp
+	docks/roidock.cpp
+	docks/illumdock.cpp
+	docks/falsecolordock.cpp
+	docks/clusteringdock.cpp
+	docks/labeldock.cpp
 
-	gerbil_gui_debug
+	gerbil_gui_debug.cpp
 
-	dialogs/openrecent/recentfile
-	dialogs/openrecent/openrecent
-	dialogs/openrecent/recentfiledelegate
+	dialogs/openrecent/recentfile.cpp
+	dialogs/openrecent/openrecent.cpp
+	dialogs/openrecent/recentfiledelegate.cpp
 )
 
 vole_moc_library(
@@ -141,7 +139,6 @@ vole_add_resources(
 	gerbil.qrc
 )
 
-vole_add_executable("qgerbil" "app/gerbilapplication")
-
+vole_add_executable("qgerbil" "app/gerbilapplication.cpp")
 
 vole_add_module()
