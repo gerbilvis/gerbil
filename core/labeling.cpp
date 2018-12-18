@@ -290,7 +290,7 @@ std::vector<cv::Vec3b> Labeling::colors(int count, bool yellowcursor,
 			hsvmap[0][i] = cv::Vec3f(hue, 1.f, val);
 			hue += distance;
 		}
-		cv::cvtColor(hsvmap, hsvmap, CV_HSV2BGR);
+		cv::cvtColor(hsvmap, hsvmap, cv::COLOR_HSV2BGR);
 
 		// save in ret vector (build matrix around vector to avoid a copy)
 		ret.resize(count);

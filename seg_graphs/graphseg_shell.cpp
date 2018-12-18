@@ -34,7 +34,7 @@ int GraphSegShell::execute() {
 
 	// Read the seed image
 	cv::Mat1b seeds;
-	seeds = cv::imread(config.seed_file, CV_LOAD_IMAGE_GRAYSCALE);
+	seeds = cv::imread(config.seed_file, cv::IMREAD_GRAYSCALE);
 	if (seeds.empty()) {
 		std::cerr << "ERROR: Could not load seed file: "
 		          << config.seed_file << std::endl;

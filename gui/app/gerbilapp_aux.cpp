@@ -120,7 +120,7 @@ void GerbilApplication::init_opencv()
 	cv::subtract(b1, b1, b2);
 	cv::multiply(b1, b1, b2);
 	cv::divide(b1, b1, b2);
-	cv::PCA pca(b1, cv::noArray(), CV_PCA_DATA_AS_COL, 0);
+	cv::PCA pca(b1, cv::noArray(), cv::PCA::DATA_AS_COL, 0);
 	pca.project(b1, b2);
 }
 

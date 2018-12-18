@@ -176,7 +176,7 @@ void multi_img::write_out(const std::string& base,
 
 	// parameters to image writer
 	std::vector<int> flags;
-	flags.push_back(CV_IMWRITE_PNG_COMPRESSION);
+	flags.push_back(cv::IMWRITE_PNG_COMPRESSION);
 	flags.push_back(9);  // [0-9] 9 being max compression, default is 3
 
 	// write out band files and corresponding text file entries at once

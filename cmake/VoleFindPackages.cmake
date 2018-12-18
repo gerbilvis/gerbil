@@ -1,7 +1,7 @@
 # Library versions
 
-# 2.4 introduces some new features we use and older versions are buggy, too!
-set(VOLE_MINIMUM_OPENCV_VERSION "2.4.0")
+# We only tested 4.0 after making changes to stay compatible with 4.0
+set(VOLE_MINIMUM_OPENCV_VERSION "4.0.0")
 
 # 5.5 or 5.5.1 fixes an important drawing bug
 set(VOLE_MINIMUM_QT_VERSION "5.5.1")

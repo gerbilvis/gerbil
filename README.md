@@ -2,7 +2,7 @@ ABOUT
 -----
 
 This archive contains the Software "gerbil" maintained by Johannes Jordan 
-<johannes.jordan@informatik.uni-erlangen.de> at the Pattern Recognition Lab, 
+<johannes.jordan@cs.fau.de> at the Pattern Recognition Lab,
 University of Erlangen-Nuremberg. See the file AUTHORS for a list of all
 contributors.
 
