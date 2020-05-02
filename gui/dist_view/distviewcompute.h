@@ -9,6 +9,7 @@
 #include <QGLBuffer>
 #include <QGLFramebufferObject>
 
+#if !defined(Q_MOC_RUN)
 #include <tbb/atomic.h>
 #include <tbb/concurrent_vector.h>
 #include <tbb/concurrent_hash_map.h>
@@ -19,6 +20,7 @@
 #include <tbb/parallel_for.h>
 #include <tbb/parallel_reduce.h>
 #include <tbb/tbb_allocator.h>
+#endif
 #include <boost/functional/hash.hpp>
 
 #include <limits>

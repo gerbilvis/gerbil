@@ -11,7 +11,9 @@
 #include <opencv2/core/core.hpp>
 
 #include <boost/shared_ptr.hpp>
+#if !defined(Q_MOC_RUN)
 #include <tbb/task_group.h>
+#endif
 
 // Context struct for label icon computation.
 // Bad style, but better than fiddling all parameters through constructors.
