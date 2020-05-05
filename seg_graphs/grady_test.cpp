@@ -1,5 +1,5 @@
 extern "C" {
-	#include <cs.h>	// CSparse
+	#include "csparse/cs.h"
 }
 
 void printmat(const cv::Mat1f &X)

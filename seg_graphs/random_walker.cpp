@@ -56,7 +56,7 @@
  */
 
 extern "C" {
-	#include <cs.h>	// CSparse
+	#include "csparse/cs.h"
 }
 #include "graph_alg.h"
 #include "sorting.h"
